@@ -742,13 +742,15 @@ export function MessagesReadyView({
                         <div className="messages-mention-empty" role="status">
                           <p>
                             {members.length === 0
-                              ? "No teammates to mention yet — invite under Team admin."
+                              ? canManageChannels
+                                ? "No teammates to mention yet — invite under Team admin."
+                                : "No teammates to mention yet. An owner or admin invites people."
                               : activeMention.query
                                 ? `No org member matches @${activeMention.query}`
                                 : "Type a name to mention a teammate in this organization."}
                           </p>
                           <small>Esc to dismiss · mentions stay inside this team</small>
-                          {members.length === 0 ? (
+                          {members.length === 0 && canManageChannels ? (
                             <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
                               Team admin
                             </Button>
@@ -824,11 +826,17 @@ export function MessagesReadyView({
             <EmptyState
               soft
               title="No teammates yet"
-              description="Invite people under Team admin."
+              description={
+                canManageChannels
+                  ? "Invite people under Team admin."
+                  : "An owner or admin invites people onto this team."
+              }
             >
-              <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-                Team admin
-              </Button>
+              {canManageChannels ? (
+                <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
+                  Team admin
+                </Button>
+              ) : null}
             </EmptyState>
           ) : (
             members.map((member) => (

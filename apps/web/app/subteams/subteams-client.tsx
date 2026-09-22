@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   SUBTEAM_LABELS,
@@ -270,7 +271,7 @@ export default function SubteamsClient() {
           title="Nobody has joined yet"
           description="Invite your team, and everyone who finishes onboarding will appear here under the subteam they picked."
         >
-          <Button as="a" variant="primary" href="/team/admin">Invite people</Button>
+          <Button as="a" variant="primary" href={withOrgHref("/team/admin", view.orgId)}>Invite people</Button>
         </EmptyState>
       ) : null}
 

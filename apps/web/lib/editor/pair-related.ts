@@ -34,12 +34,13 @@ export const PAIR_RELATED_INCLUDE: PairRelatedId[] = ["code", "github", "chat"];
  */
 export function pairRelatedLinks(
   orgId?: string | null,
-  options?: { active?: PairRelatedId; include?: PairRelatedId[] },
+  options?: { active?: PairRelatedId; include?: PairRelatedId[]; canConnect?: boolean },
 ): PairRelatedLink[] {
   const include = options?.include ? new Set(options.include) : null;
   return PAIR_RELATED_LINKS.filter((link) => {
     if (link.id === options?.active) return false;
     if (include && !include.has(link.id)) return false;
+    if (link.id === "github" && options?.canConnect === false) return false;
     return true;
   }).map((link) => {
     if (link.kind === "build") {
@@ -188,11 +189,22 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
  * Soft-UI next actions for Pair VS Code empty/setup shells.
  * Points at Code Coach / GitHub / AI — never invents DEMO pairing metrics.
  */
+function pairAskOwnerGithubAction(): PairNextAction {
+  return {
+    id: "github",
+    label: "Ask an owner to connect GitHub",
+    detail: "An owner or admin links the robot-code repo. Pairing this editor does not need GitHub.",
+    href: "#pair-approve",
+  };
+}
+
 export function pairNextActions(input: {
   orgId?: string | null;
   shell: PairShellKind;
   deviceCount?: number;
   hasCode?: boolean;
+  /** When false, GitHub setup stays a note. Omitted keeps the owner link. */
+  canConnect?: boolean;
 }): PairNextAction[] {
   const orgId = input.orgId ?? null;
   const deviceCount = input.deviceCount ?? 0;
@@ -201,7 +213,16 @@ export function pairNextActions(input: {
     // One list, not two: the setup shell offers exactly the setup steps. These
     // used to be a second hand-written copy of pairSetupSteps with the same ids and
     // different wording, so the screen showed the same guided list twice.
-    return setupActionsFrom(pairSetupSteps(orgId));
+    const steps = setupActionsFrom(pairSetupSteps(orgId));
+    if (input.canConnect !== false) return steps;
+    return steps.map((step) =>
+      step.id === "github"
+        ? {
+            ...pairAskOwnerGithubAction(),
+            primary: step.primary,
+          }
+        : step,
+    );
   }
 
   if (input.shell === "empty" || deviceCount === 0) {
@@ -221,12 +242,14 @@ export function pairNextActions(input: {
         detail: "Review robot source locally after pairing.",
         href: hubHref("/build", "code", orgId),
       },
-      {
-        id: "github",
-        label: "Connect GitHub",
-        detail: "Optional: hydrate file content from your default repo after you link it.",
-        href: githubConnectionHref(orgId),
-      },
+      input.canConnect === false
+        ? pairAskOwnerGithubAction()
+        : {
+            id: "github",
+            label: "Connect GitHub",
+            detail: "Optional: hydrate file content from your default repo after you link it.",
+            href: githubConnectionHref(orgId),
+          },
       {
         id: "chat",
         label: "Open AI chat",
@@ -244,12 +267,14 @@ export function pairNextActions(input: {
       href: hubHref("/build", "code", orgId),
       primary: true,
     },
-    {
-      id: "github",
-      label: "Connect GitHub",
-      detail: "Optional repo context for Code Coach.",
-      href: githubConnectionHref(orgId),
-    },
+    input.canConnect === false
+      ? pairAskOwnerGithubAction()
+      : {
+          id: "github",
+          label: "Connect GitHub",
+          detail: "Optional repo context for Code Coach.",
+          href: githubConnectionHref(orgId),
+        },
     {
       id: "chat",
       label: "Open AI chat",

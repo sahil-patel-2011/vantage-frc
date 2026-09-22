@@ -36,6 +36,15 @@ describe("pairRelatedLinks", () => {
     expect(blob).not.toMatch(/DEMO/i);
     expect(blob).not.toMatch(/demo/i);
   });
+
+  it("drops the Team admin GitHub link when the member cannot connect", () => {
+    const links = pairRelatedLinks("org-1", {
+      include: [...PAIR_RELATED_INCLUDE],
+      canConnect: false,
+    });
+    expect(links.map((link) => link.id)).toEqual(["code", "chat"]);
+    expect(links.some((link) => link.href.includes("/team/admin"))).toBe(false);
+  });
 });
 
 describe("pairSetupSteps", () => {
@@ -92,6 +101,26 @@ describe("pairNextActions", () => {
     expect(actions.some((a) => a.id === "github")).toBe(true);
     expect(actions.some((a) => a.id === "chat")).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
+  });
+
+  it("keeps a member off Team admin when they cannot connect GitHub", () => {
+    const empty = pairNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      canConnect: false,
+    });
+    const ready = pairNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      deviceCount: 1,
+      canConnect: false,
+    });
+    for (const actions of [empty, ready]) {
+      const github = actions.find((action) => action.id === "github");
+      expect(github?.label).toBe("Ask an owner to connect GitHub");
+      expect(github?.href).toBe("#pair-approve");
+      expect(actions.some((action) => action.href.includes("/team/admin"))).toBe(false);
+    }
   });
 });
 
