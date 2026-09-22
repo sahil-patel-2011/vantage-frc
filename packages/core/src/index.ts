@@ -158,7 +158,11 @@ function buildAuth() {
       allowedAttempts: OTP_POLICY.allowedAttempts,
       storeOTP: "hashed",
       resendStrategy: "rotate",
-      disableSignUp: true,
+      // False so a pending invite can create the account on the first code.
+      // Strangers are still rejected: user.create.before throws unless the
+      // email is the platform owner, an existing user, or a live invite, and
+      // the send callback stays quiet for everyone else.
+      disableSignUp: false,
       rateLimit: {
         window: OTP_POLICY.requestWindowSeconds,
         max: OTP_POLICY.requestLimit,
@@ -173,6 +177,10 @@ function buildAuth() {
           throw new Error(
             "Email sign-in is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are configured.",
           );
+        }
+        if (message.type === "sign-in") {
+          const access = await resolveAuthEmailAccess(message.email);
+          if (!access.allowed) return;
         }
         const emailProvider = createEmailProvider();
         await emailProvider.sendOtp(message);

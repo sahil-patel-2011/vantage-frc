@@ -314,7 +314,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     } catch {
       setInviteNotice({
         tone: "error",
-        message: "Could not copy automatically. Select the invite link and copy it.",
+        message: `Could not copy automatically. Select this link: ${url}`,
       });
     }
   }

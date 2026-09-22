@@ -62,15 +62,11 @@ export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAc
       return { allowed: true, reason: "existing_user", email: normalized };
     }
 
-    const invite = await pool.query<{ id: string }>(
-      `SELECT id FROM invites
-        WHERE lower(email)=lower($1)
-          AND status='pending'
-          AND expires_at > now()
-        LIMIT 1`,
+    const invite = await pool.query<{ allowed: boolean }>(
+      `SELECT auth_email_has_pending_invite($1) AS allowed`,
       [normalized],
     );
-    if (invite.rows[0]) {
+    if (invite.rows[0]?.allowed) {
       return { allowed: true, reason: "pending_invite", email: normalized };
     }
 
