@@ -16,7 +16,9 @@ import {
   type AiChatShellKind,
 } from "../../lib/ai-chat/ai-chat-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -175,6 +177,7 @@ export default function ChatClient({
   const [contextOpen, setContextOpen] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [canManageTeam, setCanManageTeam] = useState(false);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [providerSetup, setProviderSetup] = useState<{
@@ -210,6 +213,18 @@ export default function ChatClient({
 
   useEffect(() => {
     void load();
+  }, [orgId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanManageTeam(strategyCanSync(membership?.role ?? session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [orgId]);
 
   async function newThread(nextScope: "private" | "team") {
@@ -342,7 +357,7 @@ export default function ChatClient({
   }
 
   async function setTeamInjection(enabled: boolean) {
-    await fetch("/api/agent/memory", {
+    const response = await fetch("/api/agent/memory", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -353,13 +368,18 @@ export default function ChatClient({
         retentionDays: memorySettings?.team?.retentionDays ?? 365,
       }),
     });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      setStatus(data?.error ?? "Team memory could not be changed.");
+      return;
+    }
     setStatus(enabled ? "Team memory injection enabled." : "Team memory injection disabled.");
     await load(thread?.id);
   }
 
   async function saveTeamBudget(event: React.FormEvent) {
     event.preventDefault();
-    await fetch("/api/agent/memory", {
+    const response = await fetch("/api/agent/memory", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -370,6 +390,11 @@ export default function ChatClient({
         retentionDays: memorySettings?.team?.retentionDays ?? 365,
       }),
     });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      setStatus(data?.error ?? "Team memory budget could not be saved.");
+      return;
+    }
     setStatus(`Team memory budget set to ${teamBudget} tokens.`);
     await load(thread?.id);
   }
@@ -727,29 +752,37 @@ export default function ChatClient({
                 {memorySettings?.team?.enabled ? "On" : "Off"}
               </span>
             </div>
-            <div className="ch-actions">
-              <Button variant="secondary" type="button" onClick={() => void setTeamInjection(true)}>
-                Enable team
-              </Button>
-              <Button variant="secondary" type="button" onClick={() => void setTeamInjection(false)}>
-                Disable team
-              </Button>
-            </div>
-            <form className="ch-budget" onSubmit={saveTeamBudget}>
-              <label>
-                Team token budget
-                <input
-                  type="number"
-                  min={200}
-                  max={8000}
-                  value={teamBudget}
-                  onChange={(e) => setTeamBudget(Number(e.target.value))}
-                />
-              </label>
-              <Button variant="secondary" type="submit">
-                Save team budget
-              </Button>
-            </form>
+            {canManageTeam ? (
+              <>
+                <div className="ch-actions">
+                  <Button variant="secondary" type="button" onClick={() => void setTeamInjection(true)}>
+                    Enable team
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => void setTeamInjection(false)}>
+                    Disable team
+                  </Button>
+                </div>
+                <form className="ch-budget" onSubmit={saveTeamBudget}>
+                  <label>
+                    Team token budget
+                    <input
+                      type="number"
+                      min={200}
+                      max={8000}
+                      value={teamBudget}
+                      onChange={(e) => setTeamBudget(Number(e.target.value))}
+                    />
+                  </label>
+                  <Button variant="secondary" type="submit">
+                    Save team budget
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+                An owner or admin turns team memory on. Your private memory stays yours.
+              </p>
+            )}
             <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>
               Open Memory →
             </a>

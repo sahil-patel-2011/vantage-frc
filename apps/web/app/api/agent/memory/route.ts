@@ -8,8 +8,11 @@ async function session() {
   if (!value) throw new Error("Authentication required");
   return value;
 }
-const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Memory request failed" }, { status: 400 });
+const fail = (error: unknown) => {
+  const message = error instanceof Error ? error.message : "Memory request failed";
+  const status = /administrator access required/i.test(message) ? 403 : 400;
+  return Response.json({ error: message }, { status });
+};
 
 export async function POST(request: Request) {
   try {
@@ -41,6 +44,11 @@ export async function POST(request: Request) {
       }
       if (body.action === "toggle-team" || body.action === "team-budget") {
         if (!body.orgId) throw new Error("orgId is required");
+        const admin = await client.query(
+          `SELECT 1 FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid AND role IN ('owner','admin')`,
+          [body.orgId, current.user.id],
+        );
+        if (!admin.rowCount) throw new Error("Organization administrator access required");
         await repository.setTeamMemory(body.orgId, current.user.id, {
           enabled: Boolean(body.enabled),
           retentionDays: body.retentionDays,
