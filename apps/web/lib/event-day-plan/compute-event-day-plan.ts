@@ -32,6 +32,7 @@ export type EventDayPlanView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string;
+      eventName: string | null;
       eventKeys: string[];
       planDate: string;
       blocks: EventDayPlanBlock[];
@@ -121,6 +122,31 @@ export async function computeEventDayPlanView(
   const eventKey = input.eventKey && input.eventKey.trim() ? input.eventKey.trim() : eventKeys[0] ?? null;
 
   if (!eventKey) {
+    const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1`,
+      [org.orgId],
+    );
+    const activeKey = active.rows[0]?.eventKey ?? null;
+    if (activeKey) {
+      const blocks: EventDayPlanBlock[] = [];
+      return {
+        status: "live",
+        orgId: org.orgId,
+        teamNumber: org.teamNumber,
+        eventKey: activeKey,
+        eventName: active.rows[0]?.eventName ?? null,
+        eventKeys: [activeKey],
+        planDate,
+        blocks,
+        hourly: groupBlocksByHour(blocks),
+        conflicts: detectConflicts(blocks),
+        summary: summarizeEventDayPlan(blocks, []),
+        computedAt: new Date().toISOString(),
+      };
+    }
     return {
       status: "setup_required",
       message: "Add your first event-day plan block — qual matches, battery charges, scout shifts, pit-repair windows, or logistics tasks.",
@@ -163,6 +189,7 @@ export async function computeEventDayPlanView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     eventKey,
+    eventName: null,
     eventKeys,
     planDate,
     blocks,

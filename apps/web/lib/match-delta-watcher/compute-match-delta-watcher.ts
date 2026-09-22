@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
 import { classifyMatchDelta, sortAlerts, summarizeAlerts } from ".";
 import type {
   MatchDeltaAlert,
@@ -154,7 +155,7 @@ export async function computeMatchDeltaWatcherView(
           id: "predictions",
           label: "Score predictions",
           detail: "Run the prediction model for an upcoming event",
-          href: "/strategy",
+          href: hubHref("/competition", "strategy", org.orgId),
         },
       ],
       orgId: org.orgId,

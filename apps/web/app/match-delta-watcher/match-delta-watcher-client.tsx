@@ -103,6 +103,8 @@ function WatcherShell({
   shell,
   error,
   onRetry,
+  action,
+  emptyTitle,
   children,
 }: {
   description: string;
@@ -110,6 +112,8 @@ function WatcherShell({
   shell: MatchDeltaWatcherShellKind;
   error?: string;
   onRetry?: () => void;
+  action?: { href: string; label: string } | null;
+  emptyTitle?: string;
   children?: ReactNode;
 }) {
   const actions = matchDeltaWatcherNextActions({ orgId, shell });
@@ -143,10 +147,14 @@ function WatcherShell({
           soft
           badge={copy.badge}
           badgeTone="setup"
-          title={copy.title}
-          description={error ?? copy.description}
+          title={emptyTitle ?? copy.title}
+          description={action && orgId ? description : (error ?? copy.description)}
         >
-          {setup ? (
+          {action ? (
+            <Button as="a" variant="primary" href={action.href}>
+              {action.label}
+            </Button>
+          ) : setup ? (
             <Button as="a" variant="primary" href={setup.href}>
               {setup.label}
             </Button>
@@ -315,11 +323,15 @@ export default function MatchDeltaWatcherClient() {
   }
 
   if (shell === "setup") {
+    const setupView = view?.status === "setup_required" ? view : null;
+    const step = setupView?.orgId ? setupView.steps[0] : null;
     return (
       <WatcherShell
-        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        description={setupView ? setupView.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        emptyTitle={setupView?.orgId ? setupView.message : undefined}
+        action={step ? { href: step.href, label: step.label } : undefined}
       >
         <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
       </WatcherShell>

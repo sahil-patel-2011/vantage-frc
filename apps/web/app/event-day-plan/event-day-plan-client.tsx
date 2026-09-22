@@ -31,6 +31,7 @@ import {
   type EventDayPlanShellKind,
 } from "../../lib/event-day-plan/event-day-plan-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./event-day-plan.css";
@@ -399,7 +400,10 @@ export default function EventDayPlanClient() {
             >
               {view.eventKeys.map((key) => (
                 <option key={key} value={key}>
-                  {key}
+                  {scoutEventLabel({
+                    eventName: key === view.eventKey ? view.eventName : null,
+                    eventKey: key,
+                  }) ?? key}
                 </option>
               ))}
             </select>
@@ -459,7 +463,13 @@ export default function EventDayPlanClient() {
 
       <ConflictBanner view={view} />
       <div id="event-day-plan-add">
-        <AddBlockForm busy={busy} mutate={mutate} planDate={view.planDate} defaultEventKey={view.eventKey} />
+        <AddBlockForm
+          busy={busy}
+          mutate={mutate}
+          planDate={view.planDate}
+          defaultEventKey={view.eventKey}
+          eventName={view.eventName}
+        />
       </div>
       <HourlyOverlay view={view} busy={busy} mutate={mutate} />
     </main>
@@ -567,11 +577,13 @@ function AddBlockForm({
   mutate,
   planDate,
   defaultEventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   planDate: string;
   defaultEventKey: string;
+  eventName?: string | null;
 }) {
   const defaultStart = useMemo(() => toLocalInputValue(`${planDate}T09:00:00`), [planDate]);
   const defaultEnd = useMemo(() => toLocalInputValue(`${planDate}T10:00:00`), [planDate]);
@@ -615,8 +627,12 @@ function AddBlockForm({
     >
       <h2 style={{ margin: 0 }}>Add block</h2>
       <FormGrid min={160}>
-        <FormRow label="Event key">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" required />
+        <FormRow label="Event">
+          <input
+            value={scoutEventLabel({ eventName, eventKey: form.eventKey }) ?? ""}
+            readOnly
+            aria-label="Event"
+          />
         </FormRow>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="Battery bank 2 charging" required />
