@@ -1,0 +1,54 @@
+/* Microsoft Excel card. Reuses the connector-card chrome from connectors.css and adds
+   only the facts list and the sync history. */
+
+.connectors-page .ms-excel-card {
+  margin-top: 12px;
+  scroll-margin-top: 80px;
+}
+
+.connectors-page .ms-excel-small {
+  margin: 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.connectors-page .ms-excel-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.connectors-page .ms-excel-facts > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 120px) 1fr;
+  gap: 8px;
+}
+
+.connectors-page .ms-excel-facts dt {
+  font-weight: 600;
+}
+
+.connectors-page .ms-excel-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.connectors-page .ms-excel-runs h3 {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+.connectors-page .ms-excel-runs ol {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 520px) {
+  .connectors-page .ms-excel-facts > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
