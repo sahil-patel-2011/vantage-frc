@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { PageHeader, Panel, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { fetchProductSession } from "../../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -48,6 +48,8 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [loaded, setLoaded] = useState(false);
   /** Fail closed until /api/me confirms owner or admin. */
   const [canManage, setCanManage] = useState(false);
+  /** Fail closed until the policy read says this account can change team settings. */
+  const [canEditPolicy, setCanEditPolicy] = useState(false);
   const loadedRef = useRef(false);
   loadedRef.current = loaded;
 
@@ -75,6 +77,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       const data: unknown = await response.json().catch(() => null);
       if (response.status === 401 || response.status === 403) {
         setPolicy(DEFAULT_POLICY);
+        setCanEditPolicy(false);
         setFromCache(false);
         setCachedAt(null);
         setLoaded(true);
@@ -85,8 +88,9 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         );
         return;
       }
-      const next =
-        data && typeof data === "object" && "policy" in data ? (data as { policy?: unknown }).policy : null;
+      const record =
+        data && typeof data === "object" ? (data as { policy?: unknown; canManage?: unknown }) : null;
+      const next = record && "policy" in record ? record.policy : null;
       if (!response.ok || !isAuthPolicy(next)) {
         if (hadCache || loadedRef.current) {
           setFromCache(true);
@@ -98,6 +102,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         return;
       }
       setPolicy(next);
+      setCanEditPolicy(record?.canManage === true);
       setFromCache(false);
       setCachedAt(null);
       setLoaded(true);
@@ -167,6 +172,9 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
+      {!loaded ? (
+        <EmptyState soft title="Loading sign-in policy…" description="Checking which methods this team allows." aria-busy />
+      ) : canEditPolicy ? (
       <Panel as="form" className="auth-policy-form" onSubmit={save}>
         <h2>Allowed sign-in methods</h2>
         <p>
@@ -233,6 +241,19 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           Save access policy
         </Button>
       </Panel>
+      ) : (
+        <EmptyState
+          soft
+          badge="No access"
+          badgeTone="setup"
+          title="Owners and admins set sign-in methods"
+          description="An owner or admin chooses email codes, passwords, Google, and whether two-factor is required. Your own authenticator stays under Personal 2FA."
+        >
+          <Button as="a" variant="secondary" href="/security">
+            Personal 2FA
+          </Button>
+        </EmptyState>
+      )}
     </main>
   );
 }

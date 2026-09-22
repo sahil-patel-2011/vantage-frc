@@ -12,6 +12,7 @@ import {
   type FormQuestion,
   type QuestionKind,
 } from "../../../lib/forms/types";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 
@@ -86,6 +87,12 @@ async function persistFormDetailSnapshot(orgHint: string, formId: string, data: 
  * first membership by org name, so a member of two teams could open a form
  * belonging to the team they are not currently in.
  */
+function pageOrgId(): string | null {
+  if (typeof window === "undefined") return null;
+  const orgId = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+  return orgId || null;
+}
+
 function orgParam(): string {
   if (typeof window === "undefined") return "";
   const orgId = new URLSearchParams(window.location.search).get("orgId");
@@ -287,7 +294,7 @@ function OffPlatformRespondents({ count }: { count: number }) {
         preferences page, an unsubscribe link, and the short onboarding sequence — all of which start
         from a decision they made.
       </p>
-      <Button as="a" variant="secondary" href="/team/admin">
+      <Button as="a" variant="secondary" href={withOrgHref("/team/admin", pageOrgId())}>
         Invite someone to the team
       </Button>
     </Panel>

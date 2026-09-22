@@ -64,6 +64,15 @@ type HubAccessSnapshot = {
   hubAccessByUser: Record<string, HubAccessRow[]>;
 };
 
+function isAdministratorDenial(data: unknown): boolean {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      "error" in data &&
+      (data as { error?: unknown }).error === "Organization administrator access required",
+  );
+}
+
 function isHubAccessSnapshot(value: unknown): value is HubAccessSnapshot {
   if (!value || typeof value !== "object") return false;
   return Array.isArray((value as { members?: unknown }).members);
@@ -86,6 +95,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true);
   /** True only after a member list actually loaded. A refused load must not offer Team admin. */
   const [rosterReady, setRosterReady] = useState(false);
+  const [denied, setDenied] = useState(false);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -105,6 +115,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
     setFromCache(cached);
     setCachedAt(cachedAtValue);
     setRosterReady(true);
+    setDenied(false);
     setLoading(false);
   }, []);
 
@@ -125,15 +136,12 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data: unknown = await response.json().catch(() => null);
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401 || response.status === 403 || isAdministratorDenial(data)) {
         setMembers([]);
+        setDenied(true);
         setFromCache(false);
         setCachedAt(null);
-        setMessage(
-          data && typeof data === "object" && "error" in data && typeof data.error === "string"
-            ? data.error
-            : "Unable to load members",
-        );
+        setMessage("");
         setLoading(false);
         return;
       }
@@ -245,6 +253,16 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
       <OfflineBanner feature="Team security" fromCache={fromCache} cachedAt={cachedAt} />
       <span className="eyebrow">Who can open what</span>
       <h2>Hub access</h2>
+      {denied ? (
+        <EmptyState
+          soft
+          badge="No access"
+          badgeTone="setup"
+          title="Owners and admins set hub access"
+          description="An owner or admin limits which hubs scouts and viewers can open."
+        />
+      ) : (
+      <>
       <p className="app-muted">
         Limit scouts and viewers to specific hubs. Start unrestricted (no hubs checked). Enabling a hub shows
         it; leave its tabs unchecked for every tab, or check tabs to restrict to those only. Clear all restores full
@@ -365,6 +383,8 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
             );
           })}
         </>
+      )}
+      </>
       )}
     </Panel>
   );
