@@ -10,7 +10,7 @@ import {
 
 describe("island preferences", () => {
   it("defaults to Home, Matches, Scout, Stats — a scouter's match week", () => {
-    expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/competition?tab=scouting", "/analytics"]);
+    expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/competition?tab=scouting", "/rankings"]);
     expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Matches", "Scout", "Stats"]);
   });
 

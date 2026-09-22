@@ -14,7 +14,7 @@ import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../
 
 const QUICK_LINKS = [
   { href: "/competition?tab=scouting", label: "Scouting", icon: "scout" as const },
-  { href: "/analytics", label: "Analytics", icon: "stats" as const },
+  { href: "/rankings", label: "Stats", icon: "stats" as const },
   { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" as const },
 ];
 
