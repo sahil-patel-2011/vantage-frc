@@ -14,7 +14,9 @@ import {
 import { buildAwardExportPayload } from "../../../lib/awards/export";
 import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
+import { fetchProductSession } from "../../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../../../lib/nav/resolve-org";
+import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -181,6 +183,19 @@ function AwardsLive({ orgId }: { orgId: string }) {
   const lockedEvent = activeEventKey?.trim() ?? "";
   const submittedEvent = lockedEvent || form.eventKey.trim();
   const [itemForm, setItemForm] = useState({ kind: "essay", prompt: "", charLimit: "" });
+  const [canManage, setCanManage] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const role = session?.memberships?.find((member) => member.orgId === orgId)?.role ?? session?.role;
+      setCanManage(strategyCanSync(role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
 
   function flash(ok: boolean, text: string) {
     setMessageTone(ok ? "ok" : "error");
@@ -283,6 +298,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
 
   async function addSubmission(event: React.FormEvent) {
     event.preventDefault();
+    if (!canManage) return;
     const response = await fetch("/api/awards", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -301,6 +317,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
   }
 
   async function updateStatus(id: string, status: string) {
+    if (!canManage) return;
     const response = await fetch("/api/awards", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -312,6 +329,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
   }
 
   async function saveItem(id: string, content: string) {
+    if (!canManage) return;
     const response = await fetch("/api/awards/items", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -327,6 +345,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
   }
 
   async function toggleDone(id: string, done: boolean) {
+    if (!canManage) return;
     const response = await fetch("/api/awards/items", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -345,7 +364,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
 
   async function addItem(event: React.FormEvent) {
     event.preventDefault();
-    if (!selectedId) return;
+    if (!canManage || !selectedId) return;
     const response = await fetch("/api/awards/items", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -434,6 +453,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
     inProgressCount: inProgress,
     wonCount: totalWon,
     incompleteEssayCount,
+    canManage,
   });
 
   if (!submissions.length && failureStatus && !fromCache) {
@@ -543,15 +563,22 @@ function AwardsLive({ orgId }: { orgId: string }) {
               badge="Empty workbench"
               badgeTone="setup"
               title="No FIRST award submissions yet"
-              description="Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence."
+              description={
+                canManage
+                  ? "Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence."
+                  : "An owner or admin starts a FIRST award submission. You can still read the catalog and any essays already saved."
+              }
             >
-              <Button as="a" variant="primary" href="#awards-start">
-                Start a catalog award
-              </Button>
+              {canManage ? (
+                <Button as="a" variant="primary" href="#awards-start">
+                  Start a catalog award
+                </Button>
+              ) : null}
             </EmptyState>
           ) : null}
 
           <div className="awards-grid">
+            {canManage ? (
             <form id="awards-start" className="app-card soft-panel awards-form" onSubmit={addSubmission}>
               <span className="biz-overline">Start a submission</span>
               <h2>Catalog award</h2>
@@ -605,13 +632,22 @@ function AwardsLive({ orgId }: { orgId: string }) {
                 Start submission
               </Button>
             </form>
+            ) : (
+            <section className="app-card soft-panel awards-form" aria-label="Start a submission">
+              <span className="biz-overline">Start a submission</span>
+              <h2>Catalog award</h2>
+              <p>An owner or admin starts a FIRST award submission. You can still read the catalog and any essays already saved.</p>
+            </section>
+            )}
 
             <section className="app-card soft-panel awards-list" aria-label="Award submissions">
               <span className="biz-overline">This team</span>
               <h2>Submissions</h2>
               {submissions.length === 0 ? (
                 <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-                  No submissions yet — start one from the catalog on the left.
+                  {canManage
+                    ? "No submissions yet — start one from the catalog on the left."
+                    : "No submissions yet. An owner or admin starts one from the catalog."}
                 </p>
               ) : (
                 <ul className="awards-submission-list">
@@ -628,6 +664,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
                           {s.deadline ? ` · due ${new Date(s.deadline).toLocaleDateString()}` : ""}
                         </span>
                       </div>
+                      {canManage ? (
                       <select
                         value={s.status}
                         aria-label={`Status for ${awardCatalogEntry(s.awardType)?.name ?? s.awardType}`}
@@ -643,6 +680,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
                           </option>
                         ))}
                       </select>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -657,8 +695,9 @@ function AwardsLive({ orgId }: { orgId: string }) {
               </span>
               <h2>Essay items</h2>
               <p>
-                Drafts save on blur. Mark items done as you finish. Set status to Won when the team receives the award —
-                that feeds Business evidence for grant writing.
+                {canManage
+                  ? "Drafts save on blur. Mark items done as you finish. Set status to Won when the team receives the award — that feeds Business evidence for grant writing."
+                  : "An owner or admin updates essays and status. You can still copy and print what is already written."}
               </p>
               <div className="awards-export-bar">
                 <Button variant="secondary" type="button" disabled={realItemCount === 0} onClick={() => void copyAll()}>
@@ -693,7 +732,10 @@ function AwardsLive({ orgId }: { orgId: string }) {
                         rows={5}
                         defaultValue={item.content ?? ""}
                         key={`${item.id}-${item.content ?? ""}`}
-                        onBlur={(e) => void saveItem(item.id, e.target.value)}
+                        readOnly={!canManage}
+                        onBlur={(e) => {
+                          if (canManage) void saveItem(item.id, e.target.value);
+                        }}
                         maxLength={item.charLimit ?? undefined}
                         placeholder="Draft essay response…"
                       />
@@ -702,6 +744,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
                           {(item.content ?? "").length}/{item.charLimit} characters
                         </small>
                       ) : null}
+                      {canManage ? (
                       <label className="check-field">
                         <input
                           type="checkbox"
@@ -710,11 +753,15 @@ function AwardsLive({ orgId }: { orgId: string }) {
                         />{" "}
                         Done
                       </label>
+                      ) : item.done ? (
+                        <small className="app-muted">Done</small>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
               )}
 
+              {canManage ? (
               <form className="awards-add-item" onSubmit={addItem}>
                 <span className="biz-overline">Add item</span>
                 <div className="awards-add-item-row">
@@ -753,6 +800,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
                   Add item
                 </Button>
               </form>
+              ) : null}
             </section>
           ) : null}
         </>
