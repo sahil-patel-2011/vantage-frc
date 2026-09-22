@@ -16,6 +16,7 @@ import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./awards.css";
 
@@ -170,11 +171,15 @@ function AwardsLive({ orgId }: { orgId: string }) {
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const submissionsRef = useRef<Submission[]>([]);
   submissionsRef.current = submissions;
+  const [activeEventKey, setActiveEventKey] = useState<string | null>(null);
+  const [activeEventName, setActiveEventName] = useState<string | null>(null);
   const [form, setForm] = useState({
     awardType: AWARD_CATALOG[0]!.slug,
     eventKey: "",
     deadline: "",
   });
+  const lockedEvent = activeEventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
   const [itemForm, setItemForm] = useState({ kind: "essay", prompt: "", charLimit: "" });
 
   function flash(ok: boolean, text: string) {
@@ -239,6 +244,11 @@ function AwardsLive({ orgId }: { orgId: string }) {
         return;
       }
       setSubmissions(next);
+      if (data && typeof data === "object") {
+        const record = data as { eventKey?: unknown; eventName?: unknown };
+        setActiveEventKey(typeof record.eventKey === "string" ? record.eventKey : null);
+        setActiveEventName(typeof record.eventName === "string" ? record.eventName : null);
+      }
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
@@ -276,7 +286,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
     const response = await fetch("/api/awards", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, seasonYear, ...form }),
+      body: JSON.stringify({ orgId, seasonYear, ...form, eventKey: submittedEvent || undefined }),
     });
     const data = await response.json();
     flash(
@@ -563,14 +573,25 @@ function AwardsLive({ orgId }: { orgId: string }) {
                     {catalog.essayPrompts.length === 1 ? "" : "s"}.
                   </p>
                 ) : null}
-                <label>
-                  Event key (optional)
-                  <input
-                    value={form.eventKey}
-                    onChange={(e) => setForm({ ...form, eventKey: e.target.value })}
-                    placeholder="2027mnmin"
-                  />
-                </label>
+                {lockedEvent ? (
+                  <label>
+                    Event
+                    <input
+                      readOnly
+                      aria-label="Event"
+                      value={scoutEventLabel({ eventName: activeEventName, eventKey: lockedEvent }) ?? ""}
+                    />
+                  </label>
+                ) : (
+                  <label>
+                    Event key (optional)
+                    <input
+                      value={form.eventKey}
+                      onChange={(e) => setForm({ ...form, eventKey: e.target.value })}
+                      placeholder="2027mnmin"
+                    />
+                  </label>
+                )}
                 <label>
                   Deadline
                   <input
