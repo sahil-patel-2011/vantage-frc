@@ -46,6 +46,40 @@
   font-size: 0.85rem;
 }
 
+/* Import preview: replaces the action row until applied or cancelled. */
+.connectors-page .ms-excel-import {
+  display: grid;
+  gap: 8px;
+}
+
+.connectors-page .ms-excel-import h3 {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+}
+
+.connectors-page .ms-excel-import h4 {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.connectors-page .ms-excel-change-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.connectors-page .ms-excel-skipped summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.connectors-page .ms-excel-skipped[open] summary {
+  margin-bottom: 4px;
+}
+
 @media (max-width: 520px) {
   .connectors-page .ms-excel-facts > div {
     grid-template-columns: 1fr;

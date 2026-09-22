@@ -9,13 +9,15 @@ Where it lives:
 
 | Piece | Path |
 | --- | --- |
-| Migration | `packages/db/migrations/0671_microsoft_workbook_sync.sql` |
+| Migrations | `packages/db/migrations/0671_microsoft_workbook_sync.sql`, `0676_workbook_import_runs.sql` |
 | Graph client (OAuth, retry, errors) | `apps/web/lib/microsoft/graph.ts` |
 | Workbook layout | `apps/web/lib/microsoft/workbook-schema.ts` |
 | Sync (Postgres → `WorkbookTarget`) | `apps/web/lib/microsoft/workbook-sync.ts` |
-| Graph `WorkbookTarget` + OneDrive file helpers | `apps/web/lib/microsoft/workbook-target.ts` |
+| Graph `WorkbookTarget` / `WorkbookReader` + OneDrive file helpers | `apps/web/lib/microsoft/workbook-target.ts` |
+| Import diff (pure: workbook + Postgres → preview) | `apps/web/lib/microsoft/workbook-import.ts` |
+| Import preview / apply (reads, writes, run record) | `apps/web/lib/microsoft/run-import.ts` |
 | Signed OAuth state + PKCE | `apps/web/lib/microsoft/oauth-state.ts` |
-| Routes | `apps/web/app/api/integrations/microsoft/{connect,callback,status,sync,disconnect}` |
+| Routes | `apps/web/app/api/integrations/microsoft/{connect,callback,status,sync,disconnect,import/preview,import/apply}` |
 | Settings card | `apps/web/app/connectors/microsoft-excel-card.tsx` (on **Settings → Connectors**) |
 
 ---
@@ -55,10 +57,10 @@ that account's OneDrive whenever an owner or admin presses **Sync now**.
 - The team gets a human-readable, coach-editable copy in storage it already pays for, usable offline in
   Excel and shareable with mentors who do not use Vantage.
 - The workbook is a *copy*. Each sync rewrites the `Vantage*` tables from Postgres, so an edit typed into
-  those tables is overwritten on the next sync. Coaches should keep their own formulas, charts and notes on
+  those tables is overwritten on the next sync unless it was imported first. Coaches should keep their own formulas, charts and notes on
   their own sheets, referencing the Vantage tables by name (e.g. `=AVERAGEIFS(VantageMatchScouting[data.autoPoints], VantageMatchScouting[team_number], 254)`).
-- Bringing edits back from Excel into Vantage is a separate, deliberate feature (see *Not done yet*), not
-  a side effect of the sync.
+- Bringing edits back from Excel into Vantage is a separate, deliberate, previewed action
+  (**Import changes from Excel**, below), not a side effect of the sync.
 - One more connector to operate: an Azure app registration and its client secret, which expires and must be rotated.
 
 ---
@@ -140,7 +142,7 @@ To also revoke Vantage's access on the Microsoft side: <https://account.microsof
 One worksheet and one Excel table per entity, written in this order. Every table has:
 
 - `id` — a stable key from Postgres: a uuid, or a natural key (TBA `match_key`, `team_key`). **Never a row
-  number.** Rows are rewritten on every sync, and any future import must match on `id`.
+  number.** Rows are rewritten on every sync, and the import matches rows on `id`.
 - `updated_at` — when Vantage last changed that record, ISO-8601 UTC.
 - `source` — where the record came from.
 
@@ -199,7 +201,8 @@ Key/value rows: `id` (key), `value`, `updated_at`, `source` (`vantage`). Keys: `
 
 Text that Excel would evaluate as a formula (starting with `=`, `+`, `-`, `@`, tab or CR — except plain
 numbers such as `-3`) is written with a leading apostrophe, so a scout note like `=HYPERLINK(…)` stays text.
-Text is capped at Excel's 32,767-character cell limit.
+Text is capped at Excel's 32,767-character cell limit. The import reverses the apostrophe under exactly the
+same condition (`unescapeCell`), and compares cells whether or not Excel kept the apostrophe on read.
 
 ---
 
@@ -252,26 +255,93 @@ refresh token Microsoft rotates on each use is re-encrypted and stored.
 
 ---
 
-## Not done yet (designed, deliberately not built)
+## Import changes from Excel
 
-### Import from Excel back into Vantage
+Useful for coaches who annotate the pick list or correct a scouting typo in Excel. It is deliberately **not**
+part of the sync: a two-way sync without rules silently loses data (the next sync would overwrite the coach's
+edit, or the coach's stale copy would overwrite a scout's newer entry). So bringing edits back is an explicit,
+previewed action with narrow rules.
 
-Useful for coaches who annotate the pick list or correct a scouting typo in Excel. It is intentionally not
-part of the sync, because a two-way sync without rules silently loses data. The design, for a follow-up:
+### How it works
 
-1. **Explicit, previewed action.** An owner/admin presses **Import changes from Excel**. Vantage reads the
-   `Vantage*` tables (`GET …/tables/{name}/range` values), diffs them against Postgres by `id`, and shows a
-   preview: rows changed, fields changed, rows it cannot match. Nothing is written until confirmed.
-2. **Allow-listed columns only.** Only human-owned fields are importable — pick-list `rank`, `bucket`, `notes`;
-   scouting `data.*` fields and `confidence`. Keys, `event_key`, `team_key`, `source`, timestamps, and all
-   TBA/Statbotics-derived columns are read-only; edits there are reported, not applied.
-3. **Optimistic concurrency.** Each row's `updated_at` in the workbook is the version it was exported at. If
-   Postgres has changed since (someone re-ranked in Vantage after the sync), that row is a conflict shown in
-   the preview, never overwritten. Pick-list writes go through `lib/picklist/store.ts` (with its `revision`
-   checks), scouting edits through the normal author-or-admin update path, so RLS and audit apply unchanged.
-4. **No deletes, no inserts** in the first version: a row deleted in Excel is reported, not deleted in
-   Vantage; new rows without an `id` are ignored.
-5. Record every import as a run (a `workbook_import_runs` table mirroring `workbook_sync_runs`).
+1. **Preview (nothing written).** An owner/admin presses **Import changes from Excel** on the card
+   (`POST /api/integrations/microsoft/import/preview { orgId }`). Vantage reads `VantagePickList`,
+   `VantageMatchScouting` and `VantagePitScouting` back from the workbook — `headerRowRange` values, then the
+   `dataBodyRange` address and the body's `values` in 2,000-row range reads, one request at a time, in a
+   non-persisting session — loads the matching Postgres rows, and diffs them by `id`
+   (`workbook-import.ts`, pure and unit-tested). The card shows: changes (row, field, old → new), rows left
+   alone as conflicts, and a collapsed **Not imported** list (invalid values, read-only columns, rows it
+   cannot match, rows without an id, duplicate ids, rows deleted in Excel, unknown columns).
+2. **Apply.** One primary **Apply N changes** button
+   (`POST /api/integrations/microsoft/import/apply { orgId, changeIds }`). The preview is stateless: apply
+   reads the workbook again, diffs again, and writes only the changes whose fingerprint the user confirmed.
+   A change id is a hash of (sheet, row id, column, old value, new value, the row's Postgres version), so if
+   the cell was edited again or the row moved on after the preview, that id simply no longer exists and the
+   change is counted as *stale*, not written.
+
+### The rules
+
+- **Allow-listed columns only.** Pick list: `rank`, `bucket`, `notes`. Scouting: `confidence` and the
+  `data.<field>` columns. Everything else — `id`, `pick_list_id`, `event_key`, `team_key`, `match_key`,
+  `source`, `created_at`, `tier`, `weighted_score`, every TBA/Statbotics-derived column — is read-only: a
+  difference there is reported under *Not imported*, never applied. `data._more` (fields past the 60-column
+  cap) and answers with several parts (objects/arrays written as JSON) are read-only too.
+- **Values are checked.** `rank` must be a whole number ≥ 1; `bucket` accepts `first_pick`, `second_pick`,
+  `unranked`, `avoid` or their labels ("Second pick"); `notes` are trimmed, blank clears them, 2,000
+  characters max (the pick-list route's limit); `confidence` is `high`/`normal`/`low`. A scouting answer keeps
+  the stored value's type (a number stays a number; `"5"` typed into a text answer stays text) and must then
+  pass the entry's own form through `validatePayload` (same check the scouting sync runs, with scout-identity
+  fields stripped so they can never be edited from Excel). A cell showing an Excel error (`#N/A`, `#REF!`…) is
+  refused. Blank means "no data" (null).
+- **Excel's retyping is not an edit.** `"007"` that Excel turned into `7`, `TRUE` for `true`, a timestamp Excel
+  turned into a date serial, the formula-guard apostrophe present or not: all compare as unchanged.
+- **Optimistic concurrency.** A row's `updated_at` cell is the version it was exported at. If Postgres's
+  `updated_at` for that row differs (someone re-ranked or edited in Vantage after the sync), every edit on
+  the row is a **conflict**: shown, never applied. Fix: Sync now, then redo the edit in Excel. A stale row
+  nobody typed in is just an old copy and is not reported. Inside apply the check is repeated against the
+  exact (microsecond) `updated_at`, under lock, so a change that lands between preview and confirm becomes a
+  conflict rather than an overwrite.
+- **No inserts, no deletes.** A row without an `id` is ignored and counted; an `id` that appears twice is
+  ambiguous, so neither copy is imported; a row Vantage has but the workbook does not is reported ("deleted in
+  Excel, or added since the last sync"), never deleted.
+
+### Where the writes go
+
+Through the paths the product already uses, so RLS applies unchanged:
+
+- **Pick list** — `applyImportedEntryEdits` in `lib/picklist/store.ts`: refuses a locked/archived list, locks
+  the list's entries `FOR UPDATE`, re-checks each entry's `updated_at`, writes bucket (+ the legacy `tier`) and
+  notes, then places typed ranks with `planImportedOrder` (a typed rank goes in front of whoever held it;
+  buckets stay grouped; ranks come back dense 1..n) and renumbers like a drag in `reorderEntry` — neighbours'
+  ranks move, `revision`s bump, `updated_by` is the importer. Because buckets group the list, a typed rank can
+  shift by the size of earlier buckets.
+- **Scouting** — one guarded `UPDATE … SET payload = payload || $patch, confidence = …, updated_at = now()` per
+  entry, `WHERE updated_at = <exact version>` and author-or-owner/admin — the same rule as the
+  `match_entries_author_update` / `pit_entries_author_update` RLS policies (0003). Only the edited keys change.
+- **Run record** — every apply writes a `workbook_import_runs` row (migration **0676**, owner/admin-only under
+  RLS, mirroring `workbook_sync_runs`): `status` (`applied` / `nothing_applied` / `failed`), counts
+  (`applied` cell changes, `conflicts` rows, `skipped`), and a small `summary` of row ids and column names per
+  sheet — never cell contents. A Microsoft failure while reading is recorded as `failed`; a database failure
+  rolls the whole apply back, so nothing is ever half-applied.
+
+Import and Sync now take the same per-team advisory lock, so they never interleave on one workbook (a second
+one gets "already running"). Rate limits: preview 10, apply 6 per team per 10 minutes. Owners/admins only,
+checked in each route before the rate limit. Without the Microsoft env vars the routes answer
+`setup_required`; before migration 0676 they answer `not_migrated`.
+
+### Known limits
+
+- A scouting edit imported from Excel does not re-run the match's disagreement detection or official-score
+  cross-checks (the scouting sync does that when a scout re-submits). Disagreement flags refresh on the next
+  submission for that match.
+- The import stamps `updated_at = now()`. A scout's offline copy of the same entry, replayed later with an
+  older timestamp, is treated as a duplicate by the scouting sync (its `updated_at <=` guard) — the
+  import wins, as a coach's correction should.
+- Rows are read up to 25,000 per table; longer tables are truncated with a notice. The preview lists at most
+  500 items per list per sheet; apply them, then import again for the rest.
+- Tested against an in-memory workbook and a simulated Excel REST surface, not a live Microsoft account.
+
+## Not done yet
 
 ### Also not done
 
