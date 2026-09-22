@@ -56,14 +56,14 @@ async function persistStorageSnapshot(orgId: string, data: StorageNodeViewData):
   }
 }
 
-function SetupInstructions() {
+function SetupInstructions({ canPair }: { canPair: boolean }) {
   return (
     <Panel className="stn-panel">
       <h2>Run a storage computer</h2>
       <p className="app-muted stn-note">
-        On the computer that will keep large files, run the storage app. It prints an 8-character code — enter
-        it below. On your shop or pit network it serves files directly. To reach it from anywhere, save a public
-        URL on the card for that computer. Without one, files stay on that network only.
+        {canPair
+          ? "On the computer that will keep large files, run the storage app. It prints an 8-character code — enter it below. On your shop or pit network it serves files directly. To reach it from anywhere, save a public URL on the card for that computer. Without one, files stay on that network only."
+          : "On the computer that will keep large files, an owner or admin runs the storage app and enters the code it prints. On your shop or pit network it serves files directly. Without a public URL, files stay on that network only."}
       </p>
     </Panel>
   );
@@ -438,7 +438,7 @@ export default function StorageNodesClient() {
           </ul>
         </Panel>
       ) : (
-        <SetupInstructions />
+        <SetupInstructions canPair={view.canPair} />
       )}
 
       {view.canPair ? (
@@ -487,7 +487,7 @@ export default function StorageNodesClient() {
         </Panel>
       )}
 
-      {view.nodes.length > 0 ? <SetupInstructions /> : null}
+      {view.nodes.length > 0 ? <SetupInstructions canPair={view.canPair} /> : null}
 
       {view.recentItems.length > 0 ? (
         <Panel className="stn-panel">
