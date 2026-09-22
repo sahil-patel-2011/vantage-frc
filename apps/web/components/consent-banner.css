@@ -42,6 +42,16 @@ body.has-app-shell .consent-banner {
   padding-bottom: calc(12px + var(--safe-bottom, 0px) + var(--island-clearance, 88px));
 }
 
+/* Sign-in and onboarding put their only submit at the bottom of the card.
+   The banner is fixed, so that submit sat under the card and could not be
+   pressed — the wrapper does not receive clicks, but the card does, and it
+   is exactly where Continue lands. The extra padding lets that button scroll
+   clear of the question. */
+body:has(.consent-banner) .signin-page,
+body:has(.consent-banner) .onboarding-flow-page {
+  padding-bottom: 240px;
+}
+
 .consent-banner-card {
   pointer-events: auto;
   width: min(680px, 100%);

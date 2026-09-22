@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepointOrThrow } from "@vantage/db/savepoint";
 import { assertLegalAccepted, recordLegalAcceptance } from "./legal";
 
 export const GENDER_OPTIONS = [
@@ -637,14 +638,21 @@ export async function completeOnboarding(
     !state.platformAdmin &&
     ["none", "declined", "withdrawn"].includes(state.accessStatus)
   ) {
+    // A team that is not on Vantage yet is a normal outcome, not a failed
+    // signup. The function raises, and a raise inside withRls aborts the
+    // whole transaction — the profile insert above would then die with
+    // "current transaction is aborted" and the person would see a generic
+    // failure. The savepoint rolls back only the request.
     try {
-      await client.query(`SELECT request_workspace_access($1,$2,$3,$4,$5)`, [
-        teamNumber,
-        payload.teamRole,
-        payload.primaryFocus,
-        payload.crewRole,
-        payload.roleDescription,
-      ]);
+      await withSavepointOrThrow(client, () =>
+        client.query(`SELECT request_workspace_access($1,$2,$3,$4,$5)`, [
+          teamNumber,
+          payload.teamRole,
+          payload.primaryFocus,
+          payload.crewRole,
+          payload.roleDescription,
+        ]),
+      );
     } catch (error) {
       if (!isMissingWorkspaceError(error)) throw error;
     }
