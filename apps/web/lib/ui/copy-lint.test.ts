@@ -255,6 +255,8 @@ function isCopyFile(entry: string): boolean {
   return false;
 }
 
+const LEFTOVER_KIT_DIRS = new Set(["win-kit", "lovat-kit", "agent-kit"]);
+
 function collectCopy(dir: string, acc: string[] = []): string[] {
   let entries: string[];
   try {
@@ -264,6 +266,8 @@ function collectCopy(dir: string, acc: string[] = []): string[] {
   }
   for (const entry of entries) {
     if (entry.startsWith(".") || entry === "node_modules") continue;
+    // Leftover volume kits: cloned boards. Same skip as eslint/tsconfig/vitest.
+    if (LEFTOVER_KIT_DIRS.has(entry)) continue;
     const full = join(dir, entry);
     let stats;
     try {
@@ -297,6 +301,7 @@ function collectSource(dir: string, acc: string[] = []): string[] {
   }
   for (const entry of entries) {
     if (entry.startsWith(".") || entry === "node_modules") continue;
+    if (LEFTOVER_KIT_DIRS.has(entry)) continue;
     const full = join(dir, entry);
     let stats;
     try {

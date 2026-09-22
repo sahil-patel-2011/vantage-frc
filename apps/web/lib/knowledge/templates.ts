@@ -255,6 +255,53 @@ export const KNOWLEDGE_TEMPLATES: KnowledgeTemplate[] = [
 -
 `,
   },
+  {
+    kind: "assembly_sop",
+    title: "Subsystem assembly (shop)",
+    blurb: "Torque, Loctite, helper notes, and vendor PDFs — facts the CAD book cannot know.",
+    defaultTags: ["assembly", "shop", "sop"],
+    body: `# Subsystem assembly (shop)
+
+**Subsystem:**
+**Owners:**
+**CAD book / vault link:**
+**Season:**
+
+## Which CAD book
+- Assembly-manual run or vault document:
+- Live book: /assembly-manual
+
+## Order of operations
+1.
+2.
+3.
+
+## Torque and thread-locker
+Fill what the shop actually uses. CAD does not know shop torque.
+
+| Fastener / joint | Torque | Thread-locker / lube | Notes |
+|---|---|---|---|
+| | | | |
+| | | | |
+
+## Helper / fixture notes
+- Who holds the nut / what fixture:
+-
+
+## Vendor PDF
+- COTS module (SDS / WCP / REV) PDF in Files:
+-
+
+## First-power before this mechanism is done
+- Bring-up item that must pass:
+- After a rebuild, run bring-up again: /bringup
+
+## Product links
+- Assembly manual: /assembly-manual
+- Manufacturing: /manufacturing
+- How a build book works: /help/assembly-manual
+`,
+  },
 ];
 
 export function templateByKind(kind: string | null | undefined): KnowledgeTemplate | null {

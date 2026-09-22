@@ -24,6 +24,8 @@ describe("role-aware landing", () => {
     });
     expect(view.trackKeys[0]).toBe("scouting");
     expect(view.firstFiveMinutes[0]?.href).toContain("/scouting");
+    expect(view.firstFiveMinutes.map((link) => link.label)).toContain("Assign quals");
+    expect(view.firstFiveMinutes.map((link) => link.label).join(" ")).not.toMatch(/Strategy and AI/i);
     expect(view.summary).toContain("Robo Rangers");
     // The reason caption says which track produced the link.
     expect(view.firstFiveMinutes[0]?.reason).toMatch(/crew role/i);
