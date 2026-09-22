@@ -12,6 +12,7 @@
 
 import { CONSISTENCY_LABEL, type ScoutedTeamProfile } from "@vantage/prediction-strategy";
 import { ScoutingDetailCharts } from "./scouting-detail-charts";
+import { ScoutingTeamMatchLog } from "./scouting-team-match-log";
 import "./scouting-team-detail.css";
 
 export function ScoutingTeamDetail({
@@ -19,11 +20,16 @@ export function ScoutingTeamDetail({
   compared,
   compareFull,
   onCompare,
+  orgId,
+  eventKey = null,
 }: {
   profile: ScoutedTeamProfile;
   compared: boolean;
   compareFull: boolean;
   onCompare: () => void;
+  /** With a team to read from, the pane also shows the robot match by match. */
+  orgId?: string;
+  eventKey?: string | null;
 }) {
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
@@ -84,6 +90,8 @@ export function ScoutingTeamDetail({
           </div>
         ))}
       </dl>
+
+      {orgId ? <ScoutingTeamMatchLog orgId={orgId} eventKey={eventKey} teamKey={profile.teamKey} /> : null}
     </aside>
   );
 }

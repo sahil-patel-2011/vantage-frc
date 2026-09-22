@@ -43,6 +43,7 @@ import {
 import { buildAttachMediaWire } from "../../lib/scouting/attach-media-wire";
 import { prepareScoutMediaFile, scoutMediaKind } from "../../lib/scouting/prepare-scout-media";
 import { nextMatchKey } from "../../lib/scouting/form-builder";
+import { nextAssignedTarget } from "../../lib/scouting/next-assignment";
 import {
   classifyScoutingShell,
   scoutingOfflineBannerDetail,
@@ -386,8 +387,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     // match number box steps too, so the next match is one tap away.
     setPayload(applyFormResetBehavior(schema.definition, payload));
     if (type === "match") {
-      const stepped = nextMatchKey(matchKey);
+      // Your next assignment (match AND robot) when you have one; else step the number.
+      const assigned = nextAssignedTarget(data.assignments, matchKey);
+      const stepped = assigned ? assigned.matchKey : nextMatchKey(matchKey);
       if (stepped) setMatchKey(stepped);
+      if (assigned) setTeamKey(assigned.teamKey);
     }
     setSource("manual");
     setEntryClientId(stableClientId());

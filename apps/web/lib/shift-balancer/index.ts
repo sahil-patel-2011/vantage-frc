@@ -99,6 +99,49 @@ export function overlayScheduleOnRotation(
   });
 }
 
+/**
+ * Per-match constraints for generateRotation, from the real qualification schedule.
+ *
+ * Match indexes are 1-based positions in the sorted list of qual numbers — the
+ * same mapping overlayScheduleOnRotation uses — so a constraint lands on the
+ * match it was computed for.
+ *
+ *   - unavailable: scout ids `blockedScouts(matchKey)` names for that match
+ *     (drive team while our robot plays).
+ *   - backupStations: with `backups` on, in every match our team plays, the
+ *     plan stations holding a partner or an opponent. Our own robot gets no
+ *     backup — it is scouted by the drive team, and pit crew have the data.
+ */
+export function rotationConstraintsFromSlots(input: {
+  slots: ScheduleSlot[];
+  stations: readonly string[];
+  ourTeamKey: string | null;
+  backups: boolean;
+  blockedScouts?: (matchKey: string) => Iterable<string>;
+}): { unavailable: Map<number, Set<string>>; backupStations: Map<number, string[]> } {
+  const unavailable = new Map<number, Set<string>>();
+  const backupStations = new Map<number, string[]>();
+  const matchNumbers = [...new Set(input.slots.map((slot) => slot.matchNumber))].sort((a, b) => a - b);
+  const planStations = new Set(input.stations);
+  matchNumbers.forEach((matchNumber, position) => {
+    const index = position + 1;
+    const slots = input.slots.filter((slot) => slot.matchNumber === matchNumber);
+    const matchKey = slots[0]?.matchKey;
+    if (!matchKey) return;
+    if (input.blockedScouts) {
+      const blocked = new Set(input.blockedScouts(matchKey));
+      if (blocked.size) unavailable.set(index, blocked);
+    }
+    if (input.backups && input.ourTeamKey && slots.some((slot) => slot.teamKey === input.ourTeamKey)) {
+      const stations = slots
+        .filter((slot) => slot.teamKey !== input.ourTeamKey && planStations.has(slot.station))
+        .map((slot) => slot.station);
+      if (stations.length) backupStations.set(index, stations);
+    }
+  });
+  return { unavailable, backupStations };
+}
+
 export function gapMinutes(fromIso: string | null | undefined, toIso: string | null | undefined): number | null {
   if (!fromIso || !toIso) return null;
   const from = Date.parse(fromIso);
@@ -146,7 +189,7 @@ export function planToCsv(input: { label: string; assignments: ShiftBalancerAssi
         input.label,
         row.matchLabel ?? row.match,
         row.matchKey ?? "",
-        row.station,
+        row.role === "backup" ? `${row.station} (backup)` : row.station,
         row.teamNumber ?? "",
         row.scoutName,
         row.scheduledAt ?? "",
@@ -169,6 +212,19 @@ export function generateRotation(input: {
   matchCount: number;
   stations: string[];
   maxConsecutiveMatches: number;
+  /**
+   * Scout ids that cannot work a given match (1-based plan match index) —
+   * drive team when our robot is on the field. They are never picked for it,
+   * as primary or backup.
+   */
+  unavailable?: ReadonlyMap<number, ReadonlySet<string>>;
+  /**
+   * Stations that also get a backup scout, per plan match index. A backup is
+   * someone not already working that match; they watch in case the primary
+   * misses. Backups do not count toward shifts or the consecutive-match cap —
+   * they are sitting in the stands either way.
+   */
+  backupStations?: ReadonlyMap<number, readonly string[]>;
 }): ShiftBalancerAssignment[] {
   const roster = input.scouts.filter((scout) => scout.active);
   const matchCount = Math.max(0, Math.round(input.matchCount));
@@ -179,12 +235,15 @@ export function generateRotation(input: {
 
   const streak = new Map<string, number>(roster.map((s) => [s.id, 0]));
   const totalShifts = new Map<string, number>(roster.map((s) => [s.id, 0]));
+  const backupShifts = new Map<string, number>(roster.map((s) => [s.id, 0]));
   const assignments: ShiftBalancerAssignment[] = [];
 
   for (let match = 1; match <= matchCount; match += 1) {
-    const eligible = roster.filter((s) => (streak.get(s.id) ?? 0) < cap);
+    const blocked = input.unavailable?.get(match);
+    const available = blocked?.size ? roster.filter((s) => !blocked.has(s.id)) : roster;
+    const eligible = available.filter((s) => (streak.get(s.id) ?? 0) < cap);
     // Fair-share order: fewest total shifts first, then lowest current streak, then roster order.
-    const pool = (eligible.length > 0 ? eligible : roster).slice().sort((a, b) => {
+    const pool = (eligible.length > 0 ? eligible : available).slice().sort((a, b) => {
       const shiftDiff = (totalShifts.get(a.id) ?? 0) - (totalShifts.get(b.id) ?? 0);
       if (shiftDiff !== 0) return shiftDiff;
       const streakDiff = (streak.get(a.id) ?? 0) - (streak.get(b.id) ?? 0);
@@ -199,6 +258,28 @@ export function generateRotation(input: {
       picked.add(candidate.id);
       assignments.push({ match, station, scoutId: candidate.id, scoutName: candidate.name });
       totalShifts.set(candidate.id, (totalShifts.get(candidate.id) ?? 0) + 1);
+    }
+
+    // Backups come from whoever is not already working this match, fewest
+    // backup duties first, so one person is not the permanent understudy.
+    const needBackup = input.backupStations?.get(match) ?? [];
+    if (needBackup.length > 0) {
+      const benched = available
+        .filter((s) => !picked.has(s.id))
+        .sort(
+          (a, b) =>
+            (backupShifts.get(a.id) ?? 0) - (backupShifts.get(b.id) ?? 0) ||
+            (totalShifts.get(a.id) ?? 0) - (totalShifts.get(b.id) ?? 0) ||
+            roster.indexOf(a) - roster.indexOf(b),
+        );
+      const backedUp = new Set<string>();
+      for (const station of needBackup) {
+        const candidate = benched.find((s) => !backedUp.has(s.id));
+        if (!candidate) break;
+        backedUp.add(candidate.id);
+        assignments.push({ match, station, scoutId: candidate.id, scoutName: candidate.name, role: "backup" });
+        backupShifts.set(candidate.id, (backupShifts.get(candidate.id) ?? 0) + 1);
+      }
     }
 
     for (const scout of roster) {
@@ -219,12 +300,14 @@ export function summarizePlan(input: {
   stations: string[];
   assignments: ShiftBalancerAssignment[];
 }): ShiftBalancerSummary {
+  const backupShifts = input.assignments.filter((assignment) => assignment.role === "backup").length;
+  const primaries = backupShifts ? input.assignments.filter((assignment) => assignment.role !== "backup") : input.assignments;
   const scoutById = new Map(input.scouts.map((s) => [s.id, s]));
   const shiftsByScout = new Map<string, number>();
   const streakByScout = new Map<string, { current: number; longest: number }>();
 
   const byMatch = new Map<number, Set<string>>();
-  for (const assignment of input.assignments) {
+  for (const assignment of primaries) {
     shiftsByScout.set(assignment.scoutId, (shiftsByScout.get(assignment.scoutId) ?? 0) + 1);
     if (!byMatch.has(assignment.match)) byMatch.set(assignment.match, new Set());
     byMatch.get(assignment.match)!.add(assignment.scoutId);
@@ -262,12 +345,13 @@ export function summarizePlan(input: {
 
   return {
     totalMatches: Math.max(0, Math.round(input.matchCount)),
-    totalShifts: input.assignments.length,
+    totalShifts: primaries.length,
     scoutsUsed: loadByScout.filter((l) => l.shifts > 0).length,
     maxLoad: shiftCounts.length > 0 ? Math.max(...shiftCounts) : 0,
     minLoad: shiftCounts.length > 0 ? Math.min(...shiftCounts) : 0,
     rosterShortfall: activeIds.length < stationsPerMatch,
     loadByScout,
+    ...(backupShifts ? { backupShifts } : {}),
   };
 }
 
@@ -278,6 +362,8 @@ export type PublishableAssignment = {
   teamKey: string;
   station: string;
   startsAt: string | null;
+  /** Present only for a backup; a primary row keeps its station as the role. */
+  role?: "backup";
 };
 
 export type PublishPreview = {
@@ -286,6 +372,11 @@ export type PublishPreview = {
   skippedNoMember: number;
   /** Shifts the schedule never filled in, so there is no match or team to point at. */
   skippedNoMatch: number;
+  /**
+   * Shifts refused at publish time: the member is on drive team for that match,
+   * or already holds another robot in it (from the lineup, or an earlier publish).
+   */
+  skippedConflict?: number;
 };
 
 /**
@@ -339,6 +430,7 @@ export function publishableAssignments(
       teamKey: assignment.teamKey,
       station: assignment.station,
       startsAt: assignment.scheduledAt ?? null,
+      ...(assignment.role === "backup" ? { role: "backup" as const } : {}),
     });
   }
 
@@ -354,6 +446,9 @@ export function describePublish(preview: PublishPreview): string {
     if (preview.skippedNoMatch > 0) {
       return "Nothing to publish — build the plan from the event schedule first.";
     }
+    if ((preview.skippedConflict ?? 0) > 0) {
+      return "Nothing to publish — every shift clashed with drive team or another robot in the same match.";
+    }
     return "Nothing to publish yet.";
   }
   const parts = [`${preview.rows.length} shift${preview.rows.length === 1 ? "" : "s"} published`];
@@ -362,6 +457,9 @@ export function describePublish(preview: PublishPreview): string {
   }
   if (preview.skippedNoMatch > 0) {
     parts.push(`${preview.skippedNoMatch} with no match yet`);
+  }
+  if ((preview.skippedConflict ?? 0) > 0) {
+    parts.push(`${preview.skippedConflict} that clashed with drive team or another robot in the same match`);
   }
   return parts.length === 1 ? `${parts[0]}.` : `${parts[0]}; skipped ${parts.slice(1).join(" and ")}.`;
 }

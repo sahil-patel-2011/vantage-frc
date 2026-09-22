@@ -123,6 +123,7 @@ export async function POST(request: Request) {
             stations,
             maxConsecutiveMatches,
             useEventSchedule,
+            backups: useEventSchedule && body.backups === true,
           });
           break;
         }

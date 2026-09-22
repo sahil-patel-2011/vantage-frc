@@ -332,6 +332,8 @@ function GeneratePlanForm({
     [],
   );
   const [form, setForm] = useState(empty);
+  // Backups need real matches (which ones are ours), so they only apply to the event-schedule plan.
+  const [backups, setBackups] = useState(false);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -349,6 +351,7 @@ function GeneratePlanForm({
         .map((s) => s.trim())
         .filter(Boolean),
       useEventSchedule,
+      backups: useEventSchedule && backups,
     });
     setForm(empty);
   };
@@ -389,6 +392,23 @@ function GeneratePlanForm({
       <FormRow label="Stations (comma-separated)">
         <input value={form.stations} onChange={set("stations")} />
       </FormRow>
+      <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <input
+          type="checkbox"
+          checked={backups}
+          disabled={view.qualMatchCount <= 0}
+          onChange={(event) => setBackups(event.target.checked)}
+          style={{ marginTop: 3 }}
+        />
+        <span>
+          Add backup scouts in our matches
+          <small className="app-muted" style={{ display: "block" }}>
+            Event schedule only. Each partner and opponent robot in a match we play gets a second scout
+            who is not working that match; they scout it only if the primary misses. Drive team is never
+            scheduled for a match our robot is in.
+          </small>
+        </span>
+      </label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <Button variant="primary" type="submit" disabled={busy || !Number(form.matchCount)}>
           Generate plan
@@ -461,6 +481,12 @@ function PlansPanel({
             <strong style={{ fontSize: "1.4rem", display: "block" }}>{summary.minLoad}</strong>
             <span className="app-muted">Min shifts/scout</span>
           </div>
+          {summary.backupShifts ? (
+            <div>
+              <strong style={{ fontSize: "1.4rem", display: "block" }}>{summary.backupShifts}</strong>
+              <span className="app-muted">Backup duties</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -486,6 +512,7 @@ function PlansPanel({
             >
               <span>
                 {row.matchLabel ?? `Match ${row.match}`} · {row.station}
+                {row.role === "backup" ? " (backup)" : ""}
                 {row.teamNumber != null ? ` · ${row.teamNumber}` : ""}
                 {row.breakAfterMinutes != null ? ` · ${row.breakAfterMinutes}m break` : ""}
               </span>
@@ -520,6 +547,7 @@ function PlansPanel({
                 {sheet.rows.map((row, index) => (
                   <li key={`${row.match}-${row.station}-${index}`}>
                     {row.matchLabel ?? `Match ${row.match}`} · {row.station}
+                    {row.role === "backup" ? " (backup)" : ""}
                     {row.teamNumber != null ? ` · team ${row.teamNumber}` : ""}
                     {row.breakAfterMinutes != null ? ` · then ${row.breakAfterMinutes}m break` : ""}
                   </li>

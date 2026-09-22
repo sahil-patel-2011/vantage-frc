@@ -381,6 +381,12 @@ export function planAutoAssignments(input: {
   limit?: number;
   /** Optional watchlist keys — watched threats are assigned before later schedule slots. */
   priorityTeamKeys?: readonly string[];
+  /**
+   * True when this member may not take this slot: on drive team for the match,
+   * or already holding another robot in it (see assignment-conflicts.ts). The
+   * planner also never puts one member on two robots of the same match itself.
+   */
+  isBlocked?: (userId: string, slot: { matchKey: string; teamKey: string }) => boolean;
 }): AutoAssignPlanEntry[] {
   const scouts = input.scouts.map((scout) => ({
     userId: scout.userId,
@@ -402,11 +408,18 @@ export function planAutoAssignments(input: {
 
   const limit = Math.max(0, Math.trunc(input.limit ?? open.length));
   const plan: AutoAssignPlanEntry[] = [];
+  const plannedInMatch = new Map<string, Set<string>>();
   for (const slot of open.slice(0, limit)) {
     scouts.sort((a, b) => a.load - b.load || a.userId.localeCompare(b.userId));
-    const next = scouts[0];
-    if (!next) break;
+    const taken = plannedInMatch.get(slot.matchKey);
+    const next = scouts.find(
+      (scout) => !taken?.has(scout.userId) && !input.isBlocked?.(scout.userId, slot),
+    );
+    // Nobody free for this robot — leave the gap visible rather than double-book.
+    if (!next) continue;
     next.load += 1;
+    if (taken) taken.add(next.userId);
+    else plannedInMatch.set(slot.matchKey, new Set([next.userId]));
     plan.push({ matchKey: slot.matchKey, teamKey: slot.teamKey, userId: next.userId });
   }
   return plan;

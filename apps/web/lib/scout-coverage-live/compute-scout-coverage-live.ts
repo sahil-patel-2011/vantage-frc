@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { DEFAULT_THIN_THRESHOLD, matchLabel, rankCoverageGaps, summarizeCoverage } from ".";
 import type { CoverageCell, CoverageNudge, CoverageSummary } from "./types";
 import { computeScoutingCoverageView } from "../scouting/coverage";
+import { loadMissedAssignments, type MissedAssignmentRow } from "../scouting/assignment-accountability-load";
 
 export type ScoutCoverageLiveSetupStep = {
   id: string;
@@ -28,6 +29,11 @@ export type ScoutCoverageLiveView =
       summary: CoverageSummary;
       gaps: CoverageCell[];
       nudges: CoverageNudge[];
+      /**
+       * Assigned but not submitted: results are posted and the assigned scout
+       * has no entry for that robot. Optional so an older cached view still renders.
+       */
+      missed?: MissedAssignmentRow[];
       computedAt: string;
     };
 
@@ -98,7 +104,7 @@ export async function computeScoutCoverageLiveView(
     };
   }
 
-  const [settingsResult, nudgesResult] = await Promise.all([
+  const [settingsResult, nudgesResult, missed] = await Promise.all([
     client.query<{ thinThreshold: number }>(
       `SELECT thin_threshold AS "thinThreshold" FROM scout_coverage_live_settings WHERE org_id = $1`,
       [coverage.orgId],
@@ -116,6 +122,7 @@ export async function computeScoutCoverageLiveView(
        LIMIT 50`,
       [coverage.orgId, coverage.eventKey],
     ),
+    loadMissedAssignments(client, { orgId: coverage.orgId, eventKey: coverage.eventKey }),
   ]);
 
   const thinThreshold =
@@ -153,6 +160,7 @@ export async function computeScoutCoverageLiveView(
     summary,
     gaps,
     nudges,
+    missed,
     computedAt: new Date().toISOString(),
   };
 }

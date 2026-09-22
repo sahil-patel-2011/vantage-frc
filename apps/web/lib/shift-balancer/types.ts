@@ -28,6 +28,11 @@ export type ShiftBalancerAssignment = {
   scheduledAt?: string;
   /** Minutes until the next qual when that gap is a natural break (lunch / field downtime). */
   breakAfterMinutes?: number;
+  /**
+   * "backup": watches this robot in case the primary misses; scouts it only if
+   * they do. Absent on every plan saved before backups existed — read as primary.
+   */
+  role?: "primary" | "backup";
 };
 
 export type ShiftBalancerPlan = {
@@ -56,5 +61,7 @@ export type ShiftBalancerSummary = {
   minLoad: number;
   /** True when the roster is too small to fill every station every match. */
   rosterShortfall: boolean;
+  /** Backup duties in the plan. They do not count toward shifts or streaks. */
+  backupShifts?: number;
   loadByScout: ShiftBalancerLoad[];
 };

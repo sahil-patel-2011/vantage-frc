@@ -302,6 +302,8 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
             compared={compare.includes(detail.teamKey)}
             compareFull={compare.length >= COMPARE_LIMIT}
             onCompare={() => toggleCompare(detail.teamKey)}
+            orgId={orgId}
+            eventKey={view.eventKey}
           />
         ) : null}
       </div>
