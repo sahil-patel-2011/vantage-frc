@@ -10,6 +10,8 @@ type CopyShareLinkProps = {
   pathWithSearch?: string;
   className?: string;
   label?: string;
+  /** "ghost" where the link is a side action next to a real one. */
+  variant?: "secondary" | "ghost";
 };
 
 /**
@@ -21,6 +23,7 @@ export function CopyShareLink({
   pathWithSearch,
   className,
   label = "Copy share link",
+  variant = "secondary",
 }: CopyShareLinkProps) {
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -44,7 +47,7 @@ export function CopyShareLink({
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant={variant}
       className={className}
       onClick={() => void copy()}
       aria-live="polite"

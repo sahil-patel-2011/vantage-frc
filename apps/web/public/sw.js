@@ -24,6 +24,7 @@ const PRECACHE = ["/manifest.webmanifest", "/icon.svg", SHELL_URL];
 const SHELL_ROUTES = [
   "/offline",
   "/offline-shell",
+  "/scout",
   "/scouting",
   "/schedule",
   "/competition",

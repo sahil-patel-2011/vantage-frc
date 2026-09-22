@@ -1,0 +1,25 @@
+{
+  "name": "Vantage Scouting",
+  "short_name": "Scouting",
+  "description": "Fast match and pit scouting, team lookup, match prediction and the pick list — on the same data as Vantage.",
+  "id": "/scout",
+  "start_url": "/scout",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef2f7",
+  "theme_color": "#eef2f7",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Scout a match", "short_name": "Scout", "url": "/scout/entry" },
+    { "name": "Look up a team", "short_name": "Teams", "url": "/scout/teams" },
+    { "name": "Pick list", "short_name": "Pick list", "url": "/scout/picklist" }
+  ]
+}

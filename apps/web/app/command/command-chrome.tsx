@@ -183,18 +183,24 @@ export function CommandReadyHeader({
 }) {
   const actions = headerActions ?? (
     <div className="edc-header-actions">
-      <span className="edc-live" aria-live="polite">
-        {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString() : "—"}`}
-      </span>
-      <CopyShareLink orgId={orgId} />
+      {/* The board refreshes itself, so "Refresh" is the timestamp rather than a third
+          button beside it: it says how fresh the data is and, pressed, makes it fresher. */}
+      <button
+        type="button"
+        className="edc-live"
+        aria-live="polite"
+        onClick={onRefresh}
+        disabled={!orgId || loading}
+        title="Updates on its own. Press to refresh now."
+      >
+        {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString() : "—"} · Refresh`}
+      </button>
+      <CopyShareLink orgId={orgId} variant="ghost" />
       {canSetEvent ? (
         <Button variant="secondary" type="button" onClick={onSelectEvent}>
           {eventKey ? "Change event" : "Set active event"}
         </Button>
       ) : null}
-      <Button variant="secondary" type="button" onClick={onRefresh} disabled={!orgId}>
-        Refresh
-      </Button>
     </div>
   );
 

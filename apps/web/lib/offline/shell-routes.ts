@@ -6,6 +6,9 @@
 export const OFFLINE_SHELL_ROUTES = [
   "/offline",
   "/offline-shell",
+  // The Scouting product: its home, entry, teams, predict and pick list are the offline
+  // pages below (/scouting, /intel, /match-sim, /picklist-collab) in their own frame.
+  "/scout",
   "/scouting",
   "/schedule",
   "/competition",
@@ -261,6 +264,7 @@ export function pathnameIsOfflineShell(pathname: string): boolean {
 
 export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
+  if (bare === "/scout" || bare.startsWith("/scout/")) return "Scouting app";
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
   if (bare.startsWith("/scouting/forms")) return "Scout forms";
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
