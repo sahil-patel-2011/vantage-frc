@@ -29,6 +29,7 @@ import {
 } from "../../lib/match-strategy-cards/match-strategy-cards-related";
 import type { MatchStrategyCard, MatchStrategyRoleAssignment } from "../../lib/match-strategy-cards/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./match-strategy-cards.css";
@@ -95,6 +96,7 @@ function CardsShell({
   shell,
   error,
   onRetry,
+  action,
   children,
 }: {
   description: string;
@@ -102,6 +104,7 @@ function CardsShell({
   shell: MatchStrategyCardsShellKind;
   error?: string;
   onRetry?: () => void;
+  action?: { href: string; label: string } | null;
   children?: ReactNode;
 }) {
   const actions = matchStrategyCardsNextActions({ orgId, shell });
@@ -135,10 +138,14 @@ function CardsShell({
           soft
           badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
-          title={copy.title}
-          description={error ?? copy.description}
+          title={action && orgId ? (action.label === "Set active event" ? "Set active event" : "No matches yet") : copy.title}
+          description={action && orgId ? description : (error ?? copy.description)}
         >
-          {setup ? (
+          {action ? (
+            <Button as="a" variant="primary" href={action.href}>
+              {action.label}
+            </Button>
+          ) : setup ? (
             <Button as="a" variant="primary" href={setup.href}>
               {setup.label}
             </Button>
@@ -331,11 +338,20 @@ export default function MatchStrategyCardsClient() {
   }
 
   if (shell === "setup") {
+    const setupView = view?.status === "setup_required" ? view : null;
+    const action = !orgId
+      ? { href: "/workspace", label: "Choose your team" }
+      : !setupView?.eventKey
+        ? { href: hubHref("/competition", "command", orgId), label: "Set active event" }
+        : setupView.canSync === false
+          ? { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" }
+          : { href: withOrgHref("/team/data", orgId), label: "Sync Team Data" };
     return (
       <CardsShell
-        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        description={setupView ? setupView.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        action={action}
       >
         <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
       </CardsShell>
