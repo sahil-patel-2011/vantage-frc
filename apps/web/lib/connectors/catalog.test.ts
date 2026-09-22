@@ -3,6 +3,7 @@ import {
   CONNECTORS,
   STUDENT_CONNECTOR_LEAK,
   connectorAudienceFromRole,
+  connectorSettingsPath,
   connectorById,
   connectorCallbackUrl,
   connectorScopeNote,
@@ -353,6 +354,13 @@ describe("student connector cards", () => {
   it("treats owners and admins as operators, everyone else as students", () => {
     expect(connectorAudienceFromRole(true)).toBe("operator");
     expect(connectorAudienceFromRole(false)).toBe("student");
+    expect(connectorSettingsPath("/team/admin", false)).toBeNull();
+    expect(connectorSettingsPath("/team/data", false)).toBeNull();
+    expect(connectorSettingsPath("/team/discord", false)).toBeNull();
+    expect(connectorSettingsPath("/team/slack", false)).toBeNull();
+    expect(connectorSettingsPath("/team/admin", true)).toBe("/team/admin");
+    expect(connectorSettingsPath("/cad/connections", false)).toBe("/cad/connections");
+    expect(connectorSettingsPath("/signin", false)).toBe("/signin");
   });
 
   it("does not name Onshape OAuth, env vars, Resend, or Vercel on any student card", () => {

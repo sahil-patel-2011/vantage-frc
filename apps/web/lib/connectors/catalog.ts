@@ -400,6 +400,23 @@ export function connectorAudienceFromRole(canManage: boolean): ConnectorAudience
   return canManage ? "operator" : "student";
 }
 
+/**
+ * Settings pages a member cannot use. Owners and admins still get the path.
+ * GitHub and Team Data refuse scouts; Discord and Slack refuse them too.
+ */
+const MEMBER_CLOSED_SETTINGS = new Set([
+  "/team/admin",
+  "/team/data",
+  "/team/discord",
+  "/team/slack",
+]);
+
+export function connectorSettingsPath(managePath: string, canManage: boolean): string | null {
+  const path = managePath.split(/[?#]/)[0] ?? managePath;
+  if (!canManage && MEMBER_CLOSED_SETTINGS.has(path)) return null;
+  return managePath;
+}
+
 export const CONNECTORS_PAGE_STUDENT_DESCRIPTION =
   "Connect Onshape, GitHub, and the other services this team uses. Ask a mentor when a card says to.";
 

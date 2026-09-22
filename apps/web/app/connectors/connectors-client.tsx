@@ -13,6 +13,7 @@ import {
   CONNECTORS_PAGE_LOADING,
   connectorAudienceFromRole,
   connectorScopeNote,
+  connectorSettingsPath,
   connectorsPageDescription,
 } from "../../lib/connectors/catalog";
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
@@ -291,6 +292,7 @@ export default function ConnectorsClient() {
           const badge = connectorBadge(connector.state, audience);
           const busy = busyId === connector.id;
           const managedByOthers = connector.scope === "team" && !canManage;
+          const settingsPath = connectorSettingsPath(connector.managePath, canManage);
           return (
             <li key={connector.id} className="app-card soft-panel connector-card">
               <div className="connector-head">
@@ -339,9 +341,11 @@ export default function ConnectorsClient() {
                   </Button>
                 ) : null}
 
-                <Button as="a" href={orgId ? withOrg(connector.managePath, orgId) : connector.managePath} variant="ghost" size="sm">
-                  Open settings
-                </Button>
+                {settingsPath ? (
+                  <Button as="a" href={orgId ? withOrg(settingsPath, orgId) : settingsPath} variant="ghost" size="sm">
+                    Open settings
+                  </Button>
+                ) : null}
               </div>
               {connector.id === "onshape" && orgId ? (
                 <CadDocumentPicker orgId={orgId} connected={connector.state === "connected"} />
