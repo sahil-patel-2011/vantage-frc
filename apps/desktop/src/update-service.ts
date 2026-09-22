@@ -184,10 +184,9 @@ export class UpdateService {
 
   /**
    * The web app gets first say, because it is the thing that knows which shell
-   * versions it still supports (`minimumVersion`). That endpoint is optional —
-   * it lives in apps/web, which this agent does not own — and its absence is a
-   * 404, not an error, so the GitHub release manifest is the always-present
-   * fallback and the shell works today either way.
+   * versions it still supports (`minimumVersion`). A 404 or 503 means no
+   * manifest from the app — the GitHub release asset is the fallback, so a
+   * shell still updates when the app origin cannot see GitHub.
    */
   async check(): Promise<void> {
     if (this.installing) return;

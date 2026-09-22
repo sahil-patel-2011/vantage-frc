@@ -6,6 +6,10 @@ release/
 coverage/
 !apps/web/app/api/scouting/coverage/
 !apps/web/app/api/scouting/coverage/**
+# `release/` is the Electron output folder. The public updater route shares
+# that directory name and has to stay tracked.
+!apps/web/app/api/desktop/release/
+!apps/web/app/api/desktop/release/**
 playwright-report/
 test-results/
 *.tsbuildinfo
@@ -26,3 +30,10 @@ scripts/migration-failures.log
 
 # Local free-relay project id. Machine-specific, never shared.
 .freebuff/
+
+# Node writes a crash dump named `core` beside the process. One was committed
+# under apps/web (~55MB) and later deleted from the tree; it is still in
+# history. Ignore new dumps. A bare `core` rule would also hide packages/core.
+/core
+/apps/web/core
+/apps/desktop/core

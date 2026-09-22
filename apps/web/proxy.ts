@@ -4,6 +4,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeAppPath } from "./lib/security/safe-navigation";
 import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/media-availability";
+import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -305,18 +306,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!onboardingGate.workspaceApproved) {
-    if (
-      pathname === "/onboarding" ||
-      pathname === "/invite" ||
-      pathname === "/claim" ||
-      pathname.startsWith("/api/onboarding") ||
-      pathname.startsWith("/api/invites") ||
-      pathname.startsWith("/api/organizations/claim") ||
-      pathname.startsWith("/api/auth") ||
-      pathname.startsWith("/api/theme")
-    ) {
-      return NextResponse.next();
-    }
+    // Profile is saved. Docs, account, and two-factor stay open so the
+    // "while you wait" links are real pages, not a bounce back here.
+    if (isPendingWorkspacePath(pathname)) return NextResponse.next();
     return approvalPendingRedirect(request);
   }
 
