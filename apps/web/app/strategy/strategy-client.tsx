@@ -10,6 +10,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   classifyStrategyShell,
+  strategyCanSync,
   strategyNextActions,
   strategyShellSetupSteps,
 } from "../../lib/strategy/strategy-related";
@@ -175,6 +176,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   }, [view]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const eventName = view && "eventName" in view ? view.eventName : null;
+  const actorRole = view && "actorRole" in view ? view.actorRole : undefined;
+  const canSync = actorRole == null ? true : strategyCanSync(actorRole);
   const shell = classifyStrategyShell({
     loading,
     fetchFailed,
@@ -196,7 +200,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
 
   if (tab !== "picks" && shell !== "ready") {
     return (
-      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded} fromCache={fromCache} cachedAt={cachedAt}>
+      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded} fromCache={fromCache} cachedAt={cachedAt} eventName={eventName} canSync={canSync}>
         {/* The switcher has to survive this state. Without it, clicking Matchup
             before there is a matchup to show replaced the whole panel — tabs
             included — and the only way back to the pick list was to edit the

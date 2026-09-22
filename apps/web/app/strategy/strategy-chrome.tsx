@@ -9,6 +9,7 @@ import {
   STRATEGY_RELATED_INCLUDE,
   strategyRelatedLinks,
   strategyShellCopy,
+  strategyWaitingCopy,
   type StrategyShellKind,
   type StrategyShellNextAction,
 } from "../../lib/strategy/strategy-related";
@@ -81,6 +82,8 @@ export function StrategyShell({
   embedded = false,
   fromCache = false,
   cachedAt = null,
+  eventName = null,
+  canSync = true,
   children,
 }: {
   orgId?: string | null;
@@ -90,9 +93,12 @@ export function StrategyShell({
   embedded?: boolean;
   fromCache?: boolean;
   cachedAt?: string | null;
+  eventName?: string | null;
+  canSync?: boolean;
   children?: ReactNode;
 }) {
   const copy = strategyShellCopy(shell);
+  const description = shell === "empty" ? strategyWaitingCopy(eventName) : copy.description;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
@@ -128,7 +134,7 @@ export function StrategyShell({
         }
         badgeTone="setup"
         title={copy.title}
-        description={error ?? copy.description}
+        description={error ?? description}
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
@@ -140,7 +146,9 @@ export function StrategyShell({
           <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync Team Data</Button>
+          <Button as="a" variant="primary" href={canSync ? teamDataHref : hubHref("/competition", "scouting", orgId)}>
+            {canSync ? "Sync Team Data" : "Open Scouting"}
+          </Button>
         ) : null}
       </EmptyState>
     </Root>

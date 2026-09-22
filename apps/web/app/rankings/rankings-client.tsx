@@ -18,7 +18,7 @@ import {
 import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import {
   RANKINGS_POLL_MS,
-  rankingsCacheRequiredCopy,
+  rankingsEmptyAction,
   shouldRefreshRankings,
 } from "../../lib/rankings/tba-cache";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -327,6 +327,7 @@ export default function RankingsClient() {
   );
   const syncedLabel = view.syncedAt ? fmtRankTime(view.syncedAt) : "";
   const groups = groupPlayoffs(view.playoffs);
+  const emptyAction = rankingsEmptyAction({ orgId: view.context.orgId, role: view.context.role });
 
   return (
     <main className="module-page rank-page">
@@ -374,11 +375,11 @@ export default function RankingsClient() {
             badge="Needs setup"
             badgeTone="setup"
             soft
-            title={rankingsCacheRequiredCopy().title}
-            description={rankingsCacheRequiredCopy().description}
+            title="Reference metrics not synced yet"
+            description={emptyAction.description}
           >
-            <Button as="a" variant="primary" href="/team/data">
-              Open Team Data
+            <Button as="a" variant="primary" href={emptyAction.href}>
+              {emptyAction.label}
             </Button>
           </EmptyState>
         ) : (

@@ -101,6 +101,8 @@ export type StrategyView =
       eventKey: string | null;
       eventName: string | null;
       teamNumber: number | null;
+      /** Membership role, so an empty board does not send a scout to Team Data. */
+      actorRole?: string | null;
       tbaConfigured: boolean;
       tbaAccess?: TbaAccessInfo;
       referenceAccess?: ReferenceAccessInfo;

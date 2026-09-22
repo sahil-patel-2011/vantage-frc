@@ -405,11 +405,12 @@ export async function computeStrategyView(
   const membership = await client.query<{
     orgId: string;
     teamNumber: number | null;
+    role: string;
     eventKey: string | null;
     eventName: string | null;
     eventYear: number | null;
   }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber",
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role,
             c.active_event_key AS "eventKey", e.name AS "eventName", e.year AS "eventYear"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
@@ -506,6 +507,7 @@ export async function computeStrategyView(
         eventKey: row.eventKey,
         eventName: row.eventName,
         teamNumber: row.teamNumber,
+        actorRole: row.role,
         engine,
         productVersion: VANTAGE_PRODUCT_VERSION,
       },
@@ -561,6 +563,7 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
+      actorRole: row.role,
       engine,
       productVersion: VANTAGE_PRODUCT_VERSION,
     }, gameRules);
@@ -578,6 +581,7 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
+      actorRole: row.role,
       engine,
       productVersion: VANTAGE_PRODUCT_VERSION,
     }, gameRules);

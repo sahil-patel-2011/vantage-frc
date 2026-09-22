@@ -4,6 +4,8 @@
 // Event-day refresh polls that cache — never live TBA, never invented ranks or
 // bracket slots. Polling is non-overlapping and pauses while the tab is hidden.
 
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import {
   formatRecord,
   parsePlayoffLabel,
@@ -154,6 +156,27 @@ export function rankingsCacheRequiredCopy(): { title: string; description: strin
   return {
     title: "Reference metrics not synced yet",
     description: "Sync Team Data under Team → Data to populate event rankings — ranks stay blank until cache rows exist.",
+  };
+}
+
+/** Where the empty rankings board should send this person. */
+export function rankingsEmptyAction(input: {
+  orgId?: string | null;
+  role?: string | null;
+}): { label: string; href: string; description: string } {
+  const role = (input.role ?? "").toLowerCase();
+  const copy = rankingsCacheRequiredCopy();
+  if (role === "owner" || role === "admin") {
+    return {
+      label: "Open Team Data",
+      href: withOrgHref("/team/data", input.orgId),
+      description: copy.description,
+    };
+  }
+  return {
+    label: "Open Scouting",
+    href: hubHref("/competition", "scouting", input.orgId),
+    description: "Ranks stay blank until an owner or admin syncs this event. You can still scout.",
   };
 }
 
