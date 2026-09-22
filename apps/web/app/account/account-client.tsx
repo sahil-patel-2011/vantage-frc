@@ -476,7 +476,7 @@ export default function AccountClient() {
                 </p>
               </header>
               <div className="account-ai-keys-actions">
-                <Button as="a" variant="primary" href={withOrgHref("/team/ai-keys", orgId)}>
+                <Button as="a" variant="secondary" href={withOrgHref("/team/ai-keys", orgId)}>
                   Open AI keys
                 </Button>
               </div>
