@@ -137,11 +137,15 @@ export function bugbotUserMessage(input: {
     "Do not claim the robot is competition-legal.",
     "Do not comment on files that are not in this chunk — other chunks cover them.",
     "",
-    input.chunkLabel ? `Chunk: ${input.chunkLabel}` : `Path: ${input.path}`,
+    // File names and the quoted evidence lines come from the repository too, so they sit
+    // inside the untrusted block with the source rather than beside our instructions.
+    "<untrusted_source>",
+    neutralizeWrapperTags(input.chunkLabel ? `Chunk: ${input.chunkLabel}` : `Path: ${input.path}`),
     "Files in this chunk:",
-    files,
+    neutralizeWrapperTags(files),
     "Local pattern hits (already will be shown; do not repeat unless you add a distinct match-day reason):",
-    local,
+    neutralizeWrapperTags(local),
+    "</untrusted_source>",
     "",
     "<untrusted_source>",
     neutralizeWrapperTags(input.content.slice(0, 24_000)),
