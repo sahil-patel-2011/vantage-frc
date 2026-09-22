@@ -4,6 +4,7 @@ import type { CoverageCell, CoverageNudge, CoverageSummary } from "./types";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeScoutingCoverageView } from "../scouting/coverage";
+import { scoutEventLabel } from "../scouting/scouting-related";
 
 export type ScoutCoverageLiveSetupStep = {
   id: string;
@@ -84,6 +85,10 @@ export async function computeScoutCoverageLiveView(
   }
 
   if (coverage.slots.length === 0) {
+    const named = scoutEventLabel({
+      eventName: coverage.eventName,
+      eventKey: coverage.eventKey,
+    });
     const scoutStep: ScoutCoverageLiveSetupStep = {
       id: "scouting",
       label: "Open Scouting",
@@ -98,7 +103,9 @@ export async function computeScoutCoverageLiveView(
     };
     return {
       status: "setup_required",
-      message: "No match schedule is synced for this event yet.",
+      message: named
+        ? `${named} has no match schedule yet.`
+        : "No match schedule is synced for this event yet.",
       steps: coverage.canAssign ? [syncStep, scoutStep] : [scoutStep],
       orgId: coverage.orgId,
       eventKey: coverage.eventKey,

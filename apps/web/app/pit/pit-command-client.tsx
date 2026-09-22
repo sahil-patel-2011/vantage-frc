@@ -26,6 +26,7 @@ import {
   classifyPitShell,
   formatPitBatteryReady,
   formatPitMetric,
+  pitEmptyBoardDescription,
   pitNextActions,
   pitRelatedLinks,
   pitShellCopy,
@@ -490,7 +491,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         title="Robot release board"
         description={
           shell === "empty"
-            ? shellCopy.description
+            ? pitEmptyBoardDescription(data.context)
             : `${data.context.eventName ?? "No active event"} · counts come from logs and issues your team entered`
         }
       >
@@ -521,7 +522,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             badge="No pit evidence yet"
             badgeTone="setup"
             title={shellCopy.title}
-            description={shellCopy.description}
+            description={pitEmptyBoardDescription(data.context)}
           >
             <Button as="a" variant="primary" href="#pit-actions">
               Log first evidence

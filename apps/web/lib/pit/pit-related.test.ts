@@ -5,6 +5,7 @@ import {
   formatPitBatteryReady,
   formatPitMetric,
   isPitBoardEmpty,
+  pitEmptyBoardDescription,
   pitNextActions,
   pitRelatedLinks,
   pitSetupSteps,
@@ -184,6 +185,22 @@ describe("pitShellCopy + metrics", () => {
     );
     expect(shouldShowPitSummaryTiles({ batteryCount: 1, openIssues: 0, maintenanceCount: 0 })).toBe(
       true,
+    );
+  });
+
+  it("names the active event on an empty board and hides a custom key", () => {
+    const named = pitEmptyBoardDescription({
+      eventName: "Pacific Practice",
+      eventKey: "2026custom-org-pacific",
+    });
+    expect(named.startsWith("Pacific Practice.")).toBe(true);
+    expect(named).not.toContain("2026custom-");
+    expectPlainCopy(named);
+    expect(
+      pitEmptyBoardDescription({ eventKey: "2026custom-org-pacific" }),
+    ).toMatch(/^Your event\./);
+    expect(pitEmptyBoardDescription({ eventName: null, eventKey: null })).toBe(
+      pitShellCopy("empty").description,
     );
   });
 });

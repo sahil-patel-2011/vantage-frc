@@ -1,6 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
+import { scoutEventLabel } from "../scouting/scouting-related";
 import { isPitBoardLive, type PitBoardFlags } from "./board";
 
 /** Soft-UI related surfaces for Pit Command (never DEMO release / IR metrics). */
@@ -226,6 +227,16 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
       return _exhaustive;
     }
   }
+}
+
+/** Empty pit board names the active event when one is set. */
+export function pitEmptyBoardDescription(input: {
+  eventName?: string | null;
+  eventKey?: string | null;
+}): string {
+  const named = scoutEventLabel({ eventName: input.eventName, eventKey: input.eventKey });
+  const body = pitShellCopy("empty").description;
+  return named ? `${named}. ${body}` : body;
 }
 
 /**
