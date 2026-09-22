@@ -1,6 +1,6 @@
-import { auth } from "@vantage/core";
+import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   customEventKey,
   customEventProblemCopy,
@@ -122,6 +122,18 @@ export async function POST(request: Request) {
       if (!["owner", "admin"].includes(membership.rows[0]!.role)) {
         throw new Error("Owner or admin role required to set the active event");
       }
+      // Scouting already refuses a sign-in method this team turned off. Setting
+      // the event is the same kind of team change, so a password session cannot
+      // do it while the rest of competition says to sign in again.
+      await assertOrgAuthentication(client, {
+        userId: session.user.id,
+        orgId,
+        sessionId: session.session.id,
+        authMethod: String(
+          (session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown",
+        ),
+        rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
+      });
 
       let activeKey = eventKey;
 
@@ -202,9 +214,14 @@ export async function POST(request: Request) {
 
     return Response.json({ ok: true, ...result });
   } catch (error) {
+    const code = error instanceof Error ? (error as Error & { code?: string }).code : undefined;
+    const denied =
+      code === "sign_in_method_not_allowed" ||
+      code === "mfa_enrollment_required" ||
+      code === "mfa_step_up_required";
     return Response.json(
       { error: error instanceof Error ? error.message : "Could not set active event" },
-      { status: 400 },
+      { status: denied ? 403 : 400 },
     );
   }
 }
