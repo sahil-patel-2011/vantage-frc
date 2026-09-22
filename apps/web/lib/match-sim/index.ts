@@ -110,7 +110,19 @@ export function computeLever(red: AllianceCapability, blue: AllianceCapability):
 
 /** Swap the painted red/blue alliances without inventing new ratings. */
 export function flipMatchSimResult(result: MatchSimResult): MatchSimResult {
-  return computeMatchSimResult({ ...result.blue, color: "red" }, { ...result.red, color: "blue" });
+  const flipped = computeMatchSimResult({ ...result.blue, color: "red" }, { ...result.red, color: "blue" });
+  return {
+    ...flipped,
+    winChance: result.winChance ? { red: result.winChance.blue, blue: result.winChance.red } : (result.winChance ?? null),
+  };
+}
+
+/**
+ * True when either side has no rated robot at all. A 0–0 projection from two
+ * empty alliances is not a toss-up; it is no information.
+ */
+export function matchSimHasNoData(result: MatchSimResult): boolean {
+  return result.red.dataCompleteness === 0 || result.blue.dataCompleteness === 0;
 }
 
 export function computeMatchSimResult(red: AllianceCapability, blue: AllianceCapability): MatchSimResult {

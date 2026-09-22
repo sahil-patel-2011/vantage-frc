@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { populationStdDev, predictUnscoredMatch } from "@vantage/prediction-strategy";
 import { computeAllianceCapability, computeMatchSimResult } from ".";
 import type {
   AllianceColor,
@@ -134,7 +135,39 @@ export async function simulateMatch(
   ]);
   const red = computeAllianceCapability("red", redTeams);
   const blue = computeAllianceCapability("blue", blueTeams);
-  return computeMatchSimResult(red, blue);
+  const result = computeMatchSimResult(red, blue);
+  return { ...result, winChance: await winChanceFor(client, input.eventKey, redTeams, blueTeams) };
+}
+
+/**
+ * Lovat-style win chance: each alliance's score is the sum of its robots'
+ * ratings, spread by this event's spread of ratings. Needs every robot rated
+ * and an event field of at least three teams — otherwise null, never 50/50.
+ */
+async function winChanceFor(
+  client: PoolClient,
+  eventKey: string | null,
+  redTeams: TeamCapability[],
+  blueTeams: TeamCapability[],
+): Promise<{ red: number; blue: number } | null> {
+  if (!eventKey) return null;
+  const field = await client.query<{ epaTotal: number | null }>(
+    `SELECT DISTINCT ON (team_key) epa_total::float8 AS "epaTotal"
+       FROM team_event_metrics
+      WHERE event_key = $1 AND epa_total IS NOT NULL
+      ORDER BY team_key, CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END, synced_at DESC NULLS LAST`,
+    [eventKey],
+  );
+  const totals = field.rows.map((row) => row.epaTotal).filter((value): value is number => value != null);
+  if (totals.length < 3) return null;
+  const fieldStd = populationStdDev(totals);
+  const prediction = predictUnscoredMatch({
+    red: redTeams.map((team) => ({ teamKey: team.teamKey, mean: team.epaTotal })),
+    blue: blueTeams.map((team) => ({ teamKey: team.teamKey, mean: team.epaTotal })),
+    fieldStd,
+  });
+  if (!prediction || prediction.redWinPct == null || prediction.blueWinPct == null) return null;
+  return { red: prediction.redWinPct, blue: prediction.blueWinPct };
 }
 
 type RunRow = {

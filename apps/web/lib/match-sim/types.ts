@@ -60,6 +60,13 @@ export type MatchSimResult = {
   finalMargin: number;
   favored: AllianceColor | "even";
   lever: LeverageLever | null;
+  /**
+   * Chance each alliance wins, from the six teams' ratings and this event's
+   * spread of ratings (alliance score ~ Normal). Null when any robot has no
+   * rating or there is no event field to measure spread from — runs saved
+   * before this existed have no field at all.
+   */
+  winChance?: { red: number; blue: number } | null;
   computedAt: string;
 };
 

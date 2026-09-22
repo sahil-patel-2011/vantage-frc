@@ -1,0 +1,9 @@
+/* Win chance: one bar split red | blue, with the numbers beside it in text so
+   the colours are never the only way to read it. */
+.match-sim-win{display:grid;gap:6px;margin-top:14px}
+.match-sim-win-bar{display:flex;height:12px;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--line) 70%,transparent)}
+.match-sim-win-bar i{display:block;height:100%}
+.match-sim-win-bar .is-red{background:var(--alliance-red,#d64545)}
+.match-sim-win-bar .is-blue{background:var(--alliance-blue,#2f6fd6)}
+.match-sim-win-labels{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.match-sim-win-labels small{flex:1;text-align:center;font-size:11px}

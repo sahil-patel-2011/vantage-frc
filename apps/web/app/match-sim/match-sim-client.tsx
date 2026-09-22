@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { flipMatchSimResult, phaseLabel } from "../../lib/match-sim";
+import { flipMatchSimResult, matchSimHasNoData, phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
 import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -284,7 +284,7 @@ function SimulateForm({
         <FormRow label="Blue alliance (team numbers, comma-separated)">
           <input value={form.blueTeamKeys} onChange={set("blueTeamKeys")} placeholder="118, 2056, 33" required />
         </FormRow>
-        <FormRow label="Event key (optional)">
+        <FormRow label="Event (blank = the event you are at)">
           <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" />
         </FormRow>
         <FormRow label="Match key (optional)">
@@ -307,12 +307,18 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
   const [flipped, setFlipped] = useState(false);
   const result = flipped ? flipMatchSimResult(run.result) : run.result;
   const maxScore = Math.max(result.red.total, result.blue.total, 1);
+  const noData = matchSimHasNoData(result);
+  const win = noData ? null : (result.winChance ?? null);
   return (
     <Panel aria-label="Simulation result">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <span className={`app-badge ${result.favored === "even" ? "setup" : "good"}`}>
-            {result.favored === "even" ? "TOSS-UP" : `${allianceLabel(result.favored)} FAVORED`}
+          <span className={`app-badge ${noData || result.favored === "even" ? "setup" : "good"}`}>
+            {noData
+              ? "NOT ENOUGH DATA"
+              : result.favored === "even"
+                ? "TOSS-UP"
+                : `${allianceLabel(result.favored)} FAVORED`}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>{run.label}</h2>
           <small className="app-muted">
@@ -324,6 +330,28 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
           Flip red / blue
         </Button>
       </header>
+
+      {noData ? (
+        <p className="app-muted" style={{ marginTop: 12 }}>
+          {result.red.dataCompleteness === 0 && result.blue.dataCompleteness === 0 ? "Neither alliance has" : `${allianceLabel(result.red.dataCompleteness === 0 ? "red" : "blue")} has`}{" "}
+          a single robot with a synced rating{run.eventKey ? ` at ${run.eventKey}` : " this season"}, so there is nothing to
+          compare. Check the event, or sync ratings from Rankings.
+        </p>
+      ) : null}
+
+      {win ? (
+        <div className="match-sim-win" aria-label={`Win chance: red ${pct(win.red)}, blue ${pct(win.blue)}`}>
+          <div className="match-sim-win-bar" aria-hidden="true">
+            <i className="is-red" style={{ width: pct(win.red) }} />
+            <i className="is-blue" style={{ width: pct(win.blue) }} />
+          </div>
+          <div className="match-sim-win-labels">
+            <strong>Red {pct(win.red)}</strong>
+            <small className="app-muted">chance to win, from ratings and this event&rsquo;s spread</small>
+            <strong>Blue {pct(win.blue)}</strong>
+          </div>
+        </div>
+      ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginTop: 16 }}>
         <AllianceCard alliance={result.red} maxScore={maxScore} />

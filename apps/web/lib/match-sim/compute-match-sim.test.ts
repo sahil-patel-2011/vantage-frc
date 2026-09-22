@@ -1,7 +1,13 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { computeMatchSimView, resolveTeamCapabilities, simulateMatch } from "./compute-match-sim";
-import { computeAllianceCapability, computeLever, computeMatchSimResult, flipMatchSimResult } from ".";
+import {
+  computeAllianceCapability,
+  computeLever,
+  computeMatchSimResult,
+  flipMatchSimResult,
+  matchSimHasNoData,
+} from ".";
 import type { TeamCapability } from "./types";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -212,5 +218,33 @@ describe("resolveTeamCapabilities + simulateMatch", () => {
     expect(result.finalMargin).toBe(16);
     expect(result.favored).toBe("red");
     expect(result.lever).not.toBeNull();
+  });
+});
+
+describe("win chance and empty alliances", () => {
+  const empty = { teamKey: "frc10", teamNumber: 10, epaAuto: null, epaTeleop: null, epaEndgame: null, epaTotal: null, source: null, hasData: false };
+
+  it("says an alliance with no rated robot is no data, not a toss-up", () => {
+    const result = computeMatchSimResult(
+      computeAllianceCapability("red", [empty]),
+      computeAllianceCapability("blue", [empty]),
+    );
+    expect(result.favored).toBe("even");
+    expect(matchSimHasNoData(result)).toBe(true);
+    const rated = computeMatchSimResult(
+      computeAllianceCapability("red", [team()]),
+      computeAllianceCapability("blue", [team({ teamKey: "frc1", epaTotal: 20 })]),
+    );
+    expect(matchSimHasNoData(rated)).toBe(false);
+  });
+
+  it("swaps the win chance when the alliances are flipped", () => {
+    const base = computeMatchSimResult(
+      computeAllianceCapability("red", [team()]),
+      computeAllianceCapability("blue", [team({ teamKey: "frc1", epaTeleop: 10, epaTotal: 20 })]),
+    );
+    const flipped = flipMatchSimResult({ ...base, winChance: { red: 0.8, blue: 0.2 } });
+    expect(flipped.winChance).toEqual({ red: 0.2, blue: 0.8 });
+    expect(flipMatchSimResult({ ...base, winChance: null }).winChance).toBeNull();
   });
 });

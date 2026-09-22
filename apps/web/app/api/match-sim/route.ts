@@ -96,9 +96,21 @@ export async function POST(request: Request) {
           if (redTeamKeys.length === 0 || blueTeamKeys.length === 0) {
             throw new Error("Select at least one team on each alliance (frcNNNN keys)");
           }
-          const eventKey = trimmedOrNull(body.eventKey, 40);
+          // Blank means "the event we are at". Left null, the simulator fell back
+          // to season numbers only, found none mid-event, and called every
+          // matchup a 0–0 toss-up.
+          const eventKey =
+            trimmedOrNull(body.eventKey, 40) ??
+            (
+              await client.query<{ eventKey: string | null }>(
+                `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1::uuid`,
+                [orgId],
+              )
+            ).rows[0]?.eventKey ??
+            null;
           const matchKey = trimmedOrNull(body.matchKey, 60);
-          const label = trimmedOrNull(body.label, 120) ?? `Red ${redTeamKeys.join(", ")} vs Blue ${blueTeamKeys.join(", ")}`;
+          const numbers = (keys: string[]) => keys.map((key) => key.replace(/^frc/, "")).join(", ");
+          const label = trimmedOrNull(body.label, 120) ?? `Red ${numbers(redTeamKeys)} vs Blue ${numbers(blueTeamKeys)}`;
           const year = yearFrom(body.year);
 
           const result = await simulateMatch(client, { redTeamKeys, blueTeamKeys, eventKey, year });
