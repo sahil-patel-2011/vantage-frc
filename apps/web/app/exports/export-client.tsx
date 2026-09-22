@@ -86,6 +86,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [canSync, setCanSync] = useState(false);
+  const [roleReady, setRoleReady] = useState(false);
 
   async function load() {
     const response = await fetch(`/api/exports?orgId=${encodeURIComponent(orgId)}`);
@@ -105,6 +106,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       if (cancelled) return;
       const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
       setCanSync(strategyCanSync(membership?.role ?? session?.role));
+      setRoleReady(true);
     });
     return () => {
       cancelled = true;
@@ -124,7 +126,9 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
      
   }, [orgId]);
 
-  const available = useMemo(() => domains.filter((domain) => domain.scope === scope), [domains, scope]);
+  /** Team-shared export stays with an owner or admin. Until the role is known, stay on private. */
+  const exportScope: "team" | "private" = roleReady && canSync && scope === "team" ? "team" : "private";
+  const available = useMemo(() => domains.filter((domain) => domain.scope === exportScope), [domains, exportScope]);
 
   const grouped = useMemo(() => {
     return CATEGORY_ORDER.map((category) => ({
@@ -141,7 +145,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         orgId,
-        scope,
+        scope: exportScope,
         domains: all ? "all" : selected,
         filters: { eventKey: eventKey || undefined, excelBom },
       }),
@@ -173,7 +177,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       body: JSON.stringify({
         action: "csv",
         orgId,
-        scope,
+        scope: exportScope,
         domain: selected[0],
         domains: selected,
         filters: { eventKey: eventKey || undefined, excelBom },
@@ -200,7 +204,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       body: JSON.stringify({
         action: "pdf",
         orgId,
-        scope,
+        scope: exportScope,
         domains: [],
         filters: { eventKey: eventKey || undefined },
       }),
@@ -222,7 +226,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     const response = await fetch("/api/exports", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "download", orgId, jobId, scope, domains: [] }),
+      body: JSON.stringify({ action: "download", orgId, jobId, scope: exportScope, domains: [] }),
     });
     const data = await response.json();
     if (response.ok) location.assign(data.url);
@@ -282,21 +286,23 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         <section className="app-card soft-panel export-panel">
           <h2>Choose data</h2>
           <div className="export-tabs" role="tablist" aria-label="Export scope">
+            {canSync ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={exportScope === "team"}
+                onClick={() => {
+                  setScope("team");
+                  setSelected([]);
+                }}
+              >
+                Team-shared
+              </button>
+            ) : null}
             <button
               type="button"
               role="tab"
-              aria-selected={scope === "team"}
-              onClick={() => {
-                setScope("team");
-                setSelected([]);
-              }}
-            >
-              Team-shared
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === "private"}
+              aria-selected={exportScope === "private"}
               onClick={() => {
                 setScope("private");
                 setSelected([]);
@@ -306,7 +312,13 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             </button>
           </div>
 
-          {scope === "private" ? (
+          {!canSync && roleReady ? (
+            <p className="app-muted">
+              An owner or admin exports the team&apos;s shared data. You can download your private AI chats and memory.
+            </p>
+          ) : null}
+
+          {exportScope === "private" ? (
             <p className="app-muted">
               Only your private conversations and memory appear here. Organization administrators cannot silently export
               them.
@@ -353,7 +365,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                     <small>{domain.description}</small>
                     <span className="prov">{domain.provenance}</span>
                   </span>
-                  <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => { setSelected([domain.id]); void (async () => { setBusy(true); const response = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "csv", orgId, scope, domain: domain.id, domains: [domain.id], filters: { eventKey: eventKey || undefined, excelBom }, }), }); if (!response.ok) { const data = await response.json(); setOk(false); setMessage(data.error ?? "CSV export failed"); } else { await downloadBlob(response, domain.fileName); setOk(true); setMessage(`Downloaded ${domain.fileName}`); } setBusy(false); })(); }}>
+                  <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => { setSelected([domain.id]); void (async () => { setBusy(true); const response = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "csv", orgId, scope: exportScope, domain: domain.id, domains: [domain.id], filters: { eventKey: eventKey || undefined, excelBom }, }), }); if (!response.ok) { const data = await response.json(); setOk(false); setMessage(data.error ?? "CSV export failed"); } else { await downloadBlob(response, domain.fileName); setOk(true); setMessage(`Downloaded ${domain.fileName}`); } setBusy(false); })(); }}>
                     CSV
                   </Button>
                 </label>
@@ -369,10 +381,10 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
               Instant CSV
             </Button>
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void createZip(true)}>
-              ZIP all {scope === "team" ? "team" : "private"} data
+              ZIP all {exportScope === "team" ? "team" : "private"} data
             </Button>
-            <Button variant="secondary" type="button" disabled={busy} onClick={() => { const ids = available .filter((item) => scope === "private" ? item.id === "ai-private-conversations" || item.id === "ai-private-memory" : item.category === "ai" || item.id === "usage", ) .map((item) => item.id); setSelected(ids); setMessage( scope === "private" ? "Selected your private AI chats and memory only." : "Selected this team's AI chats, memory, and artifacts — not other workspaces.", ); setOk(true); }}>
-              {scope === "private" ? "Select my AI takeout" : "Select this team's AI takeout"}
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => { const ids = available .filter((item) => exportScope === "private" ? item.id === "ai-private-conversations" || item.id === "ai-private-memory" : item.category === "ai" || item.id === "usage", ) .map((item) => item.id); setSelected(ids); setMessage( exportScope === "private" ? "Selected your private AI chats and memory only." : "Selected this team's AI chats, memory, and artifacts — not other workspaces.", ); setOk(true); }}>
+              {exportScope === "private" ? "Select my AI takeout" : "Select this team's AI takeout"}
             </Button>
           </div>
         </section>
