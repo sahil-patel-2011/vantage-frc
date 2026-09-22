@@ -326,7 +326,7 @@ async function readWindowState(): Promise<WindowState> {
   } catch {
     raw = undefined;
   }
-  const displays = screen.getAllDisplays().map((display) => display.bounds);
+  const displays = screen.getAllDisplays().map((display) => display.workArea);
   return parseWindowState(raw, displays);
 }
 
