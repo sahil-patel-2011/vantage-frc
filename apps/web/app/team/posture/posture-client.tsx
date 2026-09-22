@@ -91,6 +91,7 @@ export default function PostureClient({ orgId }: { orgId: string }) {
   const [posture, setPosture] = useState<Posture | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [denied, setDenied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -99,8 +100,17 @@ export default function PostureClient({ orgId }: { orgId: string }) {
       const response = await fetch(`/api/organizations/security-posture?orgId=${orgId}`);
       const data = await response.json();
       if (!active) return;
-      if (!response.ok) setMessage(data.error ?? "Unable to load security posture");
-      else {
+      const errorText = typeof data.error === "string" ? data.error : "";
+      const refused =
+        response.status === 401 ||
+        response.status === 403 ||
+        /administrator access required/i.test(errorText);
+      if (!response.ok) {
+        setDenied(refused);
+        setPosture(null);
+        setMessage(refused ? "" : errorText || "Unable to load security posture");
+      } else {
+        setDenied(false);
         setMessage("");
         setPosture(data);
       }
@@ -121,14 +131,15 @@ export default function PostureClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">VANTAGE / SECURITY POSTURE</span>
           <h1>This team&apos;s access at a glance</h1>
           <p className="app-muted">
-            A read-only roll-up of the controls protecting this team, with suggestions where a setting could
-            be tightened. Nothing here changes automatically.
+            {denied
+              ? "An owner or admin reads this team's access at a glance."
+              : "A read-only roll-up of the controls protecting this team, with suggestions where a setting could be tightened. Nothing here changes automatically."}
           </p>
         </div>
         <nav className="intel-actions" aria-label="Security links">
           <a href={`/team/security?orgId=${orgId}`}>Access policy</a>
           <a href={`/team/audit?orgId=${orgId}`}>Audit log</a>
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          {posture ? <a href={`/team?orgId=${orgId}`}>Team admin</a> : null}
         </nav>
       </header>
 
