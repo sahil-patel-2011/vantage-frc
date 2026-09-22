@@ -11,6 +11,12 @@ type Roster = {
   roster?: Array<{ teamNumber: number; teamKey?: string; nickname: string | null; scouted: number; pitScouted?: number }>;
 };
 
+/** The number is already on the chip; a placeholder name ("Team 6925") would say it twice. */
+function chipName(team: { teamNumber: number; nickname: string | null }): string {
+  const name = team.nickname?.trim() ?? "";
+  return name && name.toLowerCase() !== `team ${team.teamNumber}` ? name : "";
+}
+
 function useOnline(): boolean {
   const [online, setOnline] = useState(true);
   useEffect(() => {
@@ -165,7 +171,7 @@ export function ScoutingHome() {
               <li key={team.teamNumber}>
                 <a href={`${withOrg("/scout/teams")}${orgId ? "&" : "?"}team=${team.teamNumber}`}>
                   <strong>{team.teamNumber}</strong>
-                  <span>{team.nickname ?? ""}</span>
+                  <span>{chipName(team)}</span>
                 </a>
               </li>
             ))}
@@ -190,7 +196,7 @@ export function ScoutingHome() {
                 <li key={team.teamNumber}>
                   <a href={pitHref(team.teamNumber)} aria-label={`Pit scout team ${team.teamNumber}`}>
                     <strong>{team.teamNumber}</strong>
-                    <span>{team.nickname ?? ""}</span>
+                    <span>{chipName(team)}</span>
                   </a>
                 </li>
               ))}

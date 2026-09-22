@@ -1,7 +1,15 @@
 /* The Scouting product frame. Same tokens as Vantage (so the two read as one
    family), a narrower job: five places and a way back. The bar sticks so the
    tabs stay under a thumb while a scouter scrolls a long form. */
-.scouting-product{min-height:100dvh;background:var(--bg)}
+/* One type family, the same one Vantage's app shell uses. Without it this frame fell back
+   to the legacy root font for text and links while <button>s took the design-system font,
+   so "Look up a team" and "Keep scouting data on this device" were two different fonts. */
+.scouting-product{
+  min-height:100dvh;background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",var(--font-inter,var(--font-sans)),sans-serif;
+  letter-spacing:-.006em;
+}
+.scouting-product :where(button,input,select,textarea){font-family:inherit}
 .scouting-bar{
   position:sticky;top:0;z-index:40;
   display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px;
@@ -36,7 +44,13 @@
 
 @media (max-width:720px){
   /* On a phone the tabs become a bottom bar — the thumb's reach, not the eyes'. */
-  .scouting-bar{grid-template-columns:auto minmax(0,1fr);padding-top:max(10px,env(safe-area-inset-top))}
+  /* No backdrop-filter on the bar here: a filtered ancestor becomes the containing block
+     for position:fixed children, which pinned the "bottom" tab bar over the header —
+     on top of the brand and "Back to Vantage" — instead of the bottom of the screen. */
+  .scouting-bar{
+    grid-template-columns:auto minmax(0,1fr);padding-top:max(10px,env(safe-area-inset-top));
+    backdrop-filter:none;background:var(--bg);
+  }
   .scouting-tabs{
     position:fixed;left:0;right:0;bottom:0;z-index:40;justify-content:space-around;
     padding:6px 8px max(8px,env(safe-area-inset-bottom));
