@@ -179,6 +179,20 @@ Every route must have **≥2** entry paths: (a) at least one contextual/hub link
 Zero is allowed (pure-read screens). Two is a bug. If ≥3 actions have equal priority, **all** render neutral/outline. Primary sits **above or left of** secondary actions.
 *Check:* lint rule — at most one `<Button appearance="primary">` (or brand-token equivalent) per page component tree; runtime `data-primary-action` counter assertion in E2E.
 *Why:* Fluent 2, stated verbatim.
+*How it is kept (September 2026 audit of 220 pages):*
+- **Row actions are secondary.** A button repeated once per list row ("Mark done", "Pair with …",
+  "Save card") is never `variant="primary"`. A list of editable forms opens one at a time
+  (`/match-strategy-cards`).
+- **Empty states and headers don't double up.** While a page's empty state offers the primary
+  action, a primary in the page header steps down; when an add form is already on screen, the empty
+  state's "Add a …" steps down instead. Both are enforced centrally in `app/soft-ui.css` with
+  `:has()`, so a new page gets them without doing anything.
+- **Empty dashboard cards link, they don't button.** Their way in is a quiet text link
+  (`.dash-empty-cta`); an idle Home hero does the same (`HomeNowAction.quiet`).
+- **"Next actions" are one line.** Every `section[aria-label="Next actions"]` built from
+  `a.edc-next-action` rows renders as a small label and a row of links (`app/system.css`), not a
+  stack of cards above the page's content.
+- **Reference links are outlined, not filled** (lesson links, docs links, "Open …" cross-links).
 
 **R5 — Minimum 44 × 44 CSS px interactive target; 48 px in competition mode; ≥8 px separation. [CI]**
 44px is the floor everywhere (WCAG 2.5.5 AAA / Apple HIG). Any surface rendered under event-day/pit context raises to **48 × 48** with **≥12 px** gaps — gloves, cold hands, motion.
