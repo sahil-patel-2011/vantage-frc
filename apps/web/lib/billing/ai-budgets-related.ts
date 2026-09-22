@@ -266,6 +266,8 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
 export function aiBudgetsNextActions(input: {
   orgId?: string | null;
   shell: AiBudgetsShellKind;
+  /** When false, limit setup stays with an owner or admin. Omitted keeps the owner actions. */
+  canManage?: boolean;
 }): AiBudgetsNextAction[] {
   const orgId = input.orgId ?? null;
   if (!orgId) {
@@ -297,12 +299,12 @@ export function aiBudgetsNextActions(input: {
     ];
   }
 
-  if (input.shell === "forbidden") {
+  if (input.shell === "forbidden" || input.canManage === false) {
     return [
       {
         id: "chat",
         label: "Open Chat",
-        detail: "Members can still use the assistant under existing team limits.",
+        detail: "An owner or admin sets spend limits. Chat still follows the limits already saved.",
         href: chatHref,
         primary: true,
       },

@@ -60,8 +60,16 @@ function BudgetsRelatedStrip({ orgId }: { orgId: string }) {
   );
 }
 
-function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKind }) {
-  const actions = aiBudgetsNextActions({ orgId, shell });
+function NextActions({
+  orgId,
+  shell,
+  canManage,
+}: {
+  orgId: string;
+  shell: AiBudgetsShellKind;
+  canManage: boolean;
+}) {
+  const actions = aiBudgetsNextActions({ orgId, shell, canManage });
   if (!actions.length) return null;
   return (
     <section
@@ -89,10 +97,12 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
 function ShellPrimary({
   orgId,
   shell,
+  canManage,
   onRetry,
 }: {
   orgId: string;
   shell: AiBudgetsShellKind;
+  canManage: boolean;
   onRetry?: () => void;
 }) {
   if (shell === "error" && onRetry) {
@@ -102,7 +112,7 @@ function ShellPrimary({
       </Button>
     );
   }
-  const primary = aiBudgetsNextActions({ orgId, shell }).find((action) => action.primary);
+  const primary = aiBudgetsNextActions({ orgId, shell, canManage }).find((action) => action.primary);
   if (!primary) return null;
   return (
     <Button as="a" variant="primary" href={primary.href}>
@@ -137,6 +147,8 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** Fail closed until the budget read says this account can manage keys. */
+  const [canManage, setCanManage] = useState(false);
 
   const chatHref = hubHref("/ai", "chat", orgId);
   const usageHref = hubHref("/ai", "usage", orgId);
@@ -148,6 +160,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     const response = await fetch(`/api/billing/budgets?orgId=${encodeURIComponent(orgId)}`);
     const data = (await response.json()) as {
       error?: string;
+      canManage?: boolean;
       policy?: Record<string, unknown> | null;
       usage?: Record<string, string>;
       projectedExhaustionDays?: number | null;
@@ -157,11 +170,13 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     setHttpStatus(response.status);
     if (!response.ok) {
       setLoadError(data.error ?? "Unable to load Chat limits");
+      setCanManage(false);
       setMessage("");
       setLoading(false);
       return;
     }
     setLoadError(null);
+    setCanManage(data.canManage === true);
     if (data.policy) {
       const policy = data.policy;
       setPolicy((prev) => ({
@@ -285,7 +300,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <ShellPrimary orgId={orgId} shell={shell} onRetry={() => void load()} />
+          <ShellPrimary orgId={orgId} shell={shell} canManage={canManage} onRetry={() => void load()} />
         </EmptyState>
       ) : null}
 
@@ -306,9 +321,15 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 <h2>{card.title}</h2>
                 <p className="app-muted">{card.body}</p>
                 {card.id === "limits" ? (
-                  <Button as="a" variant="secondary" href="#org-hard-limits">
-                    Edit spend limits
-                  </Button>
+                  canManage ? (
+                    <Button as="a" variant="secondary" href="#org-hard-limits">
+                      Edit spend limits
+                    </Button>
+                  ) : (
+                    <Button as="a" variant="secondary" href={chatHref}>
+                      Open Chat
+                    </Button>
+                  )
                 ) : null}
                 {card.id === "usage" ? (
                   <Button as="a" variant="secondary" href={usageHref}>
@@ -329,7 +350,19 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
             ))}
           </section>
 
-          {showEmptyBanner ? (
+          {!canManage ? (
+            <EmptyState
+              soft
+              badge="No access"
+              badgeTone="setup"
+              title="Owners and admins set spend limits"
+              description="Chat still follows the limits already saved. An owner or admin changes the caps, the pause switch, and which models the team can use."
+            >
+              <Button as="a" variant="primary" href={chatHref}>
+                Open Chat
+              </Button>
+            </EmptyState>
+          ) : showEmptyBanner ? (
             <EmptyState
               soft
               badge={shellCopy.badge}
@@ -337,10 +370,10 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               title={shellCopy.title}
               description={shellCopy.description}
             >
-              <ShellPrimary orgId={orgId} shell={shell} />
+              <ShellPrimary orgId={orgId} shell={shell} canManage={canManage} />
             </EmptyState>
           ) : (
-            <NextActions orgId={orgId} shell={shell} />
+            <NextActions orgId={orgId} shell={shell} canManage={canManage} />
           )}
 
           {snapshot ? <UsageCutoffBanner orgId={orgId} snapshot={snapshot} /> : null}
@@ -393,6 +426,8 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
             </div>
           </section>
 
+          {canManage ? (
+          <>
           <section className="intel-panel" id="prompt-caching" style={{ marginBottom: 16 }}>
             <span className="eyebrow">Prompt caching</span>
             <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>Reuse stable system and context blocks</h2>
@@ -583,6 +618,8 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               <button className="primary-action">Save layered limit</button>
             </form>
           </section>
+          </>
+          ) : null}
         </>
       ) : null}
     </main>

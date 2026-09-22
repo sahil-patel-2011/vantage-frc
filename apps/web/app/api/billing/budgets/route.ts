@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
     const data = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      const [policy, members, features, models, usage, entitlement, wallet, usagePolicy] = await Promise.all([
+      const [policy, members, features, models, usage, entitlement, wallet, usagePolicy, manage] = await Promise.all([
         client.query(`SELECT daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
           monthly_token_limit AS "monthlyTokenLimit",warning_thresholds AS "warningThresholds",
@@ -48,6 +48,10 @@ export async function GET(request: Request) {
         client.query(`SELECT COALESCE(sum(amount_usd),0)::text AS balance FROM wallet_ledger WHERE org_id=$1`, [orgId]),
         client.query(`SELECT payg_enabled AS "paygEnabled",overage_spend_cap_usd AS "spendCap",
           kill_switch AS "killSwitch" FROM org_usage_policies WHERE org_id=$1`, [orgId]),
+        client.query<{ allowed: boolean }>(
+          `SELECT has_org_capability($1::uuid, 'manage_api_keys'::org_capability) AS allowed`,
+          [orgId],
+        ),
       ]);
       const row = usage.rows[0] as Record<string, string>;
       const elapsedDays = Math.max(1, new Date().getUTCDate());
@@ -57,8 +61,12 @@ export async function GET(request: Request) {
       const used = Number(row.monthlySpend ?? 0);
       const policyKill = Boolean(policy.rows[0]?.killSwitch);
       const usageKill = Boolean(usagePolicy.rows[0]?.killSwitch);
+      const canManage = manage.rows[0]?.allowed === true;
       return {
-        policy: policy.rows[0] ?? null, members: members.rows, features: features.rows, models: models.rows,
+        policy: policy.rows[0] ?? null,
+        members: canManage ? members.rows : [],
+        canManage,
+        features: features.rows, models: models.rows,
         usage: row,
         projectedExhaustionDays: monthlyLimit > 0 && dailyRate > 0
           ? Math.max(0, (monthlyLimit - Number(row.monthlySpend)) / dailyRate) : null,
