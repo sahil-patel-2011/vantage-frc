@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatReportClock, scoutReportFromPayload } from "./scout-report";
+import { formatReportClock, scoutEntryByline, scoutReportFromPayload } from "./scout-report";
 
 describe("scoutReportFromPayload", () => {
   it("turns real payload fields into stats and skips empty ones", () => {
@@ -26,6 +26,12 @@ describe("scoutReportFromPayload", () => {
     expect(report.timeline.map((event) => event.label)).toEqual(["Mobility", "L4", "Climb"]);
     expect(formatReportClock(report.timeline[0]?.atSeconds ?? null)).toBe("0:08");
     expect(formatReportClock(report.timeline[2]?.atSeconds ?? null)).toBe("—");
+  });
+
+  it("names the scout and the way the report was filed", () => {
+    expect(scoutEntryByline({ scoutName: "Noah Scout", source: "manual" })).toBe("Noah Scout · Form");
+    expect(scoutEntryByline({ scoutName: "  ", source: "voice" })).toBe("Voice");
+    expect(scoutEntryByline({ scoutName: null, source: "nope" })).toBe("");
   });
 
   it("returns empty instead of inventing a report", () => {
