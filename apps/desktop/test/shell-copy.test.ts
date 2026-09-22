@@ -135,4 +135,11 @@ describe("bundled shell pages", () => {
     expect(update).not.toMatch(/portable build/i);
     expect(update).not.toMatch(/Last attempt:/);
   });
+
+  it("lets a mentor select the update failure and the release notes", () => {
+    expect(update).toMatch(
+      /\.versions,\s*\.note,\s*\.notes,\s*\.card > p\s*\{[^}]*user-select:\s*text/,
+    );
+    expect(update).toContain("button:focus-visible");
+  });
 });
