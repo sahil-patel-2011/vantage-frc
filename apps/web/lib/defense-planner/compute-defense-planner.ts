@@ -55,6 +55,8 @@ export type DefensePlannerView =
       seasons: number[];
       robotProfile: RobotProfile | null;
       matchups: Matchup[];
+      eventKey: string | null;
+      eventName: string | null;
       computedAt: string;
     };
 
@@ -200,6 +202,15 @@ export async function computeDefensePlannerView(
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -208,6 +219,8 @@ export async function computeDefensePlannerView(
     seasons,
     robotProfile: profileResult.rows[0] ? mapProfile(profileResult.rows[0]) : null,
     matchups: matchupResult.rows.map(mapMatchup),
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     computedAt: new Date().toISOString(),
   };
 }

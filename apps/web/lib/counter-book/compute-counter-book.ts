@@ -9,6 +9,7 @@ import {
 } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { scoutEventLabel } from "../scouting/scouting-related";
 import type { CounterBookFailureTrigger, CounterBookReport, CounterBookTendency } from "./types";
 
 export const COUNTER_BOOK_AI_MODEL = "vantage-counter-book-v1";
@@ -57,6 +58,8 @@ export type CounterBookView =
       orgId: string;
       teamNumber: number | null;
       reports: CounterBookReport[];
+      eventKey: string | null;
+      eventName: string | null;
       computedAt: string;
     };
 
@@ -133,11 +136,22 @@ export async function computeCounterBookView(
     [org.orgId],
   );
 
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+
   return {
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     reports: reportResult.rows.map(mapReport),
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     computedAt: new Date().toISOString(),
   };
 }
@@ -199,7 +213,18 @@ export async function generateCounterBookReport(
     },
   });
 
-  const title = `Counter-book — ${teamLabel}${input.eventKey ? ` @ ${input.eventKey}` : ""}`;
+  let eventLabel: string | null = null;
+  if (input.eventKey) {
+    const named = await client.query<{ eventName: string | null }>(
+      `SELECT name AS "eventName" FROM events_ref WHERE event_key = $1`,
+      [input.eventKey],
+    );
+    eventLabel = scoutEventLabel({
+      eventName: named.rows[0]?.eventName ?? null,
+      eventKey: input.eventKey,
+    });
+  }
+  const title = `Counter-book — ${teamLabel}${eventLabel ? ` @ ${eventLabel}` : ""}`;
   const inserted = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO counter_book_reports(
        org_id, team_key, team_number, event_key, title, matches_scouted,

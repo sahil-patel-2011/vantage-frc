@@ -95,7 +95,24 @@ describe("computeCounterBookView", () => {
       expect(view.reports).toHaveLength(1);
       expect(view.reports[0].teamKey).toBe("frc254");
       expect(view.reports[0].tendencies[0].field).toBe("autoPoints");
+      expect(view.eventKey).toBeNull();
+      expect(view.eventName).toBeNull();
     }
+  });
+
+  it("names the active event on a live counter-book", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 100 }], rowCount: 1 };
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const view = await computeCounterBookView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).not.toBe("Pacific Practice");
   });
 });
 
@@ -158,5 +175,52 @@ describe("generateCounterBookReport", () => {
     expect(report.tendencies.some((t) => t.field === "autoPoints")).toBe(true);
     expect(report.counterPlan).toMatch(/Team 254/);
     expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
+  });
+
+  it("titles a report with the event name instead of a custom key", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM teams_ref")) return { rows: [{ teamNumber: 254 }], rowCount: 1 };
+      if (sql.includes("FROM match_scout_entries")) {
+        return {
+          rows: [
+            { payload: { autoPoints: 10, teleopPoints: 30 } },
+            { payload: { autoPoints: 14, teleopPoints: 32 } },
+          ],
+          rowCount: 2,
+        };
+      }
+      if (sql.includes("FROM events_ref")) {
+        return { rows: [{ eventName: "Pacific Practice" }], rowCount: 1 };
+      }
+      if (sql.includes("FROM org_billing")) {
+        return {
+          rows: [
+            {
+              tier: "team",
+              credit_cap_usd: "100",
+              kill_switch: false,
+              period_start: new Date("2026-01-01"),
+              period_end: new Date("2027-01-01"),
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      if (sql.includes("COALESCE")) return { rows: [{ used: "0", grants: "0" }], rowCount: 1 };
+      if (sql.includes("INSERT INTO counter_book_reports")) {
+        return { rows: [{ id: "report-1", createdAt: new Date().toISOString() }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 1 };
+    });
+
+    const report = await generateCounterBookReport(client, {
+      orgId: ORG,
+      userId: USER,
+      teamKey: "frc254",
+      eventKey: "2026custom-org-pacific",
+    });
+
+    expect(report.title).toBe("Counter-book — Team 254 @ Pacific Practice");
+    expect(report.title).not.toContain("2026custom-");
   });
 });
