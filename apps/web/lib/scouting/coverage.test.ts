@@ -189,6 +189,19 @@ describe("computeScoutingCoverageView", () => {
     expect(view.slots).toEqual([]);
     expect(view.summary.totalSlots).toBe(0);
     expect(view.summary.coverageRate).toBeNull();
+    expect(view.eventName).toBeNull();
+  });
+
+  it("names the active event from the reference row", async () => {
+    const client = makeClient((sql, params) => {
+      if (sql.includes("FROM events_ref")) return { rows: [{ eventName: "Pacific Practice" }] };
+      return liveHandler({ matches: [] })(sql, params);
+    });
+
+    const view = await computeScoutingCoverageView(client, { userId: USER, requestedOrg: ORG });
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe(EVENT);
   });
 
   it("orders a watchlisted team earlier than schedule order", async () => {

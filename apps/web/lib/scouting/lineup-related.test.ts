@@ -10,6 +10,7 @@ import {
   formatLineupCoverage,
   formatLineupMetric,
   isLineupBoardEmpty,
+  lineupEmptyDescription,
   lineupNextActions,
   lineupRelatedLinks,
   lineupScoutNowHref,
@@ -227,17 +228,41 @@ describe("lineupNextActions", () => {
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
-  it("empty shell points at schedule sync + Scouting / Form builder / Strategy", () => {
+  it("empty shell for an owner points at Team Data", () => {
     const actions = lineupNextActions({
       orgId: "org-1",
       shell: "empty",
       totalSlots: 0,
+      canAssign: true,
     });
-    expect(actions[0]?.id).toBe("command");
+    expect(actions[0]?.id).toBe("team-data");
+    expect(actions[0]?.label).toBe("Sync Team Data");
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
     expect(actions.map((a) => a.id)).toEqual(
       expect.arrayContaining(["scouting", "forms", "strategy"]),
     );
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
+  });
+
+  it("empty shell for a scout opens Scouting", () => {
+    const actions = lineupNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      totalSlots: 0,
+      canAssign: false,
+    });
+    expect(actions[0]?.label).toBe("Open Scouting");
+    expect(actions[0]?.href).toBe("/competition?tab=scouting&orgId=org-1");
+    expect(actions.some((action) => action.label === "Sync Team Data")).toBe(false);
+    const description = lineupEmptyDescription({
+      eventName: "Pacific Practice",
+      eventKey: "2026custom-org-pacific",
+      canAssign: false,
+    });
+    expect(description).toMatch(/Pacific Practice has no match schedule/);
+    expect(description).toMatch(/owner or admin/);
+    expect(description).not.toMatch(/2026custom-/);
+    expectPlainCopy(description);
   });
 
   it("ready boards prioritize gaps without DEMO %", () => {

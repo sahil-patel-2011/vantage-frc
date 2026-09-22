@@ -32,6 +32,7 @@ function emptyLive(overrides: Partial<Extract<ScoutingCoverageView, { status: "l
     orgId: ORG,
     teamNumber: 1234,
     eventKey: EVENT,
+    eventName: null,
     generatedAt: "2026-03-01T00:00:00.000Z",
     qualsOnly: true,
     canAssign: true,

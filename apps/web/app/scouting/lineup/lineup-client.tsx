@@ -12,6 +12,7 @@ import {
   classifyLineupShell,
   formatLineupCoverage,
   formatLineupMetric,
+  lineupEmptyDescription,
   lineupNextActions,
   lineupRelatedLinks,
   lineupScoutNowHref,
@@ -24,6 +25,7 @@ import {
 } from "../../../lib/scouting/lineup-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { AssignmentRangeForm } from "./assignment-range-form";
@@ -53,6 +55,7 @@ type CoverageView =
   | {
       status: "live";
       eventKey: string;
+      eventName?: string | null;
       generatedAt: string;
       qualsOnly: boolean;
       canAssign: boolean;
@@ -142,6 +145,7 @@ function LineupShell({
   error,
   errorStatus,
   onRetry,
+  canAssign,
   children,
 }: {
   description: string;
@@ -151,9 +155,10 @@ function LineupShell({
   /** HTTP status of the failed load, so an expired session can offer sign-in. */
   errorStatus?: number | null;
   onRetry?: () => void;
+  canAssign?: boolean;
   children?: ReactNode;
 }) {
-  const actions = lineupNextActions({ orgId, shell });
+  const actions = lineupNextActions({ orgId, shell, canAssign });
   const copy = lineupShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const setup = shell === "setup" ? lineupSetupSteps(orgId)[0] : null;
@@ -174,8 +179,6 @@ function LineupShell({
           },
         )
       : null;
-  const commandHref = hubHref("/competition", "command", orgId);
-
   return (
     <main className="module-page lineup-page soft-gate">
       <PageHeader
@@ -222,9 +225,9 @@ function LineupShell({
             {setup.label}
           </Button>
         ) : null}
-        {shell === "empty" ? (
-          <Button as="a" variant="primary" href={commandHref}>
-            Sync event schedule
+        {shell === "empty" && actions[0] ? (
+          <Button as="a" variant="primary" href={actions[0].href}>
+            {actions[0].label}
           </Button>
         ) : null}
       </EmptyState>
@@ -450,8 +453,17 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   }
 
   if (shell === "empty" || view?.status !== "live") {
+    const canAssign = view?.status === "live" ? view.canAssign : false;
+    const description =
+      view?.status === "live"
+        ? lineupEmptyDescription({
+            eventName: view.eventName,
+            eventKey: view.eventKey,
+            canAssign,
+          })
+        : shellCopy.description;
     return (
-      <LineupShell description={shellCopy.description} orgId={orgId} shell="empty">
+      <LineupShell description={description} orgId={orgId} shell="empty" canAssign={canAssign}>
         <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
       </LineupShell>
     );
@@ -517,7 +529,9 @@ export default function LineupClient({ orgId }: { orgId: string }) {
             {busy ? "Assigning…" : "Auto-assign open gaps"}
           </Button>
         ) : null}
-        <span className="app-muted">{view.eventKey}</span>
+        <span className="app-muted">
+          {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Your event"}
+        </span>
       </section>
 
       {view.canAssign ? (
