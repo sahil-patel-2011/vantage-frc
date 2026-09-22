@@ -35,7 +35,47 @@ export const PICKLIST_METRIC_IDS = [
   "reliability",
 ] as const;
 
-export type PicklistMetricId = (typeof PICKLIST_METRIC_IDS)[number];
+/** The metrics every team shares, from ratings and the standard scouting profile. */
+export type BuiltinPicklistMetricId = (typeof PICKLIST_METRIC_IDS)[number];
+
+/**
+ * A number the team's own scouting form collects — "form:teleopCycles".
+ *
+ * The built-in list above was written for one season's game (fuel fed,
+ * camping defense time…). A team whose form asks for cycles, notes scored or
+ * fouls could not weigh any of it. Form metrics make the pick list follow the
+ * form, so a new game needs a new form, not new code.
+ */
+export type FormMetricId = `form:${string}`;
+
+export type PicklistMetricId = BuiltinPicklistMetricId | FormMetricId;
+
+export function isFormMetricId(id: string): id is FormMetricId {
+  return id.startsWith("form:") && id.length > 5;
+}
+
+export function formMetricId(fieldKey: string): FormMetricId {
+  return `form:${fieldKey}`;
+}
+
+/** Fouls, misses, drops: less is better, so the value is negated for ranking. */
+const LOWER_IS_BETTER_FIELD = /foul|penalt|card|miss|drop|fail|error/i;
+
+export function formFieldLowerIsBetter(fieldKey: string): boolean {
+  return LOWER_IS_BETTER_FIELD.test(fieldKey);
+}
+
+/** "teleopCycles" → "Teleop cycles"; "fouls" → "Fewer fouls". */
+export function formMetricLabel(id: FormMetricId): string {
+  const key = id.slice("form:".length);
+  const spaced = key
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim()
+    .toLowerCase();
+  if (formFieldLowerIsBetter(key)) return `Fewer ${spaced}`;
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 export type PicklistMetricSource = "event" | "scout";
 
@@ -102,6 +142,7 @@ export type RankedPicklistTeam = {
 const round4 = (value: number) => Math.round(value * 10_000) / 10_000;
 
 export function picklistMetricLabel(id: PicklistMetricId): string {
+  if (isFormMetricId(id)) return formMetricLabel(id);
   const found = PICKLIST_METRICS.find((metric) => metric.id === id);
   return found?.label ?? id;
 }
@@ -139,7 +180,11 @@ export function zScore(value: number, mean: number, std: number): number | null 
 
 export function fieldStatsFromRows(rows: TeamMetricRow[]): FieldStats {
   const stats: FieldStats = {};
-  for (const metric of PICKLIST_METRIC_IDS) {
+  const formIds = new Set<FormMetricId>();
+  for (const row of rows) {
+    for (const key of Object.keys(row.values)) if (isFormMetricId(key)) formIds.add(key);
+  }
+  for (const metric of [...PICKLIST_METRIC_IDS, ...formIds] as PicklistMetricId[]) {
     const values = finiteValues(rows.map((row) => row.values[metric]));
     const mean = populationMean(values);
     const std = populationStdDev(values);

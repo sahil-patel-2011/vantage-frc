@@ -30,6 +30,7 @@ import {
 } from "@vantage/prediction-strategy";
 import { withSavepoint } from "@vantage/db";
 import { loadTeamProfiles } from "../scouting/team-profiles";
+import { formMetricRows, mergeFormMetrics } from "./form-metrics";
 import { classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab } from ".";
 import type {
   PicklistCollabEntry,
@@ -321,13 +322,30 @@ export async function computePicklistCollabView(
   const activeList = toCollabList(snapshot.list);
   const epa = await loadEventEpa(client, snapshot.list.eventKey);
   const entries = projectEntries(snapshot, epa);
-  const eventTeams = mergeScoutingIntoEventRows(
+  const scoutedRows = mergeScoutingIntoEventRows(
     epa.metricRows,
     await withSavepoint(
       client,
       async () => {
         const profiles = await loadTeamProfiles(client, { orgId: org.orgId, eventKey: snapshot.list.eventKey });
         return profiles.status === "ready" ? pickListRowsFromScouting(profiles.profiles) : [];
+      },
+      [] as TeamMetricRow[],
+    ),
+  );
+  // Every number the team's own form collects becomes a slider too.
+  const eventTeams = mergeFormMetrics(
+    scoutedRows,
+    await withSavepoint(
+      client,
+      async () => {
+        const entries = await client.query<{ teamKey: string; payload: Record<string, unknown> }>(
+          `SELECT team_key AS "teamKey", payload
+             FROM match_scout_entries
+            WHERE org_id = $1::uuid AND event_key = $2::text`,
+          [org.orgId, snapshot.list.eventKey],
+        );
+        return formMetricRows(entries.rows);
       },
       [] as TeamMetricRow[],
     ),

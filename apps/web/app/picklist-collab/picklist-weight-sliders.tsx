@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PICKLIST_METRICS,
   defaultPicklistWeights,
+  isFormMetricId,
+  picklistMetricLabel,
   type FieldStats,
   type MetricWeight,
   type PicklistMetricId,
@@ -23,15 +25,20 @@ function parseStoredWeights(raw: string | null): MetricWeight[] | null {
       if (!item || typeof item !== "object") continue;
       const id = (item as { id?: unknown }).id;
       const weight = (item as { weight?: unknown }).weight;
-      if (typeof id !== "string" || !METRIC_IDS.has(id as PicklistMetricId)) continue;
+      if (typeof id !== "string" || (!METRIC_IDS.has(id as PicklistMetricId) && !isFormMetricId(id))) continue;
       if (typeof weight !== "number" || !Number.isFinite(weight)) continue;
       byId.set(id as PicklistMetricId, Math.min(2, Math.max(0, weight)));
     }
     if (byId.size === 0) return null;
-    return defaultPicklistWeights().map((item) => ({
+    const builtin = defaultPicklistWeights().map((item) => ({
       id: item.id,
       weight: byId.get(item.id) ?? item.weight,
     }));
+    // Weights for the team's own form fields ride along after the built-ins.
+    const form = [...byId.entries()]
+      .filter(([id]) => isFormMetricId(id))
+      .map(([id, weight]) => ({ id, weight }));
+    return [...builtin, ...form];
   } catch {
     return null;
   }
@@ -68,7 +75,12 @@ export function usePicklistFieldWeights(listId: string | null): {
     () => ({
       weights,
       setWeight: (id: PicklistMetricId, weight: number) => {
-        setWeights((prev) => prev.map((item) => (item.id === id ? { ...item, weight } : item)));
+        // A form field's first move adds it; the built-ins are always present.
+        setWeights((prev) =>
+          prev.some((item) => item.id === id)
+            ? prev.map((item) => (item.id === id ? { ...item, weight } : item))
+            : [...prev, { id, weight }],
+        );
       },
       reset: () => setWeights(defaultPicklistWeights()),
     }),
@@ -90,8 +102,17 @@ export function PicklistWeightSliders({
   const weightById = new Map(weights.map((item) => [item.id, item.weight]));
   // A slider that can never move is noise. Show the ones this event has data
   // for; say in one line how many are waiting on data.
-  const ready = PICKLIST_METRICS.filter((metric) => (fieldStats[metric.id]?.n ?? 0) >= 2);
-  const waiting = PICKLIST_METRICS.length - ready.length;
+  const builtinReady = PICKLIST_METRICS.filter((metric) => (fieldStats[metric.id]?.n ?? 0) >= 2);
+  const waiting = PICKLIST_METRICS.length - builtinReady.length;
+  // Then every number the team's own form collects, measured at this event.
+  const formReady = (Object.keys(fieldStats) as PicklistMetricId[])
+    .filter((id) => isFormMetricId(id) && (fieldStats[id]?.n ?? 0) >= 2)
+    .sort()
+    .map((id) => ({ id, label: picklistMetricLabel(id), source: "form" as const }));
+  const ready: Array<{ id: PicklistMetricId; label: string; source: "event" | "scout" | "form" }> = [
+    ...builtinReady,
+    ...formReady,
+  ];
   return (
     <section className="app-card soft-panel picklist-weight-sliders" aria-label="How much each rating matters">
       <header>
@@ -114,7 +135,11 @@ export function PicklistWeightSliders({
                 <span>
                   {metric.label}
                   <small className="app-muted">
-                    {metric.source === "scout" ? `our scouting · ${field.n} teams` : `${field.n} teams at this event`}
+                    {metric.source === "form"
+                      ? `from your form · ${field.n} teams`
+                      : metric.source === "scout"
+                        ? `our scouting · ${field.n} teams`
+                        : `${field.n} teams at this event`}
                   </small>
                 </span>
                 <input
