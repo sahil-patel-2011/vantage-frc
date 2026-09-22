@@ -16,6 +16,7 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [denied, setDenied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -24,8 +25,14 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
       const response = await fetch(`/api/team/knowledge-history?orgId=${orgId}`);
       const data = await response.json();
       if (!active) return;
-      if (!response.ok) setMessage(data.error ?? "Unable to load history");
-      else {
+      const errorText = typeof data.error === "string" ? data.error : "";
+      const refused = response.status === 401 || response.status === 403 || /administrator access required/i.test(errorText);
+      if (!response.ok) {
+        setDenied(refused);
+        setRevisions([]);
+        setMessage(refused ? "" : errorText || "Unable to load history");
+      } else {
+        setDenied(false);
         setMessage("");
         setRevisions(data.revisions ?? []);
       }
@@ -52,7 +59,11 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
         <div>
           <span className="breadcrumbs">Team / Knowledge / History</span>
           <h1>AI context — version history</h1>
-          <p>Every save of the AI context document is snapshotted here. Copy an older version to roll back.</p>
+          <p>
+            {denied
+              ? "An owner or admin reads version history. You can still read the current assistant summary."
+              : "Every save of the AI context document is snapshotted here. Copy an older version to roll back."}
+          </p>
         </div>
         <div className="kb-hero-actions">
           <Button as="a" variant="secondary" href={`/team/knowledge?orgId=${orgId}`}>
@@ -68,7 +79,7 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
       ) : null}
       {loading ? <p className="app-muted">Loading history…</p> : null}
 
-      {!loading ? (
+      {!loading && !denied ? (
         <section className="soft-card">
           <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>Revisions · {revisions.length}</h2>
           {!revisions.length ? <p className="app-muted">No saved revisions yet.</p> : null}

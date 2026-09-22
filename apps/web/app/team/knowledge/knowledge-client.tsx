@@ -575,9 +575,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             </>
           ) : null}
           {canEditAi ? null : (
-            <div className="kb-ai-links">
-              <a href={`/team/knowledge/history?orgId=${orgId}`}>History</a>
-            </div>
+            <p className="app-muted">An owner or admin reads change history. You can still read this summary.</p>
           )}
         </section>
       ) : null}
