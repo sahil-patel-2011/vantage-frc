@@ -8,7 +8,8 @@
     "./reasoning-floor": "./src/reasoning-floor.ts",
     "./repository": "./src/repository.ts",
     "./coding-assistant": "./src/coding-assistant.ts",
-    "./bugbot": "./src/bugbot.ts"
+    "./bugbot": "./src/bugbot.ts",
+    "./untrusted": "./src/untrusted.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

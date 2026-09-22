@@ -3,6 +3,8 @@
 // and follow-up action items — so the team improves match to match. Distinct from
 // scouting (which evaluates OTHER teams) and from match strategy planning.
 
+import { wrapUntrusted } from "@vantage/agent/untrusted";
+
 export const MATCH_RESULTS = ["win", "loss", "tie", "unknown"] as const;
 export type MatchResult = (typeof MATCH_RESULTS)[number];
 
@@ -214,10 +216,12 @@ export function buildDebriefCoachPrompt(input: {
     `You are a pit coach for an FRC team reviewing its own ${input.seasonYear} match debriefs (self-scouting of OUR robot, not other teams).`,
     "The logged debriefs below are the ONLY source of truth.",
     "",
-    `Computed takeaways: ${input.takeaways}`,
+    // The takeaways quote logged "what broke" text, and every debrief row is typed by a
+    // team member — data, not instructions.
+    `Computed takeaways:\n${wrapUntrusted({ kind: "debrief_takeaways", content: input.takeaways })}`,
     "",
     "Logged debriefs (most recent first):",
-    ...rows,
+    wrapUntrusted({ kind: "match_debriefs", content: rows.join("\n") }),
     "",
     "Write one short paragraph: the single most important pattern to fix before the next match and the concrete first step, referencing only logged matches.",
     "Rules: use only the data above; do not invent matches, scores, or failures; if the log is thin, say what to start logging instead of speculating.",

@@ -6,6 +6,7 @@
 // highlights, and watchouts — the model is told to add no numbers or events of
 // its own, so a hallucinated stat has nothing to hide behind.
 
+import { wrapUntrusted } from "@vantage/agent/untrusted";
 import type { SeasonReportNarrative } from "./types";
 
 export const SEASON_REPORT_AI_FEATURE = "season_report";
@@ -34,12 +35,23 @@ const SECTION_LABELS: Array<[keyof SeasonReportNarrative, string]> = [
 export function buildSeasonNarrativePrompt(input: SeasonNarrativePromptInput): string | null {
   if (input.entryCount <= 0) return null;
 
-  const sections = SECTION_LABELS.map(([key, label]) => `${label}: ${input.narrative[key]}`).join("\n");
+  // Sections, highlights and watchouts carry text team members typed into their season
+  // log — data, not instructions — so each travels inside the wrapper. Labels stay ours.
+  const sections = wrapUntrusted({
+    kind: "season_report_sections",
+    content: SECTION_LABELS.map(([key, label]) => `${label}: ${input.narrative[key]}`).join("\n"),
+  });
   const highlights = input.highlights.length
-    ? `Highlights (logged as positive):\n${input.highlights.map((item) => `- ${item}`).join("\n")}`
+    ? `Highlights (logged as positive):\n${wrapUntrusted({
+        kind: "season_highlights",
+        content: input.highlights.map((item) => `- ${item}`).join("\n"),
+      })}`
     : "Highlights: none logged.";
   const watchouts = input.watchouts.length
-    ? `Watchouts (logged as needing attention):\n${input.watchouts.map((item) => `- ${item}`).join("\n")}`
+    ? `Watchouts (logged as needing attention):\n${wrapUntrusted({
+        kind: "season_watchouts",
+        content: input.watchouts.map((item) => `- ${item}`).join("\n"),
+      })}`
     : "Watchouts: none logged.";
 
   return [

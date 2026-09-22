@@ -3,7 +3,7 @@ import { auth } from "@vantage/core";
 import { meteredAI } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, resolveOrgChatAdapter, wrapUntrusted } from "@vantage/agent";
 import { createBridgeTransport } from "../../../../lib/ai-bridge/transport";
 import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 import { TRACK } from "../../../../lib/dev-setup/track";
@@ -74,10 +74,14 @@ export async function POST(request: Request) {
         [org.orgId, body.stepId ?? null],
       );
 
+      // Team-authored notes are data, not instructions: they travel inside the wrapper.
       const teamContext = resources.rows.length
-        ? resources.rows
-            .map((r) => `- ${r.title}${r.url ? ` (${r.url})` : ""}${r.body ? `: ${r.body}` : ""}`)
-            .join("\n")
+        ? wrapUntrusted({
+            kind: "team_setup_notes",
+            content: resources.rows
+              .map((r) => `- ${r.title}${r.url ? ` (${r.url})` : ""}${r.body ? `: ${r.body}` : ""}`)
+              .join("\n"),
+          })
         : "(this team has not added any of its own notes for this step yet)";
 
       const stepContext = step

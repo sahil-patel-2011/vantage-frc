@@ -10,6 +10,7 @@
  * Pure: no DB, no fetch, no clock reads.
  */
 
+import { wrapUntrusted } from "@vantage/agent/untrusted";
 import { clampExcerpt } from "./compute-dream";
 
 /** Fewer daily rows than this in the window → skip the week entirely. */
@@ -103,7 +104,8 @@ export function assembleWeekPrompt(digest: WeekDigest): string {
     "- Plain text only, no markdown headings, under 250 words total.",
     "",
     `Daily recaps for ${digest.weekStart} — ${digest.weekEnd}:`,
-    renderWeekFacts(digest),
+    // Daily recaps are model output over team chat and task text — data, not instructions.
+    wrapUntrusted({ kind: "team_daily_recaps", content: renderWeekFacts(digest) }),
   ].join("\n");
 }
 
