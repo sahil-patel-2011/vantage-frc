@@ -75,6 +75,7 @@ export function formatAccountRole(role: string | null | undefined): string | nul
   if (normalized === "mentor") return "Mentor";
   if (normalized === "member") return "Member";
   if (normalized === "viewer") return "Viewer";
+  if (normalized === "scout") return "Scout";
   return role.trim();
 }
 
@@ -83,7 +84,9 @@ export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
   if (!input.orgId) return null;
   const team =
     input.teamNumber != null && Number.isFinite(input.teamNumber) ? `Team ${input.teamNumber}` : null;
-  const name = input.orgName?.trim() || null;
+  const rawName = input.orgName?.trim() || null;
+  // A team named "Team 6925" printed as "Team 6925 · Team 6925 · scout".
+  const name = rawName && team && rawName.toLowerCase() === team.toLowerCase() ? null : rawName;
   const role = formatAccountRole(input.role);
   const parts = [team, name, role].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "This team";
@@ -99,8 +102,15 @@ export function accountNextActions(input: {
   emailDeliveryReady?: boolean;
   googleReady?: boolean;
   tbaReady?: boolean;
+  /**
+   * Owners and admins. Everyone else sees personal next steps only: a scout
+   * was told "This deployment is missing Google OAuth env" and asked to open
+   * billing and budgets — work they cannot do on a page about their account.
+   */
+  canManageTeam?: boolean;
 }): AccountNextAction[] {
   const orgId = input.orgId ?? null;
+  const manager = input.canManageTeam !== false;
 
   if (!orgId) {
     return [
@@ -136,6 +146,31 @@ export function accountNextActions(input: {
       href: "/account?tab=profile",
       primary: true,
     });
+  }
+
+  if (!manager) {
+    actions.push(
+      {
+        id: "notifications",
+        label: "Choose your alerts",
+        detail: "Which match, chat and task alerts reach you, in the app and by email.",
+        href: "/account?tab=notifications",
+        primary: actions.length === 0,
+      },
+      {
+        id: "appearance",
+        label: "Set how Vantage looks",
+        detail: "Light or dark, text size and motion — on this account.",
+        href: "/account?tab=appearance",
+      },
+      {
+        id: "support",
+        label: "Help & Support",
+        detail: "Something about your account looks wrong? Tell us here.",
+        href: "/support",
+      },
+    );
+    return actions;
   }
 
   if (input.emailDeliveryReady === false) {

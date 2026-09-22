@@ -27,12 +27,14 @@ export function NextActions({
   emailDeliveryReady,
   googleReady,
   tbaReady,
+  role,
 }: {
   orgId: string | null;
   hasProfile: boolean;
   emailDeliveryReady: boolean;
   googleReady: boolean;
   tbaReady: boolean;
+  role?: string | null;
 }) {
   const actions = accountNextActions({
     orgId,
@@ -40,6 +42,7 @@ export function NextActions({
     emailDeliveryReady,
     googleReady,
     tbaReady,
+    canManageTeam: role == null ? undefined : ["owner", "admin"].includes(role.toLowerCase()),
   });
   return (
     <section className="account-next-actions app-card soft-panel" aria-label="Next actions">

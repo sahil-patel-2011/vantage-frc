@@ -84,6 +84,26 @@ describe("accountNextActions", () => {
     expect(actions.some((a) => a.id === "support")).toBe(true);
   });
 
+  it("keeps deployment and billing setup away from students", () => {
+    const actions = accountNextActions({
+      orgId: "org-1",
+      hasProfile: true,
+      emailDeliveryReady: false,
+      googleReady: false,
+      tbaReady: false,
+      canManageTeam: false,
+    });
+    const ids = actions.map((a) => a.id);
+    expect(ids).toEqual(["notifications", "appearance", "support"]);
+    expect(JSON.stringify(actions)).not.toMatch(/OAuth|env|billing|Resend/i);
+  });
+
+  it("prints a team named after its number once", () => {
+    expect(formatAccountOrgLabel({ orgId: "o", orgName: "Team 6925", teamNumber: 6925, role: "scout" })).toBe(
+      "Team 6925 · Scout",
+    );
+  });
+
   it("surfaces email setup without inventing delivery", () => {
     const actions = accountNextActions({
       orgId: "org-1",

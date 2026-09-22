@@ -462,6 +462,7 @@ export default function AccountClient() {
               emailDeliveryReady={emailDeliveryReady}
               googleReady={googleReady}
               tbaReady={tbaReady}
+              role={org.role}
             />
           ) : null}
 
