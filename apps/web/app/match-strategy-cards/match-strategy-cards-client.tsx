@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
@@ -162,6 +162,12 @@ export default function MatchStrategyCardsClient() {
   const [busy, setBusy] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  // One card open at a time. Sixteen full forms, each with its own blue Save, was the
+  // whole schedule as a wall of textareas; the rest are one-line rows until opened.
+  const [openMatchKey, setOpenMatchKey] = useState<string | null>(null);
+  // Cards opened before stay mounted (hidden), so a half-written plan survives a look
+  // at another match.
+  const [visitedKeys, setVisitedKeys] = useState<string[]>([]);
   const viewRef = useRef<MatchStrategyCardsView | null>(null);
   viewRef.current = view;
 
@@ -405,16 +411,46 @@ export default function MatchStrategyCardsClient() {
               : `${view.cards.length} scheduled match(es) — no upcoming match`}
           </span>
         </Panel>
-        {view.cards.map((card) => (
-          <StrategyCardPanel
-            key={card.matchKey}
-            card={card}
-            eventKey={view.eventKey}
-            ownTeamNumber={view.teamNumber}
-            busy={busy}
-            mutate={mutate}
-          />
-        ))}
+        {view.cards.map((card) => {
+          const current = openMatchKey ?? view.nextMatchKey ?? view.cards[0]?.matchKey;
+          const open = card.matchKey === current;
+          const mounted = open || visitedKeys.includes(card.matchKey);
+          return (
+            <Fragment key={card.matchKey}>
+              {mounted ? (
+                <div hidden={!open}>
+                  <StrategyCardPanel
+                    card={card}
+                    eventKey={view.eventKey}
+                    ownTeamNumber={view.teamNumber}
+                    busy={busy}
+                    mutate={mutate}
+                  />
+                </div>
+              ) : null}
+              {open ? null : (
+                <button
+                  type="button"
+                  className={`msc-card-row${card.ownAllianceColor ? ` is-${card.ownAllianceColor}` : ""}`}
+                  onClick={() => {
+                    if (current) setVisitedKeys((keys) => (keys.includes(current) ? keys : [...keys, current]));
+                    setOpenMatchKey(card.matchKey);
+                  }}
+                  aria-label={`Open the plan for ${matchLabel(card)}`}
+                >
+                  <strong>{matchLabel(card)}</strong>
+                  <span>
+                    {card.scheduledAt
+                      ? new Date(card.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                      : "Time TBD"}
+                  </span>
+                  <span>{card.ownAllianceColor ? `${card.ownAllianceColor === "red" ? "Red" : "Blue"} alliance` : ""}</span>
+                  <small>{card.hasCard ? "Plan saved" : "No plan yet"}</small>
+                </button>
+              )}
+            </Fragment>
+          );
+        })}
       </div>
     </main>
   );

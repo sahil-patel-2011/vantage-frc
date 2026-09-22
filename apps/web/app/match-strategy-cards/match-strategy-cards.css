@@ -22,3 +22,20 @@
   .msc-header-actions{justify-content:flex-start}
   .msc-next-actions li,.msc-setup-steps li{flex-direction:column;align-items:stretch}
 }
+
+/* Closed cards: one line each — match, time, our alliance, whether a plan exists. */
+.msc-card-row{
+  display:grid;grid-template-columns:minmax(9rem,auto) 6rem minmax(0,1fr) auto;align-items:center;gap:12px;
+  width:100%;min-height:48px;padding:10px 16px;border:1px solid var(--line);border-radius:var(--radius-sm,12px);
+  background:var(--surface);color:var(--ink);font:inherit;font-size:14px;text-align:left;cursor:pointer;
+}
+.msc-card-row:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.msc-card-row.is-red{box-shadow:inset 3px 0 0 var(--critical,#c0392b)}
+.msc-card-row.is-blue{box-shadow:inset 3px 0 0 var(--accent,#1f5fbf)}
+.msc-card-row span,.msc-card-row small{color:var(--muted)}
+.msc-card-row small{font-size:12px;white-space:nowrap}
+@media (max-width:560px){
+  .msc-card-row{grid-template-columns:minmax(0,1fr) auto}
+  .msc-card-row span{display:none}
+}
+@media print{.msc-card-row{display:none}}
