@@ -12,6 +12,7 @@ import {
   type MediaKitView,
 } from "../../../lib/media-kit/compute-media-kit";
 import type { MediaKitAssetKind } from "../../../lib/media-kit/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MediaKitView };
 
@@ -157,7 +158,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Media Kit request failed";
+    const message = publicErrorMessage(error, "Media Kit request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

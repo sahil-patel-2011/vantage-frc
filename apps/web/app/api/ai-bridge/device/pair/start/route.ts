@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getAiBridgePool } from "../../../../../../lib/ai-bridge/pool";
+import { publicErrorMessage } from "../../../../../../lib/security/public-error";
 
 /** Ambiguous alphabet (no I/O/0/1) for human entry — mirrors CAD pairing. */
 function code() {
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing could not start" },
+      { error: publicErrorMessage(error, "Pairing could not start") },
       { status: 400 },
     );
   }

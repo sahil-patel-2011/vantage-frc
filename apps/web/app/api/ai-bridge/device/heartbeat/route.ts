@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getAiBridgePool } from "../../../../../lib/ai-bridge/pool";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 const MAX_ENGINES_JSON = 4_096;
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Heartbeat failed" },
+      { error: publicErrorMessage(error, "Heartbeat failed") },
       { status: 400 },
     );
   }

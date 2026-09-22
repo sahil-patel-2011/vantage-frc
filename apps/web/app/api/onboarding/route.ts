@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../lib/security/request";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const mutationLimiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "onboarding" });
 
@@ -82,7 +83,7 @@ export async function GET() {
     return privateJson(state);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load onboarding state." },
+      { error: publicErrorMessage(error, "Could not load onboarding state.") },
       { status: 500 },
     );
   }

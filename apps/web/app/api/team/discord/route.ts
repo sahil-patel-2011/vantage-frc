@@ -10,6 +10,7 @@ import {
   postTeamDiscordMessage,
 } from "../../../../lib/discord";
 import { canPostViaDiscord } from "../../../../lib/discord-related";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -23,7 +24,7 @@ async function session() {
  * a malformed request rather than "ask an owner or admin".
  */
 const fail = (error: unknown, status = 400) => {
-  const message = error instanceof Error ? error.message : "Discord request failed";
+  const message = publicErrorMessage(error, "Discord request failed");
   if (/authentication required/i.test(message)) return Response.json({ error: message }, { status: 401 });
   if (/administrator access required/i.test(message)) return Response.json({ error: message }, { status: 403 });
   return Response.json({ error: message }, { status });

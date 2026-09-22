@@ -10,6 +10,7 @@ import {
   slugifyTitle,
   type KnowledgeWikiAction,
 } from "../../../../lib/knowledge";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -28,7 +29,7 @@ async function requireSession() {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Wiki request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Wiki request failed") }, { status });
 }
 
 async function resolveOrgId(client: PoolClient, userId: string, requested: string | null) {

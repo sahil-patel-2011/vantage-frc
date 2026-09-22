@@ -16,6 +16,8 @@
  * because the alternative is a 15-year-old torquing to an invented spec.
  */
 
+import { wrapUntrusted } from "@vantage/agent/untrusted";
+
 export type ChatLike = {
   provider: string;
   model: string;
@@ -188,7 +190,13 @@ export async function writeStepSentences(
     };
   }
 
-  const prompt = [SYSTEM, "", "FACTS:", batch.map((facts) => factSheet(facts)).join("\n---\n")].join("\n");
+  // Part names, fabrication lines and cautions are typed by people into CAD — data, not instructions.
+  const prompt = [
+    SYSTEM,
+    "",
+    "FACTS:",
+    wrapUntrusted({ kind: "assembly_step_facts", content: batch.map((facts) => factSheet(facts)).join("\n---\n") }),
+  ].join("\n");
 
   let raw: string;
   try {
@@ -242,7 +250,10 @@ export async function nameSubAssembly(
     "Name this FRC robot sub-assembly in at most four words, using only words that appear in the part names below.",
     "Reply with ONLY the name. No punctuation, no quotes, no explanation.",
     "",
-    ...memberNames.slice(0, 40).map((name) => `- ${name}`),
+    wrapUntrusted({
+      kind: "cad_part_names",
+      content: memberNames.slice(0, 40).map((name) => `- ${name}`).join("\n"),
+    }),
   ].join("\n");
 
   let raw: string;

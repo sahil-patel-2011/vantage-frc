@@ -13,6 +13,7 @@ import {
   type BatteryRotationView,
 } from "../../../lib/battery-rotation/compute-battery-rotation";
 import type { BatteryStatus } from "../../../lib/battery-rotation/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { BatteryRotationView };
 
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Battery rotation request failed";
+    const message = publicErrorMessage(error, "Battery rotation request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

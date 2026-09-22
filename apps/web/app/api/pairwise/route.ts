@@ -9,6 +9,7 @@ import {
   type PairwiseView,
 } from "../../../lib/pairwise/compute-pairwise";
 import { promotePairwiseOrder } from "../../../lib/pairwise/promote-to-pick-list";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const FALLBACK: PairwiseView = {
   status: "setup_required",
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Pairwise write failed";
+    const message = publicErrorMessage(error, "Pairwise write failed");
     if (message === "Organization access denied") return Response.json({ error: message }, { status: 403 });
     if (/required|criterion|team number|outrank|Unknown pairwise|active event|Nothing to promote/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });

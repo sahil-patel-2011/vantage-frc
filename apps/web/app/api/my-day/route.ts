@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadMyDay } from "../../../lib/load-my-day";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -21,7 +22,7 @@ async function requireSession() {
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json(
-    { error: error instanceof Error ? error.message : "My Day request failed" },
+    { error: publicErrorMessage(error, "My Day request failed") },
     { status },
   );
 }

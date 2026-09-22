@@ -7,6 +7,7 @@ import {
   isDisplayPreset,
   isDisplayWidgetType,
 } from "../../../../lib/display";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -16,7 +17,7 @@ async function current() {
 
 const fail = (error: unknown) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "Display request failed" },
+    { error: publicErrorMessage(error, "Display request failed") },
     { status: 400 },
   );
 

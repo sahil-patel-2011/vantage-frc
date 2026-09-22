@@ -10,6 +10,7 @@ import {
   MAX_LOGO_UPLOAD_BYTES,
 } from "../../../../lib/branding/branding";
 import { sponsorImageKind } from "../../../../lib/sponsor-assets";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
     return Response.json({ logo: { present: true, ...logo } }, { status: 201 });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not save the logo" },
+      { error: publicErrorMessage(error, "Could not save the logo") },
       { status: 400 },
     );
   }
@@ -195,7 +196,7 @@ export async function DELETE(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not remove the logo" },
+      { error: publicErrorMessage(error, "Could not remove the logo") },
       { status: 400 },
     );
   }

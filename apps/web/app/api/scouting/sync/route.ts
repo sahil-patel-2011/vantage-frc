@@ -14,6 +14,7 @@ import {
   scoutingErrorResponse,
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * After an entry mints, stamp scout_media.entry_id from payload refs and the entry_client tag.
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
             await client.query("ROLLBACK TO SAVEPOINT scout_sync_entry");
             failures.push({
               clientId: typeof entry?.clientId === "string" ? entry.clientId : "",
-              reason: error instanceof Error ? error.message : "Entry rejected",
+              reason: publicErrorMessage(error, "Entry rejected"),
             });
           }
         }

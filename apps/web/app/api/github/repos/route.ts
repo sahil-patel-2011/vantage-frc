@@ -7,6 +7,7 @@ import {
   listGitHubRepos,
   requireOrgMember,
 } from "../../../../lib/github";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   try {
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Failed to list repositories" },
+      { error: publicErrorMessage(error, "Failed to list repositories") },
       { status: 400 },
     );
   }

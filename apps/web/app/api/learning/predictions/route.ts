@@ -24,6 +24,7 @@ import {
   type PastCall,
 } from "../../../../lib/learning/predictions";
 import { failMeteredAi } from "../../../../lib/metered-ai-fail";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * The learning-coach paragraph can reach a real upstream model. A bridged turn (a paired device with
@@ -77,7 +78,7 @@ async function resolveMembership(
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json(
-    { error: error instanceof Error ? error.message : "Learning prediction request failed" },
+    { error: publicErrorMessage(error, "Learning prediction request failed") },
     { status },
   );
 }

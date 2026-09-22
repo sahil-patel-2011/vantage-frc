@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { runMemberOnboarding } from "../../../../lib/member-onboarding/run-member-onboarding";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -42,7 +43,7 @@ async function run(request: Request) {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Member onboarding run failed",
+        error: publicErrorMessage(error, "Member onboarding run failed"),
       },
       { status: 500 },
     );

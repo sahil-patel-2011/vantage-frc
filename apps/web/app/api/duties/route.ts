@@ -15,6 +15,7 @@ import {
   parseDutyAction,
   updateDuty,
 } from "../../../lib/duty-roster";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { DutiesView };
 
@@ -28,7 +29,7 @@ class HttpError extends Error {
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Duty roster request failed";
+  const message = publicErrorMessage(error, "Duty roster request failed");
   if (/duty_assignments|relation .* does not exist|0500_duty_on_duty_chaperone|0145_duty_roster/i.test(message)) {
     return Response.json(
       { error: message.includes("0500") ? message : "Apply the duty roster migration first (0145_duty_roster)." },

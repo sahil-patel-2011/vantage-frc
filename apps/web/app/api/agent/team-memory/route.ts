@@ -2,6 +2,7 @@ import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // AI governance / data retention: admin control over the shared team memory the
 // assistant injects into prompts. Enablement, per-turn token budget, and a
@@ -16,7 +17,7 @@ async function session() {
 }
 
 const fail = (error: unknown) => {
-  const message = error instanceof Error ? error.message : "Team memory request failed";
+  const message = publicErrorMessage(error, "Team memory request failed");
   const status =
     typeof error === "object" &&
     error &&

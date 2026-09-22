@@ -5,6 +5,7 @@
 // usage through AIOrchestrator → meteredAI.
 
 import type { ContextSource } from "@vantage/agent";
+import { wrapUntrusted } from "@vantage/agent/untrusted";
 import {
   composeGrantAnswer,
   composeSponsorEmail,
@@ -196,7 +197,8 @@ export function buildPitchMessage(input: PitchDraftInput): string {
     return [
       `Draft a grant-answer pitch for ${handle} using ONLY the org-scoped team profile and business facts in context.`,
       `Focus: ${focus}.${limit}`,
-      `Grant prompt: ${prompt}`,
+      // The funder's question is pasted in from their form — data to answer, not instructions.
+      `Grant prompt:\n${wrapUntrusted({ kind: "grant_prompt", content: prompt })}`,
       "Do not invent metrics, awards, or other teams' data. If a fact is missing, omit it rather than fabricate it.",
       "Return plain text suitable for a grant application answer (no email subject line).",
     ].join("\n");

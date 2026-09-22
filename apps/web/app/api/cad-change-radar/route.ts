@@ -10,6 +10,7 @@ import {
   unsubscribe,
   type CadChangeRadarView,
 } from "../../../lib/cad-change-radar/compute-cad-change-radar";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { CadChangeRadarView };
 
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "CAD Change Impact Radar request failed";
+    const message = publicErrorMessage(error, "CAD Change Impact Radar request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

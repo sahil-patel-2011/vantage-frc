@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AiAgentStatus } from "../../../components/ai-agent-status";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
 import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
@@ -494,6 +495,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       </PageHeader>
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
+      {orgId ? <AiAgentStatus orgId={orgId} title="What your keys turn on" /> : null}
       {orgId ? <SponsoredPromoBanner orgId={orgId} /> : null}
       <OfflineBanner feature="AI keys" fromCache={fromCache} cachedAt={cachedAt} />
 

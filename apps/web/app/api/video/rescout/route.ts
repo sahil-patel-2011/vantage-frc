@@ -13,6 +13,7 @@ import {
   type TimelineScore,
 } from "../../../../lib/video-rescout";
 import { sortNotes, type VideoNote } from "../../../../lib/video-review";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -43,7 +44,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Video re-scout request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Video re-scout request failed") }, { status });
 }
 
 async function loadReview(client: PoolClient, orgId: string, reviewId: string) {

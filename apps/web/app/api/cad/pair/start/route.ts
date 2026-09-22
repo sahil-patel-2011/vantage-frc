@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { isRelayDatabaseUnconfigured, relaySetupResponse } from "../../../../../lib/connectors/pairing-setup";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 /** Ambiguous alphabet (no I/O/0/1) for human + QR entry. */
 function code() {
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
     // not a 400 the CLI on someone's laptop will treat as its own fault.
     if (isRelayDatabaseUnconfigured(error)) return relaySetupResponse();
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing could not start" },
+      { error: publicErrorMessage(error, "Pairing could not start") },
       { status: 400 },
     );
   }

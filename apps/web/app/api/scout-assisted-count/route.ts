@@ -11,6 +11,7 @@ import {
   type CountMetricKey,
   type ScoutAssistedCountView,
 } from "../../../lib/scout-assisted-count/compute-scout-assisted-count";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutAssistedCountView };
 
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Scout-assisted count request failed";
+    const message = publicErrorMessage(error, "Scout-assisted count request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

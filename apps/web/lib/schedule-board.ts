@@ -1,6 +1,8 @@
 // Match Schedule Board — framework-free domain logic shared by the API route,
 // the client UI, and unit tests. No server or React imports belong here.
 
+import type { TimelineRobot, TimelineVideo } from "./schedule/match-timeline";
+
 export type ScheduleMatchPrediction = {
   redPredicted: number;
   bluePredicted: number;
@@ -22,6 +24,23 @@ export type ScheduleMatch = {
   scoutCount: number;
   /** Upcoming-match estimate from real event ratings. Null when any robot is missing. */
   prediction?: ScheduleMatchPrediction | null;
+  // ---- Timeline detail (optional: older cached payloads and other callers omit it) ----
+  /** Playoff set number (SF2-1 → 2). */
+  setNumber?: number | null;
+  /** TBA published slot (`time`). */
+  plannedTime?: string | null;
+  /** TBA live estimate (`predicted_time`). */
+  predictedTime?: string | null;
+  /** When the field actually ran it. */
+  actualTime?: string | null;
+  /** When the result was posted. */
+  postResultTime?: string | null;
+  /** Six robots with who is assigned and how many entries came in. */
+  robots?: TimelineRobot[];
+  /** Match notes (match-notes-timeline) filed against this match key. */
+  noteCount?: number;
+  /** A team-indexed video link, else TBA's official upload, else null. */
+  video?: TimelineVideo | null;
 };
 
 export type ScheduleContext = {
@@ -31,6 +50,8 @@ export type ScheduleContext = {
   role: string | null;
   eventKey: string | null;
   eventName: string | null;
+  /** The signed-in member, so "my assignments" can filter without a second request. */
+  viewerUserId?: string | null;
 };
 
 export type ScheduleView =

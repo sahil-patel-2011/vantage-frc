@@ -16,6 +16,7 @@ import {
   shouldWriteImpactForStatus,
 } from "../../../lib/outreach/complete-to-impact";
 import type { OutreachAudience, OutreachCategory, OutreachStatus } from "../../../lib/outreach-calendar/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { OutreachCalendarView };
 
@@ -185,7 +186,7 @@ export async function POST(request: Request) {
     if (error instanceof CompleteOutreachError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    const message = error instanceof Error ? error.message : "Outreach Calendar request failed";
+    const message = publicErrorMessage(error, "Outreach Calendar request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -30,7 +30,7 @@ import {
 import { legalConsentMessage } from "../../lib/legal";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import { OnboardingLoadShell } from "./onboarding-chrome";
-import { LandingPanel } from "./onboarding-landing";
+import { ConnectToolsThenLanding } from "./onboarding-connect-tools";
 import {
   isCrew,
   isGender,
@@ -516,7 +516,7 @@ export default function OnboardingClient() {
           />
         ) : null}
 
-        {step === "done" ? <LandingPanel state={state} draft={draft} /> : null}
+        {step === "done" ? <ConnectToolsThenLanding state={state} draft={draft} /> : null}
       </section>
     </main>
   );

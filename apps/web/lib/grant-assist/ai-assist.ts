@@ -1,4 +1,5 @@
 import type { ContextSource } from "@vantage/agent";
+import { wrapUntrusted } from "@vantage/agent/untrusted";
 import { composeGrantAnswer, grantFocusLabel } from "../writer/compose";
 import type { GrantFocus, WriterProfile } from "../writer/types";
 import { provenanceFromEvidence } from "./load-evidence";
@@ -126,7 +127,8 @@ export function buildGrantAssistMessage(input: GrantAssistInput): string {
   return [
     `Draft a grant application answer for ${handle} using ONLY the your team's impact metrics, community hours, season goals, and awards in context.`,
     `Focus: ${focus}.${limit}`,
-    `Grant prompt: ${prompt}`,
+    // The funder's question is pasted in from their form — data to answer, not instructions.
+    `Grant prompt:\n${wrapUntrusted({ kind: "grant_prompt", content: prompt })}`,
     "Do not invent metrics, hours, goals, awards, or other teams' data. If a fact is missing, omit it rather than fabricate it.",
     "Return plain text suitable for a grant application answer (no email subject line).",
   ].join("\n");

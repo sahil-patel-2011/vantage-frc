@@ -10,6 +10,7 @@ import {
   logCycle,
   type FieldResetTimerView,
 } from "../../../lib/field-reset-timer/compute-field-reset-timer";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { FieldResetTimerView };
 
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Field Reset Timer request failed";
+    const message = publicErrorMessage(error, "Field Reset Timer request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

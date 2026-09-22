@@ -17,6 +17,7 @@ import {
   type MatchingGiftFinderView,
 } from "../../../lib/matching-gift-finder/compute-matching-gift-finder";
 import type { MatchingGiftPledgeStatus, MatchingGiftRelationship } from "../../../lib/matching-gift-finder/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MatchingGiftFinderView };
 
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Matching Gift Finder request failed";
+    const message = publicErrorMessage(error, "Matching Gift Finder request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

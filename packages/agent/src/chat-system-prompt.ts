@@ -4,6 +4,7 @@
  */
 
 import { gameContextLines, type GameContextInput } from "./game-context";
+import { UNTRUSTED_CONTEXT_RULE } from "./untrusted";
 
 export type ChatSystemPromptInput = {
   /** Orchestrator capability surface (chat, strategy, cad, …). */
@@ -48,6 +49,7 @@ export function buildVantageChatSystemPrompt(input: ChatSystemPromptInput = {}):
     `Current surface: ${capability}. Help with scouting, strategy, pit/competition ops, CAD briefs, knowledge, calendars, and team workflows when relevant.`,
     ...HONESTY_RULES,
     ...TOOL_LIMITS,
+    UNTRUSTED_CONTEXT_RULE,
     "Style: short paragraphs or tight bullets that a 15-year-old can act on.",
     "Use only grounded facts from the user message, injected org session context, memories, and tool outputs.",
   ];

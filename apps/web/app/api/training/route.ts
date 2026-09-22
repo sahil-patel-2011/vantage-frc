@@ -12,6 +12,7 @@ import {
 } from "../../../lib/training/compute-training";
 import { assertOrgManager, orgRole } from "../../../lib/team-admin/permissions";
 import type { TrainingCategory } from "../../../lib/training/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { TrainingView };
 
@@ -143,7 +144,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Training Matrix request failed";
+    const message = publicErrorMessage(error, "Training Matrix request failed");
     const status =
       message === "forbidden" || message.startsWith("Only an owner or admin can") ? 403 : 400;
     return Response.json(

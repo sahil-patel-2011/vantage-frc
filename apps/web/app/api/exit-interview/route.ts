@@ -13,6 +13,7 @@ import {
 } from "../../../lib/exit-interview/compute-exit-interview";
 import { ExitInterviewError } from "../../../lib/exit-interview/lifecycle";
 import type { ExitInterviewRole, ExitInterviewStatus } from "../../../lib/exit-interview/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ExitInterviewView };
 
@@ -174,7 +175,7 @@ export async function POST(request: Request) {
     if (error instanceof ExitInterviewError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    const message = error instanceof Error ? error.message : "Exit Interview request failed";
+    const message = publicErrorMessage(error, "Exit Interview request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

@@ -9,6 +9,7 @@ import {
   upsertConfig,
   type MatchDeltaWatcherView,
 } from "../../../lib/match-delta-watcher/compute-match-delta-watcher";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MatchDeltaWatcherView };
 
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Match-delta watcher request failed";
+    const message = publicErrorMessage(error, "Match-delta watcher request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

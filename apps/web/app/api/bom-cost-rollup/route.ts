@@ -10,6 +10,7 @@ import {
   type BomCostRollupView,
 } from "../../../lib/bom-cost-rollup/compute-bom-cost-rollup";
 import type { BomCategory, BomSource } from "../../../lib/bom-cost-rollup/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { BomCostRollupView };
 
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "BOM cost rollup request failed";
+    const message = publicErrorMessage(error, "BOM cost rollup request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

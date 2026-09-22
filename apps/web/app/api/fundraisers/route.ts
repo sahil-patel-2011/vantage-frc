@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseFundraiserAction, summarizeFundraisers, type FundraiserStatus, type FundraiserType } from "../../../lib/fundraisers";
 import { syncFundraiserMoney } from "../../../lib/finance/source-mirrors";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -29,7 +30,7 @@ async function requireAdmin(client: PoolClient, orgId: string, userId: string) {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Fundraiser request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Fundraiser request failed") }, { status });
 }
 
 type EventRow = {

@@ -10,6 +10,7 @@ import {
   type AnalyticsSourceMode,
 } from "../../../../lib/analytics/lovat-data-source";
 import { canEditLookupNotes } from "../../../../lib/intel/lookup-notes";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function noStore(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "private, no-store" } });
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     });
     return noStore({ settings });
   } catch (error) {
-    return noStore({ settings: DEFAULT_ANALYTICS_SOURCE, error: error instanceof Error ? error.message : "Could not load" });
+    return noStore({ settings: DEFAULT_ANALYTICS_SOURCE, error: publicErrorMessage(error, "Could not load") });
   }
 }
 
@@ -78,6 +79,6 @@ export async function POST(request: Request) {
     return noStore({ settings });
   } catch (error) {
     const status = error instanceof Error && "status" in error && error.status === 403 ? 403 : 400;
-    return noStore({ error: error instanceof Error ? error.message : "Could not save" }, status);
+    return noStore({ error: publicErrorMessage(error, "Could not save") }, status);
   }
 }

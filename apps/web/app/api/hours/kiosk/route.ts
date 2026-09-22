@@ -20,6 +20,7 @@ import {
   type KioskView,
 } from "../../../../lib/hours/kiosk";
 import { maskScanCode, resolveOccurredAt, type ScanCodeKind } from "../../../../lib/hours/scan-codes";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -55,14 +56,14 @@ function requireAdmin(role: string) {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Kiosk request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Kiosk request failed") }, { status });
 }
 
 // The kiosk columns landed in 0457_hours_kiosk_scan.sql. A deployment that has
 // not run the migration yet must degrade to "configure X", never crash.
 function isMissingKioskSchema(error: unknown): boolean {
   const code = (error as { code?: string } | null)?.code;
-  const message = error instanceof Error ? error.message : "";
+  const message = publicErrorMessage(error, "");
   return (
     code === "42P01" ||
     code === "42703" ||

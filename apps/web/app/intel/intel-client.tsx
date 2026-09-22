@@ -142,6 +142,14 @@ function IntelLive({ orgId }: { orgId: string }) {
     })();
   }, [orgId]);
 
+  // ?team=254 opens that team directly (links from Scouting's home and from
+  // anywhere that names a team).
+  useEffect(() => {
+    const team = Number(new URLSearchParams(window.location.search).get("team"));
+    if (Number.isInteger(team) && team > 0) void select(team);
+    // Once, on arrival.
+  }, []);
+
   // The event's teams, so the page opens on something to tap. Best effort:
   // search still works when this fails or there is no active event.
   useEffect(() => {

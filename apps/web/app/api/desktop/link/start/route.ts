@@ -10,6 +10,7 @@ import {
   sha256Hex,
 } from "../../../../../lib/desktop-link/codes";
 import { getDesktopLinkPool } from "../../../../../lib/desktop-link/pool";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 const limiter = createRateLimiter({ limit: 6, windowMs: 60_000, namespace: "desktop-link-start" });
 
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Sign-in could not start" },
+      { error: publicErrorMessage(error, "Sign-in could not start") },
       { status: 400 },
     );
   }

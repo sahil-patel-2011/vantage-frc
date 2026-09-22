@@ -11,6 +11,7 @@ import {
   type AwardTrackerView,
 } from "../../../lib/award-tracker/compute-award-tracker";
 import type { AwardSubmissionStatus, AwardType } from "../../../lib/award-tracker/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { AwardTrackerView };
 
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Award Tracker request failed";
+    const message = publicErrorMessage(error, "Award Tracker request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

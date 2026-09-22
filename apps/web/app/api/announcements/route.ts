@@ -18,6 +18,7 @@ import {
   shouldEmailAnnouncement,
   type AnnouncementEmailOutcome,
 } from "../../../lib/announcements/notify-email";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 // Posting an urgent announcement to a large team is one query plus a bounded
 // set of provider round trips; the default serverless budget is tighter than
@@ -75,7 +76,7 @@ function requireAdmin(membership: Membership) {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Announcement request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Announcement request failed") }, { status });
 }
 
 export async function GET(request: Request) {
@@ -219,7 +220,7 @@ export async function POST(request: Request) {
             eligible: 0,
             sent: 0,
             failed: 0,
-            setupRequired: error instanceof Error ? error.message : "email delivery failed",
+            setupRequired: publicErrorMessage(error, "email delivery failed"),
           };
         }
       }

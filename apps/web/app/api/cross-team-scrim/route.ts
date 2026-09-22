@@ -13,6 +13,7 @@ import {
   type CrossTeamScrimView,
 } from "../../../lib/cross-team-scrim/compute-cross-team-scrim";
 import type { ScrimDataShareScope, ScrimStatus } from "../../../lib/cross-team-scrim/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { CrossTeamScrimView };
 
@@ -153,7 +154,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Cross-team scrim request failed";
+    const message = publicErrorMessage(error, "Cross-team scrim request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

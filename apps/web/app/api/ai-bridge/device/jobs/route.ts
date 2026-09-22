@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getAiBridgePool } from "../../../../../lib/ai-bridge/pool";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 function bearer(request: Request) {
   return request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
       leaseSeconds: 120,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Job claim failed";
+    const message = publicErrorMessage(error, "Job claim failed");
     return Response.json({ error: message }, { status: /invalid or revoked/i.test(message) ? 401 : 400 });
   }
 }
@@ -64,7 +65,7 @@ export async function PATCH(request: Request) {
     return Response.json({ success: true });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Job update failed" },
+      { error: publicErrorMessage(error, "Job update failed") },
       { status: 400 },
     );
   }

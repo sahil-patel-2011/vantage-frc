@@ -14,6 +14,7 @@ import {
   type AlumniNetworkView,
 } from "../../../lib/alumni-network/compute-alumni-network";
 import type { AlumniStatus, MentorSlotStatus } from "../../../lib/alumni-network/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { AlumniNetworkView };
 
@@ -178,7 +179,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Alumni network request failed";
+    const message = publicErrorMessage(error, "Alumni network request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

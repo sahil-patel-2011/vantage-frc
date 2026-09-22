@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { addAlumni, loadAlumniDirectory, removeAlumni } from "../../../../lib/alumni";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Team alumni network: a shared per-team directory of persisted rows. Any member
 // can read and add alumni; RLS lets admins (or the original adder) delete.
@@ -14,7 +15,7 @@ async function session() {
 }
 
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Alumni request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Alumni request failed") }, { status: 400 });
 
 export async function GET(request: Request) {
   try {

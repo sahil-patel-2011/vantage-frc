@@ -24,6 +24,7 @@ import {
   type RoomAssignment,
   type TravelLeg,
 } from "../../../lib/logistics";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -38,7 +39,7 @@ async function requireSession() {
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Logistics request failed";
+  const message = publicErrorMessage(error, "Logistics request failed");
   if (/logistics_|relation .* does not exist/i.test(message)) {
     return Response.json({
       status: "setup_required",

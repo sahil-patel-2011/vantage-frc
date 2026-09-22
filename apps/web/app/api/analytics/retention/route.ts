@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { purgeExpiredProductEvents, RAW_EVENT_RETENTION_DAYS } from "../../../../lib/product-analytics/retention";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -27,7 +28,7 @@ async function run() {
       {
         ok: false,
         retentionDays: RAW_EVENT_RETENTION_DAYS,
-        error: error instanceof Error ? error.message : "Product analytics retention purge failed",
+        error: publicErrorMessage(error, "Product analytics retention purge failed"),
       },
       { status: 500 },
     );

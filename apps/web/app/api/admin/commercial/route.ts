@@ -2,6 +2,7 @@ import { giftUsageCredits, grantTrial } from "@vantage/billing";
 import { assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, platformAdminDeniedResponse, PlatformAdminRequiredError } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function runAdmin<T>(work: Parameters<typeof withRls<T>>[1], requireMfa = false) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -101,6 +102,6 @@ export async function POST(request: Request) {
     if (error instanceof PlatformAdminRequiredError || (error instanceof Error && /authentication required|platform administrator/i.test(error.message))) {
       return platformAdminDeniedResponse(error);
     }
-    return Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Request failed") }, { status: 400 });
   }
 }

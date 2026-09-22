@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -8,7 +9,7 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Award item request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Award item request failed") }, { status: 400 });
 
 const RETURNING = `id, submission_id AS "submissionId", kind, prompt, content, char_limit AS "charLimit",
   done, assignee_user_id AS "assigneeUserId", due_at AS "dueAt", sort_order AS "sortOrder"`;

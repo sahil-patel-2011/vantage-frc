@@ -15,6 +15,7 @@ import {
   type SeasonPlanningWorkspaceView,
 } from "../../../lib/season-planning-workspace";
 import type { GoalCategory, WorkItemStatus } from "../../../lib/season-planning-workspace/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { SeasonPlanningWorkspaceView };
 
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Request failed";
+    const message = publicErrorMessage(error, "Request failed");
     if (message === "forbidden") return Response.json({ error: "Forbidden" }, { status: 403 });
     return Response.json({ error: message }, { status: 400 });
   }

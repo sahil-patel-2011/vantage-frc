@@ -18,6 +18,7 @@ import {
   type CostsView,
 } from "../../../lib/costs/compute-costs";
 import type { CostCategory, CostStatus, SubscriptionCadence } from "../../../lib/costs/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { CostsView };
 
@@ -214,7 +215,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Season costs request failed";
+    const message = publicErrorMessage(error, "Season costs request failed");
     if (message === "budget_forbidden") {
       return Response.json(
         {

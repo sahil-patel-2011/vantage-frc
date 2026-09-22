@@ -9,6 +9,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { finalizeUploadGrant } from "../../../../lib/storage-routing/store";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
     return Response.json({ ok: true, purpose: result.purpose, targetId: result.targetId });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Finalize failed";
+    const message = publicErrorMessage(error, "Finalize failed");
     return Response.json({ error: message }, { status: 400 });
   }
 }

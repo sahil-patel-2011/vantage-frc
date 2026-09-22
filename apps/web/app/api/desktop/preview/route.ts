@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { normalizeUserCode, sha256Hex } from "../../../../lib/desktop-link/codes";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const limiter = createRateLimiter({ limit: 20, windowMs: 60_000, namespace: "desktop-link-preview" });
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Lookup failed" },
+      { error: publicErrorMessage(error, "Lookup failed") },
       { status: 400 },
     );
   }

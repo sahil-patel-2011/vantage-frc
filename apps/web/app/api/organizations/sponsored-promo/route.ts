@@ -6,6 +6,7 @@ import { getSponsoredPoolStatus } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * Soft-UI promo status for team 1111 sponsored AI.
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
     return Response.json(payload);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Sponsored promo status failed" },
+      { error: publicErrorMessage(error, "Sponsored promo status failed") },
       { status: 400 },
     );
   }

@@ -43,6 +43,7 @@ import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import { redactFinanceTextForAi } from "./finance-redact";
 import { ProviderRateLimitError, isProviderQuotaOrCapacityStatus } from "./http-chat-adapter";
+import { formatContextItemForPrompt } from "./untrusted";
 
 export const AI_HORDE_DEFAULT_BASE_URL = "https://aihorde.net/api/v2";
 
@@ -235,8 +236,9 @@ export function buildAiHordePrompt(input: {
     answerPath: "public_swarm",
   });
   const parts = [system];
+  // One text prompt, no roles: the wrappers are what mark this as data (./untrusted.ts).
   for (const item of sanitizeAiHordeContext(input.context)) {
-    parts.push(`[${item.type}:${item.id}] ${item.content}`);
+    parts.push(formatContextItemForPrompt(item));
   }
   for (const turn of input.history ?? []) {
     parts.push(`${turn.role === "assistant" ? "Assistant" : "User"}: ${redactFinanceTextForAi(turn.content)}`);

@@ -11,6 +11,7 @@ import {
   sendPhoneOtpSms,
 } from "../../../../lib/account/phone-otp";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const limiter = createRateLimiter({ limit: 5, windowMs: 10 * 60_000, namespace: "phone-otp" });
 
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
     return Response.json(verified);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Phone OTP failed" },
+      { error: publicErrorMessage(error, "Phone OTP failed") },
       { status: 400 },
     );
   }

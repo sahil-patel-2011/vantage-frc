@@ -19,6 +19,7 @@ import {
   parseEnrollScanAction,
 } from "../../../lib/hours/enroll";
 import { sweepOpenSessions } from "../../../lib/hours/sweep";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -48,7 +49,7 @@ const isAdmin = (role: string) => role === "owner" || role === "admin";
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Hours request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Hours request failed") }, { status });
 }
 
 export async function GET(request: Request) {

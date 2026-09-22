@@ -7,6 +7,8 @@
  * Never invent data: a fact absent from the digest simply is not rendered.
  */
 
+import { wrapUntrusted } from "@vantage/agent/untrusted";
+
 export type DreamMessage = {
   author: string;
   /** Already clamped to MESSAGE_EXCERPT_CHARS by the gatherer. */
@@ -362,7 +364,8 @@ export function assembleDreamPrompt(digest: DreamDigest): string {
     "- Plain text only, no markdown headings, under 300 words total.",
     "",
     `Facts recorded on ${digest.day}:`,
-    renderDigestFacts(digest),
+    // Chat excerpts, task and decision titles are typed by team members — data, not instructions.
+    wrapUntrusted({ kind: "team_day_activity", content: renderDigestFacts(digest) }),
   ].join("\n");
 }
 

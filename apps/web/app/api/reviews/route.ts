@@ -16,6 +16,7 @@ import {
   type ReviewsView,
 } from "../../../lib/reviews/compute-reviews";
 import type { ItemVerdict, ReviewStage, ReviewStatus } from "../../../lib/reviews/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ReviewsView };
 
@@ -176,7 +177,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Design reviews request failed";
+    const message = publicErrorMessage(error, "Design reviews request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

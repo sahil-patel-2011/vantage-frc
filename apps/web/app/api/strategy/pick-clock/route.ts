@@ -22,6 +22,7 @@ import {
 import { boardState } from "../../../../lib/picklist";
 import { wirePickClockJustifications } from "../../../../lib/strategy/pick-clock-justifier-wire";
 import { applyTeamTagReasonsToPickClock } from "../../../../lib/strategy/pick-clock-tag-reasons";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function trimmedOrNull(value: unknown, max = 200): string | null {
   if (typeof value !== "string") return null;
@@ -223,7 +224,7 @@ export async function POST(request: Request) {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Pick clock request failed";
+    const message = publicErrorMessage(error, "Pick clock request failed");
     if (message === "forbidden") {
       return Response.json({ error: "Organization access denied" }, { status: 403 });
     }

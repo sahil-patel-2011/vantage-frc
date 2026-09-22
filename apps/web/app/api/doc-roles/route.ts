@@ -20,6 +20,7 @@ import {
   revokeCapability,
 } from "../../../lib/capabilities/org-capabilities";
 import { computeDocRolesView } from "../../../lib/doc-roles/compute-doc-roles";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 function trimmedOrNull(value: unknown, max = 500): string | null {
   if (typeof value !== "string") return null;
@@ -31,7 +32,7 @@ function fail(error: unknown): Response {
   if (error instanceof CapabilityError) {
     return Response.json({ error: error.message, reason: error.reason }, { status: error.status });
   }
-  const message = error instanceof Error ? error.message : "Doc role request failed";
+  const message = publicErrorMessage(error, "Doc role request failed");
   if (/row-level security/i.test(message)) {
     return Response.json(
       { error: "Only the team owner can change who may edit docs.", reason: "not_allowed" },

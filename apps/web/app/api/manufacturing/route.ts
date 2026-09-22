@@ -21,6 +21,7 @@ import type {
   ManufacturingPriority,
   ManufacturingState,
 } from "../../../lib/manufacturing/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ManufacturingView };
 
@@ -217,7 +218,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Part Manufacturing request failed";
+    const message = publicErrorMessage(error, "Part Manufacturing request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

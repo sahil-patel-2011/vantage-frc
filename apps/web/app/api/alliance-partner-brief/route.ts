@@ -6,6 +6,7 @@ import {
   generateAlliancePartnerBrief,
   type AlliancePartnerBriefView,
 } from "../../../lib/alliance-partner-brief/compute-alliance-partner-brief";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { AlliancePartnerBriefView };
 
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Alliance-partner brief request failed";
+    const message = publicErrorMessage(error, "Alliance-partner brief request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

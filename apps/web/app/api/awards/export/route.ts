@@ -13,6 +13,7 @@ import {
   type AwardExportItemInput,
   type AwardExportSubmissionInput,
 } from "../../../../lib/awards/export";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -21,7 +22,7 @@ async function session() {
 }
 
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Award export failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Award export failed") }, { status: 400 });
 
 type SubmissionRow = AwardExportSubmissionInput;
 type ItemRow = AwardExportItemInput;
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
 
     return Response.json(payload, { headers: { "cache-control": "no-store" } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Award export failed";
+    const message = publicErrorMessage(error, "Award export failed");
     if (message === "Authentication required") {
       return Response.json({ error: message }, { status: 401 });
     }

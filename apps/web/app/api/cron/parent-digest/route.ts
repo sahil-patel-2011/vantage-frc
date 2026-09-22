@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { runParentDigest } from "../../../../lib/parent-comms/run-parent-digest";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -29,7 +30,7 @@ async function run() {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Parent digest failed",
+        error: publicErrorMessage(error, "Parent digest failed"),
       },
       { status: 500 },
     );

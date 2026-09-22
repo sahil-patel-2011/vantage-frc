@@ -13,6 +13,7 @@ import {
   type EquipmentMaintenanceView,
 } from "../../../lib/equipment-maintenance/compute-equipment-maintenance";
 import type { EquipmentCategory, MaintenanceAction } from "../../../lib/equipment-maintenance/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { EquipmentMaintenanceView };
 
@@ -152,7 +153,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Equipment Maintenance request failed";
+    const message = publicErrorMessage(error, "Equipment Maintenance request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

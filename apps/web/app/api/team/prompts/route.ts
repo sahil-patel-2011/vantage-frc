@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Team AI Prompt Library: shared, reusable prompts. Any member reads and adds;
 // admins or the author remove. Stored per org.
@@ -12,7 +13,7 @@ async function session() {
 }
 
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Prompt request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Prompt request failed") }, { status: 400 });
 
 export async function GET(request: Request) {
   try {

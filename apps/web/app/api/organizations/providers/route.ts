@@ -3,6 +3,7 @@ import { createKms, decryptSecret, encryptSecret } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function context(orgId: string | undefined) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -10,7 +11,7 @@ async function context(orgId: string | undefined) {
   return { session, orgId };
 }
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Provider request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Provider request failed") }, { status: 400 });
 
 export async function GET(request: Request) {
   try {

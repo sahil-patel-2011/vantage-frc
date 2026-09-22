@@ -1,4 +1,5 @@
 import { getAllianceBoardPool } from "@vantage/db/alliance-board";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   } catch (error) {
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Alliance board unavailable",
+        error: publicErrorMessage(error, "Alliance board unavailable"),
       },
       { status: 400 },
     );

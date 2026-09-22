@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, resolveOrgChatAdapter, wrapUntrusted } from "@vantage/agent";
 import { meteredAI } from "@vantage/billing";
 import { isOnshapeOAuthConfigured, parseOnshapeDocumentUrl, type OnshapeHttp } from "@vantage/cad";
 import { auth } from "@vantage/core";
@@ -19,6 +19,7 @@ import {
   startRun,
 } from "../../../lib/assembly-manual/store";
 import { deterministicSentence, sentenceIsGrounded, type StepWriteFacts } from "../../../lib/assembly-manual/write";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -136,7 +137,7 @@ async function startFromUrl(userId: string, body: StartBody): Promise<Response> 
     try {
       parsed = parseOnshapeDocumentUrl(url);
     } catch (error) {
-      throw new HttpError(400, error instanceof Error ? error.message : "That is not an Onshape document URL.");
+      throw new HttpError(400, publicErrorMessage(error, "That is not an Onshape document URL."));
     }
     if (!parsed.workspaceId) {
       throw new HttpError(
@@ -251,12 +252,21 @@ async function rewriteStep(userId: string, body: RewriteBody): Promise<Response>
       "Use ONLY the facts below. Never state a torque, thread-locker, lubricant, tolerance or any number not present.",
       "Reply with ONLY the sentence.",
       "",
-      `part: ${facts.primaryName}`,
-      facts.subassembly ? `sub-assembly: ${facts.subassembly}` : "",
-      facts.attachesTo.length ? `attaches to: ${facts.attachesTo.join(", ")}` : "",
-      ...facts.hardware.map((item) => `hardware: ${item}`),
-      ...facts.fabrication.map((item) => `fabrication: ${item}`),
-      ...facts.cautions.map((item) => `caution: ${item}`),
+      // Part names, fabrication lines and cautions are typed by people into CAD and the
+      // feasibility notes — data, not instructions.
+      wrapUntrusted({
+        kind: "assembly_step_facts",
+        content: [
+          `part: ${facts.primaryName}`,
+          facts.subassembly ? `sub-assembly: ${facts.subassembly}` : "",
+          facts.attachesTo.length ? `attaches to: ${facts.attachesTo.join(", ")}` : "",
+          ...facts.hardware.map((item) => `hardware: ${item}`),
+          ...facts.fabrication.map((item) => `fabrication: ${item}`),
+          ...facts.cautions.map((item) => `caution: ${item}`),
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      }),
     ]
       .filter(Boolean)
       .join("\n");

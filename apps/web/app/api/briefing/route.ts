@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import { computeBriefingView } from "../../../lib/briefing/compute-briefing";
 import type { FullBriefingView } from "../../../lib/briefing/types";
 import { briefingRequestsStrategyRefresh } from "../../../lib/strategy/recompute";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { FullBriefingView };
 
@@ -28,7 +29,7 @@ async function requireSession() {
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Briefing request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Briefing request failed") }, { status });
 }
 
 export async function GET(request: Request) {

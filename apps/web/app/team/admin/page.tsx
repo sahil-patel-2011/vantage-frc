@@ -68,6 +68,10 @@ export default async function TeamAdminPage({
           team" first, then hand out a role. */}
       <div className="module-page team-admin-page">
         <RoleProfilesPanel orgId={orgId} />
+        <p className="app-muted team-admin-moderation-link">
+          <a href={withOrgHref("/messages/moderation", orgId)}>Chat moderation</a> — review team chat messages
+          members have reported, and remove ones that break team rules.
+        </p>
       </div>
     </>
   );

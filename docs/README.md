@@ -53,6 +53,8 @@ Start with the section that matches you. Each document says who it is for in its
 |---|---|
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Setup, conventions, how to verify a change, what a pull request needs |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | How the system fits together: request path, tenancy, AI path, workers, offline |
+| [PRODUCTS.md](PRODUCTS.md) | Vantage and Scouting: two products on two hosts, one deployment, one database, one sign-in |
+| [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) | Decisions that changed the system's shape, and why (Excel as a synced copy, the Scouting address, Base44, Lovat) |
 | [UI_DESIGN_RULES.md](UI_DESIGN_RULES.md) | The interface rules every screen follows |
 | [../CLAUDE.md](../CLAUDE.md) | Operating guide for AI coding agents working in this repository |
 

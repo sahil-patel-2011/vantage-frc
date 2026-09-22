@@ -15,6 +15,7 @@ import {
 } from "../../../lib/impact/compute-impact";
 import { normalizeParticipantInput } from "../../../lib/impact/participants";
 import type { ImpactAudience, ImpactAwardTag, ImpactCategory } from "../../../lib/impact/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ImpactView };
 
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Community Impact request failed";
+    const message = publicErrorMessage(error, "Community Impact request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

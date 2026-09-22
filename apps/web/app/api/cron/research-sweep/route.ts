@@ -1,5 +1,6 @@
 import { runScheduledResearchSweep } from "@vantage/intel-research/production-worker";
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -28,7 +29,7 @@ async function run() {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Research sweep failed",
+        error: publicErrorMessage(error, "Research sweep failed"),
       },
       { status: 500 },
     );

@@ -12,6 +12,7 @@ import {
   type RiskBurndownView,
 } from "../../../lib/risk-burndown/compute-risk-burndown";
 import type { RiskCategory, RiskStatus } from "../../../lib/risk-burndown/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { RiskBurndownView };
 
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Risk-burndown request failed";
+    const message = publicErrorMessage(error, "Risk-burndown request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

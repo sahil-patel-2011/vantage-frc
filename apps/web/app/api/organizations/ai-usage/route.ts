@@ -6,6 +6,7 @@ import {
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function context(orgId: string | undefined) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -15,7 +16,7 @@ async function context(orgId: string | undefined) {
 
 const fail = (error: unknown) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "BYOK usage request failed" },
+    { error: publicErrorMessage(error, "BYOK usage request failed") },
     { status: 400 },
   );
 

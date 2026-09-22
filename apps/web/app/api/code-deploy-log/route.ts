@@ -11,6 +11,7 @@ import {
   type CodeDeployLogView,
 } from "../../../lib/code-deploy-log/compute-code-deploy-log";
 import type { DeployStatus, DeployType } from "../../../lib/code-deploy-log/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { CodeDeployLogView };
 
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Code deploy log request failed";
+    const message = publicErrorMessage(error, "Code deploy log request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

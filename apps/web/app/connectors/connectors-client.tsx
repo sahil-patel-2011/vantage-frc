@@ -16,6 +16,7 @@ import {
   connectorsPageDescription,
 } from "../../lib/connectors/catalog";
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
+import MicrosoftExcelCard from "./microsoft-excel-card";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./connectors.css";
@@ -350,6 +351,7 @@ export default function ConnectorsClient() {
           );
         })}
       </ul>
+      {orgId ? <MicrosoftExcelCard orgId={orgId} /> : null}
     </main>
   );
 }

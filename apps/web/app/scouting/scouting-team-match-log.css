@@ -1,0 +1,36 @@
+/* Match-by-match table inside the team detail pane. See scouting-team-match-log.tsx.
+   The table scrolls inside its own box on a phone; the page never scrolls sideways. */
+.stml{display:grid;gap:10px;min-width:0}
+.stml-head h4{margin:0;font-size:14px}
+.stml-head p{margin:2px 0 0;color:var(--muted);font-size:11px;line-height:1.4}
+.stml-src{font-weight:700}
+.stml-src.observed{color:var(--ink)}
+.stml-src.official{color:var(--accent)}
+.stml-empty{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+.stml-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:6px}
+.stml-chip{display:grid;gap:2px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius-xs,6px);background:var(--bg)}
+.stml-chip span{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.stml-chip strong{color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
+.stml-relative{display:grid;gap:6px}
+.stml-relative label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.stml-relative select{min-height:36px;padding:4px 8px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs,6px);font:inherit}
+.stml-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-xs,6px)}
+.stml-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stml-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.stml-table th,.stml-table td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:top}
+.stml-table thead th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.stml-table thead small{font-weight:500;text-transform:none;letter-spacing:0}
+.stml-table tbody th{color:var(--ink);font-weight:700}
+.stml-table tbody tr:last-child th,.stml-table tbody tr:last-child td{border-bottom:0}
+.stml-dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--line)}
+.stml-dot.red{background:var(--critical)}
+.stml-dot.blue{background:var(--accent)}
+.stml-result{font-weight:700}
+.stml-result.w{color:var(--positive)}
+.stml-result.l{color:var(--critical)}
+.stml-result.t{color:var(--warning)}
+.stml-muted{color:var(--muted)}
+.stml-notes{max-width:260px;white-space:normal!important;color:var(--ink)}
+.stml-table a{color:var(--accent);text-decoration:none;font-weight:700}
+.stml-foot{margin:0;font-size:12px;color:var(--muted)}
+.stml-foot a{color:var(--accent)}

@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import { runGrantDeadlineAlerts } from "../../../../lib/grants-calendar/run-grant-deadline-alerts";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -30,7 +31,7 @@ async function run() {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Grant deadline alerts failed",
+        error: publicErrorMessage(error, "Grant deadline alerts failed"),
       },
       { status: 500 },
     );

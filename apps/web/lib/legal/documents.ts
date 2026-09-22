@@ -10,6 +10,15 @@
 /**
  * Date these documents were last rewritten. Bump when the text changes.
  *
+ * Revised 2026-09-22 to add "Team identities and team numbers"
+ * (`#team-identities`): what submitting or claiming a team number represents,
+ * the ban on claiming a team you do not represent, the claim statement record,
+ * how a disputed claim is handled, and the FIRST trademark notice.
+ * `LEGAL_DOC_VERSION` (packages/core/src/legal.ts) was left alone in this
+ * change — see the note below on why moving it forces every member to
+ * re-accept. Whether this section is material enough to require that is the
+ * operator's call.
+ *
  * Revised 2026-09-20 to add the "Governing law and disputes" section
  * (`#governing-law`). The Terms page had been telling readers to go and read
  * that section for weeks; it did not exist, so the link went nowhere and the
@@ -30,7 +39,7 @@
  * updated" in the future would be the first false statement in a document
  * whose whole point is that it can be checked.
  */
-export const LEGAL_LAST_UPDATED = "September 20, 2026";
+export const LEGAL_LAST_UPDATED = "September 22, 2026";
 
 /** Where a privacy question goes. */
 // The Privacy Policy and Terms name this address as the way to reach a
@@ -324,6 +333,26 @@ export const TERMS_OF_SERVICE: LegalDocument = {
         "Export the team's data, as CSV or as a ZIP archive.",
         "Configure the team's direct-message policy, and run an audited export of one named member's direct messages — a written reason is required and an audit record is written before any data is returned.",
         "Change team settings, including AI budgets and model policies.",
+      ],
+    },
+    /*
+      Added 2026-09-22 with the authorization statement on /claim
+      (apps/web/lib/claim/attestation.ts, migration 0672). Every statement below
+      is checked against that code: the claim route refuses a claim without the
+      statement, stores its exact words and version, and stores only a one-way
+      hash of the network address (anonymizeIp), never the address itself.
+    */
+    {
+      id: "team-identities",
+      heading: "Team identities and team numbers",
+      paragraphs: [
+        "When you submit or claim an FRC team number on Vantage, you represent that you are a current member, mentor, coach, or other person authorized by that team. Claiming a number that is not yet on Vantage goes further: you represent that you are authorized to act on the team's behalf and to use its name and number here.",
+        "Do not claim, register, reserve, or impersonate a team you are not authorized to represent. That includes holding a number for later, keeping another team off Vantage, and presenting yourself as a team you do not belong to. It applies to team names as well as numbers.",
+        "When you claim a team, you confirm a written statement that you are authorized to register it. We keep a record of that statement with the team: its exact words and version, your account, the team number, the time, and a one-way hash of the network address the request came from — not the address itself. The team's owners and admins, and Vantage's platform administrators, can see it.",
+        "If a team's authorized representatives — for example its lead mentor or coach — make a credible claim that a workspace was registered without the team's authorization, we may suspend the workspace, transfer its ownership to the team's representatives, or remove it. Where it is practical, we will ask the current owner for their side first. Where a claim involves impersonation or a risk to students, we may act first and explain afterwards. To report a team claimed without authorization, write to " +
+          CONTACT +
+          " with the team number, or use the report link on the claim page.",
+        "FIRST® and FIRST® Robotics Competition (FRC) are trademarks of FIRST (For Inspiration and Recognition of Science and Technology). Team names, numbers, and logos belong to their teams or other owners. Vantage is an independent product. It is not affiliated with, sponsored by, or endorsed by FIRST, and a team's name or number appearing on Vantage does not imply any affiliation with FIRST or endorsement by that team.",
       ],
     },
     {

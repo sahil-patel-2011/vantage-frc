@@ -12,6 +12,7 @@ import {
   type FmeaView,
 } from "../../../lib/fmea/compute-fmea";
 import type { FmeaContext, FmeaStatus } from "../../../lib/fmea/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { FmeaView };
 
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failure log request failed";
+    const message = publicErrorMessage(error, "Failure log request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

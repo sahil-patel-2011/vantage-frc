@@ -69,11 +69,12 @@ export function HomeShowcase() {
       <section className="lux-pillars mk-app-gallery" aria-labelledby="lux-app-frames">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
-            <p className="lux-eyebrow">Inside the app</p>
+            <p className="lux-eyebrow">Vantage Scouting</p>
             <h2 id="lux-app-frames">What your scouting turns into.</h2>
             <p>
-              Look up a team, plan a match, build the pick list. These are drawings of the real screens — your
-              event&rsquo;s numbers fill them in, and anything nobody scouted stays blank instead of guessed.
+              Scouting is its own app for event days — scout, look up a team, plan a match, build the pick list —
+              on the same sign-in and the same data as the rest of Vantage. These are drawings of its real screens:
+              your event&rsquo;s numbers fill them in, and anything nobody scouted stays blank instead of guessed.
             </p>
           </header>
           <ul className="mk-app-gallery-grid" data-reveal>

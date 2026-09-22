@@ -13,6 +13,7 @@
  * failures throw with the provider's rate-limit text verbatim when present.
  */
 import type { ChatAdapter, ContextItem } from "./index";
+import { UNTRUSTED_CONTEXT_RULE, formatContextItemForPrompt } from "./untrusted";
 
 export type BridgeDegradedReason = "bridge-offline" | "bridge-timeout" | "bridge-rate-limited";
 
@@ -78,12 +79,14 @@ export function buildBridgePromptDocument(input: {
       "Answer the user's message directly in plain text. Use only the team context provided " +
       "below — do not invent data the context does not contain, and say so when it is missing.";
   const message = input.message.slice(0, 40_000);
-  const header = `=== SYSTEM ===\n${system}\n`;
+  const framing = system.includes(UNTRUSTED_CONTEXT_RULE) ? system : `${system}\n${UNTRUSTED_CONTEXT_RULE}`;
+  const header = `=== SYSTEM ===\n${framing}\n`;
   const footer = `\n=== USER MESSAGE ===\n${message}\n`;
   let budget = BRIDGE_PROMPT_MAX_CHARS - header.length - footer.length;
   const sections: string[] = [];
   for (const item of input.context) {
-    const section = `\n=== TEAM CONTEXT: ${item.type} (${item.id}) ===\n${item.content}\n`;
+    // Wrapped as data (./untrusted.ts): a note or page cannot pose as a new === SYSTEM === block.
+    const section = `\n=== TEAM CONTEXT: ${item.type} (${item.id}) ===\n${formatContextItemForPrompt(item)}\n`;
     if (section.length > budget) continue;
     sections.push(section);
     budget -= section.length;

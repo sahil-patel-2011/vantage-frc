@@ -31,6 +31,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { summarizeMissed } from "../../lib/scouting/assignment-accountability";
 import "./scout-coverage-live.css";
 
 const statusToneMap: Record<CoverageStatus, BadgeTone> = {
@@ -410,6 +411,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       </section>
 
       {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      <MissedAssignments view={view} orgId={orgId} />
       <CoverageGaps view={view} busy={busy} mutate={mutate} loaded={loaded} />
       <NudgeLog view={view} busy={busy} mutate={mutate} />
       <ScoutCoverageLiveNextActionsPanel actions={nextActions} />
@@ -510,6 +512,67 @@ function CoverageGaps({
             </li>
           ))}
         </ul>
+      )}
+    </Panel>
+  );
+}
+
+/**
+ * Assigned but not submitted. Coverage counts entries per robot; this names the
+ * person whose robot it was, while the match is fresh enough to ask them — or
+ * to pull the video.
+ */
+function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | null | undefined }) {
+  const missed = view.missed;
+  if (!missed) return null;
+  const summary = summarizeMissed(missed);
+  const recent = [...missed].reverse().slice(0, 30);
+  return (
+    <Panel className="scout-coverage-live-panel" id="missed-assignments">
+      <header>
+        <h2>Assigned but not submitted</h2>
+        <p className="app-muted">
+          Played matches (results posted) where the assigned scout has no entry for their robot. A backup is
+          listed only when the primary missed too.
+        </p>
+      </header>
+      {missed.length === 0 ? (
+        <p className="app-muted">Every assigned scout in a played match has submitted.</p>
+      ) : (
+        <>
+          <p className="app-muted">
+            {summary.total} missed · {summary.uncovered} with no entry from anyone
+            {summary.byScout.length
+              ? ` · most: ${summary.byScout
+                  .slice(0, 3)
+                  .map((row) => `${row.name} (${row.count})`)
+                  .join(", ")}`
+              : ""}
+          </p>
+          <ul className="scout-coverage-live-list">
+            {recent.map((row) => (
+              <li key={`${row.matchKey}::${row.teamKey}::${row.userId}`}>
+                <div>
+                  <div className="scout-coverage-live-row-meta">
+                    <Badge tone={row.robotScouted ? "setup" : "danger"}>
+                      {row.robotScouted ? "Someone else covered it" : "No entry from anyone"}
+                    </Badge>
+                    <strong>
+                      {row.matchLabel} · Team {row.teamKey.replace(/^frc/i, "")}
+                    </strong>
+                  </div>
+                  <small>
+                    {row.name}
+                    {row.role === "backup" ? " (backup)" : ""}
+                  </small>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="app-muted">
+            <a href={withOrgHref("/schedule", orgId ?? null)}>See them on the match timeline</a>
+          </p>
+        </>
       )}
     </Panel>
   );

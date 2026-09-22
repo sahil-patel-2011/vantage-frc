@@ -4,9 +4,13 @@ import {
   generateRotation,
   overlayScheduleOnRotation,
   publishableAssignments,
+  rotationConstraintsFromSlots,
   scheduleSlotsFromQuals,
   summarizePlan,
 } from ".";
+import { BACKUP_ROLE } from "../scouting/assignment-accountability";
+import { assignmentConflict, isOnDriveTeamForMatch, withAssignment } from "../scouting/assignment-conflicts";
+import { loadAssignmentConflictContext } from "../scouting/assignment-conflicts-load";
 import type { PublishPreview, ShiftBalancerAssignment } from ".";
 import type { ShiftBalancerPlan, ShiftBalancerScout, ShiftBalancerSummary } from "./types";
 
@@ -258,16 +262,31 @@ export async function publishPlan(
     scouts.rows,
   );
 
+  // Refuse what the generator could not see: drive team changed since the plan
+  // was built, or the lineup already put this member on another robot in the
+  // same match. Skipped rows are counted, never silently dropped.
+  let conflicts = await loadAssignmentConflictContext(client, { orgId: input.orgId, eventKey });
+  const written: typeof preview.rows = [];
+  let skippedConflict = 0;
   for (const row of preview.rows) {
+    if (assignmentConflict(conflicts, row)) {
+      skippedConflict += 1;
+      continue;
+    }
+    written.push(row);
+    conflicts = withAssignment(conflicts, { ...row, role: row.role ?? row.station });
+  }
+
+  for (const row of written) {
     await client.query(
       `INSERT INTO scout_assignments (org_id, event_key, user_id, match_key, team_key, role, starts_at)
        VALUES ($1::uuid, $2::text, $3::uuid, $4::text, $5::text, $6::text, $7::timestamptz)
        ON CONFLICT (org_id, user_id, match_key, team_key)
        DO UPDATE SET role = EXCLUDED.role, starts_at = EXCLUDED.starts_at`,
-      [input.orgId, eventKey, row.userId, row.matchKey, row.teamKey, row.station, row.startsAt],
+      [input.orgId, eventKey, row.userId, row.matchKey, row.teamKey, row.role === "backup" ? BACKUP_ROLE : row.station, row.startsAt],
     );
   }
-  return preview;
+  return skippedConflict ? { ...preview, rows: written, skippedConflict } : preview;
 }
 
 export async function removeScout(
@@ -290,10 +309,12 @@ export async function generatePlan(
     stations: string[];
     maxConsecutiveMatches: number;
     useEventSchedule?: boolean;
+    /** Add a backup scout on every partner and opponent robot in our own matches. */
+    backups?: boolean;
   },
 ): Promise<void> {
   const scoutResult = await client.query<ScoutRow>(
-    `SELECT id, name, active FROM shift_balancer_scouts WHERE org_id = $1 AND active = true ORDER BY name`,
+    `SELECT id, name, active, user_id AS "userId" FROM shift_balancer_scouts WHERE org_id = $1 AND active = true ORDER BY name`,
     [input.orgId],
   );
   const scouts = scoutResult.rows.map(mapScout);
@@ -334,12 +355,26 @@ export async function generatePlan(
       throw new Error("No qualification schedule cached for the active event. Sync Team Data or pick an event on Event day.");
     }
     matchCount = qualMatches;
+    // Drive team never scouts a match our robot is in; backups only where asked.
+    const conflictContext = await loadAssignmentConflictContext(client, { orgId: input.orgId, eventKey });
+    const constraints = rotationConstraintsFromSlots({
+      slots,
+      stations,
+      ourTeamKey: conflictContext.ourTeamKey,
+      backups: input.backups === true,
+      blockedScouts: (matchKey) =>
+        scouts
+          .filter((scout) => scout.userId && isOnDriveTeamForMatch(conflictContext, scout.userId, matchKey))
+          .map((scout) => scout.id),
+    });
     assignments = overlayScheduleOnRotation(
       generateRotation({
         scouts,
         matchCount,
         stations,
         maxConsecutiveMatches: input.maxConsecutiveMatches,
+        unavailable: constraints.unavailable,
+        backupStations: constraints.backupStations,
       }),
       slots,
     );

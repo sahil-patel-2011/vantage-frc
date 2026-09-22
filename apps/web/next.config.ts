@@ -10,9 +10,13 @@ const config: NextConfig = {
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.
   supportsImmutableAssets: false,
-  allowedDevOrigins: process.env.BASE44_PUBLIC_HOST_SUFFIX
-    ? [`3000-${process.env.BASE44_PUBLIC_HOST_SUFFIX}`]
-    : [],
+  // Dev only. 127.0.0.1 is the local stand-in for the Scouting host (see
+  // lib/products/products.ts); without it the dev server withholds its scripts
+  // there and the Scouting pages never hydrate.
+  allowedDevOrigins: [
+    "127.0.0.1",
+    ...(process.env.BASE44_PUBLIC_HOST_SUFFIX ? [`3000-${process.env.BASE44_PUBLIC_HOST_SUFFIX}`] : []),
+  ],
   serverExternalPackages: ["pg"],
   transpilePackages: [
     "@vantage/agent",

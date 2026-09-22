@@ -12,6 +12,7 @@ import {
   type GoalsTrackerView,
 } from "../../../lib/goals-tracker/compute-goals-tracker";
 import type { GoalCategory, GoalStatus } from "../../../lib/goals-tracker/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { GoalsTrackerView };
 
@@ -157,7 +158,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Season Goals request failed";
+    const message = publicErrorMessage(error, "Season Goals request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

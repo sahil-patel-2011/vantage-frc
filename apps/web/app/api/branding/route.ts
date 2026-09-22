@@ -9,6 +9,7 @@ import {
 } from "../../../lib/branding/appearance";
 import { emptyBrandingView, type BrandingPayload, type OrgBrandingView } from "../../../lib/branding/branding";
 import { normalizeHexColor } from "../../../lib/branding/colors";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export const dynamic = "force-dynamic";
 
@@ -194,7 +195,7 @@ export async function PUT(request: Request) {
     return Response.json({ org: view }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not save branding" },
+      { error: publicErrorMessage(error, "Could not save branding") },
       { status: 400 },
     );
   }

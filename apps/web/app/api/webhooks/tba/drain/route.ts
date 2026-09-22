@@ -1,5 +1,6 @@
 import { assertCronAuthorized } from "../../../../../lib/reference/run-ingest";
 import { drainTbaWebhookEvents } from "../../../../../lib/webhooks/tba-fanout";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ async function run(request: Request) {
     return Response.json({ ok: true, summary });
   } catch (error) {
     return Response.json(
-      { ok: false, error: error instanceof Error ? error.message : "TBA webhook drain failed" },
+      { ok: false, error: publicErrorMessage(error, "TBA webhook drain failed") },
       { status: 500 },
     );
   }

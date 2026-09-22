@@ -9,6 +9,7 @@ import {
   GITHUB_MAX_FILE_CHARS,
   requireOrgMember,
 } from "../../../../lib/github";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * Size-capped file/tree snippets for AI context. Members may read; never returns
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch GitHub contents" },
+      { error: publicErrorMessage(error, "Failed to fetch GitHub contents") },
       { status: 400 },
     );
   }

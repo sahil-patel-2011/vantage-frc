@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
     return Response.json({ nodes });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not load relays" },
+      { error: publicErrorMessage(error, "Could not load relays") },
       { status: error instanceof Error && error.message.includes("Authentication") ? 401 : 400 },
     );
   }

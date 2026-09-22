@@ -18,6 +18,7 @@ import {
   type DisplayStagePayload,
   type DisplayStageSnapshot,
 } from "../../../../lib/display";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function asPits(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -94,7 +95,7 @@ export async function GET(request: Request) {
     return Response.json(withNexusViews(stage));
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Display unavailable" },
+      { error: publicErrorMessage(error, "Display unavailable") },
       { status: 400 },
     );
   }

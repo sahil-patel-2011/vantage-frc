@@ -14,6 +14,7 @@
  * Pure module: no React, no DB, no network. Unit-tested in narration.test.ts.
  */
 
+import { wrapUntrusted } from "@vantage/agent/untrusted";
 import { CODE_RULE_LESSONS, STEP_KIND_PRINCIPLES, TOOL_PRINCIPLES } from "./catalog";
 
 export { CODE_RULE_LESSONS, STEP_KIND_PRINCIPLES, TOOL_PRINCIPLES };
@@ -473,24 +474,31 @@ export function isExplainLevel(value: unknown): value is ExplainLevel {
  * it is told explicitly what is absent so it reports the gap instead of filling it.
  */
 export function buildExplainPrompt(narration: Narration, level: ExplainLevel): string {
+  // The action, result, reason and evidence were lifted verbatim from tool results, code
+  // findings and fetched pages — data, not instructions — so they travel inside one wrapper.
+  // Step number, status, the NONE marker and the catalog principle are ours and stay outside.
   const lines: string[] = [
     "You are an FRC build-season mentor explaining ONE recorded agent step to a student.",
     "",
     "RECORDED STEP — this is the complete record. Nothing else is known.",
     `- Step: ${narration.step}`,
-    `- What happened: ${narration.action}`,
     `- Status: ${narration.status}`,
+    wrapUntrusted({
+      kind: "agent_step_record",
+      content: [
+        `- What happened: ${narration.action}`,
+        narration.outcome ? `- Result recorded: ${narration.outcome}` : "",
+        narration.why ? `- Reason recorded with the step: ${narration.why}` : "",
+        ...(narration.sources ?? []).map(
+          (source) => `- Evidence: ${source.label}${source.excerpt ? ` — "${source.excerpt}"` : ""}`,
+        ),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    }),
   ];
-  if (narration.outcome) lines.push(`- Result recorded: ${narration.outcome}`);
-  lines.push(
-    narration.why
-      ? `- Reason recorded with the step: ${narration.why}`
-      : "- Reason recorded with the step: NONE. No reason was recorded.",
-  );
+  if (!narration.why) lines.push("- Reason recorded with the step: NONE. No reason was recorded.");
   if (narration.principle) lines.push(`- General practice for this operation: ${narration.principle}`);
-  for (const source of narration.sources ?? []) {
-    lines.push(`- Evidence: ${source.label}${source.excerpt ? ` — "${source.excerpt}"` : ""}`);
-  }
   lines.push(
     "",
     level === "new"

@@ -157,3 +157,14 @@ html[data-motion="reduced"] .kit-row:active {
 }
 
 html[data-motion="reduced"] .hub-tool-overflow { animation: none; }
+
+/* "Scouting" in the top bar — the other product, one tap away. A quiet pill,
+   not an icon: a first-time user has to be able to read where it goes. */
+.soft-topbar-product{
+  display:inline-flex;align-items:center;min-height:34px;padding:0 12px;margin-right:4px;
+  border:1px solid var(--line);border-radius:999px;
+  color:var(--ink);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;
+  transition:border-color .2s var(--ease-out,ease),background-color .2s var(--ease-out,ease);
+}
+.soft-topbar-product:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 7%,transparent)}
+@media (max-width:520px){.soft-topbar-product{padding:0 10px;font-size:12.5px}}

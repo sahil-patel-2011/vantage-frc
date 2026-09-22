@@ -4,6 +4,7 @@ import {
   publishReleaseFromAgent,
 } from "../../../../lib/release-notes/agent-publish";
 import { composeReleaseNotes } from "@vantage/core";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Release publish failed" },
+      { error: publicErrorMessage(error, "Release publish failed") },
       { status: 400 },
     );
   }

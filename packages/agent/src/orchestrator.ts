@@ -24,7 +24,8 @@ import { loadOrgAgentRulesContextItem } from "./org-agent-rules";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
-export type ToolExecutionContext={client:PoolClient;orgId:string;userId:string;activeEventKey:string|null};
+/** `runId` is the ai_runs row of the turn that called the tool, when there is one — write tools record it on their proposal. */
+export type ToolExecutionContext={client:PoolClient;orgId:string;userId:string;activeEventKey:string|null;runId?:string|null};
 export type ToolDefinition<I,O>={name:string;description:string;inputSchema?:Record<string,unknown>;parseInput(value:unknown):I;parseOutput(value:unknown):O;execute(context:ToolExecutionContext,input:I):Promise<O>};
 
 let toolSavepointSeq=0;
@@ -182,7 +183,7 @@ export class AIOrchestrator{
         if(calls.length&&!dataSourceNote)dataSourceNote=await loadToolDataSourceNote(this.client);
         for(const call of calls){
           if(!isToolAllowed(aiPolicy,call.name))throw new Error(`AI tool is not allowed by organization policy: ${call.name}`);
-          const output=await this.registry.invoke(call.name,{client:this.client,orgId:request.orgId,userId:request.userId,activeEventKey:active},call.input);
+          const output=await this.registry.invoke(call.name,{client:this.client,orgId:request.orgId,userId:request.userId,activeEventKey:active,runId},call.input);
           const annotated=annotateToolOutput(call.name,output,call.input);
           annotatedTools.push(annotated);
           await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,tool_name,input,output,provenance) VALUES($1,$2,$3,'tool',$4,$5::jsonb,$6::jsonb,$7::jsonb)`,[request.orgId,runId,sequence++,call.name,JSON.stringify(call.input),JSON.stringify({status:annotated.status,summary:annotated.summary,data:output,dataSource:dataSourceNote&&dataSourceNote.mode!=="ok"?dataSourceNote:null}),JSON.stringify([{type:"tool",id:call.name,classification:annotated.classification,status:annotated.status,dataSource:dataSourceNote&&dataSourceNote.mode!=="ok"?dataSourceNote:undefined}])]);

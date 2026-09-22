@@ -5,6 +5,7 @@ import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { headers } from "next/headers";
 import { buildAgentConfigBundle } from "../../../../lib/agent-config/store";
 import { buildCursorExport } from "../../../../lib/agent-config/cursor-formats";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * GET /api/agent-config/bundle — the typed team agent-config bundle
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
     }
     return Response.json(bundle);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Bundle request failed";
+    const message = publicErrorMessage(error, "Bundle request failed");
     // Missing migration/table degrades to a clear setup state, never a crash.
     if (/agent_config_items/.test(message)) {
       return Response.json(

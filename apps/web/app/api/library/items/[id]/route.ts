@@ -12,6 +12,7 @@ import {
   isInlinePreviewable,
 } from "../../../../../lib/library/validation";
 import { cloudUploadCapBytes } from "../../../../../lib/storage-routing/caps";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -105,7 +106,7 @@ export async function PUT(request: Request, context: RouteContext) {
     }
     return new Response(null, { status: 204 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload failed";
+    const message = publicErrorMessage(error, "Upload failed");
     return Response.json({ error: message }, { status: 400 });
   }
 }
@@ -184,7 +185,7 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "File unavailable";
+    const message = publicErrorMessage(error, "File unavailable");
     return Response.json({ error: message }, { status: 400 });
   }
 }

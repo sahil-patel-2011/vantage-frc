@@ -21,6 +21,7 @@ import {
   writeTeamChatEnabled,
 } from "../../../../lib/messages/supervision";
 import { DM_MODES, DM_MODE_COPY, normalizeDmMode } from "../../../../lib/messages/youth-protection";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const maxDuration = 10;
 
@@ -39,7 +40,7 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 }
 
 function fail(error: unknown) {
-  const message = error instanceof Error ? error.message : "Chat safety request failed";
+  const message = publicErrorMessage(error, "Chat safety request failed");
   return Response.json({ error: message }, { status: message.includes("Authentication") ? 401 : 400 });
 }
 

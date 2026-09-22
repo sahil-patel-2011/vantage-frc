@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Data-governance accountability: who exported a copy of this team's data, when,
 // at what scope, and whether they downloaded it. The export center already
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Export audit request failed" },
+      { error: publicErrorMessage(error, "Export audit request failed") },
       { status: 403 },
     );
   }

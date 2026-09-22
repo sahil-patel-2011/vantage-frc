@@ -206,6 +206,8 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
+  // The Scouting product (its own frame, same data) — pinnable to the island.
+  { href: "/scout", label: "Scouting app", icon: "scout" },
 ];
 
 /**

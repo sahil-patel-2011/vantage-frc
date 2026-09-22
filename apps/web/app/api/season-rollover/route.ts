@@ -13,6 +13,7 @@ import {
   type SeasonRolloverView,
 } from "../../../lib/season-rollover/compute-season-rollover";
 import type { SeasonRolloverCategory } from "../../../lib/season-rollover/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { SeasonRolloverView };
 
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Season Rollover request failed";
+    const message = publicErrorMessage(error, "Season Rollover request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

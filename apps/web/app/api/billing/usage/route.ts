@@ -2,6 +2,7 @@ import { readOrgAllowance } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Team usage view. The allowance figures come from `readOrgAllowance`, which reads the
 // same `org_billing` cap and `[period_start, period_end)` window that `meteredAI`
@@ -97,6 +98,6 @@ export async function GET(request: Request) {
     });
     return Response.json(data);
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Usage request failed" }, { status: 403 });
+    return Response.json({ error: publicErrorMessage(error, "Usage request failed") }, { status: 403 });
   }
 }

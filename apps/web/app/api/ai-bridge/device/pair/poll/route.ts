@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createKms, decryptSecret, type EncryptedSecret } from "@vantage/billing";
 import { getAiBridgePool } from "../../../../../../lib/ai-bridge/pool";
+import { publicErrorMessage } from "../../../../../../lib/security/public-error";
 
 /** Device-side pairing poll — mirrors /api/cad/pair/poll (token released exactly once). */
 export async function POST(request: Request) {
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await client.query("ROLLBACK");
     return Response.json(
-      { error: error instanceof Error ? error.message : "Pairing poll failed" },
+      { error: publicErrorMessage(error, "Pairing poll failed") },
       { status: 400 },
     );
   } finally {

@@ -12,6 +12,7 @@ import {
   type AllianceSimView,
 } from "../../../lib/alliance-sim/compute-alliance-sim";
 import type { AllianceSimRole } from "../../../lib/alliance-sim/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { AllianceSimView };
 
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Alliance Sim request failed";
+    const message = publicErrorMessage(error, "Alliance Sim request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

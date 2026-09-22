@@ -10,6 +10,7 @@ import {
   submitEntry,
   type ScoutSchemaNegotiateView,
 } from "../../../lib/scout-schema-negotiate/compute-scout-schema-negotiate";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutSchemaNegotiateView };
 
@@ -151,7 +152,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Schema negotiation request failed";
+    const message = publicErrorMessage(error, "Schema negotiation request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

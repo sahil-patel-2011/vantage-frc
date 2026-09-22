@@ -9,6 +9,7 @@ import {
   type ScoutingHeatSignalsView,
 } from "../../../lib/scouting-heat-signals/compute-scouting-heat-signals";
 import type { HeatDirection } from "../../../lib/scouting-heat-signals/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { ScoutingHeatSignalsView };
 
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Scouting Heat Signals request failed";
+    const message = publicErrorMessage(error, "Scouting Heat Signals request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

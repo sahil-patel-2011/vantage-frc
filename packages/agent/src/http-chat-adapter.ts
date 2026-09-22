@@ -8,6 +8,7 @@ import type {
 } from "./index";
 import { compactChatTurns, compactContextItems, contextTokenBudgetForAdapter } from "./context-compact";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
+import { userTurnWithContext } from "./untrusted";
 import { currentSeasonYear, packForYear } from "@vantage/game-year";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import {
@@ -201,16 +202,9 @@ export class HttpChatAdapter implements ChatAdapter {
     tools: ChatToolDefinition[],
     caching: boolean,
   ) {
-    const systemBlocks = applyAnthropicCacheControl(
-      [
-        { type: "text", text: this.systemPrompt },
-        ...context.map((item) => ({
-          type: "text" as const,
-          text: `[${item.type}:${item.id}] ${item.content}`,
-        })),
-      ],
-      caching,
-    );
+    // Context is data from other people and the web: it goes in the user turn, wrapped as
+    // <untrusted_source>, never in the system prompt (see ./untrusted.ts).
+    const systemBlocks = applyAnthropicCacheControl([{ type: "text", text: this.systemPrompt }], caching);
     const response = await fetchWithTimeout(
       this.fetchImpl,
       `${this.baseUrl}/v1/messages`,
@@ -225,7 +219,7 @@ export class HttpChatAdapter implements ChatAdapter {
           model: this.model,
           max_tokens: chatCompletionMaxTokens(this.capability),
           system: systemBlocks,
-          messages: [...history, { role: "user", content: message }],
+          messages: [...history, { role: "user", content: userTurnWithContext(message, context) }],
           ...(tools.length
             ? {
                 tools: tools.map((tool) => ({
@@ -306,15 +300,9 @@ export class HttpChatAdapter implements ChatAdapter {
         body: JSON.stringify({
           model: this.model,
           messages: [
-            {
-              role: "system",
-              content: [
-                this.systemPrompt,
-                ...context.map((item) => `[${item.type}:${item.id}] ${item.content}`),
-              ].join("\n"),
-            },
+            { role: "system", content: this.systemPrompt },
             ...history,
-            { role: "user", content: message },
+            { role: "user", content: userTurnWithContext(message, context) },
           ],
           ...(tools.length
             ? {

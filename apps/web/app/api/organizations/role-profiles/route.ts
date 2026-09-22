@@ -10,6 +10,7 @@ import {
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * Role profiles for one org. Reads are open to members (a student may see what a
@@ -25,7 +26,7 @@ async function session() {
 
 const fail = (error: unknown) =>
   Response.json(
-    { error: error instanceof Error ? error.message : "Role profile request failed" },
+    { error: publicErrorMessage(error, "Role profile request failed") },
     { status: 400 },
   );
 

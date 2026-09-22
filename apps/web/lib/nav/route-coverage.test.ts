@@ -28,6 +28,7 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   ["/pricing", "public marketing"],
   ["/privacy", "public legal"],
   ["/terms", "public legal"],
+  ["/claim/report", "linked from /claim through teamClaimReportHref(), which the scan cannot follow"],
   ["/for-teams", "public marketing"],
   ["/desktop", "public download page"],
   ["/signin", "auth entry"],

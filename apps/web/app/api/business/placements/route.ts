@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { syncSponsorContributionMoney } from "../../../../lib/finance/source-mirrors";
 import { orgScopedPackageId } from "../../../../lib/partner-placements";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 type Body = Record<string, unknown>;
 const surfaces = ["business_wall", "dashboard_footer", "pit_footer"] as const;
@@ -148,5 +149,5 @@ export async function POST(request: Request) {
       return load(client, orgId);
     });
     return Response.json(program);
-  } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "Partner placement update failed" }, { status: 400 }); }
+  } catch (error) { return Response.json({ error: publicErrorMessage(error, "Partner placement update failed") }, { status: 400 }); }
 }

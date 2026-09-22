@@ -21,6 +21,7 @@ import {
   type AgentConfigItem,
   type OrgMemberOption,
 } from "../../../lib/agent-config/store";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type AgentConfigView =
   | {
@@ -205,7 +206,7 @@ export async function POST(request: Request) {
     const view = await withRls({ userId, orgId }, (client) => computeView(client, userId, orgId));
     return Response.json({ ...payload, view });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Agent config request failed";
+    const message = publicErrorMessage(error, "Agent config request failed");
     // RLS blocks non-editors as a zero-row write; surface it as access denied, not a mystery.
     const denied = message === "forbidden" || /row-level security/i.test(message);
     return Response.json(

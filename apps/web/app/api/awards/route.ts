@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { awardCatalogEntry } from "../../../lib/awards";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -9,7 +10,7 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Award request failed" }, { status: 400 });
+  Response.json({ error: publicErrorMessage(error, "Award request failed") }, { status: 400 });
 
 const RETURNING = `id, season_year AS "seasonYear", event_key AS "eventKey", award_type AS "awardType", title,
   status, priority, deadline, owner_user_id AS "ownerUserId", summary, created_at AS "createdAt"`;

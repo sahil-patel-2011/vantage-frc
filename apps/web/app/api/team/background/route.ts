@@ -10,6 +10,7 @@ import {
   type TeamBackgroundProfile,
   type TeamBackgroundView,
 } from "../../../../lib/team-background";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 type MembershipRow = {
   role: string;
@@ -110,7 +111,7 @@ export async function GET(request: Request) {
       { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not load team background";
+    const message = publicErrorMessage(error, "Could not load team background");
     const status = message === "Organization access denied" ? 403 : 500;
     return Response.json({ error: message }, { status });
   }
@@ -191,7 +192,7 @@ export async function PUT(request: Request) {
       { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not save team background";
+    const message = publicErrorMessage(error, "Could not save team background");
     const status =
       message === "Organization access denied"
         ? 403

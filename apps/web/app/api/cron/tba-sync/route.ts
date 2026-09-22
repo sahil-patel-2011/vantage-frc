@@ -6,6 +6,7 @@ import {
   runTbaEventDaySync,
   runTbaSeasonSync,
 } from "../../../../lib/reference/run-ingest";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -88,7 +89,7 @@ async function run(request: Request) {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "TBA sync failed",
+        error: publicErrorMessage(error, "TBA sync failed"),
       },
       { status: 500 },
     );

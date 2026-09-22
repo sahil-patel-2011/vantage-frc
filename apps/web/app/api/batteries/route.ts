@@ -13,6 +13,7 @@ import {
   type HealthStatus,
 } from "../../../lib/battery";
 import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -38,7 +39,7 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Battery request failed" }, { status });
+  return Response.json({ error: publicErrorMessage(error, "Battery request failed") }, { status });
 }
 
 type PackRow = {

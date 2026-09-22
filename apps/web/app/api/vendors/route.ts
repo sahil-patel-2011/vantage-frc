@@ -10,6 +10,7 @@ import {
   type VendorsView,
 } from "../../../lib/vendors/compute-vendors";
 import type { VendorCategory } from "../../../lib/vendors/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { VendorsView };
 
@@ -144,7 +145,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Vendors request failed";
+    const message = publicErrorMessage(error, "Vendors request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

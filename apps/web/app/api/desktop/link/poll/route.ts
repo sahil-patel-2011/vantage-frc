@@ -7,6 +7,7 @@ import {
 } from "../../../../../lib/desktop-link/codes";
 import { decidePoll, type DesktopLinkRow } from "../../../../../lib/desktop-link/link-state";
 import { getDesktopLinkPool } from "../../../../../lib/desktop-link/pool";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
 // Desktop polls every 3s (≈20/min); allow headroom without enabling brute force.
 const limiter = createRateLimiter({ limit: 40, windowMs: 60_000, namespace: "desktop-link-poll" });
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await client.query("ROLLBACK");
     return Response.json(
-      { error: error instanceof Error ? error.message : "Sign-in poll failed" },
+      { error: publicErrorMessage(error, "Sign-in poll failed") },
       { status: 400 },
     );
   } finally {

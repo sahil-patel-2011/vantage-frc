@@ -5,6 +5,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import sharp from "sharp";
 import { MAX_SPONSOR_NORMALIZED_BYTES, MAX_SPONSOR_UPLOAD_BYTES, safeSponsorFilename, sponsorImageKind } from "../../../../lib/sponsor-assets";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function value(form: FormData, name: string) {
   const raw = form.get(name);
@@ -78,6 +79,6 @@ export async function POST(request: Request) {
     });
     return Response.json(asset, { status: 201 });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not upload artwork" }, { status: 400 });
+    return Response.json({ error: publicErrorMessage(error, "Could not upload artwork") }, { status: 400 });
   }
 }

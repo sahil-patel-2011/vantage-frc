@@ -8,6 +8,7 @@ import {
   promoteChemistryShortlist,
 } from "../../../lib/chemistry/promote-to-pick-list";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     return Response.json(view, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not score alliance chemistry" },
+      { error: publicErrorMessage(error, "Could not score alliance chemistry") },
       { status: 400 },
     );
   }
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not save to the pick list" },
+      { error: publicErrorMessage(error, "Could not save to the pick list") },
       { status: 400 },
     );
   }

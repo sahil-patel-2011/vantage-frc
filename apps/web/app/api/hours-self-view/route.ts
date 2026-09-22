@@ -12,6 +12,7 @@ import {
   type HoursSelfViewView,
 } from "../../../lib/hours-self-view/compute-hours-self-view";
 import type { BiometricConsentStatus, HourLogKind } from "../../../lib/hours-self-view/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { HoursSelfViewView };
 
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Hours self-view request failed";
+    const message = publicErrorMessage(error, "Hours self-view request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

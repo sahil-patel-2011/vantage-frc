@@ -13,6 +13,7 @@ import {
   type BinShelfLocatorView,
 } from "../../../lib/bin-shelf-locator/compute-bin-shelf-locator";
 import type { BinShelfLocationKind, BinShelfMoveMethod } from "../../../lib/bin-shelf-locator/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { BinShelfLocatorView };
 
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Bin/Shelf Locator request failed";
+    const message = publicErrorMessage(error, "Bin/Shelf Locator request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

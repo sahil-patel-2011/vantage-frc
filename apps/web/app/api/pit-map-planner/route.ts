@@ -12,6 +12,7 @@ import {
   type PitMapPlannerView,
 } from "../../../lib/pit-map-planner/compute-pit-map-planner";
 import type { PitMapItemCategory } from "../../../lib/pit-map-planner/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { PitMapPlannerView };
 
@@ -159,7 +160,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Pit Map Planner request failed";
+    const message = publicErrorMessage(error, "Pit Map Planner request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

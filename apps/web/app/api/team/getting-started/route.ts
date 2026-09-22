@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 // Team transition/onboarding checklist. Aggregates the real state of a team
 // so a team moving in can see, at a glance, what is set up and what is left:
@@ -109,7 +110,7 @@ export async function GET(request: Request) {
     return Response.json(data);
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Getting-started request failed" },
+      { error: publicErrorMessage(error, "Getting-started request failed") },
       { status: 403 },
     );
   }

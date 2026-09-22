@@ -11,6 +11,7 @@ import {
   type SparesView,
 } from "../../../lib/spares/compute-spares";
 import type { ConsumableCategory } from "../../../lib/spares/types";
+import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { SparesView };
 
@@ -145,7 +146,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Consumables request failed";
+    const message = publicErrorMessage(error, "Consumables request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
