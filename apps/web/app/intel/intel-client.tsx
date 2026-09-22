@@ -28,6 +28,8 @@ import {
   IntelLookupForm,
   IntelReadyView,
   IntelSearchResults,
+  IntelEventRoster,
+  type IntelRosterTeam,
   type IntelCompareResult,
   type IntelDetail,
   type IntelSearchTeam,
@@ -99,6 +101,7 @@ function IntelLive({ orgId }: { orgId: string }) {
   const source = useAnalyticsSource(orgId);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IntelSearchTeam[]>([]);
+  const [roster, setRoster] = useState<IntelRosterTeam[]>([]);
   const [view, setView] = useState<IntelBoardView | null>(null);
   const [summary, setSummary] = useState("");
   const [compare, setCompare] = useState("");
@@ -137,6 +140,28 @@ function IntelLive({ orgId }: { orgId: string }) {
         // IndexedDB missing or blocked; live lookup still runs.
       }
     })();
+  }, [orgId]);
+
+  // The event's teams, so the page opens on something to tap. Best effort:
+  // search still works when this fails or there is no active event.
+  useEffect(() => {
+    if (!orgId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=`, {
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { roster?: IntelRosterTeam[] };
+        if (!cancelled && Array.isArray(data.roster)) setRoster(data.roster);
+      } catch {
+        // Offline or slow — the search box is still there.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [orgId]);
 
   async function search(event: FormEvent) {
@@ -463,7 +488,11 @@ function IntelLive({ orgId }: { orgId: string }) {
 
       <IntelSearchResults results={results} onSelect={(teamNumber) => void select(teamNumber)} />
 
-      {shell === "empty" && results.length === 0 ? (
+      {!view && results.length === 0 && roster.length > 0 ? (
+        <IntelEventRoster roster={roster} onSelect={(teamNumber) => void select(teamNumber)} />
+      ) : null}
+
+      {shell === "empty" && results.length === 0 && roster.length === 0 ? (
         <EmptyState
           soft
           badge={emptyCopy.badge}
@@ -475,6 +504,20 @@ function IntelLive({ orgId }: { orgId: string }) {
 
       {shell === "ready" && view ? (
         <>
+          {roster.length > 0 ? (
+            <button
+              type="button"
+              className="text-button intel-roster-back"
+              onClick={() => {
+                setView(null);
+                setResults([]);
+                setSummary("");
+                setComparison(null);
+              }}
+            >
+              ← All {roster.length} teams at your event
+            </button>
+          ) : null}
           <DataSourcePicker
             settings={source.settings}
             ownTeamKey={null}

@@ -30,6 +30,59 @@ export class IntelResearchRepository {
     return result.rows;
   }
 
+  /**
+   * Every team at an event, best-rated first, with how many of our own scout
+   * rows each has — the list a strategist opens the lookup to scan. Teams come
+   * from the schedule and from synced ratings, so a roster exists before the
+   * schedule is posted. Rating stays null when none is synced.
+   */
+  async eventRoster(orgId: string, eventKey: string, limit = 80) {
+    const result = await this.client.query<{
+      teamKey: string;
+      teamNumber: number;
+      nickname: string | null;
+      epaTotal: number | null;
+      scouted: number;
+    }>(
+      `WITH roster AS (
+         SELECT jsonb_array_elements_text(m.red_alliance->'teamKeys') AS team_key
+           FROM matches_ref m WHERE m.event_key = $2::text
+         UNION
+         SELECT jsonb_array_elements_text(m.blue_alliance->'teamKeys')
+           FROM matches_ref m WHERE m.event_key = $2::text
+         UNION
+         SELECT tm.team_key FROM team_event_metrics tm WHERE tm.event_key = $2::text
+       ),
+       rating AS (
+         SELECT DISTINCT ON (tm.team_key) tm.team_key, tm.epa_total
+           FROM team_event_metrics tm
+          WHERE tm.event_key = $2::text
+          ORDER BY tm.team_key,
+            CASE tm.source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+            tm.synced_at DESC NULLS LAST
+       ),
+       scouted AS (
+         SELECT s.team_key, count(*)::int AS n
+           FROM match_scout_entries s
+          WHERE s.org_id = $1::uuid AND s.event_key = $2::text
+          GROUP BY s.team_key
+       )
+       SELECT r.team_key AS "teamKey",
+              COALESCE(t.team_number, NULLIF(regexp_replace(r.team_key, '\\D', '', 'g'), '')::int) AS "teamNumber",
+              t.nickname,
+              rating.epa_total::float8 AS "epaTotal",
+              COALESCE(scouted.n, 0) AS scouted
+         FROM roster r
+         LEFT JOIN teams_ref t ON t.team_key = r.team_key
+         LEFT JOIN rating ON rating.team_key = r.team_key
+         LEFT JOIN scouted ON scouted.team_key = r.team_key
+        ORDER BY rating.epa_total DESC NULLS LAST, 2
+        LIMIT $3`,
+      [orgId, eventKey, Math.min(Math.max(limit, 1), 120)],
+    );
+    return result.rows;
+  }
+
   async getTeamIntel(orgId: string, teamNumber: number): Promise<TeamIntel | null> {
     const teamResult = await this.client.query<TeamRow>(
       `SELECT t.team_key AS "teamKey", t.team_number AS "teamNumber", t.nickname,

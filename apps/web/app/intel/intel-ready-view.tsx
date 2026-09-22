@@ -128,6 +128,59 @@ export function IntelSearchResults({
   );
 }
 
+export type IntelRosterTeam = {
+  teamKey: string;
+  teamNumber: number;
+  nickname: string | null;
+  epaTotal: number | null;
+  scouted: number;
+};
+
+/**
+ * Every team at the event, best-rated first. The bar is the team's rating
+ * against the top of this list; the count is our own scout rows, so a lead
+ * can see at a glance who has not been watched yet.
+ */
+export function IntelEventRoster({
+  roster,
+  onSelect,
+}: {
+  roster: IntelRosterTeam[];
+  onSelect: (teamNumber: number) => void;
+}) {
+  const top = Math.max(1, ...roster.map((team) => team.epaTotal ?? 0));
+  const unscouted = roster.filter((team) => team.scouted === 0).length;
+  return (
+    <section className="intel-roster" aria-label="Teams at your event">
+      <header>
+        <h2>Teams at your event</h2>
+        <p className="app-muted">
+          {roster.length} teams, best season rating first.
+          {unscouted > 0 ? ` ${unscouted} not scouted by us yet.` : " Every one has been scouted."}
+        </p>
+      </header>
+      <ol className="intel-roster-list">
+        {roster.map((team, index) => (
+          <li key={team.teamKey}>
+            <button type="button" onClick={() => onSelect(team.teamNumber)}>
+              <span className="intel-roster-rank">{index + 1}</span>
+              <strong>{team.teamNumber}</strong>
+              <span className="intel-roster-name">{team.nickname ?? ""}</span>
+              <span className="intel-roster-bar" aria-hidden="true">
+                {team.epaTotal != null ? <i style={{ width: `${(team.epaTotal / top) * 100}%` }} /> : null}
+              </span>
+              <span className="intel-roster-rating">{team.epaTotal != null ? team.epaTotal.toFixed(1) : "—"}</span>
+              <span className={`intel-roster-scouted${team.scouted === 0 ? " is-none" : ""}`}>
+                {team.scouted === 0 ? "not scouted" : `${team.scouted} scouted`}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function IntelReadyView({
   intel,
   similar,

@@ -174,3 +174,30 @@ button.intel-sb-head:focus-visible{outline:2px solid var(--accent);outline-offse
 .intel-sb-notes{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .intel-sb-notes li{display:flex;gap:10px;align-items:baseline}
 .intel-sb-notes p{margin:0}
+
+/* --- Teams at your event ------------------------------------------------------
+   The lookup's opening view: tap a row to open that team. */
+.intel-roster{display:grid;gap:10px;margin:4px 0 12px}
+.intel-roster header h2{margin:0 0 4px;font-size:1.1rem}
+.intel-roster-list{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.intel-roster-list button{
+  display:grid;
+  grid-template-columns:2rem 3.5rem minmax(0,1fr) minmax(3rem,7rem) 3rem 6rem;
+  align-items:center;gap:10px;width:100%;
+  padding:8px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--surface);color:inherit;font:inherit;text-align:left;cursor:pointer;
+}
+.intel-roster-list button:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.intel-roster-list button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.intel-roster-rank{color:var(--muted);font-size:12px;text-align:right}
+.intel-roster-name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted)}
+.intel-roster-bar{position:relative;height:6px;border-radius:999px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}
+.intel-roster-bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--accent)}
+.intel-roster-rating{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+.intel-roster-scouted{font-size:12px;color:var(--muted);text-align:right}
+.intel-roster-scouted.is-none{color:var(--warn,#9a5b12)}
+@media (max-width:640px){
+  .intel-roster-list button{grid-template-columns:1.5rem 3rem minmax(0,1fr) 2.75rem;row-gap:4px}
+  .intel-roster-bar{grid-column:2/4}
+  .intel-roster-scouted{grid-column:4;text-align:right}
+}

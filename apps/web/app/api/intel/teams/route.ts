@@ -64,7 +64,12 @@ export async function GET(request: Request) {
             lookupNote,
           };
         }
-        if (!query) return { teams: [], activeEvent };
+        if (!query) {
+          // No search yet: the event's teams, so the page opens on something
+          // to tap instead of an empty box.
+          const roster = activeEvent?.eventKey ? await repository.eventRoster(orgId!, activeEvent.eventKey) : [];
+          return { teams: [], roster, activeEvent };
+        }
         return { teams: await repository.searchTeams(orgId!, query), activeEvent };
       }),
     );
