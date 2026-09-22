@@ -1,0 +1,100 @@
+/* The Scouting product frame. Same tokens as Vantage (so the two read as one
+   family), a narrower job: five places and a way back. The bar sticks so the
+   tabs stay under a thumb while a scouter scrolls a long form. */
+.scouting-product{min-height:100dvh;background:var(--bg)}
+.scouting-bar{
+  position:sticky;top:0;z-index:40;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px;
+  padding:10px clamp(12px,3vw,28px);
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.scouting-brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none}
+.scouting-brand strong{display:block;font-size:15px;letter-spacing:-.01em;line-height:1.1}
+.scouting-brand small{display:block;color:var(--muted);font-size:11.5px}
+.scouting-mark{
+  display:grid;place-items:center;width:30px;height:30px;border-radius:9px;
+  background:var(--accent);color:var(--accent-ink,#fff);font-weight:800;font-size:15px;
+}
+.scouting-tabs{display:flex;justify-content:center;gap:4px;overflow-x:auto;scrollbar-width:none}
+.scouting-tabs::-webkit-scrollbar{display:none}
+.scouting-tabs a{
+  flex:0 0 auto;padding:8px 14px;border-radius:999px;
+  color:var(--muted);font-weight:600;font-size:14px;text-decoration:none;
+  transition:background-color .2s var(--ease-out,ease),color .2s var(--ease-out,ease);
+}
+.scouting-tabs a:hover{color:var(--ink);background:color-mix(in srgb,var(--line) 55%,transparent)}
+.scouting-tabs a.is-active{color:var(--ink);background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .08),0 0 0 1px var(--line)}
+.scouting-back{
+  justify-self:end;padding:8px 12px;border-radius:999px;border:1px solid var(--line);
+  color:var(--ink);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;
+}
+.scouting-back:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.scouting-main{padding:clamp(12px,3vw,28px);max-width:1180px;margin:0 auto}
+.scouting-main > main{padding:0}
+
+@media (max-width:720px){
+  /* On a phone the tabs become a bottom bar — the thumb's reach, not the eyes'. */
+  .scouting-bar{grid-template-columns:auto minmax(0,1fr);padding-top:max(10px,env(safe-area-inset-top))}
+  .scouting-tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;justify-content:space-around;
+    padding:6px 8px max(8px,env(safe-area-inset-bottom));
+    background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+    border-top:1px solid var(--line);
+  }
+  .scouting-tabs a{padding:10px 10px;font-size:13px;min-height:44px;display:grid;place-items:center}
+  .scouting-main{padding-bottom:88px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .scouting-tabs a{transition:none}
+}
+
+/* --- Scouting home -------------------------------------------------------- */
+.scout-home{display:grid;gap:clamp(16px,2.4vw,24px)}
+.scout-home-hero{display:grid;gap:10px;padding:clamp(20px,4vw,40px) 0 4px}
+.scout-home-eyebrow{margin:0;color:var(--muted);font:600 12px/1.3 var(--font-mono,ui-monospace,monospace);letter-spacing:.08em;text-transform:uppercase}
+.scout-home-hero h1{margin:0;font-size:clamp(34px,6vw,54px);line-height:1;letter-spacing:-.035em}
+.scout-home-lede{margin:0;max-width:52ch;color:var(--muted);font-size:clamp(15px,1.6vw,17px);line-height:1.5}
+.scout-home-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.scout-home-start{min-height:48px;padding-inline:22px;font-size:16px}
+.scout-home-device{
+  display:grid;gap:14px;padding:16px 18px;border:1px solid var(--line);border-radius:18px;background:var(--surface);
+}
+.scout-home-status{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:center}
+.scout-home-status span{grid-row:span 2;width:10px;height:10px;border-radius:50%;background:var(--good,#1b7f4e);box-shadow:0 0 0 4px color-mix(in srgb,var(--good,#1b7f4e) 18%,transparent)}
+.scout-home-status.is-offline span{background:var(--warn,#9a5b12);box-shadow:0 0 0 4px color-mix(in srgb,var(--warn,#9a5b12) 18%,transparent)}
+.scout-home-status small{color:var(--muted);font-size:13px}
+.scout-home-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0}
+.scout-home-facts div{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--line) 35%,transparent)}
+.scout-home-facts dt{color:var(--muted);font-size:12px}
+.scout-home-facts dd{margin:2px 0 0;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.scout-home-facts dd.is-warn{color:var(--warn,#9a5b12)}
+.scout-home-persist{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.scout-home-persist p,.scout-home-kept{margin:0;color:var(--muted);font-size:13px;max-width:60ch}
+.scout-home-gaps h2{margin:0 0 10px;font-size:16px}
+.scout-home-gaps ul{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.scout-home-gaps a{display:flex;gap:8px;align-items:baseline;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-size:13px}
+.scout-home-gaps a span{color:var(--muted);max-width:14ch;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.scout-home-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.scout-home-tools a{
+  display:grid;gap:6px;padding:16px 18px;border:1px solid var(--line);border-radius:18px;background:var(--surface);
+  color:var(--ink);text-decoration:none;
+  transition:transform .25s var(--ease-out,ease),box-shadow .25s var(--ease-out,ease),border-color .25s var(--ease-out,ease);
+}
+.scout-home-tools a:hover{transform:translateY(-2px);box-shadow:0 10px 30px -18px rgb(0 0 0 / .35);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.scout-home-tools span{color:var(--muted);font-size:13.5px;line-height:1.45}
+@media (max-width:720px){
+  .scout-home-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scout-home-tools{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.scout-home-tools a{transition:none}.scout-home-tools a:hover{transform:none}}
+
+/* Shared feature pages carry Vantage's breadcrumb ("Competition / Research")
+   and a strip of links to other Vantage tools. Inside Scouting the tab bar is
+   the navigation, so both are hidden here — the pages themselves are unchanged
+   and keep them when opened in Vantage. */
+.scouting-main .app-page-header .breadcrumbs,
+.scouting-main .app-page-header .product-hub-related{display:none}

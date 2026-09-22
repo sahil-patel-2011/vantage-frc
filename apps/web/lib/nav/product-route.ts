@@ -28,6 +28,8 @@ const APP_SHELL_EXEMPT_EXACT = new Set([
  */
 export function pathnameUsesAppShell(pathname: string): boolean {
   if (APP_SHELL_EXEMPT_EXACT.has(pathname)) return false;
+  // The Scouting product brings its own frame (app/scout/layout.tsx).
+  if (pathname === "/scout" || pathname.startsWith("/scout/")) return false;
   if (pathname.startsWith("/display/kiosk")) return false;
   if (pathname.startsWith("/display/pit")) return false;
   if (pathname.startsWith("/showcase/present")) return false;

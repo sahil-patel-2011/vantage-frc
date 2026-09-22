@@ -208,6 +208,10 @@ export function resolveAuthTrustedOrigins(baseURL: string) {
   for (const alias of PRODUCTION_AUTH_ALIASES) addOrigin(alias);
   addOrigin(runtimeEnv("NEXT_PUBLIC_APP_URL"));
   addOrigin(runtimeEnv("NEXT_PUBLIC_SITE_URL"));
+  // The Scouting product's host (same deployment, same auth) — sign-out and
+  // other /api/auth POSTs from it must pass the origin check.
+  addOrigin(runtimeEnv("NEXT_PUBLIC_SCOUTING_ORIGIN"));
+  addOrigin(runtimeEnv("NEXT_PUBLIC_VANTAGE_ORIGIN"));
   const productionHost = runtimeEnv("VERCEL_PROJECT_PRODUCTION_URL");
   addOrigin(productionHost);
   addOrigin(runtimeEnv("VERCEL_URL"));

@@ -4,6 +4,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeAppPath } from "./lib/security/safe-navigation";
 import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/media-availability";
+import { productRedirect, requestOrigin } from "./lib/products/products";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -29,6 +30,9 @@ const PUBLIC_PAGES = new Set([
 // Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.
 const PUBLIC_PREFIXES = [
   "/api/auth",
+  // Redeems a one-time Vantage ↔ Scouting handoff token; it is what creates the
+  // session on this host, so it cannot require one (migration 0670).
+  "/api/handoff/accept",
   "/api/invites/preview",
   "/api/waitlist",
   "/api/admin/bootstrap-owner",
@@ -213,6 +217,19 @@ function approvalPendingRedirect(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Two products, one deployment: the Scouting host presents only Scouting's
+  // pages and sends everything else to Vantage (lib/products/products.ts).
+  const productTarget = productRedirect({
+    host: request.headers.get("host"),
+    pathname,
+    search: request.nextUrl.search,
+  });
+  if (productTarget) {
+    // An explicit Location: NextResponse.redirect relativises a URL it thinks
+    // is same-origin, and in dev it believes both hosts are.
+    const location = new URL(productTarget, requestOrigin(request)).toString();
+    return new NextResponse(null, { status: 307, headers: { Location: location } });
+  }
   // Run before public routes and auth: nobody can use paused media endpoints.
   if (isPausedMediaRoute(pathname, request.nextUrl.searchParams.get("tab")) ||
       (!MEDIA_ENABLED && request.method === "POST" && (

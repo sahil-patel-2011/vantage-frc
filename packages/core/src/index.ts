@@ -27,6 +27,7 @@ import {
   resolveAuthEmailAccess,
 } from "./auth-access";
 import { desktopLinkSessions } from "./desktop-link-plugin";
+import { productHandoffSessions } from "./product-handoff-plugin";
 
 /**
  * Auth env is resolved lazily inside buildAuth(): `next build` imports every
@@ -220,6 +221,7 @@ function buildAuth() {
     // Server-only endpoint (never HTTP-mounted) that mints a session for the
     // desktop shell after a browser-approved, verifier-proven code exchange.
     desktopLinkSessions(),
+    productHandoffSessions(),
   ],
   rateLimit: {
     enabled: true,
