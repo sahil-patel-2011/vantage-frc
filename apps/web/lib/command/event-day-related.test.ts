@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   EVENT_DAY_RELATED_INCLUDE,
   classifyEventDayShell,
+  commandSetupMessage,
   eventDayEmptyTitle,
   eventDayRelatedLinks,
   eventDaySetupSteps,
@@ -157,6 +158,12 @@ describe("eventDayShellNextActions", () => {
   it("ready boards keep scouting without repeating the related strip", () => {
     const actions = eventDayShellNextActions({ orgId: "org-1", shell: "ready" });
     expect(actions.map((a) => a.id)).toEqual(["scouting"]);
+  });
+
+  it("tells a scout that an admin sets the event", () => {
+    expect(commandSetupMessage({ eventKey: null, canSetEvent: false })).toMatch(/owner or admin/);
+    expect(commandSetupMessage({ eventKey: null, canSetEvent: true })).toMatch(/Set your active event/);
+    expect(commandSetupMessage({ eventKey: "2026casj", canSetEvent: false })).toMatch(/team's number/);
   });
 
   it("does not repeat header related-strip destinations as next actions", () => {

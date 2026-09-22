@@ -7,6 +7,7 @@ import { TeamDataRelated } from "../../../components/team-data-related";
 import { EmptyState, Panel, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { loadFailureCopy } from "../../../lib/ui/load-failure";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
 import {
@@ -180,6 +181,8 @@ function TeamDataShell({
   orgId,
   shell,
   error,
+  badge,
+  primary,
   onRetry,
   children,
 }: {
@@ -188,6 +191,8 @@ function TeamDataShell({
   orgId?: string | null;
   shell: TeamDataShellKind;
   error?: string;
+  badge?: string;
+  primary?: { label: string; href: string };
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -207,13 +212,14 @@ function TeamDataShell({
       <EmptyState
         soft
         badge={
-          shell === "setup"
+          badge ??
+          (shell === "setup"
             ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
                 ? "No cache yet"
-                : undefined
+                : undefined)
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
         title={title}
@@ -224,6 +230,11 @@ function TeamDataShell({
         }
         aria-busy={shell === "loading" || undefined}
       >
+        {primary ? (
+          <Button as="a" variant="primary" href={primary.href}>
+            {primary.label}
+          </Button>
+        ) : null}
         {shell === "error" && onRetry ? (
           <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
@@ -473,16 +484,27 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   }
 
   if (shell === "error") {
+    const failure = forbidden ? loadFailureCopy("forbidden") : null;
     return (
       <TeamDataShell
-        title={forbidden ? "Admin access required" : "Team Data unavailable"}
-        description="Inventory and event data appear after your first sync."
+        title={failure?.title ?? "Team Data unavailable"}
+        description={
+          failure
+            ? "Owners and admins connect the event schedule here."
+            : "Inventory and event data appear after your first sync."
+        }
         orgId={orgId}
         shell="error"
-        error={error || message}
-        onRetry={() => {
-          void load();
-        }}
+        badge={failure?.badge}
+        error={forbidden ? failure?.description : error || message}
+        primary={failure?.primary}
+        onRetry={
+          forbidden
+            ? undefined
+            : () => {
+                void load();
+              }
+        }
       >
         <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamDataShell>

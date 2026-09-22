@@ -12,6 +12,7 @@ import {
   type EventDayShellKind,
   type EventDayShellNextAction,
 } from "../../lib/command/event-day-related";
+import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
 export function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -76,7 +77,6 @@ export function EventDayShell({
 }) {
   const copy = eventDayShellCopy(shell);
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const teamDataHref = withOrgHref("/team/data", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
 
   const related = <EventDayRelatedStrip orgId={orgId} />;
@@ -112,14 +112,15 @@ export function EventDayShell({
     );
   }
 
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const primarySetupCta =
     canSetEvent && onSelectEvent ? (
       <Button variant="primary" type="button" onClick={onSelectEvent}>
         Set active event
       </Button>
     ) : (
-      <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
-        {orgId ? "Set the event you’re at" : "Choose your team"}
+      <Button as="a" variant="primary" href={orgId ? scoutingHref : workspaceHref}>
+        {orgId ? "Back to Scouting" : "Choose your team"}
       </Button>
     );
 

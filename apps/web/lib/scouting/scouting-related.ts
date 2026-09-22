@@ -88,8 +88,8 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     },
     {
       id: "command",
-      label: "Set active event",
-      detail: "Event Day picks the event match and pit forms use.",
+      label: "Open Event Day",
+      detail: "An owner or admin sets the event match and pit forms use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -193,9 +193,9 @@ export function scoutingShellCopy(
         return {
           kind,
           badge: "Needs setup",
-          title: "Set the event you're at",
+          title: "Waiting on an event",
           description:
-            "This team is already chosen. Match and pit forms load after you set the event you are attending.",
+            "This team is already chosen. An owner or admin sets the event, and then match and pit forms load.",
         };
       }
       return {
@@ -277,8 +277,8 @@ export function scoutingNextActions(input: {
       return [
         {
           id: "command",
-          label: "Set active event",
-          detail: "Event Day picks the event match and pit forms use.",
+          label: "Open Event Day",
+          detail: "An owner or admin sets the event match and pit forms use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },

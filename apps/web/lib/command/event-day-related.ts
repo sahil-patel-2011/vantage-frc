@@ -173,6 +173,19 @@ export function eventDayEmptyTitle(input: {
   return eventDayShellCopy(input.shell).title;
 }
 
+/** The sentence Event Day shows when the team or the event is still missing. */
+export function commandSetupMessage(input: {
+  eventKey?: string | null;
+  canSetEvent: boolean;
+}): string {
+  if (!input.eventKey) {
+    return input.canSetEvent
+      ? "Set your active event to turn Event Day Command into your field-side OS."
+      : "An owner or admin sets the event this team is attending. Match times stay empty until then.";
+  }
+  return "Set your team's number so we can filter your match queue.";
+}
+
 /** Soft-UI empty / setup / error copy. */
 export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
   switch (kind) {

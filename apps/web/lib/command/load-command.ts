@@ -7,6 +7,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
 import { finalizeStrategyRecompute } from "../strategy/recompute";
+import { commandSetupMessage } from "./event-day-related";
 import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
 import { buildNexusQueueSnapshot } from "./nexus-queue";
@@ -216,9 +217,10 @@ export async function loadEventDayCommand(
     return {
       ...base,
       status: "setup_required",
-      message: !row.eventKey
-        ? "Set your active event to turn Event Day Command into your field-side OS."
-        : "Set your team's number so we can filter your match queue.",
+      message: commandSetupMessage({
+        eventKey: row.eventKey,
+        canSetEvent,
+      }),
       matches: [],
       scoutQueue: [],
       briefs: [],
