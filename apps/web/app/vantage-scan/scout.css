@@ -1,0 +1,20 @@
+/* =============================================================================
+   Scan polish — scout (the Scouting product: /scout and its tabs)
+   The product brings its own frame (app/scout/scouting-shell.css); this keeps
+   the shared feature pages inside it on the scan rhythm without the Vantage
+   hub chrome. Empty stays empty. No demo metrics.
+   ========================================================================== */
+
+.scouting-main > main,
+.scout-home {
+  min-width: 0;
+}
+
+.scouting-main .app-page-header {
+  margin-top: 0;
+}
+
+.scout-home h2 {
+  color: var(--scan-navy, var(--ink));
+  letter-spacing: -0.02em;
+}

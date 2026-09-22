@@ -7,7 +7,7 @@
   display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px;
   padding:10px clamp(12px,3vw,28px);
   background:color-mix(in srgb,var(--bg) 82%,transparent);
-  backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+  backdrop-filter:saturate(1.6) blur(14px);
   border-bottom:1px solid var(--line);
 }
 .scouting-brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none}
@@ -41,7 +41,7 @@
     position:fixed;left:0;right:0;bottom:0;z-index:40;justify-content:space-around;
     padding:6px 8px max(8px,env(safe-area-inset-bottom));
     background:color-mix(in srgb,var(--bg) 88%,transparent);
-    backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+    backdrop-filter:saturate(1.6) blur(14px);
     border-top:1px solid var(--line);
   }
   .scouting-tabs a{padding:10px 10px;font-size:13px;min-height:44px;display:grid;place-items:center}
