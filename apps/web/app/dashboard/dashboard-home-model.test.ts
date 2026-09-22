@@ -43,6 +43,13 @@ describe("homeHeaderDetail", () => {
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",
+      tbaConfigured: false,
+      setupRequired: false,
+      eventName: "Pacific Practice",
+    })).toBe("");
+    expect(homeHeaderDetail({
+      meLoaded: true,
+      orgId: "org-1",
       tbaConfigured: true,
       setupRequired: true,
       eventName: null,

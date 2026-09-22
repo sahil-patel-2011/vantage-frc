@@ -8,6 +8,7 @@ import {
   scoutingRelatedLinks,
   scoutingSetupSteps,
   scoutingShellCopy,
+  scoutEventLabel,
   shouldShowScoutingRecentEntries,
 } from "./scouting-related";
 
@@ -96,6 +97,17 @@ describe("scoutingOfflineBannerDetail", () => {
       }),
     );
     expect(blob).not.toMatch(/DEMO/i);
+  });
+});
+
+describe("scoutEventLabel", () => {
+  it("uses the saved name and hides a team-made key", () => {
+    expect(scoutEventLabel({ eventName: "Pacific Practice", eventKey: "2026custom-org-pacific" })).toBe(
+      "Pacific Practice",
+    );
+    expect(scoutEventLabel({ eventName: "  ", eventKey: "2026custom-org-pacific" })).toBe("Your event");
+    expect(scoutEventLabel({ eventKey: "2026orwil" })).toBe("2026orwil");
+    expect(scoutEventLabel({ eventKey: null })).toBeNull();
   });
 });
 

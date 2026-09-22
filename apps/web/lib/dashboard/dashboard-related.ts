@@ -114,13 +114,23 @@ export function dashboardNextActions(input: {
   const actions: DashboardNextAction[] = [];
 
   if (shell === "tba") {
-    actions.push({
-      id: "tba",
-      label: "Connect match results",
-      detail: "Needed for live match and rank widgets.",
-      href: withOrgHref("/team/data", orgId),
-      primary: true,
-    });
+    actions.push(
+      isOwnerAdmin
+        ? {
+            id: "tba",
+            label: "Connect match results",
+            detail: "Needed for live match and rank widgets.",
+            href: withOrgHref("/team/data", orgId),
+            primary: true,
+          }
+        : {
+            id: "scout-while-results",
+            label: "Open Scouting",
+            detail: "An owner or admin connects match results. You can still scout this event.",
+            href: hubHref("/competition", "scouting", orgId),
+            primary: true,
+          },
+    );
   }
 
   if (shell === "setup") {
@@ -212,8 +222,10 @@ export function dashboardSetupSteps(input: {
     {
       id: "tba",
       label: "Connect match results",
-      detail: "Match and rank data",
-      href: withOrgHref("/team/data", orgId),
+      detail: isOwnerAdmin ? "Match and rank data" : "An owner or admin connects this",
+      href: isOwnerAdmin
+        ? withOrgHref("/team/data", orgId)
+        : hubHref("/competition", "scouting", orgId),
       state: stateOf("tba", tbaDone),
     },
     {

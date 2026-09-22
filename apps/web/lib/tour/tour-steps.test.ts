@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   CARD_GAP,
+  TOUR_DIALOG_LABEL,
   TOUR_STEPS,
   availableSteps,
   placeCard,
   stepProgress,
+  tourShouldYield,
 } from "./tour-steps";
 
 const VIEWPORT = { width: 1200, height: 800 };
@@ -47,6 +49,18 @@ describe("availableSteps", () => {
 
   it("returns nothing when the page has none of the targets", () => {
     expect(availableSteps(TOUR_STEPS, () => false)).toEqual([]);
+  });
+});
+
+describe("tourShouldYield", () => {
+  it("stays up when the only dialog is the tour", () => {
+    expect(tourShouldYield([TOUR_DIALOG_LABEL])).toBe(false);
+    expect(tourShouldYield([])).toBe(false);
+  });
+
+  it("waits while another dialog is open, even without an accessible name", () => {
+    expect(tourShouldYield([null])).toBe(true);
+    expect(tourShouldYield([TOUR_DIALOG_LABEL, "Set active event"])).toBe(true);
   });
 });
 

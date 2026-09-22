@@ -19,6 +19,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
   formatScoutingMetric,
+  scoutEventLabel,
   shouldShowScoutingRecentEntries,
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
@@ -214,7 +215,11 @@ return (
       queue count says the same thing and says it with a number.
     */}
     <div className="scout-status-bar">
-      {data?.eventKey ? <strong className="scout-status-event">Event {data.eventKey}</strong> : null}
+      {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey }) ? (
+        <strong className="scout-status-event">
+          {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey })}
+        </strong>
+      ) : null}
       <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
         {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
         {embedded ? null : <> · {formatScoutingMetric(counts.media, true)} media</>}
@@ -722,11 +727,11 @@ return (
                   rows={data.recentEntries}
                   columns={SCOUT_ENTRY_CSV_COLUMNS}
                   feature="Scouting entries"
-                  orgLabel={data.eventKey}
+                  orgLabel={scoutEventLabel({ eventName: data.eventName, eventKey: data.eventKey })}
                   orgId={orgId}
                   size="sm"
                   provenance={`${
-                    data.eventKey ?? "Active event"
+                    scoutEventLabel({ eventName: data.eventName, eventKey: data.eventKey }) ?? "Active event"
                   } — the 30 most recent synced entries only. Anything still queued offline, and the rest of the event, is in the full export.`}
                 />
                 <ScoutReportViewer

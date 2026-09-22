@@ -253,6 +253,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       onClear={() => void setActiveEvent(null)}
       year={new Date().getFullYear()}
       onCreate={(draft) => void createCustomEvent(draft)}
+      message={eventMessage}
     />
   );
 

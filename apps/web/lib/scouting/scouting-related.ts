@@ -154,6 +154,24 @@ export function scoutingOfflineBannerDetail(input: {
   return undefined;
 }
 
+/**
+ * What a scout should read where the page names the event.
+ *
+ * A district key is already the name people say. A team-made key embeds the
+ * org id, so it is not a label — use the saved name, or a plain fallback.
+ */
+export function scoutEventLabel(input: {
+  eventName?: string | null;
+  eventKey?: string | null;
+}): string | null {
+  const name = input.eventName?.trim();
+  if (name) return name;
+  const key = input.eventKey?.trim() ?? "";
+  if (!key) return null;
+  if (key.includes("custom-")) return "Your event";
+  return key;
+}
+
 /** Classify main Scouting Soft-UI shell — never invents DEMO entries. */
 export function classifyScoutingShell(input: {
   loading?: boolean;

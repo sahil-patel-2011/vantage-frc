@@ -8,6 +8,7 @@ import {
   availableSteps,
   placeCard,
   stepProgress,
+  tourShouldYield,
   type Rect,
   type TourStep,
 } from "../lib/tour/tour-steps";
@@ -56,6 +57,16 @@ function rectOf(element: Element): Rect {
   return { top: box.top, left: box.left, width: box.width, height: box.height };
 }
 
+function openDialogLabels(): (string | null)[] {
+  return [...document.querySelectorAll('[role="dialog"]')]
+    .filter((node): node is HTMLElement => {
+      if (!(node instanceof HTMLElement)) return false;
+      const box = node.getBoundingClientRect();
+      return box.width > 0 && box.height > 0;
+    })
+    .map((node) => node.getAttribute("aria-label"));
+}
+
 /** Home's tour. Onboarding and sign-in are a form, and a full-screen scrim there swallows the first tap. */
 function tourWaits(pathname: string): boolean {
   return (
@@ -75,6 +86,7 @@ export function AppTour() {
   const [target, setTarget] = useState<Rect | null>(null);
   const [placement, setPlacement] = useState<{ top: number; left: number; side: string } | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const [paused, setPaused] = useState(false);
 
   const finish = useCallback(() => {
     markDismissed();
@@ -95,10 +107,12 @@ export function AppTour() {
     let elapsed = 0;
     const id = window.setInterval(() => {
       elapsed += 400;
-      if (consentShowing()) {
+      if (consentShowing() || tourShouldYield(openDialogLabels())) {
         // Give up after a while rather than waiting forever on someone who
-        // never answers: the tour simply does not run this visit.
-        if (elapsed > 60_000) window.clearInterval(id);
+        // never answers the cookie card: the tour simply does not run this
+        // visit. A dialog they opened on purpose is different — keep waiting,
+        // because starting the scrim on top of it steals the next click.
+        if (consentShowing() && elapsed > 60_000) window.clearInterval(id);
         return;
       }
       window.clearInterval(id);
@@ -111,6 +125,17 @@ export function AppTour() {
   }, [pathname]);
 
   const step = steps?.[index] ?? null;
+
+  // A dialog opened after the tour started (set active event, add a teammate)
+  // has to receive clicks. Hide the scrim until that dialog closes; do not
+  // mark the tour finished, because the person did not dismiss it.
+  useEffect(() => {
+    if (!steps) return;
+    const watch = () => setPaused(tourShouldYield(openDialogLabels()));
+    watch();
+    const id = window.setInterval(watch, 200);
+    return () => window.clearInterval(id);
+  }, [steps]);
 
   // Measure the target and place the card. Re-runs on resize and scroll so the
   // spotlight cannot drift off the thing it is pointing at.
@@ -154,7 +179,7 @@ export function AppTour() {
     return () => window.removeEventListener("keydown", onKey);
   }, [step, steps, finish]);
 
-  if (!steps || !step) return null;
+  if (!steps || !step || paused) return null;
   const isLast = index === steps.length - 1;
 
   return (

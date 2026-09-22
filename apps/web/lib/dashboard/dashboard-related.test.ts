@@ -85,6 +85,21 @@ describe("dashboard Soft-UI related", () => {
     expect(ai?.label.toLowerCase()).toMatch(/ai keys|api keys/);
   });
 
+  it("sends a scout to scouting while match results wait on an admin", () => {
+    const actions = dashboardNextActions({ orgId: ORG, shell: "tba", role: "scout" });
+    expect(actions[0]?.label).toBe("Open Scouting");
+    expect(actions[0]?.href).toContain("/competition");
+    expect(actions[0]?.href).not.toContain("/team/data");
+    const steps = dashboardSetupSteps({
+      orgId: ORG,
+      tbaConfigured: false,
+      role: "scout",
+    });
+    expect(steps.find((step) => step.id === "tba")?.href).not.toContain("/team/data");
+    const owner = dashboardNextActions({ orgId: ORG, shell: "tba", role: "owner" });
+    expect(owner[0]?.href).toContain("/team/data");
+  });
+
   it("hides AI key next action from non-admin members", () => {
     const actions = dashboardNextActions({
       orgId: ORG,
