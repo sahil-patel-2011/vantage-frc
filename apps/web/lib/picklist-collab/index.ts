@@ -99,8 +99,13 @@ export function sortEntriesWithFieldRating(
   entries: PicklistCollabEntry[],
   weights: readonly MetricWeight[],
   field?: FieldStats,
+  eventTeams?: readonly TeamMetricRow[],
 ): PicklistCollabEntryWithRating[] {
-  const ranked = rankByWeightedZScores(collabEntriesToMetricRows(entries), weights, field);
+  // Prefer the event rows (ratings + our scouting) so "finishes the match"
+  // moves the list; fall back to the entry's own ratings.
+  const eventByKey = new Map((eventTeams ?? []).map((row) => [row.teamKey, row]));
+  const rows = collabEntriesToMetricRows(entries).map((row) => eventByKey.get(row.teamKey) ?? row);
+  const ranked = rankByWeightedZScores(rows, weights, field);
   const scoreByKey = new Map(ranked.map((row) => [row.teamKey, row.score]));
   const withRating: PicklistCollabEntryWithRating[] = entries.map((entry) => ({
     ...entry,

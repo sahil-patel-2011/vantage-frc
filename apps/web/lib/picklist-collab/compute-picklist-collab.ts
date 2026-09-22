@@ -22,7 +22,14 @@ import {
   type PickListEntry,
   type PickListSnapshot,
 } from "../picklist";
-import { fieldStatsFromRows, type FieldStats, type TeamMetricRow } from "@vantage/prediction-strategy";
+import {
+  fieldStatsFromRows,
+  pickListRowsFromScouting,
+  type FieldStats,
+  type TeamMetricRow,
+} from "@vantage/prediction-strategy";
+import { withSavepoint } from "@vantage/db";
+import { loadTeamProfiles } from "../scouting/team-profiles";
 import { classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab } from ".";
 import type {
   PicklistCollabEntry,
@@ -57,6 +64,13 @@ export type PicklistCollabView =
       summary: PicklistCollabSummary;
       /** Event-wide field stats for slider ranking. Empty when fewer than two teams have ratings. */
       fieldStats?: FieldStats;
+      /**
+       * Every team at the list's event with the numbers the sliders weigh —
+       * synced ratings plus what our own scouting says (does it finish the
+       * match, does it do the same thing every match). The client ranks these
+       * live as sliders move, the way Lovat's dynamic pick list does.
+       */
+      eventTeams?: TeamMetricRow[];
       computedAt: string;
     };
 
@@ -154,6 +168,7 @@ async function loadEventEpa(
   >;
   bench: { median: number; p75: number } | null;
   fieldStats: FieldStats;
+  metricRows: TeamMetricRow[];
 }> {
   const result = await client.query<{
     teamKey: string;
@@ -202,7 +217,36 @@ async function loadEventEpa(
       },
     });
   }
-  return { byTeam, bench: fieldEpaBenchmarks(fieldTotals), fieldStats: fieldStatsFromRows(metricRows) };
+  return { byTeam, bench: fieldEpaBenchmarks(fieldTotals), fieldStats: fieldStatsFromRows(metricRows), metricRows };
+}
+
+/**
+ * One row per team: synced ratings first, our scouting filling what ratings
+ * cannot say. Scouting's own points only stand in when the team has no synced
+ * rating at all (an off-season event, the first morning of week one) — mixing
+ * the two scales for one metric would rank on a unit nobody measured.
+ */
+export function mergeScoutingIntoEventRows(
+  eventRows: readonly TeamMetricRow[],
+  scoutRows: readonly TeamMetricRow[],
+): TeamMetricRow[] {
+  const byKey = new Map<string, TeamMetricRow>();
+  for (const row of eventRows) byKey.set(row.teamKey, { teamKey: row.teamKey, values: { ...row.values } });
+  const anyRated = eventRows.some((row) => row.values.totalPoints != null);
+  for (const scout of scoutRows) {
+    const current = byKey.get(scout.teamKey) ?? { teamKey: scout.teamKey, values: {} };
+    const values = { ...current.values };
+    for (const id of ["consistency", "reliability", "defenseEffectiveness"] as const) {
+      if (scout.values[id] != null) values[id] = scout.values[id];
+    }
+    if (!anyRated) {
+      for (const id of ["totalPoints", "autoPoints", "teleopPoints", "endgameClimb"] as const) {
+        if (values[id] == null && scout.values[id] != null) values[id] = scout.values[id];
+      }
+    }
+    byKey.set(scout.teamKey, { teamKey: scout.teamKey, values });
+  }
+  return [...byKey.values()];
 }
 
 function projectEntries(
@@ -277,6 +321,17 @@ export async function computePicklistCollabView(
   const activeList = toCollabList(snapshot.list);
   const epa = await loadEventEpa(client, snapshot.list.eventKey);
   const entries = projectEntries(snapshot, epa);
+  const eventTeams = mergeScoutingIntoEventRows(
+    epa.metricRows,
+    await withSavepoint(
+      client,
+      async () => {
+        const profiles = await loadTeamProfiles(client, { orgId: org.orgId, eventKey: snapshot.list.eventKey });
+        return profiles.status === "ready" ? pickListRowsFromScouting(profiles.profiles) : [];
+      },
+      [] as TeamMetricRow[],
+    ),
+  );
 
   return {
     status: "live",
@@ -286,7 +341,8 @@ export async function computePicklistCollabView(
     activeList,
     entries: sortEntriesForDisplay(entries),
     summary: summarizePicklistCollab(entries),
-    fieldStats: epa.fieldStats,
+    fieldStats: fieldStatsFromRows(eventTeams),
+    eventTeams,
     computedAt: new Date().toISOString(),
   };
 }

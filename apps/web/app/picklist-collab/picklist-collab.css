@@ -33,3 +33,19 @@
   .picklist-collab-header-actions{justify-content:flex-start}
   .picklist-collab-next-actions li,.picklist-collab-setup-steps li{flex-direction:column;align-items:stretch}
 }
+
+/* Every team at the event, ranked by the sliders (the dynamic pick list). */
+.picklist-event-ranking header{display:grid;gap:4px;margin-bottom:10px}
+.picklist-event-ranking-list{display:grid;gap:4px;margin:0 0 8px;padding:0;list-style:none}
+.picklist-event-ranking-list li{
+  display:grid;grid-template-columns:1.75rem 3.5rem minmax(4rem,1fr) minmax(0,1.4fr) auto;
+  align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--line);
+}
+.picklist-event-rank{color:var(--muted);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.picklist-event-bar{position:relative;height:6px;border-radius:999px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}
+.picklist-event-bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--accent)}
+.picklist-event-why{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media (max-width:640px){
+  .picklist-event-ranking-list li{grid-template-columns:1.5rem 3rem minmax(0,1fr) auto}
+  .picklist-event-why{display:none}
+}

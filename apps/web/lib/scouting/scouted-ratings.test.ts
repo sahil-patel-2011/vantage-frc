@@ -152,3 +152,38 @@ describe("scoutedRowsFromEntries", () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe("points the scouts recorded themselves", () => {
+  it("uses a recorded total when there is no formula, and says nothing is guessed", () => {
+    const result = scoutedRowsFromEntries(
+      [
+        entry({ teamKey: "frc1", matchKey: "qm1", payload: { totalPoints: 59, autoPoints: 10, brokeDown: "no" } }),
+        entry({ teamKey: "frc1", matchKey: "qm2", payload: { totalPoints: 12, autoPoints: 0, brokeDown: "yes" } }),
+      ],
+      [],
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.basis).toBe("total");
+    expect(result.rows[0]).toMatchObject({ auto: 10, teleop: 49, disabled: false });
+    // "yes" is a breakdown; it used to be read only when the answer was "true".
+    expect(result.rows[1]).toMatchObject({ disabled: true });
+  });
+
+  it("still asks for a formula when the form records no points at all", () => {
+    const result = scoutedRowsFromEntries(eventEntries(), []);
+    expect(isScoutedRatingsUnavailable(result)).toBe(true);
+  });
+
+  it("does not count parking as a climb", () => {
+    const result = scoutedRowsFromEntries(
+      [
+        entry({ teamKey: "frc1", matchKey: "qm1", payload: { totalPoints: 40, endgame: "park" } }),
+        entry({ teamKey: "frc1", matchKey: "qm2", payload: { totalPoints: 50, endgame: "climb" } }),
+      ],
+      [],
+    );
+    if (!result.ok) throw new Error("expected rows");
+    expect(result.rows.map((row) => row.climbed)).toEqual([false, true]);
+  });
+});

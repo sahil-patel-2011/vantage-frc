@@ -98,9 +98,19 @@ export async function POST(request: Request) {
       switch (action) {
         case "create-list": {
           const name = trimmedOrNull(body.name, 200);
-          const eventKey = trimmedOrNull(body.eventKey, 64);
           if (!name) throw new Error("name is required");
-          if (!eventKey) throw new Error("eventKey is required");
+          // Blank means the event the team is at; a student should not need to
+          // know that Peachtree is "2026gacmp" to start a list.
+          const eventKey =
+            trimmedOrNull(body.eventKey, 64) ??
+            (
+              await client.query<{ eventKey: string | null }>(
+                `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1::uuid`,
+                [orgId],
+              )
+            ).rows[0]?.eventKey ??
+            null;
+          if (!eventKey) throw new Error("Set the event you are at first, or type an event code.");
           await createList(client, {
             orgId,
             userId,

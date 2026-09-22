@@ -81,14 +81,27 @@ function flag(payload: Record<string, unknown>, keys: readonly string[]): boolea
   for (const key of keys) {
     const value = payload[key];
     if (value === true) return true;
-    if (typeof value === "string" && value.trim().toLowerCase() === "true") return true;
+    if (typeof value === "number" && value > 0) return true;
+    // Forms answer yes/no as often as true/false; "yes" was read as "no".
+    if (typeof value === "string" && /^(true|yes|y|1)$/i.test(value.trim())) return true;
   }
   return false;
 }
 
-const DISABLED_KEYS = ["disabled", "dead", "no_show", "broke_down"] as const;
+/** Both spellings: forms built in the editor save camelCase keys. */
+const DISABLED_KEYS = [
+  "disabled",
+  "dead",
+  "no_show",
+  "noShow",
+  "broke_down",
+  "brokeDown",
+  "breakdown",
+  "died",
+  "tipped",
+] as const;
 const DEFENSE_KEYS = ["defense", "played_defense", "defence"] as const;
-const CLIMB_KEYS = ["tower_level", "climb", "climb_level", "endgame_climb"] as const;
+const CLIMB_KEYS = ["tower_level", "climb", "climb_level", "endgame_climb", "endgameClimb", "endgame"] as const;
 
 /** Did the robot climb? Null when nobody recorded anything either way. */
 function climbed(payload: Record<string, unknown>): boolean | null {
@@ -99,7 +112,8 @@ function climbed(payload: Record<string, unknown>): boolean | null {
     if (typeof value === "number") return value > 0;
     if (typeof value === "string") {
       const text = value.trim().toLowerCase();
-      if (text === "none" || text === "no" || text === "false" || text === "0") return false;
+      // Parking is an endgame result, not a climb.
+      if (["none", "no", "false", "0", "park", "parked", "fell", "failed"].includes(text)) return false;
       return true;
     }
   }
@@ -117,6 +131,11 @@ export function scoutedRowsFromEntries(
 
   const hasPhases = auto != null || teleop != null || endgame != null;
   if (!hasPhases && total == null) {
+    // No formula — but many forms have the scout record points directly
+    // ("totalPoints: 59"). Those are not a guess about what an action is
+    // worth; they are the number the scout wrote down, so use them as written.
+    const direct = directPointRows(entries);
+    if (direct) return { ok: true, ratings: ratingsFromScouting(direct), rows: direct, basis: "total" };
     return {
       ok: false,
       needsFormula: true,
@@ -149,6 +168,43 @@ export function scoutedRowsFromEntries(
   });
 
   return { ok: true, ratings: ratingsFromScouting(rows), rows, basis: hasPhases ? "phase" : "total" };
+}
+
+const DIRECT_TOTAL_KEYS = ["totalPoints", "total_points", "points", "score"] as const;
+const DIRECT_AUTO_KEYS = ["autoPoints", "auto_points"] as const;
+
+function directNumber(payload: Record<string, unknown>, keys: readonly string[]): number | null {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+/**
+ * Rows from points the scouts recorded themselves. Null unless at least half
+ * the entries carry a recorded total — a form that only sometimes has one is
+ * not a basis for ranking. Auto is kept when recorded; the rest of the total
+ * sits in teleop, because the form did not split it and inventing a split
+ * would be making numbers up.
+ */
+export function directPointRows(entries: readonly ScoutEntryRow[]): ScoutedMatchRow[] | null {
+  const withTotal = entries.filter((entry) => directNumber(entry.payload ?? {}, DIRECT_TOTAL_KEYS) != null);
+  if (withTotal.length === 0 || withTotal.length * 2 < entries.length) return null;
+  return entries.map((entry) => {
+    const payload = entry.payload ?? {};
+    const totalPoints = directNumber(payload, DIRECT_TOTAL_KEYS);
+    const autoPoints = directNumber(payload, DIRECT_AUTO_KEYS);
+    return {
+      teamKey: entry.teamKey,
+      matchKey: entry.matchKey,
+      disabled: flag(payload, DISABLED_KEYS),
+      defense: flag(payload, DEFENSE_KEYS),
+      climbed: climbed(payload) ?? undefined,
+      auto: totalPoints != null ? autoPoints : null,
+      teleop: totalPoints != null ? totalPoints - (autoPoints ?? 0) : null,
+    };
+  });
 }
 
 export function isScoutedRatingsUnavailable(

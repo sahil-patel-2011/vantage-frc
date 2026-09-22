@@ -88,34 +88,33 @@ export function PicklistWeightSliders({
   onReset: () => void;
 }) {
   const weightById = new Map(weights.map((item) => [item.id, item.weight]));
+  // A slider that can never move is noise. Show the ones this event has data
+  // for; say in one line how many are waiting on data.
+  const ready = PICKLIST_METRICS.filter((metric) => (fieldStats[metric.id]?.n ?? 0) >= 2);
+  const waiting = PICKLIST_METRICS.length - ready.length;
   return (
     <section className="app-card soft-panel picklist-weight-sliders" aria-label="How much each rating matters">
       <header>
         <h2>Compared to this event</h2>
         <p className="app-muted">
-          Drag a slider to change how much that rating moves the list. Scout-only ratings turn on
-          once your team has scouted a few matches.
+          Drag a slider to say how much that matters to your alliance — the ranking below moves as you drag.
+          {waiting > 0 ? ` ${waiting} more turn on when your scouting form collects them.` : ""}
         </p>
         <Button variant="ghost" size="sm" type="button" onClick={onReset}>
           Reset weights
         </Button>
       </header>
       <ol className="picklist-weight-sliders-list">
-        {PICKLIST_METRICS.map((metric) => {
+        {ready.map((metric) => {
           const weight = weightById.get(metric.id) ?? 0;
-          const field = fieldStats[metric.id];
-          const ready = metric.source === "event" && field != null;
+          const field = fieldStats[metric.id]!;
           return (
             <li key={metric.id}>
               <label>
                 <span>
                   {metric.label}
                   <small className="app-muted">
-                    {ready
-                      ? `${field.n} teams at this event`
-                      : metric.source === "scout"
-                        ? "Needs setup — no scout rows yet"
-                        : "Need two teams at this event with this rating"}
+                    {metric.source === "scout" ? `our scouting · ${field.n} teams` : `${field.n} teams at this event`}
                   </small>
                 </span>
                 <input
@@ -124,11 +123,10 @@ export function PicklistWeightSliders({
                   max={2}
                   step={0.1}
                   value={weight}
-                  disabled={!ready}
                   aria-label={`${metric.label} weight`}
                   onChange={(event) => onWeight(metric.id, Number(event.target.value))}
                 />
-                <b aria-hidden="true">{ready ? weight.toFixed(1) : "—"}</b>
+                <b aria-hidden="true">{weight.toFixed(1)}</b>
               </label>
             </li>
           );

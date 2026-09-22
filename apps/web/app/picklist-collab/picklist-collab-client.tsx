@@ -25,6 +25,7 @@ import {
   type PicklistCollabEntryWithRating,
 } from "../../lib/picklist-collab";
 import { PicklistWeightSliders, usePicklistFieldWeights } from "./picklist-weight-sliders";
+import { PicklistEventRanking } from "./picklist-event-ranking";
 import { DataSourcePicker } from "../analytics/data-source-picker";
 import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
@@ -449,6 +450,14 @@ export default function PicklistCollabClient() {
             onWeight={fieldWeights.setWeight}
             onReset={fieldWeights.reset}
           />
+          <PicklistEventRanking
+            eventTeams={view.eventTeams ?? []}
+            weights={fieldWeights.weights}
+            fieldStats={view.fieldStats ?? {}}
+            onList={new Set(view.entries.map((entry) => entry.teamNumber))}
+            busy={busy}
+            onAdd={(teamNumber) => mutate({ action: "add-entry", teamNumber, tier: "unranked" })}
+          />
           <AddEntryForm busy={busy} mutate={mutate} />
           <EntriesByTier
             view={view}
@@ -495,7 +504,7 @@ function EntriesByTier({
   mutate: (payload: Record<string, unknown>) => void;
   weights: MetricWeight[];
 }) {
-  const ranked = sortEntriesWithFieldRating(view.entries, weights, view.fieldStats ?? {});
+  const ranked = sortEntriesWithFieldRating(view.entries, weights, view.fieldStats ?? {}, view.eventTeams);
   if (view.summary.totalEntries === 0) {
     return (
       <EmptyState
@@ -719,8 +728,9 @@ function CreateListForm({
       className="picklist-collab-panel"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.name.trim() || !form.eventKey.trim()) return;
-        mutate({ action: "create-list", name: form.name, eventKey: form.eventKey });
+        if (!form.name.trim()) return;
+        // A blank event means the event the team is at — the server fills it in.
+        mutate({ action: "create-list", name: form.name, eventKey: form.eventKey.trim() || null });
         setForm(empty);
         setOpen(!collapsedLabel);
       }}
@@ -730,8 +740,8 @@ function CreateListForm({
         <FormRow label="List name">
           <input value={form.name} onChange={set("name")} placeholder="Week 3 Regional" required />
         </FormRow>
-        <FormRow label="Event key">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" required />
+        <FormRow label="Event (optional)" hint="Blank uses the event you are at. Or type an event code, like 2026miket.">
+          <input value={form.eventKey} onChange={set("eventKey")} placeholder="The event you are at" />
         </FormRow>
       </FormGrid>
       <div>
@@ -739,7 +749,7 @@ function CreateListForm({
           as="button"
           type="submit"
           variant="primary"
-          disabled={busy || !form.name.trim() || !form.eventKey.trim()}
+          disabled={busy || !form.name.trim()}
         >
           Create list
         </Button>
