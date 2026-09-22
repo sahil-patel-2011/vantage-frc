@@ -22,6 +22,7 @@ import {
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { commandCatalog, searchCommands } from "../lib/nav/command-search";
+import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { fetchProductSession } from "../lib/nav/product-session";
 import { Icon, type IconName } from "./icon";
@@ -344,6 +345,10 @@ export default function AppShell() {
     ];
   }, [me.platformAdmin]);
 
+  const canManageTeam = useMemo(() => {
+    const membershipRole = orgId ? memberships.find((row) => row.orgId === orgId)?.role : undefined;
+    return settingsRoleTier(membershipRole ?? me.role) === "owner-admin";
+  }, [memberships, me.role, orgId]);
   const queryActive = navQuery.trim().length > 0;
   const commandHits = useMemo(
     () =>
@@ -352,9 +357,10 @@ export default function AppShell() {
             limit: 8,
             isAllowed: navHrefAllowed,
             recentHrefs: recentCommands,
+            canManageTeam,
           })
         : [],
-    [navQuery, navHrefAllowed, paletteCatalog, queryActive, recentCommands],
+    [canManageTeam, navQuery, navHrefAllowed, paletteCatalog, queryActive, recentCommands],
   );
 
   const goToCommand = useCallback(

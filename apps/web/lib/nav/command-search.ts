@@ -614,12 +614,28 @@ function scoreEntry(entry: CommandEntry, query: string): number {
   return best;
 }
 
+/** Team admin, its invite hash, and the People hub chip that opens the same page. */
+export function isTeamAdminCommand(href: string): boolean {
+  const hash = href.indexOf("#");
+  const bare = hash === -1 ? href : href.slice(0, hash);
+  const query = bare.indexOf("?");
+  const path = query === -1 ? bare : bare.slice(0, query);
+  if (path === "/team/admin" || path.startsWith("/team/admin/")) return true;
+  if (path !== "/team") return false;
+  return new URLSearchParams(bare.slice(query + 1)).get("tab") === "team-admin";
+}
+
 export type SearchCommandsOptions = {
   limit?: number;
   /** Hrefs the member may not open (hub access / sponsors gating). */
   isAllowed?: (href: string) => boolean;
   /** Shown when the query is empty, most recent first. */
   recentHrefs?: string[];
+  /**
+   * When false, Team admin and Invite a teammate stay out of the palette.
+   * Omitted keeps those entries so existing catalogs stay complete.
+   */
+  canManageTeam?: boolean;
 };
 
 /**
@@ -631,8 +647,9 @@ export function searchCommands(
   entries: CommandEntry[] = commandCatalog(),
   options: SearchCommandsOptions = {},
 ): CommandHit[] {
-  const { limit = 12, isAllowed, recentHrefs = [] } = options;
-  const pool = isAllowed ? entries.filter((entry) => isAllowed(entry.href)) : entries;
+  const { limit = 12, isAllowed, recentHrefs = [], canManageTeam } = options;
+  let pool = isAllowed ? entries.filter((entry) => isAllowed(entry.href)) : entries;
+  if (canManageTeam === false) pool = pool.filter((entry) => !isTeamAdminCommand(entry.href));
 
   if (!normalize(query)) {
     const byHref = new Map(pool.map((entry) => [entry.href, entry]));

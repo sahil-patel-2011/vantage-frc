@@ -9,6 +9,7 @@ import {
   hubNestedTabs,
   hubPrimaryTabs,
   hubStripTabs,
+  hubTabsForMember,
   hubWorkbenchHref,
   hubWorkbenchId,
   isHubTab,
@@ -334,6 +335,14 @@ describe("product hubs", () => {
     expect(team.tabs.find((tab) => tab.id === "task-board")?.legacyHref).toBe("/tasks");
     expect(hubStripTabs(team, "todos").map((tab) => tab.id)).not.toContain("task-board");
     expect(hubStripTabs(team, "todos", "task-board").map((tab) => tab.id)).toContain("task-board");
+  });
+
+  it("hides Invites from members who cannot manage the team", () => {
+    const team = hubById("team");
+    const people = hubStripTabs(team, "attendance");
+    expect(people.map((tab) => tab.id)).toContain("team-admin");
+    expect(hubTabsForMember(people, false).map((tab) => tab.id)).not.toContain("team-admin");
+    expect(hubTabsForMember(people, true).map((tab) => tab.id)).toContain("team-admin");
   });
 
   it("keeps student-facing hub descriptions free of workbench chrome talk", () => {

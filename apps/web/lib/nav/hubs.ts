@@ -533,6 +533,14 @@ export function hubStripTabs(
   );
 }
 
+const MANAGER_ONLY_HUB_TAB_IDS = new Set(["team-admin"]);
+
+/** Invites opens Team admin. Members who cannot manage the team do not see that chip. */
+export function hubTabsForMember<T extends { id: string }>(tabs: readonly T[], canManageTeam: boolean): T[] {
+  if (canManageTeam) return tabs as T[];
+  return tabs.filter((tab) => !MANAGER_ONLY_HUB_TAB_IDS.has(tab.id));
+}
+
 /** Nested tools (and leftover standalone pages) that have a route. */
 export function hubMoreTabs(hub: ProductHubDef): HubTabDef[] {
   return hub.tabs.filter((tab) => Boolean(tab.group) && Boolean(tab.legacyHref));
