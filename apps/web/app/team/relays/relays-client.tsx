@@ -28,6 +28,7 @@ type RelayNode = {
 
 export default function RelaysClient() {
   const [card, setCard] = useState<ConnectorCard | null>(null);
+  const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orgId, setOrgId] = useState("");
   const [pairCode, setPairCode] = useState("");
@@ -45,6 +46,7 @@ export default function RelaysClient() {
         if (cancelled) return;
         const found = (body.connectors as ConnectorCard[] | undefined)?.find((row) => row.id === "free-relay");
         setCard(found ?? null);
+        setCanManage(body.canManage === true);
       })
       .catch(() => {
         if (!cancelled) setError("Could not load relay status.");
@@ -101,7 +103,7 @@ export default function RelaysClient() {
       ) : null}
       {error ? <p className="app-muted">{error}</p> : null}
       {notice ? <p>{notice}</p> : null}
-      {orgId ? (
+      {orgId && canManage ? (
         <Panel>
           <p>
             <strong>Approve a pairing code</strong>
@@ -117,6 +119,15 @@ export default function RelaysClient() {
           <Button type="button" variant="primary" disabled={busy || !pairCode.trim()} onClick={() => void approve()}>
             {busy ? "Pairing…" : "Approve"}
           </Button>
+        </Panel>
+      ) : orgId ? (
+        <Panel>
+          <p>
+            <strong>Pairing stays with an owner or admin</strong>
+          </p>
+          <p className="app-muted">
+            An owner or admin approves the code the Pi prints. Paired computers still show up here.
+          </p>
         </Panel>
       ) : (
         <EmptyState
@@ -156,14 +167,15 @@ export default function RelaysClient() {
             <strong>{card.label}</strong>
           </p>
           <p>{card.statusLine}</p>
-          {card.callbackUrl ? (
+          {canManage && card.callbackUrl ? (
             <p>
               Poll URL to register on the Pi: <code>{card.callbackUrl}</code>
             </p>
           ) : null}
           <p className="app-muted">
-            Do not paste a Freebuff website cookie. That is not allowed. Paste the relay endpoint and token the
-            installer prints, or approve the pairing code.
+            {canManage
+              ? "Do not paste a Freebuff website cookie. That is not allowed. Paste the relay endpoint and token the installer prints, or approve the pairing code."
+              : "An owner or admin finishes the Pi setup. Paired computers show up on this page."}
           </p>
           <Button as="a" href="/connectors" variant="secondary">
             Open connectors
@@ -172,7 +184,11 @@ export default function RelaysClient() {
       ) : (
         <EmptyState
           title="No relay paired"
-          description="Install the worker on a Pi, then approve the pairing code. Chat goes to chat instances; long jobs go to agent; video analysis goes to video. When the video Pi is idle it can host agent instances too."
+          description={
+            canManage
+              ? "Install the worker on a Pi, then approve the pairing code. Chat goes to chat instances; long jobs go to agent; video analysis goes to video. When the video Pi is idle it can host agent instances too."
+              : "An owner or admin installs the worker on a Pi and approves the pairing code. Chat goes to chat instances; long jobs go to agent; video analysis goes to video."
+          }
         >
           <Button as="a" href="/connectors" variant="primary">
             Open connectors
