@@ -27,6 +27,8 @@ export type IncidentHeatmapView =
       seasons: number[];
       incidents: Incident[];
       summary: IncidentHeatmapSummary;
+      eventKey: string | null;
+      eventName: string | null;
       computedAt: string;
     };
 
@@ -117,6 +119,15 @@ export async function computeIncidentHeatmapView(
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -125,6 +136,8 @@ export async function computeIncidentHeatmapView(
     seasons,
     incidents,
     summary,
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     computedAt: new Date().toISOString(),
   };
 }

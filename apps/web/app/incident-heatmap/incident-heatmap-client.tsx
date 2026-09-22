@@ -7,6 +7,7 @@ import { incidentContextLabel } from "../../lib/incident-heatmap";
 import { INCIDENT_CONTEXTS, type IncidentHeatmapView } from "../../lib/incident-heatmap/compute-incident-heatmap";
 import type { IncidentContext } from "../../lib/incident-heatmap/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -349,7 +350,7 @@ export default function IncidentHeatmapClient() {
       <IncidentHeatmapNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
-        <LogIncidentForm busy={busy} mutate={mutate} />
+        <LogIncidentForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
         {view.summary.totalIncidents > 0 ? (
           <>
             <HeatmapGrid view={view} />
@@ -529,9 +530,13 @@ function RecentIncidents({
 function LogIncidentForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -547,6 +552,8 @@ function LogIncidentForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -561,7 +568,7 @@ function LogIncidentForm({
           title: form.title,
           context: form.context,
           matchKey: form.matchKey || undefined,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           notes: form.notes || undefined,
           occurredAt: new Date().toISOString(),
         });
@@ -589,9 +596,19 @@ function LogIncidentForm({
         <FormRow label="Match key (optional)">
           <input value={form.matchKey} onChange={set("matchKey")} placeholder="2026casj_qm12" />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" />
+          </FormRow>
+        )}
       </FormGrid>
       <FormRow label="Notes (optional)">
         <textarea value={form.notes} onChange={set("notes")} rows={2} />

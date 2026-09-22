@@ -35,6 +35,8 @@ export type ScoutDisagreementsView =
       items: ScoutDisagreement[];
       summary: ScoutDisagreementSummary;
       auditLog: ScoutDisagreementAuditEntry[];
+      eventKey: string | null;
+      eventName: string | null;
       computedAt: string;
     };
 
@@ -175,6 +177,15 @@ export async function computeScoutDisagreementsView(
       )
     : { rows: [] as AuditRow[] };
 
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -184,6 +195,8 @@ export async function computeScoutDisagreementsView(
     items,
     summary,
     auditLog: auditResult.rows.map(mapAudit),
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     computedAt: new Date().toISOString(),
   };
 }
