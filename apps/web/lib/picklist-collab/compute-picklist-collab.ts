@@ -23,6 +23,8 @@ import {
   type PickListSnapshot,
 } from "../picklist";
 import { fieldStatsFromRows, type FieldStats, type TeamMetricRow } from "@vantage/prediction-strategy";
+import { hubHref } from "../nav/hubs";
+import { scoutEventLabel } from "../scouting/scouting-related";
 import { classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab } from ".";
 import type {
   PicklistCollabEntry,
@@ -46,6 +48,8 @@ export type PicklistCollabView =
       message: string;
       steps: PicklistCollabSetupStep[];
       orgId: string | null;
+      eventKey?: string | null;
+      eventName?: string | null;
     }
   | {
       status: "live";
@@ -251,19 +255,43 @@ export async function computePicklistCollabView(
 
   const records = await listPickLists(client, { orgId: org.orgId });
   if (records.length === 0) {
+    if (!org.eventKey) {
+      return {
+        status: "setup_required",
+        message: "Set the active event before you start a pick list.",
+        steps: [
+          {
+            id: "command",
+            label: "Set active event",
+            detail: "Pick the event this list is for. Ranks stay empty until it is set.",
+            href: hubHref("/competition", "command", org.orgId),
+          },
+        ],
+        orgId: org.orgId,
+        eventKey: null,
+        eventName: null,
+      };
+    }
+    const named = await client.query<{ eventName: string | null }>(
+      `SELECT name AS "eventName" FROM events_ref WHERE event_key = $1::text`,
+      [org.eventKey],
+    );
+    const eventName = named.rows[0]?.eventName ?? null;
+    const label = scoutEventLabel({ eventName, eventKey: org.eventKey }) ?? "this event";
     return {
       status: "setup_required",
-      message: "Create your first pick list for an upcoming event.",
+      message: `Create your first pick list for ${label}.`,
       steps: [
         {
           id: "create-list",
-          label: "Create a pick list",
-          detail:
-            "Name it after your next event. The same list feeds the alliance-selection desk and Pick Clock.",
-          href: "/picklist-collab",
+          label: "Create pick list",
+          detail: "Name the list. It uses the active event, and the same list feeds Pick Clock.",
+          href: "#picklist-collab-create",
         },
       ],
       orgId: org.orgId,
+      eventKey: org.eventKey,
+      eventName,
     };
   }
 

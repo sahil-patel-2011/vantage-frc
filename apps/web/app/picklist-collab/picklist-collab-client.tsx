@@ -42,6 +42,7 @@ import {
 } from "../../lib/picklist-collab/picklist-collab-related";
 import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./picklist-collab.css";
@@ -116,6 +117,9 @@ function CollabShell({
   shell,
   error,
   onRetry,
+  emptyTitle,
+  emptyDescription,
+  action,
   children,
 }: {
   description: string;
@@ -123,6 +127,9 @@ function CollabShell({
   shell: PicklistCollabShellKind;
   error?: string;
   onRetry?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  action?: { href: string; label: string } | null;
   children?: ReactNode;
 }) {
   const actions = picklistCollabNextActions({ orgId, shell });
@@ -156,10 +163,14 @@ function CollabShell({
           soft
           badge={copy.badge}
           badgeTone="setup"
-          title={copy.title}
-          description={error ?? copy.description}
+          title={emptyTitle ?? copy.title}
+          description={emptyDescription ?? error ?? copy.description}
         >
-          {setup ? (
+          {action ? (
+            <Button as="a" variant="primary" href={action.href}>
+              {action.label}
+            </Button>
+          ) : setup ? (
             <Button as="a" variant="primary" href={setup.href}>
               {setup.label}
             </Button>
@@ -337,11 +348,47 @@ export default function PicklistCollabClient() {
   }
 
   if (shell === "setup") {
+    const setupView = view?.status === "setup_required" ? view : null;
+    const createStep = setupView?.steps.find((step) => step.id === "create-list");
+    if (setupView?.orgId && createStep && setupView.eventKey) {
+      return (
+        <main className="module-page picklist-collab-page">
+          <PageHeader
+            breadcrumbs={
+              <>
+                <a href={competitionHref}>Competition</a>
+                {" / Collaborative pick list"}
+              </>
+            }
+            title="Collaborative pick list"
+            description={setupView.message}
+          >
+            <RelatedStrip orgId={orgId} />
+          </PageHeader>
+          <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <CreateListForm
+            busy={busy}
+            mutate={(payload) => void mutate(payload)}
+            eventKey={setupView.eventKey}
+            eventName={setupView.eventName}
+          />
+        </main>
+      );
+    }
+    const guided = Boolean(setupView?.orgId && setupView.steps[0]);
     return (
       <CollabShell
-        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        description={setupView ? setupView.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        emptyTitle={guided ? setupView?.message : undefined}
+        emptyDescription={guided ? setupView?.steps[0]?.detail : undefined}
+        action={guided && setupView?.steps[0] ? { href: setupView.steps[0].href, label: setupView.steps[0].label } : null}
       >
         <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
       </CollabShell>
@@ -692,12 +739,17 @@ function CreateListForm({
   busy,
   mutate,
   collapsedLabel,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   collapsedLabel?: string;
+  eventKey?: string | null;
+  eventName?: string | null;
 }) {
-  const empty = useMemo(() => ({ name: "", eventKey: "" }), []);
+  const lockedEvent = eventKey?.trim() ?? "";
+  const empty = useMemo(() => ({ name: "", eventKey: lockedEvent }), [lockedEvent]);
   const [form, setForm] = useState(empty);
   const [open, setOpen] = useState(!collapsedLabel);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
@@ -718,8 +770,9 @@ function CreateListForm({
       className="picklist-collab-panel"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.name.trim() || !form.eventKey.trim()) return;
-        mutate({ action: "create-list", name: form.name, eventKey: form.eventKey });
+        const submittedEvent = lockedEvent || form.eventKey.trim();
+        if (!form.name.trim() || !submittedEvent) return;
+        mutate({ action: "create-list", name: form.name, eventKey: submittedEvent });
         setForm(empty);
         setOpen(!collapsedLabel);
       }}
@@ -729,8 +782,16 @@ function CreateListForm({
         <FormRow label="List name">
           <input value={form.name} onChange={set("name")} placeholder="Week 3 Regional" required />
         </FormRow>
-        <FormRow label="Event key">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" required />
+        <FormRow label={lockedEvent ? "Event" : "Event key"}>
+          {lockedEvent ? (
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          ) : (
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" required />
+          )}
         </FormRow>
       </FormGrid>
       <div>
@@ -738,7 +799,7 @@ function CreateListForm({
           as="button"
           type="submit"
           variant="primary"
-          disabled={busy || !form.name.trim() || !form.eventKey.trim()}
+          disabled={busy || !form.name.trim() || !(lockedEvent || form.eventKey.trim())}
         >
           Create list
         </Button>

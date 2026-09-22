@@ -82,9 +82,29 @@ describe("computePicklistCollabView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBe(ORG);
-      // The empty state points at the shared list, never at a fabricated one.
-      expect(view.steps.some((step) => step.href === "/picklist-collab")).toBe(true);
+      expect(view.steps[0]?.id).toBe("command");
+      expect(view.steps[0]?.label).toBe("Set active event");
+      expect(view.message).toMatch(/active event/);
+      expect(view.steps[0]?.href).toContain(`orgId=${ORG}`);
     }
+  });
+
+  it("names the active event when the org has no pick list yet", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254, eventKey: "2026custom-org-pacific" }] };
+      }
+      if (sql.includes("FROM events_ref")) return { rows: [{ eventName: "Pacific Practice" }] };
+      return { rows: [] };
+    });
+
+    const view = await computePicklistCollabView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") throw new Error("expected setup_required");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.message).toBe("Create your first pick list for Pacific Practice.");
+    expect(view.message).not.toMatch(/2026custom-/);
+    expect(view.steps[0]?.id).toBe("create-list");
   });
 
   it("projects the shared spine into the collaborative view with weighted vote scores", async () => {
