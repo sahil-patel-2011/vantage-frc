@@ -753,7 +753,7 @@ main.content:has(> h1:only-child) > h1 {
    label, the first step emphasised, the rest as quiet links. Every link stays;
    only the per-link sentence goes. Scoped with :has() to the shared markup
    (a.edc-next-action rows) so the four bespoke panels are untouched. */
-body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) {
   display: flex !important;
   flex-wrap: wrap;
   align-items: baseline;
@@ -766,13 +766,13 @@ body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) {
   background: transparent !important;
   box-shadow: none !important;
 }
-body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) > header {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) > header {
   display: contents !important;
 }
-body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) > header :where(p, small, span) {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) > header :where(p, small, span) {
   display: none !important;
 }
-body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) > header :where(h2, h3) {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) > header :where(h2, h3) {
   margin: 0 !important;
   color: var(--muted) !important;
   font-size: var(--text-2xs, 11px) !important;
@@ -780,7 +780,7 @@ body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) > h
   letter-spacing: var(--tracking-kicker, .06em);
   text-transform: uppercase;
 }
-body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) :where(ol, ul) {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) :where(ol, ul) {
   display: flex !important;
   flex-wrap: wrap;
   gap: 6px 16px !important;
@@ -788,7 +788,7 @@ body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) :wh
   padding: 0 !important;
   list-style: none;
 }
-body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) li {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) li {
   display: block !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -796,7 +796,7 @@ body.has-app-shell section[aria-label="Next actions"]:has(a.edc-next-action) li 
   background: none !important;
   box-shadow: none !important;
 }
-body.has-app-shell section[aria-label="Next actions"] a.edc-next-action {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] a.edc-next-action {
   display: inline !important;
   min-height: 0 !important;
   padding: 0 !important;
@@ -807,21 +807,26 @@ body.has-app-shell section[aria-label="Next actions"] a.edc-next-action {
   font-size: var(--text-sm, 13px) !important;
   text-decoration: none;
 }
-body.has-app-shell section[aria-label="Next actions"] a.edc-next-action:hover {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] a.edc-next-action:hover {
   text-decoration: underline;
 }
-body.has-app-shell section[aria-label="Next actions"] a.edc-next-action > :not(strong) {
+/* The card layout drew a chevron as ::after; inline it reads as a stray caret. */
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] a.edc-next-action::before,
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] a.edc-next-action::after {
   display: none !important;
 }
-body.has-app-shell section[aria-label="Next actions"] a.edc-next-action > strong {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] a.edc-next-action > :not(strong) {
+  display: none !important;
+}
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] a.edc-next-action > strong {
   font-size: inherit !important;
   font-weight: 600 !important;
   color: inherit !important;
 }
-body.has-app-shell section[aria-label="Next actions"] li.primary a.edc-next-action > strong {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] li.primary a.edc-next-action > strong {
   font-weight: 750 !important;
 }
-body.has-app-shell section[aria-label="Next actions"] li.primary a.edc-next-action > strong::after {
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] li.primary a.edc-next-action > strong::after {
   content: " →";
 }
 

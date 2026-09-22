@@ -136,3 +136,7 @@
 @media (max-width:720px){
   .scouting-main .scout-page > .app-page-header :where(p,.app-page-description){display:none}
 }
+
+/* Pick list inside Scouting: the list picker and CSV stay; the buttons out to Vantage's
+   Strategy, Justifier and Pick clock go (they are one tap away in Vantage). */
+.scouting-main .picklist-collab-header-actions > a.app-button{display:none}
