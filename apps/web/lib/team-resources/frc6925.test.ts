@@ -116,5 +116,13 @@ describe("Team 6925 lab", () => {
       expect(script).toContain(`'${repo}'`);
     }
     expect(script).toContain("gh auth login");
+    // A year folder on disk is not "current": the script compares the installed
+    // extension version and upgrades through the command-line installer.
+    expect(script).toContain("wpilibsuite.vscode-wpilib-");
+    expect(script).toContain("WPILibInstaller-CLI.exe");
+    expect(script).toContain("--install-mode");
+    expect(script).toContain("--force");
+    expect(script).toContain("winget upgrade");
+    expect(script).not.toContain("already installed at");
   });
 });
