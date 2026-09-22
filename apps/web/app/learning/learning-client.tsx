@@ -288,7 +288,7 @@ function ForemanSection({ view }: { view: ReadyView }) {
             title="Nobody has called a shot yet"
             description="When members commit calls on the gearbox, power-budget or shooter-table calculators, this rollup shows who is calibrating and who could use a mentor. Until then there is nothing to score."
           >
-            <Button as="a" variant="primary" href={SURFACE_ROUTES.gearbox ?? "/gearbox"}>
+            <Button as="a" variant="secondary" href={SURFACE_ROUTES.gearbox ?? "/gearbox"}>
               Open Gearbox
             </Button>
           </EmptyState>

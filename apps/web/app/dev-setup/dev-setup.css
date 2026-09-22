@@ -349,16 +349,17 @@
   color: var(--accent);
 }
 
-/* The actual download is the one control that should read as the action. */
+/* The actual download reads as the action within its step: accent-outlined, not filled.
+   Every step has one, and sixteen solid blue buttons down one page was a wall. */
 .ds-link-primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink, #fff);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  color: var(--accent);
 }
 
 .ds-link-primary:hover {
-  color: var(--accent-ink, #fff);
-  filter: brightness(0.96);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 @media (max-width: 900px) {
