@@ -16,7 +16,13 @@ import type { MigrateView } from "../../lib/migrate/compute-migrate";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  initialImportEventMode,
+  resolveImportEventKey,
+  type ImportEventMode,
+} from "../../lib/migrate/import-event";
 import { IMPORTED_FORM_DRAFT_KEY } from "../../lib/scouting/form-builder";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Skip = { ref: string; reason: string };
@@ -77,6 +83,113 @@ const CATEGORY_ORDER: Array<ConnectorDescriptor["category"]> = [
   "people",
   "notes",
 ];
+
+function ImportEventFields({
+  required,
+  activeKey,
+  activeName,
+  mode,
+  typedKey,
+  onMode,
+  onTypedKey,
+}: {
+  required: boolean;
+  activeKey: string | null;
+  activeName: string | null;
+  mode: ImportEventMode;
+  typedKey: string;
+  onMode: (mode: ImportEventMode) => void;
+  onTypedKey: (value: string) => void;
+}) {
+  const label = activeKey ? scoutEventLabel({ eventName: activeName, eventKey: activeKey }) : null;
+  const shown: ImportEventMode = label ? mode : "other";
+  switch (shown) {
+    case "all":
+      return (
+        <>
+          <p className="app-muted">
+            Your event is {label}. This import keeps every event in the file unless you narrow it.
+          </p>
+          <div className="migrate-actions">
+            <Button variant="secondary" type="button" onClick={() => onMode("active")}>
+              Only {label}
+            </Button>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                onTypedKey("");
+                onMode("other");
+              }}
+            >
+              Enter an event key by hand…
+            </Button>
+          </div>
+        </>
+      );
+    case "active":
+      return (
+        <>
+          <FormGrid>
+            <FormRow
+              label="Event"
+              hint={required ? "Scans are stored on this event." : "Only rows from this event are imported."}
+            >
+              <input readOnly aria-label="Event" value={label ?? ""} />
+            </FormRow>
+          </FormGrid>
+          <div className="migrate-actions">
+            {required ? null : (
+              <Button variant="secondary" type="button" onClick={() => onMode("all")}>
+                Every event in the file
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                onTypedKey("");
+                onMode("other");
+              }}
+            >
+              Enter an event key by hand…
+            </Button>
+          </div>
+        </>
+      );
+    case "other":
+      return (
+        <>
+          <FormGrid>
+            <FormRow label={required ? "Event key" : "Event key (optional filter)"}>
+              <input
+                aria-label={required ? "Event key" : "Event key (optional filter)"}
+                value={typedKey}
+                onChange={(event) => onTypedKey(event.target.value)}
+                placeholder="2025mokc"
+              />
+            </FormRow>
+          </FormGrid>
+          {label ? (
+            <div className="migrate-actions">
+              {required ? null : (
+                <Button variant="secondary" type="button" onClick={() => onMode("all")}>
+                  Every event in the file
+                </Button>
+              )}
+              <Button variant="secondary" type="button" onClick={() => onMode("active")}>
+                {label}
+              </Button>
+            </div>
+          ) : null}
+        </>
+      );
+    default: {
+      const _never: never = shown;
+      return _never;
+    }
+  }
+}
 
 function isMigrateView(value: unknown): value is MigrateView {
   if (!value || typeof value !== "object") return false;
@@ -182,6 +295,7 @@ export default function MigrateClient() {
   const [filePaste, setFilePaste] = useState("");
   const [configPaste, setConfigPaste] = useState("");
   const [eventKey, setEventKey] = useState("");
+  const [eventChoice, setEventChoice] = useState<ImportEventMode | null>(null);
   const [preview, setPreview] = useState("");
   const [result, setResult] = useState<MigrateResponse | null>(null);
   const [listStatus, setListStatus] = useState<Record<string, string>>({});
@@ -267,6 +381,19 @@ export default function MigrateClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const liveEventKey = view?.status === "live" ? view.eventKey : null;
+  const liveEventName = view?.status === "live" ? view.eventName : null;
+  const importEventMode =
+    eventChoice ??
+    initialImportEventMode({
+      required: connector === "qrscout_entries",
+      activeKey: liveEventKey,
+    });
+  const submittedEventKey = resolveImportEventKey({
+    mode: importEventMode,
+    activeKey: liveEventKey,
+    typedKey: eventKey,
+  });
   const selected = connector ? connectorById(connector) : undefined;
 
   const grouped = useMemo(
@@ -351,6 +478,8 @@ export default function MigrateClient() {
     setListStatus({});
     setSelectedEmails({});
     setColumnMap({});
+    setEventKey("");
+    setEventChoice(null);
   }
 
   const inviteDrafts = (result?.drafts ?? []) as Array<{ email?: string; personName?: string }>;
@@ -647,23 +776,23 @@ export default function MigrateClient() {
 
               {connector === "purple_standard" ? (
                 <>
-                  <FormGrid>
-                    <FormRow label="Event key (optional filter)">
-                      <input
-                        value={eventKey}
-                        onChange={(event) => setEventKey(event.target.value)}
-                        placeholder="2025mokc"
-                      />
-                    </FormRow>
-                  </FormGrid>
+                  <ImportEventFields
+                    required={false}
+                    activeKey={liveEventKey}
+                    activeName={liveEventName}
+                    mode={importEventMode}
+                    typedKey={eventKey}
+                    onMode={setEventChoice}
+                    onTypedKey={setEventKey}
+                  />
                   <FormRow label="Paste Purple Standard JSON">
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={10} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "commit-purple-standard", content: filePaste, eventKey }) }>
+                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "commit-purple-standard", content: filePaste, eventKey: submittedEventKey }) }>
                       Import scouting entries
                     </Button>
-                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-purple-standard", content: filePaste, eventKey }) }>
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-purple-standard", content: filePaste, eventKey: submittedEventKey }) }>
                       Preview
                     </Button>
                   </div>
@@ -724,15 +853,15 @@ export default function MigrateClient() {
 
               {connector === "qrscout_entries" ? (
                 <>
-                  <FormGrid>
-                    <FormRow label="Event key">
-                      <input
-                        value={eventKey}
-                        onChange={(event) => setEventKey(event.target.value)}
-                        placeholder="2025mokc"
-                      />
-                    </FormRow>
-                  </FormGrid>
+                  <ImportEventFields
+                    required
+                    activeKey={liveEventKey}
+                    activeName={liveEventName}
+                    mode={importEventMode}
+                    typedKey={eventKey}
+                    onMode={setEventChoice}
+                    onTypedKey={setEventKey}
+                  />
                   <FormRow label="The config.json these codes were made with">
                     <textarea value={configPaste} onChange={(event) => setConfigPaste(event.target.value)} rows={6} />
                   </FormRow>
@@ -740,10 +869,10 @@ export default function MigrateClient() {
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim() || !configPaste.trim() || !eventKey.trim()} onClick={() => void post({ action: "commit-qrscout-entries", configContent: configPaste, payloadContent: filePaste, eventKey, }) }>
+                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim() || !configPaste.trim() || !submittedEventKey.trim()} onClick={() => void post({ action: "commit-qrscout-entries", configContent: configPaste, payloadContent: filePaste, eventKey: submittedEventKey, }) }>
                       Import scans
                     </Button>
-                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim() || !configPaste.trim()} onClick={() => void post({ action: "preview-qrscout-entries", configContent: configPaste, payloadContent: filePaste, eventKey, }) }>
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim() || !configPaste.trim()} onClick={() => void post({ action: "preview-qrscout-entries", configContent: configPaste, payloadContent: filePaste, eventKey: submittedEventKey, }) }>
                       Preview
                     </Button>
                   </div>
@@ -752,23 +881,23 @@ export default function MigrateClient() {
 
               {connector === "scoutradioz" ? (
                 <>
-                  <FormGrid>
-                    <FormRow label="Event key (optional filter)">
-                      <input
-                        value={eventKey}
-                        onChange={(event) => setEventKey(event.target.value)}
-                        placeholder="2025mokc"
-                      />
-                    </FormRow>
-                  </FormGrid>
+                  <ImportEventFields
+                    required={false}
+                    activeKey={liveEventKey}
+                    activeName={liveEventName}
+                    mode={importEventMode}
+                    typedKey={eventKey}
+                    onMode={setEventChoice}
+                    onTypedKey={setEventKey}
+                  />
                   <FormRow label="Paste the Scoutradioz raw export JSON">
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={10} />
                   </FormRow>
                   <div className="migrate-actions">
-                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "commit-scoutradioz", content: filePaste, eventKey })}>
+                    <Button variant="primary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "commit-scoutradioz", content: filePaste, eventKey: submittedEventKey })}>
                       Import scouting entries
                     </Button>
-                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-scoutradioz", content: filePaste, eventKey })}>
+                    <Button variant="secondary" type="button" disabled={busy || !filePaste.trim()} onClick={() => void post({ action: "preview-scoutradioz", content: filePaste, eventKey: submittedEventKey })}>
                       Preview
                     </Button>
                   </div>
