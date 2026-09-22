@@ -1,7 +1,7 @@
 # Vantage — FRC programming laptop setup (Windows)
 #
 # Run in PowerShell:
-#   irm https://vantage-frc-web.vercel.app/team-setup.ps1 | iex
+#   irm https://vantagefrc.vercel.app/team-setup.ps1 | iex
 #
 # Installs what a new programmer needs, and updates anything already there:
 #   VS Code, Git, PathPlanner, WPILib.

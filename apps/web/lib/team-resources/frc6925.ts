@@ -8,6 +8,8 @@
  * Do not add a link from memory.
  */
 
+import { LIVE_SITE_ORIGIN } from "../site";
+
 export type LabTrack = "programming" | "mechanical";
 
 export type TeamResourceLink = {
@@ -59,8 +61,7 @@ export const LAB_TRACKS: ReadonlyArray<{ id: LabTrack; title: string; blurb: str
  * time rather than pinning a version here, so it does not go stale mid-season.
  * The script is `apps/web/public/team-setup.ps1`.
  */
-export const TEAM_6925_SETUP_COMMAND =
-  "irm https://vantage-frc-web.vercel.app/team-setup.ps1 | iex";
+export const TEAM_6925_SETUP_COMMAND = `irm ${LIVE_SITE_ORIGIN}/team-setup.ps1 | iex`;
 
 export const TEAM_6925_RESOURCES: TeamResourceGroup[] = [
   // ── Programming ────────────────────────────────────────────────────────

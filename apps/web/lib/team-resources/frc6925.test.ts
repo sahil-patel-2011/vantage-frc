@@ -1,10 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { LIVE_SITE_ORIGIN } from "../site";
 import { expectPlainCopy } from "../ui/copy-assertions";
 import {
   LAB_TRACKS,
   TEAM_6925_RESOURCES,
+  TEAM_6925_SETUP_COMMAND,
   TEAM_6925_WEEKS,
   allTeam6925Links,
   resourcesForTrack,
@@ -87,5 +89,14 @@ describe("Team 6925 lab", () => {
       expectPlainCopy(week.verify);
     }
     for (const group of TEAM_6925_RESOURCES) expectPlainCopy(group.blurb);
+  });
+
+  it("points the setup command at a live, public copy of the script", () => {
+    expect(TEAM_6925_SETUP_COMMAND).toBe(`irm ${LIVE_SITE_ORIGIN}/team-setup.ps1 | iex`);
+    const script = readFileSync(join(__dirname, "../../public/team-setup.ps1"), "utf8");
+    expect(script).toContain(TEAM_6925_SETUP_COMMAND);
+    // `irm | iex` cannot follow a sign-in redirect, so the proxy must let it through.
+    const proxy = readFileSync(join(__dirname, "../../proxy.ts"), "utf8");
+    expect(proxy).toMatch(/^\s*"\/team-setup\.ps1",$/m);
   });
 });

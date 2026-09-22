@@ -24,6 +24,8 @@ const PUBLIC_PAGES = new Set([
   "/offline",
   // Token-gated email unsubscribe (no session).
   "/unsubscribe",
+  // Laptop setup script, fetched by `irm … | iex` before the student has an account.
+  "/team-setup.ps1",
 ]);
 // Session cookie auth for product routes; Better Auth enforces CSRF/Origin on /api/auth.
 // Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.
