@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   TOUR_STEPS,
   TOUR_STORAGE_KEY,
@@ -55,7 +56,20 @@ function rectOf(element: Element): Rect {
   return { top: box.top, left: box.left, width: box.width, height: box.height };
 }
 
+/**
+ * Pages that are themselves a guided flow. A tour card pointing at the search
+ * box on top of "Step 1 of 3 · You" is two teachers talking at once; the tour
+ * waits until the person reaches the app proper.
+ */
+export function tourBlockedOn(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return ["/onboarding", "/invite", "/signin", "/sign-in", "/claim"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export function AppTour() {
+  const pathname = usePathname();
   const [steps, setSteps] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
   const [target, setTarget] = useState<Rect | null>(null);
@@ -70,6 +84,8 @@ export function AppTour() {
   // Decide once, after paint, so the targets have actually rendered.
   useEffect(() => {
     if (readDismissed()) return;
+    if (tourBlockedOn(pathname)) return;
+    if (steps) return;
     // Poll rather than fire once: the consent banner is the other thing that
     // wants an answer on a first visit, and both appearing together meant a
     // brand new user met two overlapping dialogs before seeing a single word
@@ -93,7 +109,8 @@ export function AppTour() {
       if (usable.length >= 2) setSteps(usable);
     }, 400);
     return () => window.clearInterval(id);
-  }, []);
+    // Re-checked on navigation, so leaving onboarding for Home starts it there.
+  }, [pathname]);
 
   const step = steps?.[index] ?? null;
 

@@ -103,7 +103,10 @@ export function formatInviteTeamIdentity(
     preview.teamNumber != null && Number.isFinite(preview.teamNumber)
       ? `Team ${preview.teamNumber}`
       : null;
-  const name = preview.orgName?.trim() || null;
+  const rawName = preview.orgName?.trim() || null;
+  // Most teams are named "Team 6925" — printing it after "Team 6925" read as a
+  // stutter ("Team 6925 · Team 6925 · Scout").
+  const name = rawName && team && rawName.toLowerCase() === team.toLowerCase() ? null : rawName;
   const role = formatInviteRole(preview.role);
   const parts = [team, name, role].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "Your team";

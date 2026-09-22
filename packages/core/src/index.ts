@@ -3,6 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, haveIBeenPwned } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
 import { authDb } from "@vantage/db/auth";
 import { accounts, sessions, users, verifications } from "@vantage/db/schema";
 import {
@@ -130,7 +131,9 @@ function buildAuth() {
         before: async (user) => {
           const access = await resolveAuthEmailAccess(user.email);
           if (!access.allowed) {
-            throw new Error(WAITLIST_ONLY_MESSAGE);
+            // A 403 carrying the sentence, not a bare Error: that surfaced as
+            // an empty 500, which the code screen could only call a server fault.
+            throw new APIError("FORBIDDEN", { message: WAITLIST_ONLY_MESSAGE, code: "WAITLIST_ONLY" });
           }
           return { data: user };
         },
@@ -158,7 +161,20 @@ function buildAuth() {
       allowedAttempts: OTP_POLICY.allowedAttempts,
       storeOTP: "hashed",
       resendStrategy: "rotate",
-      disableSignUp: true,
+      /**
+       * Open, and gated exactly like Google.
+       *
+       * With sign-up disabled here, an invited student who had never signed in
+       * had no user row, so every code they typed came back INVALID_OTP — and
+       * the screen then told them codes only go to invited addresses, which
+       * theirs was. Only Google could create an invited account, which strands
+       * every student whose school account is not Google. A new user created
+       * through this plugin still passes databaseHooks.user.create.before
+       * (platform owner / existing user / pending invite, else waitlist), and
+       * sendVerificationOTP below sends nothing to an address that gate would
+       * refuse, so opening this does not let anyone mail an arbitrary inbox.
+       */
+      disableSignUp: false,
       rateLimit: {
         window: OTP_POLICY.requestWindowSeconds,
         max: OTP_POLICY.requestLimit,
@@ -169,6 +185,20 @@ function buildAuth() {
           ? undefined
           : ({ email, type }) => deterministicLocalOtp(email, type),
       sendVerificationOTP: async (message) => {
+        // Codes go only to addresses that could sign in. The endpoint still
+        // answers 200 either way, so this reveals nothing about who is invited.
+        if (message.type === "sign-in") {
+          const access = await resolveAuthEmailAccess(message.email);
+          if (!access.allowed) {
+            await auditAuthEvent({
+              action: "otp.suppressed",
+              email: message.email,
+              success: false,
+              metadata: { type: message.type, reason: access.reason },
+            });
+            return;
+          }
+        }
         if (!isEmailProviderConfigured()) {
           throw new Error(
             "Email sign-in is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are configured.",

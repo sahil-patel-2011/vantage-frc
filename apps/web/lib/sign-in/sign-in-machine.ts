@@ -331,6 +331,15 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
     return { kind: "wrong_code", message: WRONG_CODE_MESSAGE, keepDigits: true, needsNewCode: false };
   }
 
+  if (/WAITLIST_ONLY|waitlist-only/i.test(text)) {
+    return {
+      kind: "not_authorized",
+      message: "This email has no invite yet. Ask your team to invite this exact address, or join the waitlist.",
+      keepDigits: false,
+      needsNewCode: true,
+    };
+  }
+
   if (input.status === 401 || input.status === 403 || /unauthorized|forbidden/i.test(text)) {
     return {
       kind: "not_authorized",

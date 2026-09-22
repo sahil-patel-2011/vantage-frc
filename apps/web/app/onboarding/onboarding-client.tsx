@@ -400,6 +400,7 @@ export default function OnboardingClient() {
   }
 
   const setupStep = step === "pending" || step === "done" ? null : step;
+  const onTeamAlready = state?.accessStatus === "approved" || state?.accessStatus === "invited";
   const headerCopy =
     step === "done"
       ? { eyebrow: "YOU'RE IN", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
@@ -409,11 +410,19 @@ export default function OnboardingClient() {
             title: "Your profile is ready. Team access is next.",
             sub: "A team number never lets you in by itself. A team owner or administrator must approve this account.",
           }
-        : {
-            eyebrow: "WELCOME TO VANTAGE",
-            title: "Make Vantage work for you.",
-            sub: "Three short steps. Your team still has to let you in before anything is shared.",
-          };
+        : onTeamAlready
+          ? {
+              // Someone who just accepted an invite was told their team "still
+              // has to let you in" — the one thing that had already happened.
+              eyebrow: "WELCOME TO THE TEAM",
+              title: "You're on the team. Three short steps.",
+              sub: "Tell us who you are and what you do, and Home will open on what to do first.",
+            }
+          : {
+              eyebrow: "WELCOME TO VANTAGE",
+              title: "Make Vantage work for you.",
+              sub: "Three short steps. Your team still has to let you in before anything is shared.",
+            };
 
   return (
     <main className="onboarding-page onboarding-flow-page scan-workbench scan-hub--onboarding">

@@ -148,3 +148,12 @@ describe("invite Soft-UI flow helpers", () => {
     expect(inviteEmptyCopy("accepted").description).toMatch(/choose your team/i);
   });
 });
+
+describe("formatInviteTeamIdentity", () => {
+  it("does not repeat a team whose name is its number", () => {
+    expect(formatInviteTeamIdentity({ orgName: "Team 6925", teamNumber: 6925, role: "scout" })).toBe("Team 6925 · Scout");
+    expect(formatInviteTeamIdentity({ orgName: "Ninjineers", teamNumber: 6925, role: "scout" })).toBe(
+      "Team 6925 · Ninjineers · Scout",
+    );
+  });
+});

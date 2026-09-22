@@ -283,3 +283,17 @@ describe("invite context preservation", () => {
     expect(signInStepCopy(secondCode).sub).toContain("s***@team254.org");
   });
 });
+
+describe("an address with no invite", () => {
+  it("says to get invited, not that the code is wrong or the server broke", () => {
+    const failure = classifyOtpFailure({
+      channel: "email-otp",
+      status: 403,
+      code: "WAITLIST_ONLY",
+      message: "Vantage is waitlist-only right now. Join the waitlist for access, or sign in with an authorized account.",
+    });
+    expect(failure.kind).toBe("not_authorized");
+    expect(failure.message).toMatch(/invite/i);
+    expect(failure.message).toMatch(/waitlist/i);
+  });
+});

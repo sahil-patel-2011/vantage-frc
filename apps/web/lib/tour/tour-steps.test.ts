@@ -99,3 +99,13 @@ describe("stepProgress", () => {
     expect(stepProgress(4, 5)).toBe("Step 5 of 5");
   });
 });
+
+describe("where the tour waits", () => {
+  it("stays off guided flows and runs in the app", async () => {
+    const { tourBlockedOn } = await import("../../components/app-tour");
+    expect(tourBlockedOn("/onboarding")).toBe(true);
+    expect(tourBlockedOn("/invite")).toBe(true);
+    expect(tourBlockedOn("/dashboard")).toBe(false);
+    expect(tourBlockedOn("/invite-codes")).toBe(false);
+  });
+});

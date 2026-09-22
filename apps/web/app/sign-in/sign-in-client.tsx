@@ -83,6 +83,7 @@ export default function SignInClient({
   const [remembered, setRemembered] = useState<RememberedAccount>({ email: null, method: null });
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
+  const invitedPrefilled = useRef(false);
   const [resolvedNext, setResolvedNext] = useState(() => safeAppPath(nextPath, "/dashboard"));
   const [passwordPanel, setPasswordPanel] = useState<PasswordPanel>(() =>
     shouldStartOnPassword(initialStatus) ? "password" : "closed",
@@ -315,11 +316,24 @@ export default function SignInClient({
    * field to type a different address would immediately refill it.
    */
   useEffect(() => {
+    // An invite names the one address that can accept it. On a shared shop
+    // laptop the remembered address is someone else's — prefilling it sent
+    // the new member's code to a teammate's inbox. The invite wins.
+    if (inviteToken) return;
     if (prefilled.current || !remembered.email) return;
     prefilled.current = true;
     if (flow.email) return;
     dispatch({ type: "email_changed", email: remembered.email });
-  }, [flow.email, remembered.email]);
+  }, [flow.email, remembered.email, inviteToken]);
+
+  useEffect(() => {
+    const invited = invitePreview?.email?.trim();
+    if (!invited || invitedPrefilled.current) return;
+    invitedPrefilled.current = true;
+    // Leave an address the person typed themselves alone.
+    if (flow.email && flow.email !== remembered.email) return;
+    dispatch({ type: "email_changed", email: invited });
+  }, [invitePreview, flow.email, remembered.email]);
 
   useEffect(() => {
     if (flow.step === "code") codeRef.current?.focus();

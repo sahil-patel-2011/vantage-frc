@@ -17,7 +17,7 @@ export default function OnboardingPage() {
               <span>YOUR STEPS</span>
               <h1 id="onboarding-suspense-title">Getting your steps ready…</h1>
               <p className="onboarding-sub">
-                You need an invite or a team owner’s approval before you can open the team.
+                Restoring anything you already filled in.
               </p>
             </header>
             <div className="onboarding-load-shell loading">

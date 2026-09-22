@@ -62,15 +62,28 @@ export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAc
       return { allowed: true, reason: "existing_user", email: normalized };
     }
 
-    const invite = await pool.query<{ id: string }>(
-      `SELECT id FROM invites
-        WHERE lower(email)=lower($1)
-          AND status='pending'
-          AND expires_at > now()
-        LIMIT 1`,
-      [normalized],
-    );
-    if (invite.rows[0]) {
+    // The auth role cannot read `invites` (it would see every team's tokens);
+    // migration 0669 answers only "does this address hold a live invite".
+    // The direct query stays as a fallback for a database without 0669 whose
+    // auth connection happens to have the grant.
+    let pending = false;
+    try {
+      const check = await pool.query<{ ok: boolean }>(`SELECT auth_email_has_pending_invite($1) AS ok`, [
+        normalized,
+      ]);
+      pending = Boolean(check.rows[0]?.ok);
+    } catch {
+      const invite = await pool.query<{ id: string }>(
+        `SELECT id FROM invites
+          WHERE lower(email)=lower($1)
+            AND status='pending'
+            AND expires_at > now()
+          LIMIT 1`,
+        [normalized],
+      );
+      pending = Boolean(invite.rows[0]);
+    }
+    if (pending) {
       return { allowed: true, reason: "pending_invite", email: normalized };
     }
 

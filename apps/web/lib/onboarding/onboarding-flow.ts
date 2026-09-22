@@ -28,7 +28,7 @@ export const ONBOARDING_STEP_COPY: Record<
   profile: {
     label: "You",
     shortLabel: "You",
-    description: "Your name, and what you do. Teammates do not see this until a team lets you in.",
+    description: "Your name, and what you do. Teammates see your name once you are on a team — nothing else here.",
   },
   team: {
     label: "Your team",
@@ -146,7 +146,7 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
       kind,
       eyebrow: "YOUR STEPS",
       title: "Getting your steps ready…",
-      description: "Restoring saved progress. You need an invite or a team owner’s approval before you can open the team.",
+      description: "Restoring anything you already filled in.",
     };
   }
   if (kind === "setup_required") {
