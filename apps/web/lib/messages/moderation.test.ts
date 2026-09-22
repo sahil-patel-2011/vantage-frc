@@ -197,3 +197,11 @@ describe("how a removed message renders", () => {
     expect(removalNotice({ mine: false, reason: "secret" })).toBe(REMOVED_BY_ADMIN_TEXT);
   });
 });
+
+describe("who hears about a report", () => {
+  it("notifies reviewing admins, never the author or the reporter", async () => {
+    const { reportNotificationRecipients } = await import("./moderation");
+    expect(reportNotificationRecipients(["owner", "admin", "author"], "author", "reporter")).toEqual(["owner", "admin"]);
+    expect(reportNotificationRecipients(["owner", "owner"], "someone", "owner")).toEqual([]);
+  });
+});

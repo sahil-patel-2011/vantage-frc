@@ -11,6 +11,7 @@
  * pointed at a trusted adult instead of being left to believe someone is looking.
  */
 import type { PoolClient } from "@neondatabase/serverless";
+import { emitPreferredNotifications } from "@vantage/core";
 import { withSavepoint } from "@vantage/db";
 import {
   REPORT_REASONS,
@@ -147,7 +148,43 @@ export async function reportMessage(
     otherModerators: ids.filter((id) => id !== message.authorUserId).length,
   });
   const reportId = inserted.rows[0]?.id ?? null;
+  if (reportId) {
+    // Tell the people who can act on it. Never the author (the same rule that
+    // hides the report from them), never the reporter, and never the message
+    // text — the notification says a report is waiting, the panel shows it.
+    const recipients = reportNotificationRecipients(ids, message.authorUserId, input.userId);
+    const reason = REPORT_REASONS.find((entry) => entry.id === input.reason)?.label ?? "Reported";
+    await withSavepoint(
+      client,
+      async () => {
+        await emitPreferredNotifications(
+          client,
+          recipients.map((userId) => ({
+            userId,
+            orgId: input.orgId,
+            type: "chat_report",
+            payload: {
+              title: "A team chat message was reported",
+              body: `Reason: ${reason}. Review it in chat moderation.`,
+              href: `/messages/moderation?orgId=${input.orgId}`,
+              reportId,
+            },
+          })),
+        );
+      },
+      undefined,
+    );
+  }
   return { reportId, alreadyReported: reportId === null, receipt };
+}
+
+/** Owners/admins who review a report: never the message's author or the reporter. */
+export function reportNotificationRecipients(
+  moderatorIds: readonly string[],
+  authorUserId: string,
+  reporterUserId: string,
+): string[] {
+  return [...new Set(moderatorIds)].filter((id) => id !== authorUserId && id !== reporterUserId);
 }
 
 export type OpenReport = {
