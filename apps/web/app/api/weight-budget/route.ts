@@ -88,6 +88,11 @@ export async function POST(request: Request) {
 
       switch (action.action) {
         case "set_limit": {
+          const admin = await client.query(
+            `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid AND role IN ('owner','admin')`,
+            [action.orgId, userId],
+          );
+          if (!admin.rowCount) throw new HttpError(403, "Organization administrator access required");
           await client.query(
             `INSERT INTO weight_settings (org_id, season_year, limit_lbs, updated_by)
              VALUES ($1,$2,$3,$4)

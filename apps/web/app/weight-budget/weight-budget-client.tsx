@@ -217,6 +217,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
 
   async function post(body: Record<string, unknown>, okMessage: string) {
     if (view?.status !== "ready") return;
+    if (body.action === "set_limit" && view.context.role !== "owner" && view.context.role !== "admin") return;
     const response = await fetch("/api/weight-budget", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -319,6 +320,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
   }
 
   const s = view.summary;
+  const canSetLimit = view.context.role === "owner" || view.context.role === "admin";
   const close = closePlannedAgainstWeighIn(s.totalLbs, scaleEntries);
   const closeBlank = isCloseBlank(close);
   const weighInHref = hubHref("/build", "robot-weigh-in", view.context.orgId);
@@ -430,13 +432,20 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (!canSetLimit) return;
             void post({ action: "set_limit", seasonYear, limitLbs: limitDraft }, "Limit updated.");
           }}
         >
-          <FormRow label="Weight limit (lb)">
-            <input type="number" min="0" step="0.1" value={limitDraft} onChange={(e) => setLimitDraft(e.target.value)} />
-          </FormRow>
-          <Button variant="primary" type="submit">Set limit</Button>
+          {canSetLimit ? (
+            <>
+              <FormRow label="Weight limit (lb)">
+                <input type="number" min="0" step="0.1" value={limitDraft} onChange={(e) => setLimitDraft(e.target.value)} />
+              </FormRow>
+              <Button variant="primary" type="submit">Set limit</Button>
+            </>
+          ) : (
+            <p className="app-muted">An owner or admin sets the weight limit. Logged parts stay with the team.</p>
+          )}
         </form>
       </Panel>
 
