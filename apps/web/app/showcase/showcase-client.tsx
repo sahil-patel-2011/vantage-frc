@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
@@ -52,6 +54,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [canShare, setCanShare] = useState(false);
   const viewRef = useRef<View | null>(null);
   viewRef.current = view;
 
@@ -135,7 +138,20 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const role = session?.memberships?.find((member) => member.orgId === orgId)?.role ?? session?.role;
+      setCanShare(strategyCanSync(role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
   async function act(action: string, extra: Record<string, unknown> = {}) {
+    if (action === "share" && !canShare) return;
     const response = await fetch("/api/showcase", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -360,6 +376,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
             >
               Start reasoning practice
             </Button>
+            {canShare ? (
             <Button
               variant="secondary"
               type="button"
@@ -373,6 +390,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
             >
               Copy share link
             </Button>
+            ) : null}
             {view.selectedId ? (
               <Button
                 as="a"
@@ -384,7 +402,9 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
               </Button>
             ) : null}
           </div>
-          {view.selectedId && !approved.length ? (
+          {!canShare ? (
+            <small className="app-muted">An owner or admin copies a share link. Practice stays on this page.</small>
+          ) : view.selectedId && !approved.length ? (
             <small className="app-muted">Approve at least one section to practice or share.</small>
           ) : null}
 
