@@ -199,6 +199,24 @@ export function manualMatchKey(
   return `${eventKey.trim()}_${compLevel}${matchNumber}`;
 }
 
+const MATCH_LEVEL_LABEL: Record<CompLevel, string> = {
+  qm: "Qualification",
+  qf: "Quarterfinal",
+  sf: "Semifinal",
+  f: "Final",
+};
+
+/**
+ * "Qualification 7" for a match key. A team-made event key embeds the org id,
+ * so the raw key is not something to read back after a save.
+ */
+export function describeMatchKey(matchKey: string): string {
+  const match = /_(qm|qf|sf|f)(\d+)$/.exec(matchKey.trim());
+  if (!match) return matchKey;
+  const level = match[1] as CompLevel;
+  return `${MATCH_LEVEL_LABEL[level]} ${Number(match[2])}`;
+}
+
 /** What to tell someone when the schedule has nothing in it. */
 export const NO_SCHEDULE_COPY =
   "No schedule synced for this event yet. Type the team number and match below — scouting does not wait for a schedule.";

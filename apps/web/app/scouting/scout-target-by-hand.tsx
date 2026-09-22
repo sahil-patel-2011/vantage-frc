@@ -5,6 +5,7 @@ import { Button } from "../../components/ui";
 import {
   COMP_LEVELS,
   NO_SCHEDULE_COPY,
+  describeMatchKey,
   manualMatchKey,
   normalizeTeamKey,
   type CompLevel,
@@ -131,7 +132,7 @@ export function ScoutTargetByHand({
       </div>
       {matchKey && teamKey ? (
         <p className="app-muted scout-by-hand-current">
-          Now scouting {teamKey.replace(/^frc/i, "")} in {matchKey}.
+          Now scouting {teamKey.replace(/^frc/i, "")} in {describeMatchKey(matchKey)}.
         </p>
       ) : null}
     </div>

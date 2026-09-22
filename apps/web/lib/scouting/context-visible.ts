@@ -187,13 +187,19 @@ export function ensureGamePhaseField<T extends { key: string }>(fields: readonly
 /**
  * Apply Lovat-style phase gates from field keys when the form author did not
  * write `visibleWhen`. Existing rules win.
+ *
+ * A summary form — the season starter, with auto and teleop counts on one
+ * entry — does not include a phase control. Inventing one and hiding the
+ * teleop count made that required answer unreachable. Gates apply only when
+ * the author already asked which phase this entry is.
  */
 export function withInferredPhaseRules<T extends VisibleField & { key: string; type?: string; config?: Record<string, unknown> | null }>(
   fields: readonly T[],
 ): T[] {
-  const withPhase = ensureGamePhaseField(fields);
+  const authorHasPhase = fields.some((field) => field.key === "gamePhase" || field.key === "game_phase");
+  if (!authorHasPhase) return [...fields];
   const rules = defaultMatchPhaseRules();
-  return withPhase.map((field) => {
+  return fields.map((field) => {
     if (readVisibleWhen(field)) return field;
     const phase = inferPhaseFromKey(field.key);
     if (!phase) return field;

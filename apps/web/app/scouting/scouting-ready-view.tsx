@@ -10,7 +10,7 @@ import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
-import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY, groupScoutTargets } from "../../lib/scouting/scout-target";
+import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY, describeMatchKey, groupScoutTargets } from "../../lib/scouting/scout-target";
 import { ScoutTargetByHand } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
@@ -657,8 +657,8 @@ return (
                 <span className="eyebrow">Where your data went</span>
                 <strong>
                   {saveReceipt.entryType === "pit" ? "Pit" : "Match"} entry for{" "}
-                  {saveReceipt.teamKey}
-                  {saveReceipt.matchKey ? ` · ${saveReceipt.matchKey}` : ""}
+                  {saveReceipt.teamKey.replace(/^frc/i, "")}
+                  {saveReceipt.matchKey ? ` · ${describeMatchKey(saveReceipt.matchKey)}` : ""}
                 </strong>
                 <small className="app-muted">
                   {saveReceipt.offline
