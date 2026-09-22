@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { DEFAULT_WEIGHT_LIMIT_LBS, summarizeWeight } from "../../../lib/weight-budget";
+import { DEFAULT_WEIGHT_LIMIT_LBS, summarizeWeight, weightComponentCanDelete } from "../../../lib/weight-budget";
 import { parseWeightWrite, plannedLineSaveFromWrite, upsertPlannedLine } from "../../../lib/weight-budget/upsert";
 
 class HttpError extends Error {
@@ -27,7 +27,16 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Weight budget request failed" }, { status });
 }
 
-type ComponentRow = { id: string; name: string; subsystem: string; weightLbs: number; quantity: number; notes: string; byName: string | null };
+type ComponentRow = {
+  id: string;
+  name: string;
+  subsystem: string;
+  weightLbs: number;
+  quantity: number;
+  notes: string;
+  byName: string | null;
+  createdBy: string | null;
+};
 
 export async function GET(request: Request) {
   try {
@@ -50,7 +59,8 @@ export async function GET(request: Request) {
 
       const [components, settings] = await Promise.all([
         client.query<ComponentRow>(
-          `SELECT c.id, c.name, c.subsystem, c.weight_lbs::float8 AS "weightLbs", c.quantity, c.notes, u.name AS "byName"
+          `SELECT c.id, c.name, c.subsystem, c.weight_lbs::float8 AS "weightLbs", c.quantity, c.notes,
+                  u.name AS "byName", c.created_by::text AS "createdBy"
            FROM weight_components c LEFT JOIN users u ON u.id = c.created_by
            WHERE c.org_id = $1 AND c.season_year = $2 ORDER BY c.subsystem, c.name`,
           [row.orgId, seasonYear],
@@ -66,7 +76,10 @@ export async function GET(request: Request) {
         status: "ready" as const,
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
         seasonYear,
-        components: components.rows,
+        components: components.rows.map(({ createdBy, ...component }) => ({
+          ...component,
+          canDelete: weightComponentCanDelete(row.role, createdBy, session.user.id),
+        })),
         summary: summarizeWeight(components.rows.map((c) => ({ subsystem: c.subsystem, weightLbs: c.weightLbs, quantity: c.quantity })), limitLbs),
       };
     });

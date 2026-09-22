@@ -24,6 +24,7 @@ type Component = {
   quantity: number;
   notes: string;
   byName: string | null;
+  canDelete?: boolean;
 };
 type Summary = {
   count: number;
@@ -463,7 +464,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
                     {c.weightLbs} lb each{c.subsystem ? ` · ${c.subsystem}` : ""}{c.notes ? ` · ${c.notes}` : ""}
                   </small>
                 </div>
-                {view.context.role !== "viewer" ? (
+                {c.canDelete ? (
                   <Button type="button" size="sm" variant="danger" onClick={() => void post({ action: "delete_component", id: c.id }, "Component removed.")}>
                     Delete
                   </Button>
