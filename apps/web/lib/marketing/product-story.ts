@@ -20,8 +20,8 @@ export const MARKETING_STUDENT_PATH = [
     copy: "Paced Onshape lessons and CAD Video Tutor on cast iron. Vantage reads mass and spin from the real document — students never type those numbers.",
   },
   {
-    title: "Watch match video",
-    copy: "Paste a match or pit video, confirm the timeline, and keep it as evidence. Scouted numbers do not change.",
+    title: "Talk with the team",
+    copy: "Team chat stays on this roster. A message you send shows up for a teammate with the same login.",
   },
   {
     title: "Run practice",
