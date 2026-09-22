@@ -704,7 +704,7 @@ function TaskRow({
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {task.status === "todo" ? (
           <>
-            <Button variant="primary" type="button" style={TAP} onClick={() => onSetTask(task.id, "done")} disabled={busy}>
+            <Button variant="secondary" type="button" style={TAP} onClick={() => onSetTask(task.id, "done")} disabled={busy}>
               Mark done
             </Button>
             <Button variant="secondary" type="button" style={TAP} onClick={() => onSetTask(task.id, "skipped")} disabled={busy}>

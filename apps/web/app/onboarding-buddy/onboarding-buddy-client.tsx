@@ -490,7 +490,7 @@ function UnpairedMemberRow({
             label: candidate.name,
           }))}
         />
-        <Button variant="primary" type="button" disabled={busy || !selected} onClick={() => selected && mutate({ action: "create-pairing", newMemberId: member.userId, buddyId: selected.userId }) }>
+        <Button variant="secondary" type="button" disabled={busy || !selected} onClick={() => selected && mutate({ action: "create-pairing", newMemberId: member.userId, buddyId: selected.userId }) }>
           Pair with {selected ? selected.name : "—"}
         </Button>
       </div>
