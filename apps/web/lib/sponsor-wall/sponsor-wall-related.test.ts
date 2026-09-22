@@ -83,6 +83,26 @@ describe("sponsorWallNextActions", () => {
     expect(actions.some((a) => a.id === "sponsorship")).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
+
+  it("hides wall writes from members who cannot manage the team", () => {
+    const empty = sponsorWallNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      entryCount: 0,
+      canManage: false,
+    });
+    expect(empty[0]?.id).toBe("sponsors");
+    expect(empty.some((action) => action.href === "#sponsor-wall-add")).toBe(false);
+    const ready = sponsorWallNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      entryCount: 4,
+      publishedCount: 2,
+      canManage: false,
+    });
+    expect(ready.some((action) => action.id === "add-more")).toBe(false);
+    expect(ready[0]?.label).toBe("Open Sponsor CRM");
+  });
 });
 
 describe("classifySponsorWallShell", () => {
