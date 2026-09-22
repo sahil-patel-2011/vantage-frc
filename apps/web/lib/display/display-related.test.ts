@@ -52,6 +52,14 @@ describe("display Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "event")?.href).toContain("tab=command");
   });
 
+  it("sends a scout to Scouting instead of Team Data", () => {
+    const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0, canSync: false });
+    expect(actions.find((action) => action.id === "team-data")).toBeUndefined();
+    expect(actions.find((action) => action.id === "scouting")?.href).toBe(
+      "/competition?tab=scouting&orgId=org-1",
+    );
+  });
+
   it("maps setup wizard steps from real counts only", () => {
     expect(displaySetupStep(0, 0)).toBe(1);
     expect(displaySetupStep(2, 0)).toBe(2);

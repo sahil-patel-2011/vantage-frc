@@ -61,6 +61,8 @@ export function displaySetupNextActions(input: {
   boardCount?: number;
   activeTokenCount?: number;
   hasActiveEvent?: boolean | null;
+  /** Owner or admin can open Team Data. A scout is sent to Scouting. */
+  canSync?: boolean;
 }): DisplayNextAction[] {
   const orgId = input.orgId ?? null;
   const boardCount = input.boardCount ?? 0;
@@ -130,12 +132,19 @@ export function displaySetupNextActions(input: {
       detail: "Score a stored prediction so Win Prediction boards can show model odds from real metrics.",
       href: hubHref("/competition", "strategy", orgId),
     },
-    {
-      id: "team-data",
-      label: "Sync team data",
-      detail: "Pull rankings when ranks or matches are missing from the display.",
-      href: withOrgHref("/team/data", orgId),
-    },
+    input.canSync === false
+      ? {
+          id: "scouting",
+          label: "Open Scouting",
+          detail: "An owner or admin syncs rankings. You can still scout.",
+          href: hubHref("/competition", "scouting", orgId),
+        }
+      : {
+          id: "team-data",
+          label: "Sync team data",
+          detail: "Pull rankings when ranks or matches are missing from the display.",
+          href: withOrgHref("/team/data", orgId),
+        },
   );
 
   return actions;

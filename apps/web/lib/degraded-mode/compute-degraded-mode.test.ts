@@ -40,7 +40,7 @@ describe("computeDegradedModeView", () => {
 
   it("returns a live view with a degraded banner and fallbacks when TBA is unhealthy", async () => {
     const client = makeClient({
-      membership: [{ orgId: "org-1", teamNumber: 254 }],
+      membership: [{ orgId: "org-1", teamNumber: 254, role: "scout" }],
       cache: [{ ok: true }],
       health: [
         {
@@ -60,6 +60,7 @@ describe("computeDegradedModeView", () => {
     if (view.status !== "live") return;
     expect(view.orgId).toBe("org-1");
     expect(view.teamNumber).toBe(254);
+    expect(view.canSync).toBe(false);
     expect(view.health.mode).toBe("degraded");
     expect(view.showBanner).toBe(true);
     expect(view.fallbacks.length).toBeGreaterThan(0);
@@ -68,7 +69,7 @@ describe("computeDegradedModeView", () => {
 
   it("surfaces an unresolved acknowledgment matching the current mode as active", async () => {
     const client = makeClient({
-      membership: [{ orgId: "org-2", teamNumber: 118 }],
+      membership: [{ orgId: "org-2", teamNumber: 118, role: "owner" }],
       cache: [{ ok: true }],
       health: [
         {
@@ -96,6 +97,7 @@ describe("computeDegradedModeView", () => {
     const view = await computeDegradedModeView(client, { userId: "u1", requestedOrg: "org-2" });
     expect(view.status).toBe("live");
     if (view.status !== "live") return;
+    expect(view.canSync).toBe(true);
     expect(view.activeAcknowledgment?.id).toBe("ack-1");
     expect(view.recentAcknowledgments).toHaveLength(1);
   });

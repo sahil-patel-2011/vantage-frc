@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { loadDataSourceHealth, type DataSourceHealthView } from "../reference-health";
+import { strategyCanSync } from "../strategy/strategy-related";
 import { computeDegradedFallbacks, shouldShowDegradedBanner } from ".";
 import type { DegradedModeAcknowledgment, DegradedModeFallback, DegradedModeReason, DegradedModeSource } from "./types";
 
@@ -16,11 +17,13 @@ export type DegradedModeView =
       message: string;
       steps: DegradedModeSetupStep[];
       orgId: string | null;
+      canSync: boolean;
     }
   | {
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      canSync: boolean;
       health: DataSourceHealthView;
       showBanner: boolean;
       fallbacks: DegradedModeFallback[];
@@ -55,9 +58,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", m.role AS "role", o.team_number AS "teamNumber"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -83,6 +86,7 @@ export async function computeDegradedModeView(
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
+      canSync: false,
     };
   }
 
@@ -107,6 +111,7 @@ export async function computeDegradedModeView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    canSync: strategyCanSync(org.role),
     health,
     showBanner: shouldShowDegradedBanner(health.mode),
     fallbacks: computeDegradedFallbacks(health.mode, org.orgId),

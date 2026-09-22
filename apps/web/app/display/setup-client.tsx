@@ -19,6 +19,8 @@ import {
 } from "../../lib/display/display-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Board = {
@@ -73,6 +75,19 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [minted, setMinted] = useState<MintedToken | null>(null);
   const [pairBoardId, setPairBoardId] = useState("");
+  const [canSync, setCanSync] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanSync(strategyCanSync(membership?.role ?? session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -246,8 +261,9 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         boardCount: boards.length,
         activeTokenCount,
         hasActiveEvent: loading ? null : Boolean(activeEventKey),
+        canSync,
       }),
-    [orgId, boards.length, activeTokenCount, loading, activeEventKey],
+    [orgId, boards.length, activeTokenCount, loading, activeEventKey, canSync],
   );
 
   // Retry cannot fix an expired session, so the failure decides its own action.
