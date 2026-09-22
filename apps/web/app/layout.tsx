@@ -59,10 +59,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       className={`${inter.variable} ${sourceSans.variable} ${sourceSerif.variable} ${ibmMono.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
-      </head>
       <body>
+        {/* beforeInteractive, not a raw <script> in <head>. A script tag rendered
+            by React is ignored on the client and Next logs that on every page.
+            This still runs before paint, so the theme is set before the first frame. */}
+        <Script id="vantage-theme" strategy="beforeInteractive">
+          {themeBootstrap}
+        </Script>
         <PwaRegister />
         <ThemeProvider>{children}</ThemeProvider>
         {/* Asks before any first-party product analytics are collected, and

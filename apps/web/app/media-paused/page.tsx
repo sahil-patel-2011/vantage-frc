@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Button, EmptyState, PageHeader } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 
 export const metadata: Metadata = {
@@ -62,8 +62,10 @@ export default async function MediaPausedPage({
 
   return (
     <main className="module-page media-paused-page">
-      <PageHeader title={title} description="Photo and video tools are switched off for now to save storage." />
+      {/* One heading. A page header above the empty state said the same words
+          twice; like the 404, the empty state is the page here. */}
       <EmptyState
+        headingLevel={1}
         badge="Paused"
         badgeTone="setup"
         title={title}

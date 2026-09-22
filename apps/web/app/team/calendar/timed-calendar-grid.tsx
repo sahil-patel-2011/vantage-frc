@@ -158,6 +158,8 @@ export function TimedCalendarGrid({
                       "tc-timed-block",
                       selectedEventId === block.event.id ? "selected" : "",
                       block.event.source === "tba" ? "tba" : "",
+                      block.event.source === "duty" ? "duty" : "",
+                      block.event.source === "travel" ? "travel" : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}

@@ -152,3 +152,35 @@
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
 
+
+/* Circuit rows. These were inline styles — fixed 80/90/110/110px columns that
+   could not have a breakpoint — so on a phone a row was ~510px wide and the
+   diagnoser scrolled sideways, which on a data-entry form means typing into
+   fields you cannot see. */
+.wd-row {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 90px 110px 110px auto;
+  gap: 8px;
+  align-items: center;
+}
+.wd-row-observed {
+  grid-template-columns: 80px minmax(0, 1fr) 90px 110px auto auto;
+}
+.wd-row-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  /* Two per line: channel + device, gauge + breaker, draw + remove. Each field
+     says what it is (placeholders, "22 AWG", "40 A", named selects), so they
+     read fine out of their columns. */
+  .wd-row,
+  .wd-row-observed {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wd-row-check {
+    white-space: normal;
+  }
+}

@@ -11,7 +11,7 @@
   min-width: 0;
 }
 
-.media-paused-page .app-page-header h1 {
+.media-paused-page .scan-empty > h1 {
   margin: 0;
   font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
   letter-spacing: -0.03em;

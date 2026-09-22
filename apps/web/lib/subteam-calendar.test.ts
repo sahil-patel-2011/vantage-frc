@@ -16,6 +16,7 @@ import {
   parseSubteamCalendarAction,
   shiftAnchor,
   sortEvents,
+  rosterToCalendarEvents,
   tbaMatchesToCalendarEvents,
   tbaMatchTitle,
   upcomingEvents,
@@ -366,6 +367,73 @@ describe("TBA match calendar overlay", () => {
     );
     expect(events[0]!.bumper).toBe("blue");
     expect(allianceTeamKeys({ team_keys: ["frc123"] })).toEqual(["frc123"]);
+  });
+});
+
+describe("rosterToCalendarEvents", () => {
+  it("puts duties and travel on the week, and skips rows already linked to an event", () => {
+    const events = rosterToCalendarEvents({
+      duties: [
+        {
+          id: "d1",
+          title: "Pit",
+          kind: "pit",
+          startsAt: "2026-09-22T18:00:00.000Z",
+          endsAt: "2026-09-22T20:00:00.000Z",
+          subteamId: null,
+          subteamName: null,
+          subteamColor: null,
+          assignedUserId: USER,
+          assignedUserName: "Sam",
+          calendarEventId: null,
+          notes: "",
+          createdByName: null,
+          mine: true,
+        },
+        {
+          id: "d2",
+          title: "Already on the calendar",
+          kind: "scouting",
+          startsAt: "2026-09-22T19:00:00.000Z",
+          endsAt: null,
+          subteamId: null,
+          subteamName: null,
+          subteamColor: null,
+          assignedUserId: null,
+          assignedUserName: null,
+          calendarEventId: "evt-1",
+          notes: "",
+          createdByName: null,
+          mine: false,
+        },
+      ],
+      travelLegs: [
+        {
+          id: "t1",
+          tripId: "trip",
+          tripTitle: "Peachtree",
+          kind: "bus",
+          title: "Bus to the venue",
+          startsAt: "2026-09-23T11:00:00.000Z",
+          endsAt: null,
+          location: "School lot",
+          meetingPoint: "",
+          notes: "",
+          subteamId: null,
+          subteamName: null,
+          subteamColor: null,
+          calendarEventId: null,
+        },
+      ],
+    });
+    expect(events.map((item) => [item.source, item.title, item.id])).toEqual([
+      ["duty", "Pit", "duty:d1"],
+      ["travel", "Bus to the venue", "travel:t1"],
+    ]);
+    expect(events.every(isReadonlyCalendarEvent)).toBe(true);
+    expect(events[0]!.notes).toBe("Assigned to Sam");
+    expect(events[1]!.location).toBe("School lot");
+    expect(events[1]!.notes).toBe("Peachtree");
   });
 });
 

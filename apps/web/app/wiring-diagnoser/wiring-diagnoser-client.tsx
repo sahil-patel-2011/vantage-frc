@@ -562,15 +562,7 @@ function NewCheckForm({
         </div>
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {expected.map((row, index) => (
-            <div
-              key={index}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px 1fr 90px 110px 110px auto",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
+            <div key={index} className="wd-row wd-row-expected">
               <input
                 type="number"
                 min={0}
@@ -583,14 +575,14 @@ function NewCheckForm({
                 value={row.deviceName}
                 onChange={setExpectedField(index, "deviceName")}
               />
-              <select value={row.wireGauge} onChange={setExpectedField(index, "wireGauge")}>
+              <select aria-label="Wire gauge" value={row.wireGauge} onChange={setExpectedField(index, "wireGauge")}>
                 {WIRE_GAUGES.map((gauge) => (
                   <option key={gauge} value={gauge}>
                     {gauge} AWG
                   </option>
                 ))}
               </select>
-              <select value={row.breakerAmps} onChange={setExpectedField(index, "breakerAmps")}>
+              <select aria-label="Breaker" value={row.breakerAmps} onChange={setExpectedField(index, "breakerAmps")}>
                 {STANDARD_BREAKER_AMPS.map((amps) => (
                   <option key={amps} value={amps}>
                     {amps}A breaker
@@ -627,15 +619,7 @@ function NewCheckForm({
         </p>
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {observed.map((row, index) => (
-            <div
-              key={index}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px 1fr 90px 110px auto auto",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
+            <div key={index} className="wd-row wd-row-observed">
               <input
                 type="number"
                 min={0}
@@ -648,21 +632,21 @@ function NewCheckForm({
                 value={row.deviceName}
                 onChange={setObservedField(index, "deviceName")}
               />
-              <select value={row.wireGauge} onChange={setObservedField(index, "wireGauge")}>
+              <select aria-label="Wire gauge" value={row.wireGauge} onChange={setObservedField(index, "wireGauge")}>
                 {WIRE_GAUGES.map((gauge) => (
                   <option key={gauge} value={gauge}>
                     {gauge} AWG
                   </option>
                 ))}
               </select>
-              <select value={row.breakerAmps} onChange={setObservedField(index, "breakerAmps")}>
+              <select aria-label="Breaker" value={row.breakerAmps} onChange={setObservedField(index, "breakerAmps")}>
                 {STANDARD_BREAKER_AMPS.map((amps) => (
                   <option key={amps} value={amps}>
                     {amps}A breaker
                   </option>
                 ))}
               </select>
-              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center", whiteSpace: "nowrap" }}>
+              <label className="app-muted wd-row-check">
                 <input
                   type="checkbox"
                   checked={row.multiWireTerminal}

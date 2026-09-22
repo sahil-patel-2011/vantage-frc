@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useBrowserValue } from "../../lib/use-browser-value";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VisitRelated } from "../../components/visit-related";
 import {
@@ -295,7 +296,9 @@ export default function VisitInvitesClient() {
   };
 
   const busy = Boolean(busyKey);
-  const urlOrgId = orgFromUrl();
+  // After mount, not during render: null on the server and the real id in the
+  // browser, and it lands in the shell's links — a hydration mismatch.
+  const urlOrgId = useBrowserValue(orgFromUrl, null as string | null);
 
   if (!view) {
     const shell = classifyVisitShell({

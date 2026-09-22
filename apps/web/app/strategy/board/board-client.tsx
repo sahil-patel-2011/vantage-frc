@@ -63,6 +63,7 @@ export default function BoardClient() {
       <main className="module-page strategy-board-public draft-board-workbench soft-gate">
         <EmptyState
           soft
+          headingLevel={1}
           className="draft-empty"
           badge="Unavailable"
           badgeTone="setup"
@@ -79,6 +80,7 @@ export default function BoardClient() {
       <main className="module-page strategy-board-public draft-board-workbench soft-gate">
         <EmptyState
           soft
+          headingLevel={1}
           className="draft-empty"
           title={copy.title}
           description="Opening this team’s mentor link."

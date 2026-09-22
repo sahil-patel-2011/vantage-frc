@@ -1944,7 +1944,7 @@ body.has-app-shell .empty-hint{
   min-height:120px;margin:0;color:var(--muted);font-size:13px;line-height:1.45;
 }
 body.has-app-shell .app-empty h2,
-body.has-app-shell .soft-empty h2{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
+body.has-app-shell .soft-empty h2,.soft-empty > h1{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
 body.has-app-shell .app-empty p,
 body.has-app-shell .soft-empty p,
 body.has-app-shell .notif-empty p{margin:0;max-width:42ch;color:var(--muted);font-size:13px;line-height:1.45}
@@ -2287,6 +2287,17 @@ body.has-app-shell .team-admin-page .team-admin-links a{
 .soft-form-row{display:grid;gap:4px;min-width:0}
 .soft-form-row.wide{grid-column:1/-1}
 .soft-form-grid{display:grid;gap:10px}
+/* Cards that lay themselves out as a grid get a track that can shrink.
+   An .app-card set to display:grid with no columns has one implicit `auto`
+   track, and an auto track grows to its widest child's minimum width: one
+   email address in a member list (it has nowhere to break) or a FormGrid whose
+   auto-fit then counts two 267px columns, and the whole page scrolled sideways
+   on a phone — /team/security, /wiring-diagnoser. minmax(0, 1fr) lets it
+   shrink, and overflow-wrap: anywhere lets an unbreakable string wrap instead
+   of setting the width. :where() keeps this at zero specificity, so a card
+   that sets its own columns still wins; on a card that is not a grid,
+   grid-template-columns does nothing. */
+:where(.app-card){grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere}
 .soft-tab-bar{
   display:flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 0 var(--space-4);
   background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius);

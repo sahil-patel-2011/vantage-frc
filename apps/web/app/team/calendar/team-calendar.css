@@ -1114,6 +1114,12 @@
 .tc-timed-block.tba {
   font-weight: 650;
 }
+.tc-timed-block.duty {
+  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+}
+.tc-timed-block.travel {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
 .tc-timed-block b,
 .tc-timed-block span {
   display: block;

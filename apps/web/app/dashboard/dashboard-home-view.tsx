@@ -262,7 +262,7 @@ export function DashboardHomeView(props: {
     onDragPointerCancel,
   } = props;
 
-  const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
+  const knownName = meLoaded ? (me.firstName || me.name || "").trim().split(/\s+/)[0] : "";
   const boardIsEmpty = layout.length === 0;
   const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded });
 
@@ -287,7 +287,7 @@ export function DashboardHomeView(props: {
               actually specific to opening the page, so it takes the line, and
               the team name appears only when it says more than the number. */}
           <h1 className="dash-hero-greeting">
-            {greeting()}, {firstName}
+            {knownName ? `${greeting()}, ${knownName}` : greeting()}
           </h1>
           {board && !board.isDefault ? (
             <span className="dash-scope-pill" data-scope={scope}>

@@ -36,6 +36,7 @@ import {
   isReadonlyCalendarEvent,
   localDayKey,
   overlayItemsForDay,
+  rosterToCalendarEvents,
   parseLocalDay,
   shiftAnchor,
   upcomingEvents,
@@ -279,7 +280,17 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const ready = view?.status === "ready" ? view : null;
   const githubItems = ready?.githubCalendar?.items ?? [];
   const filtered = useMemo(
-    () => (ready ? filterEventsBySubteam([...ready.events, ...(ready.tbaMatches ?? [])], filterSubteamId) : []),
+    () =>
+      ready
+        ? filterEventsBySubteam(
+            [
+              ...ready.events,
+              ...(ready.tbaMatches ?? []),
+              ...rosterToCalendarEvents({ duties: ready.duties, travelLegs: ready.travelLegs }),
+            ],
+            filterSubteamId,
+          )
+        : [],
     [ready, filterSubteamId],
   );
   const days = useMemo(() => groupEventsByDay(filtered), [filtered]);

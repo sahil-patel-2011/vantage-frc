@@ -17,6 +17,13 @@ type EmptyStateProps = {
    * `app-card`/`soft-empty` box would double the border. Takes over `soft`.
    */
   compact?: boolean;
+  /**
+   * 1 when the empty state *is* the page — a 404, a paused tool — and nothing
+   * above it is the page's main heading. Defaults to 2, the right level inside
+   * a page that already has a title. A page with no h1 at all gives a screen
+   * reader nothing to announce as where you are.
+   */
+  headingLevel?: 1 | 2;
   "aria-busy"?: boolean;
 };
 
@@ -30,6 +37,7 @@ export function EmptyState({
   className,
   soft = false,
   compact = false,
+  headingLevel = 2,
   "aria-busy": ariaBusy,
 }: EmptyStateProps) {
   const shell = compact ? "soft-empty-compact" : soft ? "soft-empty scan-empty" : "app-card soft-panel scan-empty";
@@ -38,7 +46,7 @@ export function EmptyState({
       {badge != null && badge !== "" ? (
         <span className={["app-badge", badgeTone].filter(Boolean).join(" ")}>{badge}</span>
       ) : null}
-      <h2>{title}</h2>
+      {headingLevel === 1 ? <h1>{title}</h1> : <h2>{title}</h2>}
       {description ? <p className="app-muted">{description}</p> : null}
       {children}
     </section>

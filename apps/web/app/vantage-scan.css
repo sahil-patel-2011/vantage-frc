@@ -143,7 +143,8 @@
   background: color-mix(in srgb, var(--scan-navy) 3.5%, var(--surface));
   text-align: left;
 }
-.scan-empty > h2 {
+.scan-empty > h2,
+.scan-empty > h1 {
   margin: 0;
   font-size: var(--title-1);
   letter-spacing: -0.02em;
@@ -325,6 +326,7 @@ body.has-app-shell .scan-empty {
   border-radius: var(--scan-radius);
 }
 body.has-app-shell .soft-empty > h2,
+body.has-app-shell .soft-empty > h1,
 body.has-app-shell .app-empty > h2 {
   color: var(--scan-navy);
 }

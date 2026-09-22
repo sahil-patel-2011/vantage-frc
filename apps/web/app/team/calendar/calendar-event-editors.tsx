@@ -292,7 +292,15 @@ export function EventCard({
         />
       ) : null}
       <div className="tc-event-meta">
-        <span className="tc-chip">{event.source === "tba" ? "Match" : SUBTEAM_EVENT_KIND_LABELS[event.kind]}</span>
+        <span className="tc-chip">
+          {event.source === "tba"
+            ? "Match"
+            : event.source === "duty"
+              ? "Duty"
+              : event.source === "travel"
+                ? "Travel"
+                : SUBTEAM_EVENT_KIND_LABELS[event.kind]}
+        </span>
         <span>
           {fmtRange(event.startsAt, event.endsAt)}
         </span>
@@ -307,7 +315,13 @@ export function EventCard({
       </div>
       {event.notes ? <p className="tc-muted">{event.notes}</p> : null}
 
-      {event.source === "tba" ? null : (
+      {event.source === "duty" ? (
+        <p className="tc-muted">This is on the duty roster. Change it under Duties.</p>
+      ) : null}
+      {event.source === "travel" ? (
+        <p className="tc-muted">This is a trip leg. Change it under Travel.</p>
+      ) : null}
+      {event.source === "tba" || event.source === "duty" || event.source === "travel" ? null : (
       <div className="tc-rsvp" role="group" aria-label="RSVP">
         <button
           type="button"

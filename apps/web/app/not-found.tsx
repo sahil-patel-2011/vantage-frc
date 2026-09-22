@@ -20,6 +20,7 @@ export default function NotFound() {
     <main className="module-page">
       <EmptyState
         soft
+        headingLevel={1}
         badge="Not found"
         badgeTone="setup"
         title="This page is not here"

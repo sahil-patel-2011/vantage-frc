@@ -28,17 +28,17 @@ export const ONBOARDING_STEP_COPY: Record<
   profile: {
     label: "You",
     shortLabel: "You",
-    description: "Your name and what you do on the team. Nothing here is shared until a team approves you.",
+    description: "Your name, and what you do. Teammates do not see this until a team lets you in.",
   },
   team: {
     label: "Your team",
     shortLabel: "Team",
-    description: "Team number is optional. Entering one requests that team's approval — it never joins you.",
+    description: "A team number asks that team to let you in. It does not join you on its own.",
   },
   preferences: {
     label: "Finish",
     shortLabel: "Finish",
-    description: "Agree to both documents, then submit. You can change everything later in Account.",
+    description: "Check that this looks right, then send it. You can change any of it later in Account.",
   },
 };
 

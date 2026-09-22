@@ -297,6 +297,7 @@
 }
 
 .display-preview {
+  min-width: 0;
   padding: 1.25rem;
   border-radius: 14px;
   background: var(--bg);
@@ -304,6 +305,17 @@
   aspect-ratio: 16 / 9;
   display: flex;
   flex-direction: column;
+}
+
+/* After the base rule, not in the earlier 768px block: same specificity, so
+   whichever comes later wins — and the base 16:9 used to come later and win.
+   On a phone the preview's height comes from its content, and 16:9 then sets
+   the width from that height: ~300px tall made it 533px wide, and the whole
+   setup page scrolled sideways. Let the width lead instead. */
+@media (max-width: 768px) {
+  .display-preview {
+    aspect-ratio: auto;
+  }
 }
 
 .display-preview > span {
@@ -320,7 +332,8 @@
 
 .display-preview-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0, …): a plain 1fr will not shrink below its content. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   flex: 1;
 }

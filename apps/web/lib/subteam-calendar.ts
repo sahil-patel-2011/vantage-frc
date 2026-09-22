@@ -63,7 +63,7 @@ export const RSVP_LABELS: Record<RsvpResponse, string> = {
   no: "Can't make it",
 };
 
-export type CalendarEventSource = "team" | "tba";
+export type CalendarEventSource = "team" | "tba" | "duty" | "travel";
 
 export type CalendarEvent = {
   id: string;
@@ -612,7 +612,65 @@ export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey:
 }
 
 export function isReadonlyCalendarEvent(event: CalendarEvent): boolean {
-  return event.source === "tba";
+  return event.source === "tba" || event.source === "duty" || event.source === "travel";
+}
+
+/**
+ * Duties and travel already have a real start time. They belong on the same
+ * week as practices and matches, not only on a second tab. A row that is
+ * already linked to a calendar event is skipped so it is not drawn twice.
+ */
+export function rosterToCalendarEvents(input: {
+  duties?: DutyOnCalendar[];
+  travelLegs?: TravelLegOnCalendar[];
+}): CalendarEvent[] {
+  const blank = {
+    attendanceEventId: null,
+    attendanceEventTitle: null,
+    milestoneId: null,
+    driverSessionId: null,
+    createdByName: null,
+    myRsvp: null,
+    rsvpGoing: 0,
+    rsvpMaybe: 0,
+    rsvpNo: 0,
+  };
+  const events: CalendarEvent[] = [];
+  for (const duty of input.duties ?? []) {
+    if (duty.calendarEventId || !duty.startsAt) continue;
+    events.push({
+      ...blank,
+      id: `duty:${duty.id}`,
+      title: duty.title,
+      kind: duty.kind === "outreach" ? "outreach" : "other",
+      startsAt: duty.startsAt,
+      endsAt: duty.endsAt,
+      location: "",
+      notes: duty.assignedUserName ? `Assigned to ${duty.assignedUserName}` : "",
+      subteamId: duty.subteamId,
+      subteamName: duty.subteamName,
+      subteamColor: duty.subteamColor,
+      source: "duty",
+    });
+  }
+  for (const leg of input.travelLegs ?? []) {
+    if (leg.calendarEventId || !leg.startsAt) continue;
+    events.push({
+      ...blank,
+      id: `travel:${leg.id}`,
+      title: leg.title || leg.tripTitle,
+      kind: "event",
+      startsAt: leg.startsAt,
+      endsAt: leg.endsAt,
+      location: leg.location || leg.meetingPoint,
+      notes: leg.tripTitle && leg.tripTitle !== leg.title ? leg.tripTitle : "",
+      subteamId: leg.subteamId,
+      subteamName: leg.subteamName,
+      subteamColor: leg.subteamColor,
+      source: "travel",
+    });
+  }
+  return events;
 }
 
 /** All-day ICS rows for GitHub milestones that already have a due date. */

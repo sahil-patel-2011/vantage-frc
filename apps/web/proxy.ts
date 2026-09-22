@@ -225,13 +225,19 @@ export async function proxy(request: NextRequest) {
       `{"error":…,"code":"media_paused"}` object where the page should be. The
       menu still links these tools — the pause is one boolean away from being
       lifted, and hiding them would mean re-listing every one on the way back —
-      so the page they land on has to explain itself. Rewritten, not
-      redirected: the address stays the one they asked for.
+      so the page they land on has to explain itself.
+
+      Redirected, not rewritten. A rewrite kept the address the person asked
+      for, which read nicely, but it meant the server rendered the app shell
+      for /media-paused while the browser hydrated it for /media — every
+      component that reads the path disagreed, React threw "Hydration failed"
+      and rebuilt the whole page on the client. Being honestly on /media-paused
+      costs nothing: the page still names the tool, from `from`.
     */
     if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
       const paused = new URL("/media-paused", request.url);
       paused.searchParams.set("from", `${pathname}${request.nextUrl.search}`);
-      return NextResponse.rewrite(paused);
+      return NextResponse.redirect(paused, 307);
     }
     return NextResponse.json({ error: MEDIA_PAUSED_MESSAGE, code: "media_paused" }, { status: 403 });
   }

@@ -412,7 +412,7 @@ export default function OnboardingClient() {
         : {
             eyebrow: "WELCOME TO VANTAGE",
             title: "Make Vantage work for you.",
-            sub: "Three short steps personalize your workspace. Your team approves access before anything is shared.",
+            sub: "Three short steps. Your team still has to let you in before anything is shared.",
           };
 
   return (

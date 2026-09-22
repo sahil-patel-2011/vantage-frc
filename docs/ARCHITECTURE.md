@@ -19,6 +19,13 @@ There is no separate API server, no message broker and no cache layer. PostgreSQ
 datastore, the job queue, and the shared cache. This is deliberate: the security model (below) lives
 in the database, and one process talking to one database keeps that model in one place.
 
+**Do not split this into microservices.** An agent (or a person) changes one feature by editing
+`apps/web/app/<feature>` for the page, `apps/web/app/api/<feature>` for the route, and
+`apps/web/lib/<feature>` for the SQL. Shared rules live in `packages/*`. Cross-feature imports of
+another feature's internals are rejected by `apps/web/lib/architecture/module-boundaries.test.ts`.
+`docs/FEATURE_MAP.md` is the index of where each screen lives. A new service would duplicate
+`withRls` and hide the calendar, duties, and travel rows that are supposed to be one week.
+
 ## The request path
 
 1. `apps/web/proxy.ts` protects every route that is not on the public allowlist. Product pages need a
