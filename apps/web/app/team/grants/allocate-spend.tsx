@@ -7,6 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Button } from "../../../components/ui";
+import { fetchProductSession } from "../../../lib/nav/product-session";
+import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -145,6 +147,8 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
   const [applications, setApplications] = useState<GrantApplicationOption[]>([]);
   const [expenses, setExpenses] = useState<NamedExpense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roleReady, setRoleReady] = useState(false);
+  const [canManage, setCanManage] = useState(false);
   const [forbidden, setForbidden] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [grantApplicationId, setGrantApplicationId] = useState("");
@@ -198,8 +202,22 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
   }, [orgId, seasonYear]);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanManage(strategyCanSync(membership?.role ?? session?.role));
+      setRoleReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
+  useEffect(() => {
+    if (!canManage) return;
     load();
-  }, [load]);
+  }, [canManage, load]);
 
   const selectedExpense = useMemo(
     () => expenses.find((row) => row.id === financeTransactionId) ?? null,
@@ -217,7 +235,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
   }
 
   async function submit() {
-    if (busy) return;
+    if (busy || !canManage) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -257,7 +275,16 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
     }
   }
 
-  if (forbidden) {
+  if (!roleReady) {
+    return (
+      <section className="app-card soft-panel" aria-label="Link spend">
+        <span className="eyebrow">Link spend</span>
+        <EmptyState compact title="Checking who can link spend…" aria-busy />
+      </section>
+    );
+  }
+
+  if (!canManage || forbidden) {
     return (
       <section className="app-card soft-panel" aria-label="Link spend">
         <span className="eyebrow">Link spend</span>
