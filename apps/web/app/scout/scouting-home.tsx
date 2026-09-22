@@ -8,7 +8,7 @@ import { deviceStorageSummary, formatBytes, type DeviceStorage } from "../../lib
 
 type Roster = {
   activeEvent?: { eventKey?: string | null; eventName?: string | null } | null;
-  roster?: Array<{ teamNumber: number; nickname: string | null; scouted: number }>;
+  roster?: Array<{ teamNumber: number; teamKey?: string; nickname: string | null; scouted: number; pitScouted?: number }>;
 };
 
 function useOnline(): boolean {
@@ -84,6 +84,11 @@ export function ScoutingHome() {
   const teams = roster?.roster ?? [];
   const unscouted = teams.filter((team) => team.scouted === 0);
   const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? null;
+  // Pit coverage only means something once the roster says whether it knows.
+  const pitKnown = teams.some((team) => typeof team.pitScouted === "number");
+  const pitMissing = teams.filter((team) => (team.pitScouted ?? 0) === 0);
+  const pitHref = (teamNumber: number) =>
+    `${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit&teamKey=frc${teamNumber}`;
 
   return (
     <main className="scout-home">
@@ -165,6 +170,34 @@ export function ScoutingHome() {
               </li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {pitKnown && teams.length > 0 ? (
+        <section className="scout-home-pit" aria-label="Pit scouting">
+          <header>
+            <h2>Pit scouting</h2>
+            <span>
+              {teams.length - pitMissing.length} of {teams.length} teams visited
+            </span>
+          </header>
+          <span className="scout-home-meter" aria-hidden="true">
+            <i style={{ width: `${Math.round(((teams.length - pitMissing.length) / teams.length) * 100)}%` }} />
+          </span>
+          {pitMissing.length > 0 ? (
+            <ul>
+              {pitMissing.slice(0, 16).map((team) => (
+                <li key={team.teamNumber}>
+                  <a href={pitHref(team.teamNumber)} aria-label={`Pit scout team ${team.teamNumber}`}>
+                    <strong>{team.teamNumber}</strong>
+                    <span>{team.nickname ?? ""}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="scout-home-kept">Every team at this event has a pit report.</p>
+          )}
         </section>
       ) : null}
 

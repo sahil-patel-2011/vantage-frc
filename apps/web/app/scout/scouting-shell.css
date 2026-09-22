@@ -98,3 +98,16 @@
    and keep them when opened in Vantage. */
 .scouting-main .app-page-header .breadcrumbs,
 .scouting-main .app-page-header .product-hub-related{display:none}
+
+/* Pit scouting coverage: how many pits are done, and a tap straight into the
+   pit form for each one still missing. */
+.scout-home-pit{display:grid;gap:10px}
+.scout-home-pit header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.scout-home-pit h2{margin:0;font-size:16px}
+.scout-home-pit header span{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.scout-home-meter{position:relative;display:block;height:6px;border-radius:999px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}
+.scout-home-meter i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--accent);transition:width .6s var(--ease-out,ease)}
+.scout-home-pit ul{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.scout-home-pit a{display:flex;gap:8px;align-items:baseline;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-size:13px}
+.scout-home-pit a span{color:var(--muted);max-width:14ch;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.scout-home-meter i{transition:none}}

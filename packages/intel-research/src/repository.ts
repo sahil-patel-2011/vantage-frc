@@ -43,6 +43,7 @@ export class IntelResearchRepository {
       nickname: string | null;
       epaTotal: number | null;
       scouted: number;
+      pitScouted: number;
     }>(
       `WITH roster AS (
          SELECT jsonb_array_elements_text(m.red_alliance->'teamKeys') AS team_key
@@ -66,16 +67,24 @@ export class IntelResearchRepository {
            FROM match_scout_entries s
           WHERE s.org_id = $1::uuid AND s.event_key = $2::text
           GROUP BY s.team_key
+       ),
+       pit AS (
+         SELECT p.team_key, count(*)::int AS n
+           FROM pit_scout_entries p
+          WHERE p.org_id = $1::uuid AND p.event_key = $2::text
+          GROUP BY p.team_key
        )
        SELECT r.team_key AS "teamKey",
               COALESCE(t.team_number, NULLIF(regexp_replace(r.team_key, '\\D', '', 'g'), '')::int) AS "teamNumber",
               t.nickname,
               rating.epa_total::float8 AS "epaTotal",
-              COALESCE(scouted.n, 0) AS scouted
+              COALESCE(scouted.n, 0) AS scouted,
+              COALESCE(pit.n, 0) AS "pitScouted"
          FROM roster r
          LEFT JOIN teams_ref t ON t.team_key = r.team_key
          LEFT JOIN rating ON rating.team_key = r.team_key
          LEFT JOIN scouted ON scouted.team_key = r.team_key
+         LEFT JOIN pit ON pit.team_key = r.team_key
         ORDER BY rating.epa_total DESC NULLS LAST, 2
         LIMIT $3`,
       [orgId, eventKey, Math.min(Math.max(limit, 1), 120)],
