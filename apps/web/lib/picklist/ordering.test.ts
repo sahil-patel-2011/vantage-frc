@@ -8,6 +8,7 @@ import {
   detectReorderConflict,
   normalizeRanks,
   normalizeTeamKey,
+  planImportedOrder,
   rankAssignments,
   sortPickEntries,
   summarizeBuckets,
@@ -298,5 +299,41 @@ describe("team key normalization", () => {
     expect(teamNumberFromKey("frc971")).toBe(971);
     expect(teamNumberFromKey("nope")).toBeNull();
     expect(teamNumberFromKey(null)).toBeNull();
+  });
+});
+
+describe("planImportedOrder", () => {
+  const list = () => [
+    entry("a", 1, "first_pick", 254),
+    entry("b", 2, "first_pick", 1678),
+    entry("c", 3, "first_pick", 971),
+    entry("d", 4, "first_pick", 118),
+    entry("e", 5, "second_pick", 1323),
+  ];
+  const order = (planned: Array<{ id: string; rank: number }>) => planned.map((p) => `${p.id}${p.rank}`).join(" ");
+
+  it("puts a typed rank in front of whoever held it", () => {
+    expect(order(planImportedOrder(list(), new Map([["d", { rank: 2 }]])))).toBe("a1 d2 b3 c4 e5");
+  });
+
+  it("gives the same result when the coach renumbered the neighbours too", () => {
+    const edits = new Map([
+      ["d", { rank: 2 }],
+      ["b", { rank: 3 }],
+      ["c", { rank: 4 }],
+    ]);
+    expect(order(planImportedOrder(list(), edits))).toBe("a1 d2 b3 c4 e5");
+  });
+
+  it("keeps buckets grouped: a bucket change moves the team into that group", () => {
+    const planned = planImportedOrder(list(), new Map([["a", { bucket: "second_pick" as const }]]));
+    expect(order(planned)).toBe("b1 c2 d3 a4 e5");
+    expect(planned.find((p) => p.id === "a")!.bucket).toBe("second_pick");
+  });
+
+  it("is a no-op without edits and always returns dense ranks", () => {
+    expect(order(planImportedOrder(list(), new Map()))).toBe("a1 b2 c3 d4 e5");
+    const planned = planImportedOrder(list(), new Map([["e", { rank: 99 }]]));
+    expect(planned.map((p) => p.rank)).toEqual([1, 2, 3, 4, 5]);
   });
 });

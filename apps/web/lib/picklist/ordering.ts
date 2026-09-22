@@ -144,6 +144,34 @@ export function applyReorder<T extends OrderableEntry>(
   return result;
 }
 
+/**
+ * Several typed edits at once (the Excel import): each edited entry sorts by the rank that
+ * was typed for it and lands in its new bucket; everyone else keeps their place. At an equal
+ * rank the typed entry goes first, so "make 1678 rank 3" pushes the old #3 down rather than
+ * landing behind it. Buckets still group the list, and ranks come back dense 1..n.
+ */
+export function planImportedOrder<T extends OrderableEntry>(
+  entries: T[],
+  edits: Map<string, { rank?: number; bucket?: PickBucket }>,
+): Array<T & { rank: number }> {
+  const keyed = entries.map((entry) => {
+    const edit = edits.get(entry.id);
+    return {
+      entry: { ...entry, bucket: edit?.bucket ?? entry.bucket },
+      key: edit?.rank ?? entry.rank,
+      typed: edit?.rank !== undefined,
+    };
+  });
+  keyed.sort(
+    (a, b) =>
+      BUCKET_ORDER[a.entry.bucket] - BUCKET_ORDER[b.entry.bucket] ||
+      a.key - b.key ||
+      (a.typed === b.typed ? 0 : a.typed ? -1 : 1) ||
+      comparePickEntries(a.entry, b.entry),
+  );
+  return keyed.map((item, index) => ({ ...item.entry, rank: index + 1 }));
+}
+
 /** id -> rank map for the bulk UPDATE in store.reorderEntry. */
 export function rankAssignments(entries: Array<{ id: string; rank: number }>): {
   ids: string[];

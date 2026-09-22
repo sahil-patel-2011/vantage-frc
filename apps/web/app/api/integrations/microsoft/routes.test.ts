@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   userId: "6925a000-0000-4000-8000-000000000002" as string | null,
   role: "admin" as string | null,
   connected: false,
+  importMigrated: true,
   deleted: 0,
   queries: [] as string[],
 }));
@@ -25,6 +26,7 @@ vi.mock("@vantage/db", () => {
     async query(sql: string) {
       state.queries.push(sql);
       if (sql.includes("FROM memberships")) return { rows: state.role ? [{ role: state.role }] : [], rowCount: state.role ? 1 : 0 };
+      if (sql.includes("to_regclass('workbook_import_runs')")) return { rows: [{ ready: state.importMigrated }], rowCount: 1 };
       if (sql.includes("FROM org_microsoft_connection_status")) {
         return {
           rows: state.connected
@@ -67,6 +69,7 @@ beforeEach(() => {
   state.userId = "6925a000-0000-4000-8000-000000000002";
   state.role = "admin";
   state.connected = false;
+  state.importMigrated = true;
   state.deleted = 0;
   state.queries = [];
   setEnv(CONFIGURED);
@@ -117,6 +120,77 @@ describe("POST /sync", () => {
   it("409 not_connected for an admin whose team has not connected", async () => {
     const { POST } = await import("./sync/route");
     const response = await POST(post("/api/integrations/microsoft/sync", { orgId: ORG }));
+    expect(response.status).toBe(409);
+    expect(((await response.json()) as { code: string }).code).toBe("not_connected");
+  });
+});
+
+describe("POST /import/preview", () => {
+  const url = "/api/integrations/microsoft/import/preview";
+
+  it("401 when signed out", async () => {
+    state.userId = null;
+    const { POST } = await import("./import/preview/route");
+    expect((await POST(post(url, { orgId: ORG }))).status).toBe(401);
+  });
+
+  it("403 for a scout, before reading the connection or the workbook", async () => {
+    state.role = "scout";
+    const { POST } = await import("./import/preview/route");
+    const response = await POST(post(url, { orgId: ORG }));
+    expect(response.status).toBe(403);
+    expect(((await response.json()) as { code: string }).code).toBe("not_manager");
+    expect(state.queries.some((q) => q.includes("org_microsoft_connections") || q.includes("scout_entries"))).toBe(false);
+  });
+
+  it("503 setup_required when there is no Microsoft app registration", async () => {
+    setEnv({ MICROSOFT_CLIENT_SECRET: undefined });
+    const { POST } = await import("./import/preview/route");
+    const response = await POST(post(url, { orgId: ORG }));
+    expect(response.status).toBe(503);
+    expect(((await response.json()) as { code: string }).code).toBe("setup_required");
+  });
+
+  it("503 not_migrated until migration 0676 is applied", async () => {
+    state.importMigrated = false;
+    const { POST } = await import("./import/preview/route");
+    const response = await POST(post(url, { orgId: ORG }));
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as { code: string; error: string };
+    expect(body.code).toBe("not_migrated");
+    expect(body.error).toContain("0676");
+  });
+
+  it("409 not_connected for an admin whose team has not connected", async () => {
+    const { POST } = await import("./import/preview/route");
+    const response = await POST(post(url, { orgId: ORG }));
+    expect(response.status).toBe(409);
+    expect(((await response.json()) as { code: string }).code).toBe("not_connected");
+  });
+});
+
+describe("POST /import/apply", () => {
+  const url = "/api/integrations/microsoft/import/apply";
+  const someId = "0123456789abcdef01234567";
+
+  it("400 without confirmed change ids", async () => {
+    const { POST } = await import("./import/apply/route");
+    const response = await POST(post(url, { orgId: ORG, changeIds: ["not-a-change-id"] }));
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { code: string }).code).toBe("no_changes");
+  });
+
+  it("403 for a viewer, and writes nothing", async () => {
+    state.role = "viewer";
+    const { POST } = await import("./import/apply/route");
+    const response = await POST(post(url, { orgId: ORG, changeIds: [someId] }));
+    expect(response.status).toBe(403);
+    expect(state.queries.some((q) => /UPDATE|INSERT/.test(q))).toBe(false);
+  });
+
+  it("409 not_connected for an admin whose team has not connected", async () => {
+    const { POST } = await import("./import/apply/route");
+    const response = await POST(post(url, { orgId: ORG, changeIds: [someId] }));
     expect(response.status).toBe(409);
     expect(((await response.json()) as { code: string }).code).toBe("not_connected");
   });

@@ -35,6 +35,14 @@
  *   append rows     POST …/workbook/tables/{name}/rows/add {"values":[[…],[…]]} → 200
  *                   "batch the rows together in a single call rather than doing single row insertion"
  *                   https://learn.microsoft.com/en-us/graph/api/tablerowcollection-add
+ *   read header     GET  …/workbook/tables/{name}/headerRowRange?$select=values   (import)
+ *                   https://learn.microsoft.com/en-us/graph/api/table-headerrowrange
+ *   read body       GET  …/workbook/tables/{name}/dataBodyRange?$select=address,rowCount, then
+ *                   GET  …/workbook/worksheets/{name}/range(address='A2:S2001')?$select=values
+ *                   in chunks of READ_ROWS_PER_REQUEST rows (import). `values` are the cells'
+ *                   computed values: numbers stay numbers, a formula returns its result, and
+ *                   an empty cell is "".  https://learn.microsoft.com/en-us/graph/api/worksheet-range
+ *                   https://learn.microsoft.com/en-us/graph/api/resources/workbookrange
  *   who am I        GET  /me?$select=displayName,mail,userPrincipalName
  *                   https://learn.microsoft.com/en-us/graph/api/user-get
  *   find file       GET  /me/drive/root:/{path}   (404 when absent)
@@ -50,10 +58,17 @@
 import { GraphClient, GraphError, isGraphError } from "./graph";
 import { XLSX_CONTENT_TYPE, minimalXlsx } from "./minimal-xlsx";
 import { type CellValue, type TableSpec, columnLetter } from "./workbook-schema";
+import type { WorkbookReader, WorkbookTableRead, WorkbookTableRef } from "./workbook-import";
 import type { WorkbookTarget } from "./workbook-sync";
 
 /** rows/add payload size. Microsoft gives no hard cap; 500 keeps each request small. */
 export const ROWS_PER_REQUEST = 500;
+
+/** Rows per range GET when reading a table back (import): keeps each response small. */
+export const READ_ROWS_PER_REQUEST = 2000;
+
+/** An import never reads more than this many rows of one table (the export caps at 20,000). */
+export const MAX_ROWS_READ = 25_000;
 
 const enc = encodeURIComponent;
 
@@ -72,6 +87,14 @@ export function parseRangeAddress(address: string): { firstRow: number; lastRow:
   };
 }
 
+/** "PickList!A2:S40" → "PickList"; "'Pick ''24'''!A2" → "Pick '24'"; no sheet part → null. */
+export function sheetFromAddress(address: string): string | null {
+  const bang = address.lastIndexOf("!");
+  if (bang <= 0) return null;
+  const sheet = address.slice(0, bang);
+  return sheet.startsWith("'") && sheet.endsWith("'") ? sheet.slice(1, -1).replace(/''/g, "'") : sheet;
+}
+
 function blankRow(width: number): CellValue[] {
   return Array.from({ length: width }, () => "");
 }
@@ -83,7 +106,7 @@ function fitRow(row: CellValue[], width: number): CellValue[] {
   return out;
 }
 
-export class GraphWorkbookTarget implements WorkbookTarget {
+export class GraphWorkbookTarget implements WorkbookTarget, WorkbookReader {
   private readonly sheets = new Set<string>();
   private readonly tables = new Set<string>();
   private readonly base: string;
@@ -95,12 +118,19 @@ export class GraphWorkbookTarget implements WorkbookTarget {
     this.base = `/me/drive/items/${enc(itemId)}/workbook`;
   }
 
-  /** Open the workbook: one session (when the account supports it) and one read each of sheets and tables. */
-  static async open(graph: GraphClient, itemId: string): Promise<GraphWorkbookTarget> {
+  /**
+   * Open the workbook: one session (when the account supports it) and one read each of sheets
+   * and tables. An import opens it with `persistChanges: false`: it only reads.
+   */
+  static async open(
+    graph: GraphClient,
+    itemId: string,
+    options: { persistChanges?: boolean } = {},
+  ): Promise<GraphWorkbookTarget> {
     const target = new GraphWorkbookTarget(graph, itemId);
     try {
       const session = await graph.request<{ id?: string }>("POST", `${target.base}/createSession`, {
-        body: { persistChanges: true },
+        body: { persistChanges: options.persistChanges ?? true },
       });
       if (session?.id) graph.sessionId = session.id;
     } catch (error) {
@@ -198,6 +228,38 @@ export class GraphWorkbookTarget implements WorkbookTarget {
       const chunk = rows.slice(i, i + ROWS_PER_REQUEST).map((row) => fitRow(row, width));
       await this.graph.request("POST", `${this.base}/tables/${enc(spec.table)}/rows/add`, { body: { values: chunk } });
     }
+  }
+
+  /**
+   * Read a table back: its header names and every body row's values (import). Returns null
+   * when the workbook has no such table. Uses the table's own ranges, so a table a coach
+   * moved or widened is still read correctly; extra columns come back as extra headers.
+   */
+  async readTable(ref: WorkbookTableRef): Promise<WorkbookTableRead | null> {
+    if (!this.tables.has(ref.table)) return null;
+    const header = await this.graph.request<{ values?: unknown[][] }>(
+      "GET",
+      `${this.base}/tables/${enc(ref.table)}/headerRowRange?$select=values`,
+    );
+    const headers = header?.values?.[0] ?? [];
+    const body = await this.graph.request<{ address?: string; rowCount?: number }>(
+      "GET",
+      `${this.base}/tables/${enc(ref.table)}/dataBodyRange?$select=address,rowCount`,
+    );
+    const parsed = body?.address ? parseRangeAddress(body.address) : null;
+    if (!parsed) return { headers, rows: [] };
+    const sheet = (body?.address ? sheetFromAddress(body.address) : null) ?? ref.sheet;
+    const lastRow = Math.min(parsed.lastRow, parsed.firstRow + MAX_ROWS_READ - 1);
+    const rows: unknown[][] = [];
+    for (let first = parsed.firstRow; first <= lastRow; first += READ_ROWS_PER_REQUEST) {
+      const last = Math.min(lastRow, first + READ_ROWS_PER_REQUEST - 1);
+      const chunk = await this.graph.request<{ values?: unknown[][] }>(
+        "GET",
+        `${this.rangePath(sheet, `${parsed.firstCol}${first}:${parsed.lastCol}${last}`)}?$select=values`,
+      );
+      rows.push(...(chunk?.values ?? []));
+    }
+    return { headers, rows, truncated: lastRow < parsed.lastRow };
   }
 
   async close(): Promise<void> {

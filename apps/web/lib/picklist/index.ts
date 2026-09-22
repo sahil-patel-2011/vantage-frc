@@ -31,6 +31,7 @@ export {
   normalizeRanks,
   normalizeTeamKey,
   PICK_BUCKETS,
+  planImportedOrder,
   rankAssignments,
   sortPickEntries,
   summarizeBuckets,
@@ -45,6 +46,7 @@ export {
 
 export {
   ALLIANCE_SEEDS,
+  applyImportedEntryEdits,
   boardState,
   deleteEntry,
   DRAFT_PICK_SLOTS,
@@ -62,5 +64,6 @@ export {
   setListStatus,
   upsertEntry,
   upsertEntryFromTier,
+  type ImportedEntryEdit,
   type ReorderResult,
 } from "./store";

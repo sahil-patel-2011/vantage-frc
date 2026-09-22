@@ -14,6 +14,7 @@ import {
   clampVoteWeight,
   detectReorderConflict,
   normalizeTeamKey,
+  planImportedOrder,
   rankAssignments,
   sortPickEntries,
   tierFromBucket,
@@ -775,6 +776,105 @@ export async function setBoardSlot(
   );
 
   await touchList(client, input);
+}
+
+export type ImportedEntryEdit = {
+  entryId: string;
+  /** The entry's `updated_at::text` when the edit was previewed. Anything else is stale. */
+  expectedUpdatedAt: string;
+  rank?: number;
+  bucket?: PickBucket;
+  /** Present (possibly null) only when notes were edited. */
+  notes?: string | null;
+};
+
+/**
+ * Edits a coach typed into the team's Excel workbook (lib/microsoft/run-import.ts), applied
+ * as one move. Optimistic: the list's entries are locked FOR UPDATE, and an entry whose
+ * updated_at is no longer the one the coach edited is returned in `stale` and left alone —
+ * never overwritten. Rank edits are placed with planImportedOrder and the whole list is
+ * renumbered, exactly like a drag in reorderEntry (neighbours' ranks move, revisions bump).
+ */
+export async function applyImportedEntryEdits(
+  client: PoolClient,
+  input: { orgId: string; userId: string; pickListId: string; edits: ImportedEntryEdit[] },
+): Promise<{ applied: string[]; stale: string[] }> {
+  await assertWritable(client, input);
+  const locked = await client.query<{
+    id: string;
+    rank: number;
+    bucket: PickBucket;
+    teamNumber: number | null;
+    updatedAt: string;
+  }>(
+    `SELECT id, rank, bucket, team_number AS "teamNumber", updated_at::text AS "updatedAt"
+     FROM pick_list_entries
+     WHERE org_id = $1::uuid AND pick_list_id = $2::uuid
+     ORDER BY id
+     FOR UPDATE`,
+    [input.orgId, input.pickListId],
+  );
+  const byId = new Map(locked.rows.map((row) => [row.id, row]));
+
+  const applied: string[] = [];
+  const stale: string[] = [];
+  const accepted: ImportedEntryEdit[] = [];
+  for (const edit of input.edits) {
+    const row = byId.get(edit.entryId);
+    if (!row || row.updatedAt !== edit.expectedUpdatedAt) stale.push(edit.entryId);
+    else accepted.push(edit);
+  }
+  if (accepted.length === 0) return { applied, stale };
+
+  for (const edit of accepted) {
+    if (edit.bucket !== undefined || edit.notes !== undefined) {
+      await client.query(
+        `UPDATE pick_list_entries
+         SET bucket = COALESCE($4::text, bucket),
+             tier = CASE WHEN $4::text IS NULL THEN tier ELSE $5::text END,
+             notes = CASE WHEN $6::boolean THEN $7::text ELSE notes END,
+             updated_by = $8::uuid, updated_at = now(), revision = revision + 1
+         WHERE org_id = $1::uuid AND pick_list_id = $2::uuid AND id = $3::uuid`,
+        [
+          input.orgId,
+          input.pickListId,
+          edit.entryId,
+          edit.bucket ?? null,
+          edit.bucket ? tierFromBucket(edit.bucket) : null,
+          edit.notes !== undefined,
+          edit.notes ?? null,
+          input.userId,
+        ],
+      );
+    }
+    applied.push(edit.entryId);
+  }
+
+  const planned = planImportedOrder(
+    locked.rows.map((row) => ({
+      id: row.id,
+      rank: Number(row.rank),
+      bucket: row.bucket,
+      teamNumber: row.teamNumber == null ? null : Number(row.teamNumber),
+    })),
+    new Map(accepted.map((edit) => [edit.entryId, { rank: edit.rank, bucket: edit.bucket }])),
+  );
+  const { ids, ranks } = rankAssignments(planned);
+  if (ids.length > 0) {
+    await client.query(
+      `UPDATE pick_list_entries e
+       SET rank = v.rank,
+           updated_by = $4::uuid,
+           updated_at = now(),
+           revision = e.revision + 1
+       FROM (SELECT unnest($2::uuid[]) AS id, unnest($3::int[]) AS rank) v
+       WHERE e.id = v.id AND e.pick_list_id = $1::uuid AND e.rank IS DISTINCT FROM v.rank`,
+      [input.pickListId, ids, ranks, input.userId],
+    );
+  }
+
+  await touchList(client, input);
+  return { applied, stale };
 }
 
 /** Convenience for surfaces that only know a tier string (Strategy / Intel-Research imports). */

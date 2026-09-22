@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GraphClient } from "./graph";
 import { type CellValue, type TableSpec, columnLetter } from "./workbook-schema";
-import { GraphWorkbookTarget, ensureWorkbookFile, parseRangeAddress, workbookFileName } from "./workbook-target";
+import { GraphWorkbookTarget, ensureWorkbookFile, parseRangeAddress, sheetFromAddress, workbookFileName } from "./workbook-target";
 
 /**
  * A small simulation of the Excel REST surface GraphWorkbookTarget uses, so the real
@@ -80,6 +80,12 @@ class FakeExcel {
       const table = [...this.tables.values()].find((t) => t.sheet === m![1]);
       if (table) table.rows.splice(range.firstRow - 2, range.lastRow - range.firstRow + 1);
       return ok(null, 204);
+    }
+    if ((m = /^\/worksheets\/([^/]+)\/range\(address='([^']+)'\)$/.exec(wb)) && method === "GET") {
+      const range = parseRangeAddress(m[2]!)!;
+      const table = [...this.tables.values()].find((t) => t.sheet === m![1]);
+      if (!table) return ok({ error: { code: "itemNotFound" } }, 404);
+      return ok({ values: table.rows.slice(range.firstRow - 2, range.lastRow - 1) });
     }
     if ((m = /^\/worksheets\/([^/]+)\/range\(address='([^']+)'\)$/.exec(wb)) && method === "PATCH") {
       const range = parseRangeAddress(m[2]!)!;
@@ -173,6 +179,47 @@ describe("GraphWorkbookTarget", () => {
     expect(excel.tables.get("VantageTeams")!.rows).toEqual(rows(2));
     expect(excel.requests).not.toContain("POST /closeSession");
     expect(excel.sessionHeaders.every((h) => h === null)).toBe(true);
+  });
+});
+
+describe("GraphWorkbookTarget.readTable (import)", () => {
+  it("reads back exactly what the sync wrote, in chunks, in a non-persisting session", async () => {
+    const excel = new FakeExcel();
+    await sync(excel, spec, rows(2500));
+    excel.requests.length = 0;
+    const createBodies: unknown[] = [];
+    const inner = excel.fetch;
+    const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).endsWith("/createSession")) createBodies.push(JSON.parse(String(init?.body)));
+      return inner(input, init);
+    }) as unknown as typeof fetch;
+    const graph = new GraphClient("token", { fetchImpl });
+    const reader = await GraphWorkbookTarget.open(graph, "item-1", { persistChanges: false });
+    const read = await reader.readTable({ entity: "PickList", sheet: "Teams", table: "VantageTeams" });
+    await reader.close();
+    expect(createBodies).toEqual([{ persistChanges: false }]);
+    expect(read!.headers).toEqual(spec.columns);
+    expect(read!.rows).toEqual(rows(2500));
+    expect(read!.truncated).toBe(false);
+    const ranges = excel.requests.filter((r) => r.startsWith("GET /worksheets/Teams/range"));
+    expect(ranges).toEqual([
+      "GET /worksheets/Teams/range(address='A2:D2001')",
+      "GET /worksheets/Teams/range(address='A2002:D2501')",
+    ]);
+    // Reading never writes.
+    expect(excel.requests.some((r) => /^(PATCH|DELETE)|rows\/add|tables\/add|worksheets\/add/.test(r))).toBe(false);
+  });
+
+  it("returns null for a table the workbook does not have", async () => {
+    const excel = new FakeExcel();
+    const reader = await GraphWorkbookTarget.open(new GraphClient("token", { fetchImpl: excel.fetch }), "item-1");
+    expect(await reader.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" })).toBeNull();
+  });
+
+  it("finds the sheet from the table's own address", () => {
+    expect(sheetFromAddress("PickList!A2:S40")).toBe("PickList");
+    expect(sheetFromAddress("'Pick ''24'''!A2:B3")).toBe("Pick '24'");
+    expect(sheetFromAddress("A2:B3")).toBeNull();
   });
 });
 

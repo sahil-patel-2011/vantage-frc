@@ -18,17 +18,25 @@ import { GraphClient, type MicrosoftConfig, type RetryOptions, describeGraphErro
 import { GraphWorkbookTarget, ensureWorkbookFile, workbookFileName } from "./workbook-target";
 import { type SyncResult, syncOrgWorkbook } from "./workbook-sync";
 
-export type RunSyncResult =
-  | SyncResult
+export type ConnectFailure =
   | { status: "not_connected" }
   | { status: "reconnect_required"; error: string }
   | { status: "encryption_unavailable"; error: string }
   | { status: "microsoft_unavailable"; error: string };
 
-export async function runWorkbookSync(
+export type RunSyncResult = SyncResult | ConnectFailure;
+
+type ConnectionSecret = NonNullable<Awaited<ReturnType<typeof readConnectionSecret>>>;
+
+/**
+ * The team's stored sign-in → a Graph client. Shared by Sync now and Import: decrypt the
+ * refresh token, redeem it (storing the rotated one), and record any failure on the
+ * connection so the card can show it.
+ */
+export async function connectMicrosoftGraph(
   client: PoolClient,
-  input: { orgId: string; userId: string; config: MicrosoftConfig; retry?: RetryOptions },
-): Promise<RunSyncResult> {
+  input: { orgId: string; config: MicrosoftConfig; retry?: RetryOptions },
+): Promise<{ status: "ok"; graph: GraphClient; secret: ConnectionSecret } | ConnectFailure> {
   const secret = await readConnectionSecret(client, input.orgId);
   if (!secret) return { status: "not_connected" };
 
@@ -56,7 +64,16 @@ export async function runWorkbookSync(
     return { status: "microsoft_unavailable", error: message };
   }
 
-  const graph = new GraphClient(accessToken, input.retry);
+  return { status: "ok", graph: new GraphClient(accessToken, input.retry), secret };
+}
+
+export async function runWorkbookSync(
+  client: PoolClient,
+  input: { orgId: string; userId: string; config: MicrosoftConfig; retry?: RetryOptions },
+): Promise<RunSyncResult> {
+  const connected = await connectMicrosoftGraph(client, input);
+  if (connected.status !== "ok") return connected;
+  const { graph, secret } = connected;
 
   const openTarget = async () => {
     let itemId = secret.workbookItemId;
