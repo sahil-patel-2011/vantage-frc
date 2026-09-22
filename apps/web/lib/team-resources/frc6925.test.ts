@@ -99,4 +99,22 @@ describe("Team 6925 lab", () => {
     const proxy = readFileSync(join(__dirname, "../../proxy.ts"), "utf8");
     expect(proxy).toMatch(/^\s*"\/team-setup\.ps1",$/m);
   });
+
+  it("installs the whole programming toolchain, GitHub included", () => {
+    const script = readFileSync(join(__dirname, "../../public/team-setup.ps1"), "utf8");
+    for (const wingetId of [
+      "Microsoft.VisualStudioCode",
+      "Git.Git",
+      "GitHub.cli",
+      "GitHub.GitHubDesktop",
+      "REVRobotics.REVHardwareClient2",
+      "9NVV4PWDW27Z",
+    ]) {
+      expect(script).toContain(`-Id '${wingetId}'`);
+    }
+    for (const repo of ["wpilibsuite/allwpilib", "mjansen4857/pathplanner", "SleipnirGroup/Choreo"]) {
+      expect(script).toContain(`'${repo}'`);
+    }
+    expect(script).toContain("gh auth login");
+  });
 });
