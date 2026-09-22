@@ -59,12 +59,12 @@ describe("desktop navigation allowlist", () => {
   });
 
   it("domain-matches cookies against the app host only", () => {
-    expect(cookieMatchesHost("vantage-frc-web.vercel.app", "vantage-frc-web.vercel.app")).toBe(true);
-    expect(cookieMatchesHost(".vantage-frc-web.vercel.app", "vantage-frc-web.vercel.app")).toBe(true);
+    expect(cookieMatchesHost("vantagefrc.vercel.app", "vantagefrc.vercel.app")).toBe(true);
+    expect(cookieMatchesHost(".vantagefrc.vercel.app", "vantagefrc.vercel.app")).toBe(true);
     expect(cookieMatchesHost("localhost", "localhost")).toBe(true);
-    expect(cookieMatchesHost("evil.example", "vantage-frc-web.vercel.app")).toBe(false);
-    expect(cookieMatchesHost(undefined, "vantage-frc-web.vercel.app")).toBe(false);
-    expect(cookieMatchesHost("", "vantage-frc-web.vercel.app")).toBe(false);
+    expect(cookieMatchesHost("evil.example", "vantagefrc.vercel.app")).toBe(false);
+    expect(cookieMatchesHost(undefined, "vantagefrc.vercel.app")).toBe(false);
+    expect(cookieMatchesHost("", "vantagefrc.vercel.app")).toBe(false);
   });
 
   it("gates a signed-out session to the sign-in flow and public pages", () => {

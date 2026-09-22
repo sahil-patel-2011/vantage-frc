@@ -50,7 +50,10 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       const params = new URLSearchParams(window.location.search);
       const orgId = params.get("orgId");
       const cacheOrg = orgId?.trim() || "_";
-      const requestedTab = params.get("tab");
+      // Embedded in the competition hub, `tab` is spent on the hub's own tab
+      // ("strategy"), so the pick desk arrives as `sub`. Standalone, it is
+      // still `tab`. Read the specific one first.
+      const requestedTab = params.get("sub") ?? params.get("tab");
       if (requestedTab === "picks") setTab("picks");
       let hadCache = Boolean(viewRef.current);
       try {
@@ -179,9 +182,26 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     orgId,
   });
 
+  const sectionTabs = (
+    <ToolStrip
+      aria-label="Strategy sections"
+      value={tab}
+      onChange={(id) => setTab(id as StrategyTab)}
+      items={[
+        { id: "matchup", label: "Matchup" },
+        { id: "picks", label: "Pick lists" },
+      ]}
+    />
+  );
+
   if (tab !== "picks" && shell !== "ready") {
     return (
       <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded} fromCache={fromCache} cachedAt={cachedAt}>
+        {/* The switcher has to survive this state. Without it, clicking Matchup
+            before there is a matchup to show replaced the whole panel — tabs
+            included — and the only way back to the pick list was to edit the
+            URL, mid-alliance-selection. */}
+        {sectionTabs}
         {error && shell !== "error" ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -251,15 +271,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       <OfflineBanner feature="Strategy" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      <ToolStrip
-        aria-label="Strategy sections"
-        value={tab}
-        onChange={(id) => setTab(id as StrategyTab)}
-        items={[
-          { id: "matchup", label: "Matchup" },
-          { id: "picks", label: "Pick lists" },
-        ]}
-      />
+      {sectionTabs}
 
       {error ? (
         <p className="telemetry-status" role="alert">

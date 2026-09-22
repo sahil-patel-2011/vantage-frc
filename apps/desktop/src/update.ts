@@ -1,3 +1,4 @@
+import { PRODUCTION_APP_HOSTS } from "./allowlist";
 /**
  * Desktop update policy — pure decisions, no IO.
  *
@@ -5,7 +6,7 @@
  * them is how you end up shipping an updater that does nothing useful:
  *
  *  1. **The web app deployed.** Vantage is a hosted product; the window is a
- *     Chromium view of `vantage-frc-web.vercel.app`. A deploy reaches the user
+ *     Chromium view of the live app host. A deploy reaches the user
  *     the moment the page reloads. That needs no binary at all — see
  *     `shouldReloadWeb` / `WEB_*` below.
  *  2. **The shell itself is out of date.** The navigation allowlist, the deep
@@ -65,8 +66,33 @@ const DOWNLOAD_HOSTS = [
   "github.com",
   "objects.githubusercontent.com",
   "release-assets.githubusercontent.com",
-  "vantage-frc-web.vercel.app",
+  // The live app hosts. `vantage-frc-web.vercel.app` was here and is retired,
+  // so an installer served by the app itself had nowhere to come from.
+  ...PRODUCTION_APP_HOSTS,
 ];
+
+/**
+ * What changed, written for the person who has to decide whether to press the
+ * button — not a changelog.
+ *
+ * A student at a competition does not care that a selector was scoped or a
+ * hook moved above a guard. They care whether the thing they complained about
+ * on Saturday is fixed, and whether restarting now will cost them anything.
+ * So the shape is deliberately three plain lists rather than free text: what
+ * you can do now, what stopped being broken, and what is coming — the last one
+ * because a release note that only looks backwards gives no reason to keep the
+ * app up to date.
+ */
+export type ReleaseNotes = {
+  /** One sentence. The reason this release exists. */
+  headline: string;
+  /** New things, in the words of somebody using them. */
+  added: string[];
+  /** Things that were broken and now are not. */
+  fixed: string[];
+  /** Named, not promised — what is being worked on next. */
+  next: string[];
+};
 
 export type ReleaseManifest = {
   /** Newest published shell version, e.g. "0.3.0". */
@@ -77,12 +103,69 @@ export type ReleaseManifest = {
    * the update stops being optional.
    */
   minimumVersion: string;
-  /** https URL of the Windows NSIS installer. */
+  /** https URL of the installer for the platform this shell is running on. */
   url: string;
   /** Lowercase hex SHA-256 of the file at `url`. */
   sha256: string;
   notes?: string;
+  releaseNotes?: ReleaseNotes;
 };
+
+/** Which download key a platform wants, best first. */
+export const DOWNLOAD_KEYS_BY_PLATFORM: Record<string, readonly string[]> = {
+  win32: ["win_nsis", "win_msi", "win_portable"],
+  darwin: ["mac_dmg", "mac_zip"],
+  linux: ["linux_appimage", "linux_deb"],
+};
+
+/**
+ * The digest belongs to the file, so it has to be read from the same entry the
+ * URL came from. A single top-level `sha256` was only ever correct while there
+ * was exactly one download — with a Mac build published alongside the Windows
+ * one it would verify the wrong file and refuse every install.
+ *
+ * `sha256` itself stays the Windows string it has always been. Shells already
+ * installed parse it with a 64-hex regex, so turning it into an object would
+ * make all of them reject the manifest and stop updating, permanently and
+ * silently. The per-download map is a new key beside it.
+ */
+function sha256ForKey(row: Record<string, unknown>, key: string | null): string {
+  const scopedSource =
+    row.sha256ByDownload && typeof row.sha256ByDownload === "object"
+      ? (row.sha256ByDownload as Record<string, unknown>)
+      : row.sha256 && typeof row.sha256 === "object"
+        ? (row.sha256 as Record<string, unknown>)
+        : null;
+  if (scopedSource && key) {
+    const scoped = scopedSource[key];
+    if (typeof scoped === "string") return scoped.trim().toLowerCase();
+  }
+  // Only the Windows installer may fall back to the bare string, because that
+  // is the file it has always described.
+  if (key != null && key !== "win_nsis") return "";
+  return typeof row.sha256 === "string" ? row.sha256.trim().toLowerCase() : "";
+}
+
+function parseReleaseNotes(raw: unknown): ReleaseNotes | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const row = raw as Record<string, unknown>;
+  const headline = typeof row.headline === "string" ? row.headline.trim().slice(0, 200) : "";
+  if (!headline) return undefined;
+  const list = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim().slice(0, 200))
+          .filter(Boolean)
+          .slice(0, 8)
+      : [];
+  return {
+    headline,
+    added: list(row.added),
+    fixed: list(row.fixed),
+    next: list(row.next),
+  };
+}
 
 export type UpdateState = {
   /** When this shell first saw this version offered (ms epoch). */
@@ -143,7 +226,10 @@ function isAllowedDownloadUrl(raw: unknown): raw is string {
  * note in docs/DESKTOP.md — these builds are unsigned, so the digest plus TLS
  * is the whole trust story and it is stated rather than pretended away).
  */
-export function parseManifest(raw: unknown): ReleaseManifest | null {
+export function parseManifest(
+  raw: unknown,
+  platform: string = process.platform,
+): ReleaseManifest | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as Record<string, unknown>;
   const version = typeof row.version === "string" ? row.version.trim() : "";
@@ -151,14 +237,27 @@ export function parseManifest(raw: unknown): ReleaseManifest | null {
 
   const downloads =
     row.downloads && typeof row.downloads === "object" ? (row.downloads as Record<string, unknown>) : {};
-  const url = isAllowedDownloadUrl(row.url)
-    ? row.url
-    : isAllowedDownloadUrl(downloads.win_nsis)
-      ? downloads.win_nsis
-      : null;
+
+  // Pick the build for the machine this is running on. Falling back to the
+  // Windows installer on a Mac is not a graceful degradation, it is handing
+  // somebody a file they cannot open — so an unsupported platform gets no
+  // manifest and the shell stays on "you are up to date" rather than looping
+  // on a download it can never install.
+  let url: unknown = null;
+  let digestKey: string | null = null;
+  for (const key of DOWNLOAD_KEYS_BY_PLATFORM[platform] ?? []) {
+    if (isAllowedDownloadUrl(downloads[key])) {
+      url = downloads[key];
+      digestKey = key;
+      break;
+    }
+  }
+  // A manifest with a bare `url` predates per-platform downloads and is
+  // Windows by construction.
+  if (url == null && platform === "win32" && isAllowedDownloadUrl(row.url)) url = row.url;
   if (!isAllowedDownloadUrl(url)) return null;
 
-  const sha256 = typeof row.sha256 === "string" ? row.sha256.trim().toLowerCase() : "";
+  const sha256 = sha256ForKey(row, digestKey);
   if (!/^[0-9a-f]{64}$/.test(sha256)) return null;
 
   // A manifest that omits it means "no floor" — every version is still supported.
@@ -174,7 +273,15 @@ export function parseManifest(raw: unknown): ReleaseManifest | null {
   const clamped = compareVersions(minimumVersion, version) > 0 ? version : minimumVersion;
 
   const notes = typeof row.notes === "string" ? row.notes.slice(0, 2000) : undefined;
-  return { version, minimumVersion: clamped, url, sha256, ...(notes ? { notes } : {}) };
+  const releaseNotes = parseReleaseNotes(row.releaseNotes);
+  return {
+    version,
+    minimumVersion: clamped,
+    url,
+    sha256,
+    ...(notes ? { notes } : {}),
+    ...(releaseNotes ? { releaseNotes } : {}),
+  };
 }
 
 /**

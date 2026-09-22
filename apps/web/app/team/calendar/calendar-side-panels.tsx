@@ -17,6 +17,7 @@ import {
   type TravelLegOnCalendar,
 } from "../../../lib/subteam-calendar";
 import {
+  fmtRange,
   fmtWhen,
   withOrg,
   type ActionBody,
@@ -204,8 +205,7 @@ export function DutyCard({
       <div className="tc-event-meta">
         <span className="tc-chip">{DUTY_KIND_LABELS[duty.kind]}</span>
         <span>
-          {fmtWhen(duty.startsAt)}
-          {duty.endsAt ? ` → ${fmtWhen(duty.endsAt)}` : ""}
+          {fmtRange(duty.startsAt, duty.endsAt)}
         </span>
         {duty.assignedUserName ? (
           <span>{duty.mine ? "You" : duty.assignedUserName}</span>

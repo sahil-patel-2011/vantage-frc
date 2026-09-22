@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FEATURE_API_TIMEOUT_MS } from "../lib/nav/resolve-org";
+import { requestMe } from "../lib/nav/me-request";
 import {
   isPayingOrgEntitlement,
   paidSplashStorageKey,
@@ -64,11 +64,8 @@ export default function PaidSessionSplash() {
   useEffect(() => {
     let cancelled = false;
 
-    void fetch("/api/me", {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => (response.ok ? ((await response.json()) as MeSplashPayload) : null))
+    void requestMe()
+      .then(({ ok, data: body }) => (ok ? (body as MeSplashPayload | null) : null))
       .then((data) => {
         if (cancelled || !data?.authenticated || !data.orgId) return;
 

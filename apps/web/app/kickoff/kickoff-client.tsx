@@ -14,9 +14,11 @@ import { NextActionsPanel, useHubEmbed } from "./kickoff-chrome";
 import { IntelligenceSection } from "./kickoff-intelligence";
 import type { ActionBody } from "./kickoff-model";
 import { PrioritySection } from "./kickoff-priority";
+import { NextSeasonSection } from "./kickoff-next-season";
 import { RulesSection } from "./kickoff-rules";
 import { GameBriefSection } from "./kickoff-game-brief";
 import { ScoringSection } from "./kickoff-scoring";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 function isKickoffView(value: unknown): value is KickoffView {
   if (!value || typeof value !== "object") return false;
@@ -219,6 +221,9 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   const priorities = view.priorities.filter((entry) => entry.seasonYear === year);
   const ruleNotes = view.ruleNotes.filter((entry) => entry.seasonYear === year);
   const summary = kickoffSummary(actions, priorities, ruleNotes);
+  // Next-season notes are not filtered by the year picker: they are about the
+  // season after this one, and there is only ever one of those to look at.
+  const nextSeasonSignals = view.nextSeasonSignals ?? [];
   const showTiles = shouldShowKickoffSummaryTiles(summary);
 
   return (
@@ -228,8 +233,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         title="Kickoff & Game Analysis"
         description={
           <>
-            Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, seed Strategy
+            Start from the {year} manual and kickoff transcript for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — structure the game, seed Strategy
             priorities, and hand a CAD brief to Onshape/Fusion paths.
           </>
         }
@@ -248,10 +252,22 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
 
       <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
       <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
+      {/*
+        This line used to be visible, and it said what the card directly below
+        it says: the game name and year are that card's heading, "from the
+        published manual" is its badge, "scoring on the sheet" is its next
+        paragraph, and "last season is below" is the heading of its last
+        section. On a phone it pushed the card it was describing down by a line
+        and read as a caption for nothing.
+
+        It stays in the accessibility tree because it is the live region that
+        announces a change from the season picker in the header — the card
+        re-renders silently otherwise.
+      */}
       {(() => {
         const pack = packForYear(year);
         return (
-          <p className="app-muted" role="status">
+          <p className="visually-hidden" role="status">
             {pack.gameName} {pack.year}
             {pack.status === "awaiting_manual"
               ? " — official scoring is not published yet. Last season is below so you can still practice."
@@ -313,6 +329,15 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
       <ScoringSection actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
       <PrioritySection priorities={priorities} actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
       <RulesSection ruleNotes={ruleNotes} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
+      {/* Last on the page on purpose: next year matters, but not before this
+          year's rules questions are answered. */}
+      <NextSeasonSection
+        signals={nextSeasonSignals}
+        orgId={orgId}
+        seasonYear={year + 1}
+        busyKey={busyKey}
+        run={run}
+      />
     </main>
   );
 }

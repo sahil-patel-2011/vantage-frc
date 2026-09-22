@@ -86,9 +86,7 @@ function DefenseRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related defense-planner-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -103,18 +101,14 @@ function DefenseNextActionsPanel({ actions }: { actions: DefensePlannerNextActio
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -383,7 +377,7 @@ export default function DefensePlannerClient() {
           </>
         }
         title="Defense planner"
-        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book."
+        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense."
       >
         <div className="defense-planner-header-actions">
           {view.seasons.length > 0 ? (

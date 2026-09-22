@@ -86,9 +86,7 @@ function AwardTrackerRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related award-tracker-related" aria-label="Related business tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -103,18 +101,14 @@ function AwardTrackerNextActionsPanel({ actions }: { actions: AwardTrackerNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -379,7 +373,7 @@ export default function AwardTrackerClient() {
           </>
         }
         title="Award Tracker"
-        description="Track award submissions across events with deadlines. Cross-check Awards and Impact Essay."
+        description="Track award submissions across events with deadlines."
       >
         <div className="award-tracker-header-actions">
           {view.seasons.length > 0 ? (

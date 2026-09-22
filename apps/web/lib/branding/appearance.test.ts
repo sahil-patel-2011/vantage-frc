@@ -11,10 +11,11 @@ import {
 import { accentIsActive, formatLogoSize, brandingLogoUrl, emptyBrandingView } from "./branding";
 
 describe("appearance preferences", () => {
-  it("defaults to comfortable, full motion, team accent on", () => {
+  it("defaults to comfortable, full motion, regular glass, team accent on", () => {
     expect(DEFAULT_APPEARANCE_PREFS).toEqual({
       density: "comfortable",
       motion: "full",
+      clarity: "regular",
       teamAccent: true,
     });
   });
@@ -39,7 +40,12 @@ describe("appearance preferences", () => {
   });
 
   it("round-trips through JSON exactly as the jsonb column would", () => {
-    const prefs = { density: "compact", motion: "reduced", teamAccent: false } as const;
+    const prefs = {
+      density: "compact",
+      motion: "reduced",
+      clarity: "solid",
+      teamAccent: false,
+    } as const;
     expect(parseAppearancePrefs(JSON.parse(JSON.stringify(prefs)))).toEqual(prefs);
     expect(appearanceEquals(parseAppearancePrefs(prefs), prefs)).toBe(true);
     expect(appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)).toBe(false);
@@ -78,16 +84,48 @@ describe("density token mapping", () => {
     expect(appearanceAttributes(DEFAULT_APPEARANCE_PREFS)).toEqual({
       "data-density": null,
       "data-motion": null,
+      "data-clarity": null,
     });
     expect(
-      appearanceAttributes({ density: "compact", motion: "reduced", teamAccent: true }),
-    ).toEqual({ "data-density": "compact", "data-motion": "reduced" });
+      appearanceAttributes({
+        density: "compact",
+        motion: "reduced",
+        clarity: "solid",
+        teamAccent: true,
+      }),
+    ).toEqual({ "data-density": "compact", "data-motion": "reduced", "data-clarity": "solid" });
+  });
+
+  it("leaves data-clarity off for regular, which is what the stylesheet does anyway", () => {
+    // An attribute that changes nothing is a thing somebody debugs later.
+    expect(
+      appearanceAttributes({ ...DEFAULT_APPEARANCE_PREFS, clarity: "regular" })["data-clarity"],
+    ).toBeNull();
+    expect(
+      appearanceAttributes({ ...DEFAULT_APPEARANCE_PREFS, clarity: "clear" })["data-clarity"],
+    ).toBe("clear");
+  });
+
+  it("defaults clarity when the stored value is missing or junk", () => {
+    // Every profile written before this preference existed parses through here.
+    expect(parseAppearancePrefs({ density: "compact" }).clarity).toBe("regular");
+    expect(parseAppearancePrefs({ clarity: "frosted" }).clarity).toBe("regular");
+    expect(parseAppearancePrefs({ clarity: "solid" }).clarity).toBe("solid");
+  });
+
+  it("treats a clarity change as a change", () => {
+    // appearanceEquals decides whether to PUT; missing a field means the
+    // setting silently fails to save.
+    expect(
+      appearanceEquals(DEFAULT_APPEARANCE_PREFS, { ...DEFAULT_APPEARANCE_PREFS, clarity: "solid" }),
+    ).toBe(false);
+    expect(appearanceEquals(DEFAULT_APPEARANCE_PREFS, { ...DEFAULT_APPEARANCE_PREFS })).toBe(true);
   });
 });
 
 describe("branding view helpers", () => {
   it("needs a colour, the team switch, and the member switch all on", () => {
-    const on = { accentColor: "#1457d9", applyAccentToApp: true };
+    const on = { accentColor: "#17457f", applyAccentToApp: true };
     expect(accentIsActive(on, { teamAccent: true })).toBe(true);
     expect(accentIsActive(on, { teamAccent: false })).toBe(false);
     expect(accentIsActive({ ...on, applyAccentToApp: false }, { teamAccent: true })).toBe(false);

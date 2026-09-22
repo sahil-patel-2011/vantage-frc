@@ -18,7 +18,7 @@ export const ACCENT_CONTRAST_TARGET = 4.5;
 export const SOFT_CARD_SURFACE = { light: "#ffffff", dark: "#151b24" } as const;
 
 /** Mirrors the stock `--accent` values in app/system.css. */
-export const DEFAULT_ACCENT = { light: "#1457d9", dark: "#6e9bff" } as const;
+export const DEFAULT_ACCENT = { light: "#17457f", dark: "#6e9bff" } as const;
 
 export type ThemeKey = "light" | "dark";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "./ui";
+
 import { hubHref } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
 
@@ -39,20 +39,25 @@ export function AiHubRelated({
       className={["product-hub-related", "ai-hub-related", className].filter(Boolean).join(" ")}
       aria-label="Related AI and season tools"
     >
+      {/* Keyed by id. Both of these lists were rendered without one, which
+          logged a React error on every page in the AI hub and left
+          reconciliation to guess which anchor was which — the kind of thing
+          that is invisible until a list reorders and the wrong link keeps the
+          focus. */}
       {AI_TABS.map((link) => {
         if (link.id === active) return null;
         return (
-          <Button key={link.id} as="a" variant="secondary" href={hubHref("/ai", link.id, orgId)}>
+          <a key={link.id} href={hubHref("/ai", link.id, orgId)}>
             {link.label}
-          </Button>
+          </a>
         );
       })}
       {CROSS_HUB.map((link) => {
         if (link.id === active) return null;
         return (
-          <Button key={link.id} as="a" variant="secondary" href={withOrgHref(link.href, orgId)}>
+          <a key={link.id} href={withOrgHref(link.href, orgId)}>
             {link.label}
-          </Button>
+          </a>
         );
       })}
     </nav>

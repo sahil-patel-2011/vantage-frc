@@ -11,16 +11,20 @@ test("Pick desk still loads after the Saturday shell pass", async ({ page }) => 
   await page.goto("/strategy?tab=picks");
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const board = page.getByRole("heading", { name: /Event pick desk|First \/ second \/ third pick desk/i });
+  // Renamed to "Rank, pick, and lock" — the thing you do, rather than the
+  // name of the screen. Old names kept so an older deployment still matches.
+  const board = page.getByRole("heading", {
+    name: /Rank, pick, and lock|Event pick desk|First \/ second \/ third pick desk/i,
+  });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Waiting on synced team metrics/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, board, empty.or(setup).or(unavailable)))) {
-    await page.screenshot({ path: "/opt/cursor/artifacts/pick-desk-after-shell.png", fullPage: true });
+    await page.screenshot({ path: "test-results/pick-desk-after-shell.png", fullPage: true });
     return;
   }
 
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await expect(page.getByText("org-scoped")).toHaveCount(0);
-  await page.screenshot({ path: "/opt/cursor/artifacts/pick-desk-after-shell.png", fullPage: true });
+  await page.screenshot({ path: "test-results/pick-desk-after-shell.png", fullPage: true });
 });

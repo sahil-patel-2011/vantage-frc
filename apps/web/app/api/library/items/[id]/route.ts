@@ -1,3 +1,4 @@
+import { isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../../../../../lib/media-availability";
 import { createHash } from "node:crypto";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -45,11 +46,13 @@ export async function PUT(request: Request, context: RouteContext) {
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const itemResult = await client.query<{
         byteSize: number;
+        contentType: string;
+        fileName: string;
         sha256: string;
         status: string;
         storageLocation: LibraryStorageLocation;
       }>(
-        `SELECT byte_size::float8 AS "byteSize", sha256, status,
+        `SELECT file_name AS "fileName", content_type AS "contentType", byte_size::float8 AS "byteSize", sha256, status,
                 storage_location AS "storageLocation"
          FROM library_resources
          WHERE id = $1::uuid AND org_id = $2::uuid AND kind = 'file'
@@ -58,6 +61,7 @@ export async function PUT(request: Request, context: RouteContext) {
       );
       const item = itemResult.rows[0];
       if (!item) return { error: "File not found", status: 404 };
+      if (isPausedMediaFile(item.fileName, item.contentType)) return { error: MEDIA_PAUSED_MESSAGE, status: 403 };
       if (item.storageLocation !== "db") {
         return { error: "This file lives on a storage node — upload through the node.", status: 409 };
       }

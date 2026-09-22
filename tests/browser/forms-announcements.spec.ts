@@ -307,9 +307,24 @@ test.describe("with real sessions", () => {
     // One acknowledgement, not one per click.
     await expect(mine.getByRole("button", { name: "I have read this" })).toHaveCount(0);
 
+    /*
+      Polled, not read once.
+
+      Announcements are offline-first: a reload paints the last snapshot
+      immediately and fetches behind it. Reading the count on the line after
+      reload() therefore read the value from before the acknowledgement —
+      which is the page working as designed, and looked exactly like the
+      acknowledgement never being recorded. (It was: the row was in
+      announcement_acks the whole time.)
+    */
     await owner.page.reload();
+    await expect
+      .poll(async () => (await readCount()).confirmed, {
+        timeout: 20_000,
+        message: "acknowledgement did not move the count",
+      })
+      .toBe(before.confirmed + 1);
     const after = await readCount();
-    expect(after.confirmed, "acknowledgement did not move the count").toBe(before.confirmed + 1);
     expect(after.total).toBe(before.total);
 
     if (after.confirmed < after.total) {

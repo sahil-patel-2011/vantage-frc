@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
+import { ActionMenu, EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
@@ -16,6 +16,7 @@ import {
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
   formBuilderShellCopy,
+  duplicateQuestion,
   moveQuestion,
   needsOptionEditor,
   needsSettingsEditor,
@@ -66,6 +67,12 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   const [mode, setMode] = useState<FormBuilderMode>("edit");
   const [title, setTitle] = useState("Match scouting");
   const [questions, setQuestions] = useState(() => defaultQuestions("match"));
+  /**
+   * The last removed question and where it sat, so Remove is recoverable.
+   * Deleting a configured field — options, settings, strategy role — used to
+   * throw all of it away with no way back.
+   */
+  const [removed, setRemoved] = useState<{ question: DraftQuestion; index: number } | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -342,10 +349,10 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
         {!payload.canManageSchemas ? (
           <EmptyState
-            badge="Coach role"
+            badge="Needs setup"
             badgeTone="setup"
-            title="View only"
-            description="Owners and admins publish scouting forms. You can still preview drafts after an event is set."
+            title="Choose your team"
+            description="Pick the team you are on and you can build scouting forms with everyone else."
           />
         ) : null}
       </FormBuilderShell>
@@ -386,10 +393,10 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
 
       {!payload.canManageSchemas ? (
         <EmptyState
-          badge="Coach role"
+          badge="Needs setup"
           badgeTone="setup"
-          title="View only"
-          description="Owners and admins publish scouting forms. You can still preview the draft below."
+          title="Choose your team"
+          description="Pick the team you are on and you can build scouting forms with everyone else."
         />
       ) : null}
 
@@ -500,9 +507,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               <div className="sfb-identity-lock" role="status">
                 <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
                 <strong>Signed-in member</strong>
-                <small className="app-muted">
-                  Live entry binds to membership userId — no free-text scout name field.
-                </small>
+                {/* The preview shows what the scout sees, from the same source
+                    as the live form, so the two cannot drift apart. */}
+                <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
               </div>
               <div className="sfb-preview-fields">
                 {questions.map((question) => (
@@ -516,10 +523,42 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Toggle required, edit MC/dropdown options, and reorder with Move up / Move down.
+                    Toggle required, edit options, copy a question with Duplicate, and reorder with
+                    Move up / Move down.
                   </p>
                 </div>
               </header>
+              {removed ? (
+                <div className="sfb-undo" role="status">
+                  <span>
+                    Removed <strong>{removed.question.label || "a question"}</strong>.
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      setQuestions((prev) => {
+                        const next = prev.slice();
+                        next.splice(Math.min(removed.index, next.length), 0, removed.question);
+                        return next;
+                      });
+                      setRemoved(null);
+                    }}
+                  >
+                    Undo
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    aria-label="Dismiss"
+                    onClick={() => setRemoved(null)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              ) : null}
               <div className="sfb-questions">
                 {questions.map((question, index) => (
                   <article key={question.id} className="sfb-question">
@@ -533,32 +572,64 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                           <span className="sfb-optional-badge">Optional</span>
                         )}
                       </strong>
+                      {/*
+                        Four buttons on every question became two and a menu.
+
+                        A seven-question form put twenty-eight controls down the
+                        side of the page — Move up, Move down, Duplicate, Remove,
+                        seven times over — and the words that told them apart were
+                        the same four words each time. Reordering is the one that
+                        wants to be immediate, so it stays as a pair of arrows with
+                        the sentence in its accessible name; duplicating and
+                        removing are occasional and go behind the overflow, where
+                        Remove also picks up the menu's confirmation step.
+                      */}
                       <div className="sfb-question-actions">
                         <button
                           type="button"
+                          className="sfb-move"
                           disabled={!payload.canManageSchemas || index === 0}
                           aria-label={`Move question ${index + 1} up`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index - 1))}
                         >
-                          Move up
+                          ↑
                         </button>
                         <button
                           type="button"
+                          className="sfb-move"
                           disabled={!payload.canManageSchemas || index === questions.length - 1}
                           aria-label={`Move question ${index + 1} down`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index + 1))}
                         >
-                          Move down
+                          ↓
                         </button>
-                        <button
-                          type="button"
-                          disabled={!payload.canManageSchemas || questions.length <= 1}
-                          onClick={() =>
-                            setQuestions((prev) => prev.filter((entry) => entry.id !== question.id))
-                          }
-                        >
-                          Remove
-                        </button>
+                        <ActionMenu
+                          tone="row"
+                          label={`Question ${index + 1} actions`}
+                          maxSecondary={0}
+                          triggerTestId={`sfb-question-more:${question.id}`}
+                          actions={[
+                            {
+                              id: "duplicate",
+                              label: "Duplicate",
+                              intent: "primary",
+                              disabled: !payload.canManageSchemas,
+                              hint: "A copy directly below, ready to edit",
+                              onClick: () => setQuestions((prev) => duplicateQuestion(prev, index)),
+                            },
+                            {
+                              id: "remove",
+                              label: "Remove",
+                              intent: "destructive",
+                              disabled: !payload.canManageSchemas || questions.length <= 1,
+                              hint: "Undo is offered right after",
+                              onClick: () => {
+                                setRemoved({ question, index });
+                                setQuestions((prev) => prev.filter((entry) => entry.id !== question.id));
+                              },
+                            },
+                          ]}
+                        />
                       </div>
                     </div>
                     <div className="sfb-question-grid">

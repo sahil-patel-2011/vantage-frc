@@ -258,6 +258,8 @@ export * from "./auto-tools";
 export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./hosted-platform-keys";
+export * from "./petals-public-pool";
+export * from "./ai-horde-pool";
 export * from "./resolve-chat-adapter";
 export * from "./resolve-stt-endpoint";
 export * from "./model-tier";
@@ -276,6 +278,8 @@ export * from "./chat-system-prompt";
 export * from "./org-session-context";
 export * from "./safe-web-fetch";
 export * from "./web-tools";
+export * from "./tinyfish";
+export * from "./tinyfish-keys";
 export * from "./autonomous-agent-store";
 export * from "./autonomous-loop";
 export * from "./org-agent-rules";
@@ -284,3 +288,6 @@ export * from "./auto-mode";
 export * from "./context-compact";
 export * from "./design-research";
 export * from "./task-finish";
+
+/* Which FRC season the model is answering about — see game-context.ts. */
+export { gameContextLines, seasonLabel, type GameContextInput } from "./game-context";

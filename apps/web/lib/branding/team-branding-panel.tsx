@@ -1,4 +1,5 @@
 "use client";
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../media-availability";
 import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -89,7 +90,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
   async function save() {
     if (!view?.canEdit) return;
     if (!draftHexValid) {
-      setNotice({ tone: "error", text: "Team colour must be a hex value like #1457d9." });
+      setNotice({ tone: "error", text: "Team colour must be a hex value like #17457f." });
       return;
     }
     setBusy(true);
@@ -243,8 +244,8 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
               </div>
               <small id="brand-accent-help" className="app-muted">
                 {draftHexValid
-                  ? "Six-digit hex, e.g. #1457d9. Leave blank for the stock Vantage blue."
-                  : "That is not a hex colour — try #1457d9."}
+                  ? "Six-digit hex, e.g. #17457f. Leave blank for the stock Vantage blue."
+                  : "That is not a hex colour — try #17457f."}
               </small>
             </div>
 
@@ -325,7 +326,8 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                 </small>
               </div>
             </div>
-            {view.canEdit ? (
+            {!MEDIA_ENABLED ? <p className="app-muted">{MEDIA_PAUSED_MESSAGE}</p> : null}
+            {view.canEdit && MEDIA_ENABLED ? (
               <div className="brand-logo-actions">
                 <input
                   ref={fileRef}

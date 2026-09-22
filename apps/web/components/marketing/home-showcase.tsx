@@ -1,5 +1,12 @@
 /**
  * Homepage product story. Real workspaces and tools that ship today.
+ *
+ * The home page carries one pass of the argument: the problem, the loop, three
+ * real screens, the four workspaces, and how we work. The day-one path and the
+ * season walk-through used to sit here too, but they are the whole point of
+ * /for-teams and /workflow — repeating them made the phone scroll twice as long
+ * for a reader who had already been convinced. Those pages still own that copy;
+ * the hub section links to them.
  */
 
 import {
@@ -7,8 +14,6 @@ import {
   MARKETING_HUBS,
   MARKETING_LEARN,
   MARKETING_PROBLEMS,
-  MARKETING_SEASON,
-  MARKETING_STUDENT_PATH,
   MARKETING_TRUST,
 } from "../../lib/marketing/product-story";
 import { MARKETING_APP_FRAMES, ProductFrame } from "./app-frames";
@@ -66,7 +71,7 @@ export function HomeShowcase() {
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">Inside the app</p>
             <h2 id="lux-app-frames">The windows a student opens after they sign in.</h2>
-            <p>Kickoff, scouting, Learn CAD, and Ask AI — scores stay blank until real data exists.</p>
+            <p>Scouting, Learn CAD and Ask AI — exactly these three screens, and scores stay blank until real data exists.</p>
           </header>
           <ul className="mk-app-gallery-grid" data-reveal>
             {MARKETING_APP_FRAMES.map((frame) => (
@@ -74,24 +79,6 @@ export function HomeShowcase() {
                 <ProductFrame id={frame.id} />
                 <strong>{frame.title}</strong>
                 <span>{frame.copy}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="lux-pillars" aria-labelledby="lux-student-path">
-        <div className="lux-content">
-          <header className="lux-section-head" data-reveal>
-            <p className="lux-eyebrow">What you open first</p>
-            <h2 id="lux-student-path">Four things a student can do on day one.</h2>
-            <p>No extra accounts. Mentors invite you; then this is the path.</p>
-          </header>
-          <ul className="lux-feature-grid lux-feature-grid-4" data-reveal>
-            {MARKETING_STUDENT_PATH.map((item) => (
-              <li key={item.title}>
-                <strong>{item.title}</strong>
-                <span>{item.copy}</span>
               </li>
             ))}
           </ul>
@@ -134,31 +121,14 @@ export function HomeShowcase() {
           <p className="mk-related-links" data-reveal>
             Deep dives: <a href="/features">Every tool</a>
             {" · "}
+            <a href="/for-teams">Day one and the season</a>
+            {" · "}
             <a href="/workflow">How it works</a>
             {" · "}
-            <a href="/pricing">Pricing</a>
+            <a href="/pricing">What it costs</a>
             {" · "}
             <a href="/signin">Sign in</a>
           </p>
-        </div>
-      </section>
-
-      <section className="lux-loop" aria-labelledby="lux-season-title">
-        <div className="lux-content">
-          <header className="lux-section-head" data-reveal>
-            <p className="lux-eyebrow">The season</p>
-            <h2 id="lux-season-title">All of it, not just the six weekends.</h2>
-            <p>Competition is a few weekends. The other forty weeks are where a team is actually made.</p>
-          </header>
-          <ol className="lux-loop-steps lux-loop-steps-4" data-reveal>
-            {MARKETING_SEASON.map((item, index) => (
-              <li key={item.title}>
-                <b aria-hidden="true">{String(index + 1)}</b>
-                <strong>{item.title}</strong>
-                <span>{item.copy}</span>
-              </li>
-            ))}
-          </ol>
         </div>
       </section>
 

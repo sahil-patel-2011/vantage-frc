@@ -178,6 +178,8 @@ export function keySourceGroup(keySource: string): AiKeyGroup {
       return "local";
     case "subscription_bridge":
       return "subscription";
+    case "public_swarm":
+      return "other";
     default:
       return "other";
   }

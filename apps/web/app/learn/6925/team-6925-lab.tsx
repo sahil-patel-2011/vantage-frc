@@ -1,5 +1,11 @@
-import { Button, PageHeader } from "../../../components/ui";
-import { TEAM_6925_RESOURCES, TEAM_6925_WEEKS, totalLabMinutes } from "../../../lib/team-resources/frc6925";
+import { PageHeader } from "../../../components/ui";
+import {
+  TEAM_6925_RESOURCES,
+  TEAM_6925_SETUP_COMMAND,
+  TEAM_6925_WEEKS,
+  totalLabMinutes,
+} from "../../../lib/team-resources/frc6925";
+import { CopyCommand } from "./copy-command";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
 export function Team6925Lab() {
@@ -16,15 +22,9 @@ export function Team6925Lab() {
         description="Official Limelight, WPILib, GitHub, and CAD Video Tutor links, then five paced weeks. Scores stay blank until a real grade exists."
       >
         <nav className="product-hub-related" aria-label="Related coding tools">
-          <Button as="a" variant="secondary" href={withOrgHref("/dev-setup", null)}>
-            Programming setup
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", null)}>
-            Learn CAD
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/code", null)}>
-            Code
-          </Button>
+          <a href={withOrgHref("/dev-setup", null)}>Programming setup</a>
+          <a href={withOrgHref("/cad-learn", null)}>Learn CAD</a>
+          <a href={withOrgHref("/code", null)}>Code</a>
         </nav>
       </PageHeader>
 
@@ -34,6 +34,12 @@ export function Team6925Lab() {
         <section key={group.id} className="lab-unit" id={group.id}>
           <h2>{group.title}</h2>
           <p>{group.blurb}</p>
+          {group.id === "laptop-setup" ? (
+            <CopyCommand
+              command={TEAM_6925_SETUP_COMMAND}
+              label="Open PowerShell and run:"
+            />
+          ) : null}
           <ul className="lab-links">
             {group.links.map((link) => (
               <li key={link.href}>

@@ -67,7 +67,10 @@
 .kiosk-board .who{display:flex;align-items:center;gap:8px;min-width:0}
 .kiosk-board .who strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 .kiosk-board .who em{font-style:normal;color:var(--positive);font-size:10px;font-weight:800}
-.kiosk-board .value{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* nowrap keeps "42 of 60 hours" from breaking across the number, and the
+   `auto` track above takes its width from this text — so anything long here
+   widens the whole kiosk. Capped, and stacked on a phone below. */
+.kiosk-board .value{min-width:0;max-width:100%;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kiosk-board .track{grid-column:1/-1;height:5px;background:var(--surface-2);border-radius:999px;overflow:hidden}
 .kiosk-board .track i{display:block;height:100%;background:var(--accent)}
 .kiosk-board .track i.done{background:var(--positive)}
@@ -95,4 +98,7 @@
   .kiosk-tabs{width:100%}
   .kiosk-tabs button{flex:1}
   .kiosk-panel>header{align-items:flex-start;flex-direction:column}
+  /* Name over hours, rather than a two-column row that has to fit both. */
+  .kiosk-board li{grid-template-columns:minmax(0,1fr)}
+  .kiosk-board .value{color:var(--muted)}
 }

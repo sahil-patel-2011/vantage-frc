@@ -2,7 +2,10 @@
 
 **One login for everything an FRC team does.**
 
-Vantage is a free, open-source operations platform for FIRST Robotics Competition teams. It replaces
+Vantage is a free operations platform for FIRST Robotics Competition teams. The source is public and
+any team may read it, fork it, change it and run their own copy; the one thing the licence reserves
+is selling it. (That makes it *source-available* rather than OSI "open source" — the distinction,
+and why it was chosen, is under [License](#license-and-community).) It replaces
 the pile of spreadsheets, group chats, shared drives and paper scouting forms a team usually runs on
 with one place that already knows the FRC season — and it teaches new members on the way in.
 
@@ -69,9 +72,23 @@ The full list of screens is in [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
   portable) and macOS (DMG) builds.
 - **Optional team hardware:** a storage node for large files, a Raspberry Pi relay for AI, and a
   Fusion 360 relay — all paired to a team with a code, never exposed to the internet.
-- **Packages:** shared logic lives in `packages/*` (database, auth and tenancy, billing, reference
-  data, scouting, prediction, CAD, agents, import/export). See
-  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- **Packages:** shared logic lives in `packages/*`. Each of the core ones has a README stating what
+  it is for and — more usefully — what it refuses to do:
+
+  | Package | What it owns | The rule that matters |
+  | --- | --- | --- |
+  | [`db`](packages/db/README.md) | Schema, migrations, both database roles | Every request query goes through `withRls`; product code never imports `/admin` |
+  | [`core`](packages/core/README.md) | Identity, membership, tenancy, notifications | Access is closed — provisioned owners, invited emails, waitlist for everyone else |
+  | [`billing`](packages/billing/README.md) | Credit caps, usage ledger, BYO keys | Balance is summed from the ledger; there is no cached counter to be wrong |
+  | [`agent`](packages/agent/README.md) | Choosing and calling a model | Nothing calls a provider outside `meteredAI`; the public swarm is opt-in |
+  | [`scouting`](packages/scouting/README.md) | Forms, entries, conflicts, coverage | A scout never types their own name |
+  | [`prediction-strategy`](packages/prediction-strategy/README.md) | Match prediction and pick-list maths | Never decides what a game action is worth, and skips rather than guesses |
+  | [`reference`](packages/reference/README.md) | TBA / Statbotics / FIRST data | A shared rate-limited cache — read Neon, never poll per page view |
+  | [`game-year`](packages/game-year/README.md) | Per-season packs and starting schemas | A season with no published manual has no scoring keys |
+  | [`cad`](packages/cad/README.md) | Onshape and Fusion automation | Modelling happens in Onshape; features are read from `featurespecs`, not hard-coded |
+
+  The wider map is [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); where a feature lives on screen is
+  [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
 
 ## Working on the code
 
@@ -96,8 +113,32 @@ prediction accuracy, in particular, is reported in
 
 ## License and community
 
-Vantage is **[MIT License](LICENSE)** (SPDX `MIT`). The npm `"private": true` field only means
-this monorepo is not published to the npm registry; it does not block self-hosting.
+Vantage is **[PolyForm Noncommercial 1.0.0](LICENSE)** (SPDX `PolyForm-Noncommercial-1.0.0`).
+
+**In plain English.** The source is public. Read it, run it, change it, self-host it for your
+team, and share your changes — all free, as long as what you are doing is not commercial. What
+you may **not** do is sell it, resell it, run it as a paid service, or ship it as your own
+product. Attribution stays with the project: the `Required Notice` at the bottom of
+[`LICENSE`](LICENSE) has to travel with any copy you pass on.
+
+An FRC team, a school, a mentor, a student, a nonprofit, or anyone learning from the code is
+squarely inside "noncommercial" and needs no permission. If you want a commercial licence,
+ask — that is the one thing this licence reserves.
+
+**This is source-available, not OSI "open source."** Every OSI-approved licence, MIT included,
+has to permit commercial use, so "nobody may sell it" and "OSI open source" cannot both be
+true. PolyForm Noncommercial is a real, standard, off-the-shelf licence that keeps the source
+open and the selling closed, which is the trade this project wants. If OSI status ever matters
+more than the no-selling rule, the nearest alternative is AGPL-3.0 — it is true open source and
+forces anyone running a modified copy as a service to publish their changes, but it does allow
+selling.
+
+Versions released before this change were published under the MIT licence and stay MIT; a
+licence cannot be withdrawn retroactively from code already shipped under it. This licence
+governs the current source and everything after it.
+
+The npm `"private": true` field only means this monorepo is not published to the npm registry;
+it does not block self-hosting.
 
 - [Contributing](CONTRIBUTING.md) — local run, Neon path, tenancy rules, how to help
 - [Code of Conduct](CODE_OF_CONDUCT.md)

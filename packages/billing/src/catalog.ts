@@ -175,7 +175,9 @@ export function byokEveryPlanCopy(): string {
 export function freeHostedModelClassCopy(): string {
   return (
     "Free's hosted allowance runs on budget-class models (Mistral Small / Llama-class via the " +
-    "sponsored provider pool, or OpenRouter's free-model router) — not frontier models."
+    "sponsored provider pool, or OpenRouter's free-model router) — not frontier models. " +
+    "When those are unset, Free can fall through to the public Petals volunteer swarm " +
+    "(no Vantage charge; prompts leave the org; the swarm is not unlimited)."
   );
 }
 

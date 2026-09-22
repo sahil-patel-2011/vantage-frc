@@ -109,6 +109,56 @@ only committed, pushed work survives a session that dies. Agent worktrees under 
 contain junctions into the main `node_modules`; remove them with `git worktree remove`, never
 `rm -rf`.
 
+## If this is your first pull request here
+
+You do not need permission to start, and you do not need to be on Team 6925.
+
+1. **Pick something small and real.** Issues tagged `good first issue` are sized for a first PR.
+   A typo in user-facing copy, a missing empty state, a test for a function that has none, or a
+   screen that reads badly on a phone are all genuinely useful and all reviewable in one sitting.
+2. **Say you are taking it** in a comment, so two people do not do the same work.
+3. **Open the PR early**, as a draft if it is not finished. A half-finished PR with a question in
+   it gets a faster answer than a week of guessing.
+4. **Expect review comments.** They are about the code, not about you, and "I do not know how to
+   do that" is a completely fine reply — someone will show you.
+
+If you are a student: this is a real codebase with real users' data in it, which is why the rules
+above exist. Reading them is the whole onboarding. Nobody will mind you asking what one means.
+
+## What gets merged, and what does not
+
+**Accepted readily**
+
+- Bug fixes with a test that fails before the fix and passes after
+- Empty, loading, offline and error states that are missing or unclear
+- Accessibility fixes — keyboard reachability, focus order, contrast, labels
+- Tests for existing untested behaviour
+- Documentation that matches what the code actually does
+- Performance work with a before/after number in the description
+
+**Accepted, but talk first** — open an issue before writing much
+
+- A new screen, hub tab, or database table. These carry migrations, RLS policies, navigation,
+  help content and a permanent maintenance cost; the design is worth agreeing before the code.
+- A new dependency. Say what it replaces and why the platform cannot do it.
+- A new background job. There are two crons and there is room for no more.
+- Changing something the product deliberately refuses to do — see the rules above.
+
+**Not accepted**
+
+- Anything that invents a number, a placeholder statistic or demo data on a user-facing screen
+- Anything that reaches the database outside `withRls`, or builds SQL by concatenation
+- Weakening or deleting a failing test instead of fixing what it caught
+- A whole-file reformat, a rename sweep, or a "modernisation" mixed into a behaviour change —
+  send those on their own so the diff can be read
+- AI-generated changes nobody has run. Every rule here applies to agent-authored work too, and
+  the person opening the PR owns it either way.
+
+**Review.** Pull requests are reviewed by the maintainers. CI has to be green, and a reviewer
+will ask what you saw when you ran it — screenshots for a screen, the test summary for logic.
+Small PRs are reviewed in days; large ones take as long as they take, which is the best argument
+for small ones.
+
 ## Reporting problems
 
 Open a GitHub issue. For anything security-related, see
@@ -116,5 +166,11 @@ Open a GitHub issue. For anything security-related, see
 
 ## License
 
-By contributing you agree the work is released under the MIT License in
-[`LICENSE`](LICENSE).
+By contributing you agree the work is released under the PolyForm Noncommercial 1.0.0
+licence in [`LICENSE`](LICENSE) — the same terms the rest of the project uses, so what
+comes in can go back out.
+
+That licence keeps the source public and free for teams, schools and anyone learning from
+it, and reserves selling it. It is source-available rather than OSI "open source", because
+every OSI licence has to allow commercial use. The reasoning is in the
+[README](README.md#license-and-community).

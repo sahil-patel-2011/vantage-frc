@@ -61,20 +61,14 @@ async function persistExitInterviewSnapshot(
 function ExitInterviewRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related people tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
-        Alumni Network
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "mentor-hours", orgId)}>
-        Mentor hours
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "roadmap", orgId)}>
-        Season roadmap
-      </Button>
+      <a href={hubHref("/team", "alumni-network", orgId)}>Alumni Network</a>
+      <a href={hubHref("/team", "mentor-hours", orgId)}>Mentor hours</a>
+      <a href={hubHref("/team", "roadmap", orgId)}>Season roadmap</a>
     </nav>
   );
 }
 
-function ExitInterviewNextActions({ orgId }: { orgId: string }) {
+function ExitInterviewNextActions() {
   const actions = [
     {
       id: "capture",
@@ -83,37 +77,19 @@ function ExitInterviewNextActions({ orgId }: { orgId: string }) {
       href: "#exit-interview-log",
       primary: true,
     },
-    {
-      id: "alumni",
-      label: "Open Alumni Network",
-      detail: "Keep graduates reachable after the handoff page is published.",
-      href: hubHref("/team", "alumni-network", orgId),
-      primary: false,
-    },
-    {
-      id: "roadmap",
-      label: "Open Season roadmap",
-      detail: "The next season's kickoff-to-event list lives here.",
-      href: hubHref("/team", "roadmap", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -357,7 +333,7 @@ export default function ExitInterviewClient() {
           {error}
         </p>
       ) : null}
-      <ExitInterviewNextActions orgId={view.orgId} />
+      <ExitInterviewNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogResponseForm busy={busy} mutate={mutate} />

@@ -58,9 +58,7 @@ function VendorLeadTimesRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related vendor-lead-times-related" aria-label="Related procurement tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -75,18 +73,14 @@ function VendorLeadTimesNextActionsPanel({ actions }: { actions: VendorLeadTimes
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -339,7 +333,7 @@ export default function VendorLeadTimesClient() {
           </>
         }
         title="Vendor Lead Times"
-        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors."
+        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time."
       >
         <div className="vendor-lead-times-header-actions">
           {relatedLinks.map((link) => (

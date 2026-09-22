@@ -10,14 +10,14 @@
  */
 
 .public-form {
-  --pf-ink: #14243a;
+  --pf-ink: #10202c;
   --pf-muted: #5a6578;
   --pf-line: #d5dde8;
-  --pf-accent: #1457d9;
+  --pf-accent: #0e5a66;
   --pf-card: #ffffff;
-  --pf-bg: #eef2f7;
+  --pf-bg: #f5f6f8;
 
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: clamp(20px, 5vw, 56px) clamp(16px, 5vw, 32px);
   background: var(--pf-bg);
   color: var(--pf-ink);

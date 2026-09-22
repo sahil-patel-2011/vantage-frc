@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
+import { useDismiss } from "../../hooks/use-dismiss";
 import { layoutToolStrip, type ToolStripEntry } from "../../lib/nav/tool-strip-layout";
 
 export type ToolStripItem = ToolStripEntry;
@@ -15,11 +16,60 @@ type ToolStripProps = {
    * How many chips stay on screen before the rest go behind "More tools".
    * The rest are still one tap away and are listed with a description, so the
    * choice is made from what a tool is for rather than from opening it.
+   *
+   * Defaults to three — see `DESKTOP_VISIBLE_COUNT`. Surfaces whose strip is a
+   * short, complete set rather than the head of a long one pass their own.
    */
   visibleCount?: number;
   /** One line on what a tool is for, shown in the "More tools" list. */
   describe?: (id: string) => string | undefined;
 };
+
+/**
+ * Chips on a phone, where six of them wrap to three rows.
+ *
+ * Strategy has 25 tools: six chips and "More tools (19)". Three rows of chips
+ * above a button that holds most of the list is the expensive half of both
+ * designs — it costs 150px above the content and still does not show you the
+ * tools. Three chips and "More tools (22)" is one row, and the 22 are in the
+ * same named list they were always in, each with a line saying what it is for.
+ *
+ * The active tool is never one of the ones that moves: `layoutToolStrip` ranks
+ * it first, so whatever you are looking at stays on screen at any count.
+ */
+/**
+ * Three chips, then one "More tools".
+ *
+ * This was six, and six near-identical pills in a row is not a menu — it is a
+ * wall. Scouting showed Forms · Coverage · Shifts · Pit link · Training ·
+ * Field value · More tools (1): seven controls, no hierarchy, nothing telling
+ * you which of them you actually want, and the "More" at the end holding a
+ * single item as if it were an afterthought rather than a category.
+ *
+ * Three is enough to show the shape of the section — the tool you are in is
+ * ranked first, so it is always one of them — and everything else is behind
+ * one control that opens a readable list with a line saying what each thing is
+ * for. That is a better way to find a tool you have not used than a sixth pill
+ * you have to read to rule out.
+ */
+const DESKTOP_VISIBLE_COUNT = 3;
+const PHONE_VISIBLE_COUNT = 3;
+const PHONE_QUERY = "(max-width: 720px)";
+
+function usePhoneLayout(): boolean {
+  const [phone, setPhone] = useState(false);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia(PHONE_QUERY);
+    const apply = () => setPhone(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  return phone;
+}
 
 /**
  * Horizontal tool switcher for a hub workbench.
@@ -37,11 +87,22 @@ export function ToolStrip({
   value,
   onChange,
   "aria-label": ariaLabel,
-  visibleCount = 6,
+  visibleCount = DESKTOP_VISIBLE_COUNT,
   describe,
 }: ToolStripProps) {
   const [expanded, setExpanded] = useState(false);
   const overflowId = useId();
+  const phone = usePhoneLayout();
+  // The ref wraps the "More tools" button as well as the list it opens, so
+  // pressing the button to close does not read as a click outside the panel.
+  //
+  // These two live above the `items.length` guard on purpose. They used to sit
+  // just before the JSX, which put two hooks after an early return: a hub whose
+  // tool list arrives with its data renders empty once, then non-empty, and
+  // React throws "rendered more hooks than during the previous render" on that
+  // second pass. Every hook in this component now runs on every render.
+  const closeOverflow = useCallback(() => setExpanded(false), []);
+  const stripRef = useDismiss<HTMLDivElement>(expanded, closeOverflow);
 
   if (items.length < 1) return null;
 
@@ -49,7 +110,11 @@ export function ToolStrip({
    * The split is computed the same way open or closed, so the front row does
    * not reshuffle under the thumb that just tapped it.
    */
-  const { visible, hidden } = layoutToolStrip(items, value, visibleCount);
+  const { visible, hidden } = layoutToolStrip(
+    items,
+    value,
+    phone ? Math.min(PHONE_VISIBLE_COUNT, visibleCount) : visibleCount,
+  );
   const collapsible = hidden.length > 0;
 
   const renderChip = (item: ToolStripItem) => {
@@ -109,7 +174,7 @@ export function ToolStrip({
   };
 
   return (
-    <div className="hub-tool-strip">
+    <div className="hub-tool-strip" ref={stripRef}>
       <nav className="hub-tool-strip-row" aria-label={ariaLabel}>
         {visible.map(renderChip)}
         {collapsible ? (

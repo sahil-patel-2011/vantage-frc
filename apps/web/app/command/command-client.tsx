@@ -8,13 +8,14 @@ import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import { formatEventDayMatchCount } from "../../lib/command/event-day-related";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
+import { requestMe } from "../../lib/nav/me-request";
 import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import {
   EventDayShell,
   classifyEventDayShell,
 } from "./command-chrome";
-import { CommandEventPicker } from "./command-event-picker";
+import { CommandEventPicker, type CustomEventSubmission } from "./command-event-picker";
 import {
   COMMAND_POLL_MS,
   commandHrefsFromSnap,
@@ -52,10 +53,9 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       .catch(() => {
         setOrgId((current) => current || fromUrl);
       });
-    void fetch("/api/me", { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) })
-      .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
-      .then((data) => {
-        if (data) setMe(data);
+    void requestMe()
+      .then(({ ok, data }) => {
+        if (ok && data) setMe(data as Me);
       })
       .catch(() => undefined);
   }, []);
@@ -210,6 +210,29 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     }
   }
 
+  async function createCustomEvent(draft: CustomEventSubmission) {
+    if (!orgId) return;
+    setEventBusy(true);
+    setEventMessage("");
+    try {
+      const response = await fetch("/api/context/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, create: draft }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setEventMessage(body.error ?? "Could not add that event");
+        return;
+      }
+      setEventOpen(false);
+      setEventMessage(`Active event set to ${body.eventName ?? draft.name}`);
+      await load(orgId);
+    } finally {
+      setEventBusy(false);
+    }
+  }
+
   const hrefs = commandHrefsFromSnap(snap, orgId || null);
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
@@ -228,6 +251,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       onQuery={setEventQ}
       onSelect={(eventKey) => void setActiveEvent(eventKey)}
       onClear={() => void setActiveEvent(null)}
+      year={new Date().getFullYear()}
+      onCreate={(draft) => void createCustomEvent(draft)}
     />
   );
 

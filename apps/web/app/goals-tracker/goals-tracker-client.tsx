@@ -67,20 +67,14 @@ async function persistGoalsTrackerSnapshot(
 function GoalsTrackerRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "standup-digest", orgId)}>
-        Standup
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "meeting-autopilot", orgId)}>
-        Meeting agenda
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "season-planning-workspace", orgId)}>
-        Season plan
-      </Button>
+      <a href={hubHref("/team", "standup-digest", orgId)}>Standup</a>
+      <a href={hubHref("/team", "meeting-autopilot", orgId)}>Meeting agenda</a>
+      <a href={hubHref("/team", "season-planning-workspace", orgId)}>Season plan</a>
     </nav>
   );
 }
 
-function GoalsTrackerNextActions({ orgId }: { orgId: string }) {
+function GoalsTrackerNextActions() {
   const actions = [
     {
       id: "goal",
@@ -89,37 +83,19 @@ function GoalsTrackerNextActions({ orgId }: { orgId: string }) {
       href: "#goals-tracker-new",
       primary: true,
     },
-    {
-      id: "standup",
-      label: "Open Standup",
-      detail: "Yesterday's hours and task movement compile into the morning digest.",
-      href: hubHref("/team", "standup-digest", orgId),
-      primary: false,
-    },
-    {
-      id: "meeting",
-      label: "Open Meeting agenda",
-      detail: "Agenda and minutes attach to a calendar meeting.",
-      href: hubHref("/team", "meeting-autopilot", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -366,7 +342,7 @@ export default function GoalsTrackerClient() {
           {error}
         </p>
       ) : null}
-      <GoalsTrackerNextActions orgId={view.orgId} />
+      <GoalsTrackerNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <CreateGoalForm busy={busy} mutate={mutate} />

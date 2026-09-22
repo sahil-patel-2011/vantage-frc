@@ -76,7 +76,7 @@ export default function StageClient({
 
   const refresh = useCallback(async () => {
     if (!params.token && !(params.orgId && params.boardId)) {
-      setError("Provide a TV token, or orgId and boardId while signed in.");
+      setError("This screen's link is incomplete. Open Displays on a signed-in computer and use the link it gives you for this board.");
       return;
     }
     const query = params.token

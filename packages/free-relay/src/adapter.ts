@@ -3,13 +3,16 @@ import {
   tryCreateGroqFreeAdapter,
   tryCreateFreeRelayAdapter,
   tryCreateOpenRouterFreeAdapter,
+  tryCreatePetalsPublicAdapter,
+  isPetalsPublicPoolEnabled,
+  petalsPublicModel,
   openRouterFreeModel,
   type ChatAdapter,
 } from "@vantage/agent";
 
 /**
- * Adapter for background / Pi worker jobs. Prefers FREE_RELAY_* (Freebuff proxy on Pi),
- * then platform OPENROUTER_API_KEY free pool.
+ * Adapter for background / Pi worker jobs. Prefers FREE_RELAY_* (local OpenAI proxy
+ * on the Pi), then Groq / OpenRouter free pools, then the public Petals swarm.
  */
 export function createFreeRelayChatAdapter(capability?: string): ChatAdapter {
   const freeRelay = tryCreateFreeRelayAdapter({ capability });
@@ -21,21 +24,31 @@ export function createFreeRelayChatAdapter(capability?: string): ChatAdapter {
   const openrouter = tryCreateOpenRouterFreeAdapter({ capability });
   if (openrouter) return openrouter;
 
+  const petals = tryCreatePetalsPublicAdapter({ capability });
+  if (petals) return petals;
+
   throw new Error(
-    "Free relay is not configured. Set FREE_RELAY_BASE_URL (Pi DeepSeek endpoint) or a team/hosted key.",
+    "Free relay is not configured. Set FREE_RELAY_BASE_URL, a Groq/OpenRouter key, or leave PETALS_PUBLIC_POOL on for the public swarm.",
   );
 }
 
 export function isFreeRelayConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
-  return Boolean(readFreeRelayConfig(env)) || Boolean(env.GROQ_API_KEY?.trim()) || Boolean(env.OPENROUTER_API_KEY?.trim());
+  return (
+    Boolean(readFreeRelayConfig(env)) ||
+    Boolean(env.GROQ_API_KEY?.trim()) ||
+    Boolean(env.OPENROUTER_API_KEY?.trim()) ||
+    isPetalsPublicPoolEnabled(env)
+  );
 }
 
 export function describeFreeRelayBackend(env: NodeJS.ProcessEnv = process.env): string {
   const relay = readFreeRelayConfig(env);
   if (relay) return `${relay.providerLabel}@${relay.baseUrl}`;
+  if (env.GROQ_API_KEY?.trim()) return "groq";
   if (env.OPENROUTER_API_KEY?.trim()) {
     return `openrouter/${openRouterFreeModel(env)}`;
   }
+  if (isPetalsPublicPoolEnabled(env)) return `petals/${petalsPublicModel(env)}`;
   return "unset";
 }
 

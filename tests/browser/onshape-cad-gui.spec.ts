@@ -32,7 +32,7 @@ test("CAD vault paste-link offers Edit in Onshape or Needs setup", async ({ page
   }
 
   await paste.fill("https://cad.onshape.com/documents/aaa111/w/bbb222/e/ccc333");
-  await expect(page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Edit( .+)? in Onshape$/i }).first()).toBeVisible();
 });
 
 test("CAD setup wizard is link-first Edit in Onshape without env-var dumps", async ({ page }) => {
@@ -55,7 +55,7 @@ test("CAD setup wizard is link-first Edit in Onshape without env-var dumps", asy
   }
 
   await paste.fill("https://cad.onshape.com/documents/aaa111/w/bbb222/e/ccc333");
-  await expect(page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Edit( .+)? in Onshape$/i }).first()).toBeVisible();
 });
 
 test("Pair this computer keeps its heading with the fixture cookie", async ({ page }) => {
@@ -78,7 +78,7 @@ test("CAD hub viewport can paste a document and click Edit in Onshape", async ({
   if ((await docInput.count()) === 0) return;
 
   await docInput.fill("https://cad.onshape.com/documents/aaa111/w/bbb222/e/ccc333");
-  const edit = page.getByRole("link", { name: /Edit( .* )?in Onshape/i }).first();
+  const edit = page.getByRole("link", { name: /^Edit( .+)? in Onshape$/i }).first();
   await expect(edit).toBeVisible();
   await expect(page.getByRole("region", { name: "CAD viewport" })).toBeVisible();
   await edit.click();

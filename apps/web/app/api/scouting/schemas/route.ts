@@ -18,8 +18,12 @@ export async function GET(request: Request) {
     if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
     const orgId = new URL(request.url).searchParams.get("orgId");
     const data = await withScoutingRequest(orgId, async (client) => {
+      // Scouting forms belong to the team, not the owner: anyone on it can
+      // build one, edit someone else's, or delete an unused one (migration
+      // 0658). A form that already has scouting filed under it cannot be
+      // deleted by anyone — the entry tables' foreign keys stop that.
       const allowed = await client.query<{ allowed: boolean }>(
-        `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
+        `SELECT is_org_member($1) AS allowed`,
         [orgId],
       );
       const context = await client.query<{ eventKey: string | null; year: number | null }>(
@@ -88,10 +92,10 @@ export async function POST(request: Request) {
     if (body.action === "ensure_defaults") {
       const result = await withScoutingRequest(body.orgId, async (client) => {
         const allowed = await client.query(
-          `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
+          `SELECT is_org_member($1) AS allowed`,
           [body.orgId],
         );
-        if (!allowed.rows[0]?.allowed) throw new Error("Coach role required");
+        if (!allowed.rows[0]?.allowed) throw new Error("Join this team to change its scouting forms");
         const context = await client.query<{ eventKey: string | null }>(
           `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
           [body.orgId],
@@ -119,10 +123,10 @@ export async function POST(request: Request) {
     }
     const schema = await withScoutingRequest(body.orgId, async (client) => {
       const allowed = await client.query(
-        `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
+        `SELECT is_org_member($1) AS allowed`,
         [body.orgId],
       );
-      if (!allowed.rows[0]?.allowed) throw new Error("Coach role required");
+      if (!allowed.rows[0]?.allowed) throw new Error("Join this team to change its scouting forms");
       const result = await client.query(
         `INSERT INTO scout_schemas (org_id,year,type,version,schema,created_by)
          SELECT $1,$2,$3,COALESCE(MAX(version),0)+1,$4::jsonb,$5

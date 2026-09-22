@@ -483,3 +483,146 @@
     gap: 2px;
   }
 }
+
+/* ===========================================================================
+   The hub bar — one row where there used to be four.
+
+   A hub opened with a page header, a section tab row, a tool chip row and the
+   app bar pinned to the bottom of the window. On a 667px phone that is roughly
+   320px of navigation before the first pixel of the thing you opened the page
+   for, and three of those four strips were saying the same thing: the header's
+   description for Competition was "Event day, scouting, strategy, and pit."
+   directly above tabs reading Event day | Scouting | Strategy | Pit, with
+   Compete already lit in the app bar.
+
+   The description is gone (a phone already hid it), and the title, the
+   sections, the tools and the page actions now share a single row. The two
+   levels of navigation are still distinguishable, by shape rather than by
+   position: sections are underlined tabs, tools are chips.
+   =========================================================================== */
+.hub-bar {
+  /* The tool overflow hangs off this as a dropdown rather than pushing the
+     page down — inside a one-line bar it has nowhere to expand to. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  /* The top bar's Ask button is taller than the top bar itself and hangs a few
+     pixels into whatever comes next. Nothing used to be up here but the page
+     title's leading; now the tool chips are, and they were being sat on. */
+  margin: 6px 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hub-bar-id {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+/* Still an h1 — the page needs one and it is what gets announced on arrival.
+   It reads as a label on a bar, not as a banner over a page. */
+.hub-bar-id h1 {
+  margin: 0;
+  white-space: nowrap;
+  color: var(--ink);
+  font: 700 var(--title-3)/1.2 var(--font-source-sans), ui-sans-serif;
+}
+.hub-bar-id .breadcrumbs {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hub-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Never wraps. A "?" and a page action on a line of their own is a fourth
+     bar growing back, so the tool strip absorbs the squeeze instead — it is
+     the one part of this row that can scroll. `margin-left` still right-aligns
+     these when a hub has no tools and there is free space to take up. */
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* The bar owns the rule underneath and the spacing between its parts, so the
+   pieces that used to be stacked blocks give up their own margins. */
+.product-hub .hub-bar .product-hub-tabs.soft-tab-bar {
+  width: auto;
+  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  border-bottom: 0;
+}
+.hub-bar .hub-tool-strip {
+  /* The elastic item: it takes whatever the title, the tabs and the actions
+     leave, and scrolls the chips inside that rather than pushing a neighbour
+     onto a second line. */
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  /* A rule, not a gap: it is what says the chips after it live inside the tab
+     before it, rather than being five more sections. */
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+.hub-bar .hub-tool-strip-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.hub-bar .hub-tool-strip-row::-webkit-scrollbar {
+  display: none;
+}
+/* Floating over the page, so it needs its own surface — the old translucent
+   fill was readable only because content never sat behind it. */
+.hub-bar .hub-tool-overflow {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  width: min(380px, calc(100vw - 32px));
+  margin: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+
+@media (max-width: 720px) {
+  .hub-bar {
+    gap: 2px 10px;
+  }
+  /* Two lines on a phone. Line one is the title, the sections and the "?" —
+     the sections scroll inside whatever the other two leave, which is around
+     250px, enough for the open one plus its neighbours. Line two is the tools.
+
+     Giving the sections a line of their own instead cost a third line for
+     nothing: a 44px row holding an 18px title and one help button. Measured on
+     a 390px viewport, that arrangement was 165px of chrome against the old
+     four bars' 197px, and this one is 95px.
+
+     `order` only matters for the tools: in source order they come before the
+     actions, which would put the "?" under them on a line of its own. */
+  .hub-bar-end {
+    order: 1;
+  }
+  /* `flex-basis: 0`, not `auto`. A flex line is packed at each item's basis
+     before anything shrinks, so at `auto` the tab row's ~320px of labels
+     measured wider than the space left beside the title and wrapped to a line
+     of its own — taking the "?" with it and costing the third line this rule
+     exists to remove. At 0 it is placed first and then grows into whatever is
+     left, scrolling its labels inside that. */
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar {
+    flex: 1 1 0;
+  }
+  .hub-bar .hub-tool-strip {
+    order: 2;
+    flex-basis: 100%;
+    padding: 0 0 8px;
+    border-left: 0;
+  }
+}

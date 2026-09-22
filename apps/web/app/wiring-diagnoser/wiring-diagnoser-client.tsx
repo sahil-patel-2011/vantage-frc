@@ -65,20 +65,14 @@ async function persistWiringDiagnoserSnapshot(
 function WiringDiagnoserRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "readiness-score", orgId)}>
-        Readiness
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
+      <a href={hubHref("/build", "readiness-score", orgId)}>Readiness</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
     </nav>
   );
 }
 
-function WiringDiagnoserNextActions({ orgId }: { orgId: string }) {
+function WiringDiagnoserNextActions() {
   const actions = [
     {
       id: "check",
@@ -87,37 +81,19 @@ function WiringDiagnoserNextActions({ orgId }: { orgId: string }) {
       href: "#wiring-diagnoser-form",
       primary: true,
     },
-    {
-      id: "readiness",
-      label: "Open Readiness",
-      detail: "Wiring flags feed the ship-readiness index.",
-      href: hubHref("/build", "readiness-score", orgId),
-      primary: false,
-    },
-    {
-      id: "map",
-      label: "Open CAN-bus map",
-      detail: "Expected channels come from the stored map.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -404,7 +380,7 @@ export default function WiringDiagnoserClient() {
           {error}
         </p>
       ) : null}
-      <WiringDiagnoserNextActions orgId={view.orgId} />
+      <WiringDiagnoserNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <NewCheckForm busy={busy} mutate={mutate} wiringMap={view.wiringMap} />
         {view.checks.length > 0 ? (
@@ -586,15 +562,7 @@ function NewCheckForm({
         </div>
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {expected.map((row, index) => (
-            <div
-              key={index}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px 1fr 90px 110px 110px auto",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
+            <div key={index} className="wd-row wd-row-expected">
               <input
                 type="number"
                 min={0}
@@ -607,14 +575,14 @@ function NewCheckForm({
                 value={row.deviceName}
                 onChange={setExpectedField(index, "deviceName")}
               />
-              <select value={row.wireGauge} onChange={setExpectedField(index, "wireGauge")}>
+              <select aria-label="Wire gauge" value={row.wireGauge} onChange={setExpectedField(index, "wireGauge")}>
                 {WIRE_GAUGES.map((gauge) => (
                   <option key={gauge} value={gauge}>
                     {gauge} AWG
                   </option>
                 ))}
               </select>
-              <select value={row.breakerAmps} onChange={setExpectedField(index, "breakerAmps")}>
+              <select aria-label="Breaker" value={row.breakerAmps} onChange={setExpectedField(index, "breakerAmps")}>
                 {STANDARD_BREAKER_AMPS.map((amps) => (
                   <option key={amps} value={amps}>
                     {amps}A breaker
@@ -651,15 +619,7 @@ function NewCheckForm({
         </p>
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {observed.map((row, index) => (
-            <div
-              key={index}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px 1fr 90px 110px auto auto",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
+            <div key={index} className="wd-row wd-row-observed">
               <input
                 type="number"
                 min={0}
@@ -672,21 +632,21 @@ function NewCheckForm({
                 value={row.deviceName}
                 onChange={setObservedField(index, "deviceName")}
               />
-              <select value={row.wireGauge} onChange={setObservedField(index, "wireGauge")}>
+              <select aria-label="Wire gauge" value={row.wireGauge} onChange={setObservedField(index, "wireGauge")}>
                 {WIRE_GAUGES.map((gauge) => (
                   <option key={gauge} value={gauge}>
                     {gauge} AWG
                   </option>
                 ))}
               </select>
-              <select value={row.breakerAmps} onChange={setObservedField(index, "breakerAmps")}>
+              <select aria-label="Breaker" value={row.breakerAmps} onChange={setObservedField(index, "breakerAmps")}>
                 {STANDARD_BREAKER_AMPS.map((amps) => (
                   <option key={amps} value={amps}>
                     {amps}A breaker
                   </option>
                 ))}
               </select>
-              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center", whiteSpace: "nowrap" }}>
+              <label className="app-muted wd-row-check">
                 <input
                   type="checkbox"
                   checked={row.multiWireTerminal}

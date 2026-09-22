@@ -129,3 +129,10 @@
   color: var(--muted);
   font-size: 12px;
 }
+
+/* The channel name keeps the size it had as an h1; only its level changed. */
+.messages-channel-title {
+  margin: 5px 0;
+  font-size: var(--title-2);
+  letter-spacing: -0.02em;
+}

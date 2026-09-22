@@ -59,7 +59,6 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:scout-assisted-count": ["assisted count", "counting help", "tally"],
   "competition:scout-schema-negotiate": ["schema sync", "share form", "other teams", "negotiate"],
   "competition:scouting-heat-signals": ["heat", "signals", "hot teams", "trends"],
-  "competition:scouting-schema-ab": ["a/b test", "experiment", "compare forms"],
   "competition:data-quality-scorecard": ["data quality", "scorecard", "clean data", "errors"],
   // --- Competition · Strategy ---
   "competition:strategy": ["strategy", "plan", "predictions", "win", "matchup", "analysis"],
@@ -400,6 +399,17 @@ const STANDALONE: CommandEntry[] = [
   { id: "logistics", label: "Logistics", context: "Vantage", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
   { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
   { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
+  // Four complete features — API, offline support, browser specs — that no
+  // menu pointed at. They were reachable only by typing the URL, which the
+  // route-coverage rule was supposed to catch and did not: it counted a route
+  // as "linked" because an offline-cache list or robots.ts named it.
+  //
+  // Keywords are what somebody types when they do not know the page's name:
+  // "how did we do", not "match debrief".
+  { id: "match-debrief", label: "Match debrief", context: "Compete", href: "/match-debrief", kind: "destination", keywords: ["match debrief", "how did we do", "after the match", "our robot", "post match", "what went wrong", "match log", "record"] },
+  { id: "cad-review-queue", label: "CAD review queue", context: "Build", href: "/cad-review-queue", kind: "destination", keywords: ["cad review", "design review", "sign off", "checkpoint", "approve part", "release to manufacture", "reviewer"] },
+  { id: "parts-relay", label: "Parts relay", context: "Build", href: "/parts-relay", kind: "destination", keywords: ["parts relay", "hand off part", "who has the part", "part handoff", "shop to pit", "relay"] },
+  { id: "season-rollover", label: "Season rollover", context: "Team", href: "/season-rollover", kind: "destination", keywords: ["season rollover", "new season", "next year", "graduate", "roll over", "archive season", "start of season"] },
   { id: "visit-invites", label: "Visit invites", context: "Logistics", href: "/visit-invites", kind: "destination", keywords: ["visit", "tour", "demo day", "rsvp"] },
   // Forms is a standalone destination rather than a pillar leaf: the drawer
   // keeps one link per pillar, and a second Team leaf breaks that invariant.

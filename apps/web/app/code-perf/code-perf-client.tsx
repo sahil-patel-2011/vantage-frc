@@ -60,20 +60,14 @@ async function persistCodePerfSnapshot(orgHint: string, seasonHint: string, data
 function CodePerfRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code Coach
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code-deploy-log", orgId)}>
-        Deploy log
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
-        CAD
-      </Button>
+      <a href={hubHref("/build", "code", orgId)}>Code Coach</a>
+      <a href={hubHref("/build", "code-deploy-log", orgId)}>Deploy log</a>
+      <a href={hubHref("/build", "cad", orgId)}>CAD</a>
     </nav>
   );
 }
 
-function CodePerfNextActions({ orgId }: { orgId: string }) {
+function CodePerfNextActions() {
   const actions = [
     {
       id: "log",
@@ -82,37 +76,19 @@ function CodePerfNextActions({ orgId }: { orgId: string }) {
       href: "#code-perf-log",
       primary: true,
     },
-    {
-      id: "code",
-      label: "Open Code Coach",
-      detail: "Review robot code before you log a change here.",
-      href: hubHref("/build", "code", orgId),
-      primary: false,
-    },
-    {
-      id: "deploy",
-      label: "Open Deploy log",
-      detail: "Firmware deploys sit next to this match-linked board.",
-      href: hubHref("/build", "code-deploy-log", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -352,7 +328,7 @@ export default function CodePerfClient() {
           {error}
         </p>
       ) : null}
-      <CodePerfNextActions orgId={view.orgId} />
+      <CodePerfNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogChangeForm busy={busy} mutate={mutate} />

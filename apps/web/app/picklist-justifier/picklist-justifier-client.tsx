@@ -60,9 +60,7 @@ function JustifierRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related picklist-justifier-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -77,18 +75,14 @@ function JustifierNextActionsPanel({ actions }: { actions: PicklistJustifierNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -347,7 +341,7 @@ export default function PicklistJustifierClient() {
           </>
         }
         title="Pick-list Auto-Justifier"
-        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with. Cross-check Strategy, Collaborative Pick List, and Scouting."
+        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with."
       >
         <div className="picklist-justifier-header-actions">
           {view.pickLists.length > 0 ? (

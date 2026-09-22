@@ -177,11 +177,70 @@ export function shellTitleForPath(pathname: string): string | null {
   return null;
 }
 
-export function orgLabelFor(me: Me, orgId: string): string {
-  if (me.teamNumber != null) {
-    return `Team ${me.teamNumber}${me.orgName ? ` · ${me.orgName}` : ""}`;
+/**
+ * Does a team's own name tell you anything the number does not?
+ *
+ * Most teams name their workspace after their number — "Team 6925", or just
+ * "6925". Sticking the number in front of that produces "Team 6925 · Team 6925",
+ * which reads as a rendering fault rather than as a name, and it was on the top
+ * bar of every single page.
+ *
+ * Strips a leading "team", punctuation and spacing, then asks whether what is
+ * left is just the number again. "Team 6925 Robotics" survives that, because
+ * "Robotics" is a real part of the name.
+ */
+export function orgNameAddsDetail(
+  teamNumber: number | null | undefined,
+  orgName: string | null | undefined,
+): boolean {
+  const name = (orgName ?? "").trim();
+  if (!name) return false;
+  if (teamNumber == null) return true;
+  const reduced = name
+    .toLowerCase()
+    .replace(/^team\b/, "")
+    .replace(/[^a-z0-9]+/g, "");
+  return reduced !== String(teamNumber) && reduced.length > 0;
+}
+
+/**
+ * The team, written to sit inside a sentence: "Robotics Club (Team 6925)".
+ *
+ * A dozen page descriptions were built as `{orgName}{" (Team " + n + ")"}`,
+ * which reads "Parts and materials stock … for Team 6925 (Team 6925)" for
+ * every team that never renamed itself — the common case, and the one that
+ * looks like a bug rather than a name. When the name adds nothing the
+ * parenthetical is the whole label instead of a second copy of it.
+ *
+ * `teamLabelFor` is the other spelling, "Team 6925 · Robotics Club", for
+ * places that are a label rather than prose — the top bar, a card heading.
+ * The `·` does not belong in the middle of a sentence.
+ */
+export function teamProseLabel(
+  teamNumber: number | null | undefined,
+  orgName: string | null | undefined,
+): string | null {
+  const name = (orgName ?? "").trim();
+  if (teamNumber == null) return name || null;
+  return orgNameAddsDetail(teamNumber, orgName) ? `${name} (Team ${teamNumber})` : `Team ${teamNumber}`;
+}
+
+/** The one label for a team: its number, plus a real name when it has one. */
+export function teamLabelFor(
+  teamNumber: number | null | undefined,
+  orgName: string | null | undefined,
+): string | null {
+  if (teamNumber != null) {
+    return orgNameAddsDetail(teamNumber, orgName)
+      ? `Team ${teamNumber} · ${(orgName ?? "").trim()}`
+      : `Team ${teamNumber}`;
   }
-  return me.orgName ?? (orgId ? "This team" : "No team selected");
+  const name = (orgName ?? "").trim();
+  return name || null;
+}
+
+export function orgLabelFor(me: Me, orgId: string): string {
+  return teamLabelFor(me.teamNumber, me.orgName) ?? (orgId ? "This team" : "No team selected");
 }
 
 export function switchWorkspaceHrefFor(pathname: string, pathSearch: string, nextOrgId: string): string {

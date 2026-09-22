@@ -6,6 +6,7 @@ import {
   INTEL_RELATED_INCLUDE,
   intelRelatedLinks,
   intelSetupSteps,
+  INTEL_PAGE_DESCRIPTION,
   intelShellCopy,
   type IntelNextAction,
   type IntelShellKind,
@@ -27,9 +28,7 @@ export function IntelRelatedStrip({
   return (
     <nav className="product-hub-related intel-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -41,18 +40,14 @@ export function IntelNextActionsPanel({ actions }: { actions: IntelNextAction[] 
     <section className="app-card soft-panel edc-next-actions intel-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -100,7 +95,9 @@ export function IntelShell({
       <PageHeader
         breadcrumbs="Competition / Research"
         title="Research"
-        description={copy.description}
+        /* Not copy.description — that is the empty state's line, and it is
+           printed again by the EmptyState directly below this header. */
+        description={INTEL_PAGE_DESCRIPTION}
       >
         <IntelRelatedStrip orgId={orgId} />
       </PageHeader>

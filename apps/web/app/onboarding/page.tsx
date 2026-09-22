@@ -1,6 +1,7 @@
 ﻿import { Suspense } from "react";
 import OnboardingClient from "./onboarding-client";
 import "./onboarding-flow.css";
+import "../vantage-scan-auth.css";
 
 export const metadata = {
   title: "Onboarding",

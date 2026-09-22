@@ -67,20 +67,14 @@ async function persistAutonPathSnapshot(
 function AutonPathRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
-        Tuning log
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code-perf", orgId)}>
-        Code vs match
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "bringup", orgId)}>
-        Bring-up
-      </Button>
+      <a href={hubHref("/build", "tuning-log", orgId)}>Tuning log</a>
+      <a href={hubHref("/build", "code-perf", orgId)}>Code vs match</a>
+      <a href={hubHref("/build", "bringup", orgId)}>Bring-up</a>
     </nav>
   );
 }
 
-function AutonPathNextActions({ orgId }: { orgId: string }) {
+function AutonPathNextActions() {
   const actions = [
     {
       id: "add",
@@ -89,37 +83,19 @@ function AutonPathNextActions({ orgId }: { orgId: string }) {
       href: "#auton-path-form",
       primary: true,
     },
-    {
-      id: "tuning",
-      label: "Open Tuning log",
-      detail: "Constants that made a path work belong next to the success rate.",
-      href: hubHref("/build", "tuning-log", orgId),
-      primary: false,
-    },
-    {
-      id: "code",
-      label: "Open Code vs match",
-      detail: "Which deploy actually ran this path.",
-      href: hubHref("/build", "code-perf", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -374,7 +350,7 @@ export default function AutonPathLibraryClient() {
           {error}
         </p>
       ) : null}
-      <AutonPathNextActions orgId={view.orgId} />
+      <AutonPathNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <CreatePathForm busy={busy} mutate={mutate} />

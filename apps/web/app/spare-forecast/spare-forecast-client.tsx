@@ -71,9 +71,7 @@ function SpareForecastRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related spare-forecast-related" aria-label="Related spare tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -88,18 +86,14 @@ function SpareForecastNextActionsPanel({ actions }: { actions: SpareForecastNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -295,6 +289,7 @@ export default function SpareForecastClient() {
   });
   // Header strip drops destinations the Next-actions panel already offers.
   const nextActionHrefs = new Set(nextActions.map((action) => action.href));
+  const fmeaHref = hubHref("/build", "fmea", orgId);
   const relatedLinks = spareForecastRelatedLinks(orgId, {
     include: [...SPARE_FORECAST_RELATED_INCLUDE],
   }).filter((link) => !nextActionHrefs.has(link.href));
@@ -455,9 +450,15 @@ export default function SpareForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
-          </Button>
+          {/* Same rule the "no spare bins" state above already follows: only
+              what Next actions is not already offering. Both pointed at the
+              FMEA tab, one under the other, so the page asked twice for the
+              same thing in two different voices. */}
+          {nextActionHrefs.has(fmeaHref) ? null : (
+            <Button as="a" variant="primary" href={fmeaHref}>
+              Open FMEA
+            </Button>
+          )}
         </EmptyState>
       ) : null}
 

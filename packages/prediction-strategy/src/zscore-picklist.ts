@@ -21,6 +21,18 @@ export const PICKLIST_METRIC_IDS = [
   "scoringRate",
   "estimatedSuccessfulFuelRate",
   "estimatedTotalFuelScored",
+  /**
+   * The two things a team's own scouts know that a season rating cannot.
+   *
+   * EPA and the OPR family are built from final scores, so a robot that dies
+   * twice and a robot that is merely inconsistent look identical to them — an
+   * average with some bad matches in it. The people watching know the
+   * difference, and at a pick-list meeting it is usually the difference that
+   * decides. Both are expressed so that higher is better, like every other
+   * slider here.
+   */
+  "consistency",
+  "reliability",
 ] as const;
 
 export type PicklistMetricId = (typeof PICKLIST_METRIC_IDS)[number];
@@ -51,6 +63,8 @@ export const PICKLIST_METRICS: readonly PicklistMetricDef[] = [
   { id: "scoringRate", label: "Scoring rate", source: "scout" },
   { id: "estimatedSuccessfulFuelRate", label: "Estimated successful fuel rate", source: "scout" },
   { id: "estimatedTotalFuelScored", label: "Estimated total fuel scored", source: "scout" },
+  { id: "consistency", label: "Does the same thing every match", source: "scout" },
+  { id: "reliability", label: "Finishes the match", source: "scout" },
 ];
 
 export type TeamMetricRow = {

@@ -89,29 +89,36 @@ export function ProfileForm({
         ))}
       </fieldset>
 
-      <fieldset className="onboarding-cards onboarding-cards-crew">
-        <legend>
-          What do you actually do? <small>Optional — tap again to clear</small>
-        </legend>
-        {CREW_ROLES.map((option) => (
-          <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
-            <input
-              type="checkbox"
-              name="crewRole"
-              value={option.value}
-              checked={draft.crewRole === option.value}
-              onChange={() => pickCrew(option.value)}
-            />
-            <strong>{option.label}</strong>
-            <span>{option.detail}</span>
-          </label>
-        ))}
-      </fieldset>
+      <details className="onboarding-specialty">
+        <summary>
+          <span>
+            <strong>Team specialty</strong>
+            <small>{draft.crewRole ? CREW_ROLES.find((option) => option.value === draft.crewRole)?.label : "Optional"}</small>
+          </span>
+          <b aria-hidden="true">+</b>
+        </summary>
+        <fieldset className="onboarding-cards onboarding-cards-crew">
+          <legend className="sr-only">Choose your team specialty</legend>
+          {CREW_ROLES.map((option) => (
+            <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
+              <input
+                type="checkbox"
+                name="crewRole"
+                value={option.value}
+                checked={draft.crewRole === option.value}
+                onChange={() => pickCrew(option.value)}
+              />
+              <strong>{option.label}</strong>
+              <span>{option.detail}</span>
+            </label>
+          ))}
+        </fieldset>
+      </details>
 
       <fieldset className="onboarding-account-fields">
-        <legend>Account record</legend>
+        <legend>Only you can see this</legend>
         <p className="onboarding-team-profile-hint">
-          Vantage requires these two for youth-safe account records before it will create your account. Teammates and team leaders never see them.
+          Birthday and gender stay on your account. Teammates and team leaders never see them. We ask so student accounts stay safe.
         </p>
         <label>
           Date of birth
@@ -292,7 +299,7 @@ export function PreferencesForm({
       <section className="onboarding-review-card" aria-label="Access request summary">
         <div><span>TEAM</span><strong>{lookup.teamNumber ? `FRC ${lookup.teamNumber}` : "None yet"}</strong></div>
         <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === draft.teamRole)?.label ?? draft.teamRole}</strong></div>
-        <div><span>CREW</span><strong>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Not specified"}</strong></div>
+        <div><span>SPECIALTY</span><strong>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Skipped"}</strong></div>
         <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === draft.primaryFocus)?.label}</strong></div>
         {draft.roleDescription.trim() ? (
           <div><span>HOW YOU HELP</span><strong>{draft.roleDescription.trim()}</strong></div>
@@ -347,10 +354,11 @@ export function PreferencesForm({
         <div className="onboarding-security-note" style={{ marginTop: 0 }}>
           <b aria-hidden="true">↳</b>
           <p>
-            <strong>After approval: connect GitHub for AI code context.</strong>
+            <strong>After your team lets you in, connect the robot code.</strong>
             <span>
-              {" "}Owners/admins link the robot-code repo under{" "}
-              <a href={githubConnectionHref(state.workspaceOrgId)}>Team → GitHub</a>.
+              {" "}A team owner links the GitHub repo under{" "}
+              <a href={githubConnectionHref(state.workspaceOrgId)}>Team, then GitHub</a>
+              {" "}so the code helper can read it.
             </span>
           </p>
         </div>

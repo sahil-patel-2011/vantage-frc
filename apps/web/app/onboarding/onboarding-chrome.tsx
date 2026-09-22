@@ -15,7 +15,7 @@ export function OnboardingLoadShell({
   onRetry: () => void;
 }) {
   return (
-    <main className="onboarding-page onboarding-flow-page">
+    <main className="onboarding-page onboarding-flow-page scan-workbench scan-hub--onboarding">
       <section
         className="onboarding-card onboarding-flow-card"
         aria-labelledby="onboarding-load-title"

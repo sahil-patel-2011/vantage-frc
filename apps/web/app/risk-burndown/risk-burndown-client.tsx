@@ -75,9 +75,7 @@ function RiskBurndownRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related risk-burndown-related" aria-label="Related risk tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -92,18 +90,14 @@ function RiskBurndownNextActionsPanel({ actions }: { actions: RiskBurndownNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -368,7 +362,7 @@ export default function RiskBurndownClient() {
           </>
         }
         title="Risk-Register Burndown"
-        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and FMEA."
+        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out."
       >
         <div className="risk-burndown-header-actions">
           {view.seasons.length > 0 ? (

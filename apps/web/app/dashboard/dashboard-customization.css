@@ -1,0 +1,20 @@
+.dash-home .dash-customize-primary { min-height: 44px; border: 1px solid var(--vt-blue); border-radius: 12px; padding: 10px 16px; background: var(--vt-blue); color: #fff; font-weight: 700; cursor: pointer; }
+.dash-card-action-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; min-height: 36px; padding: 0 8px; background: var(--surface); border-radius: 14px 14px 0 0; }
+.dash-card-action-bar > span { font-size: 11px; color: var(--muted); }
+.dash-card-actions { position: relative; }
+.dash-card-actions > summary { cursor: pointer; list-style: none; min-width: 44px; min-height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--ink); }
+.dash-card-actions > summary::-webkit-details-marker { display: none; }
+.dash-card-actions[open] > summary { background: var(--accent-soft); }
+.dash-card-action-options { position: absolute; right: 0; top: 100%; z-index: 12; display: grid; width: 210px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px #0002; }
+.dash-card-action-options button { text-align: left; min-height: 44px; padding: 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; }
+.dash-card-action-options button:hover { background: var(--accent-soft); }
+.dash-card-action-options button:disabled { opacity: .5; cursor: not-allowed; }
+.dash-grid-item:has(.dash-card-actions[open]) { z-index: 15; overflow: visible; }
+.dash-grid-item:not(.is-editing) .dash-widget-hit { height: calc(100% - 36px); }
+.dash-action-dialog { width: min(960px, calc(100vw - 24px)); max-width: 960px; }
+.dash-action-dialog .scout-page { padding: 12px 0; min-width: 0; }
+.dash-action-dialog .scout-workbench { grid-template-columns: 1fr; }
+.dash-action-dialog .scout-side { display: none; }
+.dash-quick-task { display: grid; gap: 16px; }
+.dash-home .dash-size-chips { flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
+@media (max-width: 600px) { .dash-home-header { flex-wrap: wrap; gap: 12px; } }

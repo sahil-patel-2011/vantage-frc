@@ -36,6 +36,11 @@ test("Team calendar hub still loads after the panel split", async ({ page }) => 
   await viewGroup.getByRole("button", { name: "List" }).click();
   await expect(page.getByRole("heading", { name: "Coming up" })).toBeVisible();
 
+  // Phone calendar moved inside the calendar's own "More" menu — the same
+  // consolidation Home's Edit Home went through. The control still exists and
+  // still works; it is one click further in, and this spec was clicking at
+  // where it used to be.
+  await page.locator(".tc-more > summary").click();
   await page.getByRole("button", { name: "Phone calendar" }).click();
   await expect(page.getByRole("heading", { name: "Phone calendar" })).toBeVisible();
   await expect(page.getByRole("button", { name: "← Calendar" })).toBeVisible();

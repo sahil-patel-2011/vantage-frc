@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { runWhatIf } from "@vantage/prediction-strategy";
+import { NO_LEVERS_COPY, runWhatIf } from "@vantage/prediction-strategy";
 import { EmptyState, Panel, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { strategyCoverageLinks } from "../../lib/strategy/competition-related";
@@ -260,16 +260,12 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
     <section className="strategy-workbench strategy-live-grid">
       <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event Day">
         {relatedLinks.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <nav className="strategy-coverage-links product-hub-related" aria-label="Explainability and coverage">
         {coverageLinks.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
       <Panel className="strategy-primary">
@@ -299,7 +295,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
           {redWinDisplay ? (
             <small>
               {Math.round(view.prediction.confidenceLow * 100)}–{Math.round(view.prediction.confidenceHigh * 100)}%
-              confidence · sample {view.prediction.effectiveSampleSize}
+              confidence · sample {Math.round(view.prediction.effectiveSampleSize)}
             </small>
           ) : (
             <small>No grounded prediction — recompute after match results are connected.</small>
@@ -328,11 +324,40 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             </ul>
           </div>
         </div>
+        <h3>What would move this</h3>
+        <p className="app-muted lever-note">
+          Each line re-runs the rating model with one measured number changed. A
+          lever only appears when we have actually measured the thing behind it.
+        </p>
+        {view.levers.length ? (
+          <ul className="lever-list">
+            {view.levers.map((lever) => (
+              <li key={lever.id} data-lever={lever.id}>
+                {/* Percentage points of win chance, not game points. On a
+                    screen covered in scores, "pts" was genuinely ambiguous —
+                    a drive team could read "+1.3 pts" as 1.3 more points on
+                    the board rather than 1.3% more chance of winning. */}
+                <b>
+                  {lever.gain > 0 ? "+" : ""}
+                  {lever.gain}
+                  <i>% win</i>
+                </b>
+                <span>
+                  {lever.title}
+                  {lever.isCeiling ? <em className="lever-ceiling">ceiling</em> : null}
+                </span>
+                <small>{lever.detail}</small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">{NO_LEVERS_COPY}</p>
+        )}
         <h3>Key factors</h3>
         <ul className="factor-table">
           {view.prediction.keyFactors.map((factor) => (
             <li key={`${factor.kind}-${factor.name}`}>
-              <b>{factor.impact}</b>
+              <b>{Math.round(factor.impact * 10) / 10}</b>
               <span>
                 <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
               </span>

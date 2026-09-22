@@ -218,3 +218,68 @@
     white-space: normal;
   }
 }
+
+/* Things you told the assistant about you. */
+.ai-memory-personal { display: grid; gap: 12px; }
+.ai-memory-personal h2 { margin: 0; font-size: var(--title-3); }
+.ai-memory-personal > p { margin: 0; }
+.ai-memory-personal-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.ai-memory-personal-add label { display: grid; gap: 4px; font-size: 12px; }
+/* The sentence gets the room; the category is a short word. */
+.ai-memory-personal-add label:nth-of-type(2) { flex: 1 1 320px; min-width: 0; }
+.ai-memory-personal-add input,
+.ai-memory-personal-add select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.ai-memory-personal-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ai-memory-personal-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.ai-memory-personal-list p { margin: 2px 0 0; }
+.ai-memory-forget {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.ai-memory-forget:hover { color: var(--critical); border-color: var(--critical); }
+/* A choice beside its words, not above them — the same rule the AI keys page
+   needed. */
+/* `.ai-memory-personal` sets labels to grid for the two fields above, which is
+   right for a caption over an input and wrong for a checkbox beside its words.
+   Scoped tighter so it wins without loosening the rule it is an exception to. */
+.ai-memory-personal .ai-memory-personal-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ai-memory-personal .ai-memory-personal-toggle input {
+  flex: none;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 3px 0 0;
+}
+.ai-memory-personal .ai-memory-personal-toggle span { display: grid; gap: 2px; }

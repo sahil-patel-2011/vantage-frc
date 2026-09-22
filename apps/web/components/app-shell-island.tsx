@@ -63,8 +63,6 @@ export function AppShellIsland({
   islandTabs,
   activeIslandTabHref,
   unreadMessages,
-  navOpen,
-  onOpenNav,
   onOpenEditor,
   islandPressTimer,
   islandPressOrigin,
@@ -74,8 +72,6 @@ export function AppShellIsland({
   islandTabs: IslandTabDefinition[];
   activeIslandTabHref: string | undefined;
   unreadMessages: number;
-  navOpen: boolean;
-  onOpenNav: () => void;
   onOpenEditor: () => void;
   islandPressTimer: { current: number | null };
   islandPressOrigin: { current: { x: number; y: number } | null };
@@ -112,8 +108,9 @@ export function AppShellIsland({
     <nav
       className="soft-island"
       data-testid="soft-island"
+      data-tour="island"
       aria-label="Primary apps"
-      title="Press and hold or right-click to change these four apps"
+      title="Press and hold to change these four apps, or use the gear"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenEditor();
@@ -145,15 +142,30 @@ export function AppShellIsland({
         </a>
       ))}
       <button
+        className="soft-island-edit"
         type="button"
-        className="soft-island-more"
-        aria-label="Open all apps"
-        aria-expanded={navOpen}
-        onClick={onOpenNav}
+        aria-label="Edit these apps"
+        title="Choose which four apps stay in this bar"
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          clearIslandPress();
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenEditor();
+        }}
       >
-        <Icon name="grid" />
-        <span>All</span>
+        <Icon name="gear" />
       </button>
+      {/*
+        No fifth "All" button.
+
+        It opened the same drawer the hamburger at the top-left already opens,
+        so the island spent a fifth of itself on a duplicate — and a duplicate
+        that read like a peer of Team, Compete, Scout and Build when it is not
+        one of your apps at all. Four apps you chose, and one way to see the
+        rest of them.
+      */}
     </nav>
   );
 }

@@ -15,7 +15,8 @@ import {
   requireDriveMembership,
   requireDriveSession,
 } from "../../../../../lib/drive/api";
-import { markFileReady } from "../../../../../lib/drive/store";
+import { loadFileContent, markFileReady } from "../../../../../lib/drive/store";
+import { isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../../../../../lib/media-availability";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
       { userId: session.userId, ...(requestedOrgId ? { orgId: requestedOrgId } : {}) },
       async (client) => {
         const { orgId } = await requireDriveMembership(client, session.userId, requestedOrgId);
+        const file = await loadFileContent(client, { orgId, fileId, includeBytes: false });
+        if (file && isPausedMediaFile(file.name, file.contentType)) throw new DriveHttpError(403, MEDIA_PAUSED_MESSAGE);
 
         if (grantId) {
           // Single-use: consuming it is what stops a leaked grant token being

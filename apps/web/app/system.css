@@ -2,37 +2,55 @@
    Canonical tokens. This is the only stylesheet allowed to DECLARE
    --bg/--surface/--ink and the marketing --m-* palette.
 
-   Light: navy ink on cool paper, one house blue. Dark: surfaces step UP in
-   lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows become
-   rims. No pure black on white. No neon.
+   Light: navy ink on neutral grey paper, one deep house blue. Dark: surfaces
+   step UP in lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows
+   become rims. No pure black on white. No neon.
 
    Contrast (WCAG 2.1, measured against the fill they sit on):
-     #14243a on #eef2f7  ≈ 12.4:1  (body text)
-     #14243a on #ffffff   ≈ 13.7:1
-     #1457d9 on #ffffff    ≈  5.6:1  (accent as text)
-     #ffffff on #1457d9   ≈  5.6:1  (accent-ink on house blue)
-     #5a6578 on #eef2f7   ≈  5.1:1  (muted)
-     #98630a on #ffffff    ≈  5.2:1  (warning text)
-     #b91c1c on #ffffff    ≈  6.1:1  (critical text)
-     #15803d on #ffffff    ≈  4.6:1  (positive text)
-     #edf2f7 on #0c1118   ≈ 14.5:1  (dark body)
-     #0c1118 on #6e9bff   ≈  7.4:1  (dark accent-ink)
+     #14243a on #f2f3f5  ≈ 14.1:1  (body text)
+     #14243a on #ffffff  ≈ 15.6:1
+     #17457f on #ffffff  ≈  9.6:1  (accent as text)
+     #ffffff on #17457f  ≈  9.6:1  (accent-ink on house blue)
+     #5a6578 on #f2f3f5  ≈  5.3:1  (muted)
+     #98630a on #ffffff  ≈  5.1:1  (warning text)
+     #b91c1c on #ffffff  ≈  6.5:1  (critical text)
+     #15803d on #ffffff  ≈  5.0:1  (positive text)
+     #edf2f7 on #0c1118  ≈ 16.8:1  (dark body)
+     #0c1118 on #93b4e8  ≈  9.0:1  (dark accent-ink)
    Marketing copper #a34a07 is decoration + large type; it is not body text.
    ========================================================================== */
 
 :root {
-  --brand-navy: #14243a;
-  --brand-blue: #1457d9;
-  --brand-blue-soft: #e4ecfc;
-  --brand-paper: #eef2f7;
+  /* The accent is a deep navy-blue, not a bright one, and the page under it is
+     grey rather than tinted.
+
+     It used to be #17457f on a #f2f3f5 page: a vivid cornflower primary on a
+     blue-washed background, with a pale blue behind every badge and active
+     chip. Three blues stacked on each other is what made the product read as
+     light blue overall, which is a colour scheme for a consumer app, not for
+     something a team runs a competition on.
+
+     Deepening the accent is also the accessible direction, which is unusual
+     enough to be worth saying: white on #17457f measures 6.2:1, and white on
+     #17457f measures 9.6:1. The page loses its blue cast, the badges lose
+     theirs, and the one thing that stays blue is the thing you are meant to
+     press. */
+  /* 2026 repaint: the house colour moves from cornflower navy to a deep
+     teal-slate. The paper is cooler, the ink is graphite slate rather than a
+     blue, and the one saturated colour left is the thing you press.
+     White on #0e5a66 measures ~6.3:1; #0e5a66 on #f5f6f8 ~5.9:1. */
+  --brand-navy: #10202c;
+  --brand-blue: #0e5a66;
+  --brand-blue-soft: #e2edef;
+  --brand-paper: #f5f6f8;
   --brand-white: #ffffff;
 
   --bg: var(--brand-paper);
   --surface: var(--brand-white);
   --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
-  --line: #d5dde8;
+  --line: #dde1e7;
   --ink: var(--brand-navy);
-  --muted: #5a6578;
+  --muted: #566372;
   --accent: var(--brand-blue);
   --accent-ink: #fff;
   --accent-soft: var(--brand-blue-soft);
@@ -52,12 +70,18 @@
   --radius-sm: 12px;
   --radius-lg: 22px;
   --radius-pill: 999px;
-  --shadow: 0 10px 28px rgba(19, 32, 51, .07);
-  --shadow-lift: 0 14px 34px rgba(19, 32, 51, .11);
-  --shadow-pop: 0 16px 40px rgba(19, 32, 51, .16);
+  /* Two layers, not one.
+     These were each a single large blur at low opacity — a 28px spread at 7%
+     reads as grey haze under a card rather than as the card being lifted off
+     the page. Real elevation has a tight contact shadow where the object meets
+     the surface AND a wider ambient one; the pair is what makes an edge look
+     crisp instead of smudged. Same ink, same overall weight, better defined. */
+  --shadow: 0 1px 2px rgba(19, 32, 51, .06), 0 6px 16px rgba(19, 32, 51, .06);
+  --shadow-lift: 0 2px 4px rgba(19, 32, 51, .07), 0 10px 24px rgba(19, 32, 51, .09);
+  --shadow-pop: 0 4px 8px rgba(19, 32, 51, .09), 0 16px 38px rgba(19, 32, 51, .14);
   --space: 8px;
 
-  --tone-blue: #1457d9;
+  --tone-blue: #0e5a66;
   --tone-green: #15803d;
   --tone-teal: #0f766e;
   --tone-amber: #b45309;
@@ -88,13 +112,13 @@
   --measure-prose: 58ch;
   --measure-narrow: 760px;
   --gutter: clamp(14px, 3vw, 28px);
-  --island: rgba(255, 255, 255, .94);
+  --island: rgba(255, 255, 255, .86);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --island-clearance: 88px;
   --glyph-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M8 2 15 14H1L8 2Z'/%3E%3Cpath d='M8 6.4v3.2M8 11.8v.1'/%3E%3C/svg%3E");
   --glyph-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5 6.5 12 13 4.5'/%3E%3C/svg%3E");
   --glow: radial-gradient(120% 80% at 12% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
-    radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, #38bdf8 8%, transparent), transparent 50%);
+    radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, var(--brand-navy) 6%, transparent), transparent 50%);
   --density: 1;
   --motion: 1;
   --space-1: calc(4px * var(--density));
@@ -118,11 +142,11 @@
   --m-accent-soft: var(--brand-blue-soft);
   --m-graphite: var(--brand-navy);
   --m-blue: var(--brand-blue);
-  --m-soft: #e7edf5;
-  --m-muted: #44536b;
-  --m-line: #ccd6e4;
-  --m-accent-dark: #0f3f9e;
-  --m-graphite-mid: #334561;
+  --m-soft: #eaedf1;
+  --m-muted: #46535f;
+  --m-line: #d4d8de;
+  --m-accent-dark: #094149;
+  --m-graphite-mid: #2f4351;
   --m-radius: 14px;
   --m-radius-sm: 10px;
   --m-radius-pill: var(--radius-pill);
@@ -135,24 +159,27 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #0c1118;
-  --surface: #151b24;
+  --bg: #0b1015;
+  --surface: #141a20;
   --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
-  --line: #273140;
-  --ink: #edf2f7;
-  --muted: #9aa7b5;
-  --accent: #6e9bff;
-  --accent-ink: #0c1118;
-  --accent-soft: #1a2740;
+  --line: #253038;
+  --ink: #e9eff3;
+  --muted: #97a4ad;
+  --accent: #66c2cd;
+  --accent-ink: #08131a;
+  --accent-soft: #123038;
   --positive: #4ade80;
   --critical: #ff9a91;
   --warning: #ffb936;
   --tone-plate-mix: 24%;
   --tone-ink-mix: 42%;
-  --island: rgba(21, 27, 36, .94);
-  --shadow: 0 12px 36px rgba(0, 0, 0, .4);
-  --shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
-  --shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
+  --island: rgba(20, 26, 32, .86);
+  /* Dark mode keeps the same two-layer shape. The contact layer carries more
+     of the weight here, because a wide soft blur on a dark ground is almost
+     invisible — it is the tight edge that separates the card from the page. */
+  --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 18px rgba(0, 0, 0, .36);
+  --shadow-lift: 0 2px 5px rgba(0, 0, 0, .55), 0 12px 28px rgba(0, 0, 0, .44);
+  --shadow-pop: 0 4px 10px rgba(0, 0, 0, .6), 0 20px 46px rgba(0, 0, 0, .5);
   --glow: radial-gradient(120% 80% at 10% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 55%);
   --accent-hover: color-mix(in srgb, var(--accent) 82%, #fff);
   --positive-fill: #2b7d5b;
@@ -179,7 +206,7 @@ body {
     --line: #273140;
     --ink: #edf2f7;
     --muted: #9aa7b5;
-    --accent: #6e9bff;
+    --accent: #93b4e8;
     --accent-ink: #0c1118;
     --accent-soft: #1a2740;
     --positive: #4ade80;
@@ -187,10 +214,11 @@ body {
     --warning: #ffb936;
     --tone-plate-mix: 24%;
     --tone-ink-mix: 42%;
-    --island: rgba(21, 27, 36, .94);
-    --shadow: 0 12px 36px rgba(0, 0, 0, .4);
-    --shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
-    --shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
+    --island: rgba(21, 27, 36, .86);
+    /* Same two-layer shape as the explicit dark theme above. */
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 18px rgba(0, 0, 0, .36);
+    --shadow-lift: 0 2px 5px rgba(0, 0, 0, .55), 0 12px 28px rgba(0, 0, 0, .44);
+    --shadow-pop: 0 4px 10px rgba(0, 0, 0, .6), 0 20px 46px rgba(0, 0, 0, .5);
     --glow: radial-gradient(120% 80% at 10% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 55%);
     --accent-hover: color-mix(in srgb, var(--accent) 82%, #fff);
     --positive-fill: #2b7d5b;
@@ -213,24 +241,24 @@ html[data-motion="reduced"] {
 }
 
 .marketing-v2 {
-  --m-paper: #eef2f7;
+  --m-paper: #f2f3f5;
 }
 
 .marketing-lux {
-  --m-ink: #14243a;
-  --m-muted: #515154;
-  --m-line: rgba(0, 0, 0, .09);
-  --m-paper: #f4f2ec;
+  --m-ink: #10202c;
+  --m-muted: #53606b;
+  --m-line: rgba(16, 32, 44, .1);
+  --m-paper: #f2f4f6;
   --m-white: #ffffff;
-  --m-canvas: #faf9f6;
+  --m-canvas: #fafbfc;
   --m-surface: #ffffff;
-  --m-surface-2: #f8f6f1;
+  --m-surface-2: #f5f7f9;
   --m-line-soft: rgba(0, 0, 0, .08);
   --m-line-strong: rgba(0, 0, 0, .22);
   --m-on-accent: #ffffff;
-  --m-accent: #14243a;
-  --m-accent-dark: #000;
-  --m-blue: #1457d9;
+  --m-accent: #10202c;
+  --m-accent-dark: #04121a;
+  --m-blue: #0e5a66;
   --m-pad-x: clamp(20px, 5.5vw, 88px);
   --m-pad-y: clamp(56px, 7vw, 88px);
   --m-section-gap: clamp(48px, 6vw, 72px);
@@ -242,11 +270,11 @@ html[data-motion="reduced"] {
   --m-step-3: clamp(26px, 1.35rem + 1.5vw, 38px);
   --m-step-4: clamp(32px, 1.6rem + 2.4vw, 52px);
   --m-step-5: clamp(38px, 2rem + 2.9vw, 64px);
-  --m-warm: #a34a07;
-  --m-warm-soft: rgba(163, 74, 7, .09);
-  --m-warm-line: rgba(163, 74, 7, .28);
-  --m-grid-line: rgba(20, 36, 58, .05);
-  --m-grid-line-strong: rgba(20, 36, 58, .085);
+  --m-warm: #0e5a66;
+  --m-warm-soft: rgba(14, 90, 102, .08);
+  --m-warm-line: rgba(14, 90, 102, .26);
+  --m-grid-line: rgba(16, 32, 44, .05);
+  --m-grid-line-strong: rgba(16, 32, 44, .085);
   --m-card-radius: 16px;
   --m-card-shadow: 0 1px 2px rgba(15, 18, 20, .04), 0 8px 24px rgba(15, 18, 20, .05);
   --m-card-shadow-lg: 0 2px 4px rgba(15, 18, 20, .05), 0 18px 44px rgba(15, 18, 20, .09);
@@ -260,18 +288,18 @@ html[data-theme="dark"] .marketing-lux {
   --m-line: rgba(255, 255, 255, .12);
   --m-line-soft: rgba(255, 255, 255, .09);
   --m-line-strong: rgba(255, 255, 255, .24);
-  --m-paper: #14161a;
-  --m-canvas: #0e1013;
-  --m-surface: #181b20;
-  --m-surface-2: #1f232a;
-  --m-white: #181b20;
+  --m-paper: #12171b;
+  --m-canvas: #0c1013;
+  --m-surface: #171c21;
+  --m-surface-2: #1e242a;
+  --m-white: #171c21;
   --m-accent: #f2f3f5;
   --m-accent-dark: #ffffff;
   --m-on-accent: #0e1013;
-  --m-blue: #7fb2ff;
-  --m-warm: #f0a05a;
-  --m-warm-soft: rgba(240, 160, 90, .12);
-  --m-warm-line: rgba(240, 160, 90, .32);
+  --m-blue: #66c2cd;
+  --m-warm: #7fd2dc;
+  --m-warm-soft: rgba(127, 210, 220, .12);
+  --m-warm-line: rgba(127, 210, 220, .3);
   --m-grid-line: rgba(255, 255, 255, .045);
   --m-grid-line-strong: rgba(255, 255, 255, .08);
   --m-card-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .28);

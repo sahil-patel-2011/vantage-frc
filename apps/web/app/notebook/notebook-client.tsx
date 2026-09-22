@@ -92,15 +92,9 @@ function CiteMedia({ asset, compact }: { asset: NotebookImageAttachment; compact
 function NotebookRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related playbook tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "files", orgId)}>
-        Files
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "writer", orgId)}>
-        Writer
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "impact", orgId)}>
-        Community Impact
-      </Button>
+      <a href={hubHref("/team", "files", orgId)}>Files</a>
+      <a href={hubHref("/team", "writer", orgId)}>Writer</a>
+      <a href={hubHref("/business", "impact", orgId)}>Community Impact</a>
     </nav>
   );
 }
@@ -121,30 +115,19 @@ function NotebookNextActions({ orgId }: { orgId: string }) {
       href: withOrgHref("/media-library", orgId),
       primary: false,
     },
-    {
-      id: "files",
-      label: "Open Files",
-      detail: "Approved write-ups live in the team file space.",
-      href: hubHref("/team", "files", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

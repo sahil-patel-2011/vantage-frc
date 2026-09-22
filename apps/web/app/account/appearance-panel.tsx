@@ -9,6 +9,7 @@ import {
   type AppearancePrefs,
   type DensityPreference,
   type MotionPreference,
+  type ClarityPreference,
 } from "../../lib/branding/appearance";
 import { applyBranding, broadcastAppearance } from "../../lib/branding/appearance-runtime";
 import { brandingLogoUrl, type OrgBrandingView } from "../../lib/branding/branding";
@@ -318,6 +319,36 @@ export default function AppearancePanel() {
               aria-checked={prefs.density === value}
               disabled={busy}
               onClick={() => preview({ ...prefs, density: value })}
+            >
+              <span>{label}</span>
+              <small>{hint}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="appearance-group" aria-labelledby="appearance-clarity-title">
+        <h3 id="appearance-clarity-title">Glass</h3>
+        <p>
+          The bar at the top and the tabs at the bottom float over the page. How much of the page
+          shows through is up to you — outdoors, or on an older tablet, solid is easier to read and
+          quicker to draw.
+        </p>
+        <div className="appearance-choice" role="radiogroup" aria-label="Glass">
+          {(
+            [
+              ["clear", "Clear", "More of the page shows through"],
+              ["regular", "Regular", "Default"],
+              ["solid", "Solid", "No blur — best in sunlight"],
+            ] as [ClarityPreference, string, string][]
+          ).map(([value, label, hint]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={prefs.clarity === value}
+              disabled={busy}
+              onClick={() => preview({ ...prefs, clarity: value })}
             >
               <span>{label}</span>
               <small>{hint}</small>

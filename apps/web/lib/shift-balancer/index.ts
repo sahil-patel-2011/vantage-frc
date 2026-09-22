@@ -270,3 +270,98 @@ export function summarizePlan(input: {
     loadByScout,
   };
 }
+
+/** A plan row ready to become a scout_assignments row for a real member. */
+export type PublishableAssignment = {
+  userId: string;
+  matchKey: string;
+  teamKey: string;
+  station: string;
+  startsAt: string | null;
+};
+
+export type PublishPreview = {
+  rows: PublishableAssignment[];
+  /** Shifts belonging to scouts with no account — they keep their tablet sheet. */
+  skippedNoMember: number;
+  /** Shifts the schedule never filled in, so there is no match or team to point at. */
+  skippedNoMatch: number;
+};
+
+/**
+ * Turn a generated plan into assignments for real people.
+ *
+ * The balancer's roster is free text, so a finished plan could only ever be a
+ * CSV and a printed sheet — the student it was planned for never saw it.
+ * Schedule, the pre-match briefing, Event Day command and the Home dashboard all
+ * already read scout_assignments; this is the step that was missing between
+ * them.
+ *
+ * Two kinds of row are dropped rather than guessed at:
+ *   - a scout with no linked member has nobody to assign to (a parent volunteer
+ *     still rotates in the plan and still gets a tablet sheet);
+ *   - a shift with no matchKey/teamKey was never overlaid on a real schedule, so
+ *     there is no match to point at. Inventing one would put a student in front
+ *     of a robot that is not playing.
+ *
+ * Both are counted and reported, so publishing says what it did not do.
+ */
+export function publishableAssignments(
+  assignments: ShiftBalancerAssignment[],
+  scouts: Array<{ id: string; userId?: string | null }>,
+): PublishPreview {
+  const memberByScout = new Map(
+    scouts.filter((scout) => scout.userId).map((scout) => [scout.id, scout.userId as string]),
+  );
+  const rows: PublishableAssignment[] = [];
+  const seen = new Set<string>();
+  let skippedNoMember = 0;
+  let skippedNoMatch = 0;
+
+  for (const assignment of assignments) {
+    const userId = memberByScout.get(assignment.scoutId);
+    if (!userId) {
+      skippedNoMember += 1;
+      continue;
+    }
+    if (!assignment.matchKey || !assignment.teamKey) {
+      skippedNoMatch += 1;
+      continue;
+    }
+    // scout_assignments is unique on (org, user, match, team); collapse repeats
+    // here so a publish cannot fight its own conflict clause.
+    const key = `${userId}|${assignment.matchKey}|${assignment.teamKey}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({
+      userId,
+      matchKey: assignment.matchKey,
+      teamKey: assignment.teamKey,
+      station: assignment.station,
+      startsAt: assignment.scheduledAt ?? null,
+    });
+  }
+
+  return { rows, skippedNoMember, skippedNoMatch };
+}
+
+/** One line a student reads after publishing. Never claims rows it skipped. */
+export function describePublish(preview: PublishPreview): string {
+  if (preview.rows.length === 0) {
+    if (preview.skippedNoMember > 0 && preview.skippedNoMatch === 0) {
+      return "Nothing to publish — link scouts to team members first.";
+    }
+    if (preview.skippedNoMatch > 0) {
+      return "Nothing to publish — build the plan from the event schedule first.";
+    }
+    return "Nothing to publish yet.";
+  }
+  const parts = [`${preview.rows.length} shift${preview.rows.length === 1 ? "" : "s"} published`];
+  if (preview.skippedNoMember > 0) {
+    parts.push(`${preview.skippedNoMember} for scouts without an account`);
+  }
+  if (preview.skippedNoMatch > 0) {
+    parts.push(`${preview.skippedNoMatch} with no match yet`);
+  }
+  return parts.length === 1 ? `${parts[0]}.` : `${parts[0]}; skipped ${parts.slice(1).join(" and ")}.`;
+}

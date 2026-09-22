@@ -49,7 +49,9 @@ describe("Files and Drive-team tags keep one primary", () => {
     expect(header).toMatch(/variant="secondary"/);
     expect(header).not.toMatch(/layout === "grid" \? "primary"/);
     expect(src).toMatch(/Upload files/);
-    expect(src).toMatch(/variant="primary" type="button"/);
+    // Tolerate the formatter putting the attributes on their own lines — the
+    // point is that Upload is a primary <Button type="button">, not how it wraps.
+    expect(src).toMatch(/variant="primary"\s+type="button"/);
   });
 
   it("live Tag robot is the only primary; next-actions stay secondary", () => {

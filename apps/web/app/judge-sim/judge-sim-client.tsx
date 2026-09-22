@@ -67,9 +67,7 @@ function JudgeSimRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related judge-sim-related" aria-label="Related business tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -84,18 +82,14 @@ function JudgeSimNextActionsPanel({ actions }: { actions: JudgeSimNextAction[] }
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -362,7 +356,7 @@ export default function JudgeSimClient() {
           </>
         }
         title="Judge-Pitch Simulator"
-        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Community Impact, Impact Essay, and Awards."
+        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it."
       >
         <div className="judge-sim-header-actions">
           {view.seasons.length > 0 ? (

@@ -111,7 +111,10 @@ export default function CadDocumentPicker({
     return onshapePickerUrl(selected.id, selected.defaultWorkspaceId, elementId);
   }
 
-  async function useDocument() {
+  // Not `useDocument`. It binds the picked Onshape document to the team; the
+  // `use` prefix is reserved for hooks, and naming a plain async handler that
+  // way makes every hook rule read it as a hook called from a click handler.
+  async function bindDocument() {
     setBusy(true);
     setMessage("");
     setMessageOk(false);
@@ -199,7 +202,7 @@ export default function CadDocumentPicker({
       </label>
 
       <div className="cad-document-picker-actions">
-        <Button variant="primary" type="button" disabled={busy || !connected} onClick={() => void useDocument()}>
+        <Button variant="primary" type="button" disabled={busy || !connected} onClick={() => void bindDocument()}>
           {busy ? "Using…" : CAD_DOCUMENT_BIND}
         </Button>
         {bound ? (

@@ -16,12 +16,8 @@ export function LearnResources() {
         description={LEARN_PAGE_DESCRIPTION}
       >
         <nav className="product-hub-related" aria-label="Related build tools">
-          <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", null)}>
-            Learn CAD
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/dev-setup", null)}>
-            Programming setup
-          </Button>
+          <a href={withOrgHref("/cad-learn", null)}>Learn CAD</a>
+          <a href={withOrgHref("/dev-setup", null)}>Programming setup</a>
         </nav>
       </PageHeader>
 

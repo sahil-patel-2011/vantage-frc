@@ -3,6 +3,8 @@
  * Legacy routes redirect here (see apps/web/next.config.ts).
  */
 
+import { MEDIA_ENABLED, isMediaTool } from "../media-availability";
+
 export type HubTabDef = {
   id: string;
   label: string;
@@ -97,7 +99,6 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "scout-assisted-count", label: "Assisted count", legacyHref: "/scout-assisted-count", inStrip: false },
         { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate", inStrip: false },
         { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
-        { id: "scouting-schema-ab", label: "Schema A/B", legacyHref: "/scouting-schema-ab", inStrip: false },
       ]),
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
@@ -476,6 +477,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
  * marketing page list. Four plus Home is the whole top level; All hangs the
  * other workbenches under each hub row. Nested tools stay inside a workbench.
  */
+// Preserve definitions for re-enabling later, but remove paused tools from every
+// hub tab strip, search catalog, and navigation consumer.
+if (!MEDIA_ENABLED) {
+  for (const hub of PRODUCT_HUBS) {
+    hub.tabs = hub.id === "media" ? [] : hub.tabs.filter((tab) => !isMediaTool(tab.id));
+  }
+}
 export const NAV_HUBS: ProductHubDef[] = PRODUCT_HUBS.filter((hub) => !hub.hidden);
 
 export function hubById(id: ProductHubDef["id"]): ProductHubDef {

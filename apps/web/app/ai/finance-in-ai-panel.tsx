@@ -174,9 +174,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
       <AiHubRelated orgId={orgId} active="finance" />
       <nav className="product-hub-related" aria-label="Related AI tools" style={{ marginBottom: 16 }}>
         {stripLinks.map((link) => (
-          <Button as="a" variant="secondary" key={link.id} href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
 

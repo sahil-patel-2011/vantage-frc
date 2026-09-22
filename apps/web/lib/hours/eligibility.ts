@@ -39,13 +39,26 @@ export type MemberEligibilityRow = MemberHoursTotal & {
 
 export const NO_THRESHOLD_LABEL = "No travel-hours threshold set for this team";
 
-/** "42 of 60 hours" · "42 hours logged (no threshold set)". */
+/**
+ * "42 of 60 hours" — or just "42 hours logged" when no threshold is set.
+ *
+ * This is a per-member row label, and whether the team has a threshold is a
+ * fact about the team, not about the member. It used to append the whole
+ * "no travel-hours threshold set for this team" sentence to every row, so a
+ * twelve-person board said it twelve times under a headline that had already
+ * said it once. On a phone that also set the board's minimum width above the
+ * screen and scrolled the entire kiosk sideways.
+ *
+ * The honesty requirement is unchanged and still tested: never imply a
+ * threshold that does not exist. `summary.headline` is where the absence is
+ * explained, once.
+ */
 export function formatHoursAgainstThreshold(
   totalHours: number,
   thresholdHours: number | null,
 ): string {
   const total = round2(totalHours);
-  if (thresholdHours == null) return `${total} hours logged · ${NO_THRESHOLD_LABEL.toLowerCase()}`;
+  if (thresholdHours == null) return `${total} hours logged`;
   return `${total} of ${round2(thresholdHours)} hours`;
 }
 

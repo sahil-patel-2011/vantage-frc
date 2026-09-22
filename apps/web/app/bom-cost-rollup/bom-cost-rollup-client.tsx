@@ -90,20 +90,14 @@ async function persistBomCostRollupSnapshot(
 function BomCostRollupRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "budget-reconciler", orgId)}>
-        Budget check
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "costs", orgId)}>
-        Season costs
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-        Inventory
-      </Button>
+      <a href={hubHref("/build", "budget-reconciler", orgId)}>Budget check</a>
+      <a href={hubHref("/business", "costs", orgId)}>Season costs</a>
+      <a href={withOrgHref("/inventory", orgId)}>Inventory</a>
     </nav>
   );
 }
 
-function BomCostRollupNextActions({ orgId }: { orgId: string }) {
+function BomCostRollupNextActions() {
   const actions = [
     {
       id: "add",
@@ -112,37 +106,19 @@ function BomCostRollupNextActions({ orgId }: { orgId: string }) {
       href: "#bom-cost-add",
       primary: true,
     },
-    {
-      id: "check",
-      label: "Open Budget check",
-      detail: "Weight and power drift sit next to this parts total.",
-      href: hubHref("/build", "budget-reconciler", orgId),
-      primary: false,
-    },
-    {
-      id: "costs",
-      label: "Open Season costs",
-      detail: "Event fees and subscriptions are a separate spend log.",
-      href: hubHref("/business", "costs", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -373,7 +349,7 @@ export default function BomCostRollupClient() {
           {error}
         </p>
       ) : null}
-      <BomCostRollupNextActions orgId={view.orgId} />
+      <BomCostRollupNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} busy={busy} mutate={mutate} />
         <AddItemForm busy={busy} mutate={mutate} />

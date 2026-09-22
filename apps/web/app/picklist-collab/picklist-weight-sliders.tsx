@@ -93,8 +93,8 @@ export function PicklistWeightSliders({
       <header>
         <h2>Compared to this event</h2>
         <p className="app-muted">
-          Drag a slider to change how much that rating moves the list. Scout-only ratings stay off
-          until this team has real scout rows.
+          Drag a slider to change how much that rating moves the list. Scout-only ratings turn on
+          once your team has scouted a few matches.
         </p>
         <Button variant="ghost" size="sm" type="button" onClick={onReset}>
           Reset weights

@@ -274,6 +274,13 @@ export class ScoutingRepository {
 
     const entryId = randomUUID();
     const table = input.type === "match" ? "match_scout_entries" : "pit_scout_entries";
+    // The entry's team and match are foreign keys into the shared reference
+    // tables, which only the ingest worker fills. Offseason events have no
+    // schedule to sync, the first morning of any event has not synced one yet,
+    // and pit scouting has always taken a typed team number. Without this the
+    // entry saves on the device and dies here on a constraint violation, which
+    // is worse than refusing it: the scout believes it was recorded.
+    await this.ensureReferenceRows(input);
     if (input.type === "match") {
       await this.client.query(
         `INSERT INTO match_scout_entries
@@ -312,6 +319,68 @@ export class ScoutingRepository {
       validations = await this.refreshOfficialValidations(orgId, entryId, locked, schema);
     }
     return { clientId: input.clientId, entryId, duplicate: false, table, validations };
+  }
+
+  /**
+   * Make sure the team and match this entry points at exist in the reference
+   * tables, creating marked placeholders if they do not.
+   *
+   * Placeholders carry only the key facts a scout can be sure of. A later TBA
+   * sync upserts by key and overwrites them with the real thing, so this heals
+   * itself rather than leaving rows to reconcile. RLS allows a member to insert
+   * a placeholder and nothing else — no update, no delete, and only for a key
+   * that looks like a team or a match.
+   */
+  private async ensureReferenceRows(input: {
+    type: "match" | "pit";
+    eventKey: string;
+    matchKey?: string;
+    teamKey: string;
+  }): Promise<void> {
+    const teamNumber = Number(/^frc(\d+)/.exec(input.teamKey)?.[1] ?? NaN);
+    if (Number.isInteger(teamNumber) && teamNumber > 0) {
+      await this.tryPlaceholder(
+        `INSERT INTO teams_ref (team_key, team_number, name, placeholder)
+         VALUES ($1, $2, $3, true)
+         ON CONFLICT (team_key) DO NOTHING`,
+        [input.teamKey, teamNumber, `Team ${teamNumber}`],
+      );
+    }
+
+    if (input.type !== "match" || !input.matchKey) return;
+    const parsed = /_([a-z]+)(\d+)$/.exec(input.matchKey);
+    if (!parsed) return;
+    const [, compLevel = "", matchNumber = ""] = parsed;
+    if (!["qm", "qf", "sf", "f"].includes(compLevel)) return;
+    await this.tryPlaceholder(
+      `INSERT INTO matches_ref (
+         match_key, event_key, comp_level, set_number, match_number,
+         red_alliance, blue_alliance, placeholder
+       ) VALUES ($1, $2, $3, 1, $4, '{"teamKeys":[]}'::jsonb, '{"teamKeys":[]}'::jsonb, true)
+       ON CONFLICT (match_key) DO NOTHING`,
+      [input.matchKey, input.eventKey, compLevel, Number(matchNumber)],
+    );
+  }
+
+  /**
+   * Attempt a placeholder insert without letting it take the sync down with it.
+   *
+   * Under a savepoint for two reasons. A deploy can briefly run ahead of the
+   * migration that adds the `placeholder` column, and without this every
+   * scouting sync in the product would fail on a missing column — far worse
+   * than the gap this closes. And a failed statement aborts the surrounding
+   * transaction, so even an expected refusal would take the entry insert with
+   * it. On failure we are exactly where we were before: the entry insert
+   * proceeds and the foreign key decides.
+   */
+  private async tryPlaceholder(sql: string, params: unknown[]): Promise<void> {
+    await this.client.query("SAVEPOINT scout_ref");
+    try {
+      await this.client.query(sql, params);
+      await this.client.query("RELEASE SAVEPOINT scout_ref");
+    } catch {
+      await this.client.query("ROLLBACK TO SAVEPOINT scout_ref").catch(() => {});
+    }
   }
 
   private async refreshDisagreements(

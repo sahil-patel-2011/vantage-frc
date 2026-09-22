@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { withLocalPlaywrightHint } from "./onshape-setup-strings";
 import type { BuildRelatedId } from "../build/build-related";
 import type { CompetitionRelatedId } from "../strategy/competition-related";
 
@@ -144,7 +145,9 @@ export function cadNextActions(input: {
     actions.push({
       id: "onshape-connect",
       label: "Connect Onshape",
-      detail: "Ask a mentor to connect Onshape in the browser if you need the CAD agent.",
+      detail: withLocalPlaywrightHint(
+        "Ask a mentor to connect Onshape in the browser if you need the CAD agent.",
+      ),
       href: withOrgHref("/cad/setup", orgId),
     });
   }

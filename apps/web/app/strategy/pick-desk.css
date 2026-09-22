@@ -101,3 +101,56 @@
   border-radius: 3px;
   border: 1px solid var(--line);
 }
+
+/* Does this team's result hold up beside weak partners? The word carries the
+   meaning, so the colour is a second channel and not the only one. The chip is
+   absent — not grey — until the event has enough played matches to split. */
+.pick-independence{
+  display:inline-flex;align-items:center;
+  margin-top:4px;padding:2px 8px;
+  border-radius:999px;
+  border:1px solid currentColor;
+  font-size:10px;font-weight:800;letter-spacing:.02em;
+  white-space:nowrap;
+}
+.pick-independence-carries{color:var(--tone-green, #15803d)}
+.pick-independence-needs-partners{color:var(--tone-amber, #b45309)}
+.pick-independence-steady{color:var(--muted)}
+
+/* Whether the average is telling the truth. The word carries the meaning, so
+   colour is a second channel and never the only one. */
+.pick-consistency {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.pick-consistency-metronome {
+  border-color: var(--tone-green);
+  color: var(--tone-green);
+}
+
+.pick-consistency-steady {
+  border-color: var(--tone-teal);
+  color: var(--tone-teal);
+}
+
+.pick-consistency-streaky {
+  border-color: var(--tone-amber);
+  color: var(--tone-amber);
+}
+
+/* Not styled as an error: a boom-or-bust robot is exactly what you want for a
+   longshot third pick. It is a fact about the team, not a fault. */
+.pick-consistency-boom-or-bust {
+  border-color: var(--muted);
+  color: var(--muted);
+}

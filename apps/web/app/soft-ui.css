@@ -31,7 +31,7 @@ body.has-app-shell .app-topbar{display:none}
   padding:0 16px;padding-top:env(safe-area-inset-top);
   background:color-mix(in srgb,var(--bg) 78%,transparent);
   border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);
-  backdrop-filter:saturate(1.35) blur(14px);-webkit-backdrop-filter:saturate(1.35) blur(14px);
+  backdrop-filter:saturate(1.35) blur(14px);
 }
 .soft-topbar-lead{display:flex;align-items:center;gap:4px;min-width:0;flex:1}
 .soft-topbar-lead.has-back{gap:0}
@@ -56,7 +56,7 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-burger i{
   display:block;height:2px;border-radius:2px;background:currentColor;
-  transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .2s ease,width .28s ease;
+  transition:transform .28s var(--ease-settle),opacity .2s ease,width .28s ease;
 }
 .soft-burger i:nth-child(2){width:14px}
 .soft-menu-btn.is-open .soft-burger i:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -122,14 +122,14 @@ body.has-app-shell .app-topbar{display:none}
      search box sat between the avatar and the page. Hidden visibility takes the
      panel out of the sequence, delayed so the slide-out still animates. */
   visibility:hidden;
-  transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s linear .32s;
+  transition:transform .32s var(--ease-settle),visibility 0s linear .32s;
   box-shadow:none;will-change:transform;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
 }
 .soft-drawer.open{
   transform:translateX(0);box-shadow:24px 0 48px rgba(15,20,28,.14);
-  visibility:visible;transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s;
+  visibility:visible;transition:transform .32s var(--ease-settle),visibility 0s;
 }
 .soft-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .soft-drawer-brand{display:flex;align-items:center;gap:10px}
@@ -167,6 +167,28 @@ body.has-app-shell .app-topbar{display:none}
 .soft-profile-actions button:disabled{opacity:.65;cursor:wait}
 .soft-profile-compact{padding:2px;margin-bottom:10px}
 .soft-profile-compact .soft-profile-link{padding:8px 10px}
+/* Two settings doors at the bottom of the drawer: yours, and the team's.
+   Same inset as the workspace chip so the drawer keeps one left edge. */
+.soft-drawer-settings{
+  display:grid;gap:6px;margin:12px 8px 0;padding-top:12px;border-top:1px solid var(--line);
+}
+.soft-drawer-settings a{
+  display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;
+  padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--bg);color:var(--ink);text-decoration:none;
+  transition:border-color var(--dur-tint) var(--ease-out),transform var(--dur-press) var(--ease-spring),
+    background-color var(--dur-tint) var(--ease-out);
+}
+.soft-drawer-settings a:hover{
+  border-color:color-mix(in srgb,var(--accent) 35%,var(--line));
+  background:color-mix(in srgb,var(--accent) 5%,var(--bg));
+}
+.soft-drawer-settings a:active{transform:scale(.985)}
+.soft-drawer-settings svg{width:16px;height:16px;color:var(--accent)}
+.soft-drawer-settings span{display:grid;gap:1px}
+.soft-drawer-settings strong{font:600 13px var(--font-source-sans),ui-sans-serif}
+.soft-drawer-settings small{color:var(--muted);font:500 11.5px/1.35 var(--font-source-sans),ui-sans-serif}
+
 .soft-drawer-foot{
   display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:auto;padding:14px 8px 4px;
   border-top:1px solid var(--line);
@@ -320,7 +342,7 @@ body.has-app-shell .app-topbar{display:none}
 .soft-nav-group{margin:0}
 .soft-nav-caret{
   display:grid;place-items:center;width:18px;height:18px;color:var(--muted);
-  transform:rotate(0deg);transition:transform .22s cubic-bezier(.22,1,.36,1);
+  transform:rotate(0deg);transition:transform .22s var(--ease-settle);
 }
 .soft-nav-caret svg{width:14px;height:14px}
 .soft-nav-caret.open{transform:rotate(90deg)}
@@ -371,16 +393,25 @@ body.soft-nav-panel-open .soft-island{
    banner would otherwise sit on top of it. */
 .soft-island{
   position:fixed;z-index:95;left:50%;bottom:calc(12px + var(--safe-bottom));transform:translateX(-50%);
-  display:flex;align-items:stretch;gap:2px;width:min(420px,calc(100vw - 28px));
-  padding:6px;border-radius:28px;background:var(--island);
+  /* Slightly smaller and a touch more translucent than it was: it floats over
+     the page, so it should read as glass rather than a second toolbar. The
+     blur below is what keeps text legible at this opacity. */
+  display:flex;align-items:stretch;gap:2px;width:min(384px,calc(100vw - 32px));
+  padding:5px;border-radius:26px;background:var(--island);
   border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
   box-shadow:var(--shadow-pop);
-  backdrop-filter:saturate(1.8) blur(22px);-webkit-backdrop-filter:saturate(1.8) blur(22px);
+  backdrop-filter:saturate(1.8) blur(22px);
   touch-action:manipulation;
 }
+.soft-island-edit{
+  flex:0 0 34px;width:34px;align-self:center;min-height:44px;padding:0;border:0;border-radius:16px;
+  background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;
+}
+.soft-island-edit svg{width:16px;height:16px}
+.soft-island-edit:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,transparent)}
 .soft-island a,.soft-island-more{
   position:relative;flex:1 1 0;display:grid;justify-items:center;gap:3px;
-  min-width:0;min-height:52px;padding:8px 4px;border-radius:var(--radius-lg);
+  min-width:0;min-height:48px;padding:7px 4px;border-radius:var(--radius-lg);
   color:var(--muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
   transition:background .18s ease,color .18s ease,transform .18s ease;
   border:0;background:transparent;cursor:pointer;place-content:center;
@@ -407,7 +438,7 @@ body.soft-nav-panel-open .soft-island{
   padding:10px 12px calc(14px + env(safe-area-inset-bottom,0px));border-radius:var(--radius-lg);background:var(--surface);
   border:1px solid var(--line);box-shadow:0 18px 48px rgba(15,20,28,.22);
   opacity:0;pointer-events:none;
-  transition:opacity .22s ease,transform .28s cubic-bezier(.22,1,.36,1);
+  transition:opacity .22s ease,transform .28s var(--ease-settle);
 }
 .soft-more-sheet.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
 .soft-more-handle{width:36px;height:4px;margin:2px auto 10px;border-radius:var(--radius-pill);background:var(--line)}
@@ -873,7 +904,20 @@ body.has-app-shell .dash-widget:hover{
 body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .dash-widget.is-empty .dash-widget-title{gap:0}
 .dash-widget-msg{margin:0;font-size:13px}
-.dash-widget-link{margin-top:auto;color:var(--tone-ink);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+/* Every widget's footer link goes through this class, and it was rendering as
+   a 17px-tall target — measured on a 375px phone. That is under half the 44px
+   the rest of the product uses, on the screen most likely to be tapped with
+   cold or gloved hands in a pit. The text stays the same size; the box around
+   it grows to the small-control height so there is something to hit. */
+.dash-widget-link{
+  margin-top:auto;color:var(--tone-ink);
+  font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
+  display:inline-flex;align-items:center;min-height:var(--control-h-sm);
+  /* Negative inline margin keeps the text flush with the card's other content
+     while the padding extends the tap area past it. */
+  padding-inline:6px;margin-inline:-6px;
+  align-self:flex-start;
+}
 .dash-widget-link:hover{text-decoration:underline}
 .dash-empty{display:grid;gap:6px;flex:1;align-content:center;min-height:96px;padding:4px 2px}
 .dash-empty strong{font:700 14px/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em}
@@ -885,6 +929,12 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
    hand-rolled markup, without doubling the widget's own card border/shadow. */
 .soft-empty-compact{display:grid;gap:6px;flex:1;align-content:center;min-height:96px;padding:4px 2px;text-align:left;background:transparent;border:0}
 .soft-empty-compact h2{margin:0;font:700 var(--title-4)/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em;color:var(--ink)}
+/* An empty widget's own heading must not vanish. `.dash-widget h2` clips to one
+   line with overflow:hidden — right for the widget's title — but it also caught
+   this heading, and overflow:hidden lets a grid item shrink to zero height. So
+   a short card kept its title and description and silently lost the sentence
+   saying why it was empty ("No venue weather"). Wrap it instead. */
+.dash-widget .soft-empty-compact h2{overflow:visible;white-space:normal;text-overflow:clip}
 .soft-empty-compact p{margin:0;color:var(--muted);font-size:13px;line-height:1.4;max-width:44ch}
 .soft-empty-compact .app-badge{margin-bottom:2px}
 .dash-empty-board{
@@ -946,7 +996,7 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
   padding:10px 12px;border-radius:var(--radius-lg);background:var(--island);
   border:1px solid color-mix(in srgb,var(--line) 70%,transparent);
   box-shadow:var(--shadow-pop);
-  backdrop-filter:saturate(1.4) blur(18px);-webkit-backdrop-filter:saturate(1.4) blur(18px);
+  backdrop-filter:saturate(1.4) blur(18px);
   animation:dash-dock-in .28s ease;
 }
 @keyframes dash-dock-in{
@@ -1004,7 +1054,7 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 }
 
 /* First-login onboarding + invite / join */
-.onboarding-page{min-height:100vh;display:grid;place-items:center;padding:28px 16px;background:
+.onboarding-page{min-height:100dvh;display:grid;place-items:center;padding:28px 16px;background:
   radial-gradient(120% 80% at 10% 0%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 50%),
   radial-gradient(90% 70% at 90% 10%,color-mix(in srgb,var(--accent) 6%,transparent),transparent 45%),
   var(--bg);color:var(--ink);font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
@@ -1065,7 +1115,15 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .soft-admin-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px}
 /* Same card recipe as .app-card — radius, hairline and resting shadow all come
    from the tokens so both classes land on one surface in light and dark. */
-.soft-panel{display:grid;gap:12px;padding:18px;border-radius:var(--radius);background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);box-shadow:var(--shadow)}
+/* align-content:start is load-bearing. A panel is usually a grid item next to
+   another panel, and the taller one sets the row height — that part is wanted,
+   it keeps two cards the same height. But a grid container with auto rows and
+   the default `normal` alignment hands its spare height to the rows, so the
+   panel's own contents spread out to fill it. On the scouting page the form
+   panel sits beside a tall leaderboard and its 13 rows stretched from ~40px to
+   over 190px each: a heading, then 150px of nothing, then the next field.
+   Cards match heights; what is inside them stacks from the top. */
+.soft-panel{display:grid;align-content:start;gap:12px;padding:18px;border-radius:var(--radius);background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);box-shadow:var(--shadow)}
 .soft-panel label{display:grid;gap:6px;font:600 13px var(--font-source-sans),ui-sans-serif}
 .soft-panel input,.soft-admin-search input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font:500 14px var(--font-source-sans),ui-sans-serif;background:var(--surface);color:inherit}
 .soft-panel small{color:var(--muted);font-weight:500;font-size:12px}
@@ -1151,7 +1209,7 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 
 /* Sign-in / onboarding / invite share this leftover chrome. Tokens only so
    dark mode and team accent match the rest of the product. */
-.signin-page{min-height:100vh;display:grid;place-items:center;padding:28px 16px;background:var(--bg);color:var(--ink);font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
+.signin-page{min-height:100dvh;display:grid;place-items:center;padding:28px 16px;background:var(--bg);color:var(--ink);font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
 .signin-card{width:min(100%,460px);padding:32px 28px 24px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-pop)}
 .signin-brand{display:flex;justify-content:center;margin-bottom:18px}
 .signin-progress{display:grid;grid-template-columns:repeat(3,1fr);max-width:320px;margin:0 auto 20px;padding:0;list-style:none}.signin-progress li{position:relative;display:grid;justify-items:center;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.signin-progress li+li:before{content:"";position:absolute;right:calc(50% + 15px);top:13px;left:calc(-50% + 15px);height:1px;background:var(--line)}.signin-progress li.active{color:var(--accent)}.signin-progress li.active+li.active:before{background:var(--accent)}.signin-progress b{z-index:1;display:grid;place-items:center;width:27px;height:27px;border-radius:var(--radius-pill);background:var(--surface-2);font-size:11px}.signin-progress li.active b{color:var(--accent-ink);background:var(--accent)}
@@ -1811,11 +1869,11 @@ body.has-app-shell{
 .soft-drawer-brand strong{font-size:16px}
 .soft-nav-group a:not(.soft-drawer-hub),.soft-nav-group span.planned{min-height:40px;padding:6px 10px;font-size:13px}
 .soft-island{
-  gap:2px;padding:6px;max-width:calc(100vw - 24px);
+  gap:2px;padding:5px;max-width:calc(100vw - 32px);
   box-shadow:var(--shadow-pop);
 }
 .soft-island a,.soft-island-more{
-  display:grid;justify-items:center;gap:2px;min-width:0;min-height:52px;padding:8px 4px;border-radius:var(--radius-lg);
+  display:grid;justify-items:center;gap:2px;min-width:0;min-height:48px;padding:7px 4px;border-radius:var(--radius-lg);
   color:var(--muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
   background:transparent;border:0;cursor:pointer;place-content:center;
 }
@@ -1886,7 +1944,7 @@ body.has-app-shell .empty-hint{
   min-height:120px;margin:0;color:var(--muted);font-size:13px;line-height:1.45;
 }
 body.has-app-shell .app-empty h2,
-body.has-app-shell .soft-empty h2{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
+body.has-app-shell .soft-empty h2,.soft-empty > h1{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
 body.has-app-shell .app-empty p,
 body.has-app-shell .soft-empty p,
 body.has-app-shell .notif-empty p{margin:0;max-width:42ch;color:var(--muted);font-size:13px;line-height:1.45}
@@ -2229,6 +2287,17 @@ body.has-app-shell .team-admin-page .team-admin-links a{
 .soft-form-row{display:grid;gap:4px;min-width:0}
 .soft-form-row.wide{grid-column:1/-1}
 .soft-form-grid{display:grid;gap:10px}
+/* Cards that lay themselves out as a grid get a track that can shrink.
+   An .app-card set to display:grid with no columns has one implicit `auto`
+   track, and an auto track grows to its widest child's minimum width: one
+   email address in a member list (it has nowhere to break) or a FormGrid whose
+   auto-fit then counts two 267px columns, and the whole page scrolled sideways
+   on a phone — /team/security, /wiring-diagnoser. minmax(0, 1fr) lets it
+   shrink, and overflow-wrap: anywhere lets an unbreakable string wrap instead
+   of setting the width. :where() keeps this at zero specificity, so a card
+   that sets its own columns still wins; on a card that is not a grid,
+   grid-template-columns does nothing. */
+:where(.app-card){grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere}
 .soft-tab-bar{
   display:flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 0 var(--space-4);
   background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius);
@@ -2309,7 +2378,12 @@ body.has-app-shell .strategy-demo-optin{
 .scout-sync-pill{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:var(--radius-pill);border:1px solid var(--line);font:700 11px var(--font-source-sans),ui-sans-serif}
 .scout-sync-pill.online{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
 .scout-sync-pill.offline{color:var(--warning);background:var(--warning-soft);border-color:color-mix(in srgb,var(--warning) 35%,var(--line))}
-.scout-event-strip{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+/* Event, connection and queue on one line. The event sits first because it is
+   the thing that changes least and anchors the other two; Sync is pushed to
+   the far end so the thumb finds it in the same place on every screen. */
+.scout-status-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+.scout-status-bar .app-button{margin-left:auto}
+.scout-status-event{font:700 13px/1.2 var(--font-source-sans),ui-sans-serif;color:var(--ink)}
 .scout-workbench{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px}
 .scout-form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
 .scout-form-heading h2{margin:0 0 4px}
@@ -2317,6 +2391,15 @@ body.has-app-shell .strategy-demo-optin{
   display:grid;gap:4px;margin:0 0 14px;padding:14px 16px;
   border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));
   border-radius:var(--radius-sm);background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface));
+}
+/* On the live form this is two words and a name — "Scouting as Sahil Patel".
+   Stacked and padded like a card it took 68px directly above the first field
+   on a phone, which is the one place in the app where vertical space is
+   actually scarce. One line says the same thing. The form builder's preview
+   keeps the stacked version: it also carries the explanatory line, and it is
+   read on a laptop where the height is free. */
+.scout-identity-lock{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;padding:8px 12px;
 }
 .scout-identity-lock .eyebrow,.sfb-identity-lock .eyebrow{
   font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
@@ -2817,17 +2900,7 @@ html[data-motion="reduced"] *::after{
 /* Ask AI — the one AI control in the chrome. Icon-only on phones, labelled on
    a laptop; sits before Search so the two helpers read as a pair. */
 body.has-app-shell .soft-ask-ai{position:relative}
-body.has-app-shell .soft-ask-ai-label{display:none}
-@media (min-width:900px){
-  body.has-app-shell .soft-ask-ai{
-    display:flex;align-items:center;gap:6px;width:auto;height:40px;padding:0 10px;
-    border-radius:var(--radius-xs);background:var(--surface);border:1px solid var(--line);
-    color:var(--ink);text-decoration:none;
-  }
-  body.has-app-shell .soft-ask-ai-label{display:inline;font:600 13px var(--font-source-sans),ui-sans-serif;color:var(--muted)}
-  body.has-app-shell .soft-ask-ai:hover{border-color:var(--accent)}
-  body.has-app-shell .soft-ask-ai:hover .soft-ask-ai-label{color:var(--ink)}
-}
+body.has-app-shell .soft-ask-ai:hover{color:var(--accent);border-color:var(--accent)}
 
 /* Felt, not flashy: short fade + a few pixels of rise. Reduce = none. */
 :root{
@@ -2836,8 +2909,8 @@ body.has-app-shell .soft-ask-ai-label{display:none}
   --motion-slow:360ms;
   --motion-rise:6px;
   --motion-press:0.985;
-  --motion-ease:cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-ease-io:cubic-bezier(0.45, 0, 0.55, 1);
+  --motion-ease:var(--ease-settle);
+  --motion-ease-io:var(--ease-in-out);
 }
 @keyframes motion-page-in{
   from{opacity:0;transform:translateY(var(--motion-rise))}
@@ -2885,4 +2958,488 @@ body.has-app-shell .soft-ask-ai-label{display:none}
     transition:none !important;
     transform:none !important;
   }
+}
+
+/* Wordmark in the top bar removed — the sidebar rail already carries the
+   brand, so the topbar no longer needs a redundant home link. */
+.soft-brand-link{display:none!important}
+
+/* Competition snapshot: auto / teleop / endgame as one bar.
+   Each segment also appears in the legend with its own number, so colour is a
+   second channel and never the only one. Tones come from the canonical set so
+   dark mode follows without a second palette. */
+.dash-split{display:grid;gap:7px;margin-top:10px}
+.dash-split-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.dash-split-head span{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.dash-split-head strong{font-size:20px;line-height:1.1;color:var(--accent)}
+.dash-split-bar{
+  display:flex;overflow:hidden;width:100%;height:8px;
+  border-radius:999px;background:color-mix(in srgb,var(--line) 55%,transparent);
+}
+.dash-split-seg{
+  display:block;height:100%;min-width:2px;
+  animation:dash-split-grow var(--motion-slow) var(--motion-ease) both;
+  transform-origin:left center;
+}
+.dash-split-auto{background:var(--tone-teal)}
+.dash-split-teleop{background:var(--accent)}
+.dash-split-endgame{background:var(--tone-amber)}
+.dash-split-legend{
+  display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0;list-style:none;
+  color:var(--muted);font-size:11px;
+}
+.dash-split-legend li{display:inline-flex;align-items:center;gap:5px}
+.dash-split-legend b{color:var(--ink);font-weight:700}
+.dash-split-dot{width:7px;height:7px;border-radius:50%;flex:none}
+@keyframes dash-split-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion: reduce){.dash-split-seg{animation:none !important}}
+
+/* Home hero.
+   This used to set the team number at clamp(38px,6vw,56px), on the reasoning
+   that it is the fact you open this page for at an event. Measured on the
+   rendered page, that made "6925" the largest text on screen at 38px — nearly
+   twice "Nothing you have to do right now" (20px) and "No upcoming match"
+   (20px) — while the same number already sits in the top bar as "Team 6925".
+
+   Your own team number is the one fact on this screen you cannot forget, and
+   spending the page's loudest position on it pushes the things that change
+   below the fold. It still anchors the page; it no longer outshouts the line
+   that tells you what to do. */
+.dash-greeting{
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
+  color:var(--muted);font-size:13px;font-weight:600;
+}
+.dash-hero-team{
+  margin:2px 0 0 !important;
+  font-size:clamp(26px,3.4vw,34px) !important;
+  font-weight:800;letter-spacing:-.04em;line-height:1 !important;
+}
+.dash-hero-org{margin:4px 0 0;color:var(--muted);font-size:13px}
+/* The event, as one tappable row. Only rendered when an event is really set. */
+.dash-hero-event{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:10px;padding:9px 12px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--ink);text-decoration:none;
+  font-size:13px;max-width:100%;
+  transition:border-color .15s ease,background .15s ease;
+}
+.dash-hero-event:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--accent-soft)}
+.dash-hero-event span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-hero-event svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.dash-hero-event svg:last-child{margin-left:auto}
+
+/* Says what the drawer is, and what it is not: the few places you go often.
+   Everything else lives behind the search box above it. */
+.soft-drawer-hint{
+  margin:0 2px 10px;color:var(--muted);font-size:12px;
+}
+
+/* Platform admin: four tabs for four jobs, then only that group's pages.
+   The row used to hold all fourteen destinations at once. */
+.admin-nav{display:grid;gap:8px;margin:0 0 14px}
+.admin-tabs{display:flex;flex-wrap:wrap;gap:18px;border-bottom:1px solid var(--line)}
+.admin-tabs a{
+  position:relative;padding:8px 2px 10px;
+  color:var(--muted);text-decoration:none;
+  font:700 14px var(--font-source-sans),ui-sans-serif;
+  transition:color .15s ease;
+}
+.admin-tabs a:hover{color:var(--ink)}
+.admin-tabs a.is-open{color:var(--accent)}
+/* The underline is the second channel; the colour is not carrying it alone. */
+.admin-tabs a.is-open::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+  border-radius:2px;background:var(--accent);
+}
+.admin-nav .admin-subnav{margin:0 !important}
+
+/* Quick actions: bigger targets and a visible way in.
+   These were flat 12px tiles where the label was the smallest text on the card
+   and nothing said they were clickable. The detail leads now, the category sits
+   above it, and an arrow appears on hover so the affordance is not colour only. */
+.dash-actions a{
+  position:relative;
+  min-height:64px;
+  padding:14px 34px 14px 14px !important;
+  align-content:center;
+}
+.dash-actions a strong{font-size:15px;line-height:1.25;letter-spacing:-.01em}
+.dash-actions a::after{
+  content:"";
+  position:absolute;right:14px;top:50%;
+  width:7px;height:7px;
+  border-right:2px solid currentColor;border-top:2px solid currentColor;
+  transform:translateY(-50%) rotate(45deg);
+  color:var(--muted);
+  opacity:.5;
+  transition:opacity .15s ease,right .15s ease,color .15s ease;
+}
+.dash-actions a:hover::after{opacity:1;right:11px;color:var(--accent)}
+@media (prefers-reduced-motion: reduce){
+  .dash-actions a::after,.dash-actions a:hover::after{transition:none;right:14px}
+}
+
+/* Account: who you are signed in as, said once at the top. The page used to
+   open straight into settings rows, so the first thing it answered was "which
+   toggle" rather than "whose account is this" — which matters on a shop laptop
+   several people share. */
+.account-identity{
+  display:flex;align-items:center;gap:14px;
+  margin:0 0 16px;padding:14px 16px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);
+}
+.account-identity-avatar{
+  display:grid;place-items:center;flex:none;
+  width:52px;height:52px;border-radius:var(--radius-pill);
+  background:var(--accent);color:var(--accent-ink);
+  font:700 22px var(--font-source-sans),ui-sans-serif;
+}
+.account-identity strong{display:block;font-size:18px;letter-spacing:-.02em}
+.account-identity span{display:block;color:var(--muted);font-size:13px}
+.account-identity-role{margin:3px 0 0;color:var(--muted);font-size:12px}
+.account-identity-role b{color:var(--ink);text-transform:capitalize}
+
+/* Guided tour. Shown once, leaves on Escape, a Skip, or a click outside.
+   The spotlight is a ring plus a huge outward shadow, which dims the rest of
+   the page without a second overlay element to keep in sync. */
+.tour-root{position:fixed;inset:0;z-index:200;pointer-events:none}
+.tour-scrim{
+  position:fixed;inset:0;border:0;padding:0;
+  background:transparent;cursor:default;pointer-events:auto;
+}
+.tour-spotlight{
+  position:fixed;border-radius:14px;pointer-events:none;
+  border:2px solid var(--accent);
+  box-shadow:0 0 0 9999px rgba(8,14,24,.55);
+  transition:top .22s var(--motion-ease),left .22s var(--motion-ease),
+             width .22s var(--motion-ease),height .22s var(--motion-ease);
+}
+.tour-card{
+  position:fixed;width:min(320px,calc(100vw - 32px));
+  padding:16px;border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--ink);
+  border:1px solid var(--line);box-shadow:var(--shadow-pop);
+  pointer-events:auto;
+  animation:tour-card-in var(--motion) var(--motion-ease) both;
+}
+.tour-progress{
+  display:block;color:var(--accent);
+  font:800 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.09em;text-transform:uppercase;
+}
+.tour-card h2{margin:6px 0 4px;font-size:16px;letter-spacing:-.02em}
+.tour-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.tour-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.tour-move{display:flex;gap:6px}
+.tour-card button{
+  min-height:36px;padding:0 14px;border-radius:var(--radius-xs, 9px);
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font:700 13px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.tour-card .tour-skip{border-color:transparent;background:transparent;color:var(--muted)}
+.tour-card .tour-next{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+@keyframes tour-card-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .tour-card{animation:none !important}
+  .tour-spotlight{transition:none !important}
+}
+
+/* Adding an event The Blue Alliance does not carry — an offseason like GRITS.
+   Lives inside the existing Set-active-event modal rather than on a page of its
+   own: it is the same decision, reached at the moment the list comes up short. */
+.edc-event-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+/* A team-made event will never receive Blue Alliance results. This chip is the
+   only place in the product where that difference is visible. */
+.edc-event-own {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.edc-add-event {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.edc-add-event label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.edc-add-event input {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.edc-add-event input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.edc-add-event-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.edc-add-event-problems {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.edc-add-event-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* A phone in a venue is the common case for adding one of these, so the paired
+   fields stack rather than shrinking to nothing. */
+@media (max-width: 460px) {
+  .edc-add-event-row {
+    grid-template-columns: 1fr;
+  }
+
+  .edc-add-event-actions,
+  .edc-event-footer {
+    flex-direction: column-reverse;
+  }
+}
+
+/* Authenticator enrollment. Scanning is the path nearly everyone takes, so the
+   QR is the biggest thing on the card and the typed key folds away beneath it. */
+.mfa-qr {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin: 14px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+
+/* The barcode is drawn in black on white and must stay that way: inverting it
+   for dark mode makes it unreadable to every phone camera. The white plate is
+   deliberate, not an oversight. */
+.mfa-qr img {
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.mfa-qr p {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.mfa-manual {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.mfa-manual summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mfa-manual summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mfa-manual p {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
+/* Scouting a robot by typing its number. The only path at an offseason event,
+   and on the first morning of any event before the schedule lands. */
+.scout-by-hand {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.scout-by-hand > .app-muted {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scout-by-hand-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 10px;
+}
+
+.scout-by-hand-row label {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.scout-by-hand-row input,
+.scout-by-hand-row select {
+  /* Thumb-sized: this gets tapped standing up, in a crowd, on a phone. */
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.scout-by-hand-row [aria-invalid="true"] {
+  border-color: var(--tone-amber);
+}
+
+.scout-by-hand-problem {
+  margin: 0;
+  color: var(--tone-amber);
+  font-size: 13px;
+}
+
+.scout-by-hand-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.scout-by-hand-current {
+  margin: 0;
+  font-size: 12px;
+}
+
+.scout-by-hand-toggle {
+  margin: 8px 0 12px;
+}
+
+@media (max-width: 520px) {
+  .scout-by-hand-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scout-by-hand-row label:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The team name in the top bar is a button now — see TeamChip in
+   app-shell-topbar.tsx. It has to keep looking like the label it replaced, so
+   the only visible additions are the caret and what happens on hover. */
+.soft-topbar-team{
+  display:flex;align-items:center;gap:4px;min-width:0;max-width:100%;
+  margin:0;padding:2px 6px 2px 0;
+  background:transparent;border:0;border-radius:var(--radius-xs);
+  color:inherit;font:inherit;text-align:left;cursor:pointer;
+}
+.soft-topbar-team > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.soft-topbar-team svg{flex:none;width:14px;height:14px;opacity:.55;transform:rotate(90deg)}
+.soft-topbar-team:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.soft-topbar-team:hover svg{opacity:.9}
+.soft-topbar-team:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* `.soft-org-crumb` is `display:block`; the flex row above must win. */
+.soft-org-crumb.soft-topbar-team{display:flex;padding-left:0}
+
+/* Home's hero leads with the greeting; the team number is in the top bar and
+   is not repeated here (see dashboard-home-view.tsx). */
+.dash-hero-greeting{
+  margin:0 !important;
+  font-size:clamp(22px,2.6vw,28px) !important;
+  font-weight:800;letter-spacing:-.03em;line-height:1.1 !important;
+}
+/* Edit Home moved inside the More menu, so it is a row in a list now rather
+   than a pill on the page. Same control, quieter place. */
+.dash-home-more .dash-edit-trigger{
+  display:block;width:100%;min-height:36px;padding:7px 10px;
+  border:0;border-radius:var(--radius-xs);background:transparent;
+  color:var(--ink);font:600 13px/1.3 var(--font-source-sans),ui-sans-serif;
+  text-align:left;cursor:pointer;
+}
+.dash-home-more .dash-edit-trigger:hover{
+  background:var(--accent-soft);color:var(--accent);border:0;
+}
+
+/* The team chip in the top bar (TeamChip in app-shell-topbar.tsx) is pressed
+   often enough to deserve feedback. Tint and a couple of percent, using the
+   shared tokens so it matches everything else that answers a finger. */
+.soft-topbar-team{
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.soft-topbar-team:active{transform:scale(.97)}
+.soft-topbar-team svg{transition:opacity var(--dur-tint) var(--ease-out),transform var(--dur-move) var(--ease-out)}
+/* The caret turns toward the drawer it opens. */
+.soft-topbar-team:hover svg{transform:rotate(90deg) translateX(1px)}
+
+/* Home's "More" menu, and Edit Home inside it. */
+.dash-home-more>summary{
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out);
+}
+.dash-home-more[open]>div{
+  animation:dash-more-open var(--dur-press) var(--ease-settle) both;
+  transform-origin:top right;
+}
+@keyframes dash-more-open{
+  from{opacity:0;transform:translateY(-6px) scale(.985)}
+  to{opacity:1;transform:none}
+}
+.dash-home-more .dash-edit-trigger{
+  transition:background-color var(--dur-tint) var(--ease-out),color var(--dur-tint) var(--ease-out);
 }

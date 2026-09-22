@@ -80,9 +80,7 @@ function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related scout-coverage-live-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -97,18 +95,14 @@ function ScoutCoverageLiveNextActionsPanel({ actions }: { actions: ScoutCoverage
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -499,7 +493,18 @@ function CoverageGaps({
                   {cell.entryCount === 1 ? "y" : "ies"}
                 </small>
               </div>
-              <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`, }) }>
+              {/* Every gap's button said only "Nudge coordinator", so fifteen
+                  of them were indistinguishable to anyone not reading the row
+                  above — which, moving through a page by control, is everyone
+                  using a screen reader. The message each one sends already
+                  names the match and the team; now the button does too. */}
+              <Button
+                variant="secondary"
+                type="button"
+                aria-label={`Nudge the coordinator about ${cell.matchLabel}, Team ${cell.teamNumber}`}
+                disabled={busy}
+                onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`, }) }
+              >
                 Nudge coordinator
               </Button>
             </li>

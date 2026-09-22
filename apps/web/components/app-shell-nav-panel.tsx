@@ -112,6 +112,9 @@ export function AppShellNavPanel({
   signingOut: boolean;
   onSignOut: () => void;
 }) {
+  const activeMembershipRole = orgId
+    ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
+    : null;
   return (
     <>
       {navOpen ? (
@@ -127,6 +130,7 @@ export function AppShellNavPanel({
             <span className="mark">v</span>
             <div>
               <strong>Vantage</strong>
+              <small>Navigation</small>
             </div>
           </div>
           <button
@@ -335,6 +339,9 @@ export function AppShellNavPanel({
           </div>
         ) : (
           <nav className="soft-drawer-flat" aria-label="Hubs">
+            {/* Says what this list is and what it is not: the few places you go
+                often, never every screen. Everything else is behind search. */}
+            <p className="soft-drawer-hint">Only the main places you use most.</p>
             {visibleNavGroups.map((group) => {
               const item = group.items[0];
               if (!item || item.state === "planned") return null;
@@ -365,7 +372,11 @@ export function AppShellNavPanel({
                           }
                           onClick={closeNav}
                         >
-                          {entry.label}
+                          <span>{entry.label}</span>
+                          {/* Every row that takes you somewhere says so. These
+                              were bare words in a list, indistinguishable from
+                              the group headings above them. */}
+                          <Icon name="chevron" />
                         </a>
                       ))}
                     </div>
@@ -383,6 +394,29 @@ export function AppShellNavPanel({
             ) : null}
           </nav>
         )}
+        {/* Settings, split the way people ask for them: "my stuff" and "the
+            team's stuff". Both used to be somewhere inside the hub lists, which
+            meant hunting through Team for a sign-in preference. The team link
+            only appears for an owner or admin, because for everyone else it is a
+            door that opens onto an error. */}
+        <div className="soft-drawer-settings">
+          <a href="/account" onClick={closeNav}>
+            <Icon name="gear" />
+            <span>
+              <strong>Personal settings</strong>
+              <small>Your profile, sign-in and notifications</small>
+            </span>
+          </a>
+          {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
+            <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
+              <Icon name="users" />
+              <span>
+                <strong>Team settings</strong>
+                <small>Members, role profiles and team preferences</small>
+              </span>
+            </a>
+          ) : null}
+        </div>
         <footer className="soft-drawer-foot">
           <button type="button" onClick={openIslandEditor}>
             Customize island

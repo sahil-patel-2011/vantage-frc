@@ -60,61 +60,10 @@ async function persistKnowledgeDraftsSnapshot(orgHint: string, data: CaptureView
 function KnowledgeDraftsRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related playbook tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
-        Playbook
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/decisions", orgId)}>
-        Decisions
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/getting-started", orgId)}>
-        Getting started
-      </Button>
+      <a href={hubHref("/team", "knowledge", orgId)}>Playbook</a>
+      <a href={withOrgHref("/decisions", orgId)}>Decisions</a>
+      <a href={withOrgHref("/team/getting-started", orgId)}>Getting started</a>
     </nav>
-  );
-}
-
-function KnowledgeDraftsNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "playbook",
-      label: "Open Playbook",
-      detail: "Approved drafts land as pages the team can actually read.",
-      href: hubHref("/team", "knowledge", orgId),
-      primary: true,
-    },
-    {
-      id: "decisions",
-      label: "Open the decision log",
-      detail: "Accepted decisions are the first source this queue drafts from.",
-      href: withOrgHref("/decisions", orgId),
-    },
-    {
-      id: "setup",
-      label: "Open Getting started",
-      detail: "The team setup checklist tracks whether the Playbook has real writing yet.",
-      href: withOrgHref("/team/getting-started", orgId),
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -326,7 +275,6 @@ export default function KnowledgeDraftsClient() {
             </p>
           ) : null}
           <ReviewQueue view={view} busy={busy} mutate={mutate} />
-          {orgId ? <KnowledgeDraftsNextActions orgId={orgId} /> : null}
         </main>
       );
     default: {

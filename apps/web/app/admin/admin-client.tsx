@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { KitCard, KitStats } from "../../components/ui/kit";
 import {
   ADMIN_RELATED_INCLUDE,
   adminEmptyCopy,
@@ -57,13 +58,10 @@ function AdminNextActions({ kind }: { kind: AdminShellKind }) {
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -198,20 +196,22 @@ function AdminClientInner() {
         <AdminRelated active="teams" />
       </PageHeader>
 
-      <div className="cards" aria-label="Provisioning summary">
-        <article className="card">
-          <span>Organizations</span>
-          <strong>{adminOrgMetric(organizations.length, true)}</strong>
-        </article>
-        <article className="card">
-          <span>Membership</span>
-          <strong>Closed</strong>
-        </article>
-        <article className="card">
-          <span>Provisioning</span>
-          <strong>Admin only</strong>
-        </article>
-      </div>
+      {/* One card, three numbers, each in its own colour. People come back to
+          this page for the count and read the captions once, ever — so the
+          number is the large thing and the caption is the small one. */}
+      <KitCard aria-label="Provisioning summary">
+        <KitStats
+          items={[
+            {
+              value: adminOrgMetric(organizations.length, true),
+              label: "Teams provisioned",
+              tone: "blue",
+            },
+            { value: "Closed", label: "Membership", tone: "violet" },
+            { value: "Admin only", label: "Provisioning", tone: "green" },
+          ]}
+        />
+      </KitCard>
 
       {confirmation ? (
         <Panel className="admin-provision-confirmation" aria-label="Team created">

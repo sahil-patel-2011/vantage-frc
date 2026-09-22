@@ -8,6 +8,7 @@ import type {
   Ref,
 } from "react";
 import dynamic from "next/dynamic";
+import { orgNameAddsDetail } from "../../components/app-shell-model";
 import { prefersTapToPlace } from "../../lib/dashboard/tap-to-place";
 import {
   catalogEntry,
@@ -91,6 +92,7 @@ export function DashboardHomeView(props: {
   viewLayout: DashboardWidgetLayout[];
   displayLayout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
+  widgetsLoaded?: boolean;
   paletteEntries: PaletteRow[];
   addableEntries: PaletteRow[];
   homeStripItems: HomeStripItem[];
@@ -183,6 +185,7 @@ export function DashboardHomeView(props: {
     viewLayout,
     displayLayout,
     widgets,
+    widgetsLoaded,
     paletteEntries,
     addableEntries,
     homeStripItems,
@@ -259,43 +262,66 @@ export function DashboardHomeView(props: {
     onDragPointerCancel,
   } = props;
 
-  const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
+  const knownName = meLoaded ? (me.firstName || me.name || "").trim().split(/\s+/)[0] : "";
   const boardIsEmpty = layout.length === 0;
-  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets });
+  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded });
 
   return (
-    <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
+    <main className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
       <p className="dash-live-region" role="status" aria-live="polite">
         {announce}
       </p>
 
       <header className="dash-home-header">
         <div>
-          <span className="breadcrumbs">
-            {me.orgName ?? "Your team"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
-            {board && !board.isDefault ? (
-              <span className="dash-scope-pill" data-scope={scope}>
-                {scope === "org" ? "Team board" : "Personal board"}
-              </span>
-            ) : null}
-          </span>
-          <h1>
-            {greeting()}, {firstName}
+          {/* The team number is the thing you are looking at; the greeting is
+              a courtesy above it. It used to be the other way round — the
+              number sat in small grey breadcrumb text while "Good morning"
+              took the headline, which is the wrong way up for a page you open
+              at an event. */}
+          {/* The team number is not repeated here.
+              It is in the top bar on every page, including this one, and it
+              was the largest thing on the screen — "Team 6925" two rows above
+              a 56px "6925", telling you a fact you had just read and that
+              never changes while you are signed in. The greeting is what is
+              actually specific to opening the page, so it takes the line, and
+              the team name appears only when it says more than the number. */}
+          <h1 className="dash-hero-greeting">
+            {knownName ? `${greeting()}, ${knownName}` : greeting()}
           </h1>
+          {board && !board.isDefault ? (
+            <span className="dash-scope-pill" data-scope={scope}>
+              {scope === "org" ? "Team board" : "Personal board"}
+            </span>
+          ) : null}
+          {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? (
+            <p className="dash-hero-org">{me.orgName}</p>
+          ) : null}
           {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
             <p className="dash-board-current">
               <strong>{board.name}</strong>
             </p>
           ) : null}
-          <p>
-            {homeHeaderDetail({
+          {(() => {
+            const detail = homeHeaderDetail({
               meLoaded,
               orgId,
               tbaConfigured,
               setupRequired,
               eventName,
-            })}
-          </p>
+            });
+            return detail ? <p>{detail}</p> : null;
+          })()}
+          {/* The event you are at, as its own row you can tap — it is the
+              single most looked-up fact on this page during a competition.
+              Absent until an event is actually set; there is no placeholder. */}
+          {typeof eventName === "string" && eventName.trim() ? (
+            <a className="dash-hero-event" data-tour="event" href={withOrgHref("/command", orgId || null)}>
+              <Icon name="pin" />
+              <span>{eventName}</span>
+              <Icon name="chevron" />
+            </a>
+          ) : null}
         </div>
         <div className="dash-home-actions">
           {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
@@ -309,20 +335,26 @@ export function DashboardHomeView(props: {
               </b>
             </a>
           ) : null}
-          {!editing && !previewing ? (
-            <Button
-              variant="secondary"
-              className="dash-edit-trigger"
-              data-testid="dash-customize"
-              aria-label="Edit Home — rearrange, add, or remove widgets"
-              onClick={enterEditMode}
-            >
-              Edit Home
-            </Button>
-          ) : null}
           <details className="dash-home-more">
             <summary aria-label="More home tools">More</summary>
             <div>
+              {/* Edit Home lives in here rather than beside the greeting.
+                  Arranging widgets is something you do once and then leave
+                  alone for a season, and it was one of only two controls on
+                  the page — so the quietest screen in the app opened with a
+                  button most people will never press again. */}
+              {!editing && !previewing ? (
+                <button
+                  type="button"
+                  className="dash-edit-trigger"
+                  data-testid="dash-customize"
+                  data-tour="customise"
+                  aria-label="Edit Home — rearrange, add, or remove widgets"
+                  onClick={enterEditMode}
+                >
+                  Edit Home
+                </button>
+              ) : null}
               <CopyShareLink orgId={orgId || null} />
               {orgId && meLoaded && !editing ? (
                 <button
@@ -348,10 +380,15 @@ export function DashboardHomeView(props: {
       </header>
       {!editing ? (
         <section className="dash-now" aria-label="What to do now" data-testid="dash-now">
+          {/* This card used to carry an eyebrow reading "What to do now", a
+              heading, a sentence, and a button — four ways of saying one
+              thing, stacked. The heading says it, the button does it, and the
+              section keeps its aria-label so nothing is lost to a screen
+              reader. The sentence stays only when it adds a fact the other
+              two do not. */}
           <div>
-            <span>What to do now</span>
             <strong>{now.title}</strong>
-            <p>{now.detail}</p>
+            {now.detail ? <p>{now.detail}</p> : null}
           </div>
           <Button as="a" variant="primary" href={withOrgHref(now.href, orgId || null)}>
             {now.cta}
@@ -475,7 +512,7 @@ export function DashboardHomeView(props: {
         />
       ) : null}
 
-      {dashShell === "ready" || editing ? (
+      {orgId || editing ? (
         <section
           className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
             drag?.kind === "add" ? " receiving-widget" : ""
@@ -535,10 +572,8 @@ export function DashboardHomeView(props: {
             </button>
           ) : mounted && viewLayout.length === 0 && !editing ? (
             <div className="dash-quiet-home" role="status">
-              <strong>Nothing live yet</strong>
-              <span>
-                Home stays quiet until match, files, or chat data exists. Edit Home to pin cards anyway.
-              </span>
+              <strong>No widgets on this board</strong>
+              <span>Use Customize widgets to add the cards you want to see.</span>
             </div>
           ) : (
             <div

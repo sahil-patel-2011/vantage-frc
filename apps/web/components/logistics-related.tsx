@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "./ui";
+
 
 import {
   LOGISTICS_RELATED_INCLUDE,
@@ -30,9 +30,7 @@ export function LogisticsRelated({
       aria-label={ariaLabel}
     >
       {links.map((link) => (
-        <Button key={link.id} as="a" variant="secondary" href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

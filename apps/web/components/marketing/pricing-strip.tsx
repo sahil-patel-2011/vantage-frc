@@ -12,15 +12,31 @@ export function PricingStrip({ headingId }: { headingId: string }) {
   return (
     <section className="mk-price" aria-labelledby={headingId}>
       <div className="lux-content">
+        {/*
+          The software is free, and that is the first thing this section
+          should say.
+
+          It used to open with the word "Pricing" over a ladder of monthly
+          figures, which reads as "here are the tiers" — and a mentor skimming
+          it concluded the product costs money and that the cheap plan is the
+          crippled one. Neither is true: nothing is feature-gated, and the only
+          thing on this page that costs anything is AI run on our hardware
+          instead of yours, which a team can decline entirely.
+        */}
         <header className="lux-section-head" data-reveal>
-          <p className="lux-eyebrow">Pricing</p>
-          <h2 id={headingId}>Cost should never decide which teams get it.</h2>
+          <p className="lux-eyebrow">What it costs</p>
+          <h2 id={headingId}>The software is free. All of it.</h2>
           <p>
-            {pricingTeaserLede()} Hosted usage stops when the allowance is used — there is no silent overage on a booster
-            club&rsquo;s card.
+            Every feature, for every team, at no cost — scouting, strategy, the build, the budget, the shop. The only
+            thing below is hosted AI, and you can skip it: point Vantage at your own API key, or at a model running on
+            a machine in your shop, and pay nothing at all. {pricingTeaserLede()} Hosted usage stops when the
+            allowance is used — there is no silent overage on a booster club&rsquo;s card.
           </p>
         </header>
 
+        <p className="mk-price-kicker" data-reveal>
+          Hosted AI allowances — not feature tiers
+        </p>
         <ul className="mk-price-grid" data-reveal>
           {tiers.map((tier) => (
             <li key={tier.id}>
@@ -36,11 +52,12 @@ export function PricingStrip({ headingId }: { headingId: string }) {
 
         <div className="mk-price-foot" data-reveal>
           <p>
-            {pricingTeaserByokCopy()} Prices here are read live from the billing catalog; the{" "}
-            <a href="/pricing">pricing page</a> carries the full ladder, credit packs and the usage ledger.
+            {pricingTeaserByokCopy()} The figures here are read live from the billing catalog, so this section cannot
+            drift from what a team is actually charged; the <a href="/pricing">full detail</a> covers allowances,
+            credit packs and the usage ledger.
           </p>
           <a className="button secondary" href="/pricing">
-            See all plans
+            How the AI allowances work
           </a>
         </div>
       </div>

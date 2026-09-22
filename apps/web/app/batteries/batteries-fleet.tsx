@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState } from "../../components/ui";
+import { ActionMenu, Button, EmptyState } from "../../components/ui";
 import {
   batteryBreakInCue,
   batteryOverDischargeCue,
@@ -208,107 +208,124 @@ export function BatteriesFleetColumn({
                       {overDischargeCue ? <small className="app-muted">{overDischargeCue}</small> : null}
                       {ventChargeCue ? <small className="app-muted">{ventChargeCue}</small> : null}
                       <AssignRow pack={pack} orgId={orgId} busy={busy} run={run} />
-                      <div className="batt-actions">
-                        {pack.status === "active" ? (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              void run(
-                                { action: "log_event", orgId, batteryId: pack.id, kind: "charge" },
-                                `charge:${pack.id}`,
-                              )
-                            }
-                          >
-                            Mark charged
-                          </button>
-                        ) : null}
-                        {pack.status === "active" ? (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => onLogIr(pack.id)}
-                          >
-                            Log IR test
-                          </button>
-                        ) : null}
-                        {pack.status === "active" ? (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              void run(
+                      {/*
+                        One row of controls per pack, not six.
+
+                        Eighteen packs with six buttons each put 108 controls on
+                        this screen — Save, Mark charged, Log IR test,
+                        Quarantine, Retire, Delete, repeated down the page. A
+                        person looking for the one they wanted had to read the
+                        same six words eighteen times, and a screen reader read
+                        them all out.
+
+                        The daily action stays where a thumb can reach it, and
+                        the rest go behind the overflow the inventory rows have
+                        used for a while. Destructive ones take the menu's own
+                        second confirmation step, which is stricter than the
+                        `confirm()` they used to have.
+                      */}
+                      <ActionMenu
+                        tone="row"
+                        className="batt-actions"
+                        label={`${pack.label} actions`}
+                        maxSecondary={0}
+                        triggerTestId={`battery-more:${pack.id}`}
+                        actions={[
+                          ...(pack.status === "active"
+                            ? [
                                 {
-                                  action: "set_status",
-                                  orgId,
-                                  id: pack.id,
-                                  status: "quarantine",
-                                  note: "Quarantined from UI",
+                                  id: "charge",
+                                  label: "Mark charged",
+                                  intent: "primary" as const,
+                                  disabled: busy,
+                                  hint: "Logs a charge against this pack right now",
+                                  onClick: () =>
+                                    void run(
+                                      { action: "log_event", orgId, batteryId: pack.id, kind: "charge" },
+                                      `charge:${pack.id}`,
+                                    ),
                                 },
-                                `q:${pack.id}`,
-                              )
-                            }
-                          >
-                            Quarantine
-                          </button>
-                        ) : null}
-                        {pack.status === "active" ? (
-                          <button
-                            type="button"
-                            className="danger"
-                            disabled={busy}
-                            onClick={() => {
-                              if (confirm(`Retire ${pack.label}?`)) {
-                                void run(
-                                  {
-                                    action: "set_status",
-                                    orgId,
-                                    id: pack.id,
-                                    status: "retired",
-                                    note: "Retired from UI",
-                                  },
-                                  `retire:${pack.id}`,
-                                );
-                              }
-                            }}
-                          >
-                            Retire
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              void run(
                                 {
-                                  action: "set_status",
-                                  orgId,
-                                  id: pack.id,
-                                  status: "active",
-                                  note: "Returned to service",
+                                  id: "ir",
+                                  label: "Log IR test",
+                                  disabled: busy,
+                                  hint: "Internal resistance, in milliohms",
+                                  onClick: () => onLogIr(pack.id),
                                 },
-                                `act:${pack.id}`,
-                              )
-                            }
-                          >
-                            Activate
-                          </button>
-                        )}
-                        {canDelete ? (
-                          <button
-                            type="button"
-                            className="danger"
-                            disabled={busy}
-                            onClick={() => {
-                              if (confirm(`Delete ${pack.label}? This removes its log.`)) {
-                                void run({ action: "delete_pack", orgId, id: pack.id }, `del:${pack.id}`);
-                              }
-                            }}
-                          >
-                            Delete
-                          </button>
-                        ) : null}
-                      </div>
+                                {
+                                  id: "quarantine",
+                                  label: "Quarantine",
+                                  disabled: busy,
+                                  hint: "Out of service, kept in the fleet and its history",
+                                  onClick: () =>
+                                    void run(
+                                      {
+                                        action: "set_status",
+                                        orgId,
+                                        id: pack.id,
+                                        status: "quarantine",
+                                        note: "Quarantined from UI",
+                                      },
+                                      `q:${pack.id}`,
+                                    ),
+                                },
+                                {
+                                  id: "retire",
+                                  label: "Retire",
+                                  intent: "destructive" as const,
+                                  disabled: busy,
+                                  hint: "Done for good. The log stays.",
+                                  onClick: () =>
+                                    void run(
+                                      {
+                                        action: "set_status",
+                                        orgId,
+                                        id: pack.id,
+                                        status: "retired",
+                                        note: "Retired from UI",
+                                      },
+                                      `retire:${pack.id}`,
+                                    ),
+                                },
+                              ]
+                            : [
+                                {
+                                  id: "activate",
+                                  label: "Activate",
+                                  intent: "primary" as const,
+                                  disabled: busy,
+                                  hint: "Back into the rotation",
+                                  onClick: () =>
+                                    void run(
+                                      {
+                                        action: "set_status",
+                                        orgId,
+                                        id: pack.id,
+                                        status: "active",
+                                        note: "Returned to service",
+                                      },
+                                      `act:${pack.id}`,
+                                    ),
+                                },
+                              ]),
+                          ...(canDelete
+                            ? [
+                                {
+                                  id: "delete",
+                                  label: "Delete",
+                                  intent: "destructive" as const,
+                                  disabled: busy,
+                                  hint: "Removes the pack and its whole log",
+                                  onClick: () =>
+                                    void run(
+                                      { action: "delete_pack", orgId, id: pack.id },
+                                      `del:${pack.id}`,
+                                    ),
+                                },
+                              ]
+                            : []),
+                        ]}
+                      />
                     </li>
                   );
                 })}

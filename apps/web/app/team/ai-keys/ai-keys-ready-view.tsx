@@ -23,6 +23,7 @@ import { ShellPanel } from "./ai-keys-chrome";
 import {
   type LocalDraft,
   type MineDraft,
+  type FreeSwarm,
   type ModelOption,
   type ModelPolicyMode,
   type ModelPolicyPayload,
@@ -31,6 +32,7 @@ import {
   type RoutingPrefs,
 } from "./ai-keys-model";
 import { ProviderCard } from "./ai-keys-provider-card";
+import { WebResearchCard } from "./ai-keys-web-research";
 
 export type AiKeysReadyViewProps = {
   orgId: string | null;
@@ -60,6 +62,7 @@ export type AiKeysReadyViewProps = {
   busyRouting: boolean;
   saveRouting: () => void;
   modelOptions: ModelOption[];
+  freeSwarm: FreeSwarm | null;
   configuredProviders: Set<string>;
   modelPolicy: ModelPolicyPayload | null;
   policyDraft: { mode: ModelPolicyMode; allowedModelIds: string[] };
@@ -99,6 +102,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     busyRouting,
     saveRouting,
     modelOptions,
+    freeSwarm,
     configuredProviders,
     modelPolicy,
     policyDraft,
@@ -285,6 +289,10 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               );
             })}
           </section>
+
+          {/* Web research sits with the keys a team brings, straight after the
+              model providers: it is the other key that changes what the AI can do. */}
+          {orgId ? <WebResearchCard orgId={orgId} /> : null}
 
           <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
             <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>
@@ -489,6 +497,51 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                     })}
                   </fieldset>
                 )}
+
+                {/*
+                  The free swarm is a different question from the models
+                  above, and it sits inside the same form because the answer
+                  is saved by the same press. Above: which model to buy from a
+                  provider key. Here: which volunteer to borrow from.
+                */}
+                {freeSwarm?.enabled && freeSwarm.models.length ? (
+                  <fieldset className="ai-keys-pool ai-keys-free-swarm">
+                    <legend>Free AI, from volunteers</legend>
+                    <p className="app-muted">
+                      When this team has no provider key, Vantage can ask the AI Horde — a
+                      crowdsourced swarm of people lending their graphics cards. It costs
+                      nothing and needs no account. Two things to know: it is slower than a
+                      paid key, and the volunteer running the model can read what you send,
+                      so Vantage never sends private notes to it.
+                    </p>
+                    <label>
+                      <input
+                        type="radio"
+                        name="free-swarm-model"
+                        checked={!routingDraft.freeSwarmModel}
+                        onChange={() =>
+                          setRoutingDraft((prev) => ({ ...prev, freeSwarmModel: null }))
+                        }
+                      />{" "}
+                      <strong>Whichever is free</strong>
+                      <span className="app-muted"> · usually the fastest answer</span>
+                    </label>
+                    {freeSwarm.models.map((model) => (
+                      <label key={model.id}>
+                        <input
+                          type="radio"
+                          name="free-swarm-model"
+                          checked={routingDraft.freeSwarmModel === model.id}
+                          onChange={() =>
+                            setRoutingDraft((prev) => ({ ...prev, freeSwarmModel: model.id }))
+                          }
+                        />{" "}
+                        <strong>{model.label}</strong>
+                        <span className="app-muted"> · {model.note}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+                ) : null}
 
                 <div className="ai-keys-actions">
                   <button className="primary-action" type="submit" disabled={busyRouting}>

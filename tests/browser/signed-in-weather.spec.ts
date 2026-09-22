@@ -7,7 +7,7 @@ import { signInAs } from "./session";
  * is not a session. CI Playwright therefore skips this spec.
  */
 test.describe("signed-in venue weather", () => {
-  test("event-day Houston card shows a public forecast, not an invented temperature", async ({
+  test("the venue card shows a public forecast or says why not, never an invented temperature", async ({
     page,
     context,
   }) => {
@@ -35,8 +35,35 @@ test.describe("signed-in venue weather", () => {
     );
 
     await expect(liveTitle).toBeVisible();
-    await expect(page.getByText("Houston", { exact: true })).toBeVisible();
+
+    /*
+      The city is whatever event this team is actually at. Pinning "Houston"
+      pinned one seed: on any other database the card was correct, named a
+      different city, and the spec called it a failure — which taught nothing
+      except to distrust the spec.
+
+      The guarantee worth testing is the one the widget was written for: it
+      names the venue it got from the event, and it either shows a real
+      reading or says the forecast did not load. It never fills the gap with a
+      number.
+    */
+    const card = page.locator(".dash-widget", { has: liveTitle });
+    const city = (await card.locator("strong").first().innerText()).trim();
+    test.skip(city.length === 0, "needs a seeded events_ref city on event day");
+
+    // Four states the widget can honestly be in, and no fifth. Off event day
+    // it says so rather than fetching a forecast nobody asked for, which the
+    // spec used to treat as a failure on every day but one.
+    const onEventDay = !(await card.getByText("Forecast shows on event day.").count());
+    if (!onEventDay) {
+      await expect(card).toContainText("Forecast shows on event day.");
+      // The thing that must never happen, on any day: a number with nothing
+      // behind it.
+      await expect(card).not.toContainText(/\d+°/);
+      return;
+    }
+
     await expect(page.getByText("Loading the public forecast…")).toBeHidden({ timeout: 20_000 });
-    await expect(page.getByText(/(\d+°C · |Forecast did not load)/)).toBeVisible();
+    await expect(card.getByText(/\d+°C · |Forecast did not load/)).toBeVisible();
   });
 });

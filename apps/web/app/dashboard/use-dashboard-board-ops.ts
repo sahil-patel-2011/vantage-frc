@@ -160,7 +160,10 @@ export function useDashboardBoardOps(input: {
     setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
     setPendingPlaceType(null);
-    if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type));
+    if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type)).catch(() => {
+      setMessageKind("error");
+      setMessage("Widget added, but its data could not refresh. Try Refresh card data.");
+    });
   }
 
   function placePendingAtPoint(event: ReactPointerEvent<HTMLElement> | ReactMouseEvent<HTMLElement>) {
@@ -291,6 +294,9 @@ export function useDashboardBoardOps(input: {
       setMessage(data.scope === "org" ? "Saved as team Home Screen." : "Personal Home Screen saved.");
       setPreviewing(false);
       await loadHome(orgId, data.id);
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not save your layout. Your changes are still here; please try again.");
     } finally {
       setSaving(false);
     }

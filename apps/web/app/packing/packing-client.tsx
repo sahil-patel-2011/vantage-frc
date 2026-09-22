@@ -23,6 +23,7 @@ import {
 } from "../../lib/packing";
 import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -49,9 +50,7 @@ function PackingRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related packing tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -565,8 +564,7 @@ export default function PackingClient() {
           <span className="breadcrumbs">Competition / Packing</span>
           <h1>Packing Lists</h1>
           <p>
-            Load-out checklists for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — seeded with the standard FRC
+            Load-out checklists for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — seeded with the standard FRC
             competition kit. Teammates request extras; the packing lead owns the master list.
           </p>
           {/* Packing sits between the shelf it draws from, the trip it loads

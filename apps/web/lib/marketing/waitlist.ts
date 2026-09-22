@@ -170,12 +170,60 @@ function mapWaitlistRow(row: WaitlistRow): WaitlistEntry {
 let waitlistPool: ReturnType<typeof createSqlPool> | undefined;
 
 /** Postgres-backed waitlist (Neon today; node-postgres on a Supabase host). */
+/**
+ * Turn a Postgres grant failure into a sentence an operator can act on.
+ *
+ * `MARKETING_DATABASE_URL` has to connect as `vantage_marketing`, the only
+ * role `0001_roles_and_rls.sql` grants `waitlist_signups` to. Point it at the
+ * product app role by mistake — which is what the CI workflow and every local
+ * env copied from it do — and the admin console answers
+ * `permission denied for table waitlist_signups`, a database's words for a
+ * configuration mistake, shown to a person who was looking at a list of names.
+ *
+ * Nothing here papers over the failure; it stays a failure, and now it says
+ * which variable is wrong and what it should hold.
+ */
+function describeWaitlistDbError(error: unknown): Error {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/permission denied for (?:table|relation) waitlist_signups/i.test(message)) {
+    return new Error(
+      "MARKETING_DATABASE_URL is connected as a role that cannot read waitlist_signups. " +
+        "It must use the vantage_marketing role — the product app role is not granted this table.",
+    );
+  }
+  if (/relation "?waitlist_signups"? does not exist/i.test(message)) {
+    return new Error(
+      "MARKETING_DATABASE_URL points at a database with no waitlist_signups table. " +
+        "Run the migrations against it, or unset the variable to use the in-memory store.",
+    );
+  }
+  return error instanceof Error ? error : new Error(message);
+}
+
 export class NeonWaitlistStore implements WaitlistStore {
   constructor(private readonly url: string) {}
 
-  private pool() {
+  private rawPool() {
     waitlistPool ??= createSqlPool(this.url);
     return waitlistPool;
+  }
+
+  /**
+   * The pool every method already used, with its `query` wrapped so no path
+   * can lose the hint — adding a method later cannot forget to translate.
+   */
+  private pool() {
+    const pool = this.rawPool();
+    const query = pool.query.bind(pool);
+    return {
+      query: async (...args: Parameters<typeof query>) => {
+        try {
+          return await query(...args);
+        } catch (error) {
+          throw describeWaitlistDbError(error);
+        }
+      },
+    } as unknown as ReturnType<typeof createSqlPool>;
   }
 
   async upsert(input: WaitlistInput) {

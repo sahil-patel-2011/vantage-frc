@@ -341,7 +341,7 @@ export function scoutingNextActions(input: {
         label: input.canManageSchemas ? "Open Form builder" : "Ask for Form builder",
         detail: input.canManageSchemas
           ? `Publish a ${typeLabel} form, or create starter forms.`
-          : `Ask an owner or admin to publish a ${typeLabel} form.`,
+          : `Build a ${typeLabel} form — anyone on the team can.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },

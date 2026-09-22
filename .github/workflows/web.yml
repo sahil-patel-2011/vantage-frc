@@ -5,6 +5,16 @@ on:
     paths-ignore:
       - "**/*.md"
       - "docs/**"
+  # Also build what actually landed. 2,495 commits once reached main while CI
+  # ran on pull_request only: every small PR passed on its own branch, and the
+  # accumulated result — which no longer typechecked or tested at all — was
+  # never built once. Per-PR green does not mean main is green.
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -12,7 +22,14 @@ permissions:
 
 concurrency:
   group: web-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseding a PR run saves minutes and costs nothing: the branch moved on.
+  # Superseding a push to main destroys the only evidence that main works.
+  #
+  # Three pushes in a row here each cancelled the one before, and a cancelled
+  # run reports as a failure — so main showed red for twenty minutes of CI that
+  # had nothing wrong with it, and a genuine break would have looked exactly
+  # the same. main is what deploys; its runs finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -45,12 +62,57 @@ jobs:
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 was enough while the suite tested signed-out shells against no
+    # database. Now that it signs in and pages actually load data, a full pass
+    # is around 55 minutes — the job was being killed mid-run and reporting as
+    # a failure, which is the same misleading red the cancellations used to be.
+    #
+    # Left at one worker deliberately: the specs share one dev server and one
+    # database, and several create rows another spec then counts. Parallelising
+    # would be the way to cut this down, and it is a change that needs the
+    # fixtures isolated first rather than a flag flipped here.
+    timeout-minutes: 75
+    # This job had no database, so Better Auth could not look a user up, every
+    # sign-in failed, and the suite reported a wall of assertion failures that
+    # had nothing to do with the code under test. `E2E_AUTH_FIXTURE` made it
+    # worse rather than better: proxy.ts lets pages render while every
+    # `/api/*` answers 404, so specs measured half-painted screens.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     env:
       CI: "true"
       NODE_ENV: "development"
-      E2E_AUTH_FIXTURE: "1"
       NEXT_TELEMETRY_DISABLED: "1"
+      # The database name has to contain "ci" or "test": tests/browser/origin.ts
+      # refuses to start Playwright against anything else, which is what stops
+      # a stray production URL from being pointed at a destructive seed.
+      PGBASE: postgresql://postgres:postgres@127.0.0.1:5432
+      DATABASE_DRIVER: pg
+      DATABASE_URL: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
+      DATABASE_URL_UNPOOLED: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
+      DATABASE_AUTH_URL: postgresql://auth_login:auth@127.0.0.1:5432/vantage_ci?sslmode=disable
+      DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci?sslmode=disable
+      # Unused here on purpose: `CI=true` puts the waitlist on the in-memory
+      # store, so nothing connects with this. Note that the role is wrong for
+      # the real thing — `waitlist_signups` is granted to `vantage_marketing`
+      # only, and a deployment that copies this line gets "permission denied
+      # for table waitlist_signups". The store now says so in as many words.
+      MARKETING_DATABASE_URL: postgresql://app_login:app@127.0.0.1:5432/vantage_ci?sslmode=disable
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      DEV_KMS_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      DEV_OTP_SECRET: ci-only-otp-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,6 +120,24 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Create the scratch database
+        run: |
+          psql "$PGBASE/postgres" -v ON_ERROR_STOP=1 -c \
+            "CREATE DATABASE vantage_ci TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C' ENCODING 'UTF8'"
+      - name: Apply migrations
+        run: node scripts/run-migrations.mjs
+      - name: Create the non-superuser logins the app connects as
+        env:
+          RLS_PROOF_SUPERUSER_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
+        run: |
+          RLS_PROOF_APP_URL=postgresql://app_login:app@127.0.0.1:5432/vantage_ci \
+            RLS_PROOF_SET_ROLE=vantage_app node scripts/rls-proof-prepare-app-login.mjs
+          RLS_PROOF_APP_URL=postgresql://auth_login:auth@127.0.0.1:5432/vantage_ci \
+            RLS_PROOF_SET_ROLE=vantage_auth node scripts/rls-proof-prepare-app-login.mjs
+      - name: Seed a team, an event, and two logins the suite can sign in as
+        run: |
+          node scripts/seed-dev.mjs
+          node scripts/seed-e2e-logins.mjs
       - name: Cache Playwright Chromium
         id: playwright-cache
         uses: actions/cache@v4

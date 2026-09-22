@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -11,9 +12,21 @@ const BANNED = ["Setup required", "Hard cut-off", "Hosted by Vantage", "3D Print
 
 const LEAVES = [
   { path: "/team/usage", heading: /Where the team's AI spend goes|Choose your team|Usage/ },
-  { path: "/team/budgets", heading: /Chat limits|Choose your team/ },
+  /*
+    /team/budgets redirects into the AI hub, which supplies the page's h1 and
+    hides the feature's own with display:none — so "Chat limits" is not
+    something a person or a role locator can find there. This entry passed
+    only when the org had not resolved yet and the team gate was briefly on
+    screen, which is to say it passed by accident and failed the rest of the
+    time.
+
+    Every other leaf here shows its own heading; this is the one that does
+    not, so it names what the tab actually puts on screen.
+  */
+  { path: "/team/budgets", heading: /This tab · hard limits|Chat limits|Choose your team/ },
   { path: "/files", heading: "Files" },
-  { path: "/media", heading: "Media" },
+  // A media tool: the paused page while media is switched off.
+  { path: "/media", heading: "Media", pausedAs: "Media" },
   { path: "/help", heading: "Help centre" },
   { path: "/whats-new", heading: "What’s new" },
   { path: "/print-farm", heading: "Print farm" },
@@ -28,6 +41,10 @@ test("leftover-product boards speak student chrome", async ({ page }) => {
     await page.goto(leaf.path);
     await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
+    if (mediaPaused && "pausedAs" in leaf) {
+      await expectPausedPage(page, leaf.pausedAs);
+      continue;
+    }
     await expect(page.getByRole("heading", { name: leaf.heading }).first()).toBeVisible();
     for (const phrase of BANNED) {
       await expect(page.locator("body"), `${leaf.path} still shows ${phrase}`).not.toContainText(phrase);

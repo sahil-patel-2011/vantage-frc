@@ -8,6 +8,7 @@ import {
   listSeasonTemplates,
   meetingProvider,
   milestoneWorkflowLinks,
+  milestonesInMonth,
   nextUpcoming,
   optionalMeetingUrl,
   parseCalendarAction,
@@ -268,6 +269,61 @@ describe("parseCalendarAction", () => {
     expect(() => parseCalendarAction({ action: "seed_season", orgId: ORG, kickoffDate: "next saturday" })).toThrow(/valid date/);
   });
 
+  it("validates every repeat date rather than trusting the client", () => {
+    const base = { action: "add_milestone", orgId: ORG, title: "Practice", kind: "practice" as const };
+
+    // Duplicates collapse and the list is sorted, so the series is written in
+    // the order it happens.
+    const parsed = parseCalendarAction({
+      ...base,
+      startsOn: "2027-01-12",
+      repeatOn: ["2027-01-19", "2027-01-05", "2027-01-19", "2027-01-12"],
+    });
+    expect(parsed).toMatchObject({ repeatOn: ["2027-01-05", "2027-01-12", "2027-01-19"] });
+
+    // The start date is *not* forced in. "Every Tuesday and Thursday from
+    // Monday the 4th" is eight entries; forcing it in made nine, the extra one
+    // being a practice on the Monday nobody asked for.
+    const monday = parseCalendarAction({
+      ...base,
+      startsOn: "2027-01-04",
+      repeatOn: ["2027-01-05", "2027-01-07"],
+    });
+    expect((monday as { repeatOn: string[] }).repeatOn).toEqual(["2027-01-05", "2027-01-07"]);
+
+    // A date that is not a date is a rejection, not a silently dropped row:
+    // a schedule missing one Thursday for no visible reason is worse than an
+    // error saying which value was wrong.
+    expect(() =>
+      parseCalendarAction({ ...base, startsOn: "2027-01-12", repeatOn: ["2027-13-45"] }),
+    ).toThrow(/Repeat date/i);
+
+    // Anything that is not a list of dates falls back to the single entry.
+    for (const junk of [null, undefined, "2027-01-19", 7, {}]) {
+      expect(
+        parseCalendarAction({ ...base, startsOn: "2027-01-12", repeatOn: junk }),
+        String(junk),
+      ).toMatchObject({ repeatOn: ["2027-01-12"] });
+    }
+  });
+
+  it("caps a repeat series on the server, not only in the browser", () => {
+    // A cap that exists only in the client is not a cap.
+    const many = Array.from({ length: 400 }, (_, index) => {
+      const day = new Date(Date.UTC(2027, 0, 1) + index * 86_400_000);
+      return day.toISOString().slice(0, 10);
+    });
+    const parsed = parseCalendarAction({
+      action: "add_milestone",
+      orgId: ORG,
+      title: "Practice",
+      kind: "practice",
+      startsOn: "2027-01-01",
+      repeatOn: many,
+    });
+    expect((parsed as { repeatOn: string[] }).repeatOn.length).toBeLessThanOrEqual(200);
+  });
+
   it("parses add_milestone with defaults and validates the date range", () => {
     expect(
       parseCalendarAction({ action: "add_milestone", orgId: ORG, title: "Scrimmage", kind: "event", startsOn: "2027-02-20" }),
@@ -280,6 +336,10 @@ describe("parseCalendarAction", () => {
       endsOn: null,
       notes: "",
       meetingUrl: null,
+      // Always present, always containing the start date. A plain one-off
+      // entry is a series of one, so the server has a single insert path and
+      // never has to know whether something repeats.
+      repeatOn: ["2027-02-20"],
     });
     expect(() =>
       parseCalendarAction({
@@ -377,5 +437,93 @@ describe("offline calendar writes", () => {
     expect(deleted.status).toBe("ready");
     if (deleted.status !== "ready") return;
     expect(deleted.milestones.map((row) => row.id)).toEqual(["33333333-3333-4333-8333-333333333333"]);
+  });
+});
+
+describe("the list under the grid, about the month the grid is about", () => {
+  const row = (id: string, startsOn: string, endsOn: string | null = null): Milestone => ({
+    id,
+    title: id,
+    kind: "event",
+    startsOn,
+    endsOn,
+    notes: "",
+    meetingUrl: null,
+    done: false,
+    doneAt: null,
+    doneByName: null,
+    createdByName: null,
+  });
+
+  it("takes only the month asked for", () => {
+    const rows = [row("jan", "2027-01-14"), row("feb", "2027-02-03"), row("mar", "2027-03-09")];
+    expect(milestonesInMonth(rows, "2027-02").map((m) => m.id)).toEqual(["feb"]);
+  });
+
+  it("keeps a competition that spans into the month", () => {
+    // Drawn on the March grid, so a March list without it looks like the list
+    // lost it.
+    const rows = [row("champs", "2027-02-27", "2027-03-02")];
+    expect(milestonesInMonth(rows, "2027-03").map((m) => m.id)).toEqual(["champs"]);
+    expect(milestonesInMonth(rows, "2027-02").map((m) => m.id)).toEqual(["champs"]);
+  });
+
+  it("keeps a span across a whole month it never starts or ends in", () => {
+    expect(milestonesInMonth([row("long", "2027-01-20", "2027-03-05")], "2027-02")).toHaveLength(1);
+  });
+
+  it("shows a row with a backwards end date rather than hiding it", () => {
+    // Bad data is a reason to show the row so somebody can fix it.
+    expect(milestonesInMonth([row("typo", "2027-02-10", "2027-01-01")], "2027-02")).toHaveLength(1);
+  });
+
+  it("sorts by date then title", () => {
+    const rows = [row("b", "2027-02-10"), row("a", "2027-02-10"), row("early", "2027-02-01")];
+    expect(milestonesInMonth(rows, "2027-02").map((m) => m.id)).toEqual(["early", "a", "b"]);
+  });
+
+  it("returns nothing for a month that is not a month", () => {
+    expect(milestonesInMonth([row("a", "2027-02-10")], "February")).toEqual([]);
+    expect(milestonesInMonth([row("a", "2027-02-10")], "")).toEqual([]);
+  });
+});
+
+describe("deleting a whole repeat series", () => {
+  it("parses the action", () => {
+    expect(
+      parseCalendarAction({
+        action: "delete_series",
+        orgId: "11111111-1111-4111-8111-111111111111",
+        seriesId: "22222222-2222-4222-8222-222222222222",
+      }),
+    ).toEqual({
+      action: "delete_series",
+      orgId: "11111111-1111-4111-8111-111111111111",
+      seriesId: "22222222-2222-4222-8222-222222222222",
+    });
+  });
+
+  it("refuses a series id that is not an id", () => {
+    // It deletes every row that matches, so a loose value here is the
+    // difference between removing a practice schedule and removing nothing at
+    // all — or worse, something else.
+    for (const bad of ["", "all", "22222222-2222", null, 7]) {
+      expect(() =>
+        parseCalendarAction({
+          action: "delete_series",
+          orgId: "11111111-1111-4111-8111-111111111111",
+          seriesId: bad,
+        }),
+        String(bad),
+      ).toThrow();
+    }
+  });
+
+  it("stays online-only, like seeding a season", () => {
+    // Both write many rows at once. A queued delete of forty entries replayed
+    // against a calendar somebody else has edited is not something the local
+    // snapshot can honestly represent.
+    expect(isCalendarQueueableAction("delete_series")).toBe(false);
+    expect(isCalendarQueueableAction("delete_milestone")).toBe(true);
   });
 });

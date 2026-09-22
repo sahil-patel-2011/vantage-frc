@@ -58,20 +58,13 @@ async function persistSchemaNegotiateSnapshot(
 function SchemaSyncRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-p2p-relay", orgId)}>
-        Pit mesh
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting-schema-ab", orgId)}>
-        Schema A/B
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "scout-p2p-relay", orgId)}>Pit mesh</a>
     </nav>
   );
 }
 
-function SchemaSyncNextActions({ orgId }: { orgId: string }) {
+function SchemaSyncNextActions() {
   const actions = [
     {
       id: "register",
@@ -80,37 +73,19 @@ function SchemaSyncNextActions({ orgId }: { orgId: string }) {
       href: "#schema-sync-register",
       primary: true,
     },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are the rows this page keeps.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "mesh",
-      label: "Open Pit mesh",
-      detail: "Tablets share entries in the pit when venue Wi-Fi drops.",
-      href: hubHref("/competition", "scout-p2p-relay", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -329,7 +304,7 @@ export default function ScoutSchemaNegotiateClient() {
           {error}
         </p>
       ) : null}
-      <SchemaSyncNextActions orgId={view.orgId} />
+      <SchemaSyncNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <RegisterVersionForm busy={busy} mutate={mutate} />

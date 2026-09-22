@@ -5,7 +5,6 @@ import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner
 import { EmptyState, Button } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
-import { kickoffPipelineLinks } from "../../lib/kickoff-related";
 import { hubHref } from "../../lib/nav/hubs";
 import type { ProviderSetupStep } from "./kickoff-model";
 
@@ -44,7 +43,6 @@ export function IntelligenceSection({
   );
   const busy = busyKey != null;
   const selected = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
-  const pipeline = kickoffPipelineLinks({ orgId, cadJobId: selected?.cadJobId ?? null });
 
   const loadIntel = useCallback(async () => {
     try {
@@ -180,13 +178,6 @@ export function IntelligenceSection({
             <strong>AI suggestion</strong> — check it against the manual before you build on it.
           </p>
         </div>
-        <nav className="kick-pipeline-links" aria-label="Kickoff pipeline">
-          {pipeline.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </nav>
       </header>
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
@@ -240,8 +231,13 @@ export function IntelligenceSection({
               placeholder="Paste scoring tables, game pieces, constraints from the official manual…"
               onChange={(event) => setManualText(event.target.value)}
             />
+            {/* Named on the input itself. This label already wraps the
+                textarea above, and a label names only its first control — so
+                without this the file picker was the one control on the page
+                with no name at all. */}
             <input
               type="file"
+              aria-label="Upload the game manual as a .txt file"
               accept=".txt,.md,.markdown,text/plain"
               disabled={busy}
               onChange={(event) => onPickFile("manual", event.target.files?.[0] ?? null)}
@@ -258,6 +254,7 @@ export function IntelligenceSection({
             />
             <input
               type="file"
+              aria-label="Upload the kickoff transcript as a .txt file"
               accept=".txt,.md,.markdown,text/plain"
               disabled={busy}
               onChange={(event) => onPickFile("transcript", event.target.files?.[0] ?? null)}

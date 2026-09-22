@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeAppPath } from "./lib/security/safe-navigation";
+import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/media-availability";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -55,6 +56,12 @@ const PUBLIC_PREFIXES = [
   "/api/desktop/link",
   // Unsigned desktop updater: version + download URLs. No secrets, no session.
   "/api/desktop/release",
+  // Public release-notes feed for the desktop updater and marketing changelog:
+  // published, everyone-audience releases only.
+  "/api/desktop/updates",
+  // Release-note publishing for coding agents/CI — bearer RELEASE_AGENT_TOKEN,
+  // enforced by the route itself (no session cookie).
+  "/api/agent/release-notes",
   // Pi relay pairing: the worker prints a code and polls; approval stays session-gated.
   "/api/relay/pair/start",
   "/api/relay/pair/poll",
@@ -206,6 +213,34 @@ function approvalPendingRedirect(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Run before public routes and auth: nobody can use paused media endpoints.
+  if (isPausedMediaRoute(pathname, request.nextUrl.searchParams.get("tab")) ||
+      (!MEDIA_ENABLED && request.method === "POST" && (
+        pathname === "/api/business/assets" || pathname === "/api/branding/logo" ||
+        /^\/api\/reimbursements\/[^/]+\/receipt$/.test(pathname)
+      ))) {
+    /*
+      A page gets a page. This used to answer page requests with the same JSON
+      as the API, so a student tapping "Match video" in the menu saw a raw
+      `{"error":…,"code":"media_paused"}` object where the page should be. The
+      menu still links these tools — the pause is one boolean away from being
+      lifted, and hiding them would mean re-listing every one on the way back —
+      so the page they land on has to explain itself.
+
+      Redirected, not rewritten. A rewrite kept the address the person asked
+      for, which read nicely, but it meant the server rendered the app shell
+      for /media-paused while the browser hydrated it for /media — every
+      component that reads the path disagreed, React threw "Hydration failed"
+      and rebuilt the whole page on the client. Being honestly on /media-paused
+      costs nothing: the page still names the tool, from `from`.
+    */
+    if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
+      const paused = new URL("/media-paused", request.url);
+      paused.searchParams.set("from", `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(paused, 307);
+    }
+    return NextResponse.json({ error: MEDIA_PAUSED_MESSAGE, code: "media_paused" }, { status: 403 });
+  }
   const fixtureSession =
     process.env.NODE_ENV !== "production" &&
     process.env.E2E_AUTH_FIXTURE === "1" &&

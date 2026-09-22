@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { shopTimeLeft } from "../../lib/calendar/shop-time-left";
+import { restOfWeek } from "../../lib/calendar/rest-of-week";
+import { moveToDate } from "../../lib/calendar/move-entry";
+import { localToday, monthLabel, monthOf } from "../../lib/calendar/month-grid";
+import { hubHref } from "../../lib/nav/hubs";
+import { CalendarHero } from "./calendar-hero";
+import { CalendarMonth } from "./calendar-month";
+import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -18,6 +26,7 @@ import {
   applyCalendarLocalWrite,
   daysUntil,
   groupByMonth,
+  milestonesInMonth,
   isCalendarQueueableAction,
   KIND_LABELS,
   meetingProvider,
@@ -157,6 +166,7 @@ function MilestoneRow({
   editingId,
   setEditingId,
   run,
+  seriesCount,
 }: {
   milestone: Milestone;
   orgId: string;
@@ -165,6 +175,8 @@ function MilestoneRow({
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   run: (body: ActionBody, key: string) => Promise<void>;
+  /** How many entries this one was created alongside; 1 when it stands alone. */
+  seriesCount: number;
 }) {
   const busy = busyKey != null;
   const past = daysUntil(milestone.startsOn, now) < 0;
@@ -248,6 +260,37 @@ function MilestoneRow({
         >
           Delete
         </button>
+        {/*
+          The other half of expanding a schedule into real entries: one press
+          made forty of these, and without this it takes forty to undo. Offered
+          only where it means something — an entry that was created on its own
+          has no series to delete.
+
+          It says the number, because "Delete series" beside a Delete button is
+          two words that could plausibly mean the same thing, and only one of
+          them removes thirty-nine entries you are not looking at.
+        */}
+        {milestone.seriesId && seriesCount > 1 ? (
+          <button
+            type="button"
+            className="cal-link danger"
+            disabled={busy}
+            onClick={() => {
+              if (
+                confirm(
+                  `Delete all ${seriesCount} entries created with "${milestone.title}"? This cannot be undone.`,
+                )
+              ) {
+                void run(
+                  { action: "delete_series", orgId, seriesId: milestone.seriesId! },
+                  `delete-series:${milestone.seriesId}`,
+                );
+              }
+            }}
+          >
+            Delete all {seriesCount}
+          </button>
+        ) : null}
       </div>
     </li>
   );
@@ -581,17 +624,71 @@ function ReadyCalendar({
 }) {
   const orgId = view.context.orgId ?? "";
   const milestones = view.milestones;
+  // Recomputed from the same two lists the grid draws, so the sentence and the
+  // squares can never disagree.
+  const shopTime = shopTimeLeft(milestones, view.meetings ?? []);
+  // The question a student actually opens this page with. Answered from the
+  // same two lists the grid draws, over the same week the grid is drawing.
+  const week = restOfWeek(milestones, view.meetings ?? []);
+  // Local to this form on purpose: a repeat rule is a thing you are typing,
+  // not state the rest of the page has any use for.
+  const repeat = useRepeatRule(startsOn);
   const busy = busyKey != null;
   const now = new Date();
   const next = nextUpcoming(milestones, now);
   const progress = seasonProgress(milestones);
   const months = groupByMonth(milestones);
+  /**
+   * The list under the grid is about the month the grid is about.
+   *
+   * It used to be every milestone in the season, every time — eighty rows
+   * under a grid that was already showing them, and an "Add milestone" form
+   * at the far end of a twelve-thousand-pixel page. Two views of the same
+   * data, one of which you had to scroll past.
+   *
+   * Scoping it to the visible month makes the grid the way you navigate and
+   * the list the way you edit, and `Whole season` is still there for the
+   * once-a-year read-through.
+   */
+  // How many entries share each series id, counted once over the whole
+  // season rather than per row: the button says the real number, including
+  // the entries in months the list is not showing.
+  const seriesCounts = new Map<string, number>();
+  for (const row of milestones) {
+    if (!row.seriesId) continue;
+    seriesCounts.set(row.seriesId, (seriesCounts.get(row.seriesId) ?? 0) + 1);
+  }
+
+  /*
+    Starts on this month, not on null.
+
+    The grid reports which month it is showing, and it can only do that after
+    it has mounted. Starting at null meant the first paint had no month to
+    scope to, so it fell back to the whole season and then collapsed to one
+    month a frame later — a page that visibly jumps, and a list that was
+    briefly showing eighty rows it was about to take away.
+
+    The grid opens on today unless somebody moves it, so this is the same
+    answer it is about to give.
+  */
+  const [visibleMonth, setVisibleMonth] = useState<string>(() => monthOf(localToday()));
+  const [wholeSeason, setWholeSeason] = useState(false);
+  const shownMonths = wholeSeason
+    ? months
+    : [
+        {
+          month: visibleMonth,
+          label: monthLabel(visibleMonth),
+          items: milestonesInMonth(milestones, visibleMonth),
+        },
+      ];
   const selectedTemplate = view.templates.find((template) => template.id === templateId) ?? view.templates[0];
 
   const addMilestone = () => {
     if (!title.trim() || !startsOn) return;
     void run(
       {
+        repeatOn: repeat.dates,
         action: "add_milestone",
         orgId,
         title: title.trim(),
@@ -608,11 +705,15 @@ function ReadyCalendar({
       setEndsOn("");
       setNotes("");
       setMeetingUrl("");
+      repeat.reset();
     });
   };
 
   return (
-    <main className="module-page cal-page">
+    // `data-seeded` decides the stacking order below: on a calendar that
+    // already has entries the once-a-season setup panels move under the grid,
+    // and on an empty one they stay where a new team will find them.
+    <main className="module-page cal-page" data-seeded={milestones.length > 0 ? "yes" : "no"}>
       <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -622,39 +723,16 @@ function ReadyCalendar({
         </p>
       ) : null}
 
-      <Panel className="cal-hero">
-        <div className="cal-hero-next">
-          <span className="cal-hero-kicker">Next milestone</span>
-          {next ? (
-            <>
-              <span className="cal-countdown">{countdownLabel(daysUntil(next.startsOn, now))}</span>
-              <div className="cal-hero-title">
-                <strong>{next.title}</strong>
-                <span className={`cal-chip kind-${next.kind}`}>{KIND_LABELS[next.kind]}</span>
-              </div>
-              <span className="app-muted">{fmtDate(next.startsOn)}</span>
-              {next.meetingUrl ? (
-                <a className="cal-join hero" href={next.meetingUrl} target="_blank" rel="noopener noreferrer">
-                  ▶ Join {meetingProvider(next.meetingUrl) ?? "meeting"}
-                </a>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <strong>Nothing upcoming</strong>
-              <span className="app-muted">Opt into a season template below, or add a milestone.</span>
-            </>
-          )}
-        </div>
-        <div className="cal-hero-progress">
-          <span className="app-muted">
-            {progress.done}/{progress.total} milestones done · {progress.percent}%
-          </span>
-          <div className="cal-track" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100}>
-            <i style={{ width: `${progress.percent}%` }} className={progress.total > 0 && progress.done === progress.total ? "done" : undefined} />
-          </div>
-        </div>
-      </Panel>
+      <CalendarHero
+        next={next}
+        now={now}
+        shopTime={shopTime}
+        week={week}
+        progress={progress}
+        countdownLabel={countdownLabel}
+        daysUntil={daysUntil}
+        fmtDate={fmtDate}
+      />
 
       <Panel as="details" className="cal-seed" open={milestones.length === 0}>
         <summary>Seed a season template</summary>
@@ -695,14 +773,73 @@ function ReadyCalendar({
 
       <LinkedDeadlinesPanel items={view.linkedDeadlines ?? []} orgId={orgId} />
 
+      {/*
+        The grid first, then the same milestones as a list.
+
+        They are two readings of one set of entries, not two features: the grid
+        answers "what does February look like" and the list answers "what is
+        next, and let me edit it". The grid is not gated on there being
+        milestones — an empty February is a useful thing to look at, and it is
+        also where you add the first one.
+      */}
+      <CalendarMonth
+        milestones={milestones}
+        meetings={view.meetings}
+        // The workbench tab, not the legacy `/team/calendar`, which only
+        // redirects here — a chip should land where it says it lands.
+        meetingHref={hubHref("/team", "calendar", orgId)}
+        busy={busy}
+        onCreate={async ({ title: newTitle, startsOn: on }) => {
+          await run(
+            {
+              action: "add_milestone",
+              orgId,
+              title: newTitle,
+              kind: "other",
+              startsOn: on,
+              endsOn: null,
+              notes: "",
+              meetingUrl: null,
+            },
+            "add",
+          );
+        }}
+        onOpen={(milestone) => setEditingId(milestone.id)}
+        onMonthChange={setVisibleMonth}
+        onMove={async (milestone, toDate) => {
+          const patch = moveToDate(milestone, toDate);
+          if (!patch) return;
+          await run({ action: "update_milestone", orgId, id: milestone.id, patch }, `move-${milestone.id}`);
+        }}
+      />
+
+      {months.length > 0 ? (
+        <div className="cal-list-scope">
+          <span className="app-muted">
+            {wholeSeason
+              ? `Whole season · ${milestones.length} ${milestones.length === 1 ? "entry" : "entries"}`
+              : `Showing ${monthLabel(visibleMonth)}`}
+          </span>
+          <button type="button" className="cal-link" onClick={() => setWholeSeason((on) => !on)}>
+            {wholeSeason ? "Just this month" : "Whole season"}
+          </button>
+        </div>
+      ) : null}
+
       {months.length === 0 ? (
         <EmptyState
           soft
-          title="No milestones yet"
-          description="Seed a template from your kickoff date, or add your first milestone below."
+          title="Nothing on the calendar yet"
+          description="Press a day above to add something, or seed a season template from your kickoff date."
+        />
+      ) : shownMonths.every((group) => group.items.length === 0) ? (
+        <EmptyState
+          soft
+          title={`Nothing in ${monthLabel(visibleMonth)}`}
+          description="Press a day above to add something here, or read the whole season."
         />
       ) : (
-        months.map((group) => (
+        shownMonths.map((group) => (
           <section key={group.month} className="cal-month">
             <h2>
               {group.label}
@@ -719,6 +856,7 @@ function ReadyCalendar({
                   editingId={editingId}
                   setEditingId={setEditingId}
                   run={run}
+                  seriesCount={milestone.seriesId ? (seriesCounts.get(milestone.seriesId) ?? 1) : 1}
                 />
               ))}
             </ul>
@@ -772,8 +910,12 @@ function ReadyCalendar({
             onChange={(event) => setMeetingUrl(event.target.value)}
           />
         </FormRow>
+
+        {/* A build season is mostly the same evening over and over, and this
+            form could only be told about one evening at a time. */}
+        <CalendarRepeat state={repeat} disabled={busy} startsOn={startsOn} />
         <Button variant="primary" type="submit" disabled={busy || !title.trim() || !startsOn}>
-          Add milestone
+          {repeat.dates.length > 1 ? `Add ${repeat.dates.length} entries` : "Add milestone"}
         </Button>
       </Panel>
 

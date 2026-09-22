@@ -234,7 +234,9 @@ export type MeterKeySource =
   | "local_cli"
   | "sponsored"
   /** A paired member's Claude/ChatGPT subscription served the turn (AI bridge, 0486). */
-  | "subscription_bridge";
+  | "subscription_bridge"
+  /** Petals volunteer swarm last resort — $0 Vantage charge, prompts leave the org. */
+  | "public_swarm";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -251,6 +253,7 @@ export type MeteredAIInput<T> = {
   billingOwner?: { type: "user" | "org"; id: string };
   /**
    * When `local_cli`, Vantage never charges and ledger cost is forced to 0.
+   * When `public_swarm`, Petals volunteer swarm — same $0 ledger, prompts leave Vantage.
    * When `byo` / `local`, skip hosted credit caps (caller already resolved org keys).
    * When `sponsored`, platform promo pool — ledger cost 0, no credit debit.
    * When omitted, prefer configured org BYOK/local over hosted platform for any tier.
@@ -667,6 +670,44 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
         receipt.promptTokens + receipt.completionTokens,
         input.requestId,
         JSON.stringify({ ...(input.metadata ?? {}), vantageChargeUsd: 0, path: "local_cli" }),
+        receipt.cacheReadInputTokens ?? 0,
+        receipt.cacheWriteInputTokens ?? 0,
+        receipt.uncachedInputTokens ?? receipt.promptTokens,
+      ],
+    );
+    return receipt.value;
+  }
+
+  // A volunteer swarm costs the team nothing, so it is ledgered at zero and
+  // never touches the credit lock. `ai_horde` joined `petals` here when the
+  // Petals swarm was measured empty and this became the free path that works.
+  if (
+    input.keySource === "public_swarm" ||
+    input.provider === "petals" ||
+    input.provider === "ai_horde"
+  ) {
+    const receipt = await input.invoke("public_swarm");
+    await input.client.query(
+      `INSERT INTO ai_usage_events
+        (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
+         completion_tokens, total_tokens, cost_usd, request_id, metadata,
+         cache_read_input_tokens, cache_write_input_tokens, uncached_input_tokens)
+       VALUES ($1,$2,$3,$4,$5,'public_swarm',$6,$7,$8,0,$9,$10::jsonb,$11,$12,$13)`,
+      [
+        input.orgId,
+        input.userId,
+        input.feature,
+        receipt.model,
+        receipt.provider,
+        receipt.promptTokens,
+        receipt.completionTokens,
+        receipt.promptTokens + receipt.completionTokens,
+        input.requestId,
+        JSON.stringify({
+          ...(input.metadata ?? {}),
+          vantageChargeUsd: 0,
+          path: input.provider === "ai_horde" ? "ai_horde_pool" : "petals_public_pool",
+        }),
         receipt.cacheReadInputTokens ?? 0,
         receipt.cacheWriteInputTokens ?? 0,
         receipt.uncachedInputTokens ?? receipt.promptTokens,

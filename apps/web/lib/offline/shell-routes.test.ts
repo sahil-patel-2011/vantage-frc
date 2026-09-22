@@ -264,6 +264,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance Sim");
     expect(offlineCapableLabel("/briefing")).toBe("Pre-match briefing");
     expect(offlineCapableLabel("/award-tracker")).toBe("Award Tracker");
+    // Renamed on purpose: student chrome says "Rating", never "EPA"
+    // (docs/FEATURE_MAP.md, and the copy rule in CONTRIBUTING.md).
     expect(offlineCapableLabel("/epa-trend-alerts")).toBe("Rating alerts");
     expect(offlineCapableLabel("/rankings")).toBe("Rankings");
     expect(offlineCapableLabel("/grant-report")).toBe("Grant Report");

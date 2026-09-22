@@ -1,16 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { IBM_Plex_Mono, Inter, Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 // Last on purpose: system.css is the shared default layer (see its header).
 // Leftover product chrome sheets load from product-styles.ts via AppShell
 // and the public shells that need them — not from this root layout — so
 // marketing routes do not download scout/intel/kiosk chrome.
 import "./system.css";
+import "./vantage-scan.css";
+import "./vantage-kit.css";
+// Last: motion + material tokens that later sheets and components read.
+import "./vantage-fluid.css";
+import "./vantage-redesign.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
 import { ConsentBanner } from "../components/consent-banner";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
   variable: "--font-source-sans",
@@ -34,7 +44,7 @@ export const viewport: Viewport = {
   // Matches --bg in both themes, so the OS browser chrome does not paint a
   // different shade than the page behind it.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef2f7" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
     { media: "(prefers-color-scheme: dark)", color: "#0c1118" },
   ],
 };
@@ -46,13 +56,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <html
       lang="en"
       data-theme="light"
-      className={`${sourceSans.variable} ${sourceSerif.variable} ${ibmMono.variable}`}
+      className={`${inter.variable} ${sourceSans.variable} ${sourceSerif.variable} ${ibmMono.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
-      </head>
       <body>
+        {/* beforeInteractive, not a raw <script> in <head>. A script tag rendered
+            by React is ignored on the client and Next logs that on every page.
+            This still runs before paint, so the theme is set before the first frame. */}
+        <Script id="vantage-theme" strategy="beforeInteractive">
+          {themeBootstrap}
+        </Script>
         <PwaRegister />
         <ThemeProvider>{children}</ThemeProvider>
         {/* Asks before any first-party product analytics are collected, and

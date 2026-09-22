@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { Button, EmptyState, PageHeader, Panel, ToolStrip } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
+import { teamLabelFor } from "../../components/app-shell-model";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -31,9 +32,7 @@ export function InventoryRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related inventory-related" aria-label="Related inventory tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -45,18 +44,14 @@ export function InventoryNextActionsPanel({ actions }: { actions: InventoryNextA
     <section className="app-card soft-panel edc-next-actions inventory-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -212,7 +207,13 @@ export function InventoryReadyHeader({
   if (shell !== "empty") {
     actions.push({
       id: "add-item",
-      label: showAdd ? "Close add item" : "Add item",
+      /* One name for one action. The empty state has always called this "Add
+         a part" — the word the rest of the page uses for a row — while the
+         toolbar called it "Add item" and the form heading called it something
+         else again. Three names for the same thing is learning curve for
+         nothing, and it made specs depend on which state the page happened to
+         be in. */
+      label: showAdd ? "Close the part form" : "Add a part",
       intent: "primary",
       onClick: onToggleAdd,
     });
@@ -233,7 +234,23 @@ export function InventoryReadyHeader({
         </>
       }
       title="Inventory & BOM"
-      description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${orgName ?? "your team"}${teamNumber ? ` (Team ${teamNumber})` : ""}. Cross-check Vendors, Orders, and Spare Forecast.`}
+      /*
+        Two things were wrong with this line.
+
+        `${orgName} (Team ${teamNumber})` printed "for Team 6925 (Team 6925)",
+        because a team whose name is just its number makes the parenthetical a
+        copy of what precedes it. `teamLabelFor` is the helper for exactly
+        this: it appends the name only when the name says something the number
+        does not.
+
+        And it ended "Cross-check Vendors, Orders, and Spare Forecast", which
+        is the list of links rendered directly beneath it — and the same
+        sentence the empty-state card repeats verbatim further down. Three
+        copies for one idea, one of which is the links themselves.
+      */
+      description={`Parts and materials stock, storage locations, and per-mechanism bills of materials for ${
+        teamLabelFor(teamNumber, orgName) ?? "your team"
+      }.`}
     >
       <div className="inventory-header-actions">
         {lowStock > 0 ? (

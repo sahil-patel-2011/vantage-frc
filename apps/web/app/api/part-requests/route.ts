@@ -27,6 +27,16 @@ const DECIDE_DENIED =
   "Approving a part request is limited to the team Owner and Admins. Budget access alone " +
   "does not include it — ask an owner to make you an admin if you should be deciding these.";
 
+function moneyOrNull(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  // Refused rather than clamped: a mentor who typed a negative or a nonsense
+  // figure should see the refusal, not a number they did not intend in the
+  // season budget.
+  if (!Number.isFinite(n) || n < 0 || n > 1_000_000) return null;
+  return Math.round(n * 100) / 100;
+}
+
 function seasonFrom(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 2000 && n < 3000 ? Math.round(n) : currentSeasonYear();
@@ -129,6 +139,9 @@ export async function POST(request: Request) {
             orderId: requestId,
             decision: action === "approve" ? "approved" : "rejected",
             reviewNotes: trimmedOrNull(body.reviewNotes, 1000),
+            // What it actually costs, entered by whoever approves it. Absent
+            // leaves whatever the requester estimated.
+            totalCostUsd: moneyOrNull(body.totalCostUsd),
           });
           break;
         }

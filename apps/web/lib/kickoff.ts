@@ -1,3 +1,4 @@
+import type { Capability, NextSeasonSignal, SignalKind } from "./kickoff/next-season";
 // Kickoff & Game Analysis — framework-free domain logic shared by the API
 // route, the client UI, and unit tests. No server or React imports belong here.
 
@@ -59,6 +60,8 @@ export type KickoffView =
       actions: ScoringAction[];
       priorities: DesignPriority[];
       ruleNotes: RuleNote[];
+      /** What the team has noticed about next year's game. Often empty, which is fine. */
+      nextSeasonSignals: NextSeasonSignal[];
     }
   | { status: "setup_required"; context: KickoffContext; message: string };
 
@@ -169,6 +172,42 @@ function secondsValue(value: unknown) {
   return Math.round(number * 10) / 10;
 }
 
+const SIGNAL_KINDS = ["announcement", "ftc-game", "teaser", "rumour"] as const;
+const CAPABILITIES = [
+  "scoring-height",
+  "ground-pickup",
+  "climb",
+  "traversal",
+  "human-player",
+  "autonomous",
+  "defense",
+] as const;
+
+/**
+ * A calendar date, round-tripped so a typo like 2026-02-31 is refused rather
+ * than silently rolled into March.
+ */
+function isoDate(value: unknown) {
+  const text = requiredText(value, "Date", 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("Date must be YYYY-MM-DD");
+  const parsed = new Date(`${text}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text) {
+    throw new Error("Date must be a real calendar date");
+  }
+  return text;
+}
+
+/** Capabilities a signal points at. Duplicates collapse; unknown values are refused. */
+function capabilityList(value: unknown): Capability[] {
+  if (value == null) return [];
+  if (!Array.isArray(value)) throw new Error("Capabilities must be a list");
+  const out = new Set<Capability>();
+  for (const item of value.slice(0, 7)) {
+    out.add(enumValue(item, CAPABILITIES, "Capability"));
+  }
+  return [...out];
+}
+
 function weightValue(value: unknown) {
   const number = Number(value);
   if (!Number.isInteger(number) || number < 1 || number > 5) {
@@ -237,7 +276,18 @@ export type KickoffAction =
   | { action: "delete_priority"; orgId: string; id: string }
   | { action: "add_rule_note"; orgId: string; seasonYear: number; question: string; ruleRef: string }
   | { action: "update_rule_note"; orgId: string; id: string; patch: RuleNotePatch }
-  | { action: "delete_rule_note"; orgId: string; id: string };
+  | { action: "delete_rule_note"; orgId: string; id: string }
+  | {
+      action: "add_next_season_signal";
+      orgId: string;
+      seasonYear: number;
+      kind: SignalKind;
+      observedOn: string;
+      source: string;
+      note: string;
+      pointsAt: Capability[];
+    }
+  | { action: "delete_next_season_signal"; orgId: string; id: string };
 
 export function parseKickoffAction(input: unknown): KickoffAction {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid kickoff action");
@@ -316,6 +366,21 @@ export function parseKickoffAction(input: unknown): KickoffAction {
       if (Object.keys(patch).length === 0) throw new Error("No changes provided");
       return { action, orgId, id: uuid(body.id, "Rule note"), patch };
     }
+
+    case "add_next_season_signal":
+      return {
+        action,
+        orgId,
+        seasonYear: yearValue(body.seasonYear),
+        kind: enumValue(body.kind, SIGNAL_KINDS, "Kind"),
+        observedOn: isoDate(body.observedOn),
+        source: optionalText(body.source, 500) ?? "",
+        note: requiredText(body.note, "Note", 2_000),
+        pointsAt: capabilityList(body.pointsAt),
+      };
+
+    case "delete_next_season_signal":
+      return { action, orgId, id: uuid(body.id, "Signal") };
 
     case "delete_rule_note":
       return { action, orgId, id: uuid(body.id, "Rule note") };

@@ -47,55 +47,10 @@ async function persistStartSnapshot(orgHint: string, data: RoleOnboardingView): 
 function StartRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/team/getting-started", orgId)}>
-        Team setup
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/calendar", orgId)}>
-        Calendar
-      </Button>
-      <Button as="a" variant="secondary" href="/security">
-        Security
-      </Button>
+      <a href={withOrgHref("/team/getting-started", orgId)}>Team setup</a>
+      <a href={withOrgHref("/team/calendar", orgId)}>Calendar</a>
+      <a href="/security">Security</a>
     </nav>
-  );
-}
-
-function StartNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "getting-started",
-      label: "Open Team setup",
-      detail: "Invites, knowledge, and budgets for the whole team.",
-      href: withOrgHref("/team/getting-started", orgId),
-      primary: true,
-    },
-    {
-      id: "calendar",
-      label: "Open Calendar",
-      detail: "Join a subteam so practices and build sessions show up.",
-      href: withOrgHref("/team/calendar", orgId),
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -384,7 +339,7 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
               ))}
             </section>
           ) : null}
-          <StartNextActions orgId={view.orgId} />
+
         </main>
       );
     }

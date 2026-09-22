@@ -106,20 +106,14 @@ function conflictText(conflict: WiringConflict): string {
 function WiringRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/inventory", orgId)}>
-        Inventory
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "batteries", orgId)}>
-        Batteries
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
+      <a href={withOrgHref("/inventory", orgId)}>Inventory</a>
+      <a href={hubHref("/build", "batteries", orgId)}>Batteries</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
     </nav>
   );
 }
 
-function WiringNextActions({ orgId }: { orgId: string }) {
+function WiringNextActions() {
   const actions = [
     {
       id: "add",
@@ -128,37 +122,19 @@ function WiringNextActions({ orgId }: { orgId: string }) {
       href: "#wiring-device",
       primary: true,
     },
-    {
-      id: "power",
-      label: "Open Power budget",
-      detail: "Breaker amps on this map should match the load on the budget.",
-      href: hubHref("/build", "power-budget", orgId),
-      primary: false,
-    },
-    {
-      id: "batteries",
-      label: "Open Batteries",
-      detail: "A mapped robot still needs a healthy pack.",
-      href: hubHref("/build", "batteries", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -562,7 +538,7 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <WiringNextActions orgId={view.context.orgId} />
+      <WiringNextActions />
     </main>
   );
 }

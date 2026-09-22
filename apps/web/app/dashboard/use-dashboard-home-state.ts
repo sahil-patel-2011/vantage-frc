@@ -97,7 +97,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     const timeout = AbortSignal.timeout(FEATURE_API_TIMEOUT_MS);
     const signal = opts?.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
     const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal });
-    if (!response.ok) return;
+    if (!response.ok) throw new Error("Could not refresh dashboard data.");
     const data = await response.json();
     const nextWidgets = mergeDashboardWidgets(widgetsRef.current, data.widgets);
     const nextContext = mergeDashboardContext(contextRef.current, data.context);
@@ -208,7 +208,6 @@ export function useDashboardHomeState(initialOrgId = "") {
       });
       return;
     }
-    void loadHome(orgId);
     let cancelled = false;
     let timer: number | null = null;
     let inFlight: AbortController | null = null;
@@ -241,6 +240,28 @@ export function useDashboardHomeState(initialOrgId = "") {
         });
       }, dashboardPollDelay(document.visibilityState === "hidden"));
     };
+    /*
+      Load the widget data now, not in thirty seconds.
+
+      `mode=home` returns the board and its layout and no widget data at all;
+      the data arrives on the first `poll()`, which used to be scheduled rather
+      than run — so for `DASHBOARD_POLL_MS` after opening Home, every widget and
+      the "what to do now" card had nothing to read. The card's honest answer to
+      "nothing loaded" is "Nothing you have to do right now", so a team with a
+      build night at six was told there was nothing to do for the first thirty
+      seconds of every visit.
+
+      It looked fine in practice because the offline snapshot in IndexedDB
+      usually painted the previous visit's data over the gap. On a phone that
+      had never opened Home before — a student's first use, which is the moment
+      that matters — there was nothing to paint.
+
+      Home first so the layout is known and one request fetches every widget the
+      board actually shows; `poll` is a no-op while another is in flight.
+    */
+    void loadHome(orgId).finally(() => {
+      if (!cancelled) void poll();
+    });
     schedule();
 
     const onVisibility = () => {

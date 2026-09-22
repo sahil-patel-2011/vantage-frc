@@ -24,3 +24,18 @@
   .team-data-header-actions{justify-content:flex-start}
   .team-data-next-actions li{flex-direction:column;align-items:stretch}
 }
+
+/* Statbotics has no key. People arrive at the Blue Alliance panel looking for a
+   second field, so the answer sits in the panel rather than in a support page.
+   Set apart from the form above it, but not hidden. */
+.team-data-statbotics {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.team-data-statbotics strong {
+  color: var(--ink);
+}

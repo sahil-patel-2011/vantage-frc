@@ -37,6 +37,8 @@ export default function ShiftBalancerClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** What the last publish actually wrote, including what it skipped. */
+  const [notice, setNotice] = useState("");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<ShiftBalancerView | null>(null);
@@ -119,11 +121,16 @@ export default function ShiftBalancerClient() {
           body: JSON.stringify({ orgId, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as ShiftBalancerView | { error?: string };
+        const data = (await response.json()) as
+          | (ShiftBalancerView & { published?: string })
+          | { error?: string };
         if (!response.ok || !isShiftBalancerView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
+        // Publishing reports what it wrote and what it skipped, so "done" never
+        // stands in for shifts that silently went nowhere.
+        setNotice("published" in data && typeof data.published === "string" ? data.published : "");
         setView(data);
         void persistShiftBalancerSnapshot(orgId, data);
       } catch {
@@ -200,7 +207,7 @@ export default function ShiftBalancerClient() {
         <div style={{ display: "grid", gap: 16 }}>
           <RosterPanel view={view} busy={busy} mutate={mutate} />
           <GeneratePlanForm view={view} busy={busy} mutate={mutate} />
-          <PlansPanel view={view} busy={busy} mutate={mutate} />
+          <PlansPanel view={view} busy={busy} mutate={mutate} notice={notice} />
         </div>
       )}
     </main>
@@ -237,8 +244,31 @@ function RosterPanel({
               <span>
                 {scout.name}{" "}
                 {!scout.active ? <span className="app-badge setup">Inactive</span> : null}
+                {!scout.userId ? (
+                  <small className="app-muted"> · gets a tablet sheet, not a phone duty</small>
+                ) : null}
               </span>
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {/* Linking a scout to the person they are is what lets a published
+                    plan reach them on Home, the schedule and the briefing. */}
+                <label className="sr-only" htmlFor={`link-${scout.id}`}>
+                  Who is {scout.name}?
+                </label>
+                <select
+                  id={`link-${scout.id}`}
+                  value={scout.userId ?? ""}
+                  disabled={busy}
+                  onChange={(event) =>
+                    mutate({ action: "link-scout", scoutId: scout.id, memberId: event.target.value })
+                  }
+                >
+                  <option value="">Not on the team</option>
+                  {view.members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   className="text-button"
@@ -375,10 +405,13 @@ function PlansPanel({
   view,
   busy,
   mutate,
+  notice,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  /** What the last publish wrote, and what it skipped. */
+  notice: string;
 }) {
   if (view.plans.length === 0) {
     return (
@@ -497,6 +530,11 @@ function PlansPanel({
         </div>
       ) : null}
 
+      {notice ? (
+        <p className="app-muted" role="status" style={{ marginTop: 12 }}>
+          {notice}
+        </p>
+      ) : null}
       <h3 style={{ marginTop: 16 }}>All plans</h3>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
         {view.plans.map((plan) => (
@@ -504,18 +542,31 @@ function PlansPanel({
             <span>
               {plan.label} <small className="app-muted">({plan.matchCount} matches)</small>
             </span>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete plan "${plan.label}"?`)) {
-                  mutate({ action: "delete-plan", planId: plan.id });
-                }
-              }}
-            >
-              Delete
-            </button>
+            <div style={{ display: "flex", gap: 6 }}>
+              {/* Publishing writes the plan into scout_assignments, which the
+                  schedule, the pre-match briefing, Event Day and Home already
+                  read — so the shift shows up wherever the scout is looking. */}
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => mutate({ action: "publish-plan", planId: plan.id })}
+              >
+                Publish to the schedule
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm(`Delete plan "${plan.label}"?`)) {
+                    mutate({ action: "delete-plan", planId: plan.id });
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>

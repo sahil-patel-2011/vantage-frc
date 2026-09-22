@@ -10,6 +10,7 @@
 // plainly rather than guessing a plausible-looking name.
 
 import { classifyModelTier, degradedNoticeCopy } from "@vantage/agent/model-tier";
+import { checkReasoningFloor } from "@vantage/agent/reasoning-floor";
 
 /**
  * Metadata an AI route reports alongside a generated answer.
@@ -136,21 +137,33 @@ export function hasProvenance(meta: ModelProvenance | null | undefined): boolean
   return Boolean(clean(meta.provider) || clean(meta.modelId) || clean(meta.baseUrlOrigin));
 }
 
-/** Resolve the notice for a run, preferring a caller-supplied one from `@vantage/agent`. */
+/**
+ * Resolve the notice for a run, preferring a caller-supplied one from
+ * `@vantage/agent`.
+ *
+ * When the caller names the feature, the reasoning floor answers first. It is
+ * the more specific statement: "this model is smaller than our defaults" is
+ * true of a local model on every screen, but "this screen asks for judgement
+ * rather than a summary, so check the ordering" is only true on the screens
+ * that rank robots, and it is the one worth interrupting somebody for.
+ */
 export function provenanceNotice(
   meta: ModelProvenance,
   supplied?: string | null,
+  feature?: string | null,
 ): string | null {
   if (typeof supplied === "string") return supplied.trim() || null;
   if (supplied === null) return null;
-  return degradedNoticeCopy(
-    classifyModelTier({
-      provider: meta.provider,
-      modelId: meta.modelId,
-      baseUrlOrigin: meta.baseUrlOrigin,
-    }).tier,
-    meta.modelId ?? "",
-  );
+  const model = {
+    provider: meta.provider,
+    modelId: meta.modelId,
+    baseUrlOrigin: meta.baseUrlOrigin,
+  };
+  if (feature) {
+    const floor = checkReasoningFloor({ feature, model });
+    if (floor.notice) return floor.notice;
+  }
+  return degradedNoticeCopy(classifyModelTier(model).tier, meta.modelId ?? "");
 }
 
 /**

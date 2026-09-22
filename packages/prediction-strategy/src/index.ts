@@ -16,6 +16,8 @@ export type {
 export * from "./signals";
 export * from "./scout-ops";
 export * from "./dossier";
+export * from "./alliance-independence";
+export * from "./season-form";
 export {
   DEFAULT_ERROR_BAND,
   FIXTURE_ERROR_BAND,
@@ -31,10 +33,53 @@ export type { MatchPlan } from "./match-plan";
 export type {
   AllianceScorePrediction,
   ScoreFeatureRow,
+  ScorePredictionBasis,
   ScorePredictionMetrics,
   ScorePredictionSkip,
   TeamScoreFeatures,
 } from "./calibrated-score";
+
+/**
+ * Per-match confidence. `calibrated-score` already uses it; exported so a
+ * screen explaining *why* a prediction is uncertain bends the same arithmetic
+ * the number was drawn from, rather than inventing a second opinion.
+ */
+export {
+  ALLIANCE_CORRELATION,
+  DEFAULT_MODEL_SD,
+  FALLBACK_DISPERSION,
+  MIN_OBSERVATIONS_FOR_MEAN,
+  MAX_WIN_PROBABILITY,
+  MIN_WIN_PROBABILITY,
+  allianceBelief,
+  describeConfidence,
+  matchBelief,
+  matchSdFromDistribution,
+  normalCdf,
+  teamVariance,
+  type AllianceBelief,
+  type MatchBelief,
+  type TeamScoreBelief,
+  type TeamVarianceBreakdown,
+} from "./score-uncertainty";
+export {
+  CONFIDENT_MATCHES,
+  MIN_MATCHES_TO_STAND_ALONE,
+  canStandAlone,
+  ratingsByTeam,
+  ratingsFromScouting,
+} from "./scouting-rating";
+export type {
+  ScoutedMatchRow,
+  ScoutedTeamRating,
+  ScoutingConfidence,
+} from "./scouting-rating";
+export {
+  MIN_MATCHES_FOR_TREND,
+  pickListOrder,
+  profilesFromScouting,
+} from "./scouting-profile";
+export type { ScoutedTeamProfile, TrendDirection } from "./scouting-profile";
 export {
   allianceScoreSpread,
   lovatWinProbability,
@@ -82,10 +127,55 @@ export {
 } from "./engine-tier";
 export { seasonWeight } from "./season-weight";
 export {
+  allianceWinProbability,
   buildAllianceWinBreakdown,
   citeMatchResults,
   rateTeam,
 } from "./alliance-outcome";
+export {
+  CONSISTENCY_LABEL,
+  MIN_FOR_CENTRE,
+  MIN_FOR_SPREAD,
+  comparePick,
+  describeDistribution,
+  summariseDistribution,
+} from "./distribution";
+export type { Consistency, Distribution, PickComparison, PickNeed } from "./distribution";
+export {
+  DEFAULT_LOGISTIC_SCALE,
+  MIN_FIT_SAMPLE,
+  brierScore,
+  calibrationReport,
+  fitLogisticScale,
+  logLoss,
+  reliabilityBuckets,
+  winProbabilityAt,
+} from "./calibration";
+export type { CalibrationReport, Outcome, ReliabilityBucket, ScaleFit } from "./calibration";
+export {
+  DEFAULT_SHRINKAGE_MATCHES,
+  MIN_FIELD_SIZE,
+  fieldCentre,
+  shrinkRatings,
+  shrinkageConstant,
+  shrinkageNote,
+} from "./shrinkage";
+export type { ShrinkageConstant, ShrunkRating, TeamSample } from "./shrinkage";
+export {
+  SEASON_ALGORITHMS,
+  algorithmForSeason,
+  algorithmProvenance,
+  newestAlgorithm,
+} from "./season-algorithm";
+export type { ResolvedAlgorithm, SeasonAlgorithm } from "./season-algorithm";
+export {
+  DEFENCE_SHARE_FLOOR,
+  DEFENCE_SUPPRESSION,
+  MIN_LEVER_GAIN_PP,
+  NO_LEVERS_COPY,
+  winLevers,
+} from "./win-levers";
+export type { LeverId, WinLever, WinLeverInput } from "./win-levers";
 export {
   MIN_PEPA_SAMPLE,
   PRIVATE_EPA_PUBLIC_WEIGHT,
@@ -130,6 +220,14 @@ import { buildAllianceWinBreakdown, rateTeam } from "./alliance-outcome";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
+/**
+ * The same number, for a person to read.
+ *
+ * Stored values keep four decimal places because a later comparison may need
+ * them. Prose does not: "rating margin -48.5562" puts the model's internal
+ * precision on a screen somebody is reading between matches.
+ */
+const readable = (value: number) => Math.round(value * 10) / 10;
 
 function citeSources(
   seasons: MatchPredictionInput["seasons"],
@@ -272,7 +370,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "weighted scoring",
       alliance: margin >= 0 ? "red" : "blue",
       impact: round(Math.abs(margin)),
-      evidence: `MODEL ${policy.engineId}${eventBit}: ${seasonBit}. Alliance rating margin ${round(margin)} from ${citation}.`,
+      evidence: `MODEL ${policy.engineId}${eventBit}: ${seasonBit}. Alliance rating margin ${readable(margin)} from ${citation}.`,
       kind: "model",
     },
   ];
@@ -282,7 +380,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "autonomous",
       alliance: autoMargin > 0 ? "red" : "blue",
       impact: round(Math.abs(autoMargin)),
-      evidence: `MODEL: Weighted autonomous EPA margin ${round(autoMargin)} (${citation}).${
+      evidence: `MODEL: Weighted autonomous EPA margin ${readable(autoMargin)} (${citation}).${
         autoCapTeams.length ? ` Scout auto-capable: ${autoCapTeams.join(", ")}.` : ""
       }`,
       kind: "model",
@@ -294,7 +392,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "foul exposure",
       alliance: foulMargin > 0 ? "blue" : "red",
       impact: round(Math.abs(foulMargin)),
-      evidence: `MODEL: Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not a TBA fact.${scoutProvenanceBit}`,
+      evidence: `MODEL: Org scout foul penalty (capped) margin ${readable(Math.abs(foulMargin))}; not a TBA fact.${scoutProvenanceBit}`,
       kind: "model",
       scoutEntryIds: foulEntryIds.length ? foulEntryIds : undefined,
     });
@@ -326,7 +424,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "TBA+scout trust blend",
       alliance: "neutral",
       impact: round(Math.min(6, policy.maxScoutBlend * 10 * avgQuality)),
-      evidence: `MODEL ${policy.engineId}: TBA/Statbotics base with scout trust blend capped at ${Math.round(policy.maxScoutBlend * 100)}% (mean quality weight ${round(avgQuality)}).${
+      evidence: `MODEL ${policy.engineId}: TBA/Statbotics base with scout trust blend capped at ${Math.round(policy.maxScoutBlend * 100)}% (mean quality weight ${readable(avgQuality)}).${
         qualityNotes.length ? ` Quality notes: ${qualityNotes.slice(0, 3).join("; ")}.` : ""
       }`,
       kind: "model",
@@ -495,3 +593,16 @@ export function predictionAccuracy(
     outcomes.length;
   return { count: outcomes.length, accuracy: round(correct / outcomes.length), brierScore: round(brier) };
 }
+
+/**
+ * The pick list, built from your own scouting rather than only from season
+ * ratings — see picklist-from-scouting.ts.
+ */
+export {
+  MIN_MATCHES_FOR_PICKLIST,
+  consistencyScore,
+  metricRowFromProfile,
+  pickListRowsFromScouting,
+  reliabilityScore,
+  scoutingPicklistWeights,
+} from "./picklist-from-scouting";

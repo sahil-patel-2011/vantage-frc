@@ -31,7 +31,9 @@ import {
   dashboardPaletteRows,
 } from "./dashboard-home-model";
 import { DashboardHomeView } from "./dashboard-home-view";
+import { DashboardActionsProvider } from "./dashboard-quick-actions";
 import "./dashboard-dnd.css";
+import "./dash-layout.css";
 
 export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
@@ -222,6 +224,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       : null;
 
   return (
+    <DashboardActionsProvider orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
     <DashboardHomeView
       me={home.me}
       meLoaded={home.meLoaded}
@@ -235,6 +238,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       viewLayout={viewLayout}
       displayLayout={displayLayout}
       widgets={home.widgets}
+      // Whether the widgets have arrived, so the "what to do now" card can
+      // say it is still working it out rather than saying there is nothing.
+      widgetsLoaded={dashShell !== "loading"}
       paletteEntries={paletteEntries}
       addableEntries={addableEntries}
       homeStripItems={homeStripItems}
@@ -310,5 +316,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       onDragPointerUp={onDragPointerUp}
       onDragPointerCancel={onDragPointerCancel}
     />
+    </DashboardActionsProvider>
   );
 }

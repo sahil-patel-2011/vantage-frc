@@ -85,20 +85,14 @@ async function persistDataQualitySnapshot(
 function DataQualityRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-training-mode", orgId)}>
-        Training
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/scouting/lineup", orgId)}>
-        Coverage
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "scout-training-mode", orgId)}>Training</a>
+      <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
     </nav>
   );
 }
 
-function DataQualityNextActions({ orgId }: { orgId: string }) {
+function DataQualityNextActions() {
   const actions = [
     {
       id: "log",
@@ -107,37 +101,19 @@ function DataQualityNextActions({ orgId }: { orgId: string }) {
       href: "#data-quality-log",
       primary: true,
     },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are the rows this scorecard grades.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "training",
-      label: "Open Training",
-      detail: "New scouts practice on completed matches before they scout live.",
-      href: hubHref("/competition", "scout-training-mode", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -384,7 +360,7 @@ export default function DataQualityScorecardClient() {
           {error}
         </p>
       ) : null}
-      <DataQualityNextActions orgId={view.orgId} />
+      <DataQualityNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <ScorecardPanel view={view} />
         <SummaryTiles view={view} />

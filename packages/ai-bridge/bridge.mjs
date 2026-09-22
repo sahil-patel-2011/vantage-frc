@@ -34,7 +34,9 @@ const CONFIG_PATH = join(homedir(), ".vantage", "ai-bridge.json");
 // apps/desktop/src/allowlist.ts, SITE_URL in apps/web/lib/site.ts, and the origin added in
 // packages/core/src/access-policy.ts — `--setup` with no --url/VANTAGE_URL pairs against
 // this host, so drift here silently points mentors at a deployment that does not exist.
-export const CANONICAL_BASE_URL = "https://vantage-frc-web.vercel.app";
+// vantage-frc-web.vercel.app is retired and answers DEPLOYMENT_NOT_FOUND, so a
+// bridge set up with neither --url nor VANTAGE_URL paired against nothing.
+export const CANONICAL_BASE_URL = "https://vantagefrc.vercel.app";
 const DEFAULT_BASE_URL = process.env.VANTAGE_URL || CANONICAL_BASE_URL;
 const JOB_TIMEOUT_MS = Number(process.env.VANTAGE_BRIDGE_JOB_TIMEOUT_MS || 90_000);
 const HEARTBEAT_INTERVAL_MS = 60_000;

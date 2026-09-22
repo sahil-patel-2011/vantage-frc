@@ -71,20 +71,14 @@ async function persistMockJudgingSnapshot(
 function MockJudgingRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related judging tools">
-      <Button as="a" variant="secondary" href={hubHref("/business", "judge-sim", orgId)}>
-        Judge pitch
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "impact-essay", orgId)}>
-        Impact essay
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "district-advancement", orgId)}>
-        Districts
-      </Button>
+      <a href={hubHref("/business", "judge-sim", orgId)}>Judge pitch</a>
+      <a href={hubHref("/business", "impact-essay", orgId)}>Impact essay</a>
+      <a href={hubHref("/competition", "district-advancement", orgId)}>Districts</a>
     </nav>
   );
 }
 
-function MockJudgingNextActions({ orgId }: { orgId: string }) {
+function MockJudgingNextActions() {
   const actions = [
     {
       id: "session",
@@ -93,37 +87,19 @@ function MockJudgingNextActions({ orgId }: { orgId: string }) {
       href: "#mock-judging-session",
       primary: true,
     },
-    {
-      id: "pitch",
-      label: "Open Judge pitch",
-      detail: "Timed pitch practice uses the same award prep as this board.",
-      href: hubHref("/business", "judge-sim", orgId),
-      primary: false,
-    },
-    {
-      id: "essay",
-      label: "Open Impact essay",
-      detail: "Written award drafts sit next to these practice sessions.",
-      href: hubHref("/business", "impact-essay", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -365,7 +341,7 @@ export default function MockJudgingClient() {
           {error}
         </p>
       ) : null}
-      {view.readiness.totalSessions > 0 ? <MockJudgingNextActions orgId={view.orgId} /> : null}
+      {view.readiness.totalSessions > 0 ? <MockJudgingNextActions /> : null}
       <div style={{ display: "grid", gap: 16 }}>
         {view.readiness.totalSessions > 0 ? <ReadinessPanel view={view} /> : null}
         <RunSessionForm busy={busy} mutate={mutate} />

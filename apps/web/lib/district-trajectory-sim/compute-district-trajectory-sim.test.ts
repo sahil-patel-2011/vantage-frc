@@ -112,6 +112,7 @@ describe("computeTrajectoryView", () => {
     const view = await computeTrajectoryView(client, { userId: USER, requestedOrg: ORG });
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
+      // "EPA" is not student vocabulary; the message says "rating" on purpose.
       expect(view.message).toMatch(/not enough cached rating/i);
     }
   });

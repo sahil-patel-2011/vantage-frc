@@ -20,6 +20,19 @@ export function AssignRow({
     setValue(pack.assignment);
   }, [pack.assignment]);
 
+  /*
+    Save appears when there is something to save.
+
+    Eighteen packs meant eighteen permanent Save buttons down the page, all of
+    them doing nothing, all of them in the tab order and read out by a screen
+    reader. A button that is disabled-in-spirit is worse than no button: it
+    implies there is an action waiting.
+
+    Enter in the field still submits, so the keyboard path does not depend on
+    the button existing.
+  */
+  const dirty = value.trim() !== pack.assignment.trim();
+
   return (
     <form
       className="batt-assign"
@@ -37,9 +50,11 @@ export function AssignRow({
           onChange={(event) => setValue(event.target.value)}
         />
       </label>
-      <Button variant="secondary" type="submit" disabled={busy}>
-        Save
-      </Button>
+      {dirty ? (
+        <Button variant="secondary" type="submit" disabled={busy}>
+          Save
+        </Button>
+      ) : null}
     </form>
   );
 }

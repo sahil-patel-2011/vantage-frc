@@ -189,15 +189,9 @@ export default function IncidentsClient() {
 
   const related = (
     <nav className="product-hub-related" aria-label="Related safety tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/safety", orgId)}>
-        Safety log
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "safety-training", orgId)}>
-        Safety training
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
-      </Button>
+      <a href={withOrgHref("/safety", orgId)}>Safety log</a>
+      <a href={hubHref("/team", "safety-training", orgId)}>Safety training</a>
+      <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
     </nav>
   );
 

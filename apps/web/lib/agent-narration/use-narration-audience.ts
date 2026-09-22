@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FEATURE_API_TIMEOUT_MS } from "../nav/resolve-org";
+import { requestMe } from "../nav/me-request";
 
 /**
  * Who is reading the narration. Students get the reasoning open by default (teach visibly);
@@ -42,13 +42,9 @@ function classify(teamRole: unknown): NarrationAudience {
 
 async function loadAudience(): Promise<NarrationAudience> {
   try {
-    const response = await fetch("/api/me", {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    });
-    if (!response.ok) return "student";
-    const data = (await response.json()) as { teamRole?: string | null };
-    const audience = classify(data.teamRole);
+    const { ok, data } = await requestMe();
+    if (!ok) return "student";
+    const audience = classify((data as { teamRole?: string | null } | null)?.teamRole);
     writeStored(audience);
     return audience;
   } catch {

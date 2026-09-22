@@ -16,6 +16,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -325,8 +326,7 @@ export default function InspectionClient() {
           <span className="breadcrumbs">Competition / Inspection</span>
           <h1>Robot Inspection</h1>
           <p>
-            Pre-inspection checklist and weigh-ins for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. Not an official inspection — pass the
+            Pre-inspection checklist and weigh-ins for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"}. Not an official inspection — pass the
             real one at the event.
           </p>
         </div>
@@ -343,12 +343,8 @@ export default function InspectionClient() {
               weigh it, then work the copilot's flags. It used to end here with
               no way forward. */}
           <nav className="product-hub-related" aria-label="Related inspection tools">
-            <Button as="a" variant="secondary" href={withOrgHref("/robot-weigh-in", orgId || null)}>
-              Weigh-in
-            </Button>
-            <Button as="a" variant="secondary" href={withOrgHref("/inspection-copilot", orgId || null)}>
-              Inspection
-            </Button>
+            <a href={withOrgHref("/robot-weigh-in", orgId || null)}>Weigh-in</a>
+            <a href={withOrgHref("/inspection-copilot", orgId || null)}>Inspection</a>
           </nav>
         </div>
       </header>

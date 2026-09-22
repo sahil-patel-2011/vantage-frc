@@ -29,6 +29,23 @@ export type RoutingPrefs = {
   mode: "fixed" | "automode";
   fixedModelId: string | null;
   enabledModelIds: string[];
+  /**
+   * Which free-swarm model this team prefers, or null for any of them.
+   *
+   * A different question from the three above, which are about provider keys
+   * the team pays for. This one is about the volunteer swarm, where the
+   * trade is speed against quality on somebody else's hardware.
+   */
+  freeSwarmModel?: string | null;
+};
+
+/** One model Vantage will accept an answer from on the volunteer swarm. */
+export type FreeSwarmModel = { id: string; label: string; note: string };
+
+export type FreeSwarm = {
+  /** Whether the deployment has the pool turned on at all. */
+  enabled: boolean;
+  models: FreeSwarmModel[];
 };
 
 export type ModelPolicyMode = "allow_all" | "allowlist" | "force_auto";
@@ -57,6 +74,7 @@ export type Payload = {
   localConnector?: LocalConnector;
   routing?: RoutingPrefs;
   modelOptions?: ModelOption[];
+  freeSwarm?: FreeSwarm;
   setupRequired?: boolean;
   setupMessage?: string | null;
   error?: string;

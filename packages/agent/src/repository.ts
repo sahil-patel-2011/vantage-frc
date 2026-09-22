@@ -348,7 +348,7 @@ export class AgentRepository {
         }) as ContextSource,
     );
     const bridgeTokens = bridgeItems.reduce((sum, item) => sum + Math.ceil(item.content.length / 4), 0);
-    const orchestrated = await new AIOrchestrator(this.client, createVantageToolRegistry()).run({
+    const orchestrated = await new AIOrchestrator(this.client, createVantageToolRegistry({ requestText: input.message })).run({
       orgId: input.orgId,
       userId: input.userId,
       threadId: input.threadId,

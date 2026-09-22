@@ -18,7 +18,12 @@ function fakeClient(handlers: Array<(sql: string, params?: unknown[]) => QueryRe
   };
 }
 
-const PLATFORM_ENV_KEYS = ["OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "MISTRAL_API_KEY"] as const;
+const PLATFORM_ENV_KEYS = [
+  "OPENROUTER_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "MISTRAL_API_KEY",
+  "PETALS_PUBLIC_POOL",
+] as const;
 
 describe("resolveOrgChatAdapter", () => {
   const savedEnv: Record<string, string | undefined> = {};
@@ -28,6 +33,7 @@ describe("resolveOrgChatAdapter", () => {
       savedEnv[key] = process.env[key];
       delete process.env[key];
     }
+    process.env.PETALS_PUBLIC_POOL = "0";
   });
 
   afterEach(() => {
@@ -227,7 +233,7 @@ describe("resolveOrgChatAdapter", () => {
         promptCachingEnabled: false,
         decrypt: async () => "unused",
       }),
-    ).rejects.toThrow(/OpenRouter free pool|Team → AI API keys/);
+    ).rejects.toThrow(/OpenRouter free pool|Petals volunteer swarm|Team → AI API keys/);
   });
 
   it("uses sponsored failover pool for team 1111 within promo window", async () => {
@@ -299,6 +305,48 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter).toBeInstanceOf(HttpChatAdapter);
     expect(adapter.provider).toBe("openai-compatible");
     expect(adapter.model).toBe("openrouter/free");
+  });
+
+  it("refuses rather than reaching for the public swarm a team never enabled", async () => {
+    delete process.env.PETALS_PUBLIC_POOL;
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+      () => ({ rowCount: 1, rows: [{ teamNumber: 254 }] }),
+    ]);
+
+    // Volunteer peers can read and rewrite what passes through the swarm, so a
+    // free org with no key gets an honest "configure a provider", not a silent
+    // hop onto strangers' GPUs.
+    await expect(
+      resolveOrgChatAdapter(client as never, {
+        orgId: "org-1",
+        promptCachingEnabled: false,
+        decrypt: async () => "unused",
+      }),
+    ).rejects.toThrow(/No AI provider key is configured/);
+  });
+
+  it("uses the Petals public swarm when a free org has no keys and turned it on", async () => {
+    process.env.PETALS_PUBLIC_POOL = "1";
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+      () => ({ rowCount: 1, rows: [{ teamNumber: 254 }] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      decrypt: async () => "unused",
+    });
+
+    expect(adapter.provider).toBe("petals");
+    expect(adapter.model).toBe("petals-team/StableBeluga2");
   });
 
   it("uses hosted Anthropic Sonnet for paid orgs when managed peek is empty", async () => {

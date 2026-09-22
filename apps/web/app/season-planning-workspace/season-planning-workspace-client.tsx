@@ -86,9 +86,7 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related season-plan-related" aria-label="Related team tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -103,18 +101,14 @@ function NextActionsPanel({ actions }: { actions: SeasonPlanningNextAction[] }) 
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -516,7 +510,7 @@ export default function SeasonPlanningWorkspaceClient() {
           </>
         }
         title="Season Planning Workspace"
-        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data. Cross-check Season Goals, Calendar, and Attendance."
+        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data."
       >
         <div className="season-plan-header-actions">
           {view && "seasons" in view && view.seasons.length > 0 ? (

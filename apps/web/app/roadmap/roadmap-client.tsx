@@ -70,20 +70,14 @@ async function persistRoadmapSnapshot(orgHint: string, data: RoadmapView): Promi
 function RoadmapRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "season-planning-workspace", orgId)}>
-        Season plan
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "goals", orgId)}>
-        Objectives
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
-        Exit interviews
-      </Button>
+      <a href={hubHref("/team", "season-planning-workspace", orgId)}>Season plan</a>
+      <a href={hubHref("/team", "goals", orgId)}>Objectives</a>
+      <a href={hubHref("/team", "exit-interview", orgId)}>Exit interviews</a>
     </nav>
   );
 }
 
-function RoadmapNextActions({ orgId }: { orgId: string }) {
+function RoadmapNextActions() {
   const actions = [
     {
       id: "kickoff",
@@ -92,37 +86,19 @@ function RoadmapNextActions({ orgId }: { orgId: string }) {
       href: "#roadmap-kickoff",
       primary: true,
     },
-    {
-      id: "plan",
-      label: "Open Season plan",
-      detail: "Milestones and dated work live beside this kickoff-to-event list.",
-      href: hubHref("/team", "season-planning-workspace", orgId),
-      primary: false,
-    },
-    {
-      id: "goals",
-      label: "Open Objectives",
-      detail: "Season goals stay a separate list from this checklist.",
-      href: hubHref("/team", "goals", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -368,7 +344,7 @@ export default function RoadmapClient() {
           {error}
         </p>
       ) : null}
-      <RoadmapNextActions orgId={view.orgId} />
+      <RoadmapNextActions />
       <KickoffPanel
         live={view}
         value={kickoffInput}

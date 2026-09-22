@@ -1,4 +1,5 @@
 "use client";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
@@ -70,9 +71,7 @@ export function HoursReadyView({
       <PageHeader
         breadcrumbs="Team / Hours"
         title={HOURS_PAGE_TITLE}
-        description={`Shop-time tracking for ${context.orgName ?? "your team"}${
-          context.teamNumber ? ` (Team ${context.teamNumber})` : ""
-        }${policy.seasonGoalHours > 0 ? ` · season goal ${fmtHours(policy.seasonGoalHours)} per member` : ""}.`}
+        description={`Shop-time tracking for ${teamProseLabel(context.teamNumber, context.orgName) ?? "your team"}${policy.seasonGoalHours > 0 ? ` · season goal ${fmtHours(policy.seasonGoalHours)} per member` : ""}.`}
       >
         <HoursRelatedStrip orgId={orgId} />
         <div className="hours-header-actions">

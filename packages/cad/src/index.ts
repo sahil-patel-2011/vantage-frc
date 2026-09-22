@@ -218,3 +218,5 @@ export class CadRepository{
  private async audit(orgId:string,jobId:string,userId:string,action:string,payload:Record<string,unknown>){await this.client.query(`INSERT INTO cad_audit_events(org_id,job_id,actor_user_id,action,payload) VALUES($1,$2,$3,$4,$5::jsonb)`,[orgId,jobId,userId,action,JSON.stringify(payload)]);}
 }
 export function createLeaseToken(){const token=randomBytes(32).toString("base64url");return{token,hash:createHash("sha256").update(token).digest("hex")};}
+export * from "./onshape-ui-map";
+export * from "./onshape-generic-feature";

@@ -188,15 +188,9 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
       <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="Your keys usage" />
 
       <nav className="product-hub-related" aria-label="Related">
-        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>
-          AI API keys
-        </Button>
-        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/team/usage", orgId) : "/team/usage"}>
-          All AI usage
-        </Button>
-        <Button as="a" variant="secondary" href={orgId ? withOrgHref("/account", orgId) : "/account"}>
-          Account
-        </Button>
+        <a href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>AI API keys</a>
+        <a href={orgId ? withOrgHref("/team/usage", orgId) : "/team/usage"}>All AI usage</a>
+        <a href={orgId ? withOrgHref("/account", orgId) : "/account"}>Account</a>
       </nav>
 
       {!orgId ? (

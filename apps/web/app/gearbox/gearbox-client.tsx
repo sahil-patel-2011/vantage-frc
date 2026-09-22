@@ -64,20 +64,14 @@ async function persistGearboxSnapshot(orgHint: string, seasonHint: string, data:
 function GearboxRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "weight-budget", orgId)}>
-        Weight budget
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
+      <a href={hubHref("/build", "weight-budget", orgId)}>Weight budget</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
     </nav>
   );
 }
 
-function GearboxNextActions({ orgId }: { orgId: string }) {
+function GearboxNextActions() {
   const actions = [
     {
       id: "save",
@@ -86,37 +80,19 @@ function GearboxNextActions({ orgId }: { orgId: string }) {
       href: "#gearbox-design",
       primary: true,
     },
-    {
-      id: "weight",
-      label: "Open Weight budget",
-      detail: "Heavy gearboxes show up on the planned-weight board.",
-      href: hubHref("/build", "weight-budget", orgId),
-      primary: false,
-    },
-    {
-      id: "subsystems",
-      label: "Open Subsystem specs",
-      detail: "Attach this reduction to the subsystem it drives.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -461,7 +437,7 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <GearboxNextActions orgId={view.context.orgId} />
+      <GearboxNextActions />
     </main>
   );
 }

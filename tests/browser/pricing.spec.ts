@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("pricing leads with every-feature-every-plan and the hosted AI ladder", async ({ page }) => {
+test("the cost page leads with the software being free, then the hosted AI ladder", async ({ page }) => {
   await page.goto("/pricing");
+  // The headline changed on purpose. "Every feature on every plan" is true and
+  // reads as a tier comparison; the first thing this page has to say is that
+  // the software costs nothing, which is what the landing strip now says too.
   await expect(
-    page.getByRole("heading", { name: "Every feature on every plan. You are choosing how much AI you want." }),
+    page.getByRole("heading", { name: "The software is free. You are choosing how much hosted AI you want." }),
   ).toBeVisible();
   await expect(page.getByText(/Everything is included on every plan/i).first()).toBeVisible();
 

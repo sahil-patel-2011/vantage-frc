@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 import { useSearchParams } from "next/navigation";
 import type { SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
 import { stripHiddenAnswers, visibleFields, withInferredPhaseRules } from "../../lib/scouting/context-visible";
+import { buildScoutTargets } from "../../lib/scouting/scout-target";
+import { apiErrorMessage } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { useOnline } from "../../lib/offline/use-online";
@@ -57,9 +60,6 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scouting-qr.css";
 
-function scoutTeamLabel(teamKey: string): string {
-  return teamKey.replace(/^frc/i, "");
-}
 
 async function persistScoutingSnapshot(orgId: string, data: Bootstrap): Promise<void> {
   if (!orgId) return;
@@ -195,7 +195,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setFromCache(false);
           setFetchFailed(true);
           setBootstrapStatus(response.status);
-          setMessage("Could not load scouting");
+          // The route says which sign-in method this team allows, or which
+          // role is missing. Overwriting that with "Could not load scouting"
+          // left the screen with nothing but a 403 to reason from, and a 403
+          // alone reads as a role problem — which is what an owner who simply
+          // signed in the wrong way was told.
+          setMessage((await apiErrorMessage(response)) ?? "Could not load scouting");
           void clearFeatureSnapshot("scouting", orgId);
           void clearFeatureSnapshot("scouting", "_");
         } else if (response.ok) {
@@ -269,32 +274,16 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     }
   }, [data, matchKey, searchParams]);
 
-  const matchOptions = useMemo(() => {
-    if (!data) return [];
-    if (data.assignments.length) {
-      return data.assignments.map((assignment) => ({
-        matchKey: assignment.matchKey,
-        teamKey: assignment.teamKey,
-        label: `${assignment.compLevel.toUpperCase()} ${assignment.matchNumber} · ${scoutTeamLabel(assignment.teamKey)}`,
-      }));
-    }
-    const options: Array<{ matchKey: string; teamKey: string; label: string }> = [];
-    for (const match of data.matches) {
-      const teams = [
-        ...(match.redAlliance?.teamKeys ?? []),
-        ...(match.blueAlliance?.teamKeys ?? []),
-      ];
-      const comp = match.compLevel?.toUpperCase() ?? "MATCH";
-      for (const key of teams) {
-        options.push({
-          matchKey: match.matchKey,
-          teamKey: key,
-          label: `${comp} ${match.matchNumber} · ${scoutTeamLabel(key)}`,
-        });
-      }
-    }
-    return options;
-  }, [data]);
+  // Assignments are a suggestion, not a fence. They sort first and are marked,
+  // and the rest of the schedule stays reachable: a scout given three matches
+  // can still record the fourth one they happened to watch.
+  const matchOptions = useMemo(
+    () =>
+      data
+        ? buildScoutTargets({ assignments: data.assignments, matches: data.matches })
+        : [],
+    [data],
+  );
 
   const schema = useMemo(
     () => data?.schemas.find((candidate) => candidate.type === type),
@@ -420,6 +409,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }
 
   async function attachMedia(file: File, options?: { fieldKey?: string; tags?: string[] }) {
+    if (!MEDIA_ENABLED) { setMessage(MEDIA_PAUSED_MESSAGE); return null; }
     const eventKey = data?.eventKey;
     const tags = ["pit", ...(options?.tags ?? [])];
     const kind = scoutMediaKind(file);
@@ -634,6 +624,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setFromCache(false);
           setFetchFailed(true);
           setBootstrapStatus(response.status);
+          setMessage((await apiErrorMessage(response)) ?? "Could not load scouting");
           void clearFeatureSnapshot("scouting", orgId);
           void clearFeatureSnapshot("scouting", "_");
         } else if (response.ok) {

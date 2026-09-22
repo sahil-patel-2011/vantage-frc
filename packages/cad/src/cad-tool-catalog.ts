@@ -238,6 +238,66 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     mutating: false,
   },
   {
+    name: "onshape_add_feature",
+    label: "Build any Onshape feature",
+    group: "modify",
+    description:
+      "Build any feature Onshape publishes, by naming its featureType and the parameters you want. " +
+      "Ask onshape_feature_specs first for the exact parameter ids, units and enum options — this " +
+      "reaches 96 of the 97 feature types on a standard account, including loft, sweep, revolve, " +
+      "shell, draft, helix, thread and sheet metal, plus any custom FeatureScript the team adds. " +
+      "Lengths in millimetres, angles in degrees. Geometry selections need real resolved ids; it " +
+      "refuses rather than guessing.",
+    params: [
+      {
+        name: "featureType",
+        type: "string",
+        required: true,
+        description:
+          "Onshape's own id for the feature — loft, revolve, shell, helix, sheetMetalFlange. " +
+          "onshape_feature_specs lists every one this account publishes.",
+      },
+      {
+        name: "parameters",
+        type: "string",
+        required: true,
+        description:
+          'JSON object of parameter id to value, e.g. {"thickness": 2, "entities": ["JHD"]}. ' +
+          "Lengths are millimetres, angles degrees; enums take one of the published options; " +
+          "geometry takes resolved deterministic ids. Anything you leave out keeps Onshape's default.",
+      },
+      {
+        name: "name",
+        type: "string",
+        required: false,
+        description: "Name for the feature in the tree. Defaults to Onshape's own label.",
+      },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote:
+      "Driven by Onshape's published feature catalogue. Fusion has no equivalent endpoint, so the " +
+      "add-in stays on the fixed operations in this catalogue.",
+    mutating: true,
+  },
+  {
+    name: "onshape_feature_specs",
+    label: "List every Onshape feature",
+    group: "inspect",
+    description:
+      "Ask the bound Part Studio which features Onshape can build, and what each one takes. " +
+      "Returns every feature type available on this account with its full parameter schema — " +
+      "including any custom FeatureScript the team has added — so the answer is always current " +
+      "rather than a list somebody maintained by hand.",
+    params: [],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote:
+      "Onshape publishes its feature catalogue over the API; Fusion has no equivalent endpoint, " +
+      "so the add-in's operations are the fixed list in this catalogue.",
+    mutating: false,
+  },
+  {
     name: "onshape_describe",
     label: "Describe features",
     group: "inspect",

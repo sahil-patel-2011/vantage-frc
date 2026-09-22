@@ -59,13 +59,13 @@
 }
 .toggle:hover,
 .ghostButton:hover {
-  border-color: var(--accent, #1457d9);
-  color: var(--accent, #1457d9);
+  border-color: var(--accent, #17457f);
+  color: var(--accent, #17457f);
 }
 .toggle input {
   width: 18px;
   height: 18px;
-  accent-color: var(--accent, #1457d9);
+  accent-color: var(--accent, #17457f);
 }
 
 .primaryButton {
@@ -73,7 +73,7 @@
   padding: 0 18px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm, 12px);
-  background: var(--accent, #1457d9);
+  background: var(--accent, #17457f);
   color: var(--accent-ink, #fff);
   font: inherit;
   font-weight: 600;
@@ -106,7 +106,7 @@
   padding: 12px;
   border: 1px solid var(--line, #d5dde8);
   border-radius: var(--radius-sm, 12px);
-  background: var(--bg, #eef2f7);
+  background: var(--bg, #f2f3f5);
 }
 .fieldLabel {
   font-weight: 600;
@@ -129,7 +129,7 @@
   width: 100%;
 }
 .field input:focus-visible {
-  outline: 2px solid var(--accent, #1457d9);
+  outline: 2px solid var(--accent, #17457f);
   outline-offset: 1px;
 }
 
@@ -144,7 +144,7 @@
   padding: 12px;
   border-left: 3px solid var(--line, #d5dde8);
   border-radius: 0 var(--radius-sm, 12px) var(--radius-sm, 12px) 0;
-  background: var(--bg, #eef2f7);
+  background: var(--bg, #f2f3f5);
 }
 .spotOn {
   border-left-color: #16a34a;

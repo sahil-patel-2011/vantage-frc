@@ -58,20 +58,14 @@ async function persistChecklistLibrarySnapshot(
 function ChecklistLibraryRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related pit tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "tool-checkout", orgId)}>
-        Tool checkout
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "equipment-maintenance", orgId)}>
-        Equipment
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/match-checklist", orgId)}>
-        Pit checklist
-      </Button>
+      <a href={hubHref("/team", "tool-checkout", orgId)}>Tool checkout</a>
+      <a href={hubHref("/team", "equipment-maintenance", orgId)}>Equipment</a>
+      <a href={withOrgHref("/match-checklist", orgId)}>Pit checklist</a>
     </nav>
   );
 }
 
-function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
+function ChecklistLibraryNextActions() {
   const actions = [
     {
       id: "template",
@@ -80,37 +74,19 @@ function ChecklistLibraryNextActions({ orgId }: { orgId: string }) {
       href: "#checklist-library-new",
       primary: true,
     },
-    {
-      id: "pit",
-      label: "Open pit checklist",
-      detail: "Timed pre-queue runs live on Event Day, not as a second copy here.",
-      href: withOrgHref("/match-checklist", orgId),
-      primary: false,
-    },
-    {
-      id: "tools",
-      label: "Open Tool checkout",
-      detail: "Hand tools that leave the shop sit beside these SOPs.",
-      href: hubHref("/team", "tool-checkout", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -334,7 +310,7 @@ export default function ChecklistLibraryClient() {
           {error}
         </p>
       ) : null}
-      <ChecklistLibraryNextActions orgId={view.orgId} />
+      <ChecklistLibraryNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.lastPitInstantiation ? <PitOpenedNotice view={view} /> : null}

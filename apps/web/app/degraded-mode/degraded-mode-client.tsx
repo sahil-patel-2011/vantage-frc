@@ -57,63 +57,10 @@ async function persistDegradedModeSnapshot(orgHint: string, data: DegradedModeVi
 function DataSourceHealthRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/team/data", orgId)}>
-        Team Data
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/rankings", orgId)}>
-        Rankings
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/schedule", orgId)}>
-        Schedule
-      </Button>
+      <a href={withOrgHref("/team/data", orgId)}>Team Data</a>
+      <a href={withOrgHref("/rankings", orgId)}>Rankings</a>
+      <a href={withOrgHref("/schedule", orgId)}>Schedule</a>
     </nav>
-  );
-}
-
-function DataSourceHealthNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "data",
-      label: "Open Team Data",
-      detail: "The last saved schedule and rankings live on Team Data.",
-      href: withOrgHref("/team/data", orgId),
-      primary: true,
-    },
-    {
-      id: "rankings",
-      label: "Open Rankings",
-      detail: "Check whether the current ranking board is using the last saved copy.",
-      href: withOrgHref("/rankings", orgId),
-      primary: false,
-    },
-    {
-      id: "schedule",
-      label: "Open Schedule",
-      detail: "Match times stay on the last saved copy when the live source is stale.",
-      href: withOrgHref("/schedule", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -322,7 +269,7 @@ export default function DegradedModeClient() {
           {error}
         </p>
       ) : null}
-      <DataSourceHealthNextActions orgId={view.orgId} />
+
       <div style={{ display: "grid", gap: 16 }}>
         <BannerPanel view={view} busy={busy} mutate={mutate} />
         <SourcesPanel view={view} />

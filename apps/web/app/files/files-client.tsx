@@ -44,6 +44,7 @@ import {
 } from "./files-model";
 import { Body, PreviewPane, ShareDialog, UploadList } from "./files-panels";
 import { ScopeNotice } from "./files-scope-notice";
+import { isPausedMediaFile, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 
 export default function FilesClient() {
   const [orgId, setOrgId] = useState<string | null>(null);
@@ -225,6 +226,10 @@ export default function FilesClient() {
   const startUploads = useCallback(
     (files: File[]) => {
       if (!activeOrgId || !canUpload || files.length === 0) return;
+      if (files.some((file) => isPausedMediaFile(file.name, file.type))) {
+        setNotice(MEDIA_PAUSED_MESSAGE);
+        return;
+      }
       const target = { orgId: activeOrgId, scope: railScope(rail), folderId };
       const queued: UploadItem[] = files.map((file, index) => ({
         id: `${Date.now()}-${index}-${file.name}`,
@@ -291,7 +296,7 @@ export default function FilesClient() {
     <PageHeader
       navPath="/files"
       title="Files"
-      description="One place for the team's videos, CAD exports, print files, flyers and paperwork — and a private space of your own. Share anything to any email address, account or not."
+      description={MEDIA_ENABLED ? "One place for the team's videos, CAD exports, print files, flyers and paperwork — and a private space of your own." : "Team documents, CAD exports and paperwork. Photo and video uploads are temporarily paused."}
     >
       <div className="drive-header-actions">
         <div className="drive-layout-toggle" role="group" aria-label="Layout">
@@ -328,9 +333,7 @@ export default function FilesClient() {
   const related = (
     <nav className="product-hub-related" aria-label="Related files tools">
       {filesRelatedLinks(activeOrgId, { include: [...FILES_RELATED_INCLUDE] }).map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

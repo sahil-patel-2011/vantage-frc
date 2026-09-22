@@ -63,17 +63,114 @@ function TeamDataNextActionsPanel({ actions }: { actions: TeamDataNextAction[] }
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
     </Panel>
+  );
+}
+
+/**
+ * The one place a team puts in its Blue Alliance key.
+ *
+ * This was two copies of the same <form>: one headed "Blue Alliance team key"
+ * in the setup shell, one headed "Fallback key" further down the live page.
+ * Same input, same endpoint, same handler — described once as the thing you
+ * must do and once as an optional extra. Whichever a team found first became
+ * what they believed, and the two beliefs disagreed.
+ *
+ * One panel now, and the copy tells the truth for the state it is actually in:
+ * required when nothing is connected, a standby when the platform key is
+ * already carrying this workspace.
+ */
+function TbaKeyPanel({
+  required,
+  value,
+  onValueChange,
+  onSubmit,
+  busy,
+  credentials,
+  onTest,
+  message,
+  ok,
+}: {
+  required: boolean;
+  value: string;
+  onValueChange: (next: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  busy: boolean;
+  credentials: Credential[];
+  onTest?: (credentialId: string) => void;
+  message: string;
+  ok: boolean;
+}) {
+  return (
+    <section className="app-card soft-panel team-data-panel">
+      <h2>Blue Alliance key</h2>
+      <p className="app-muted">
+        {required
+          ? "Nothing syncs until this workspace can reach The Blue Alliance. Create a key at thebluealliance.com → Account → Read API Keys and paste it here. It is encrypted on save and never shown again."
+          : "This workspace is already syncing on the site-wide key. Your own key is kept as a standby and used when the shared one is under pressure. Encrypted on save and never shown again."}
+      </p>
+      <form className="team-data-key-form" onSubmit={onSubmit}>
+        <label>
+          TBA Read API v3 key
+          <input
+            type="password"
+            autoComplete="off"
+            value={value}
+            onChange={(event) => onValueChange(event.target.value)}
+            placeholder="Encrypted on save — never shown again"
+            required
+          />
+        </label>
+        <Button variant="secondary" type="submit" disabled={busy || !value.trim()}>
+          Encrypt and save
+        </Button>
+      </form>
+      {message ? (
+        <p className={`telemetry-status${ok ? " success" : ""}`} role="status">
+          {message}
+        </p>
+      ) : null}
+      {onTest ? (
+        credentials.length ? (
+          <ul className="team-data-credentials">
+            {credentials.map((item) => (
+              <li key={item.id}>
+                <div>
+                  <strong>{item.opaqueKeyId}</strong>
+                  <small>{item.status}</small>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onTest(item.id)}
+                >
+                  Test
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">No key saved for this team yet.</p>
+        )
+      ) : null}
+      {/* Asked often enough to belong here rather than in a support article:
+          people come to this panel hunting for a second field and do not find
+          one. Statbotics genuinely has no key — saying so stops the hunt. */}
+      <p className="app-muted team-data-statbotics">
+        <strong>Statbotics needs no key.</strong> Its API is open, so EPA and
+        ranking data arrive without anything to configure. This one key is all
+        your team has to supply.
+      </p>
+    </section>
   );
 }
 
@@ -417,34 +514,16 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       >
         <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
-          <section className="app-card soft-panel team-data-panel">
-            <h2>Blue Alliance team key</h2>
-            <p className="app-muted">
-              Encrypted on save and never shown again. Create one at thebluealliance.com → Account → Read API
-              Keys. A site-wide Blue Alliance key in deployment settings covers every team and makes this unnecessary.
-            </p>
-            <form className="team-data-key-form" onSubmit={saveFallbackKey}>
-              <label>
-                TBA Read API v3 key
-                <input
-                  type="password"
-                  autoComplete="off"
-                  value={key}
-                  onChange={(event) => setKey(event.target.value)}
-                  placeholder="Encrypted on save — never shown again"
-                  required
-                />
-              </label>
-              <Button variant="secondary" type="submit" disabled={busy || !key.trim()}>
-                Encrypt and save
-              </Button>
-            </form>
-            {message ? (
-              <p className={`telemetry-status${ok ? " success" : ""}`} role="status">
-                {message}
-              </p>
-            ) : null}
-          </section>
+          <TbaKeyPanel
+            required
+            value={key}
+            onValueChange={setKey}
+            onSubmit={saveFallbackKey}
+            busy={busy}
+            credentials={credentials}
+            message={message}
+            ok={ok}
+          />
         ) : null}
       </TeamDataShell>
     );
@@ -543,46 +622,19 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             </Button>
           </section>
 
-          <section className="app-card soft-panel team-data-panel">
-            <h2>Fallback key</h2>
-            <p className="app-muted">
-              Optional encrypted fallback when platform ingest is under pressure. Saved via the same connector path as
-              team settings.
-            </p>
-            <form className="team-data-key-form" onSubmit={saveFallbackKey}>
-              <label>
-                TBA Read API v3 key
-                <input
-                  type="password"
-                  autoComplete="off"
-                  value={key}
-                  onChange={(event) => setKey(event.target.value)}
-                  placeholder="Encrypted on save — never shown again"
-                  required
-                />
-              </label>
-              <Button variant="secondary" type="submit" disabled={busy || !key.trim()}>
-                Encrypt and save
-              </Button>
-            </form>
-            {credentials.length ? (
-              <ul className="team-data-credentials">
-                {credentials.map((item) => (
-                  <li key={item.id}>
-                    <div>
-                      <strong>{item.opaqueKeyId}</strong>
-                      <small>{item.status}</small>
-                    </div>
-                    <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void testCredential(item.id)}>
-                      Test
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="app-muted">No fallback credential configured.</p>
-            )}
-          </section>
+          <TbaKeyPanel
+            required={!tbaConfigured}
+            value={key}
+            onValueChange={setKey}
+            onSubmit={saveFallbackKey}
+            busy={busy}
+            credentials={credentials}
+            onTest={(credentialId) => void testCredential(credentialId)}
+            /* The live page already prints save/sync feedback under its header;
+               passing it again here would show every result twice. */
+            message=""
+            ok={ok}
+          />
 
           <section className="app-card soft-panel team-data-panel">
             <h2>Ingestion health</h2>

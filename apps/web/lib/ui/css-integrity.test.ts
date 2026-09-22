@@ -317,7 +317,10 @@ describe("stylesheet integrity", () => {
     // Marketing sheets keep a separate copper/paper palette on purpose.
     // Product chrome must not pick it up or two buttons on the same screen
     // diverge again. system.css may declare the aliases.
-    const marketingSheet = /(?:^|[/\\])(?:marketing(?:-v3|-showcase)?|legal)\.css$/;
+    // vantage-scan-marketing.css is loaded only by components/marketing/
+    // marketing-styles.ts, so it is a marketing sheet and may use --m-*.
+    const marketingSheet =
+      /(?:^|[/\\])(?:marketing(?:-v3|-showcase)?|legal|vantage-scan-marketing)\.css$/;
     const offenders: string[] = [];
     for (const file of files) {
       if (file.endsWith(`${sep}system.css`) || file.endsWith("/system.css")) continue;
@@ -419,7 +422,7 @@ describe("stylesheet integrity", () => {
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
     const block = text.slice(start, end);
-    expect(block).not.toMatch(/#f7f6f2|#152033|#6b7280|#1f2937|#1457d9|#ffffff\b|#fff\b|#e2e0da|#14243a/i);
+    expect(block).not.toMatch(/#f7f6f2|#152033|#6b7280|#1f2937|#17457f|#ffffff\b|#fff\b|#e2e0da|#14243a/i);
     expect(block).toContain("var(--bg)");
     expect(block).toContain("var(--surface)");
     expect(block).toContain("var(--ink)");

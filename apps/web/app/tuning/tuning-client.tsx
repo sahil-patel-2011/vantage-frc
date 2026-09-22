@@ -79,20 +79,14 @@ async function persistTuningSnapshot(orgHint: string, seasonHint: string, data: 
 function TuningRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "shooter-table", orgId)}>
-        Shooter table
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code
-      </Button>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
+      <a href={hubHref("/build", "shooter-table", orgId)}>Shooter table</a>
+      <a href={hubHref("/build", "code", orgId)}>Code</a>
     </nav>
   );
 }
 
-function TuningNextActions({ orgId }: { orgId: string }) {
+function TuningNextActions() {
   const actions = [
     {
       id: "save",
@@ -101,37 +95,19 @@ function TuningNextActions({ orgId }: { orgId: string }) {
       href: "#tuning-constant",
       primary: true,
     },
-    {
-      id: "subsystems",
-      label: "Open Subsystem specs",
-      detail: "Name the mechanism this constant belongs to.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: false,
-    },
-    {
-      id: "shooter",
-      label: "Open Shooter table",
-      detail: "Distance lookup is a different page from these constants.",
-      href: hubHref("/build", "shooter-table", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -462,7 +438,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         </Panel>
       ) : null}
 
-      <TuningNextActions orgId={view.context.orgId} />
+      <TuningNextActions />
     </main>
   );
 }

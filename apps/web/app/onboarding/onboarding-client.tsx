@@ -41,6 +41,7 @@ import {
 import { PendingPanel } from "./onboarding-pending";
 import { PreferencesForm, ProfileForm, TeamForm } from "./onboarding-steps";
 import "./onboarding-flow.css";
+import "../vantage-scan-auth.css";
 
 export default function OnboardingClient() {
   const searchParams = useSearchParams();
@@ -410,12 +411,12 @@ export default function OnboardingClient() {
           }
         : {
             eyebrow: "WELCOME TO VANTAGE",
-            title: "Set up Vantage around your role.",
-            sub: "Name, team, and role — three short steps. Nothing is shared with a team until they approve you.",
+            title: "Make Vantage work for you.",
+            sub: "Three short steps. Your team still has to let you in before anything is shared.",
           };
 
   return (
-    <main className="onboarding-page onboarding-flow-page">
+    <main className="onboarding-page onboarding-flow-page scan-workbench scan-hub--onboarding">
       <section className={`onboarding-card onboarding-flow-card${step === "pending" || step === "done" ? " pending" : ""}`} aria-labelledby="onboarding-title">
         <header className="onboarding-flow-header">
           <div className="onboarding-brand"><VantageLogo /></div>
@@ -427,7 +428,7 @@ export default function OnboardingClient() {
         {setupStep ? (
           <div className="onboarding-progress-block">
             <p className="onboarding-progress-label" aria-live="polite">{progressLabel}</p>
-            <ol className="onboarding-steps onboarding-steps-simple" aria-label="Onboarding progress">
+            <ol className="onboarding-steps onboarding-steps-simple scan-rail" aria-label="Onboarding progress">
               {stepMeta.map((item) => (
                 <li key={item.id} className={item.phase} aria-current={item.phase === "current" ? "step" : undefined}>
                   <b aria-hidden="true">{item.phase === "done" ? "✓" : item.index + 1}</b>

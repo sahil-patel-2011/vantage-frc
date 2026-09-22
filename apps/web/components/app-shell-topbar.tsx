@@ -6,6 +6,38 @@ import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
 import type { Me, MembershipOption } from "./app-shell-model";
 
+/**
+ * The team you are in, rendered as the control that changes it.
+ *
+ * This was plain text. Switching teams lived behind the avatar menu and only
+ * appeared there when you already belonged to more than one team — so the
+ * label naming your team was inert, and from the one place you would think to
+ * look, there was no way to switch, leave, or join another. Same words, same
+ * position; now you can press it.
+ */
+function TeamChip({
+  label,
+  onOpen,
+  className,
+}: {
+  label: string;
+  onOpen: () => void;
+  className: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${className} soft-topbar-team`}
+      onClick={onOpen}
+      aria-label={`${label} — switch team`}
+      title="Switch or join a team"
+    >
+      <span>{label}</span>
+      <Icon name="chevron" />
+    </button>
+  );
+}
+
 export function AppShellTopbar({
   showBack,
   onBack,
@@ -16,7 +48,8 @@ export function AppShellTopbar({
   orgId,
   navOpen,
   onOpenNav,
-  shortcutHint,
+  onOpenTeams,
+
   unreadCount,
   accountMenuOpen,
   onToggleAccount,
@@ -42,7 +75,9 @@ export function AppShellTopbar({
   orgId: string;
   navOpen: boolean;
   onOpenNav: () => void;
-  shortcutHint: string;
+  /** Opens the drawer with the team picker already expanded. */
+  onOpenTeams: () => void;
+
   unreadCount: number;
   accountMenuOpen: boolean;
   onToggleAccount: () => void;
@@ -62,6 +97,25 @@ export function AppShellTopbar({
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
+        {/* Navigation opens from the left, where a hamburger lives on every
+            other app. The right side is for things you act on. */}
+        {navOpen ? null : (
+          <button
+            className="soft-icon-btn soft-menu-btn"
+            data-tour="menu"
+            type="button"
+            aria-label="Menu and search"
+            aria-expanded={navOpen}
+            aria-keyshortcuts="Control+K Meta+K"
+            onClick={onOpenNav}
+          >
+            <span className="soft-burger" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
+        )}
         <div className="soft-page-head">
           {showBack ? (
             <button
@@ -75,11 +129,38 @@ export function AppShellTopbar({
           ) : null}
           <div className="soft-page-head-copy">
             {isHubRoot ? (
-              <p className="soft-topbar-title soft-topbar-org">{orgLabel}</p>
+              <TeamChip
+                label={orgLabel}
+                onOpen={onOpenTeams}
+                className="soft-topbar-title soft-topbar-org"
+              />
             ) : (
               <>
                 <p className="soft-topbar-title">{title ?? "Vantage"}</p>
-                <small className="soft-org-crumb">{showBack ? crumbHint : orgLabel}</small>
+                {/* The line under the title is the team, or the crumb when
+                    there is a back button. Either can repeat the title —
+                    "6925" over "6925" — which reads as a rendering bug rather
+                    than a hierarchy, so the second line is dropped when it
+                    would only say the same thing again. */}
+                {(() => {
+                  const sub = showBack ? crumbHint : orgLabel;
+                  if (!sub) return null;
+                  const heading = (title ?? "").trim().toLowerCase();
+                  const crumb = sub.trim().toLowerCase();
+                  // A crumb reading "Settings / Account" under a title reading
+                  // "Account" ends in the word it sits beneath. Comparing the
+                  // whole string missed that, so the page said its own name
+                  // twice, one line apart.
+                  const tail = crumb.split("/").pop()?.trim() ?? crumb;
+                  if (crumb === heading || tail === heading) return null;
+                  // The crumb is a location; the team is a thing you can
+                  // change. Only the latter becomes a control.
+                  return showBack ? (
+                    <small className="soft-org-crumb">{sub}</small>
+                  ) : (
+                    <TeamChip label={sub} onOpen={onOpenTeams} className="soft-org-crumb" />
+                  );
+                })()}
               </>
             )}
           </div>
@@ -89,28 +170,13 @@ export function AppShellTopbar({
         <ShellOutboxStatus orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-ask-ai"
+          data-tour="ask-ai"
           href={withOrgHref("/ai?tab=chat", orgId || null)}
           aria-label="Ask AI"
           title="Ask AI — strategy, match predictions, design help"
         >
           <Icon name="bolt" />
-          <span className="soft-ask-ai-label">Ask AI</span>
         </a>
-        {navOpen ? null : (
-          <button
-            className="soft-icon-btn soft-search-btn"
-            type="button"
-            aria-label="Search Vantage"
-            aria-keyshortcuts="Control+K Meta+K"
-            onClick={onOpenNav}
-          >
-            <Icon name="search" />
-            <span className="soft-search-label">Search</span>
-            <kbd className="soft-search-kbd" aria-hidden="true">
-              {shortcutHint}
-            </kbd>
-          </button>
-        )}
         <a
           className="soft-icon-btn soft-notif"
           href="/notifications"

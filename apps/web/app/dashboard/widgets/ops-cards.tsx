@@ -5,6 +5,8 @@ import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
+import { ratingSplit, ratingValue, splitWidths } from "../../../lib/dashboard/rating-split";
+import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
 import { emptyHintFor, WidgetShell as Shell } from "./widget-shell";
@@ -45,6 +47,58 @@ function sourceLabel(source: string): string {
 }
 
 /** Setup wall: one next step, never a laundry list of sibling CTAs. */
+/**
+ * Auto / teleop / endgame as proportions of one bar, with the total beside it.
+ *
+ * Every segment carries a text label in the legend, so the colours are a second
+ * channel rather than the only one. Renders nothing at all when the three parts
+ * are not all real — an empty track would read as a measurement of zero.
+ */
+function RatingSplitBar({
+  auto,
+  teleop,
+  endgame,
+}: {
+  auto: unknown;
+  teleop: unknown;
+  endgame: unknown;
+}) {
+  const split = ratingSplit({ auto, teleop, endgame });
+  if (!split) return null;
+  const widths = splitWidths(split);
+  return (
+    <div className="dash-split">
+      <div className="dash-split-head">
+        <span className="app-muted">Rating</span>
+        <strong>{ratingValue(split.total)}</strong>
+      </div>
+      <div
+        className="dash-split-bar"
+        role="img"
+        aria-label={split.parts
+          .map((part) => `${part.label} ${ratingValue(part.value)}`)
+          .join(", ")}
+      >
+        {split.parts.map((part, index) => (
+          <span
+            key={part.id}
+            className={`dash-split-seg dash-split-${part.id}`}
+            style={{ width: widths[index] }}
+          />
+        ))}
+      </div>
+      <ul className="dash-split-legend">
+        {split.parts.map((part) => (
+          <li key={part.id}>
+            <i className={`dash-split-dot dash-split-${part.id}`} aria-hidden="true" />
+            {part.label} <b>{ratingValue(part.value)}</b>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
   if (!orgId) {
     return [{ href: "/invite", label: "Open invite", detail: "Use the link sent to your email." }];
@@ -136,8 +190,8 @@ export function renderOpsWidget({
     case "prediction_summary": {
       const alliance = data.ourAlliance === "blue" ? "blue" : data.ourAlliance === "red" ? "red" : null;
       const win = predictionWinDisplay({
-        pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
-        pBlue: typeof data.pBlue === "number" ? data.pBlue : Number(data.pBlue),
+        pRed: numericOrNull(data.pRed),
+        pBlue: numericOrNull(data.pBlue),
         alliance,
         modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
       });
@@ -246,26 +300,34 @@ export function renderOpsWidget({
       return (
         <Shell type={type} title="Competition snapshot" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
-            <div className="dash-metric-grid">
-              <div>
-                <strong>{rankLabel}</strong>
-                <span>
-                  {scope === "year" ? "this season" : `rank · ${String(data.record ?? "")}`}
-                </span>
+            <>
+              {/* Rank and record are two facts, so they are two tiles. The
+                  season score used to sit here as a third, repeating the
+                  number the bar below already shows — the same figure twice on
+                  one card reads as a bug. The bar owns it now. */}
+              <div className="dash-metric-grid">
+                <div>
+                  <strong>{rankLabel}</strong>
+                  <span>{scope === "year" ? "this season" : "official rank"}</span>
+                </div>
+                {data.record ? (
+                  <div>
+                    <strong>{String(data.record)}</strong>
+                    <span>win–loss–tie{data.source ? ` · ${sourceLabel(String(data.source))}` : ""}</span>
+                  </div>
+                ) : null}
               </div>
-              <div>
-                <strong>{data.epaTotal != null ? Number(data.epaTotal).toFixed(1) : "—"}</strong>
-                <span>season score{data.source ? ` · ${sourceLabel(String(data.source))}` : ""}</span>
-              </div>
-              <div>
-                <strong>
-                  {data.epaAuto != null ? Number(data.epaAuto).toFixed(1) : "—"} /{" "}
-                  {data.epaTeleop != null ? Number(data.epaTeleop).toFixed(1) : "—"} /{" "}
-                  {data.epaEndgame != null ? Number(data.epaEndgame).toFixed(1) : "—"}
-                </strong>
-                <span>auto / teleop / end</span>
-              </div>
-            </div>
+              {/* The same three numbers used to print as "8.5 / 31.8 / 14.6 —
+                  auto / teleop / end", which is a row of digits to decode. As
+                  one bar you can see which phase is carrying the robot. It
+                  draws only when all three parts are real; the split refuses
+                  otherwise rather than showing an empty or invented bar. */}
+              <RatingSplitBar
+                auto={data.epaAuto}
+                teleop={data.epaTeleop}
+                endgame={data.epaEndgame}
+              />
+            </>
           ) : null}
         </Shell>
       );

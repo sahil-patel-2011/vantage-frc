@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { pickHomeBoard } from "../../../lib/dashboard/boards";
+import { HOME_ALWAYS_LOADED } from "../../../lib/dashboard/refresh";
 import {
   canWriteOrgDashboard,
   catalogEntry,
@@ -187,11 +188,9 @@ export async function GET(request: Request) {
       });
 
       const layout = filterLayoutForRole(
-        ensureOnboardingChecklist(
-          active?.layout?.length
-            ? active.layout
-            : await defaultLayoutForMember(client, session.user.id, role),
-        ),
+        Array.isArray(active?.layout)
+          ? active.layout
+          : await defaultLayoutForMember(client, session.user.id, role),
         role,
       );
 
@@ -221,7 +220,17 @@ export async function GET(request: Request) {
           orgId,
           userId: session.user.id,
           role,
-          widgetTypes: layout.map((item) => item.type),
+          /*
+            The board's widgets, plus the ones a permanent part of Home needs.
+
+            "What to do now" reads today's calendar to say "Build night —
+            today at 6 PM". That card is on Home for everybody, so asking only
+            for the widgets a team happens to have added made the feature work
+            on some boards and silently not on others — and "silently" is the
+            word that matters, because a card that says "nothing you have to
+            do right now" on a night with a practice is confidently wrong.
+          */
+          widgetTypes: [...new Set([...layout.map((item) => item.type), ...HOME_ALWAYS_LOADED])],
           includeHomeStrip: true,
         }),
         loadDataSourceHealth(client, orgId),
@@ -333,9 +342,9 @@ export async function POST(request: Request) {
         }
 
         const validated = validateDashboardLayout(
-          board.layout?.length
+          filterLayoutForRole(Array.isArray(board.layout)
             ? board.layout
-            : await defaultLayoutForMember(client, session.user.id, role),
+            : await defaultLayoutForMember(client, session.user.id, role), role),
           role,
         );
         if (!validated.ok) throw new Error(validated.error);
@@ -404,8 +413,8 @@ export async function POST(request: Request) {
         }
 
         const layout = filterLayoutForRole(
-          board.layout?.length
-            ? ensureOnboardingChecklist(board.layout)
+          Array.isArray(board.layout)
+            ? board.layout
             : await defaultLayoutForMember(client, session.user.id, role),
           role,
         );

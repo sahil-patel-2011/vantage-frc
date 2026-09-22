@@ -226,7 +226,6 @@ const SHELL_ROUTES = [
   "/scout-p2p-relay",
   "/scout-schema-negotiate",
   "/scout-training-mode",
-  "/scouting-schema-ab",
   "/scouting/forms",
   "/search",
   "/season-rollover",

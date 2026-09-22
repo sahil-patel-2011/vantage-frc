@@ -898,7 +898,22 @@ export function evaluateFormula(
     const value = payload[expression.field];
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
   }
-  const values = expression.args.map((arg) => evaluateFormula(arg, payload));
+  /**
+   * A formula comes out of a jsonb column, so its shape is whatever was
+   * written there — by an older version of the builder, by a hand-edited row,
+   * or by a seed script with a typo. `expression.args.map` on a node with no
+   * `args` threw `Cannot read properties of undefined (reading 'map')`, which
+   * reached a scouting screen as a 500 and told a student nothing about the
+   * formula their team had saved.
+   *
+   * Zero, not a throw: a malformed node contributes nothing and the rest of
+   * the formula still evaluates, which is the difference between one field
+   * going quiet and a whole event's scouting becoming unreadable.
+   */
+  const args = Array.isArray((expression as { args?: unknown }).args)
+    ? (expression as { args: FormulaExpression[] }).args
+    : [];
+  const values = args.map((arg) => evaluateFormula(arg, payload));
   if (values.length === 0) return 0;
   switch (expression.op) {
     case "add":
@@ -916,6 +931,11 @@ export function evaluateFormula(
       return Math.min(...values);
     case "max":
       return Math.max(...values);
+    default:
+      // An op this version does not know. Returning `undefined` here — which
+      // the switch did by falling through — put a non-number into arithmetic
+      // upstream and turned every downstream total into NaN.
+      return 0;
   }
 }
 

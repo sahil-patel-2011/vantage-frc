@@ -91,9 +91,7 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related prt-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -105,18 +103,14 @@ function NextActionsPanel({ actions }: { actions: PitRepairTriageNextAction[] })
     <section className="app-card soft-panel edc-next-actions prt-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -372,7 +366,7 @@ export default function PitRepairTriageClient() {
           </>
         }
         title="Pit repair triage"
-        description="Log a pit failure against real FMEA history and spare stock. Cross-check Command and Spare Kit."
+        description="Log a pit failure against real FMEA history and spare stock."
       >
         <div className="prt-header-actions">
           <RelatedStrip orgId={orgId} />

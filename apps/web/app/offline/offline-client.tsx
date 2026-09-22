@@ -2,7 +2,7 @@
 
 import "../product-styles";
 import { useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+
 import { getLastOrgId, pendingCounts } from "../../lib/scout-offline";
 import {
   OFFLINE_BOOT_RELATED_INCLUDE,
@@ -78,13 +78,10 @@ export default function OfflineClient() {
         <ol>
           {actions.map((action) => (
             <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <div>
-                <strong>{action.label}</strong>
-                <span>{action.detail}</span>
-              </div>
-              <Button as="a" variant="secondary" href={action.href}>
-                Open
-              </Button>
+              <a className="edc-next-action" href={action.href}>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </a>
             </li>
           ))}
         </ol>
@@ -92,9 +89,7 @@ export default function OfflineClient() {
 
       <nav className="offline-shell-related" aria-label="Related offline tools">
         {related.map((link) => (
-          <Button key={link.id} as="a" variant="secondary" href={link.href}>
-            {link.label}
-          </Button>
+          <a key={link.id} href={link.href}>{link.label}</a>
         ))}
       </nav>
 

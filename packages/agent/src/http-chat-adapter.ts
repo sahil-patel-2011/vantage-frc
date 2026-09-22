@@ -8,6 +8,7 @@ import type {
 } from "./index";
 import { compactChatTurns, compactContextItems, contextTokenBudgetForAdapter } from "./context-compact";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
+import { currentSeasonYear, packForYear } from "@vantage/game-year";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import {
   applyAnthropicCacheControl,
@@ -138,7 +139,18 @@ export class HttpChatAdapter implements ChatAdapter {
     this.timeoutMs =
       config.timeoutMs ?? resolveChatFetchTimeoutMs(process.env.VANTAGE_CHAT_TIMEOUT_MS);
     this.capability = config.capability ?? "chat";
-    this.systemPrompt = buildVantageChatSystemPrompt({ capability: this.capability });
+    /**
+     * Every model call knows which FRC season it is.
+     *
+     * Defaulted here rather than left to each caller: the prompt had no season
+     * in it at all, so a model answered "how many points is a climb" from
+     * training data — which is some previous game, stated confidently. This is
+     * the one place every hosted, BYOK and relay call passes through.
+     */
+    this.systemPrompt = buildVantageChatSystemPrompt({
+      capability: this.capability,
+      game: { pack: packForYear(currentSeasonYear()) },
+    });
     this.extraHeaders = config.extraHeaders ?? {};
   }
 

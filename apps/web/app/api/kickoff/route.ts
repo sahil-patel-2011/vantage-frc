@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   parseKickoffAction,
@@ -12,6 +12,7 @@ import {
   type ScoringAction,
   type ScoringActionPatch,
 } from "../../../lib/kickoff";
+import type { NextSeasonSignal } from "../../../lib/kickoff/next-season";
 
 class HttpError extends Error {
   constructor(
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
       );
       const defaultSeasonYear = season.rows[0]?.year ?? new Date().getFullYear();
 
-      const [actions, priorities, ruleNotes] = await Promise.all([
+      const [actions, priorities, ruleNotes, nextSeasonSignals] = await Promise.all([
         client.query<ScoringAction>(
           `SELECT a.id, a.season_year AS "seasonYear", a.label, a.phase, a.points::float8 AS points,
                   a.est_seconds::float8 AS "estSeconds", a.notes, a.sort_order AS "sortOrder"
@@ -111,6 +112,25 @@ export async function GET(request: Request) {
            LIMIT 500`,
           [row.orgId],
         ),
+        // Savepointed: a deploy can briefly run ahead of the migration that
+        // creates this table, and next-season notes are not worth taking the
+        // whole Kickoff page down for. Missing reads as "nothing recorded".
+        withSavepoint(
+          client,
+          async () =>
+            (
+              await client.query<NextSeasonSignal>(
+                `SELECT id, kind, observed_on::text AS "observedOn", source, note,
+                        points_at AS "pointsAt"
+                 FROM next_season_signals
+                 WHERE org_id = $1
+                 ORDER BY observed_on DESC, created_at DESC
+                 LIMIT 200`,
+                [row.orgId],
+              )
+            ).rows,
+          [] as NextSeasonSignal[],
+        ).then((rows: NextSeasonSignal[]) => ({ rows })),
       ]);
 
       return {
@@ -125,6 +145,7 @@ export async function GET(request: Request) {
         actions: actions.rows,
         priorities: priorities.rows,
         ruleNotes: ruleNotes.rows,
+        nextSeasonSignals: nextSeasonSignals.rows,
       } satisfies KickoffView;
     });
 
@@ -234,6 +255,33 @@ export async function POST(request: Request) {
             [...values, action.id, action.orgId],
           );
           if (!updated.rowCount) throw new HttpError(404, "Rule note not found");
+          return { ok: true };
+        }
+
+        case "add_next_season_signal": {
+          await client.query(
+            `INSERT INTO next_season_signals
+               (org_id, season_year, kind, observed_on, source, note, points_at, created_by)
+             VALUES ($1, $2, $3, $4::date, $5, $6, $7::text[], $8)`,
+            [
+              action.orgId,
+              action.seasonYear,
+              action.kind,
+              action.observedOn,
+              action.source,
+              action.note,
+              action.pointsAt,
+              userId,
+            ],
+          );
+          return { ok: true };
+        }
+
+        case "delete_next_season_signal": {
+          await client.query(`DELETE FROM next_season_signals WHERE org_id = $1 AND id = $2`, [
+            action.orgId,
+            action.id,
+          ]);
           return { ok: true };
         }
 

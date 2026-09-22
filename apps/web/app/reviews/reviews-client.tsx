@@ -80,20 +80,14 @@ async function persistReviewsSnapshot(orgHint: string, seasonHint: string, data:
 function ReviewsRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "cad-vault", orgId)}>
-        CAD vault
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "prototype", orgId)}>
-        Prototypes
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
+      <a href={hubHref("/build", "cad-vault", orgId)}>CAD vault</a>
+      <a href={hubHref("/build", "prototype", orgId)}>Prototypes</a>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
     </nav>
   );
 }
 
-function ReviewsNextActions({ orgId }: { orgId: string }) {
+function ReviewsNextActions() {
   const actions = [
     {
       id: "schedule",
@@ -102,37 +96,19 @@ function ReviewsNextActions({ orgId }: { orgId: string }) {
       href: "#reviews-add",
       primary: true,
     },
-    {
-      id: "vault",
-      label: "Open CAD vault",
-      detail: "The files under review live with the printable parts.",
-      href: hubHref("/build", "cad-vault", orgId),
-      primary: false,
-    },
-    {
-      id: "prototypes",
-      label: "Open Prototypes",
-      detail: "A review gate should match a real prototype decision.",
-      href: hubHref("/build", "prototype", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -370,7 +346,7 @@ export default function ReviewsClient() {
           {error}
         </p>
       ) : null}
-      <ReviewsNextActions orgId={view.orgId} />
+      <ReviewsNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.summary.needsAttention.length > 0 ? <NeedsAttention view={view} /> : null}

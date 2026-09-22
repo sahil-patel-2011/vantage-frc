@@ -78,20 +78,14 @@ async function persistSparesSnapshot(orgHint: string, data: SparesView): Promise
 function SparesRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related consumables tools">
-      <Button as="a" variant="secondary" href={hubHref("/business", "orders", orgId)}>
-        Orders
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/packing", orgId)}>
-        Packing list
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "spare-forecast", orgId)}>
-        Spares forecast
-      </Button>
+      <a href={hubHref("/business", "orders", orgId)}>Orders</a>
+      <a href={withOrgHref("/packing", orgId)}>Packing list</a>
+      <a href={hubHref("/build", "spare-forecast", orgId)}>Spares forecast</a>
     </nav>
   );
 }
 
-function SparesNextActions({ orgId }: { orgId: string }) {
+function SparesNextActions() {
   const actions = [
     {
       id: "add",
@@ -100,37 +94,19 @@ function SparesNextActions({ orgId }: { orgId: string }) {
       href: "#spares-add",
       primary: true,
     },
-    {
-      id: "orders",
-      label: "Open Orders",
-      detail: "A reorder point that fires becomes a purchase request.",
-      href: hubHref("/business", "orders", orgId),
-      primary: false,
-    },
-    {
-      id: "packing",
-      label: "Open Packing list",
-      detail: "Competition load-out is what runs this bin dry.",
-      href: withOrgHref("/packing", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -352,7 +328,7 @@ export default function SparesClient() {
           {error}
         </p>
       ) : null}
-      <SparesNextActions orgId={view.orgId} />
+      <SparesNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.summary.reorderList.length > 0 ? <ReorderList view={view} /> : null}

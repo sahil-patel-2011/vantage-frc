@@ -13,7 +13,7 @@ import {
   type SessionCookiePayload,
 } from "../src/link";
 
-const ORIGIN = "https://vantage-frc-web.vercel.app";
+const ORIGIN = "https://vantagefrc.vercel.app";
 
 function goodStart() {
   return {

@@ -58,63 +58,10 @@ async function persistMeetingAutopilotSnapshot(
 function MeetingAutopilotRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "calendar", orgId)}>
-        Calendar
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "standup-digest", orgId)}>
-        Standup
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "goals-tracker", orgId)}>
-        Season Goals
-      </Button>
+      <a href={hubHref("/team", "calendar", orgId)}>Calendar</a>
+      <a href={hubHref("/team", "standup-digest", orgId)}>Standup</a>
+      <a href={hubHref("/team", "goals-tracker", orgId)}>Season Goals</a>
     </nav>
-  );
-}
-
-function MeetingAutopilotNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "calendar",
-      label: "Open Calendar",
-      detail: "Agenda and minutes attach to a meeting that already exists.",
-      href: hubHref("/team", "calendar", orgId),
-      primary: true,
-    },
-    {
-      id: "standup",
-      label: "Open Standup",
-      detail: "Yesterday's hours and task movement feed the morning digest.",
-      href: hubHref("/team", "standup-digest", orgId),
-      primary: false,
-    },
-    {
-      id: "goals",
-      label: "Open Season Goals",
-      detail: "Season targets sit beside this meeting board.",
-      href: hubHref("/team", "goals-tracker", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -353,7 +300,7 @@ export default function MeetingAutopilotClient() {
           {error}
         </p>
       ) : null}
-      <MeetingAutopilotNextActions orgId={view.orgId} />
+
       <div style={{ display: "grid", gap: 16 }}>
         <SuggestedAgenda view={view} />
         <MeetingsPanel view={view} busy={busy} mutate={mutate} />

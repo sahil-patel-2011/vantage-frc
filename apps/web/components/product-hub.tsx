@@ -52,6 +52,10 @@ function readTab(hub: ProductHubDef): string {
 function writeTabToUrl(tab: string, defaultTab: string) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
+  // `sub` names a view inside whichever tab we are leaving, so it means
+  // nothing in the next one — carrying it over would make a reload land
+  // somewhere the user never chose.
+  url.searchParams.delete("sub");
   if (tab === defaultTab) url.searchParams.delete("tab");
   else url.searchParams.set("tab", tab);
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
@@ -200,7 +204,7 @@ export function ProductHubShell({
 
   if (access.ready && hubDenied) {
     return (
-      <main className={`module-page product-hub product-hub--${hub.id} soft-gate`}>
+      <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id} soft-gate`}>
         <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
           {headerActions}
         </PageHeader>
@@ -224,43 +228,65 @@ export function ProductHubShell({
     primaryTabs.some((entry) => entry.id === tab || entry.id === workbenchId);
 
   return (
-    <main className={`module-page product-hub product-hub--${hub.id}`}>
-      <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
-        {headerActions}
-      </PageHeader>
+    <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
       <OfflineBanner feature={hub.label} />
-      <TabBar
-        aria-label={`${hub.label} sections`}
-        value={workbenchId}
-        onChange={selectTab}
-        tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
-        className="product-hub-tabs"
-      >
-        {/* How / why / when for whatever is open. Prefers the leaf tool's entry
-            and falls back to its workbench; renders nothing when neither has one. */}
-        <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
-      </TabBar>
-      {/* The workbench root is the tab that is already selected one row up, so
-          repeating it here put the same label ("Event day", "Kickoff") on the
-          page twice. The strip lists only the tools inside the open workbench;
-          the tab above is how you get back to its own screen. */}
-      {toolTabs.length > 0 ? (
-        <ToolStrip
-          aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
-          value={tab}
+      {/*
+        One bar, not four.
+        A hub used to open with a page header ("Competition" + a sentence), a
+        tab row, a tool row and the app bar along the bottom — four stacked
+        strips of navigation before a single pixel of the thing you came for,
+        around 320px of a 667px phone. Worse, they repeated each other: the
+        header's sentence for this hub was "Event day, scouting, strategy, and
+        pit." and the row directly beneath it read Event day | Scouting |
+        Strategy | Pit, while the app bar already had Compete lit up.
+        So the description is gone, and title, sections, tools and actions
+        share one row. The two levels stay legible because they are styled
+        differently, not because they are on different lines: sections are
+        underlined tabs, tools are chips.
+      */}
+      <div className="hub-bar">
+        <div className="hub-bar-id">
+          {breadcrumbs ? <span className="breadcrumbs">{breadcrumbs}</span> : null}
+          {/* Still an h1: the page needs one, and it is what a screen reader
+              announces on arrival. It is small and inline, not a banner. */}
+          <h1>{hub.title}</h1>
+        </div>
+        <TabBar
+          aria-label={`${hub.label} sections`}
+          value={workbenchId}
           onChange={selectTab}
-          describe={(id) => sectionHelpFor(hub.id, id)?.what}
-          items={toolTabs.map((entry) => ({
-            id: entry.id,
-            label: entry.label,
-            featured: entry.featured === true,
-            href:
-              embeddedTabs && !embeddedTabs.includes(entry.id) && entry.legacyHref
-                ? hubLegacyHref(entry, orgId)
-                : undefined,
-          }))}
+          tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
+          className="product-hub-tabs"
         />
-      ) : null}
+        {/* The workbench root is the tab that is already selected beside it, so
+            repeating it here put the same label ("Event day", "Kickoff") on the
+            page twice. The strip lists only the tools inside the open workbench;
+            the tab is how you get back to its own screen. */}
+        {toolTabs.length > 0 ? (
+          <ToolStrip
+            aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
+            value={tab}
+            onChange={selectTab}
+            describe={(id) => sectionHelpFor(hub.id, id)?.what}
+            items={toolTabs.map((entry) => ({
+              id: entry.id,
+              label: entry.label,
+              featured: entry.featured === true,
+              href:
+                embeddedTabs && !embeddedTabs.includes(entry.id) && entry.legacyHref
+                  ? hubLegacyHref(entry, orgId)
+                  : undefined,
+            }))}
+          />
+        ) : null}
+        <div className="hub-bar-end">
+          {/* How / why / when for whatever is open. Prefers the leaf tool's
+              entry and falls back to its workbench; renders nothing when
+              neither has one. */}
+          <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
+          {headerActions}
+        </div>
+      </div>
       <div className="product-hub-panel" data-hub-tab={tab}>
         {(() => {
           if (!orgReady) {

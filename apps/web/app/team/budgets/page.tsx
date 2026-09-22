@@ -22,9 +22,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
         />
         <nav className="product-hub-related ai-budgets-related" aria-label="Related AI budget tools">
           {links.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
+            <a key={link.id} href={link.href}>{link.label}</a>
           ))}
         </nav>
         <EmptyState

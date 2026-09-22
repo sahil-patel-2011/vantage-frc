@@ -89,20 +89,14 @@ async function persistPowerBudgetSnapshot(orgHint: string, seasonHint: string, d
 function PowerBudgetRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "batteries", orgId)}>
-        Batteries
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
+      <a href={hubHref("/build", "batteries", orgId)}>Batteries</a>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
     </nav>
   );
 }
 
-function PowerBudgetNextActions({ orgId }: { orgId: string }) {
+function PowerBudgetNextActions() {
   const actions = [
     {
       id: "add",
@@ -111,37 +105,19 @@ function PowerBudgetNextActions({ orgId }: { orgId: string }) {
       href: "#power-budget-load",
       primary: true,
     },
-    {
-      id: "wiring",
-      label: "Open CAN-bus map",
-      detail: "Breaker size on a branch should match the device on that port.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
-    },
-    {
-      id: "batteries",
-      label: "Open Batteries",
-      detail: "A tired pack browns out sooner than the budget says.",
-      href: hubHref("/build", "batteries", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -539,7 +515,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <PowerBudgetNextActions orgId={view.context.orgId} />
+      <PowerBudgetNextActions />
     </main>
   );
 }

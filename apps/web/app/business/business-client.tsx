@@ -302,6 +302,25 @@ export default function BusinessClient() {
 
   const orgId = live?.orgId;
 
+  /*
+    The org from the URL, read after mount rather than during render.
+
+    `readOrgIdFromUrl()` returns null on the server and the real id in the
+    browser, so calling it while rendering gave the related-links nav one set
+    of hrefs in the server HTML and a different set on hydration. React
+    reported it on every Business tab — "a tree hydrated but some attributes
+    of the server rendered HTML didn't match" — and it is the first cause its
+    own message lists: a `typeof window` branch.
+
+    Starting at null and filling in afterwards means the first client render
+    matches the server exactly, and the links gain their org a frame later,
+    which is what `live?.orgId` was already doing beside it.
+  */
+  const [urlOrgId, setUrlOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    setUrlOrgId(readOrgIdFromUrl());
+  }, []);
+
   if (hubDenied) {
     return (
       <SoftAccessDenied
@@ -342,7 +361,7 @@ export default function BusinessClient() {
           </div>
         ) : null}
         <BusinessRelated
-          orgId={live?.orgId ?? readOrgIdFromUrl()}
+          orgId={live?.orgId ?? urlOrgId}
           include={
             sponsorsAllowed === false
               ? BUSINESS_FUNDING_RELATED_INCLUDE.filter((id) => id !== "sponsors")

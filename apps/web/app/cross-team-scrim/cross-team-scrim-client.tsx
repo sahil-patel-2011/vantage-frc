@@ -70,9 +70,7 @@ function ScrimRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related cross-team-scrim-related" aria-label="Related team tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -87,18 +85,14 @@ function ScrimNextActionsPanel({ actions }: { actions: CrossTeamScrimNextAction[
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -362,7 +356,7 @@ export default function CrossTeamScrimClient() {
           </>
         }
         title="Cross-Team Scrim Scheduling"
-        description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared. Cross-check Calendar, Scouting, and Team Data."
+        description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared."
       >
         <div className="cross-team-scrim-header-actions">
           {view.seasons.length > 0 ? (

@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { gotoAsTeam } from "./active-org";
 import { baseOrigin, signInAs } from "./session";
 
 /**
@@ -57,7 +58,47 @@ test.beforeAll(async ({ browser }) => {
   if (seen.role === "owner" || seen.role === "admin") orgId = seen.orgId ?? null;
 });
 
+/**
+ * Prefixes this file writes. Every row it creates carries one, so the cleanup
+ * below can find them without touching a real team's data.
+ */
+const PROBE_PREFIXES = [
+  "Spare gearbox ",
+  "Spare pneumatic tubing ",
+  "Untested pack ",
+  "Measured pack ",
+] as const;
+
+const isProbe = (name: string) => PROBE_PREFIXES.some((prefix) => name.startsWith(prefix));
+
+/**
+ * Take the rows back out.
+ *
+ * Without this the suite's shared database accumulated one or two inventory
+ * items per run until the fixture team held 32 parts, every one of them a
+ * probe and not one of them real. That is not merely untidy: it puts
+ * `/inventory` permanently out of its empty state, so nothing exercises the
+ * empty state any more and a spec that asserts an empty-state call to action
+ * starts failing as a function of how often the suite has been run — which
+ * reads as flakiness rather than as litter.
+ */
 test.afterAll(async () => {
+  if (owner && orgId) {
+    try {
+      const items = await api(owner.context, withOrg("/api/inventory"));
+      for (const row of (items.json.items ?? []) as Array<{ id: string; name: string }>) {
+        if (!isProbe(row.name)) continue;
+        await api(owner.context, "/api/inventory", { action: "delete_item", orgId, id: row.id });
+      }
+      const packs = await api(owner.context, withOrg("/api/batteries"));
+      for (const row of (packs.json.packs ?? []) as Array<{ id: string; label: string }>) {
+        if (!isProbe(row.label ?? "")) continue;
+        await api(owner.context, "/api/batteries", { action: "delete_pack", orgId, id: row.id });
+      }
+    } catch {
+      // Cleanup is best-effort: a teardown failure must not mask a real result.
+    }
+  }
   await owner?.context.close();
 });
 
@@ -75,9 +116,26 @@ test("a part can be marked as a spare from the page that owns it, and Spare Fore
   const startingBins = Number(before.json.spareBinCount ?? 0);
   const name = `Spare gearbox ${Date.now()}`;
 
-  await owner.page.goto(withOrg("/inventory"));
+  // As the team, not merely with an org id in the query string. This context
+  // is created fresh in beforeAll and has no active team, so the page painted
+  // its "No team selected" state — with the h1 the spec waits for, and without
+  // the board underneath it. The failure then landed on the Add button and
+  // read as the button having been renamed.
+  await gotoAsTeam(owner.page, "/inventory");
   await expect(owner.page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
-  await owner.page.getByRole("button", { name: "Add item", exact: true }).click();
+  /*
+    The empty state and the populated state both call this "Add a part" now.
+    They did not always: the toolbar said "Add item" and only appeared once the
+    list had something in it, so this spec silently required a non-empty
+    inventory — which it got, from its own uncleaned rows. With the cleanup in
+    place the fixture legitimately starts empty, and the empty state offers the
+    action as a link rather than a button.
+  */
+  const add = owner.page
+    .getByRole("button", { name: "Add a part", exact: true })
+    .or(owner.page.getByRole("link", { name: "Add a part", exact: true }))
+    .locator("visible=true");
+  await add.first().click();
 
   const form = owner.page.locator("#inventory-add-item");
   await expect(form).toBeVisible();
@@ -87,7 +145,7 @@ test("a part can be marked as a spare from the page that owns it, and Spare Fore
   const spare = form.getByLabel("Held as a spare");
   await expect(spare).not.toBeChecked();
   await spare.check();
-  await form.getByRole("button", { name: /Add item/ }).click();
+  await form.getByRole("button", { name: /Add a part/ }).click();
 
   // The row says what was written, so the flag is visible and not write-only.
   const row = owner.page.locator(".inventory-item").filter({ hasText: name });

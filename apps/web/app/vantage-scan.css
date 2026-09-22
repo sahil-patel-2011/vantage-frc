@@ -1,0 +1,623 @@
+/* =============================================================================
+   Vantage scan polish — product chrome overlay.
+
+   Quality bar (FRC installer wizard, not a copy of that window):
+     • Clear hierarchy: kicker → title → one-sentence why → grouped work
+     • Navy for "where you are" (active nav, numbered steps, headers)
+     • Gold chip for setup / season labels (the FRC badge, not a warning)
+     • Honest empty: dashed plate, one primary, no invented numbers
+     • ADHD scan: uppercase group labels, stable left edge, one primary
+
+   Tokens only. This sheet consumes --bg/--surface/--ink from system.css and
+   adds --scan-* for the polish layer. It does not restyle leftover kits.
+   ========================================================================== */
+
+:root {
+  --scan-navy: #0d3560;
+  --scan-navy-deep: #092848;
+  --scan-navy-soft: #e7eef6;
+  --scan-gold: #e8b923;
+  --scan-gold-ink: #10202c;
+  --scan-rail: #0d3560;
+  --scan-rail-ink: #e8eef6;
+  --scan-rail-muted: #9db3cb;
+  --scan-radius: 16px;
+  --scan-radius-sm: 12px;
+  --scan-shadow: 0 10px 28px rgba(13, 53, 96, 0.07);
+  --scan-shadow-lift: 0 14px 34px rgba(13, 53, 96, 0.11);
+  --scan-title: clamp(22px, 2.6vw, 30px);
+  --scan-stack: 18px;
+  --scan-kicker: 0.08em;
+}
+
+:root[data-theme="dark"] {
+  --scan-navy: #9ec0e8;
+  --scan-navy-deep: #0c1624;
+  /* Was a hardcoded well a shade off system.css's --surface, which is the
+     drift css-integrity exists to stop. One palette owns dark mode; the scan
+     overlay borrows it. */
+  --scan-navy-soft: var(--surface);
+  --scan-gold: #f0c84a;
+  --scan-gold-ink: #0c1118;
+  --scan-rail: #101a28;
+  --scan-rail-ink: #edf2f7;
+  --scan-rail-muted: #8aa0b8;
+  --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+/* --- Shared kicker / group / rail (used by scan components + overlays) ----- */
+.scan-kicker,
+.scan-group::before {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--scan-navy);
+  font: 700 11px/1.2 var(--font-sans);
+  letter-spacing: var(--scan-kicker);
+  text-transform: uppercase;
+}
+.scan-group {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  min-width: 0;
+}
+.scan-group::before {
+  content: none;
+}
+.scan-group[data-label]::before {
+  content: attr(data-label);
+}
+.scan-group[data-band="a"]::before {
+  content: var(--scan-group-a, "THIS WEEK");
+}
+.scan-group[data-band="b"]::before {
+  content: var(--scan-group-b, "TEAM");
+}
+.scan-group[data-band="c"]::before {
+  content: var(--scan-group-c, "MORE");
+}
+.sr-only,
+.visually-hidden,
+.scan-rail .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.scan-workbench {
+  display: grid;
+  gap: var(--scan-stack);
+  min-width: 0;
+}
+.scan-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 16px;
+  list-style: none;
+}
+.scan-rail-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px 0 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 13px/1 var(--font-sans);
+}
+.scan-rail-step[data-state="current"] {
+  color: #fff;
+  background: var(--scan-rail);
+  border-color: var(--scan-rail);
+}
+.scan-rail-step[data-state="done"] {
+  color: var(--scan-navy);
+  background: var(--scan-navy-soft);
+  border-color: color-mix(in srgb, var(--scan-navy) 22%, var(--line));
+}
+.scan-rail-index {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 11px;
+}
+.scan-empty {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: clamp(22px, 3.4vw, 36px);
+  border: 1px dashed color-mix(in srgb, var(--scan-navy) 22%, var(--line));
+  border-radius: var(--scan-radius);
+  background: color-mix(in srgb, var(--scan-navy) 3.5%, var(--surface));
+  text-align: left;
+}
+.scan-empty > h2,
+.scan-empty > h1 {
+  margin: 0;
+  font-size: var(--title-1);
+  letter-spacing: -0.02em;
+}
+.scan-empty > p {
+  margin: 0;
+  max-width: 58ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.scan-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 20px;
+  margin-bottom: 8px;
+}
+
+/* --- Product shell: navy "you are here", not an installer window ------------- */
+body.has-app-shell {
+  --glow:
+    radial-gradient(120% 80% at 8% -12%, color-mix(in srgb, var(--scan-navy) 10%, transparent), transparent 54%),
+    radial-gradient(80% 50% at 100% 0%, color-mix(in srgb, var(--scan-gold) 8%, transparent), transparent 48%);
+}
+body.has-app-shell .soft-topbar {
+  /* Was an opaque navy-tinted mix, which cancelled the blur behind it — a
+     backdrop-filter under a solid fill does nothing at all. The tint is kept,
+     mixed into the translucent material instead of replacing it, so the bar
+     still reads as this product rather than as generic glass. This rule
+     outranks the plain .soft-topbar selector in vantage-chrome.css, so the
+     material has to come in here. */
+  background-color: color-mix(in srgb, var(--material) 88%, var(--scan-navy-soft));
+  border-bottom-color: color-mix(in srgb, var(--scan-navy) 12%, var(--line));
+}
+body.has-app-shell .soft-page-head h1,
+body.has-app-shell .soft-topbar-title {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--scan-navy);
+}
+body.has-app-shell .soft-avatar {
+  background: var(--scan-rail);
+  color: var(--scan-rail-ink);
+}
+body.has-app-shell .soft-island {
+  border-color: color-mix(in srgb, var(--scan-navy) 14%, var(--line));
+  /* The hairline of light rides on top of the drop shadow: lit object above
+     the page, rather than a flat shape with a shadow under it. This rule owns
+     the island's shadow (it outranks the plain .soft-island selector in
+     vantage-chrome.css), so the edge has to be layered in here. */
+  box-shadow: var(--material-edge), 0 12px 32px rgba(13, 53, 96, 0.12);
+}
+body.has-app-shell .soft-island a[aria-current="page"],
+body.has-app-shell .soft-island-more.is-open {
+  color: var(--scan-rail-ink);
+  background: var(--scan-rail);
+}
+body.has-app-shell .soft-drawer {
+  background: var(--surface);
+}
+body.has-app-shell .soft-drawer-brand .mark {
+  background: var(--scan-gold);
+  color: var(--scan-gold-ink);
+}
+body.has-app-shell .soft-drawer-brand strong {
+  letter-spacing: -0.02em;
+}
+body.has-app-shell .soft-org-chip {
+  border-color: color-mix(in srgb, var(--scan-navy) 16%, var(--line));
+}
+body.has-app-shell .soft-scrim {
+  background: color-mix(in srgb, var(--scan-navy-deep) 48%, transparent);
+}
+
+/* Nav rows: stable left edge, current = navy inset, not a rainbow of hues. */
+body.has-app-shell .soft-drawer nav a,
+body.has-app-shell .soft-nav-row a {
+  border-radius: var(--scan-radius-sm);
+}
+body.has-app-shell .soft-drawer a[aria-current="page"],
+body.has-app-shell .soft-nav-row a[aria-current="page"] {
+  color: var(--scan-navy);
+  background: var(--scan-navy-soft);
+  box-shadow: inset 3px 0 0 var(--scan-navy);
+}
+
+/* --- Page headers ---------------------------------------------------------- */
+body.has-app-shell .app-page-header {
+  align-items: flex-end;
+  gap: 16px 24px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--scan-navy) 10%, var(--line));
+}
+body.has-app-shell .app-page-header h1 {
+  font-size: var(--scan-title);
+  letter-spacing: -0.03em;
+  color: var(--scan-navy);
+}
+body.has-app-shell .breadcrumbs {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* --- Cards / panels -------------------------------------------------------- */
+body.has-app-shell .app-card,
+body.has-app-shell .soft-panel {
+  border-color: color-mix(in srgb, var(--scan-navy) 10%, var(--line));
+  border-radius: var(--scan-radius);
+  box-shadow: var(--scan-shadow);
+}
+body.has-app-shell .app-card:hover,
+body.has-app-shell .soft-panel:hover {
+  /* No lift on every card — ADHD: motion only on interactive. */
+  box-shadow: var(--scan-shadow);
+}
+body.has-app-shell a.app-card:hover,
+body.has-app-shell a.soft-panel:hover {
+  border-color: color-mix(in srgb, var(--scan-navy) 28%, var(--line));
+  box-shadow: var(--scan-shadow-lift);
+}
+
+/* --- Buttons: one primary, navy when it is the Install-class action -------- */
+body.has-app-shell .app-button.primary,
+body.has-app-shell .app-button.is-primary,
+body.has-app-shell .primary-action {
+  background: var(--scan-navy);
+  color: #fff;
+  border-color: var(--scan-navy);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--scan-navy) 22%, transparent);
+}
+body.has-app-shell .app-button.primary:hover:not(:disabled),
+body.has-app-shell .app-button.is-primary:hover:not(:disabled) {
+  background: var(--scan-navy-deep);
+}
+body.has-app-shell .app-button.secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+body.has-app-shell .app-button:disabled,
+body.has-app-shell .app-button[aria-disabled="true"] {
+  background: color-mix(in srgb, var(--muted) 22%, var(--surface));
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+/* --- Badges: gold = setup (installer FRC chip), not a warning tan --------- */
+body.has-app-shell .app-badge.setup {
+  color: var(--scan-gold-ink);
+  background: var(--scan-gold);
+  border-color: transparent;
+  letter-spacing: 0.06em;
+}
+body.has-app-shell .app-badge.good {
+  color: var(--positive);
+  background: var(--positive-soft);
+}
+body.has-app-shell .app-badge.demo {
+  /* Demo is not a product state we invent; if a page still stamps it, keep
+     it visually quieter than setup so it cannot be mistaken for live data. */
+  color: var(--muted);
+  background: var(--surface-2);
+}
+
+/* --- Empty / setup / error ------------------------------------------------- */
+body.has-app-shell .soft-empty,
+body.has-app-shell .app-empty,
+body.has-app-shell .scan-empty {
+  justify-items: start;
+  text-align: left;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--scan-navy) 22%, var(--line));
+  background: color-mix(in srgb, var(--scan-navy) 3.5%, var(--surface));
+  border-radius: var(--scan-radius);
+}
+body.has-app-shell .soft-empty > h2,
+body.has-app-shell .soft-empty > h1,
+body.has-app-shell .app-empty > h2 {
+  color: var(--scan-navy);
+}
+body.has-app-shell .soft-empty > :where(a, button, .app-button),
+body.has-app-shell .app-empty > :where(a, button, .app-button),
+body.has-app-shell .scan-empty > :where(a, button, .app-button) {
+  margin-top: 6px;
+}
+body.has-app-shell .soft-empty > :where(div, .soft-btn-row),
+body.has-app-shell .app-empty > :where(div, .soft-btn-row) {
+  justify-content: flex-start;
+}
+
+/* --- Tabs / tool strip: numbered-rail energy without a second nav --------- */
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar {
+  gap: 0 2px;
+}
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button.active,
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button[aria-selected="true"] {
+  color: var(--scan-navy);
+  box-shadow: inset 0 -2px 0 var(--scan-navy);
+}
+body.has-app-shell .hub-tool-chip.is-active {
+  background: var(--scan-navy-soft);
+  border-color: color-mix(in srgb, var(--scan-navy) 35%, var(--line));
+  color: var(--scan-navy);
+}
+body.has-app-shell .hub-tool-overflow-head {
+  color: var(--scan-navy);
+  letter-spacing: 0.08em;
+}
+
+/* --- Tables ---------------------------------------------------------------- */
+body.has-app-shell :where(.app-card, .soft-panel, .module-page) th {
+  color: var(--scan-navy);
+  background: color-mix(in srgb, var(--scan-navy-soft) 65%, var(--surface));
+}
+body.has-app-shell :where(.app-card, .soft-panel, .module-page) tbody tr:hover td {
+  background: color-mix(in srgb, var(--scan-navy-soft) 55%, transparent);
+}
+
+/* --- Forms ----------------------------------------------------------------- */
+body.has-app-shell input,
+body.has-app-shell select,
+body.has-app-shell textarea {
+  border-radius: var(--scan-radius-sm);
+}
+body.has-app-shell input:focus-visible,
+body.has-app-shell select:focus-visible,
+body.has-app-shell textarea:focus-visible {
+  border-color: var(--scan-navy);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--scan-navy) 18%, transparent);
+}
+
+/* --- Dashboard ------------------------------------------------------------- */
+body.has-app-shell .dash-home {
+  display: grid;
+  gap: 16px;
+}
+body.has-app-shell .dash-home-header h1 {
+  color: var(--scan-navy);
+  letter-spacing: -0.035em;
+}
+body.has-app-shell .dash-home-header .breadcrumbs {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+body.has-app-shell .dash-widget,
+body.has-app-shell .dash-grid-item {
+  border-radius: var(--scan-radius);
+}
+body.has-app-shell .dash-setup-banner {
+  border: 1px dashed color-mix(in srgb, var(--scan-navy) 22%, var(--line));
+  background: color-mix(in srgb, var(--scan-navy) 4%, var(--surface));
+  border-radius: var(--scan-radius);
+}
+body.has-app-shell .dash-setup-steps {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+body.has-app-shell .dash-now,
+body.has-app-shell .dash-now-card,
+body.has-app-shell .dash-next {
+  border-color: color-mix(in srgb, var(--scan-navy) 14%, var(--line));
+}
+
+/* --- Setup checklist (shared numbered steps, installer-like) --------------- */
+body.has-app-shell .dash-setup-steps li,
+body.has-app-shell .scan-rail-step {
+  font-weight: 600;
+}
+body.has-app-shell .strategy-setup-steps li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+/* --- Product hub related strip -------------------------------------------- */
+body.has-app-shell .product-hub-related a,
+body.has-app-shell .hub-related a {
+  color: var(--scan-navy);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* --- Chat / Drive / CAD leftover chrome that still paints in product ------ */
+body.has-app-shell .chat-page,
+body.has-app-shell .cad-workspace,
+body.has-app-shell .intel-app,
+body.has-app-shell .scout-app,
+body.has-app-shell .module-page {
+  color: var(--ink);
+}
+body.has-app-shell .chat-sidebar button.active,
+body.has-app-shell .cad-jobs button.active {
+  border-color: var(--scan-navy);
+  color: var(--scan-navy);
+  background: var(--scan-navy-soft);
+}
+
+/* --- Sign-in (product-adjacent, loaded with product styles when shelled) -- */
+.auth-card {
+  border-radius: var(--scan-radius);
+  box-shadow: var(--scan-shadow-lift);
+  border-color: color-mix(in srgb, var(--scan-navy) 12%, var(--line));
+}
+.auth-card h1 {
+  color: var(--scan-navy);
+  letter-spacing: -0.03em;
+}
+
+/* --- Density: ADHD prefers grouping over cramped equal gaps --------------- */
+body.has-app-shell .module-page,
+body.has-app-shell .product-hub {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+body.has-app-shell .product-hub > .app-page-header {
+  margin-bottom: 4px;
+}
+
+/* --- Mobile island + headers --------------------------------------------- */
+@media (max-width: 720px) {
+  body.has-app-shell .app-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding-bottom: 12px;
+  }
+  body.has-app-shell .scan-rail {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.has-app-shell .scan-empty,
+  body.has-app-shell .soft-empty,
+  body.has-app-shell .app-empty {
+    padding: 20px 16px;
+  }
+  body.has-app-shell .dash-home-header {
+    flex-direction: column;
+  }
+  body.has-app-shell .dash-home-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.has-app-shell .soft-island a[aria-current="page"],
+  body.has-app-shell .hub-tool-chip.is-active {
+    transition: none;
+  }
+}
+
+/* Dark: navy tokens already flip; keep gold chip readable. */
+:root[data-theme="dark"] body.has-app-shell .app-badge.setup {
+  color: var(--scan-gold-ink);
+  background: var(--scan-gold);
+}
+:root[data-theme="dark"] body.has-app-shell .app-button.primary,
+:root[data-theme="dark"] body.has-app-shell .app-button.is-primary {
+  background: #7aa2d6;
+  color: #0c1118;
+  border-color: #7aa2d6;
+}
+
+/* --- Onboarding / workspace picker ---------------------------------------- */
+body.has-app-shell .onboard-steps,
+body.has-app-shell .scan-rail {
+  margin-bottom: 18px;
+}
+body.has-app-shell .workspace-page .quick.primary,
+body.has-app-shell .workspace-page .home-cta {
+  background: var(--scan-navy) !important;
+  color: #fff !important;
+}
+
+/* --- Files / Drive leftover chrome (do not invent quotas) ---------------- */
+body.has-app-shell .files-page,
+body.has-app-shell .drive-page,
+body.has-app-shell [class*="files-"] {
+  --scan-group-a: "MY FILES";
+}
+
+/* --- Admin ---------------------------------------------------------------- */
+body.has-app-shell .admin-grid,
+body.has-app-shell .admin-org {
+  border-color: color-mix(in srgb, var(--scan-navy) 10%, var(--line));
+}
+
+/* --- Help / account ---------------------------------------------------------- */
+body.has-app-shell .help-cat-chip[aria-pressed="true"],
+body.has-app-shell .settings-bar-chip[aria-pressed="true"] {
+  background: var(--scan-navy-soft);
+  color: var(--scan-navy);
+  border-color: color-mix(in srgb, var(--scan-navy) 30%, var(--line));
+}
+
+/* --- Stat tiles / section headings --------------------------------------- */
+body.has-app-shell .sectionKicker,
+body.has-app-shell [class*="sectionKicker"] {
+  color: var(--scan-navy);
+}
+
+/* --- Offline banner sits above work, not inside it ----------------------- */
+body.has-app-shell .offline-banner,
+body.has-app-shell .data-source-degraded-banner {
+  border-radius: var(--scan-radius-sm);
+}
+
+/* --- Coarse pointer: keep 44px targets ---------------------------------- */
+@media (pointer: coarse) {
+  body.has-app-shell .hub-tool-chip,
+  body.has-app-shell .scan-rail-step,
+  body.has-app-shell .app-button {
+    min-height: 44px;
+  }
+}
+
+/* --- Onboarding / sign-in (often no app shell) ---------------------------- */
+.onboarding-page,
+.auth-page {
+  --scan-navy: #0d3560;
+  --scan-gold: #e8b923;
+  --scan-gold-ink: #10202c;
+}
+.onboarding-flow-header > span,
+.onboarding-progress-label {
+  color: var(--scan-navy, #0d3560);
+  letter-spacing: 0.08em;
+}
+.onboarding-flow-header h1,
+.auth-card h1 {
+  color: var(--scan-navy, #0d3560);
+  letter-spacing: -0.03em;
+}
+.onboarding-steps.scan-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 420px;
+  margin-inline: auto;
+}
+.onboarding-steps.scan-rail li.current b,
+.onboarding-steps-simple li.current b {
+  background: var(--scan-navy, #0d3560);
+  color: #fff;
+  box-shadow: none;
+}
+.onboarding-load-badge.setup {
+  color: var(--scan-gold-ink, #10202c);
+  background: var(--scan-gold, #e8b923);
+}
+.onboarding-load-shell {
+  text-align: left;
+  justify-items: start;
+}
+.auth-card .google-button {
+  min-height: 44px;
+  border-radius: var(--scan-radius-sm, 12px);
+}
+
+/* Dashboard widgets: one now-card, empty widgets stay off-stage via existing logic */
+.dash-home.scan-workbench .dash-widget h2,
+.dash-home.scan-workbench .dash-widget h3 {
+  color: var(--scan-navy, var(--ink));
+  letter-spacing: -0.02em;
+}

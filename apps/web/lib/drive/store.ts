@@ -9,6 +9,7 @@
  * Server-only: imported by API routes, never by a client component.
  */
 
+import { MEDIA_ENABLED, isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../media-availability";
 import type { PoolClient } from "@neondatabase/serverless";
 import type { StorageContentClass } from "../storage-routing/types";
 import { hashDriveShareToken } from "./share-token";
@@ -311,6 +312,7 @@ export async function createFileRow(
   client: PoolClient,
   input: CreateDriveFileInput,
 ): Promise<{ id: string }> {
+  if (isPausedMediaFile(input.name, input.contentType)) throw new Error(MEDIA_PAUSED_MESSAGE);
   const result = await client.query<{ id: string }>(
     `INSERT INTO drive_files (
        org_id, scope, owner_user_id, folder_id, name, content_type, content_class,
@@ -681,7 +683,7 @@ export async function loadVirtualFolders(
     })),
   });
 
-  return folders;
+  return folders.filter((folder) => MEDIA_ENABLED || folder.id !== "media-library");
 }
 
 // ---------------------------------------------------------------------------

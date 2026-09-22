@@ -58,20 +58,14 @@ async function persistIncidentHeatmapSnapshot(
 function IncidentHeatmapRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "failure-patterns", orgId)}>
-        Failure patterns
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "safety", orgId)}>
-        Safety log
-      </Button>
+      <a href={hubHref("/build", "failure-patterns", orgId)}>Failure patterns</a>
+      <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
+      <a href={hubHref("/team", "safety", orgId)}>Safety log</a>
     </nav>
   );
 }
 
-function IncidentHeatmapNextActions({ orgId }: { orgId: string }) {
+function IncidentHeatmapNextActions() {
   const actions = [
     {
       id: "log",
@@ -80,37 +74,19 @@ function IncidentHeatmapNextActions({ orgId }: { orgId: string }) {
       href: "#incident-heatmap-form",
       primary: true,
     },
-    {
-      id: "fmea",
-      label: "Open FMEA",
-      detail: "Repeat failures should match the risk rows.",
-      href: hubHref("/build", "fmea", orgId),
-      primary: false,
-    },
-    {
-      id: "patterns",
-      label: "Open Failure patterns",
-      detail: "Same mechanism across events lives next to this heatmap.",
-      href: hubHref("/build", "failure-patterns", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -370,7 +346,7 @@ export default function IncidentHeatmapClient() {
           {error}
         </p>
       ) : null}
-      <IncidentHeatmapNextActions orgId={view.orgId} />
+      <IncidentHeatmapNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogIncidentForm busy={busy} mutate={mutate} />

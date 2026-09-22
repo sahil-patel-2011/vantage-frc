@@ -67,63 +67,10 @@ async function persistReuseAdvisorSnapshot(
 function ReuseAdvisorRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystems
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-        FMEA
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "readiness-score", orgId)}>
-        Readiness
-      </Button>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystems</a>
+      <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
+      <a href={hubHref("/build", "readiness-score", orgId)}>Readiness</a>
     </nav>
-  );
-}
-
-function ReuseAdvisorNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "subsystems",
-      label: "Open Subsystems",
-      detail: "Reuse candidates come from prior-season subsystem rows.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: true,
-    },
-    {
-      id: "fmea",
-      label: "Open FMEA",
-      detail: "Failure history is what makes a reuse recommendation honest.",
-      href: hubHref("/build", "fmea", orgId),
-      primary: false,
-    },
-    {
-      id: "readiness",
-      label: "Open Readiness",
-      detail: "Ship-readiness still has to match the mechanism you keep.",
-      href: hubHref("/build", "readiness-score", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -370,7 +317,7 @@ export default function ReuseAdvisorClient() {
           {error}
         </p>
       ) : null}
-      <ReuseAdvisorNextActions orgId={view.orgId} />
+
       <div style={{ display: "grid", gap: 16 }}>
         {view.candidates.length > 0 ? (
           <CandidatesPanel view={view} busy={busy} mutate={mutate} />

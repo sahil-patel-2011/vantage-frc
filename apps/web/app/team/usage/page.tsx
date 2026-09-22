@@ -26,13 +26,9 @@ export default async function TeamUsagePage({
           description="Each team has its own AI usage log. Choose your team, then return from Ask AI."
         />
         <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">
-          <Button as="a" variant="secondary" href={hubHref("/ai", "budgets")}>
-            Chat limits
-          </Button>
+          <a href={hubHref("/ai", "budgets")}>Chat limits</a>
           {links.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
+            <a key={link.id} href={link.href}>{link.label}</a>
           ))}
         </nav>
         <EmptyState

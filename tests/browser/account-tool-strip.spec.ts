@@ -8,7 +8,9 @@ test.beforeEach(async ({ context }) => {
 
 test("account sections are a tool strip, not a tab bar", async ({ page }) => {
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Your settings" })).toBeVisible();
+  // The page heading is "Account" — it holds both the "Your settings" and
+  // "Team settings" groups, so naming it after one of them was wrong.
+  await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
 
   const sections = page.getByRole("navigation", { name: "Account sections" });

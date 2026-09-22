@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ClientHubAccessRow } from "./hub-access-filter";
-import { FEATURE_API_TIMEOUT_MS } from "./resolve-org";
+import { requestMe } from "./me-request";
 
 export type ClientAccessProfile = {
   ready: boolean;
@@ -29,23 +29,18 @@ export function useClientAccessProfile(): ClientAccessProfile {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/me", {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          if (!cancelled) {
-            setProfile({ ready: true, hubAccess: null, sponsorsAllowed: null });
-          }
+    void requestMe()
+      .then(({ ok, data }) => {
+        if (cancelled) return;
+        if (!ok) {
+          setProfile({ ready: true, hubAccess: null, sponsorsAllowed: null });
           return;
         }
-        const data = (await response.json()) as MeAccessPayload;
-        if (cancelled) return;
+        const payload = data as MeAccessPayload | null;
         setProfile({
           ready: true,
-          hubAccess: Array.isArray(data.hubAccess) ? data.hubAccess : null,
-          sponsorsAllowed: data.sponsorsAllowed ?? null,
+          hubAccess: Array.isArray(payload?.hubAccess) ? payload.hubAccess : null,
+          sponsorsAllowed: payload?.sponsorsAllowed ?? null,
         });
       })
       .catch(() => {

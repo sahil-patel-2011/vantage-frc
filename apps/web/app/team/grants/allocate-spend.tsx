@@ -115,15 +115,17 @@ export function buildLinkSpendPayload(input: LinkSpendFields & Record<string, un
   const orgId = asUuid(input.orgId);
   const grantApplicationId = asUuid(input.grantApplicationId);
   const financeTransactionId = asUuid(input.financeTransactionId);
-  if (!orgId) return { ok: false, error: "orgId is required" };
-  if (!grantApplicationId) return { ok: false, error: "grantApplicationId is required" };
-  if (!financeTransactionId) return { ok: false, error: "financeTransactionId is required" };
+  // Every string here lands in the red line above the form, so each one names
+  // the control the reader has to go back to — not the column it maps to.
+  if (!orgId) return { ok: false, error: "Reload the page — your team did not finish loading." };
+  if (!grantApplicationId) return { ok: false, error: "Choose the grant this spending belongs to." };
+  if (!financeTransactionId) return { ok: false, error: "Choose the expense to link." };
   if (input.amountUsd == null || input.amountUsd === "") {
-    return { ok: false, error: "amountUsd is required" };
+    return { ok: false, error: "Enter the amount to count against this grant." };
   }
   const amountUsd = parseAmountUsd(input.amountUsd);
   if (amountUsd == null) {
-    return { ok: false, error: "amountUsd must be greater than 0" };
+    return { ok: false, error: "Enter an amount greater than $0." };
   }
   return {
     ok: true,

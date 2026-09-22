@@ -10,13 +10,27 @@
 /**
  * Date these documents were last rewritten. Bump when the text changes.
  *
- * Revised on this date to add the "Product analytics" section (`#analytics`),
- * which discloses the opt-in first-party usage events introduced alongside the
- * consent banner. The date is not moved forward past the day the change landed:
- * a "last updated" in the future would be the first false statement in a
- * document whose whole point is that it can be checked.
+ * Revised 2026-09-20 to add the "Governing law and disputes" section
+ * (`#governing-law`). The Terms page had been telling readers to go and read
+ * that section for weeks; it did not exist, so the link went nowhere and the
+ * table of contents had no entry for it.
+ *
+ * `LEGAL_DOC_VERSION` is deliberately *not* bumped alongside it. That string
+ * is the re-acceptance trigger — changing it makes every member of every team
+ * accept the documents again — and this section takes nothing away: it states
+ * that no jurisdiction has been designated and that mandatory local rights are
+ * untouched. Forcing thousands of students to re-accept for a clarification
+ * that costs them nothing is churn, not consent. When a real governing law and
+ * venue are chosen, that *is* material and the version must move with it.
+ *
+ * Before this: the "Product analytics" section (`#analytics`), disclosing the
+ * opt-in first-party usage events introduced alongside the consent banner.
+ *
+ * The date is not moved forward past the day the change landed: a "last
+ * updated" in the future would be the first false statement in a document
+ * whose whole point is that it can be checked.
  */
-export const LEGAL_LAST_UPDATED = "August 24, 2026";
+export const LEGAL_LAST_UPDATED = "September 20, 2026";
 
 /** Where a privacy question goes. */
 // The Privacy Policy and Terms name this address as the way to reach a
@@ -385,6 +399,26 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       paragraphs: [
         "You can stop using Vantage at any time. A team owner can cancel the team's plan, export the team's data, and ask us to delete the team.",
         "We can suspend or end access for a violation of these Terms, for a security risk, for non-payment, or where the law requires it. Where a serious safety or security issue is involved we may act immediately and explain afterwards. If we terminate a team for a reason other than an emergency, we will give the owner a reasonable chance to export the team's data first.",
+      ],
+    },
+    /*
+      This section exists because the Terms page already told readers to go
+      and read it. It did not exist, so the page pointed at a section nobody
+      could find and no entry appeared in the table of contents.
+
+      The governing law and venue are a decision for the operator and their
+      counsel, not something this document should invent — naming a
+      jurisdiction nobody chose would be exactly the kind of unverified claim
+      the rest of this module refuses to make. So the section states the true
+      position today and says what will happen when that changes.
+    */
+    {
+      id: "governing-law",
+      heading: "Governing law and disputes",
+      paragraphs: [
+        "We have not yet designated a governing law or a venue for disputes. That is a deliberate blank, not an oversight: naming one before it has been settled with counsel would tell you something we cannot stand behind, and these documents only say things that can be checked.",
+        "Until it is settled, nothing here asks you to give up a right you already have. Your local consumer-protection law, and any mandatory rights it gives you, apply in full — including the right to bring a claim wherever your law lets you bring it. We will not argue that this section moved your dispute somewhere else.",
+        "When a governing law and venue are set, they will be stated in this section, the version and effective date above will change, and — because it is a material change — we will notify account holders under the section below rather than changing it quietly.",
       ],
     },
     {

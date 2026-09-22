@@ -87,15 +87,9 @@ function formFromPayload(data: {
 function TeamBackgroundRelated({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/writer", orgId)}>
-        Writer
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/grants", orgId)}>
-        Grant writing
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-        Team admin
-      </Button>
+      <a href={withOrgHref("/writer", orgId)}>Writer</a>
+      <a href={withOrgHref("/team/grants", orgId)}>Grant writing</a>
+      <a href={withOrgHref("/team/admin", orgId)}>Team admin</a>
     </nav>
   );
 }
@@ -110,12 +104,6 @@ function TeamBackgroundNextActions({ orgId }: { orgId: string }) {
       primary: true,
     },
     {
-      id: "writer",
-      label: "Open Writer",
-      detail: "Award and sponsor drafts pull mission and history from this page.",
-      href: withOrgHref("/writer", orgId),
-    },
-    {
       id: "setup",
       label: "Open Getting started",
       detail: "The team setup checklist ticks location once city and state are saved.",
@@ -126,18 +114,14 @@ function TeamBackgroundNextActions({ orgId }: { orgId: string }) {
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

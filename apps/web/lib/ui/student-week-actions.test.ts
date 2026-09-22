@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { MEDIA_ENABLED } from "../media-availability";
 import { homeNowAction } from "../../app/dashboard/dashboard-home-model";
 import { cadNextActions } from "../cad/cad-related";
 import { eventDayShellCopy } from "../command/event-day-related";
@@ -86,7 +87,7 @@ describe("student-week action path", () => {
     expect(JSON.stringify(actions)).not.toMatch(/OAuth|ONSHAPE_|Setup required|vantage-cad/);
   });
 
-  it("Competition featured tools include Match video; Build CAD strip includes CAD vault", () => {
+  it.skipIf(!MEDIA_ENABLED)("Competition featured tools include Match video; Build CAD strip includes CAD vault", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       "briefing",
       "video-analysis",

@@ -74,20 +74,14 @@ async function persistWeightBudgetSnapshot(orgHint: string, seasonHint: string, 
 function WeightBudgetRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "robot-weigh-in", orgId)}>
-        Weigh-in
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "gearbox", orgId)}>
-        Gearbox calculator
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-        Inspection
-      </Button>
+      <a href={hubHref("/build", "robot-weigh-in", orgId)}>Weigh-in</a>
+      <a href={hubHref("/build", "gearbox", orgId)}>Gearbox calculator</a>
+      <a href={hubHref("/build", "inspection-copilot", orgId)}>Inspection</a>
     </nav>
   );
 }
 
-function WeightBudgetNextActions({ orgId }: { orgId: string }) {
+function WeightBudgetNextActions() {
   const actions = [
     {
       id: "add",
@@ -96,37 +90,19 @@ function WeightBudgetNextActions({ orgId }: { orgId: string }) {
       href: "#weight-add",
       primary: true,
     },
-    {
-      id: "weigh-in",
-      label: "Open Weigh-in",
-      detail: "Planned vs scale stays blank until someone logs a real weigh-in.",
-      href: hubHref("/build", "robot-weigh-in", orgId),
-      primary: false,
-    },
-    {
-      id: "inspection",
-      label: "Open Inspection",
-      detail: "Cut weight before inspection if the planned total is over the limit.",
-      href: hubHref("/build", "inspection-copilot", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -489,7 +465,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
         )}
       </Panel>
 
-      <WeightBudgetNextActions orgId={view.context.orgId} />
+      <WeightBudgetNextActions />
     </main>
   );
 }

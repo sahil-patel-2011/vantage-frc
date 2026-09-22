@@ -214,7 +214,6 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: ["Keep the form short enough to finish inside one match — long forms lose the last 20 seconds."],
     related: [
       { label: "Scouting", href: "/scouting" },
-      { label: "Schema A/B", href: "/scouting-schema-ab" },
       { label: "Data quality", href: "/data-quality-scorecard" },
     ],
   },

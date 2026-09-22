@@ -20,15 +20,52 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const WEB_ROOT = join(__dirname, "..", "..");
-const ROOTS = [join(WEB_ROOT, "app"), join(WEB_ROOT, "components"), join(WEB_ROOT, "lib")];
+/**
+ * The scouting package ships user-facing copy too, and being outside these
+ * roots is how "Bound to membership userId" reached a student's phone in a
+ * product with a test whose whole job is stopping that. Scanning it closes the
+ * gap the string walked through.
+ */
+const SCOUTING_PKG = join(WEB_ROOT, "..", "..", "packages", "scouting", "src");
 
-type Rule = { readonly label: string; readonly pattern: RegExp; readonly why: string };
+const ROOTS = [
+  join(WEB_ROOT, "app"),
+  join(WEB_ROOT, "components"),
+  join(WEB_ROOT, "lib"),
+  SCOUTING_PKG,
+];
+
+type Rule = {
+  readonly label: string;
+  readonly pattern: RegExp;
+  readonly why: string;
+  /**
+   * `"prose"` restricts a rule to text a person actually reads — a quoted
+   * sentence or JSX text — instead of the whole line.
+   *
+   * Every other rule can run against the raw line because its word is never a
+   * variable name: nothing is called `RLS` or `DEMO`. `userId` is, on nearly
+   * every line of a typed multi-tenant app, so the usual `looksLikeCode`
+   * filter cannot tell the two apart — the first version of this rule reported
+   * 17,960 findings, all of them correct code.
+   */
+  readonly where?: "prose";
+};
 
 /**
  * Each pattern is matched against extracted copy only. Patterns are written to
  * hit prose and to miss identifiers (see `looksLikeCode`).
  */
 const RULES: readonly Rule[] = [
+  {
+    // "Bound to membership userId" shipped to a student's phone, above the
+    // first field of the scouting form. A column name is not something the
+    // person holding the phone can act on — say what it means for them.
+    label: "code identifier",
+    pattern: /\b[a-z]+Id\b/,
+    where: "prose",
+    why: 'a field or column name reached the screen — name the thing, not the column ("your name", not "userId")',
+  },
   {
     label: "DEMO",
     pattern: /\bDEMO\b/,
@@ -395,13 +432,113 @@ function looksLikeCode(line: string, match: string, index: number): boolean {
   return false;
 }
 
+type StringSpan = { quote: string; start: number; body: string };
+
+/**
+ * The quoted string containing `index`, or null when the position is not
+ * inside one.
+ *
+ * An unterminated quote on the line is an apostrophe in JSX text ("don't"),
+ * not a string — give up rather than swallow the rest of the line.
+ */
+function stringSpanAt(line: string, index: number): StringSpan | null {
+  let i = 0;
+  while (i < line.length) {
+    const quote = line[i];
+    if (quote !== '"' && quote !== "'" && quote !== "`") {
+      i += 1;
+      continue;
+    }
+    const start = i + 1;
+    i = start;
+    while (i < line.length && line[i] !== quote) {
+      if (line[i] === "\\") i += 1;
+      i += 1;
+    }
+    if (i >= line.length) return null;
+    if (index >= start && index < i) return { quote, start, body: line.slice(start, i) };
+    i += 1;
+  }
+  return null;
+}
+
+/** The `${…}` holes in a template body, as [start, end) offsets into it. */
+function interpolations(body: string): Array<[number, number]> {
+  const holes: Array<[number, number]> = [];
+  for (let i = 0; i < body.length - 1; i += 1) {
+    if (body[i] !== "$" || body[i + 1] !== "{") continue;
+    let depth = 0;
+    let j = i + 1;
+    for (; j < body.length; j += 1) {
+      if (body[j] === "{") depth += 1;
+      else if (body[j] === "}" && (depth -= 1) === 0) break;
+    }
+    const end = j >= body.length ? body.length : j + 1;
+    holes.push([i, end]);
+    i = end - 1;
+  }
+  return holes;
+}
+
+/** A sentence has two adjacent words; `orgId,` on its own line does not. */
+const READS_AS_PROSE = /[A-Za-z][,.:;)]?\s+[A-Za-z]/;
+
+/**
+ * A whole line of nothing but comma-separated identifiers — the middle of a
+ * destructured prop list or a hook dependency array, where the braces are on
+ * other lines. It reads as two words to the sentence test and is entirely code.
+ */
+const IDENTIFIER_LIST = /^\s*[A-Za-z_$][\w$]*(?:\s*,\s*[A-Za-z_$][\w$]*)*\s*,?\s*$/;
+
+/** Text between a closing `>` and the next `<`, with no `{…}` in between. */
+function jsxTextAt(line: string, index: number): boolean {
+  const before = line.slice(0, index);
+  const after = line.slice(index);
+  // A continuation line of multi-line JSX prose carries no code punctuation —
+  // but so does an argument or destructured key on its own line ("orgId,"),
+  // and a hook dependency array ("[orgId, busy],") even reads as two words.
+  if (!/[<>{}()[\];=:]/.test(line) && !IDENTIFIER_LIST.test(line) && READS_AS_PROSE.test(line)) return true;
+  const opensAt = before.lastIndexOf(">");
+  if (opensAt === -1) return false;
+  if (Math.max(before.lastIndexOf("{"), before.lastIndexOf("}")) > opensAt) return false;
+  const closesAt = after.indexOf("<");
+  if (closesAt === -1) return false;
+  const braceAt = after.search(/[{}]/);
+  return braceAt === -1 || braceAt > closesAt;
+}
+
+/**
+ * Is this position inside something a person reads?
+ *
+ * A quoted token is only prose when it is a sentence — `"userId"` as a union
+ * member or a query key is code, `"Bound to membership userId"` is the bug.
+ * Two adjacent words is the test.
+ */
+function inProse(line: string, index: number): boolean {
+  const span = stringSpanAt(line, index);
+  if (span === null) return jsxTextAt(line, index);
+  if (span.quote !== "`") return READS_AS_PROSE.test(span.body);
+
+  // A template literal is a sentence with code holes in it. `${contextId}` is
+  // the code, and the sentence around it must not vouch for what is inside.
+  const holes = interpolations(span.body);
+  const at = index - span.start;
+  if (holes.some(([from, to]) => at >= from && at < to)) return false;
+  let body = span.body;
+  for (const [from, to] of holes) body = body.slice(0, from) + " ".repeat(to - from) + body.slice(to);
+  return READS_AS_PROSE.test(body);
+}
+
 type Finding = { file: string; line: number; label: string; why: string; text: string };
 
 function scan(file: string, rules: readonly Rule[] = RULES): Finding[] {
-  const source = readFileSync(file, "utf8");
+  const rel = relative(WEB_ROOT, file).split(sep).join("/");
+  return scanSource(rel, readFileSync(file, "utf8"), rules);
+}
+
+function scanSource(rel: string, source: string, rules: readonly Rule[] = RULES): Finding[] {
   const stripped = stripComments(source);
   const lines = stripped.split(/\r?\n/);
-  const rel = relative(WEB_ROOT, file).split(sep).join("/");
   const findings: Finding[] = [];
 
   lines.forEach((line, idx) => {
@@ -410,6 +547,7 @@ function scan(file: string, rules: readonly Rule[] = RULES): Finding[] {
       let m: RegExpExecArray | null;
       while ((m = re.exec(line)) !== null) {
         if (m[0].length === 0) break;
+        if (rule.where === "prose" && !inProse(line, m.index)) continue;
         if (looksLikeCode(line, m[0], m.index)) continue;
         findings.push({
           file: rel,
@@ -499,4 +637,69 @@ describe("user-facing copy", () => {
     },
     60_000,
   );
+});
+
+/**
+ * Guards the guard.
+ *
+ * Two ways this rule dies silently, both of which already happened:
+ *
+ * 1. It matches nothing. The pattern was first written through a shell
+ *    heredoc that ate a backslash, so `\b` became a literal BACKSPACE and the
+ *    rule compiled fine and guarded air.
+ * 2. It matches everything. Run against raw lines it reported 17,960 findings
+ *    — every `const { userId }` in the app — which is the same as guarding
+ *    nothing, because nobody keeps a suite that red.
+ *
+ * So these cases go through `scanSource`, the real path, rather than calling
+ * `pattern.test` on a string. The isolated-pattern version of this test passed
+ * while `scan` was returning 17,960 findings.
+ */
+describe("the code-identifier rule", () => {
+  const rules = RULES.filter((entry) => entry.label === "code identifier");
+  const hits = (source: string) => scanSource("probe.tsx", source, rules).length;
+
+  it("is present", () => {
+    expect(rules).toHaveLength(1);
+  });
+
+  it("catches the copy that got through", () => {
+    // The exact string that shipped above the first field of the scouting form.
+    expect(hits('  detail: "Bound to membership userId",')).toBe(1);
+    expect(hits("      <p>Filtered by orgId before it renders</p>")).toBe(1);
+    expect(hits('  <span title="Paste the elementId from Onshape" />')).toBe(1);
+    expect(hits("        Everything here is keyed to your teamId.")).toBe(1);
+  });
+
+  it("leaves ordinary sentences alone", () => {
+    for (const line of [
+      '  title: "Your name goes on every entry",',
+      "  <p>Nobody can record under someone else&apos;s name.</p>",
+      '  <Empty title="Pick the match and team you are scouting" />',
+    ]) {
+      expect(hits(line), `false positive on: ${line}`).toBe(0);
+    }
+  });
+
+  it("leaves code alone", () => {
+    for (const line of [
+      "  const { userId, orgId } = await requireSession();",
+      "  return withRls({ userId, orgId }, async (client) => {",
+      '  const rows = await client.query("select id from scouting_entries where org_id = $1", [orgId]);',
+      "  export type ScoutIdentity = { userId: string; displayName: string };",
+      "  <Field htmlFor={fieldId} describedBy={hintId}>",
+      '  if (entry.scouterId !== userId) return { ok: false, reason: "not_yours" };',
+      "  onChange={(next) => setElementId(next)}",
+      // Hook dependencies and destructured props, whose braces and brackets
+      // are on other lines — a comma-separated list, not a sentence.
+      "    [orgId, sessionId, busy],",
+      "    session, membersById, orgId, attendanceEvents, busyKey, run,",
+      "    documentId,",
+      // A sentence with a code hole in it: the sentence is copy, `${…}` is not.
+      "  const label = `Opened with editor context ${contextId.slice(0, 8)}…`;",
+      '  const url = `/api/finance/balance?${new URLSearchParams({ orgId })}`;',
+    ]) {
+      expect(hits(line), `false positive on: ${line}`).toBe(0);
+    }
+  });
 });

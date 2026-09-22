@@ -66,20 +66,14 @@ async function persistShooterTableSnapshot(orgHint: string, seasonHint: string, 
 function ShooterTableRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "subsystems", orgId)}>
-        Subsystem specs
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
-        Tuning log
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
+      <a href={hubHref("/build", "subsystems", orgId)}>Subsystem specs</a>
+      <a href={hubHref("/build", "tuning-log", orgId)}>Tuning log</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
     </nav>
   );
 }
 
-function ShooterTableNextActions({ orgId }: { orgId: string }) {
+function ShooterTableNextActions() {
   const actions = [
     {
       id: "point",
@@ -88,37 +82,19 @@ function ShooterTableNextActions({ orgId }: { orgId: string }) {
       href: "#shooter-table-point",
       primary: true,
     },
-    {
-      id: "tuning",
-      label: "Open Tuning log",
-      detail: "Offsets and gains that go with this table live there.",
-      href: hubHref("/build", "tuning-log", orgId),
-      primary: false,
-    },
-    {
-      id: "subsystems",
-      label: "Open Subsystem specs",
-      detail: "Attach the shooter motors and reduction to the spec sheet.",
-      href: hubHref("/build", "subsystems", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -488,7 +464,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
         )}
       </Panel>
 
-      <ShooterTableNextActions orgId={view.context.orgId} />
+      <ShooterTableNextActions />
     </main>
   );
 }

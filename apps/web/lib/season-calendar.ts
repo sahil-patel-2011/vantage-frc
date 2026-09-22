@@ -1,6 +1,8 @@
 // Season Calendar & Milestones — framework-free domain logic shared by the API
 // route, the client UI, and unit tests. No server or React imports belong here.
 
+import type { OverlayMeeting } from "./calendar/meetings-overlay";
+
 export const MILESTONE_KINDS = [
   "kickoff",
   "design",
@@ -40,6 +42,13 @@ export type Milestone = {
   doneAt: string | null;
   doneByName: string | null;
   createdByName: string | null;
+  /**
+   * Shared by the entries one press of the repeat control created. Null for
+   * everything else, which is most entries. It records which press made the
+   * row and carries no cadence or end date, so it cannot disagree with the
+   * entries themselves.
+   */
+  seriesId?: string | null;
 };
 
 /** Read-only business / purchase dates surfaced beside the milestone plan (not seeded stats). */
@@ -64,6 +73,12 @@ export type CalendarView =
       context: CalendarContext;
       milestones: Milestone[];
       linkedDeadlines: LinkedDeadline[];
+      /**
+       * The team's real meetings, read-only, drawn under the season on the
+       * month grid. Owned by `/team/calendar`; see `lib/calendar/meetings-overlay.ts`.
+       * Optional so a cached snapshot written before this existed still loads.
+       */
+      meetings?: OverlayMeeting[];
       templates: Array<{ id: SeasonTemplateId; label: string; description: string; entryCount: number }>;
     }
   | { status: "setup_required"; context: CalendarContext; message: string };
@@ -437,6 +452,28 @@ export function groupByMonth(milestones: Milestone[]): Array<{ month: string; la
     .sort((a, b) => a.month.localeCompare(b.month));
 }
 
+/**
+ * Everything the month grid draws for `month` (`YYYY-MM`), so the list under
+ * the grid can be about the same month the grid is about.
+ *
+ * A milestone that spans months belongs to every month it touches, not only
+ * the one it starts in. A competition running 27 February to 2 March is drawn
+ * on the March grid, and a March list that did not contain it would look like
+ * the list had lost it.
+ */
+export function milestonesInMonth(milestones: readonly Milestone[], month: string): Milestone[] {
+  if (!/^\d{4}-\d{2}$/.test(month)) return [];
+  return milestones
+    .filter((milestone) => {
+      const from = milestone.startsOn.slice(0, 7);
+      const to = (milestone.endsOn || milestone.startsOn).slice(0, 7);
+      // An end before the start is bad data, not a reason to hide the row.
+      const last = to < from ? from : to;
+      return from <= month && month <= last;
+    })
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn) || a.title.localeCompare(b.title));
+}
+
 export type SeasonProgress = { total: number; done: number; percent: number };
 
 export function seasonProgress(milestones: Milestone[]): SeasonProgress {
@@ -500,6 +537,39 @@ function seasonTemplateId(value: unknown): SeasonTemplateId {
   return text as SeasonTemplateId;
 }
 
+/**
+ * The dates a repeating entry lands on.
+ *
+ * Validated here rather than trusted, because these arrive over the wire and
+ * each one becomes a row. Every value must be a real date, duplicates
+ * collapse, the list is sorted so the series is written in the order it
+ * happens, and it is capped — the client caps it too, and a cap that only
+ * exists in the client is not a cap.
+ *
+ * The start date is **not** forced in. An earlier version seeded the set with
+ * it, on the reasoning that a series should always contain the day you picked.
+ * It should not: "every Tuesday and Thursday from Monday the 4th" is eight
+ * entries, and seeding produced nine — the eight plus a practice on the Monday
+ * nobody asked for. The client's expansion already decides that question, and
+ * two places deciding it differently is how the Monday got in.
+ *
+ * The fallback stays: an absent or unusable list means a single entry on the
+ * start date, which is the plain non-repeating case.
+ */
+const MAX_REPEAT_DATES = 200;
+
+function repeatDates(value: unknown, startsOn: string): string[] {
+  if (!Array.isArray(value) || value.length === 0) return [startsOn];
+  const seen = new Set<string>();
+  for (const entry of value) {
+    if (seen.size >= MAX_REPEAT_DATES) break;
+    if (typeof entry !== "string" || !entry.trim()) continue;
+    seen.add(isoDate(entry, "Repeat date"));
+  }
+  if (seen.size === 0) return [startsOn];
+  return [...seen].sort();
+}
+
 function optionalEndDate(value: unknown): string | null {
   if (value == null || String(value).trim() === "") return null;
   return isoDate(value, "End date");
@@ -525,10 +595,30 @@ export type CalendarAction =
       endsOn: string | null;
       notes: string;
       meetingUrl: string | null;
+      /**
+       * Extra dates to create the same entry on — a practice schedule,
+       * already expanded by `expandRepeat`.
+       *
+       * The expansion happens before this, not here, because the rule is a
+       * thing the person typed and the dates are a thing the server stores.
+       * Sending dates rather than a rule also means the server never has to
+       * know recurrence exists, and every entry it writes is an ordinary one
+       * that can be moved or cancelled on its own.
+       */
+      repeatOn: string[];
     }
   | { action: "update_milestone"; orgId: string; id: string; patch: MilestonePatch }
   | { action: "toggle_done"; orgId: string; id: string; done: boolean }
-  | { action: "delete_milestone"; orgId: string; id: string };
+  | { action: "delete_milestone"; orgId: string; id: string }
+  /**
+   * Every entry one press of the repeat control created.
+   *
+   * The repeat control expands a schedule into real entries rather than
+   * storing a rule, which is right for a team whose Thursdays keep moving —
+   * but it made undoing one press take forty. This is the other half of that
+   * trade.
+   */
+  | { action: "delete_series"; orgId: string; seriesId: string };
 
 export function parseCalendarAction(input: unknown): CalendarAction {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid calendar action");
@@ -558,8 +648,12 @@ export function parseCalendarAction(input: unknown): CalendarAction {
         endsOn,
         notes: optionalText(body.notes, 2000) ?? "",
         meetingUrl: optionalMeetingUrl(body.meetingUrl),
+        repeatOn: repeatDates(body.repeatOn, startsOn),
       };
     }
+
+    case "delete_series":
+      return { action: "delete_series", orgId, seriesId: uuid(body.seriesId, "Series") };
 
     case "update_milestone": {
       const id = uuid(body.id, "Milestone");

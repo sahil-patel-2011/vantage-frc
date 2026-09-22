@@ -76,9 +76,7 @@ function VendorsRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related vendors-related" aria-label="Related procurement tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -90,18 +88,14 @@ function VendorsNextActionsPanel({ actions }: { actions: VendorsNextAction[] }) 
     <section className="app-card soft-panel edc-next-actions vendors-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -349,7 +343,7 @@ export default function VendorsClient() {
           </>
         }
         title="Vendor Directory"
-        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Vendor Lead Times."
+        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory."
       >
         <div className="vendors-header-actions">
           {relatedLinks.map((link) => (

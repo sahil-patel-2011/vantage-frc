@@ -14,6 +14,7 @@ import {
   PAGE_DESCRIPTION,
   QUALITY_NOTICE_BODY,
   REQUIRED_ENDPOINT_IDS,
+  PUBLIC_SWARM_FALLBACK_BODY,
 } from "./ai-keys-copy";
 
 describe("ENDPOINT_EXAMPLES", () => {
@@ -95,6 +96,12 @@ describe("page promises", () => {
   it("ships the parity claim, the quality note, and the key-handling note together", () => {
     expect(ANY_ENDPOINT_POINTS).toContain(ALL_FEATURES_BODY);
     expect(ANY_ENDPOINT_POINTS).toContain(QUALITY_NOTICE_BODY);
+    expect(ANY_ENDPOINT_POINTS).toContain(PUBLIC_SWARM_FALLBACK_BODY);
+    expect(PUBLIC_SWARM_FALLBACK_BODY.toLowerCase()).toContain("petals");
+    // The two facts a team needs before turning it on: strangers see the
+    // conversation, and nobody has turned it on for them.
+    expect(PUBLIC_SWARM_FALLBACK_BODY.toLowerCase()).toContain("read what you send");
+    expect(PUBLIC_SWARM_FALLBACK_BODY.toLowerCase()).toMatch(/off until|turned on/);
     expect(ANY_ENDPOINT_POINTS.length).toBeGreaterThanOrEqual(3);
   });
 });

@@ -12,6 +12,7 @@
 // policies decide visibility, and a personal file stays invisible to everyone
 // but its owner.
 
+import { isPausedMediaFile, MEDIA_PAUSED_MESSAGE } from "../../../../../../lib/media-availability";
 import { createHash } from "node:crypto";
 import { withRls } from "@vantage/db";
 import sharp from "sharp";
@@ -185,10 +186,11 @@ export async function PUT(request: Request, context: RouteContext) {
           sha256: string;
           byteSize: string;
           contentType: string;
+          name: string;
           storageLocation: string;
           status: string;
         }>(
-          `SELECT sha256, byte_size::text AS "byteSize", content_type AS "contentType",
+          `SELECT name, sha256, byte_size::text AS "byteSize", content_type AS "contentType",
                   storage_location AS "storageLocation", status
              FROM drive_files
             WHERE id = $1::uuid AND org_id = $2::uuid AND deleted_at IS NULL
@@ -197,6 +199,7 @@ export async function PUT(request: Request, context: RouteContext) {
         );
         const row = meta.rows[0];
         if (!row) return { ok: false as const, status: 404, reason: "That upload does not exist, or is not yours." };
+        if (isPausedMediaFile(row.name, row.contentType)) return { ok: false as const, status: 403, reason: MEDIA_PAUSED_MESSAGE };
         if (row.storageLocation !== "db") {
           return {
             ok: false as const,

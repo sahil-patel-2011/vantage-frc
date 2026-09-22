@@ -12,7 +12,10 @@ import {
   type OnshapeHttpFn,
   type OnshapeSessionHttpOptions,
 } from "../../cad/src/onshape-session";
-import type { OnshapeBrowserSession } from "../../cad/src/onshape-session-store";
+import {
+  sessionReplayHeaders,
+  type OnshapeBrowserSession,
+} from "../../cad/src/onshape-session-store";
 import { PLAYWRIGHT_MISSING_MESSAGE } from "./login";
 
 type BrowserCookie = {
@@ -185,7 +188,10 @@ export function createPlaywrightOnshapeSessionManager(
         const current = await open(session);
         const url = onshapeApiUrl(session.baseUrl, path);
         const headers = Object.fromEntries(new Headers(init.headers).entries());
-        for (const [name, value] of Object.entries(session.headers ?? {})) {
+        // Observed headers plus the CSRF token derived from the stored cookie.
+        // Observation alone leaves writes failing 401 whenever the login window
+        // caught only reads, which is most logins.
+        for (const [name, value] of Object.entries(sessionReplayHeaders(session))) {
           if (!(name in headers)) headers[name] = value;
         }
         if (!("accept" in headers)) {

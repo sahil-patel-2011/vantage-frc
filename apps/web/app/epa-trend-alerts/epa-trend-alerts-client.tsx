@@ -59,9 +59,7 @@ function EpaRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related epa-trend-alerts-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -76,18 +74,14 @@ function EpaNextActionsPanel({ actions }: { actions: EpaTrendAlertsNextAction[] 
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -339,7 +333,7 @@ export default function EpaTrendAlertsClient() {
           </>
         }
         title="Rating alerts"
-        description="Watch teams you might face and get flagged when their stored rating moves meaningfully between events. Cross-check Strategy and Opponent Watchlist."
+        description="Watch teams you might face and get flagged when their stored rating moves meaningfully between events."
       >
         <div className="epa-trend-alerts-header-actions">
           {relatedLinks.map((link) => (

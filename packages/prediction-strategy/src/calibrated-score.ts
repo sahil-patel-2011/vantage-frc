@@ -9,6 +9,18 @@
  * reports the honest MAE / within-±3 rate on whatever rows you pass in.
  */
 
+
+import {
+  MIN_MATCHES_TO_STAND_ALONE,
+  canStandAlone,
+  type ScoutedTeamRating,
+} from "./scouting-rating";
+import {
+  describeConfidence,
+  matchBelief,
+  type TeamScoreBelief,
+} from "./score-uncertainty";
+
 export type ScoreFeatureRow = {
   matchKey: string;
   eventType?: "week" | "district" | "regional" | "championship" | "other";
@@ -31,6 +43,26 @@ export type TeamScoreFeatures = {
   scoutCycles?: number | null;
   climbRate?: number | null;
   defenseFlag?: boolean;
+  /**
+   * What this team's own scouts recorded about this robot, already converted
+   * to points by the org's value formula.
+   *
+   * This is the only input that exists at an off-season event, a week-0
+   * scrimmage, or the first morning of week 1, where Statbotics and the OPR
+   * family have nothing yet. When there is no official rating it carries the
+   * prediction on its own; when there is one it nudges it.
+   */
+  scouted?: ScoutedTeamRating | null;
+  /**
+   * This robot's match-to-match spread in points, when the caller has it —
+   * `matchSdFromDistribution(summariseDistribution(series))`.
+   *
+   * Optional because most callers do not have per-match rows to hand. Without
+   * it the uncertainty model falls back to a stated assumption and marks the
+   * estimate as unmeasured; with it, a metronome and a boom-or-bust robot with
+   * the same average stop producing the same confidence.
+   */
+  matchSd?: number | null;
 };
 
 export type AllianceScorePrediction = {
@@ -41,7 +73,33 @@ export type AllianceScorePrediction = {
   errorBand: number;
   drivers: string[];
   modelVersion: "calibrated-linear-v2";
+  /**
+   * Where the number came from, so the screen can say so.
+   *
+   * `"official"` — every robot had a Statbotics or OPR-family rating.
+   * `"scouting"` — none did, and the estimate is built entirely from what this
+   *   team watched. This is the normal case at an off-season event.
+   * `"mixed"`   — some of each.
+   */
+  basis: ScorePredictionBasis;
+  /**
+   * Per-match confidence, as opposed to `errorBand`, which is how well the
+   * model does on average.
+   *
+   * These move with the robots actually on the field: how much each one
+   * swings, how many matches it rests on, and whether it has been breaking
+   * down. Two matches with the same predicted scores can have very different
+   * numbers here, and that difference is the point.
+   */
+  redBand: number;
+  blueBand: number;
+  /** P(red wins), never 0 or 1 — robots break. */
+  redWinProbability: number;
+  /** One line naming the favourite and where the doubt is coming from. */
+  confidence: string;
 };
+
+export type ScorePredictionBasis = "official" | "scouting" | "mixed";
 
 export type ScorePredictionSkip = {
   matchKey: string;
@@ -100,13 +158,35 @@ function tanh(value: number): number {
   return (exp - 1) / (exp + 1);
 }
 
+/**
+ * How much a scouting-only rating is trusted as a stand-in for EPA.
+ *
+ * Not 1.0. A scouting mean is one team's view of a robot, from one vantage
+ * point, without the cross-checking a field-wide model gets — and the points
+ * come from the org's own formula, which may weight the game differently from
+ * the official breakdown. Discounting it slightly keeps a scouting-only
+ * prediction from reading as confidently as one built on a season of results.
+ */
+const SCOUTED_AS_RATING = 0.9;
+
 function teamContribution(team: TeamScoreFeatures): number | null {
   const auto = team.autoEpa;
   const teleop = team.teleopEpa;
   const endgame = team.endgameEpa;
-  if (auto == null && teleop == null && endgame == null && team.opr == null && team.ccwm == null) {
-    return null;
+  const hasOfficial =
+    auto != null || teleop != null || endgame != null || team.opr != null || team.ccwm != null;
+
+  if (!hasOfficial) {
+    // Nothing official exists for this robot. If the team watched it enough
+    // times, that is a real rating and the match is predictable after all —
+    // this is the whole point at an off-season event.
+    if (!canStandAlone(team.scouted)) return null;
+    const scouted = team.scouted!;
+    const climb = scouted.climbRate == null ? 0 : (scouted.climbRate - 0.5) * 6;
+    const defense = scouted.defenseRate >= 0.5 ? -2 : 0;
+    return scouted.shrunkTotal * SCOUTED_AS_RATING + climb + defense;
   }
+
   const epa = (auto ?? 0) + (teleop ?? 0) + (endgame ?? 0);
   let rating = epa;
   if (team.opr != null && team.ccwm != null) {
@@ -119,9 +199,51 @@ function teamContribution(team: TeamScoreFeatures): number | null {
   const form = tanh((team.recentFormDelta ?? 0) / 12) * 8;
   const scoutRaw =
     team.scoutCycles == null ? 0 : Math.min(12, Math.max(-8, team.scoutCycles - 8)) * 0.35;
-  const climb = team.climbRate == null ? 0 : (team.climbRate - 0.5) * 6;
-  const defense = team.defenseFlag ? -2 : 0;
-  return rating + form + scoutRaw * SCOUT_SHRINK + climb + defense;
+  const climb = (team.climbRate ?? team.scouted?.climbRate) == null
+    ? 0
+    : ((team.climbRate ?? team.scouted!.climbRate!) - 0.5) * 6;
+  const defense = team.defenseFlag || (team.scouted?.defenseRate ?? 0) >= 0.5 ? -2 : 0;
+  return rating + form + scoutRaw * SCOUT_SHRINK + climb + defense + reliabilityAdjustment(team, rating);
+}
+
+/**
+ * A robot that dies contributes nothing that match, and the official rating
+ * does not know it.
+ *
+ * EPA is built from final scores, so a breakdown shows up only as a bad match
+ * mixed in with good ones. The scouts watching know the difference between a
+ * robot having an off match and a robot that has been towed off the field
+ * twice today, and that difference is worth points in expectation.
+ *
+ * Scaled against the team's own rating rather than a flat penalty: losing a
+ * 60-point robot for a third of its matches costs far more than losing a
+ * 10-point one, and the adjustment is capped so a small sample of bad luck
+ * cannot erase a team.
+ */
+function reliabilityAdjustment(team: TeamScoreFeatures, rating: number): number {
+  const scouted = team.scouted;
+  if (!scouted || scouted.matches < MIN_MATCHES_TO_STAND_ALONE) return 0;
+  if (scouted.disabledRate <= 0) return 0;
+  return -Math.min(0.3, scouted.disabledRate) * Math.max(0, rating);
+}
+
+/**
+ * Why this robot has no number, in a form somebody can act on.
+ *
+ * "has no rating yet" is true and useless. At an off-season event nothing
+ * official is ever coming, so the only thing that can change the answer is
+ * scouting another match — and the message should say that, and say how close
+ * the team already is.
+ */
+function missingReason(team: TeamScoreFeatures): string {
+  const number = team.teamKey.replace(/^frc/, "");
+  const scouted = team.scouted;
+  if (scouted && scouted.matches > 0) {
+    const need = MIN_MATCHES_TO_STAND_ALONE - scouted.matches;
+    const plural = need === 1 ? "match" : "matches";
+    return `${number} has no official rating — scout ${need} more ${plural} and we can estimate it`;
+  }
+  return `${number} has no official rating and nobody has scouted it yet`;
 }
 
 function allianceTotal(
@@ -134,7 +256,7 @@ function allianceTotal(
   for (const team of side) {
     const contribution = teamContribution(team);
     if (contribution == null) {
-      missing.push(`${team.teamKey} has no rating yet`);
+      missing.push(missingReason(team));
       continue;
     }
     total += contribution;
@@ -168,6 +290,32 @@ function driversFor(side: TeamScoreFeatures[], color: "red" | "blue"): string[] 
   return lines.slice(0, 3);
 }
 
+/**
+ * How many matches an official rating is treated as resting on.
+ *
+ * EPA and the OPR family are built from a season of results, so the *mean* is
+ * far better constrained than any scouting sample — but the number of matches
+ * behind it is not in the feature row. Twelve is a qualification schedule: it
+ * makes an official rating clearly firmer than three scouted matches without
+ * pretending it is exact. A stated assumption, like the rest of them.
+ */
+const OFFICIAL_OBSERVATIONS = 12;
+
+/** One robot, in the shape the uncertainty model reasons about. */
+function beliefFor(team: TeamScoreFeatures, mean: number): TeamScoreBelief {
+  const scouted = team.scouted ?? null;
+  const official = hasOfficialRating(team);
+  const scoutedMatches = scouted?.matches ?? 0;
+  return {
+    teamKey: team.teamKey,
+    mean,
+    observations: official ? Math.max(OFFICIAL_OBSERVATIONS, scoutedMatches) : scoutedMatches,
+    matchSd: team.matchSd ?? null,
+    disabledRate: scouted?.disabledRate ?? 0,
+    official,
+  };
+}
+
 export function predictAllianceScores(
   row: Omit<ScoreFeatureRow, "redScore" | "blueScore"> & { redScore?: number; blueScore?: number },
   options?: { errorBand?: number },
@@ -182,14 +330,79 @@ export function predictAllianceScores(
   }
   const redDrivers = driversFor(row.red, "red");
   const blueDrivers = driversFor(row.blue, "blue");
+  const basis = basisFor([...row.red, ...row.blue]);
+  const drivers = [...redDrivers, ...blueDrivers].slice(0, 3);
+  if (basis === "scouting") {
+    // Say it on the card, not just in a field the UI might ignore.
+    drivers.unshift("Estimated from your scouting — no official numbers exist for this event yet");
+  }
+  // `errorBand` keeps its meaning — how well this model does on average, and
+  // what an explicit override sets. The per-match numbers below are a
+  // different question and get their own fields rather than redefining it.
+  const modelBand = widenForBasis(resolveErrorBand(options?.errorBand), basis);
+  const belief = matchBelief(
+    { mean: red.total, beliefs: beliefsFor(row.red) },
+    { mean: blue.total, beliefs: beliefsFor(row.blue) },
+    { modelSd: modelBand },
+  );
+
   return {
     matchKey: row.matchKey,
     redPredicted: Math.round(red.total * 10) / 10,
     bluePredicted: Math.round(blue.total * 10) / 10,
-    errorBand: resolveErrorBand(options?.errorBand),
-    drivers: [...redDrivers, ...blueDrivers].slice(0, 3),
+    errorBand: modelBand,
+    drivers: drivers.slice(0, 3),
     modelVersion: MODEL_VERSION,
+    basis,
+    redBand: belief.redBand,
+    blueBand: belief.blueBand,
+    redWinProbability: Math.round(belief.redWinProbability * 1000) / 1000,
+    confidence: describeConfidence(belief),
   };
+}
+
+/** Only robots that actually have a number carry uncertainty. */
+function beliefsFor(side: readonly TeamScoreFeatures[]): TeamScoreBelief[] {
+  const out: TeamScoreBelief[] = [];
+  for (const team of side) {
+    const contribution = teamContribution(team);
+    if (contribution == null) continue;
+    out.push(beliefFor(team, contribution));
+  }
+  return out;
+}
+
+function hasOfficialRating(team: TeamScoreFeatures): boolean {
+  return (
+    team.autoEpa != null ||
+    team.teleopEpa != null ||
+    team.endgameEpa != null ||
+    team.opr != null ||
+    team.ccwm != null
+  );
+}
+
+function basisFor(teams: readonly TeamScoreFeatures[]): ScorePredictionBasis {
+  const rated = teams.filter((team) => teamContribution(team) != null);
+  if (rated.length === 0) return "official";
+  const official = rated.filter(hasOfficialRating).length;
+  if (official === rated.length) return "official";
+  if (official === 0) return "scouting";
+  return "mixed";
+}
+
+/**
+ * A number built from one team's scouting deserves a wider band than one built
+ * from a season of results, and saying so is the difference between a useful
+ * estimate and a claim the product cannot back.
+ */
+const SCOUTING_BAND_MULTIPLIER = 1.6;
+const MIXED_BAND_MULTIPLIER = 1.25;
+
+function widenForBasis(band: number, basis: ScorePredictionBasis): number {
+  if (basis === "scouting") return Math.round(band * SCOUTING_BAND_MULTIPLIER);
+  if (basis === "mixed") return Math.round(band * MIXED_BAND_MULTIPLIER);
+  return band;
 }
 
 export function isScorePredictionSkip(

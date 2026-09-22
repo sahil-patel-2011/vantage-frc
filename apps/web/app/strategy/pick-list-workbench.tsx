@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  CONSISTENCY_LABEL,
+  describeDistribution,
+  independenceLabel,
+} from "@vantage/prediction-strategy";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -16,7 +21,6 @@ import {
   pickDeskRelatedLinks,
   pickDeskSetupSteps,
   pickDeskShellCopy,
-  shouldShowPickDeskSummaryTiles,
   type PickDeskNextAction,
   type PickDeskShellKind,
 } from "../../lib/strategy/pick-desk-related";
@@ -104,6 +108,47 @@ function metricLine(candidate: PickCandidate | undefined) {
   return parts.join(" · ") || "No numbers yet";
 }
 
+/**
+ * Whether this team's results hold up beside weak partners — the question a
+ * pick actually turns on, which rank and rating cannot answer. Hidden until the
+ * event has enough played matches to split; the chip never guesses, and the
+ * word carries the meaning so the colour is a second channel.
+ */
+function IndependenceChip({ candidate }: { candidate: PickCandidate | undefined }) {
+  const verdict = candidate?.independence;
+  if (!verdict || verdict.verdict === "unknown") return null;
+  return (
+    <span className={`pick-independence pick-independence-${verdict.verdict}`} title={verdict.summary}>
+      {independenceLabel(verdict.verdict)}
+    </span>
+  );
+}
+
+/**
+ * Whether the average is telling the truth.
+ *
+ * Two teams averaging ten points are not the same team: one scores ten every
+ * match, the other nothing twice and twenty twice. A pick list that shows only
+ * the average cannot tell them apart, and which one you want depends entirely
+ * on whether you need a floor or a ceiling.
+ *
+ * Hidden below six matches. Quartiles of four matches are noise with decimal
+ * places, and a confident "steady" from a sample that small is worse than
+ * nothing, because somebody will pick on it. The hover carries the numbers.
+ */
+function ConsistencyChip({ candidate }: { candidate: PickCandidate | undefined }) {
+  const shape = candidate?.consistency;
+  if (!shape || shape.consistency === "unknown") return null;
+  return (
+    <span
+      className={`pick-consistency pick-consistency-${shape.consistency}`}
+      title={describeDistribution(shape)}
+    >
+      {CONSISTENCY_LABEL[shape.consistency]}
+    </span>
+  );
+}
+
 function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = pickDeskRelatedLinks(orgId, {
     include: [...PICK_DESK_RELATED_INCLUDE],
@@ -112,9 +157,9 @@ function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pick-desk-related" aria-label="Related competition tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
+        <a key={link.id} href={link.href}>
           {link.label}
-        </Button>
+        </a>
       ))}
     </nav>
   );
@@ -129,18 +174,14 @@ function PickDeskNextActionsPanel({ actions }: { actions: PickDeskNextAction[] }
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -555,7 +596,6 @@ export function PickListWorkbench({
     );
   }
 
-  const showTiles = shouldShowPickDeskSummaryTiles(desk.candidates.length);
   const readyActions = pickDeskNextActions({
     orgId: desk.orgId,
     shell: "ready",
@@ -605,56 +645,6 @@ export function PickListWorkbench({
         </p>
       ) : null}
 
-      {showTiles ? (
-        <div className="pick-desk-kpis" aria-label="Pick desk counts">
-          <article>
-            <strong>{formatPickDeskMetric(desk.candidates.length, true)}</strong>
-            <small>event teams</small>
-          </article>
-          <article>
-            <strong>{formatPickDeskMetric(desk.scoutedTeams, true)}</strong>
-            <small>with scout depth</small>
-          </article>
-          <article>
-            <strong>{formatPickDeskMetric(desk.pickLists.length, true)}</strong>
-            <small>saved lists</small>
-          </article>
-        </div>
-      ) : null}
-
-      <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
-        <header>
-          <h3>Strategy meeting seats</h3>
-          <small>
-            Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
-          </small>
-          {desk.canEdit ? (
-            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
-              {seating ? "Seating…" : "Seat top scouts"}
-            </Button>
-          ) : null}
-        </header>
-        {(desk.strategySeats ?? []).length ? (
-          <ul>
-            {(desk.strategySeats ?? []).map((seat) => (
-              <li key={`${seat.userId}-${seat.meetingOn}`}>
-                <strong>
-                  {seat.name}
-                  {seat.isMe ? " (you)" : ""}
-                </strong>
-                <small>
-                  {seat.meetingOn} · {seat.reason}
-                </small>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="app-muted">
-            No seats yet
-            {desk.canEdit ? " — use Seat top scouts after validations exist." : "."}
-          </p>
-        )}
-      </article>
 
       <div className="strategy-pick-toolbar app-card">
         <label>
@@ -716,6 +706,8 @@ export function PickListWorkbench({
                         #{entry.rank} {teamLabel(entry)}
                       </strong>
                       <small>{metricLine(candidate)}</small>
+                  <IndependenceChip candidate={candidate} />
+                  <ConsistencyChip candidate={candidate} />
                     </div>
                     <div className="strategy-pick-row-actions">
                       <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
@@ -782,6 +774,8 @@ export function PickListWorkbench({
                 <div>
                   <strong>{teamLabel(candidate)}</strong>
                   <small>{metricLine(candidate)}</small>
+                  <IndependenceChip candidate={candidate} />
+                  <ConsistencyChip candidate={candidate} />
                   {candidate.suggestedTier ? (
                     <em className="strategy-suggest">Suggested {candidate.suggestedTier}</em>
                   ) : (
@@ -798,6 +792,40 @@ export function PickListWorkbench({
               </li>
             ))}
           </ul>
+        )}
+      </article>
+
+      <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
+        <header>
+          <h3>Strategy meeting seats</h3>
+          <small>
+            Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
+          </small>
+          {desk.canEdit ? (
+            <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating}>
+              {seating ? "Seating…" : "Seat top scouts"}
+            </Button>
+          ) : null}
+        </header>
+        {(desk.strategySeats ?? []).length ? (
+          <ul>
+            {(desk.strategySeats ?? []).map((seat) => (
+              <li key={`${seat.userId}-${seat.meetingOn}`}>
+                <strong>
+                  {seat.name}
+                  {seat.isMe ? " (you)" : ""}
+                </strong>
+                <small>
+                  {seat.meetingOn} · {seat.reason}
+                </small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">
+            No seats yet
+            {desk.canEdit ? " — use Seat top scouts after validations exist." : "."}
+          </p>
         )}
       </article>
 

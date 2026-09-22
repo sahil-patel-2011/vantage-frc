@@ -89,9 +89,7 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related srr-related" aria-label="Related business tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -103,18 +101,14 @@ function NextActionsPanel({ actions }: { actions: SponsorRenewalRoiNextAction[] 
     <section className="app-card soft-panel edc-next-actions srr-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -381,7 +375,7 @@ export default function SponsorRenewalRoiClient() {
           </>
         }
         title="Sponsor Renewal-Risk Score & ROI Report"
-        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions. Cross-check Sponsor CRM, Suite, and Impact."
+        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions."
       >
         <div className="srr-header-actions">
           {view.seasons.length > 0 ? (

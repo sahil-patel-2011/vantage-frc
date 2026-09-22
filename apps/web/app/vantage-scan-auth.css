@@ -1,0 +1,66 @@
+/* Loaded AFTER route sheets so navy/gold scan polish wins on auth/onboarding. */
+
+.signin-page h1 {
+  color: var(--scan-navy, #0d3560);
+  letter-spacing: -0.03em;
+}
+
+.signin-setup-shell {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  text-align: left;
+  border: 1px dashed color-mix(in srgb, var(--scan-navy, #0d3560) 22%, var(--line));
+  background: color-mix(in srgb, var(--scan-navy, #0d3560) 4%, var(--surface, #fff));
+  border-radius: var(--scan-radius, 16px);
+}
+
+.signin-setup-shell > span {
+  color: var(--scan-gold-ink, #10202c);
+  background: var(--scan-gold, #e8b923);
+  border-color: transparent;
+  letter-spacing: 0.06em;
+}
+
+.signin-setup-shell strong {
+  color: var(--scan-navy, #0d3560);
+}
+
+.signin-setup-shell p {
+  color: var(--muted, #5a6578);
+}
+
+.signin-submit,
+.signin-page .signin-submit {
+  background: var(--scan-navy, #0d3560);
+  color: #fff;
+  border-color: var(--scan-navy, #0d3560);
+}
+
+.signin-submit:disabled,
+.signin-page .signin-submit:disabled {
+  background: color-mix(in srgb, var(--muted, #5a6578) 22%, var(--surface, #fff));
+  color: var(--muted, #5a6578);
+  border-color: var(--line, #d5dde8);
+}
+
+.onboarding-page h1,
+.onboarding-flow-header h1 {
+  color: var(--scan-navy, #0d3560);
+}
+
+.onboarding-load-badge.setup {
+  color: var(--scan-gold-ink, #10202c);
+  background: var(--scan-gold, #e8b923);
+}
+
+.onboarding-steps.scan-rail,
+.onboarding-steps-simple {
+  list-style: none;
+}
+
+.onboarding-steps-simple li.current b {
+  background: var(--scan-navy, #0d3560);
+  color: #fff;
+  box-shadow: none;
+}

@@ -86,9 +86,7 @@ function BusFactorRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related bus-factor-related" aria-label="Related team tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -103,18 +101,14 @@ function BusFactorNextActionsPanel({ actions }: { actions: BusFactorNextAction[]
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -385,7 +379,7 @@ export default function BusFactorClient() {
           </>
         }
         title="Bus-Factor & Burnout Watch"
-        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My Hours, and Task board."
+        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only."
       >
         <div className="bus-factor-header-actions">
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

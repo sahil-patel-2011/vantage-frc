@@ -57,9 +57,7 @@ function SponsorWallRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related sponsor-wall-related" aria-label="Related business tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -74,18 +72,14 @@ function SponsorWallNextActionsPanel({ actions }: { actions: SponsorWallNextActi
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -337,7 +331,7 @@ export default function SponsorWallClient() {
           </>
         }
         title="Sponsor Wall"
-        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsor CRM and Sponsorship."
+        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only."
       >
         <div className="sponsor-wall-header-actions">
           {relatedLinks.map((link) => (

@@ -5,6 +5,7 @@ import {
   BIG_TARGET_ANSWER_KINDS,
   addOption,
   classifyFormBuilderShell,
+  duplicateQuestion,
   groupFieldsBySection,
   isStudioAnswerKind,
   needsSettingsEditor,
@@ -286,7 +287,10 @@ describe("form-builder", () => {
         validation: ok,
         acknowledgeBudget: false,
       }),
-    ).toMatch(/owner or admin/i);
+      // Changed on purpose: scouting forms are open to the whole team now
+      // (migration 0658), so the only person this blocks is someone who has not
+      // joined a team yet — not a student whose role is too low.
+    ).toMatch(/choose your team/i);
     expect(
       formBuilderPublishBlockedReason({
         canManageSchemas: true,
@@ -855,5 +859,50 @@ describe("form-builder input studio", () => {
       "preserve",
       "increment",
     ]);
+  });
+});
+
+describe("duplicateQuestion", () => {
+  const base = [
+    newDraftQuestion({ id: "a", label: "Auto high goal", kind: "counter", required: true }),
+    newDraftQuestion({ id: "b", label: "Climb", kind: "yesno" }),
+  ];
+
+  it("drops the copy in right below the original", () => {
+    const next = duplicateQuestion(base, 0);
+    expect(next).toHaveLength(3);
+    expect(next.map((q) => q.id)[0]).toBe("a");
+    expect(next[2]?.id).toBe("b");
+    expect(next[1]?.kind).toBe("counter");
+    expect(next[1]?.required).toBe(true);
+  });
+
+  it("never reuses the published key or the draft id", () => {
+    // Two questions under one key make every stored answer ambiguous the
+    // moment the schema publishes. This is the whole reason the copy is not
+    // a plain spread.
+    const withKey = [newDraftQuestion({ id: "a", label: "Auto high goal", key: "auto_high_goal" })];
+    const next = duplicateQuestion(withKey, 0);
+    expect(next[0]?.key).toBe("auto_high_goal");
+    expect(next[1]?.key).toBeUndefined();
+    expect(next[1]?.id).not.toBe("a");
+  });
+
+  it("labels the copy so it does not publish into the original", () => {
+    // Labels become keys at publish time, so identical labels would collide.
+    expect(duplicateQuestion(base, 0)[1]?.label).toBe("Auto high goal copy");
+    const blank = [newDraftQuestion({ id: "a", label: "" })];
+    expect(duplicateQuestion(blank, 0)[1]?.label).toBe("");
+  });
+
+  it("gives the copy its own settings object", () => {
+    const next = duplicateQuestion(base, 0);
+    expect(next[1]?.settings).not.toBe(next[0]?.settings);
+    expect(next[1]?.settings).toEqual(next[0]?.settings);
+  });
+
+  it("leaves the list alone when the index is not a question", () => {
+    expect(duplicateQuestion(base, 9)).toBe(base);
+    expect(duplicateQuestion(base, -1)).toBe(base);
   });
 });

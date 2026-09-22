@@ -4,10 +4,14 @@ import type { Dispatch, SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
+import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
+import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY, groupScoutTargets } from "../../lib/scouting/scout-target";
+import { ScoutTargetByHand } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
 import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
@@ -32,8 +36,15 @@ import { ScoutReportViewer } from "./scout-report-viewer";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
+import { ScoutingReportTemplatePicker } from "./scouting-report-template-picker";
 
-type MatchOption = { matchKey: string; teamKey: string; label: string };
+type MatchOption = {
+  matchKey: string;
+  teamKey: string;
+  label: string;
+  /** One of yours. Sorted first and marked; never a restriction. */
+  assigned?: boolean;
+};
 type SaveReceipt = {
   teamKey: string;
   matchKey?: string;
@@ -174,16 +185,7 @@ export function ScoutingReadyView({
 }: ScoutingReadyViewProps) {
 return (
   <main className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
-    {embedded ? (
-      <div className="scout-header-meta scout-header-meta-embedded">
-        <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
-          {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
-        </span>
-        <Button variant="secondary" type="button" onClick={() => void sync()}>
-          Sync now
-        </Button>
-      </div>
-    ) : (
+    {embedded ? null : (
     <PageHeader
       breadcrumbs="Competition / Scouting"
       title="Scouting"
@@ -195,16 +197,32 @@ return (
         <Button variant="secondary" type="button" onClick={() => window.print()}>
           Print
         </Button>
-        <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
-          {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} entries ·{" "}
-          {formatScoutingMetric(counts.media, true)} media
-        </span>
-        <Button variant="secondary" type="button" onClick={() => void sync()}>
-          Sync now
-        </Button>
       </div>
     </PageHeader>
     )}
+
+    {/*
+      Which event, whether we are online, and how much is still waiting to
+      leave this phone are one question — "can I record right now, and is my
+      work safe?" — so they share one line.
+
+      They used to be two bands: a right-aligned pill with a Sync button, and
+      below it an 86px card holding the event key and the sentence "Forms and
+      assignments are cached on this device." On a 390×844 phone that pair cost
+      144px of the 807px of chrome standing between a scout and the first form
+      field. The sentence is also reassurance rather than information — the
+      queue count says the same thing and says it with a number.
+    */}
+    <div className="scout-status-bar">
+      {data?.eventKey ? <strong className="scout-status-event">Event {data.eventKey}</strong> : null}
+      <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
+        {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
+        {embedded ? null : <> · {formatScoutingMetric(counts.media, true)} media</>}
+      </span>
+      <Button variant="secondary" type="button" onClick={() => void sync()}>
+        Sync now
+      </Button>
+    </div>
     <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
     <OfflineBanner
@@ -221,7 +239,7 @@ return (
       onDiscard={(clientId) => void discardQuarantineItem(clientId)}
     />
 
-    {shell === "empty" && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" ? (
+    {shell === "empty" && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" && tab !== "teams" ? (
       <>
         <EmptyState
           soft
@@ -232,7 +250,7 @@ return (
           description={
             data?.canManageSchemas
               ? "Create starter match and pit forms for this season, or build a custom form and publish it."
-              : "Ask an owner or admin to publish scouting forms for this event."
+              : "Build a scouting form for this event — anyone on the team can."
           }
         >
           {data?.canManageSchemas ? (
@@ -248,13 +266,6 @@ return (
       </>
     ) : null}
 
-    {data?.eventKey ? (
-      <Panel className="scout-event-strip" style={{ minHeight: "auto", marginBottom: 14 }}>
-        <strong>{data.eventKey}</strong>
-        <span className="app-muted">Forms and assignments are cached on this device.</span>
-      </Panel>
-    ) : null}
-
     <ToolStrip
       aria-label="Scouting views"
       value={tab}
@@ -264,11 +275,18 @@ return (
         { id: "pit", label: "Pit" },
         { id: "handoff", label: "QR handoff" },
         { id: "conflicts", label: "Conflicts" },
+        { id: "teams", label: "Robots", featured: true },
         { id: "trust", label: "Trust & coverage" },
       ]}
     />
 
-    {tab === "trust" ? (
+    {tab === "teams" ? (
+      /* The one screen that answers what the scouting was *for*. Everything
+         else under this strip is about the process — coverage, conflicts,
+         trust — and a team could finish a weekend able to say "94% covered"
+         and unable to say which robot to pick. */
+      <ScoutingTeamProfiles orgId={orgId} eventKey={data?.eventKey ?? null} />
+    ) : tab === "trust" ? (
       <ScoutingTrustPanel orgId={orgId} eventKey={data?.eventKey ?? null} />
     ) : tab === "handoff" ? (
       <ScoutHandoffPanel
@@ -412,7 +430,10 @@ return (
           <header className="scout-form-heading">
             <div>
               <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
-              <p className="app-muted">Primary action: fill the form, then save.</p>
+              {/* "Primary action: fill the form, then save." used to sit here.
+                  It told someone looking at a form that the thing to do was
+                  fill in the form, in the vocabulary of a design review, and
+                  it cost a line above the first field on a phone. */}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
               {payloadHasDraftContent(payload) || draftSavedAt ? (
@@ -428,12 +449,18 @@ return (
             </div>
           </header>
 
-          <div className="scout-identity-lock" role="status">
+          {/* One line, not three. On a 390px phone this block sat above the
+              first field and helped push it off the bottom of the screen, on
+              the page a scout opens between matches. The name is the part
+              that matters every time; the reassurance about how it is enforced
+              is on hover for whoever wants it. */}
+          <div
+            className="scout-identity-lock"
+            role="status"
+            title={`${SCOUT_IDENTITY_LOCK_COPY.title}. ${SCOUT_IDENTITY_LOCK_COPY.detail}`}
+          >
             <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
             <strong>{data?.scoutIdentity?.displayName ?? "Signed-in member"}</strong>
-            <small className="app-muted">
-              {SCOUT_IDENTITY_LOCK_COPY.title}. {SCOUT_IDENTITY_LOCK_COPY.detail}
-            </small>
           </div>
 
           {schemaBudget && schemaBudget.status !== "healthy" ? (
@@ -443,30 +470,61 @@ return (
           ) : null}
 
           {type === "match" ? (
-            <FormRow
-              label="Assignment"
-              hint={
-                !matchOptions.length
-                  ? "No assignments or synced matches yet — the list fills in after the event schedule is set."
-                  : undefined
-              }
-            >
-              <select
-                value={`${matchKey}|${teamKey}`}
-                onChange={(event) => {
-                  const [match, team] = event.target.value.split("|");
-                  setMatchKey(match ?? "");
-                  setTeamKey(team ?? "");
+            <>
+              {/* Scouting is not assignment-gated. The list is a convenience:
+                  your matches first, then every other robot on the schedule,
+                  and a typed team number for anything not on it at all. */}
+              {matchOptions.length ? (
+                <FormRow
+                  label="Who are you scouting?"
+                  hint={
+                    matchOptions.some((option) => option.assigned)
+                      ? ASSIGNMENTS_ARE_SUGGESTIONS_COPY
+                      : undefined
+                  }
+                >
+                  <select
+                    value={`${matchKey}|${teamKey}`}
+                    onChange={(event) => {
+                      const [match, team] = event.target.value.split("|");
+                      setMatchKey(match ?? "");
+                      setTeamKey(team ?? "");
+                    }}
+                  >
+                    <option value="|">Select match and team</option>
+                    {/* Grouped by match. Flat, a 36-match event is 216 rows in
+                        one scroll, and the scout is looking for one of them
+                        while the match they want is starting. */}
+                    {groupScoutTargets(matchOptions).map((group) => (
+                      <optgroup key={group.key} label={group.label}>
+                        {group.options.map((option) => (
+                          <option
+                            key={`${option.matchKey}-${option.teamKey}`}
+                            value={`${option.matchKey}|${option.teamKey}`}
+                          >
+                            {option.assigned ? `★ ${option.label} · yours` : option.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </FormRow>
+              ) : null}
+
+              {/* The only path at an offseason event, and on the first morning
+                  of any event before the schedule lands. Previously an empty
+                  dropdown meant match scouting was simply impossible. */}
+              <ScoutTargetByHand
+                eventKey={data?.eventKey ?? ""}
+                matchKey={matchKey}
+                teamKey={teamKey}
+                startOpen={!matchOptions.length}
+                onPick={(nextMatch, nextTeam) => {
+                  setMatchKey(nextMatch);
+                  setTeamKey(nextTeam);
                 }}
-              >
-                <option value="|">Select match and team</option>
-                {matchOptions.map((option) => (
-                  <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormRow>
+              />
+            </>
           ) : (
             <FormRow label="Team key">
               <input
@@ -476,6 +534,13 @@ return (
               />
             </FormRow>
           )}
+
+          {type === "match" && formFields.length ? (
+            <ScoutingReportTemplatePicker
+              key={`${matchKey}-${teamKey}`}
+              fields={formFields}
+            />
+          ) : null}
 
           {liveConflicts.length ? (
             <div className="scout-official-flags" role="status">
@@ -500,9 +565,10 @@ return (
             </div>
           ) : null}
 
-          {formFields.map((field) => (
+          {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={field.key}
+              anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
               flags={flagsByField.get(field.key) ?? []}
@@ -529,7 +595,7 @@ return (
             </select>
           </FormRow>
 
-          <ScoutVoiceNotesPanel
+          {MEDIA_ENABLED ? <ScoutVoiceNotesPanel
             orgId={orgId}
             eventKey={data?.eventKey ?? ""}
             matchKey={matchKey}
@@ -559,9 +625,9 @@ return (
               void refreshCounts();
               void sync();
             }}
-          />
+          /> : null}
 
-          {type === "pit" ? (
+          {MEDIA_ENABLED && type === "pit" ? (
             <label className="scout-media">
               Queue pit photo/video
               <input

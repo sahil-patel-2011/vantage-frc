@@ -355,29 +355,66 @@ export async function submitOrder(
   const unitCostUsd = unitCostFromEstimate(validated.value.estimateUsd, validated.value.quantity);
   const totalCostUsd = totalFromParts(validated.value.quantity, unitCostUsd);
 
-  const inserted = await client.query<{ id: string }>(
-    `INSERT INTO purchase_requests (
-       org_id, season_year, requested_by, title, vendor, item_url,
-       quantity, unit_cost_usd, shipping_cost_usd, total_cost_usd, justification, needed_by
-     ) VALUES (
-       $1::uuid, $2, $3::uuid, $4, $5, $6,
-       $7, $8, 0, $9, $10, $11::date
-     )
-     RETURNING id`,
-    [
-      input.orgId,
-      seasonYear,
-      input.userId,
-      validated.value.title,
-      validated.value.vendor,
-      validated.value.itemUrl,
-      validated.value.quantity,
-      unitCostUsd,
-      totalCostUsd,
-      validated.value.justification,
-      validated.value.neededBy,
-    ],
+  // Under a savepoint so a deploy briefly ahead of the cost_source migration
+  // still takes requests — falling back to the old shape, where the number is
+  // always treated as the requester's estimate, which is what it was.
+  const costSource = validated.value.priced ? "requester-estimate" : "unpriced";
+  let inserted = await withSavepoint(
+    client,
+    () =>
+      client.query<{ id: string }>(
+        `INSERT INTO purchase_requests (
+           org_id, season_year, requested_by, title, vendor, item_url,
+           quantity, unit_cost_usd, shipping_cost_usd, total_cost_usd, justification, needed_by,
+           cost_source
+         ) VALUES (
+           $1::uuid, $2, $3::uuid, $4, $5, $6,
+           $7, $8, 0, $9, $10, $11::date,
+           $12::order_cost_source
+         )
+         RETURNING id`,
+        [
+          input.orgId,
+          seasonYear,
+          input.userId,
+          validated.value.title,
+          validated.value.vendor,
+          validated.value.itemUrl,
+          validated.value.quantity,
+          unitCostUsd,
+          totalCostUsd,
+          validated.value.justification,
+          validated.value.neededBy,
+          costSource,
+        ],
+      ),
+    null,
   );
+  if (!inserted) {
+    inserted = await client.query<{ id: string }>(
+      `INSERT INTO purchase_requests (
+         org_id, season_year, requested_by, title, vendor, item_url,
+         quantity, unit_cost_usd, shipping_cost_usd, total_cost_usd, justification, needed_by
+       ) VALUES (
+         $1::uuid, $2, $3::uuid, $4, $5, $6,
+         $7, $8, 0, $9, $10, $11::date
+       )
+       RETURNING id`,
+      [
+        input.orgId,
+        seasonYear,
+        input.userId,
+        validated.value.title,
+        validated.value.vendor,
+        validated.value.itemUrl,
+        validated.value.quantity,
+        unitCostUsd,
+        totalCostUsd,
+        validated.value.justification,
+        validated.value.neededBy,
+      ],
+    );
+  }
 
   const orderId = inserted.rows[0]!.id;
   await notifyAdminsSubmitted(client, {
@@ -400,6 +437,12 @@ export async function reviewOrder(
     decision: "approved" | "rejected";
     reviewNotes?: string | null;
     buyerUserId?: string | null;
+    /**
+     * What it actually costs, entered by the person approving it. This is the
+     * figure the budget uses; without it the ledger keeps whatever the
+     * requester guessed.
+     */
+    totalCostUsd?: number | null;
   },
 ): Promise<void> {
   await assertAdmin(client, input.orgId, input.userId);
@@ -444,6 +487,46 @@ export async function reviewOrder(
      WHERE id = $1::uuid AND org_id = $2::uuid`,
     [input.orderId, input.orgId, input.decision, input.userId, reviewNotes, resolvedBuyer],
   );
+
+  // The reviewer's figure replaces the requester's, and the ledger below uses
+  // it. Savepointed for the same deploy-ordering reason as the insert: without
+  // the column this falls back to setting the cost alone, which is still an
+  // improvement on keeping a guess.
+  const pricedTotal =
+    typeof input.totalCostUsd === "number" &&
+    Number.isFinite(input.totalCostUsd) &&
+    input.totalCostUsd >= 0
+      ? Math.round(input.totalCostUsd * 100) / 100
+      : null;
+  if (pricedTotal != null) {
+    const applied = await withSavepoint(
+      client,
+      async () => {
+        await client.query(
+          `UPDATE purchase_requests SET
+             total_cost_usd = $3,
+             unit_cost_usd = CASE WHEN quantity > 0 THEN $3 / quantity ELSE $3 END,
+             cost_source = 'mentor-entered'::order_cost_source,
+             updated_at = now()
+           WHERE id = $1::uuid AND org_id = $2::uuid`,
+          [input.orderId, input.orgId, pricedTotal],
+        );
+        return true;
+      },
+      false,
+    );
+    if (!applied) {
+      await client.query(
+        `UPDATE purchase_requests SET
+           total_cost_usd = $3,
+           unit_cost_usd = CASE WHEN quantity > 0 THEN $3 / quantity ELSE $3 END,
+           updated_at = now()
+         WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [input.orderId, input.orgId, pricedTotal],
+      );
+    }
+    row.totalCostUsd = String(pricedTotal);
+  }
 
   if (input.decision === "approved") {
     // Mirror the committed spend onto the unified money ledger (0461) in the

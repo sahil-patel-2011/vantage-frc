@@ -717,6 +717,38 @@ export function definitionFromDraft(
   return { title: title.trim() || "Scouting form", fields };
 }
 
+/**
+ * Copy a question in place, directly below the original.
+ *
+ * A scouting form is mostly near-identical fields — the same counter for auto
+ * and for teleop, the same rating for three subsystems — so rebuilding each one
+ * by hand is where the time goes.
+ *
+ * The copy deliberately drops `key`. That is the stable published identifier
+ * every stored answer is filed under; two questions carrying one key would make
+ * saved payloads ambiguous the moment the schema is published. A fresh field
+ * earns its own key at publish time, from its label.
+ *
+ * The label gets a " copy" suffix for the same reason: labels become keys, and
+ * two fields named identically would publish into one.
+ */
+export function duplicateQuestion(questions: DraftQuestion[], index: number): DraftQuestion[] {
+  const source = questions[index];
+  if (!source) return questions;
+  const copy: DraftQuestion = {
+    ...source,
+    id: `q_${Math.random().toString(36).slice(2, 10)}`,
+    key: undefined,
+    label: source.label ? `${source.label} copy` : "",
+    // Settings are a nested object; a shared reference would make editing the
+    // copy silently edit the original.
+    settings: { ...source.settings },
+  };
+  const next = questions.slice();
+  next.splice(index + 1, 0, copy);
+  return next;
+}
+
 export function moveQuestion(questions: DraftQuestion[], from: number, to: number): DraftQuestion[] {
   if (from < 0 || from >= questions.length) return questions;
   if (to < 0 || to >= questions.length) return questions;
@@ -1110,10 +1142,10 @@ export function formBuilderNextActions(input: {
     return [
       {
         id: "publish",
-        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Ask an owner to publish",
+        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Choose your team",
         detail: input.canManageSchemas
           ? `Publish a real ${typeLabel} form so Scouting and Coverage can use it.`
-          : `Owners and admins publish ${typeLabel} forms — you can still preview the draft.`,
+          : `Join a team and you can build ${typeLabel} forms with everyone else.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },
@@ -1186,7 +1218,9 @@ export function formBuilderPublishBlockedReason(input: {
   acknowledgeBudget: boolean;
 }): string | null {
   if (!input.canManageSchemas) {
-    return "Owner or admin role is required to publish forms.";
+    // Anyone on the team may build and publish a form; the only people this
+    // stops are those who have not joined one yet.
+    return "Choose your team before publishing a form.";
   }
   if (!input.eventKey || input.year == null) {
     return "Set an active event so the season year is known before publishing.";
@@ -1304,7 +1338,7 @@ export function validateDraft(
     if (!question.label.trim()) errors.push(`Question ${n} needs a label.`);
     if (isScoutIdentityField({ key: question.label, label: question.label })) {
       errors.push(
-        `Question ${n} (“${question.label.trim()}”) is a free-text scout identity field — identity locks to membership userId.`,
+        `Question ${n} (“${question.label.trim()}”) asks the scout for their own name. Remove it — every entry is already signed with the name of whoever is filling it in.`,
       );
     }
     const labelKey = question.label.trim().toLowerCase();

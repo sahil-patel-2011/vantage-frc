@@ -79,20 +79,14 @@ async function persistMentorHoursSnapshot(
 function MentorHoursRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related people tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "hours-self-view", orgId)}>
-        My hours
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "alumni-network", orgId)}>
-        Alumni Network
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
-        Exit interviews
-      </Button>
+      <a href={hubHref("/team", "hours-self-view", orgId)}>My hours</a>
+      <a href={hubHref("/team", "alumni-network", orgId)}>Alumni Network</a>
+      <a href={hubHref("/team", "exit-interview", orgId)}>Exit interviews</a>
     </nav>
   );
 }
 
-function MentorHoursNextActions({ orgId }: { orgId: string }) {
+function MentorHoursNextActions() {
   const actions = [
     {
       id: "log",
@@ -101,37 +95,19 @@ function MentorHoursNextActions({ orgId }: { orgId: string }) {
       href: "#mentor-hours-log",
       primary: true,
     },
-    {
-      id: "my-hours",
-      label: "Open My hours",
-      detail: "Student shop hours stay on a separate clock.",
-      href: hubHref("/team", "hours-self-view", orgId),
-      primary: false,
-    },
-    {
-      id: "alumni",
-      label: "Open Alumni Network",
-      detail: "Alumni mentors who offered office hours live there.",
-      href: hubHref("/team", "alumni-network", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -394,7 +370,7 @@ export default function MentorHoursClient() {
           {error}
         </p>
       ) : null}
-      <MentorHoursNextActions orgId={view.orgId} />
+      <MentorHoursNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <EngagementPanel view={view} />
         <SummaryTiles view={view} />

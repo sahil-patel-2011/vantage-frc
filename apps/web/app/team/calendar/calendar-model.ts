@@ -45,6 +45,24 @@ export function fmtTime(iso: string): string {
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+/**
+ * A start and an end, with the date said once.
+ *
+ * A fifteen-minute qualification match read "Thu, Sep 17, 7:45 AM → Thu, Sep
+ * 17, 8:00 AM", under a heading that already said THURSDAY, SEP 17 — three
+ * dates for one match, and on a phone it wrapped to two lines. An event that
+ * ends on a later day still gets both, because then the date is the point.
+ */
+export function fmtRange(startIso: string, endIso?: string | null): string {
+  const start = fmtWhen(startIso);
+  if (!endIso) return start;
+  const from = new Date(startIso);
+  const to = new Date(endIso);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return `${start} → ${fmtWhen(endIso)}`;
+  const sameDay = from.toDateString() === to.toDateString();
+  return `${start} → ${sameDay ? fmtTime(endIso) : fmtWhen(endIso)}`;
+}
+
 export function dayNum(day: string): string {
   return String(Number(day.slice(8, 10)));
 }

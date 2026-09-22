@@ -9,7 +9,7 @@ import "./pit-command.css";
 import PitCommandClient from "./pit-command-client";
 
 export const metadata: Metadata = {
-  title: "Pit Command — Vantage",
+  title: "Pit Command",
   description:
     "Robot release board from logged issues, maintenance, and battery evidence. Links to Batteries, Match checklist, and Event Day.",
 };
@@ -38,9 +38,7 @@ export default async function PitCommandPage({
           {related.length ? (
             <nav className="product-hub-related pit-related" aria-label="Related pit tools">
               {related.map((link) => (
-                <Button as="a" variant="secondary" key={link.id} href={link.href}>
-                  {link.label}
-                </Button>
+                <a key={link.id} href={link.href}>{link.label}</a>
               ))}
             </nav>
           ) : null}

@@ -67,20 +67,14 @@ async function persistBudgetReconcilerSnapshot(
 function BudgetReconcilerRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related robot tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "weight-budget", orgId)}>
-        Weight budget
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "power-budget", orgId)}>
-        Power budget
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "bom-cost-rollup", orgId)}>
-        BOM cost
-      </Button>
+      <a href={hubHref("/build", "weight-budget", orgId)}>Weight budget</a>
+      <a href={hubHref("/build", "power-budget", orgId)}>Power budget</a>
+      <a href={hubHref("/build", "bom-cost-rollup", orgId)}>BOM cost</a>
     </nav>
   );
 }
 
-function BudgetReconcilerNextActions({ orgId }: { orgId: string }) {
+function BudgetReconcilerNextActions() {
   const actions = [
     {
       id: "run",
@@ -89,37 +83,19 @@ function BudgetReconcilerNextActions({ orgId }: { orgId: string }) {
       href: "#budget-check-run",
       primary: true,
     },
-    {
-      id: "weight",
-      label: "Open Weight budget",
-      detail: "Subsystem masses feed this board.",
-      href: hubHref("/build", "weight-budget", orgId),
-      primary: false,
-    },
-    {
-      id: "bom",
-      label: "Open BOM cost",
-      detail: "Part dollars are a separate rollup from weight and power.",
-      href: hubHref("/build", "bom-cost-rollup", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -365,7 +341,7 @@ export default function BudgetReconcilerClient() {
           {error}
         </p>
       ) : null}
-      <BudgetReconcilerNextActions orgId={view.orgId} />
+      <BudgetReconcilerNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <BudgetTiles view={view} />
         <RunPanel view={view} busy={busy} mutate={mutate} />

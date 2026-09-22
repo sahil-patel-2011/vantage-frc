@@ -38,9 +38,7 @@ function PairRelatedStrip({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related pair-related" aria-label="Related code tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -52,18 +50,14 @@ function PairNextActionsPanel({ actions }: { actions: PairNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions pair-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -246,7 +240,7 @@ export default function PairClient({
           </>
         }
         title="Pair VS Code"
-        description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor. Cross-check Code Coach, GitHub, and AI."
+        description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor."
       >
         <div className="pair-header-actions">
           {relatedLinks.map((link) => (

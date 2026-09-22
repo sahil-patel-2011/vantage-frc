@@ -3,8 +3,10 @@ import {
   buildLookupCards,
   contributionShare,
   fieldCompare,
+  fieldPercentile,
   fieldStatsFromEventRows,
   formatLookupValue,
+  ordinalPercentile,
   scoutAveragesFromPayloads,
   sparklinePath,
   type EventRatingRow,
@@ -76,5 +78,77 @@ describe("buildLookupCards", () => {
     });
     expect(cards.find((card) => card.id === "driverAbility")?.value).toBe(5);
     expect(formatLookupValue(null)).toBe("—");
+  });
+});
+
+describe("fieldPercentile", () => {
+  it("puts the event average at the middle of the field", () => {
+    expect(fieldPercentile(0)).toBeCloseTo(0.5, 5);
+  });
+
+  it("reads higher for a better z and lower for a worse one", () => {
+    const strong = fieldPercentile(1.2)!;
+    const weak = fieldPercentile(-1.2)!;
+    expect(strong).toBeGreaterThan(0.85);
+    expect(weak).toBeLessThan(0.15);
+    // fieldCompare already flips rank/DPR so higher z is better; the bar must
+    // not invert a second time or a rank-1 team would render at the bottom.
+    expect(strong + weak).toBeCloseTo(1, 5);
+  });
+
+  it("stays inside the track and refuses a field it cannot measure", () => {
+    expect(fieldPercentile(40)).toBeLessThanOrEqual(1);
+    expect(fieldPercentile(-40)).toBeGreaterThanOrEqual(0);
+    // One team at an event has no field to sit in.
+    expect(fieldPercentile(null)).toBeNull();
+    expect(fieldPercentile(Number.NaN)).toBeNull();
+  });
+
+  it("gives a rank-1 team a top percentile, not a bottom one", () => {
+    const stats = fieldStatsFromEventRows(field);
+    const compare = fieldCompare(1, stats.rank?.mean ?? null, stats.rank?.std ?? null, true);
+    expect(fieldPercentile(compare.z)!).toBeGreaterThan(0.5);
+  });
+});
+
+describe("ordinalPercentile", () => {
+  it("writes the ordinal a student would say out loud", () => {
+    expect(ordinalPercentile(0.83)).toBe("83rd");
+    expect(ordinalPercentile(0.21)).toBe("21st");
+    expect(ordinalPercentile(0.22)).toBe("22nd");
+    expect(ordinalPercentile(0.5)).toBe("50th");
+  });
+
+  it("uses th for the teens, not st/nd/rd", () => {
+    expect(ordinalPercentile(0.11)).toBe("11th");
+    expect(ordinalPercentile(0.12)).toBe("12th");
+    expect(ordinalPercentile(0.13)).toBe("13th");
+  });
+
+  it("never claims a 100th or a 0th percentile", () => {
+    // A normal tail is never certainty; "100th" reads as a guarantee.
+    expect(ordinalPercentile(1)).toBe("99th");
+    expect(ordinalPercentile(0)).toBe("1st");
+    expect(ordinalPercentile(null)).toBeNull();
+  });
+});
+
+describe("lookup cards carry a field position", () => {
+  it("adds a percentile when there is a field, and none when there is not", () => {
+    const stats = fieldStatsFromEventRows(field);
+    const [withField] = [
+      buildLookupCards({ teamKey: "frc3", event: field[2], field: stats }),
+    ];
+    const total = withField.find((card) => card.id === "totalPoints");
+    expect(total?.percentile).not.toBeNull();
+    expect(total!.percentile!).toBeGreaterThan(0.5);
+
+    // A single team is not a field: no std, so no bar.
+    const lonely = buildLookupCards({
+      teamKey: "frc1",
+      event: field[0],
+      field: fieldStatsFromEventRows([field[0]]),
+    });
+    expect(lonely.find((card) => card.id === "totalPoints")?.percentile).toBeNull();
   });
 });

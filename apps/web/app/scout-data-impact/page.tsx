@@ -37,9 +37,7 @@ export default async function ScoutDataImpactPage({
             aria-label="Related competition tools"
           >
             {related.map((link) => (
-              <Button as="a" variant="secondary" key={link.id} href={link.href}>
-                {link.label}
-              </Button>
+              <a key={link.id} href={link.href}>{link.label}</a>
             ))}
           </nav>
         </PageHeader>

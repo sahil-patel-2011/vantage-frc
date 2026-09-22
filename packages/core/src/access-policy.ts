@@ -1,3 +1,5 @@
+import { isPublicSignupOpen } from "./public-signup";
+
 /** Canonical platform owner email used for first-user bootstrap. */
 export const PLATFORM_OWNER_EMAIL_DEFAULT = "sahiljpatel2011@gmail.com";
 
@@ -167,12 +169,24 @@ export function resolveAuthBaseURL() {
  * of `vantage-frc-web.vercel.app`. Google OAuth on Vercel does not add them.
  */
 export const PRODUCTION_AUTH_ALIASES = [
-  "https://vantage-frc-web.vercel.app",
+  // The five vanity hosts attached to the Vercel project. These are the ones a
+  // person is ever given; `apps/desktop`'s PRODUCTION_APP_HOSTS is the same set
+  // and a test asserts they agree.
   "https://vantagefrc.vercel.app",
   "https://frcvantage.vercel.app",
   "https://teamvantage.vercel.app",
   "https://vantagefrcweb.vercel.app",
   "https://vantagerobotics.vercel.app",
+  // Retired, and kept deliberately: a session or an OAuth round trip started
+  // before the host went away still arrives with this origin, and dropping it
+  // from the allowlist turns that into an "Invalid origin" rejection rather
+  // than the redirect `canonicalizeAuthOrigin` already performs.
+  "https://vantage-frc-web.vercel.app",
+  // Vercel's generated aliases. The team slug was renamed from
+  // `sahil-patel-s-projects1` to `sahil-patel-2011`; the old names still
+  // resolve for older deployments, so both are listed.
+  "https://vantage-frc-web-sahil-patel-2011.vercel.app",
+  "https://vantage-frc-web-git-main-sahil-patel-2011.vercel.app",
   "https://vantage-frc-web-sahil-patel-s-projects1.vercel.app",
   "https://vantage-frc-web-git-main-sahil-patel-s-projects1.vercel.app",
 ] as const;
@@ -249,8 +263,17 @@ export function isPasswordAuthBootstrappable() {
 }
 
 export type AuthCapabilityReport = {
-  waitlistOnly: true;
-  publicSignup: false;
+  /**
+   * True while access is invite-only, which is every deployment today.
+   *
+   * These were the literal types `true` and `false`, which said the right
+   * thing about the product and made the eventual decision to open sign-up
+   * unrepresentable. They are derived now — from a date and an explicit
+   * switch that both have to agree, see `public-signup.ts` — so opening it is
+   * a deliberate act rather than a code change under time pressure.
+   */
+  waitlistOnly: boolean;
+  publicSignup: boolean;
   databaseConfigured: boolean;
   emailOtpAvailable: boolean;
   email2faEnforced: boolean;
@@ -290,9 +313,10 @@ export function getAuthCapabilities(): AuthCapabilityReport {
   const google = getGoogleAuthEnvDiagnostics();
   const bypass = runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
   const email2faEnforced = databaseConfigured && isEmailDeliveryConfigured() && !bypass;
+  const publicSignup = isPublicSignupOpen();
   return {
-    waitlistOnly: true,
-    publicSignup: false,
+    waitlistOnly: !publicSignup,
+    publicSignup,
     databaseConfigured,
     emailOtpAvailable,
     email2faEnforced,

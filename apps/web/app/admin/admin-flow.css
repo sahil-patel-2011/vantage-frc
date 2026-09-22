@@ -146,3 +146,31 @@
   gap: 10px;
 }
 
+
+/* Public sign-up: the two conditions that open the doors, and which one is
+   still outstanding. Green only when both are satisfied — a half-open state
+   is closed, and should not look encouraging. */
+.admin-signup-doors{
+  display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;
+  margin:0 0 18px;padding:16px 18px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);
+}
+.admin-signup-doors[data-open="yes"]{
+  border-color:color-mix(in srgb,var(--ok, #1a7f4b) 45%,var(--line));
+  background:color-mix(in srgb,var(--ok, #1a7f4b) 7%,var(--surface));
+}
+.admin-signup-state{
+  display:block;color:var(--ink);
+  font:800 15px/1.2 var(--font-source-sans),ui-sans-serif;
+}
+.admin-signup-doors p{margin:6px 0 0;max-width:46rem;color:var(--muted);font-size:13px;line-height:1.5}
+.admin-signup-steps{display:grid;gap:6px;margin:0;padding:0;list-style:none;min-width:16rem}
+.admin-signup-steps li{
+  display:flex;align-items:flex-start;gap:8px;
+  color:var(--muted);font:600 12px/1.45 var(--font-source-sans),ui-sans-serif;
+}
+.admin-signup-steps li::before{
+  content:"○";flex:none;line-height:1.45;
+}
+.admin-signup-steps li[data-done="yes"]{color:var(--ink)}
+.admin-signup-steps li[data-done="yes"]::before{content:"●"}

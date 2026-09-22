@@ -49,8 +49,9 @@ export default function TermsPage() {
         <p className="legal-doc-notice">
           <strong>Read with the Privacy Policy.</strong>
           These Terms cover the rules; the <a href="/privacy">Privacy Policy</a> covers what we collect. The{" "}
-          <a href="#youth-protection">youth-protection section</a> states both what the product enforces and what it
-          cannot promise. The governing-law section is an unfinished placeholder pending legal review.
+          <a href="#members-under-18">Members under 18 section</a> states both what the product enforces and what it
+          cannot promise. The <a href="#governing-law">governing-law section</a> says plainly that no jurisdiction
+          has been designated yet, and that nothing in it takes away a right your own law already gives you.
         </p>
 
         <nav className="legal-toc" aria-label="Sections of these terms">

@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DisplayRelated } from "../../components/display-related";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
-  DISPLAY_WIDGET_TYPES,
   PRESET_META,
   PRESET_WIDGETS,
   displayKioskHref,
   pitChromiumKioskCommand,
   type DisplayKioskMode,
   type DisplayWidget,
+  type DisplayWidgetType,
 } from "../../lib/display";
 import {
   DISPLAY_RELATED_INCLUDE,
@@ -45,13 +45,25 @@ type MintedToken = {
   label: string;
 };
 
+import { DisplayWidgetEditor } from "./display-widget-editor";
+import {
+  WIDGET_LABEL,
+  fromGridLayout,
+  layoutProblem,
+  matchesPreset,
+  normalizeWidgets,
+  toGridLayout,
+} from "../../lib/display/widget-layout";
+
 export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [boards, setBoards] = useState<Board[]>([]);
   const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [activeEventKey, setActiveEventKey] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [preset, setPreset] = useState("next_match");
-  const [widgets, setWidgets] = useState<string[]>(PRESET_WIDGETS.next_match ?? []);
+  const [widgets, setWidgets] = useState<DisplayWidgetType[]>(
+    PRESET_WIDGETS.next_match ?? [],
+  );
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -103,11 +115,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
 
   function choosePreset(value: string) {
     setPreset(value);
-    setWidgets(PRESET_WIDGETS[value] ?? []);
+    setWidgets(normalizeWidgets(PRESET_WIDGETS[value] ?? []));
   }
 
   function resetToPreset() {
-    setWidgets(PRESET_WIDGETS[preset] ?? []);
+    setWidgets(normalizeWidgets(PRESET_WIDGETS[preset] ?? []));
   }
 
   async function saveBoard(editId?: string) {
@@ -117,13 +129,13 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       setMessageOk(false);
       return;
     }
-    const layout: DisplayWidget[] = widgets.map((type, index) => ({
-      type,
-      x: (index % 2) * 6,
-      y: Math.floor(index / 2) * 4,
-      w: 6,
-      h: 4,
-    }));
+    const problem = layoutProblem(widgets);
+    if (problem) {
+      setMessage(problem);
+      setMessageOk(false);
+      return;
+    }
+    const layout: DisplayWidget[] = toGridLayout(widgets);
     const body: Record<string, unknown> = {
       orgId,
       name: boardName,
@@ -152,7 +164,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   async function duplicateBoard(board: Board) {
     setName(`${board.name} copy`);
     setPreset(board.preset);
-    setWidgets(board.widgets.map((w) => String(w.type)));
+    setWidgets(fromGridLayout(board.widgets));
     const layout: DisplayWidget[] = board.widgets.map((w, index) => ({
       type: w.type,
       x: w.x ?? (index % 2) * 6,
@@ -374,26 +386,16 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                 />
               </label>
 
-              {preset === "custom" ? (
-                <fieldset>
-                  <legend>Widgets</legend>
-                  {DISPLAY_WIDGET_TYPES.map((type) => (
-                    <label className="check-field" key={type}>
-                      <input
-                        type="checkbox"
-                        checked={widgets.includes(type)}
-                        onChange={(e) =>
-                          setWidgets(
-                            e.target.checked
-                              ? [...widgets, type]
-                              : widgets.filter((item) => item !== type),
-                          )
-                        }
-                      />
-                      {type.replaceAll("_", " ")}
-                    </label>
-                  ))}
-                </fieldset>
+              {/* Shown for every preset, not only "custom". A preset is where a
+                  team starts, not what they are stuck with, and hiding this
+                  behind one option meant four of the five layouts could not be
+                  touched at all. */}
+              <DisplayWidgetEditor widgets={widgets} onChange={setWidgets} />
+              {preset !== "custom" && !matchesPreset(widgets, preset) ? (
+                <p className="app-muted dwe-customised">
+                  Customised from the {preset.replaceAll("_", " ")} preset. Reset to
+                  preset puts it back.
+                </p>
               ) : null}
 
               <div className="display-actions">
@@ -411,10 +413,14 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               <h2>{name.trim() || "Untitled board"}</h2>
               <div className="display-preview-grid">
                 {widgets.length ? (
-                  widgets.map((item) => (
+                  widgets.map((item, index) => (
                     <article key={item}>
-                      <strong>{item.replaceAll("_", " ")}</strong>
-                      <small>Authorized module data only</small>
+                      <strong>{WIDGET_LABEL[item] ?? item.replaceAll("_", " ")}</strong>
+                      {/* Only the first panel gets a caption. "Authorized module
+                          data only" was on every one of them: internal policy
+                          language, repeated, telling a mentor nothing about the
+                          board they are arranging. */}
+                      {index === 0 ? <small>Top left — read first</small> : null}
                     </article>
                   ))
                 ) : (
@@ -459,7 +465,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                       onClick={() => {
                         setName(board.name);
                         setPreset(board.preset);
-                        setWidgets(board.widgets.map((w) => String(w.type)));
+                        setWidgets(fromGridLayout(board.widgets));
                         void saveBoard(board.id);
                       }}
                     >
@@ -578,13 +584,10 @@ function NextActionsPanel({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

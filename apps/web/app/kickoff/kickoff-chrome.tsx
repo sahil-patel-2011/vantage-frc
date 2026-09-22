@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+
 import { kickoffNextActions } from "../../lib/kickoff-related";
 
 export function useHubEmbed(): "build" | null {
@@ -41,7 +41,7 @@ export function NextActionsPanel({
   });
   if (!actions.length) return null;
   return (
-    <section className="kick-next-actions app-card soft-panel" aria-label="Next actions">
+    <section className="kick-next-actions edc-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
         <p>Each one opens the page where you finish the work.</p>
@@ -49,13 +49,10 @@ export function NextActionsPanel({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -34,12 +34,31 @@ describe("email delivery status", () => {
     expect(status.missingEnv).toEqual(["RESEND_API_KEY", "AUTH_EMAIL_FROM"]);
   });
 
-  it("still says nothing is delivered in development even with Resend credentials present", () => {
+  /*
+    A *development* process, stated rather than assumed. The implementation
+    deliberately refuses to send while NODE_ENV is "test" (`deliverHere` in
+    email-notifications.ts), so a test suite with Resend credentials in its
+    environment can never email a real address. Vitest runs with NODE_ENV=test,
+    so without this the case below took the not-delivered branch every time and
+    asserted the opposite of what the code, correctly, did.
+  */
+  it("says a configured development process sends for real, and names the domain caveat", () => {
+    Object.assign(process.env, { NODE_ENV: "development" });
     process.env.RESEND_API_KEY = "re_x";
     process.env.AUTH_EMAIL_FROM = "Vantage <a@b.org>";
     const status = emailNotificationsSetupStatus();
     expect(status.missingEnv).toEqual([]);
+    expect(status.detail).toMatch(/will send sign-in codes from this development process/);
+    expect(status.detail).not.toMatch(/NOT delivered/);
+  });
+
+  it("never claims to send from a test run, credentials or not", () => {
+    Object.assign(process.env, { NODE_ENV: "test" });
+    process.env.RESEND_API_KEY = "re_x";
+    process.env.AUTH_EMAIL_FROM = "Vantage <a@b.org>";
+    const status = emailNotificationsSetupStatus();
     expect(status.detail).toMatch(/NOT delivered/);
+    expect(status.detail).not.toMatch(/will send/);
   });
 
   it("names the variables, the location, the console and the domain step in production", () => {

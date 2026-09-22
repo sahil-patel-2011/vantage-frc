@@ -432,6 +432,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           mode: routingDraft.mode,
           fixedModelId: routingDraft.fixedModelId,
           enabledModelIds: routingDraft.enabledModelIds,
+          freeSwarmModel: routingDraft.freeSwarmModel ?? null,
         }),
       });
       const data = (await response.json()) as { error?: string };
@@ -469,6 +470,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       docsHint: BYOK_PROVIDER_META[id].docsHint,
     }));
   const modelOptions = payload?.modelOptions ?? [];
+  const freeSwarm = payload?.freeSwarm ?? null;
   const configuredProviders = new Set<string>(
     (payload?.keys ?? []).filter((k) => k.configured).map((k) => k.provider),
   );
@@ -543,6 +545,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           busyRouting={busyRouting}
           saveRouting={() => void saveRouting()}
           modelOptions={modelOptions}
+          freeSwarm={freeSwarm}
           configuredProviders={configuredProviders}
           modelPolicy={modelPolicy}
           policyDraft={policyDraft}

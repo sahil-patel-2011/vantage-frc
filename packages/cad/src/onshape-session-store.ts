@@ -83,6 +83,50 @@ export function pickReplayableHeaders(headers: Record<string, string> | undefine
   return out;
 }
 
+/**
+ * Onshape's CSRF header, derived from the cookie rather than hoped for.
+ *
+ * Observation alone is not enough. `pickReplayableHeaders` keeps a CSRF header
+ * only if the live web client happened to send one inside the capture window,
+ * and the client sends it on writes — so a login where the person only looked
+ * at documents stores no header at all. Every later write then fails with 401
+ * while reads keep working, which reads as "the session expired" and is not
+ * that.
+ *
+ * Onshape follows the standard double-submit pattern: the token sits in the
+ * `XSRF-TOKEN` cookie and has to come back as `X-XSRF-TOKEN`. That cookie is
+ * always captured, so the header can be computed every time. Verified against
+ * a live session on 2026-09-18: POST /api/v6/documents returns 401 without the
+ * header and 200 with it.
+ */
+export function xsrfHeaderFromCookies(
+  cookies: readonly OnshapeSessionCookie[] | undefined,
+): Record<string, string> {
+  const token = (cookies ?? []).find((cookie) => cookie.name.toUpperCase() === "XSRF-TOKEN");
+  const value = (token?.value ?? "").trim();
+  if (!value) return {};
+  // Cookie values arrive percent-encoded from some drivers and raw from others.
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    // A stray % in the token is not a reason to drop it; send it as stored.
+  }
+  return { "x-xsrf-token": decoded };
+}
+
+/**
+ * Headers to replay on a request: whatever was observed, with the derived CSRF
+ * token filling the gap. An observed header wins — if the live client sent
+ * something more specific than the cookie, it knows better than we do.
+ */
+export function sessionReplayHeaders(session: {
+  headers?: Record<string, string>;
+  cookies?: readonly OnshapeSessionCookie[];
+}): Record<string, string> {
+  return { ...xsrfHeaderFromCookies(session.cookies), ...pickReplayableHeaders(session.headers) };
+}
+
 function isOnshapeHost(host: string): boolean {
   const lower = host.toLowerCase().replace(/^\./, "");
   return lower === "onshape.com" || lower.endsWith(".onshape.com");

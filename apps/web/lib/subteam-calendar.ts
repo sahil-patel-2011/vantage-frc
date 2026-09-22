@@ -27,7 +27,7 @@ export const SUBTEAM_EVENT_KIND_LABELS: Record<SubteamEventKind, string> = {
 
 /** Soft palette suggestions for the create-subteam color picker (not auto-seeded). */
 export const SUBTEAM_COLOR_SUGGESTIONS = [
-  "#1457d9",
+  "#17457f",
   "#0f766e",
   "#2d6a4f",
   "#b08900",
@@ -63,7 +63,7 @@ export const RSVP_LABELS: Record<RsvpResponse, string> = {
   no: "Can't make it",
 };
 
-export type CalendarEventSource = "team" | "tba";
+export type CalendarEventSource = "team" | "tba" | "duty" | "travel";
 
 export type CalendarEvent = {
   id: string;
@@ -587,7 +587,11 @@ export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey:
       startsAt,
       endsAt: new Date(start.getTime() + TBA_MATCH_MS).toISOString(),
       location: row.eventName?.trim() || "",
-      notes: bumper === "red" ? "RED bumpers" : "BLUE bumpers",
+      // The bumper colour is already in the title (which is what an exported
+      // feed shows) and in `bumper`, which the card renders as a colour-coded
+      // RED/BLUE chip. A notes line saying "RED bumpers" made it three times
+      // in one row, the third as a paragraph directly under the second.
+      notes: "",
       subteamId: null,
       subteamName: null,
       subteamColor: bumper === "red" ? TBA_RED : TBA_BLUE,
@@ -608,7 +612,65 @@ export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey:
 }
 
 export function isReadonlyCalendarEvent(event: CalendarEvent): boolean {
-  return event.source === "tba";
+  return event.source === "tba" || event.source === "duty" || event.source === "travel";
+}
+
+/**
+ * Duties and travel already have a real start time. They belong on the same
+ * week as practices and matches, not only on a second tab. A row that is
+ * already linked to a calendar event is skipped so it is not drawn twice.
+ */
+export function rosterToCalendarEvents(input: {
+  duties?: DutyOnCalendar[];
+  travelLegs?: TravelLegOnCalendar[];
+}): CalendarEvent[] {
+  const blank = {
+    attendanceEventId: null,
+    attendanceEventTitle: null,
+    milestoneId: null,
+    driverSessionId: null,
+    createdByName: null,
+    myRsvp: null,
+    rsvpGoing: 0,
+    rsvpMaybe: 0,
+    rsvpNo: 0,
+  };
+  const events: CalendarEvent[] = [];
+  for (const duty of input.duties ?? []) {
+    if (duty.calendarEventId || !duty.startsAt) continue;
+    events.push({
+      ...blank,
+      id: `duty:${duty.id}`,
+      title: duty.title,
+      kind: duty.kind === "outreach" ? "outreach" : "other",
+      startsAt: duty.startsAt,
+      endsAt: duty.endsAt,
+      location: "",
+      notes: duty.assignedUserName ? `Assigned to ${duty.assignedUserName}` : "",
+      subteamId: duty.subteamId,
+      subteamName: duty.subteamName,
+      subteamColor: duty.subteamColor,
+      source: "duty",
+    });
+  }
+  for (const leg of input.travelLegs ?? []) {
+    if (leg.calendarEventId || !leg.startsAt) continue;
+    events.push({
+      ...blank,
+      id: `travel:${leg.id}`,
+      title: leg.title || leg.tripTitle,
+      kind: "event",
+      startsAt: leg.startsAt,
+      endsAt: leg.endsAt,
+      location: leg.location || leg.meetingPoint,
+      notes: leg.tripTitle && leg.tripTitle !== leg.title ? leg.tripTitle : "",
+      subteamId: leg.subteamId,
+      subteamName: leg.subteamName,
+      subteamColor: leg.subteamColor,
+      source: "travel",
+    });
+  }
+  return events;
 }
 
 /** All-day ICS rows for GitHub milestones that already have a due date. */
@@ -832,7 +894,7 @@ export function parseSubteamCalendarAction(input: unknown): SubteamCalendarActio
         action,
         orgId,
         name: requiredText(body.name, "Subteam name", 80),
-        color: body.color == null || String(body.color).trim() === "" ? "#1457d9" : hexColor(body.color),
+        color: body.color == null || String(body.color).trim() === "" ? "#17457f" : hexColor(body.color),
         description: optionalText(body.description, 500),
       };
 

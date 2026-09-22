@@ -7,12 +7,23 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
+/**
+ * `ready` is what the page paints when it has something to show. `empty` is
+ * what it paints, correctly, when it does not.
+ *
+ * /whats-new only grows a "Next actions" block once a release targeting your
+ * plan has been published, and on a database where none has it shows an
+ * honest empty state instead. Without `empty` here the spec treated a page
+ * behaving exactly as designed as a shell regression — a failure that says
+ * nothing is worse than no test, because it trains you to skim the list.
+ */
 const SURFACES = [
   {
     path: "/whats-new",
     heading: "What’s new",
     crumb: "Account / What’s new",
     ready: "Next actions",
+    empty: "No releases for your plan yet",
   },
   {
     path: "/doc-roles",
@@ -50,7 +61,12 @@ for (const surface of SURFACES) {
     await expect(page.getByText("the database refuses")).toHaveCount(0);
     await expect(page.getByText("Not migrated yet")).toHaveCount(0);
 
-    const ready = main.getByRole("heading", { name: surface.ready, exact: true });
+    const shown = "empty" in surface && surface.empty
+      ? main
+          .getByRole("heading", { name: surface.ready, exact: true })
+          .or(main.getByRole("heading", { name: surface.empty as string, exact: true }))
+      : main.getByRole("heading", { name: surface.ready, exact: true });
+    const ready = shown;
     const setup = main.getByRole("heading", { name: /Choose your team/i });
     const unavailable = loadFailureHeading(page);
     if (!(await expectHubReadyOrGate(page, ready, setup.or(unavailable)))) {

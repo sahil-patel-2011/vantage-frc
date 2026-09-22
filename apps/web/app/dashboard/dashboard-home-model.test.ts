@@ -6,6 +6,7 @@ import {
   homeHeaderDetail,
   homeNowAction,
   homeNowFromWidgets,
+  nextEventToday,
 } from "./dashboard-home-model";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
@@ -24,7 +25,7 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: undefined,
       setupRequired: false,
       eventName: null,
-    })).toBe("Choose your team to see your day.");
+    })).toBe("");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",
@@ -45,14 +46,19 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: true,
       setupRequired: true,
       eventName: null,
-    })).toBe("Set the event you’re at so match times can show.");
+      // Silent on purpose: the SETUP card below says this and gives the
+      // button. Two instructions were the first two things on the page.
+    })).toBe("");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",
       tbaConfigured: true,
       setupRequired: false,
       eventName: "Houston",
-    })).toBe("Houston");
+      // Silent: the event row directly below the hero is these same words with
+      // a pin icon and a link on it, so returning the name here put the event
+      // on screen twice, one line apart.
+    })).toBe("");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",
@@ -106,7 +112,8 @@ describe("homeNowAction", () => {
 describe("dashboardPaletteRows", () => {
   it("marks placed widgets and leaves the rest addable for an owner", () => {
     const rows = dashboardPaletteRows(DEFAULT_DASHBOARD_LAYOUT, "owner");
-    expect(rows).toHaveLength(WIDGET_CATALOG.length);
+    expect(rows).toHaveLength(WIDGET_CATALOG.filter((entry) => entry.type !== "pit_youtube").length);
+    expect(rows.some((row) => row.entry.type === "pit_youtube")).toBe(false);
     const placed = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type));
     for (const row of rows) {
       if (placed.has(row.entry.type)) {
@@ -148,5 +155,109 @@ describe("dashboardBoardLists", () => {
     };
     const lists = dashboardBoardLists([], board);
     expect(lists.switcherBoards).toEqual([]);
+  });
+});
+
+describe("before the widgets have arrived", () => {
+  it("says it is still working it out, not that there is nothing to do", () => {
+    // Every check in the card falls through when the widgets are empty, so an
+    // unloaded board used to read "Nothing you have to do right now" — the one
+    // answer that tells a student to stop looking — and then replace it with
+    // the real one a moment later.
+    const card = homeNowFromWidgets({ orgId: "org-1", widgets: {}, loaded: false });
+    expect(card.title).toBe("Working out what is next");
+    expect(card.title).not.toMatch(/Nothing you have to do/);
+  });
+
+  it("says there is nothing only once it has looked", () => {
+    const card = homeNowFromWidgets({ orgId: "org-1", widgets: {}, loaded: true });
+    expect(card.title).toBe("Nothing you have to do right now");
+  });
+
+  it("treats a missing flag as loaded, so nothing that does not pass it changes", () => {
+    const card = homeNowFromWidgets({ orgId: "org-1", widgets: {} });
+    expect(card.title).toBe("Nothing you have to do right now");
+  });
+
+  it("still asks for a team before anything else", () => {
+    // No org is not a loading state; it is an answer.
+    const card = homeNowFromWidgets({ orgId: "", widgets: {}, loaded: false });
+    expect(card.title).toBe("Choose your team");
+  });
+});
+
+describe("what the calendar puts on the card", () => {
+  const at = (hour: number, minute = 0, dayOffset = 0) => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, hour, minute).toISOString();
+  };
+  const NOON = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0);
+  };
+
+  it("says what is on tonight", () => {
+    expect(nextEventToday({ items: [{ title: "Build night", startsAt: at(18) }] }, NOON())).toEqual({
+      title: "Build night",
+      whenLabel: "Today at 6 PM",
+    });
+  });
+
+  it("keeps the minutes when there are any", () => {
+    expect(
+      nextEventToday({ items: [{ title: "Standup", startsAt: at(18, 30) }] }, NOON())?.whenLabel,
+    ).toBe("Today at 6:30 PM");
+  });
+
+  it("ignores what already happened", () => {
+    // A practice that finished at ten is not something to do at noon.
+    expect(nextEventToday({ items: [{ title: "Morning", startsAt: at(9) }] }, NOON())).toBeNull();
+  });
+
+  it("ignores the rest of the week", () => {
+    // The widget loads seven days because its own card shows seven days.
+    // "Practice tonight" and "practice on Thursday" are different claims.
+    expect(nextEventToday({ items: [{ title: "Thursday", startsAt: at(18, 0, 2) }] }, NOON())).toBeNull();
+  });
+
+  it("takes the soonest one still ahead", () => {
+    const picked = nextEventToday(
+      {
+        items: [
+          { title: "Late", startsAt: at(20) },
+          { title: "Early", startsAt: at(15) },
+          { title: "Gone", startsAt: at(8) },
+        ],
+      },
+      NOON(),
+    );
+    expect(picked?.title).toBe("Early");
+  });
+
+  it("is null for nonsense rather than throwing", () => {
+    expect(nextEventToday(undefined, NOON())).toBeNull();
+    expect(nextEventToday({ items: [] }, NOON())).toBeNull();
+    expect(nextEventToday({ items: [{ title: "x", startsAt: "soon" }] }, NOON())).toBeNull();
+    expect(nextEventToday({ items: [{ startsAt: at(18) }] }, NOON())).toBeNull();
+  });
+
+  it("sits below a match and a shift, and above the todo list", () => {
+    const event = { title: "Build night", whenLabel: "Today at 6 PM" };
+    // A match starting beats it.
+    expect(homeNowAction({ orgId: "o", nextMatchLabel: "Qual 12", nextEventToday: event }).title).toBe(
+      "You’re up next",
+    );
+    // Being in the shop already beats it.
+    expect(homeNowAction({ orgId: "o", clockedIn: true, nextEventToday: event }).cta).toBe(
+      "Open My Hours",
+    );
+    // A list of tasks does not.
+    expect(homeNowAction({ orgId: "o", openTodos: 3, nextEventToday: event }).title).toBe("Build night");
+  });
+
+  it("falls through to the quiet state when nothing is on", () => {
+    expect(homeNowAction({ orgId: "o", nextEventToday: null }).title).toBe(
+      "Nothing you have to do right now",
+    );
   });
 });

@@ -51,4 +51,39 @@ describe("expandLegacyRedirects", () => {
     const rows = expandLegacyRedirects([{ source: "/help", destination: "/docs" }]);
     expect(rows).toEqual([{ source: "/help", destination: "/docs", permanent: false }]);
   });
+
+  /**
+   * Sixteen places in the app link to "/strategy?tab=picks". The destination
+   * spends `tab` on the hub tab, so the inbound value was dropped and every
+   * one of those links opened the matchup view instead of the pick desk.
+   */
+  it("re-emits a sub-tab that the destination's own ?tab= would have eaten", () => {
+    const rows = expandLegacyRedirects([
+      { source: "/strategy", destination: "/competition?tab=strategy", subTabs: ["picks"] },
+    ]);
+
+    // Narrowest first, or Next matches a catch-all and drops the sub-tab again.
+    expect(rows[0]).toMatchObject({
+      source: "/strategy",
+      destination: "/competition?tab=strategy&sub=picks&orgId=:orgId",
+    });
+    expect(rows[0]?.has).toEqual([
+      { type: "query", key: "tab", value: "picks" },
+      { type: "query", key: "orgId", value: "(?<orgId>[^&]+)" },
+    ]);
+
+    // `has` is an AND, so a link without an org needs its own rule.
+    expect(rows[1]).toMatchObject({ destination: "/competition?tab=strategy&sub=picks" });
+    expect(rows[1]?.has).toEqual([{ type: "query", key: "tab", value: "picks" }]);
+
+    // The plain orgId and bare fallbacks still follow.
+    expect(rows[2]).toMatchObject({ destination: "/competition?tab=strategy&orgId=:orgId" });
+    expect(rows[3]).toMatchObject({ destination: "/competition?tab=strategy" });
+    expect(rows).toHaveLength(4);
+  });
+
+  it("keeps the real /strategy entry wired to the pick desk", () => {
+    const strategy = expandLegacyRedirects().filter((row) => row.source === "/strategy");
+    expect(strategy[0]?.destination).toContain("sub=picks");
+  });
 });

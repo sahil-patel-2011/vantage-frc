@@ -56,63 +56,10 @@ async function persistDistrictAdvancementSnapshot(
 function DistrictAdvancementRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related competition tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "ranking-projection", orgId)}>
-        Rank projection
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/business", "mock-judging", orgId)}>
-        Mock judging
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/strategy", orgId)}>
-        Strategy
-      </Button>
+      <a href={hubHref("/competition", "ranking-projection", orgId)}>Rank projection</a>
+      <a href={hubHref("/business", "mock-judging", orgId)}>Mock judging</a>
+      <a href={withOrgHref("/strategy", orgId)}>Strategy</a>
     </nav>
-  );
-}
-
-function DistrictAdvancementNextActions({ orgId }: { orgId: string }) {
-  const actions = [
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Alliance plans and remaining-event picks live on Strategy.",
-      href: withOrgHref("/strategy", orgId),
-      primary: true,
-    },
-    {
-      id: "rank",
-      label: "Open Rank projection",
-      detail: "Event ranking uses the same cached scores as this district board.",
-      href: hubHref("/competition", "ranking-projection", orgId),
-      primary: false,
-    },
-    {
-      id: "mock",
-      label: "Open Mock judging",
-      detail: "Practice award interviews stay on this phone when venue Wi-Fi drops.",
-      href: hubHref("/business", "mock-judging", orgId),
-      primary: false,
-    },
-  ];
-  return (
-    <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -299,7 +246,7 @@ export default function DistrictAdvancementClient() {
           {error}
         </p>
       ) : null}
-      <DistrictAdvancementNextActions orgId={view.orgId} />
+
       <LiveDistrictBoard view={view} />
     </main>
   );

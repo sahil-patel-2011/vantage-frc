@@ -1,0 +1,26 @@
+/* =============================================================================
+   Scan polish — media-paused (shown in place of a paused media tool)
+   One title that names the tool, one honest sentence, two ways on.
+   Empty stays empty. No demo metrics.
+   ========================================================================== */
+
+.scan-hub--media-paused,
+.media-paused-page {
+  display: grid;
+  gap: var(--scan-stack, 18px);
+  min-width: 0;
+}
+
+.media-paused-page .scan-empty > h1 {
+  margin: 0;
+  font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
+  letter-spacing: -0.03em;
+  color: var(--scan-navy, var(--ink));
+  line-height: 1.12;
+}
+
+.media-paused-page .media-paused-note {
+  max-width: 62ch;
+  margin: 0;
+  line-height: 1.55;
+}

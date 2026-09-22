@@ -47,8 +47,14 @@ export async function loadDashboardSnapshot(
       eventName: string | null;
       fundingModel: string | null;
     }>(
+      // funding_model is read through to_jsonb so Home survives a deployment
+      // whose migrations have not been run yet. Selecting the column directly
+      // raises 42703 ("column o.funding_model does not exist"), and because
+      // this runs inside a Promise.all that killed the whole dashboard — every
+      // student saw a raw Postgres error instead of their team. to_jsonb yields
+      // NULL for a column that is not there and the real value once 0651 lands.
       `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
-              o.funding_model::text AS "fundingModel"
+              to_jsonb(o) ->> 'funding_model' AS "fundingModel"
        FROM organizations o
        LEFT JOIN org_active_context c ON c.org_id = o.id
        LEFT JOIN events_ref e ON e.event_key = c.active_event_key
@@ -197,6 +203,11 @@ export async function loadDashboardSnapshot(
     let redPredicted: number | null = null;
     let bluePredicted: number | null = null;
     let errorBand: number | null = null;
+    // Per-match, as opposed to errorBand, which is the model's average. See
+    // score-uncertainty.ts.
+    let redBand: number | null = null;
+    let blueBand: number | null = null;
+    let confidence: string | null = null;
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
     if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
@@ -229,6 +240,9 @@ export async function loadDashboardSnapshot(
         redPredicted = card.redPredicted;
         bluePredicted = card.bluePredicted;
         errorBand = card.errorBand;
+        redBand = card.redBand;
+        blueBand = card.blueBand;
+        confidence = card.confidence;
         scoreDrivers = card.drivers;
         briefing = card.briefing;
       }
@@ -255,6 +269,9 @@ export async function loadDashboardSnapshot(
       redPredicted,
       bluePredicted,
       errorBand,
+      redBand,
+      blueBand,
+      confidence,
       scoreDrivers,
       briefing,
     } as unknown as Record<string, unknown>);

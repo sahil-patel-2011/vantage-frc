@@ -10,9 +10,11 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
+import { TOUR_STORAGE_KEY } from "../../lib/tour/tour-steps";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
-import { AccountRelated, NextActions, OrgContextCard } from "./account-shell";
+import { NextActions, OrgContextCard } from "./account-shell";
 import {
   DEFAULT_EMAIL_PREFS,
   DEFAULT_NOTIFICATION_PREFS,
@@ -23,6 +25,7 @@ import {
   type Tab,
 } from "./account-types";
 import AppearancePanel from "./appearance-panel";
+import { LocalModelPanel } from "./local-model-panel";
 import "../product-hub.css";
 import "./account.css";
 
@@ -332,31 +335,68 @@ export default function AccountClient() {
   return (
     <main className="module-page account-page">
       <PageHeader
-        breadcrumbs="Account / Settings"
-        title="Your settings"
-        description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your team."
-      >
-        {/* "Support" used to sit here pointing at /support, while the related
-            strip one line below called the same page "Help & Support". Two
-            names for one destination on one screen reads as two destinations.
-            What's new stays: the strip does not carry it. */}
-        <div className="account-header-actions">
-          <Button as="a" variant="secondary" href="/whats-new">
-            What’s new
-          </Button>
-        </div>
-      </PageHeader>
+        /* "Account", not "Your settings".
+           The page lists two groups, "Your settings" and "Team settings", so
+           titling the whole page after one of them was both a duplicate of the
+           group label 440px below it and wrong about what the page holds.
+           "Account" is what the top bar calls this route, which is the point:
+           a page title that matches the thing you tapped to get here is not a
+           repetition. (The breadcrumb that used to make it a third sighting is
+           already gone.) */
+        title="Account"
+        description="Your profile and alerts, plus the team settings your role can reach."
+      />
 
       <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
 
-      <SettingsBar
-        role={org.role}
-        orgId={org.orgId}
-        pathname="/account"
-        activeTab={tab === "profile" ? null : tab}
-      />
+      {/* Who you are signed in as, said once and plainly. The page opened
+          straight into settings rows, so the first question it answered was
+          "which toggle" rather than "whose account is this" — which matters on
+          a shared shop laptop. No join date here: nothing in the session
+          carries one, and a made-up "member since" is worse than no line. */}
+      {/* Centred, and the avatar is the biggest thing on the screen, because
+          the first question this page answers is "whose account am I looking
+          at" — which matters most on the shared shop laptop where it is
+          usually somebody else's. */}
+      <section className="acct-hero" aria-label="Signed in as">
+        <span className="acct-avatar" aria-hidden="true">
+          {(displayName.trim() || "?").charAt(0).toUpperCase()}
+        </span>
+        <h2 className="acct-name">{displayName.trim() || "Your account"}</h2>
+        {account?.email ? <p className="acct-email">{account.email}</p> : null}
+        {/* Role and team only. The reference shows a join date here and the
+            session does not carry one; a plausible-looking invented date is
+            worse than a shorter row. */}
+        {org.role || org.orgName ? (
+          <dl className="acct-facts">
+            {org.role ? (
+              <div>
+                <dt>Role</dt>
+                <dd>{org.role}</dd>
+              </div>
+            ) : null}
+            {org.orgName ? (
+              <div>
+                <dt>Team</dt>
+                <dd>{org.orgName}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+      </section>
 
-      <AccountRelated orgId={orgId} />
+      <SettingsBar role={org.role} orgId={org.orgId} />
+
+      {/* These were a strip of small pills while the destinations directly
+          above them were tiled rows — same kind of thing, two appearances, on
+          one screen. "AI keys" is dropped here because the team settings rows
+          above already carry it and it points at the same page. */}
+      <KitEyebrow>Billing and help</KitEyebrow>
+      <KitCard>
+        <KitRow icon="bolt" tone="amber" title="Billing" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
+        <KitRow icon="stats" tone="teal" title="AI usage" href="/team/usage" />
+        <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
+      </KitCard>
 
       {message ? (
         <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
@@ -490,6 +530,12 @@ export default function AccountClient() {
             )}
           </nav>
 
+          {/* The one section switcher. `SettingsBar` used to render the same
+              three destinations as a second row of links with the same
+              accessible name, so the page carried two `navigation` landmarks
+              called "Account sections" and the browser test's locator matched
+              both. This is the copy that switches the panel in place; the
+              other one has been removed. */}
           <ToolStrip
             aria-label="Account sections"
             value={tab}
@@ -534,6 +580,10 @@ export default function AccountClient() {
             </Panel>
           ) : null}
 
+          {/* Lives beside appearance because it is the same kind of setting: a
+              per-person, per-machine choice about how Vantage behaves here. */}
+          {tab === "appearance" ? <LocalModelPanel /> : null}
+
           {tab === "notifications" ? (
             <AccountNotificationsPanel
               account={account}
@@ -548,6 +598,49 @@ export default function AccountClient() {
           ) : null}
         </>
       ) : null}
+
+      {/* The three things people come to this page to do that are not a
+          toggle. One card, one shape each, chevrons so they read as somewhere
+          you go rather than something that happens on tap.
+
+          No "Delete account" row: the reference has one and this deployment
+          has no endpoint behind it, and a destructive-looking button that
+          silently does nothing is worse than its absence. */}
+      <KitEyebrow>Account</KitEyebrow>
+      <KitCard className="acct-actions">
+        <KitRow
+          icon="sparkles"
+          tone="violet"
+          title="What’s new"
+          subtitle="Recent updates and features"
+          href="/whats-new"
+        />
+        <KitRow
+          icon="play"
+          tone="blue"
+          title="Replay the tour"
+          subtitle="Walk through the five stops on Home again"
+          onClick={() => {
+            try {
+              window.localStorage.removeItem(TOUR_STORAGE_KEY);
+            } catch {
+              // Private windows throw. Reloading still shows the tour for the
+              // rest of this session, which is what was asked for.
+            }
+            window.location.assign("/dashboard");
+          }}
+        />
+        <KitRow
+          icon="logout"
+          tone="cyan"
+          title="Sign out"
+          subtitle="End this session on this device"
+          onClick={() => void signOut()}
+          chevron={false}
+        />
+      </KitCard>
+
+      <p className="kit-footnote">Vantage · FRC scouting and strategy</p>
     </main>
   );
 }

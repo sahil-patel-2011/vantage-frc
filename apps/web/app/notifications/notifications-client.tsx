@@ -63,9 +63,7 @@ function InboxRelated() {
   return (
     <nav className="product-hub-related notif-related" aria-label="Related account tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );

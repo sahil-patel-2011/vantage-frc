@@ -1,0 +1,159 @@
+/**
+ * Material applied to the floating chrome — top bar, tab pill, drawer, scrim.
+ *
+ * Separate from vantage-fluid.css for one reason: load order. The root layout
+ * loads the token sheet so marketing routes get the easing curves, but
+ * soft-ui.css loads later still (from product-styles.ts, so marketing does not
+ * download product chrome) and it styles these same selectors. A rule with
+ * equal specificity declared earlier loses. This sheet therefore imports last
+ * from product-styles.ts, after the file it is overriding.
+ *
+ * Only surfaces that float over scrolling content get glass. Cards do not:
+ * blurring a panel that holds a match score costs GPU on the pit tablet and
+ * buys nothing, because there is nothing behind it to diffuse.
+ */
+
+.soft-topbar {
+  /* Longhand, not the `background` shorthand: soft-ui.css sets the shorthand
+     on this same selector, and mixing the two made the resolved colour stick
+     at whatever it was on first paint instead of following --material. */
+  background-color: var(--material);
+  backdrop-filter: var(--material-filter);
+
+  border-bottom-color: var(--material-line);
+  box-shadow: var(--material-edge);
+  /* No transition on the background. With one, the resolved colour stopped
+     following --material when the clarity preference changed — the island,
+     which is identical apart from having no transition, switched correctly.
+     A fixed bar retinting instantly is the right behaviour anyway; nobody
+     asked to watch it fade. */
+}
+
+.soft-island {
+  background-color: var(--material-thick);
+  backdrop-filter: var(--material-filter);
+  /* Border and shadow are deliberately not set here. `body.has-app-shell
+     .soft-island` in vantage-scan.css outranks this selector and owns both,
+     so declaring them here would look like it worked and do nothing. The edge
+     highlight is layered into that rule instead. */
+}
+
+/* The tab itself. Springs on press because navigation is the one place in the
+   product where a little overshoot reads as responsiveness rather than noise,
+   and nothing here is text being read at the moment it moves. */
+.soft-island a,
+.soft-island-more {
+  transition:
+    background var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-spring);
+}
+
+.soft-island a:active,
+.soft-island-more:active {
+  transform: scale(0.94);
+}
+
+.soft-drawer {
+  background-color: var(--material-thick);
+  backdrop-filter: var(--material-filter);
+
+  transition:
+    transform var(--dur-sheet) var(--ease-settle),
+    visibility 0s linear var(--dur-sheet);
+}
+
+.soft-drawer.open {
+  transition:
+    transform var(--dur-sheet) var(--ease-settle),
+    visibility 0s;
+}
+
+/* Dim and blur together, so the page behind visibly recedes instead of just
+   getting darker. */
+.shell-scrim {
+  backdrop-filter: blur(calc(var(--mat-blur) / 4));
+
+  transition: opacity var(--dur-move) var(--ease-out);
+}
+
+/* -------------------------------------------------------------- controls --
+   One press behaviour for everything pressable. A control that does not
+   acknowledge the touch is the most common reason an interface feels dead on
+   a phone, and it costs one line. */
+.kit-row,
+.kit-card,
+button,
+[role="button"],
+a.app-card {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kit-row {
+  transition:
+    background var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.kit-row:active {
+  transform: scale(0.992);
+}
+
+/* The duration tokens are already 0ms under reduced motion, but a transform
+   with a 0s duration still jumps to its end state. These come off entirely. */
+@media (prefers-reduced-motion: reduce) {
+  .soft-island a:active,
+  .soft-island-more:active,
+  .kit-row:active {
+    transform: none;
+  }
+}
+
+html[data-motion="reduced"] .soft-island a:active,
+html[data-motion="reduced"] .soft-island-more:active,
+html[data-motion="reduced"] .kit-row:active {
+  transform: none;
+}
+
+/* ------------------------------------------------------------- entrances --
+   Every scrim in the product faded at its own speed — .16s, .18s, .2s and
+   .22s for the same gesture — while the panel each one accompanies takes
+   380ms to arrive. So the dim always finished well before the drawer landed,
+   and no two of them agreed with each other. Four numbers, no decision behind
+   any of them.
+
+   One duration and one curve, shared with the panel, so the dim and the thing
+   it is dimming for read as a single movement instead of two events. */
+.soft-scrim,
+.soft-more-scrim,
+.soft-account-scrim,
+.soft-island-editor-scrim,
+.dash-library-scrim {
+  animation-duration: var(--dur-sheet);
+  animation-timing-function: var(--ease-out);
+}
+
+/* The account popover is small and opens beside the thing you pressed, so it
+   settles faster than a full-screen sheet — but on the same curve. */
+.soft-account-pop {
+  animation-duration: var(--dur-move);
+  animation-timing-function: var(--ease-settle);
+}
+
+/* "More tools" appeared instantly, which reads as a layout jump rather than a
+   panel opening. It pushes content down, so it rises into place from just
+   above rather than sliding a distance it does not travel. */
+@keyframes vantage-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hub-tool-overflow {
+  animation: vantage-panel-in var(--dur-move) var(--ease-settle) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-tool-overflow { animation: none; }
+}
+
+html[data-motion="reduced"] .hub-tool-overflow { animation: none; }

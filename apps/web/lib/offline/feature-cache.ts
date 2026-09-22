@@ -219,7 +219,6 @@ export type OfflineFeature =
   | "scout-p2p-relay"
   | "scout-schema-negotiate"
   | "scout-training-mode"
-  | "scouting-schema-ab"
   | "search"
   | "season-rollover"
   | "security"

@@ -65,20 +65,14 @@ async function persistScoutTrainingSnapshot(orgHint: string, data: ScoutTraining
 function ScoutTrainingRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "data-quality-scorecard", orgId)}>
-        Data quality
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/scouting/lineup", orgId)}>
-        Coverage
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "data-quality-scorecard", orgId)}>Data quality</a>
+      <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
     </nav>
   );
 }
 
-function ScoutTrainingNextActions({ orgId }: { orgId: string }) {
+function ScoutTrainingNextActions() {
   const actions = [
     {
       id: "practice",
@@ -87,37 +81,19 @@ function ScoutTrainingNextActions({ orgId }: { orgId: string }) {
       href: "#scout-training-practice",
       primary: true,
     },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are logged on the scouting board.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "quality",
-      label: "Open Data quality",
-      detail: "Coverage and cross-scout checks sit beside this practice board.",
-      href: hubHref("/competition", "data-quality-scorecard", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -333,7 +309,7 @@ export default function ScoutTrainingModeClient() {
           {error}
         </p>
       ) : null}
-      <ScoutTrainingNextActions orgId={view.orgId} />
+      <ScoutTrainingNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <PracticeForm view={view} busy={busy} mutate={mutate} />

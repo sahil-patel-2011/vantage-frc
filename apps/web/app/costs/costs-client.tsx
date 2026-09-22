@@ -56,7 +56,7 @@ async function persistCostsSnapshot(orgHint: string, seasonHint: string, data: C
 }
 
 const SOURCE_COLOR: Record<string, string> = {
-  season: "#1457d9",
+  season: "#0e5a66",
   subscriptions: "#7a4fd6",
   api: "#1f7a3d",
 };
@@ -111,13 +111,10 @@ function NextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

@@ -47,11 +47,19 @@ describe("formatHoursAgainstThreshold", () => {
     expect(formatHoursAgainstThreshold(42, 60)).toBe("42 of 60 hours");
   });
 
-  it("says no threshold is set instead of inventing one", () => {
+  /*
+    The rule is "never imply a threshold that isn't set", not "repeat the
+    disclaimer". The row reports what the member did; the summary headline is
+    where the missing threshold is explained, once per team.
+  */
+  it("reports the hours alone rather than inventing a threshold", () => {
     const text = formatHoursAgainstThreshold(42, null);
-    expect(text).toContain("42 hours logged");
-    expect(text).toContain(NO_THRESHOLD_LABEL.toLowerCase());
+    expect(text).toBe("42 hours logged");
     expect(text).not.toMatch(/\bof \d/);
+  });
+
+  it("leaves the team-wide explanation to the headline, not every row", () => {
+    expect(formatHoursAgainstThreshold(42, null)).not.toContain(NO_THRESHOLD_LABEL.toLowerCase());
   });
 });
 

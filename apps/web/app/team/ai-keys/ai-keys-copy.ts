@@ -74,11 +74,15 @@ export const ALL_FEATURES_BODY =
 export const QUALITY_NOTICE_BODY =
   "Smaller models give shorter, plainer answers than frontier models do. Where that applies, Vantage says so on the answer itself instead of hiding it — you always know what wrote what.";
 
+export const PUBLIC_SWARM_FALLBACK_BODY =
+  "Vantage can fall back to the public Petals swarm — free AI with no key, answered by volunteers' computers — but as of September 2026 no volunteers are hosting a model on it, so it answers nothing. Even when it is running, those volunteers can read what you send and what comes back, and can change the answer, so it stays off until an admin turns it on. For free AI that works today and never leaves your own machines, point Vantage at Ollama or LM Studio.";
+
 /** Ordered bullets for the "bring any endpoint" panel. */
 export const ANY_ENDPOINT_POINTS: string[] = [
   ALL_FEATURES_BODY,
   QUALITY_NOTICE_BODY,
   "Keys are encrypted at rest and never shown again after you save them. Vantage calls your endpoint directly with them and stores nothing from the response beyond what the feature shows you.",
+  PUBLIC_SWARM_FALLBACK_BODY,
 ];
 
 // ---------------------------------------------------------------------------

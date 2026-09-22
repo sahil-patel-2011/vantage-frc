@@ -147,7 +147,7 @@ export function dashboardNextActions(input: {
       actions.push({
         id: "ai-provider",
         label: "Add AI keys",
-        detail: "Optional — for Free / your-keys routing.",
+        detail: "Optional. Add a key if you want the team’s own AI account.",
         href: withOrgHref("/team/ai-keys", orgId),
         primary: actions.length === 0,
       });

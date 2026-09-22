@@ -1,3 +1,5 @@
+import { orgNameAddsDetail, teamProseLabel } from "../components/app-shell-model";
+
 export const OUTREACH_KINDS = ["thank_you", "renewal_ask", "new_prospect_intro", "grant_followup", "custom"] as const;
 export type OutreachKind = (typeof OUTREACH_KINDS)[number];
 
@@ -17,8 +19,19 @@ function greeting(contactName?: string | null) {
 }
 
 function teamSignature(context: DraftContext) {
-  const numberSuffix = context.teamNumber ? ` #${context.teamNumber}` : "";
-  return `${context.senderName ? `${context.senderName}\n` : ""}${context.teamName}${numberSuffix}`;
+  const name = context.teamName.trim();
+  const number = context.teamNumber;
+  // "Team 6925 #6925" is what appending the number unconditionally produced
+  // for a team whose name is its number — in the sign-off of an email to a
+  // sponsor. The number is worth adding only when the name is not already it.
+  const team = !name
+    ? number
+      ? `Team ${number}`
+      : ""
+    : number && orgNameAddsDetail(number, name)
+      ? `${name} #${number}`
+      : name;
+  return `${context.senderName ? `${context.senderName}\n` : ""}${team}`;
 }
 
 function usd(amount: number) {
@@ -54,7 +67,7 @@ export function draftOutreachMessage(kind: OutreachKind, context: DraftContext):
     case "new_prospect_intro": {
       return {
         subject: `Introducing ${context.teamName} — ${context.seasonYear} sponsorship opportunity`,
-        body: `${greeting(context.sponsor?.contactName)}\n\nMy name is${context.senderName ? ` ${context.senderName} and I'm` : ""} part of ${context.teamName}, a FIRST Robotics Competition team${context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Each year our students design, build, and program a competition robot from scratch while learning real engineering, programming, and business skills.\n\nWe're reaching out to introduce our program and explore whether ${context.sponsor?.name ?? "your organization"} would consider sponsoring our ${context.seasonYear} season. Sponsorship can be financial, in-kind (materials, tools, shop space), or expertise-based — whatever fits best.\n\nWe'd welcome a short call or a visit to our shop to share more. Thank you for your time and consideration.\n\nBest regards,\n${teamSignature(context)}`,
+        body: `${greeting(context.sponsor?.contactName)}\n\nMy name is${context.senderName ? ` ${context.senderName} and I'm` : ""} part of ${teamProseLabel(context.teamNumber, context.teamName) ?? context.teamName}, a FIRST Robotics Competition team. Each year our students design, build, and program a competition robot from scratch while learning real engineering, programming, and business skills.\n\nWe're reaching out to introduce our program and explore whether ${context.sponsor?.name ?? "your organization"} would consider sponsoring our ${context.seasonYear} season. Sponsorship can be financial, in-kind (materials, tools, shop space), or expertise-based — whatever fits best.\n\nWe'd welcome a short call or a visit to our shop to share more. Thank you for your time and consideration.\n\nBest regards,\n${teamSignature(context)}`,
       };
     }
     case "grant_followup": {

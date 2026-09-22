@@ -32,7 +32,7 @@ test("CAD vault paste-link offers Edit in Fusion or Needs setup", async ({ page 
   }
 
   await paste.fill("https://a360.co/3AbCdEf");
-  await expect(page.getByRole("link", { name: /Edit( .* )?in Fusion/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Edit( .+)? in Fusion$/i }).first()).toBeVisible();
 });
 
 test("CAD setup wizard is link-first Edit in Fusion without env-var dumps", async ({ page }) => {
@@ -58,7 +58,7 @@ test("CAD setup wizard is link-first Edit in Fusion without env-var dumps", asyn
   const paste = page.getByPlaceholder(/a360\.co/i).first();
   await expect(paste).toBeVisible();
   await paste.fill("https://a360.co/3AbCdEf");
-  await expect(page.getByRole("link", { name: /Edit( .* )?in Fusion/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Edit( .+)? in Fusion$/i }).first()).toBeVisible();
 });
 
 test("CAD connections Fusion tile is paste-link Edit in Fusion or Needs setup", async ({ page }) => {
@@ -83,5 +83,5 @@ test("CAD connections Fusion tile is paste-link Edit in Fusion or Needs setup", 
   const paste = fusionTile.getByPlaceholder(/a360\.co/i);
   await expect(paste).toBeVisible();
   await paste.fill("https://a360.co/3AbCdEf");
-  await expect(fusionTile.getByRole("link", { name: /Edit( .* )?in Fusion/i })).toBeVisible();
+  await expect(fusionTile.getByRole("link", { name: /^Edit( .+)? in Fusion$/i })).toBeVisible();
 });

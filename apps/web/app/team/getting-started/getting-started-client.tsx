@@ -203,15 +203,9 @@ async function persistGettingStartedSnapshot(orgHint: string, data: GettingStart
 function GettingStartedRelated({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/start", orgId)}>
-        Your path
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/knowledge", orgId)}>
-        Playbook
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/calendar", orgId)}>
-        Calendar
-      </Button>
+      <a href={withOrgHref("/start", orgId)}>Your path</a>
+      <a href={withOrgHref("/team/knowledge", orgId)}>Playbook</a>
+      <a href={withOrgHref("/team/calendar", orgId)}>Calendar</a>
     </nav>
   );
 }
@@ -219,41 +213,25 @@ function GettingStartedRelated({ orgId }: { orgId: string }) {
 function GettingStartedNextActions({ orgId }: { orgId: string }) {
   const actions = [
     {
-      id: "path",
-      label: "Open Your path",
-      detail: "Personal first-week steps for your role, not the whole team.",
-      href: withOrgHref("/start", orgId),
-      primary: true,
-    },
-    {
-      id: "playbook",
-      label: "Open Playbook",
-      detail: "Team Knowledge is what Ask AI reads on every chat.",
-      href: withOrgHref("/team/knowledge", orgId),
-    },
-    {
       id: "background",
       label: "Open Team background",
       detail: "Mission, location, and funding facts used by grants and sponsor drafts.",
       href: withOrgHref("/team/background", orgId),
+      primary: true,
     },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>

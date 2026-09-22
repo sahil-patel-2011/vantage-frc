@@ -106,61 +106,41 @@ function targetLabel(target: CadTarget): string {
 export function CadSetupRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related CAD tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
-        CAD
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad/connections", orgId)}>
-        CAD connections
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
-        CAD Vault
-      </Button>
+      <a href={withOrgHref("/cad", orgId)}>CAD</a>
+      <a href={withOrgHref("/cad/connections", orgId)}>CAD connections</a>
+      <a href={withOrgHref("/cad-vault", orgId)}>CAD Vault</a>
     </nav>
   );
 }
 
 function CadSetupNextActions({
   orgId,
-  onshapeConnected,
   hasDesktop,
 }: {
   orgId: string;
-  onshapeConnected: boolean;
   hasDesktop: boolean;
 }) {
   const actions = [
-    {
-      id: "cad",
-      label: "Open CAD",
-      detail: onshapeConnected
-        ? "Pick a document after Onshape is connected."
-        : "Open CAD after you connect Onshape or pair Fusion.",
-      href: withOrgHref("/cad", orgId),
-      primary: true as const,
-    },
     {
       id: "desktop",
       label: hasDesktop ? "Review paired computers" : "Pair Fusion",
       detail: CAD_SETUP_FUSION,
       href: withOrgHref("/cad/pair", orgId),
+      primary: true,
     },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions cad-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -552,7 +532,6 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
       {step === 3 ? (
         <CadSetupNextActions
           orgId={orgId}
-          onshapeConnected={view.onshapeConnected}
           hasDesktop={view.devices.some((device) => !device.revokedAt)}
         />
       ) : null}

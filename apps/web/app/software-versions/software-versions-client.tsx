@@ -90,20 +90,14 @@ async function persistSoftwareVersionsSnapshot(orgHint: string, seasonHint: stri
 function SoftwareVersionsRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "wiring-map", orgId)}>
-        CAN-bus map
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "tuning-log", orgId)}>
-        Tuning log
-      </Button>
+      <a href={hubHref("/build", "wiring-map", orgId)}>CAN-bus map</a>
+      <a href={hubHref("/build", "code", orgId)}>Code</a>
+      <a href={hubHref("/build", "tuning-log", orgId)}>Tuning log</a>
     </nav>
   );
 }
 
-function SoftwareVersionsNextActions({ orgId }: { orgId: string }) {
+function SoftwareVersionsNextActions() {
   const actions = [
     {
       id: "save",
@@ -112,37 +106,19 @@ function SoftwareVersionsNextActions({ orgId }: { orgId: string }) {
       href: "#software-version",
       primary: true,
     },
-    {
-      id: "code",
-      label: "Open Code",
-      detail: "Flash and review sit next to the versions you logged.",
-      href: hubHref("/build", "code", orgId),
-      primary: false,
-    },
-    {
-      id: "wiring",
-      label: "Open CAN-bus map",
-      detail: "Device firmware should match the hardware on the map.",
-      href: hubHref("/build", "wiring-map", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -509,7 +485,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
         )}
       </Panel>
 
-      <SoftwareVersionsNextActions orgId={view.context.orgId} />
+      <SoftwareVersionsNextActions />
     </main>
   );
 }

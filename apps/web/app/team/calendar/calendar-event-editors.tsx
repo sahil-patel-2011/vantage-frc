@@ -21,8 +21,9 @@ import {
   type SubteamEventKind,
 } from "../../../lib/subteam-calendar";
 import { toLocalInputValue } from "../../../lib/calendar-ai/pick";
+import { describeConflicts, findConflicts } from "../../../lib/calendar/conflicts";
 import {
-  fmtWhen,
+  fmtRange,
   isSeriesEvent,
   type ActionBody,
   type EventPrefill,
@@ -31,17 +32,67 @@ import {
 } from "./calendar-model";
 
 /**
+ * "That's on top of something else" — shown while typing, never blocking.
+ *
+ * A warning and not an error: teams double-book on purpose, and a calendar
+ * that refuses to record what is really happening just moves the schedule into
+ * a group chat. `aria-live="polite"` because it appears as a consequence of
+ * changing the time field, and someone not watching the form would otherwise
+ * never learn it was there.
+ */
+function ConflictNote({
+  events,
+  startsAt,
+  endsAt,
+  subteamId,
+  eventId,
+}: {
+  events: readonly ReadyView["events"][number][];
+  /** Local datetime-input value, e.g. "2026-02-10T18:00". */
+  startsAt: string;
+  endsAt?: string;
+  subteamId: string;
+  eventId?: string | null;
+}) {
+  const text = useMemo(() => {
+    if (!startsAt) return null;
+    const toIso = (value: string) => {
+      const ms = new Date(value).getTime();
+      return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+    };
+    const start = toIso(startsAt);
+    if (!start) return null;
+    return describeConflicts(
+      findConflicts(
+        { id: eventId ?? null, startsAt: start, endsAt: endsAt ? toIso(endsAt) : null, subteamId: subteamId || null },
+        events,
+      ),
+    );
+  }, [events, startsAt, endsAt, subteamId, eventId]);
+
+  if (!text) return null;
+  return (
+    <p className="tc-conflict" role="status" aria-live="polite">
+      {text}
+    </p>
+  );
+}
+
+/**
  * Edit one meeting. For a series the save step is the standard three-way choice,
  * because "this Tuesday we start at 5" and "we start at 5 from now on" are
  * different edits and guessing between them loses a team's schedule.
  */
 export function OccurrenceEditor({
   event,
+  events,
   busy,
   onSave,
   onCancel,
 }: {
   event: RecurringEvent;
+  /** The rest of the calendar, so moving this one can say what it lands on. */
+  events?: ReadyView["events"];
   busy: boolean;
   onSave: (patch: Record<string, unknown>, scope: OccurrenceScope) => void;
   onCancel: () => void;
@@ -51,6 +102,18 @@ export function OccurrenceEditor({
   const [endsAt, setEndsAt] = useState(() => toLocalInputValue(event.endsAt));
   const [location, setLocation] = useState(event.location ?? "");
   const repeats = isSeriesEvent(event);
+  /*
+    An end before its start. `buildPatch` already refuses to build one, which
+    meant Save did nothing at all and said nothing about why — the quietest
+    possible dead end. Moving an event by editing only the start is the normal
+    way to arrive here, so it is worth a sentence rather than a shrug.
+  */
+  const endsBeforeStart = (() => {
+    if (!startsAt || !endsAt) return false;
+    const start = new Date(startsAt).getTime();
+    const end = new Date(endsAt).getTime();
+    return !Number.isNaN(start) && !Number.isNaN(end) && end < start;
+  })();
 
   const buildPatch = (): Record<string, unknown> | null => {
     const trimmed = title.trim();
@@ -103,17 +166,37 @@ export function OccurrenceEditor({
           <input value={location} disabled={busy} onChange={(e) => setLocation(e.target.value)} />
         </label>
       </div>
+      {endsBeforeStart ? (
+        <p className="tc-conflict" role="status" aria-live="polite">
+          This ends before it starts. Move the end time forward to save.
+        </p>
+      ) : null}
+      {/* Moving an event into an occupied hour is the same mistake as creating
+          one there, so it gets the same warning — and not against itself. */}
+      <ConflictNote
+        events={events ?? []}
+        startsAt={startsAt}
+        endsAt={endsAt}
+        subteamId={event.subteamId ?? ""}
+        eventId={event.id}
+      />
       {repeats ? (
         <OccurrenceScopeChoice
           title="Save this change to…"
           actionLabel="Save"
           busy={busy}
+          disabled={endsBeforeStart}
           onPick={submit}
           onCancel={onCancel}
         />
       ) : (
         <div className="tc-occurrence-actions">
-          <Button variant="secondary" type="button" disabled={busy || !title.trim() || !startsAt} onClick={() => submit("this")}>
+          <Button
+            variant="secondary"
+            type="button"
+            disabled={busy || !title.trim() || !startsAt || endsBeforeStart}
+            onClick={() => submit("this")}
+          >
             Save
           </Button>
           <button type="button" className="tc-text-btn" disabled={busy} onClick={onCancel}>
@@ -127,6 +210,7 @@ export function OccurrenceEditor({
 
 export function EventCard({
   event,
+  events,
   busy,
   canDelete,
   onDelete,
@@ -141,6 +225,8 @@ export function EventCard({
   onSaveEdit,
 }: {
   event: RecurringEvent;
+  /** Passed through to the inline editor's conflict warning. */
+  events?: ReadyView["events"];
   busy: boolean;
   canDelete: boolean;
   onDelete: () => void;
@@ -182,7 +268,13 @@ export function EventCard({
         </span>
       </div>
       {editing && onSaveEdit && onCancelEdit ? (
-        <OccurrenceEditor event={event} busy={busy} onSave={onSaveEdit} onCancel={onCancelEdit} />
+        <OccurrenceEditor
+          event={event}
+          events={events}
+          busy={busy}
+          onSave={onSaveEdit}
+          onCancel={onCancelEdit}
+        />
       ) : null}
       {repeats && event.recurrenceSummary ? (
         <p className="tc-repeat-badge">
@@ -200,10 +292,17 @@ export function EventCard({
         />
       ) : null}
       <div className="tc-event-meta">
-        <span className="tc-chip">{event.source === "tba" ? "Match" : SUBTEAM_EVENT_KIND_LABELS[event.kind]}</span>
+        <span className="tc-chip">
+          {event.source === "tba"
+            ? "Match"
+            : event.source === "duty"
+              ? "Duty"
+              : event.source === "travel"
+                ? "Travel"
+                : SUBTEAM_EVENT_KIND_LABELS[event.kind]}
+        </span>
         <span>
-          {fmtWhen(event.startsAt)}
-          {event.endsAt ? ` → ${fmtWhen(event.endsAt)}` : ""}
+          {fmtRange(event.startsAt, event.endsAt)}
         </span>
         {event.source === "tba" ? (
           <span style={{ color: accent }}>{event.bumper === "red" ? "RED" : "BLUE"}</span>
@@ -216,7 +315,13 @@ export function EventCard({
       </div>
       {event.notes ? <p className="tc-muted">{event.notes}</p> : null}
 
-      {event.source === "tba" ? null : (
+      {event.source === "duty" ? (
+        <p className="tc-muted">This is on the duty roster. Change it under Duties.</p>
+      ) : null}
+      {event.source === "travel" ? (
+        <p className="tc-muted">This is a trip leg. Change it under Travel.</p>
+      ) : null}
+      {event.source === "tba" || event.source === "duty" || event.source === "travel" ? null : (
       <div className="tc-rsvp" role="group" aria-label="RSVP">
         <button
           type="button"
@@ -252,6 +357,7 @@ export function EventCard({
 export function QuickAddForm({
   orgId,
   subteams,
+  events,
   filterSubteamId,
   initialStartsAt,
   busy,
@@ -261,6 +367,8 @@ export function QuickAddForm({
 }: {
   orgId: string;
   subteams: Subteam[];
+  /** Everything already on the calendar, so the form can say when it clashes. */
+  events: ReadyView["events"];
   filterSubteamId: string | null;
   initialStartsAt: string;
   busy: boolean;
@@ -408,6 +516,8 @@ export function QuickAddForm({
           ))}
         </select>
       </div>
+      {/* A task is due on a day, not at an hour, so it cannot clash with one. */}
+      <ConflictNote events={events} startsAt={entry === "event" ? startsAt : ""} subteamId={subteamId} />
       {entry === "event" ? (
         <label className="tc-check">
           <input
@@ -434,6 +544,7 @@ export function QuickAddForm({
 export function CreateEventForm({
   orgId,
   subteams,
+  events,
   attendanceEvents,
   practiceSessions,
   filterSubteamId,
@@ -443,6 +554,8 @@ export function CreateEventForm({
 }: {
   orgId: string;
   subteams: Subteam[];
+  /** Everything already on the calendar, so the form can say when it clashes. */
+  events: ReadyView["events"];
   attendanceEvents: ReadyView["attendanceEvents"];
   practiceSessions: ReadyView["practiceSessions"];
   filterSubteamId: string | null;
@@ -571,6 +684,9 @@ export function CreateEventForm({
           <span>Ends</span>
           <input type="datetime-local" value={endsAt} disabled={busy} onChange={(e) => setEndsAt(e.target.value)} />
         </label>
+        <div className="tc-field wide">
+          <ConflictNote events={events} startsAt={startsAt} endsAt={endsAt} subteamId={subteamId} />
+        </div>
         <label className="tc-field wide">
           <span>Location</span>
           <input value={location} disabled={busy} placeholder="Shop / Room 12" onChange={(e) => setLocation(e.target.value)} />

@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
 import {
@@ -504,7 +505,7 @@ export default function ReimbursementsClient() {
                 />
               </label>
               <div className="rb-form-actions">
-                <label className="rb-receipt-pick">
+                {MEDIA_ENABLED ? <label className="rb-receipt-pick">
                   {receipt ? `Receipt: ${receipt.name} (${formatBytes(receipt.size)})` : "Add receipt photo"}
                   <input
                     ref={receiptInput}
@@ -513,7 +514,7 @@ export default function ReimbursementsClient() {
                     capture="environment"
                     onChange={(event) => pickReceipt(event.target.files?.[0] ?? null)}
                   />
-                </label>
+                </label> : null}
                 <button
                   type="button"
                   className="rb-receipt-pick"
@@ -525,8 +526,8 @@ export default function ReimbursementsClient() {
                 </button>
               </div>
               <p className="rb-meta">
-                Photos are shrunk on your phone before they upload, so a normal camera shot fits under the{" "}
-                {formatBytes(MAX_RECEIPT_BYTES)} limit. A claim needs a receipt before it can be submitted.
+                {MEDIA_ENABLED ? `Photos are shrunk before upload to fit the ${formatBytes(MAX_RECEIPT_BYTES)} limit.` : MEDIA_PAUSED_MESSAGE}
+                {" "}A claim needs a receipt before it can be submitted; claims without one can remain drafts.
               </p>
             </div>
           </Panel>
@@ -715,7 +716,7 @@ function ClaimRow({
         )}
       </p>
       <div className="rb-claim-actions">
-        {canReplaceReceipt ? (
+        {MEDIA_ENABLED && canReplaceReceipt ? (
           <label className="rb-receipt-pick">
             {request.hasReceipt ? "Replace receipt" : "Add receipt"}
             <input

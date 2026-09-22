@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { expectReadyOr, waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
+import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -21,16 +22,54 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   await waitForLoadingGone(page);
   const now = page.getByTestId("dash-now");
   await expect(now).toBeVisible();
-  await expect(now.getByText("What to do now")).toBeVisible();
+  // "What to do now" is the card's accessible name, not text on screen —
+    // d6d523a11 removed the visible eyebrow because the card said one thing
+    // four ways. A screen reader still hears it.
+    await expect(now).toHaveAttribute("aria-label", "What to do now");
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Home still shows ${phrase}`).not.toContainText(phrase);
   }
   const homeCta = now.getByRole("link").first();
   await expect(homeCta).toBeVisible();
-  const emptyNow = await now.getByText("Nothing you have to do right now").count();
-  if (emptyNow) {
-    await expect(homeCta).toHaveText(/Open My Day/i);
-  }
+  /*
+    The card is contextual: on duty, in the shop, things on your list, or
+    nothing to do — four states with four buttons. This used to count the
+    "nothing to do" text and then assert the button belonging to it, which is
+    two reads of a card that changes between them: the empty state paints
+    first and the real one replaces it a moment later, so the count said
+    "empty" and the button said "Open My Hours".
+
+    It also assumed the fixture owner is never clocked in, and an earlier
+    spec's clock-in is exactly the kind of thing that outlives its run.
+
+    One read now: whatever the card says, the button is the one that goes with
+    it, and it goes somewhere.
+  */
+  const CTA_FOR = new Map<RegExp, RegExp>([
+    [/Working out what is next/i, /Open My Day/i],
+    [/Nothing you have to do right now/i, /Open My Day/i],
+    [/You.re in the shop/i, /Open My Hours/i],
+    [/You.re on duty/i, /See duties/i],
+    [/thing(s)? on your list|One thing on your list/i, /Open todos/i],
+  ]);
+  // Polled, because the card is allowed to change once: it says it is
+  // working out what is next until the widgets land. What must never be true
+  // is the title and the button disagreeing.
+  await expect
+    .poll(
+      async () => {
+        const cardText = await now.innerText();
+        const label = (await homeCta.innerText()).trim();
+        for (const [title, cta] of CTA_FOR) {
+          if (title.test(cardText)) return cta.test(label);
+        }
+        // An unrecognised state is not a failure of this spec to describe.
+        return true;
+      },
+      { timeout: 20_000, message: "the card's button does not match what it says" },
+    )
+    .toBe(true);
+  await expect(homeCta).toHaveAttribute("href", /.+/);
 
   await homeCta.click();
   await waitForLoadingGone(page);
@@ -79,19 +118,26 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await page.goto("/video-analysis");
-  await waitForLoadingGone(page);
-  for (const phrase of BANNED_VIDEO) {
-    await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
-  }
-  const paste = page.getByRole("region", { name: "Paste a video" });
-  const chooseTeam = page.getByRole("link", { name: "Choose your team" });
-  const onPaste = await expectReadyOr(page, paste, chooseTeam);
-  if (onPaste) {
-    await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
-    const field = paste.getByLabel("Video link");
-    if (await field.count()) {
-      await field.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  if (mediaPaused) {
+    // Video is a media tool, switched off to save storage. The walk carries on
+    // past it — the step after this one has nothing to do with media — so this
+    // checks the paused page and moves on rather than ending the walk here.
+    await expectPausedPage(page, "Video analysis");
+  } else {
+    await waitForLoadingGone(page);
+    for (const phrase of BANNED_VIDEO) {
+      await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);
+    }
+    const paste = page.getByRole("region", { name: "Paste a video" });
+    const chooseTeam = page.getByRole("link", { name: "Choose your team" });
+    const onPaste = await expectReadyOr(page, paste, chooseTeam);
+    if (onPaste) {
       await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
+      const field = paste.getByLabel("Video link");
+      if (await field.count()) {
+        await field.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        await expect(page.getByRole("button", { name: "Analyze this video" })).toBeVisible();
+      }
     }
   }
 

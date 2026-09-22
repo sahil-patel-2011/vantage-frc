@@ -65,20 +65,14 @@ async function persistScoutP2pSnapshot(
 function PitMeshRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-        Scouting
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "scout-schema-negotiate", orgId)}>
-        Schema sync
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/scouting/lineup", orgId)}>
-        Coverage
-      </Button>
+      <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      <a href={hubHref("/competition", "scout-schema-negotiate", orgId)}>Schema sync</a>
+      <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
     </nav>
   );
 }
 
-function PitMeshNextActions({ orgId }: { orgId: string }) {
+function PitMeshNextActions() {
   const actions = [
     {
       id: "start",
@@ -87,37 +81,19 @@ function PitMeshNextActions({ orgId }: { orgId: string }) {
       href: "#pit-mesh-start",
       primary: true,
     },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Live match and pit entries are what this mesh merges.",
-      href: hubHref("/competition", "scouting", orgId),
-      primary: false,
-    },
-    {
-      id: "schema",
-      label: "Open Schema sync",
-      detail: "Older tablet forms are reconciled here instead of being dropped.",
-      href: hubHref("/competition", "scout-schema-negotiate", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -364,7 +340,7 @@ export default function ScoutP2pRelayClient() {
           {error}
         </p>
       ) : null}
-      <PitMeshNextActions orgId={view.orgId} />
+      <PitMeshNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <StartSessionForm busy={busy} mutate={mutate} />

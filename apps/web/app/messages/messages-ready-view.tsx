@@ -473,7 +473,11 @@ export function MessagesReadyView({
                         </button>
                       </form>
                     ) : (
-                      <h1>{labelFor(active)}</h1>
+                      /* h2, not h1: this is the channel's name, and the page
+                         it sits on already has a name. Inside the Team hub
+                         both were visible and both read "Team", so the
+                         document outline claimed one screen was two. */
+                      <h2 className="messages-channel-title">{labelFor(active)}</h2>
                     )}
                   </div>
                   {active.kind === "team" ? (

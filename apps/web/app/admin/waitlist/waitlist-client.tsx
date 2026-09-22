@@ -5,6 +5,15 @@ import { EmptyState, PageHeader, Panel } from "../../../components/ui";
 import { adminProvisionHref, adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 
+/** What `publicSignupStatus()` reports, straight from the admin route. */
+type SignupStatus = {
+  open: boolean;
+  earliest: string;
+  dateReached: boolean;
+  envEnabled: boolean;
+  reason: string;
+};
+
 type WaitlistEntry = {
   email: string;
   teamNumber: number;
@@ -21,6 +30,7 @@ function provisionHref(entry: WaitlistEntry) {
 
 export default function WaitlistAdminClient() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
+  const [signup, setSignup] = useState<SignupStatus | null>(null);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
@@ -32,6 +42,9 @@ export default function WaitlistAdminClient() {
     const params = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
     const response = await fetch(`/api/admin/waitlist${params}`);
     const data = await response.json();
+    // Sent on the 503 too: a deployment with no waitlist store still has a
+    // door, and this is the screen that says whether it is open.
+    setSignup((data.signup as SignupStatus | undefined) ?? null);
     if (!response.ok) {
       setMessage(data.error ?? "Could not load waitlist.");
       setEntries([]);
@@ -92,6 +105,43 @@ export default function WaitlistAdminClient() {
           ))}
         </nav>
       </PageHeader>
+
+      {/*
+        The doors, above the queue.
+
+        Turning off the waitlist is two conditions that both have to hold, and
+        until now neither of them was visible anywhere in the product — you
+        read the source to learn there were two, then opened the hosting
+        dashboard to find out about the second. This says which one is
+        outstanding and the exact thing to do about it, so "turn off the
+        waitlist" is one known step rather than a small research project.
+      */}
+      {signup ? (
+        <section
+          className="admin-signup-doors"
+          data-open={signup.open ? "yes" : "no"}
+          aria-label="Public sign-up"
+        >
+          <div>
+            <span className="admin-signup-state">
+              {signup.open ? "Open to everyone" : "Invite-only"}
+            </span>
+            <p>{signup.reason}</p>
+          </div>
+          <ol className="admin-signup-steps">
+            <li data-done={signup.dateReached ? "yes" : "no"}>
+              {signup.dateReached
+                ? `Planned date reached (${signup.earliest})`
+                : `Waiting for ${signup.earliest}`}
+            </li>
+            <li data-done={signup.envEnabled ? "yes" : "no"}>
+              {signup.envEnabled
+                ? "VANTAGE_PUBLIC_SIGNUP=open is set"
+                : "Set VANTAGE_PUBLIC_SIGNUP=open on the deployment, then redeploy"}
+            </li>
+          </ol>
+        </section>
+      ) : null}
 
       <div className="cards">
         <article className="card">

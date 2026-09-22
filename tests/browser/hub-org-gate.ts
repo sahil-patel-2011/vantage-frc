@@ -15,10 +15,18 @@ export function hubTeamGate(page: Page) {
  * Standalone pages that classify a 401 through `loadFailureCopy` paint this
  * instead of "Could not load X". The fixture cookie is not a Better Auth
  * session, so GHA without Postgres honestly says the session ended.
+ *
+ * Kept in step with `loadFailureCopy` in `apps/web/lib/ui/load-failure.ts` —
+ * every title it can produce belongs here. "Sign in again to open this" was
+ * added when 403s about *how* you signed in stopped being reported as a role
+ * problem; a team whose policy disallows password sign-in gets that one on
+ * every data-backed page, and until this matcher learned it, a whole family
+ * of "still loads after the split" specs failed on a page that was loading
+ * exactly as designed.
  */
 export function loadFailureHeading(page: Page) {
   return page.getByRole("heading", {
-    name: /Your session ended|You don't have access to this|You're offline|Could not load|Something went wrong|Not set up yet/i,
+    name: /Your session ended|Sign in again to open this|You don't have access to this|You're offline|Could not load|Something went wrong|Not set up yet/i,
   });
 }
 
@@ -29,14 +37,32 @@ export async function expectHubReadyOrGate(
   recovery?: Locator,
 ): Promise<boolean> {
   const gate = hubTeamGate(page);
-  const timeout = 20_000;
+  /*
+    Generous on purpose.
+
+    This runs against `next dev`, which compiles a route the first time it is
+    asked for, and by the end of a 350-spec run the server has been under
+    continuous load for nine minutes. Twenty seconds was enough for every
+    route in isolation — scouting paints in two — and not always enough at the
+    end of a full run, so the suite produced one failure per run, a different
+    one each time, each of which reads like a broken page.
+
+    A higher ceiling costs nothing except on a genuine failure, and costs a
+    diagnosis every time it is too low.
+  */
+  const timeout = 45_000;
   await waitForLoadingGone(page, timeout);
   const combined = recovery ? ready.or(recovery).or(gate) : ready.or(gate);
   // `.or()` is strict when two headings match (h1 "Match video" and
   // h2 "Loading match video…"). Wait out Loading… then take the first ready card.
   await expect(combined.first()).toBeVisible({ timeout });
   if ((await ready.count()) === 0 || !(await ready.first().isVisible().catch(() => false))) {
-    await expect(recovery ? gate.or(recovery).first() : gate).toBeVisible();
+    // The same ceiling, for the same reason. This line was left on
+    // Playwright's 5s default, so a hub that had painted *something* within
+    // the generous budget above got five seconds to settle on which — and at
+    // the end of a full run that was the one assertion still timing out,
+    // reporting a missing team gate on a page that simply had not finished.
+    await expect(recovery ? gate.or(recovery).first() : gate).toBeVisible({ timeout });
     return false;
   }
   return true;

@@ -1,5 +1,6 @@
 "use client";
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { PersonalMemories } from "./personal-memories";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -34,9 +35,7 @@ function MemoryRelatedStrip({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related ai-memory-related" aria-label="Related AI tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -64,13 +63,10 @@ function NextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -382,6 +378,11 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               </article>
             ))}
           </section>
+
+          {/* The half of memory a person owns. Everything below this is the
+              team's shared memory and its admin policy; this is the part that
+              is only yours. */}
+          <PersonalMemories orgId={orgId} />
 
           <section className="metric-grid" aria-label="Team memory counts">
             <article>

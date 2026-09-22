@@ -13,7 +13,20 @@
 .cal-countdown{font-size:32px;font-weight:800;line-height:1.05;color:var(--accent)}
 .cal-hero-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cal-hero-title strong{font-size:16px}
-.cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1;max-width:320px;font-size:12px}
+.cal-hero-shop{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cal-hero-week{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:260px}
+.cal-hero-week ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.cal-hero-week li{display:flex;gap:6px;align-items:baseline;font-size:12.5px;min-width:0}
+.cal-hero-week li b{flex:none;width:30px;color:var(--muted);font-weight:700}
+.cal-hero-week-time{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.cal-hero-week-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-hero-shop strong{font:700 15px/1.3 var(--font-source-sans),ui-sans-serif;color:var(--ink)}
+
+/* `max-width` capped this at 320px, so on a width where the hero wraps it
+   landed alone on the second row as a half-finished stub under the date. It
+   fills whatever row it ends up on now: rightmost when the four blocks fit,
+   a full-width footer when they do not. */
+.cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1 1 220px;font-size:12px}
 .cal-track{height:8px;background:var(--surface-2);border-radius:var(--radius-pill);overflow:hidden}
 .cal-track i{display:block;height:100%;background:var(--accent)}
 .cal-track i.done{background:var(--positive)}
@@ -99,3 +112,342 @@
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--muted);font-size:10px}
+
+/* ===========================================================================
+   The month grid.
+
+   Google Calendar's month view is the reference for the shape and nothing
+   else: seven columns, whole weeks, chips in the cells. What is different is
+   what has been left out — no time ruler (milestones are whole days), no
+   Create button (press the day), no guest/conference/repeat fields in the
+   quick composer (one input).
+   =========================================================================== */
+.cal-grid{
+  margin:0 0 20px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);overflow:hidden;
+}
+.cal-grid-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.cal-grid-move{display:flex;align-items:center;gap:6px;min-width:0}
+.cal-grid-move h2{
+  margin:0;min-width:0;
+  font:800 17px/1.2 var(--font-source-sans),ui-sans-serif;letter-spacing:-.02em;
+}
+.cal-grid-arrow{
+  display:grid;place-items:center;width:32px;height:32px;
+  border:1px solid var(--line);border-radius:var(--radius-xs);
+  background:var(--surface);color:var(--muted);
+  font-size:18px;line-height:1;cursor:pointer;
+}
+.cal-grid-arrow:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.cal-grid-today{
+  min-height:32px;padding:0 12px;
+  border:1px solid var(--line);border-radius:var(--radius-pill);
+  background:var(--surface);color:var(--ink);
+  font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.cal-grid-today:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+
+/*
+  `minmax(0,1fr)`, not `1fr`.
+
+  `1fr` is `minmax(auto,1fr)`, so a column refuses to shrink below the
+  min-content width of what is in it — and the min-content of a chip is its
+  whole untruncated title, because `text-overflow:ellipsis` describes how to
+  paint an overflow, not how wide the element may be. One long entry title
+  therefore widened its weekday and squeezed the other six. A week with a
+  build night on Thursday came out with a wide Thursday and four columns too
+  narrow to read, which looked like a rendering fault and was arithmetic.
+
+  The heading row is matched to the same track sizing so the labels stay over
+  their own columns.
+*/
+.cal-grid-weekdays{
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.cal-grid-weekdays span{
+  padding:7px 8px;text-align:center;color:var(--muted);
+  font:700 11px var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.cal-grid-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-grid-week + .cal-grid-week{border-top:1px solid var(--line)}
+
+.cal-grid-day{
+  position:relative;display:flex;flex-direction:column;gap:3px;
+  /* Breaks the min-content chain a second time: the cell is itself a flex
+     container, and without this its children set its floor regardless of the
+     track. */
+  min-width:0;
+  min-height:104px;padding:4px 5px 6px;
+  border-left:1px solid var(--line);
+}
+.cal-grid-day:first-child{border-left:0}
+/* Padding days from the neighbouring months are dimmed, not hidden: what is
+   on them is still real, and a 31st that vanishes reads as a bug. */
+.cal-grid-day[data-in-month="no"]{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.cal-grid-day[data-in-month="no"] .cal-grid-num{opacity:.45}
+/* A season happens at weekends, so they are marked — faintly, as information,
+   not as "closed". */
+.cal-grid-day[data-weekend="yes"][data-in-month="yes"]{
+  background:color-mix(in srgb,var(--accent) 3.5%,transparent);
+}
+
+/* The leftover space under a day's chips is the add control — in normal flow,
+   growing to fill whatever the chips leave. As an absolute overlay it was
+   underneath them, so any day that already had something on it could not be
+   pressed in the middle. `min-height` keeps a target on the fullest day. */
+.cal-grid-add{
+  flex:1 1 auto;min-height:18px;width:100%;padding:0;
+  border:0;border-radius:3px;background:transparent;cursor:pointer;
+}
+.cal-grid-add:hover{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.cal-grid-add:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cal-grid-num{
+  color:var(--muted);font:700 12px/1.6 var(--font-source-sans),ui-sans-serif;
+}
+.cal-grid-day[data-today="yes"] .cal-grid-num{
+  display:grid;place-items:center;
+  width:22px;height:22px;line-height:1;
+  border-radius:50%;background:var(--accent);color:var(--accent-ink,#fff);
+}
+
+.cal-grid-entries{
+  display:grid;gap:2px;margin:0;padding:0;list-style:none;
+  /* And a third time: a grid's implicit column is auto-sized too. */
+  min-width:0;grid-template-columns:minmax(0,1fr);
+}
+.cal-grid-entries:empty{display:none}
+.cal-grid-chip{
+  display:block;width:100%;padding:2px 6px;
+  border:0;border-left:3px solid currentColor;border-radius:3px;
+  background:color-mix(in srgb,currentColor 13%,transparent);
+  font:600 11px/1.4 var(--font-source-sans),ui-sans-serif;
+  text-align:left;cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.cal-grid-chip:hover{background:color-mix(in srgb,currentColor 22%,transparent)}
+/* A run of days reads as one bar: only the first day carries the left edge. */
+.cal-grid-chip.span-middle,.cal-grid-chip.span-end{border-left-color:transparent}
+.cal-grid-chip.is-done{opacity:.55;text-decoration:line-through}
+.cal-grid-chip.kind-kickoff,.cal-grid-chip.kind-design{color:var(--accent)}
+.cal-grid-chip.kind-build{color:var(--ink)}
+.cal-grid-chip.kind-practice{color:var(--positive)}
+.cal-grid-chip.kind-event{color:var(--warning)}
+.cal-grid-chip.kind-deadline{color:var(--critical)}
+.cal-grid-chip.kind-meeting,.cal-grid-chip.kind-outreach,.cal-grid-chip.kind-other{color:var(--muted)}
+
+/*
+  A meeting from the team calendar. Deliberately quieter than a milestone chip:
+  no filled background, no left bar unless its subteam has a colour. A month
+  with three competitions and forty build nights should still read as a month
+  with three competitions.
+*/
+.cal-grid-meeting{
+  display:flex;gap:4px;align-items:baseline;width:100%;
+  padding:1px 6px 1px 5px;border-radius:3px;
+  border-left:3px solid var(--meeting-accent,transparent);
+  color:var(--muted);text-decoration:none;
+  font:500 11px/1.4 var(--font-source-sans),ui-sans-serif;
+  overflow:hidden;
+}
+.cal-grid-meeting:hover{background:var(--surface-2,color-mix(in srgb,currentColor 10%,transparent));color:var(--ink)}
+.cal-grid-meeting-time{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.cal-grid-meeting-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.cal-grid-more{
+  align-self:flex-start;
+  padding:1px 4px;border:0;border-radius:3px;background:transparent;
+  color:var(--muted);font:700 10px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.cal-grid-more:hover{color:var(--accent);background:var(--accent-soft)}
+
+.cal-grid-composer{margin-top:auto}
+.cal-grid-composer input{
+  width:100%;min-height:26px;padding:3px 6px;
+  border:1px solid var(--accent);border-radius:3px;
+  background:var(--surface);color:var(--ink);
+  font:600 11px var(--font-source-sans),ui-sans-serif;
+}
+.cal-grid-hint{
+  margin:0;padding:8px 14px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:11.5px;
+}
+
+/* A phone cannot show seven readable columns of chips, so the cells become
+   squares that carry a count, and the agenda list below is the detail. */
+@media (max-width:720px){
+  .cal-grid-day{min-height:62px;padding:3px}
+  .cal-grid-entries{gap:1px}
+  .cal-grid-chip{
+    padding:1px 3px;border-left-width:2px;font-size:9.5px;
+  }
+  .cal-grid-hint{display:none}
+}
+
+/* ---------------------------------------------------------------- motion --
+   Shared tokens from vantage-fluid.css, which zero under reduced motion — so
+   none of this needs a media query of its own.
+
+   A calendar is a grid you scan, so the restraint matters more here than
+   anywhere: cells tint, they do not lift, and the only thing that moves is
+   the thing you opened. */
+.cal-grid-day,
+.cal-grid-add {
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+.cal-grid-arrow,
+.cal-grid-today {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.cal-grid-arrow:active,
+.cal-grid-today:active {
+  transform: scale(0.94);
+}
+.cal-grid-chip {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.cal-grid-chip:active {
+  transform: scale(0.97);
+}
+/* The composer is the one moving part: it grows out of the cell you pressed,
+   which is what makes "press a day and type" feel like one gesture instead of
+   a form appearing. */
+.cal-grid-composer {
+  animation: cal-compose var(--dur-press) var(--ease-settle) both;
+  transform-origin: top center;
+}
+@keyframes cal-compose {
+  from {
+    opacity: 0;
+    transform: scaleY(0.7) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* The overflow list is a menu: it settles down from its button rather than
+   snapping into existence under it. */
+.hub-bar .hub-tool-overflow {
+  animation: hub-overflow var(--dur-move) var(--ease-settle) both;
+  transform-origin: top right;
+}
+@keyframes hub-overflow {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Repeat ─────────────────────────────────────────────────────────────────
+   Seven buttons and a date, not a rule builder. An FRC team repeats one shape
+   of thing — some set of weeknights until a date on the season calendar — and
+   the other four options Google offers cost a dropdown and earn nothing. */
+.cal-repeat{
+  display:grid;gap:8px;
+  margin:0;padding:10px 12px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface-2);
+}
+.cal-repeat > legend{
+  padding:0 4px;
+  color:var(--muted);
+  font:700 11px var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.cal-repeat-days{display:flex;flex-wrap:wrap;gap:4px}
+.cal-repeat-days button{
+  width:34px;min-height:34px;
+  border:1px solid var(--line);border-radius:50%;
+  background:var(--surface);color:var(--muted);
+  font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.cal-repeat-days button:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.cal-repeat-days button:active{transform:scale(.92)}
+.cal-repeat-days button.is-on{
+  background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#fff);
+}
+.cal-repeat-range{display:flex;flex-wrap:wrap;gap:10px 16px}
+.cal-repeat-range label{display:grid;gap:3px}
+.cal-repeat-range span{
+  color:var(--muted);
+  font:600 11px var(--font-source-sans),ui-sans-serif;
+}
+.cal-repeat-summary{
+  margin:0;
+  color:var(--accent);
+  font:700 12px var(--font-source-sans),ui-sans-serif;
+}
+
+/* The line between the grid and the list, saying which one the list is about. */
+.cal-list-scope{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:0 2px;font-size:13px;
+}
+
+/*
+  What the page is for, first.
+
+  "Seed a season template" and the read-only business dates sat above the
+  calendar — a once-a-season setup step and a reference panel, in front of the
+  thing you open the page to look at. On a phone that put the grid below two
+  full-width panels, so the calendar was something you scrolled to find.
+
+  The page is already a grid with a gap, so this is ordering and nothing else:
+  no positioning, no layout to get wrong at a width nobody tested.
+
+  On a calendar with nothing on it the setup panels stay at the top, because
+  then they are the thing you came for.
+*/
+.cal-page[data-seeded="yes"] > .cal-grid{order:1}
+.cal-page[data-seeded="yes"] > .cal-list-scope,
+.cal-page[data-seeded="yes"] > .cal-month{order:2}
+.cal-page[data-seeded="yes"] > .cal-add{order:3}
+.cal-page[data-seeded="yes"] > .cal-linked{order:4}
+/* Named explicitly rather than left at the default: an unordered child sits
+   at 0, which would float the AI panel from the end of the page to just under
+   the hero — the reordering has to account for every child, not the ones it
+   is about. */
+.cal-page[data-seeded="yes"] > .aii-panel{order:6}
+.cal-page[data-seeded="yes"] > .cal-seed{order:5}
+
+/*
+  Moving an entry.
+
+  The chip itself only says "grab" on hover — a permanently distinct cursor on
+  every chip would be noise on a grid that is mostly read. The day underneath
+  is what lights up, because the question during a drag is "where will this
+  land", and the answer is a square, not a chip.
+*/
+.cal-grid-chip[data-draggable="yes"]{cursor:grab;touch-action:none}
+.cal-grid-chip[data-draggable="yes"]:active{cursor:grabbing}
+.cal-grid-day[data-drop="yes"]{
+  background:var(--accent-soft);
+  box-shadow:inset 0 0 0 2px var(--accent);
+}
+/* The day under the pointer is found by hit-testing, so whatever is drawn
+   inside a candidate cell must not be what the hit-test returns. */
+.cal-grid-day[data-drop="yes"] .cal-grid-chip,
+.cal-grid-day[data-drop="yes"] .cal-grid-meeting,
+.cal-grid-day[data-drop="yes"] .cal-grid-add,
+.cal-grid-day[data-drop="yes"] .cal-grid-more{pointer-events:none}

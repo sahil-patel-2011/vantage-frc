@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { EmptyState, Button } from "../components/ui";
 
 export const metadata: Metadata = {
-  title: "Page not found — Vantage",
+  title: "Page not found",
   robots: { index: false, follow: false },
 };
 
@@ -20,6 +20,7 @@ export default function NotFound() {
     <main className="module-page">
       <EmptyState
         soft
+        headingLevel={1}
         badge="Not found"
         badgeTone="setup"
         title="This page is not here"

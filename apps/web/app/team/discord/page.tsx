@@ -21,12 +21,8 @@ export default async function TeamDiscordPage({
           description="Link a guild and channel for announcements and an optional object-linked chat bridge."
         >
           <nav className="product-hub-related" aria-label="Related team tools">
-            <Button as="a" variant="secondary" href="/team?tab=messages">
-              Messages
-            </Button>
-            <Button as="a" variant="secondary" href="/team">
-              Team
-            </Button>
+            <a href="/team?tab=messages">Messages</a>
+            <a href="/team">Team</a>
           </nav>
         </PageHeader>
         <TeamOpsNav active="admin" />

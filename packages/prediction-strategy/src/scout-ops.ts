@@ -1,3 +1,4 @@
+import { summariseDistribution, type Distribution } from "./distribution";
 /**
  * Scout → strategy operational bridge.
  * Derives auto/teleop/endgame capabilities, pit notes, scout-quality weights,
@@ -88,6 +89,12 @@ export type BuiltOperationalSignal = {
   teleopCapability?: number;
   endgameCapability?: number;
   defenseLikely?: boolean;
+  /**
+   * What this team's match scores actually look like, not just their mean.
+   * Null when nobody has recorded a score for them. Two teams averaging ten
+   * can be a metronome and a coin flip, and a pick list needs to know which.
+   */
+  scoreDistribution?: Distribution | null;
   pitNotes: string[];
   provenance: ScoutProvenanceRef[];
   quality: ScoutQualityReport;
@@ -610,6 +617,38 @@ function weightedReliability(
  * Build one team's operational signal from match + pit scout entries,
  * including capabilities, pit notes, quality weighting, and provenance refs.
  */
+/**
+ * The shape of one team's match scores, from raw scouting rows.
+ *
+ * Exported because the pick desk needs it and does not build a full operational
+ * signal — it reads scouting directly, which is cheaper and is why the pick list
+ * loads while an event is running.
+ *
+ * Groups by match before summarising. Two scouts watching the same match is one
+ * match's worth of evidence; counting it twice would make a heavily-scouted team
+ * look more consistent than a lightly-scouted one purely because more people
+ * wrote it down. Where several scouts disagree about one match, their median is
+ * that match's number.
+ */
+export function teamScoreDistribution(
+  entries: ReadonlyArray<{ matchKey?: string | null; payload: Record<string, unknown> }>,
+  roles?: ScoutFieldRoleMap,
+): Distribution | null {
+  const byMatch = new Map<string, number[]>();
+  entries.forEach((entry, index) => {
+    const score = resolveSignal(entry.payload, SCORE_KEYS, null, roles);
+    if (score == null) return;
+    // An entry with no match key cannot be grouped with anything, so it stands
+    // alone rather than being merged with every other unkeyed entry.
+    const key = entry.matchKey ?? `entry:${index}`;
+    byMatch.set(key, [...(byMatch.get(key) ?? []), score]);
+  });
+  const perMatch = [...byMatch.values()]
+    .map((scores) => median(scores))
+    .filter((value): value is number => value != null);
+  return summariseDistribution(perMatch);
+}
+
 export function buildTeamOperationalSignal(
   teamKey: string,
   entries: ScoutEntryRecord[],
@@ -711,9 +750,12 @@ export function buildTeamOperationalSignal(
     ...new Set(videoEntries.map((entry) => entry.videoReviewId).filter((id): id is string => Boolean(id))),
   ];
 
+  const scoreDistribution = teamScoreDistribution(usableMatch, options?.roles);
+
   return {
     teamKey,
     scoutSample: Math.max(1, Math.round(effectiveSample * 10) / 10),
+    scoreDistribution,
     reliability: reliability ?? undefined,
     foulRate: foulRate ?? undefined,
     qualityWeight: quality.meanWeight,

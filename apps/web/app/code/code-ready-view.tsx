@@ -141,13 +141,10 @@ export function CodeReadyView(props: CodeReadyViewProps) {
         <ol>
           {nextActions.map((action) => (
             <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <div>
-                <strong>{action.label}</strong>
-                <span>{action.detail}</span>
-              </div>
-              <Button as="a" variant="secondary" href={action.href}>
-                Open
-              </Button>
+              <a className="edc-next-action" href={action.href}>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </a>
             </li>
           ))}
         </ol>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KNOWLEDGE_RELATED_INCLUDE,
   KNOWLEDGE_TEMPLATES,
@@ -13,6 +13,7 @@ import {
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
 import { OfflineBanner } from "../../../components/offline-banner";
+import { MarkdownDocument } from "./markdown-document";
 import { EmptyState, Button } from "../../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../../components/ui/action-menu";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -50,9 +51,7 @@ function KnowledgeRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
       {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
+        <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
   );
@@ -80,85 +79,6 @@ function filterPages(pages: KnowledgePageSummary[], q: string): KnowledgePageSum
   });
 }
 
-function MarkdownDocument({ source }: { source: string }) {
-  const lines = source.replace(/\r\n/g, "\n").split("\n");
-  const blocks: ReactNode[] = [];
-  const isBlockStart = (line: string) =>
-    /^#{1,3}\s+/.test(line) ||
-    /^```/.test(line) ||
-    /^[-*]\s+/.test(line) ||
-    /^\d+\.\s+/.test(line) ||
-    /^>\s?/.test(line);
-
-  for (let index = 0; index < lines.length; ) {
-    const line = lines[index] ?? "";
-    if (!line.trim()) {
-      index += 1;
-      continue;
-    }
-    if (line.startsWith("```")) {
-      const language = line.slice(3).trim();
-      const code: string[] = [];
-      index += 1;
-      while (index < lines.length && !lines[index]!.startsWith("```")) {
-        code.push(lines[index]!);
-        index += 1;
-      }
-      if (index < lines.length) index += 1;
-      blocks.push(
-        <pre key={`code-${index}`} data-language={language || undefined}>
-          <code>{code.join("\n")}</code>
-        </pre>,
-      );
-      continue;
-    }
-    const heading = /^(#{1,3})\s+(.+)$/.exec(line);
-    if (heading) {
-      const level = heading[1]!.length;
-      const text = heading[2]!;
-      blocks.push(
-        level === 1 ? <h1 key={`h-${index}`}>{text}</h1> : level === 2 ? <h2 key={`h-${index}`}>{text}</h2> : <h3 key={`h-${index}`}>{text}</h3>,
-      );
-      index += 1;
-      continue;
-    }
-    if (/^[-*]\s+/.test(line)) {
-      const items: string[] = [];
-      while (index < lines.length && /^[-*]\s+/.test(lines[index]!)) {
-        items.push(lines[index]!.replace(/^[-*]\s+/, ""));
-        index += 1;
-      }
-      blocks.push(<ul key={`ul-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>);
-      continue;
-    }
-    if (/^\d+\.\s+/.test(line)) {
-      const items: string[] = [];
-      while (index < lines.length && /^\d+\.\s+/.test(lines[index]!)) {
-        items.push(lines[index]!.replace(/^\d+\.\s+/, ""));
-        index += 1;
-      }
-      blocks.push(<ol key={`ol-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ol>);
-      continue;
-    }
-    if (/^>\s?/.test(line)) {
-      blocks.push(<blockquote key={`quote-${index}`}>{line.replace(/^>\s?/, "")}</blockquote>);
-      index += 1;
-      continue;
-    }
-    const paragraph: string[] = [];
-    while (index < lines.length && lines[index]!.trim() && !isBlockStart(lines[index]!)) {
-      paragraph.push(lines[index]!.trim());
-      index += 1;
-    }
-    blocks.push(<p key={`p-${index}`}>{paragraph.join(" ")}</p>);
-  }
-
-  return (
-    <article className="kb-document" aria-label="Page content">
-      {blocks.length ? blocks : <p className="kb-meta">This page is empty.</p>}
-    </article>
-  );
-}
 
 export default function KnowledgeClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<KnowledgeWikiView | null>(null);

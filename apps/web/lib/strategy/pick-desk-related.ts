@@ -116,10 +116,6 @@ export function formatPickDeskMetric(value: unknown, loaded: boolean): string {
   return Math.floor(n).toLocaleString();
 }
 
-/** Hide zeroed KPI tiles when the pool has no real teams — avoids DEMO picks. */
-export function shouldShowPickDeskSummaryTiles(candidateCount: number): boolean {
-  return candidateCount > 0;
-}
 
 /** True when the event pool has no synced metrics — Soft-UI empty until rows exist. */
 export function isPickDeskPoolEmpty(input: { candidateCount: number }): boolean {

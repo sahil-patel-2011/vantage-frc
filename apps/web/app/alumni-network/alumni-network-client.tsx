@@ -63,20 +63,14 @@ async function persistAlumniNetworkSnapshot(orgHint: string, data: AlumniNetwork
 function AlumniNetworkRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related people tools">
-      <Button as="a" variant="secondary" href={hubHref("/team", "exit-interview", orgId)}>
-        Exit interviews
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/team", "mentor-hours", orgId)}>
-        Mentor hours
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/team/alumni", orgId)}>
-        Team alumni
-      </Button>
+      <a href={hubHref("/team", "exit-interview", orgId)}>Exit interviews</a>
+      <a href={hubHref("/team", "mentor-hours", orgId)}>Mentor hours</a>
+      <a href={withOrgHref("/team/alumni", orgId)}>Team alumni</a>
     </nav>
   );
 }
 
-function AlumniNetworkNextActions({ orgId }: { orgId: string }) {
+function AlumniNetworkNextActions() {
   const actions = [
     {
       id: "add",
@@ -85,37 +79,19 @@ function AlumniNetworkNextActions({ orgId }: { orgId: string }) {
       href: "#alumni-add-profile",
       primary: true,
     },
-    {
-      id: "exit",
-      label: "Open Exit interviews",
-      detail: "Graduation handoff pages become the alumni knowledge trail.",
-      href: hubHref("/team", "exit-interview", orgId),
-      primary: false,
-    },
-    {
-      id: "hours",
-      label: "Open Mentor hours",
-      detail: "Adult volunteer time is a separate ledger from student shop hours.",
-      href: hubHref("/team", "mentor-hours", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -328,7 +304,7 @@ export default function AlumniNetworkClient() {
           {error}
         </p>
       ) : null}
-      <AlumniNetworkNextActions orgId={view.orgId} />
+      <AlumniNetworkNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         {view.teamDirectory.length > 0 ? (

@@ -95,20 +95,14 @@ async function persistAutoRoutinesSnapshot(orgHint: string, seasonHint: string, 
 function AutoRoutinesRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related competition tools">
-      <Button as="a" variant="secondary" href={hubHref("/build", "auton-path-library", orgId)}>
-        Auton paths
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/build", "code", orgId)}>
-        Code
-      </Button>
-      <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", orgId)}>
-        Strategy
-      </Button>
+      <a href={hubHref("/build", "auton-path-library", orgId)}>Auton paths</a>
+      <a href={hubHref("/build", "code", orgId)}>Code</a>
+      <a href={hubHref("/competition", "strategy", orgId)}>Strategy</a>
     </nav>
   );
 }
 
-function AutoRoutinesNextActions({ orgId }: { orgId: string }) {
+function AutoRoutinesNextActions() {
   const actions = [
     {
       id: "add",
@@ -117,37 +111,19 @@ function AutoRoutinesNextActions({ orgId }: { orgId: string }) {
       href: "#auto-routine",
       primary: true,
     },
-    {
-      id: "paths",
-      label: "Open Auton paths",
-      detail: "Field drawings for the routines you catalog here.",
-      href: hubHref("/build", "auton-path-library", orgId),
-      primary: false,
-    },
-    {
-      id: "code",
-      label: "Open Code",
-      detail: "The programs that run these autos live next to this list.",
-      href: hubHref("/build", "code", orgId),
-      primary: false,
-    },
   ];
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -528,7 +504,7 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
         )}
       </Panel>
 
-      <AutoRoutinesNextActions orgId={view.context.orgId} />
+      <AutoRoutinesNextActions />
     </main>
   );
 }

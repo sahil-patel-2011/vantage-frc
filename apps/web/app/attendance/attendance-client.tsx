@@ -35,6 +35,7 @@ import {
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./attendance.css";
+import { teamProseLabel } from "../../components/app-shell-model";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -103,13 +104,10 @@ function NextActions({
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -760,8 +758,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           title="Attendance"
           description={
             <>
-              Practice and meeting presence for {context.orgName ?? "your team"}
-              {context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Totals use only marks you enter.
+              Practice and meeting presence for {teamProseLabel(context.teamNumber, context.orgName) ?? "your team"}. Totals use only marks you enter.
             </>
           }
         >

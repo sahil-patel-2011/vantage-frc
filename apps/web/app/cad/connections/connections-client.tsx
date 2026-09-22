@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ClaudeConnectorWalkthrough } from "./claude-connector-walkthrough";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import {
@@ -70,44 +71,28 @@ async function persistCadConnectionsSnapshot(orgHint: string, data: CadConnectio
 export function CadConnectionsRelated({ orgId }: { orgId: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related CAD tools">
-      <Button as="a" variant="secondary" href={withOrgHref("/cad", orgId)}>
-        CAD
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad-vault", orgId)}>
-        CAD Vault
-      </Button>
-      <Button as="a" variant="secondary" href={withOrgHref("/cad-learn", orgId)}>
-        Learn CAD
-      </Button>
+      <a href={withOrgHref("/cad", orgId)}>CAD</a>
+      <a href={withOrgHref("/cad-vault", orgId)}>CAD Vault</a>
+      <a href={withOrgHref("/cad-learn", orgId)}>Learn CAD</a>
     </nav>
   );
 }
 
 function CadConnectionsNextActions({
   orgId,
-  onshapeConnected,
   hasDesktop,
 }: {
   orgId: string;
-  onshapeConnected: boolean;
   hasDesktop: boolean;
 }) {
   const actions = [
-    !onshapeConnected
-      ? {
-          id: "onshape",
-          label: "Connect Onshape",
-          detail: "Authorize in the browser. Never type your password in a terminal.",
-          href: "#onshape",
-          primary: true as const,
-        }
-      : {
-          id: "cad",
-          label: "Open CAD",
-          detail: "Pick a document after Onshape is connected.",
-          href: withOrgHref("/cad", orgId),
-          primary: true as const,
-        },
+    {
+      id: "onshape",
+      label: "Connect Onshape",
+      detail: "Authorize in the browser. Never type your password in a terminal.",
+      href: "#onshape",
+      primary: true as const,
+    },
     {
       id: "desktop",
       label: hasDesktop ? "Review paired computers" : "Pair this computer",
@@ -119,18 +104,14 @@ function CadConnectionsNextActions({
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -462,9 +443,9 @@ export default function CadConnections({ orgId }: { orgId: string }) {
               ))
             )}
           </section>
+          <ClaudeConnectorWalkthrough />
           <CadConnectionsNextActions
             orgId={orgId}
-            onshapeConnected={onshapeConnected}
             hasDesktop={view.devices.some((d) => !d.revokedAt)}
           />
         </main>
