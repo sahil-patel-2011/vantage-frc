@@ -23,6 +23,8 @@ import {
   type MentionRef,
 } from "../../lib/messages/mentions";
 import ChatSafetyPanel from "./chat-safety-panel";
+import { MessageModerationActions, RemovedMessageNotice } from "./message-moderation-actions";
+import "./moderation.css";
 import {
   formatTime,
   isArchived,
@@ -573,7 +575,13 @@ export function MessagesReadyView({
                     />
                   ) : (
                     messages.map((item) =>
-                      item.deletedAt ? (
+                      item.deletedAt && item.removal ? (
+                        <RemovedMessageNotice
+                          key={item.id}
+                          notice={item.removal.notice}
+                          when={formatTime(item.createdAt)}
+                        />
+                      ) : item.deletedAt ? (
                         <article className="deleted" key={item.id}>
                           <span>deleted · {formatTime(item.createdAt)}</span>
                           <p>
@@ -613,6 +621,13 @@ export function MessagesReadyView({
                                 Delete
                               </button>
                             ) : null}
+                            <MessageModerationActions
+                              orgId={orgId}
+                              messageId={item.id}
+                              mine={item.mine}
+                              canModerate={canManageChannels}
+                              onChanged={reloadMessages}
+                            />
                           </div>
                         </article>
                       ),

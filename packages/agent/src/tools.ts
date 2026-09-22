@@ -4,6 +4,25 @@ import { checkGameRuleCompliance } from "./rule-compliance";
 import { FINANCE_IN_AI_DENIED, sanitizeFinancePayloadForAi } from "./finance-redact";
 import { isFinanceInAiAllowed, loadOrgAiPolicy } from "@vantage/billing";
 import { resolveActiveSeasonYear } from "./season-year";
+import { proposalOnly } from "./action-proposals";
+
+type PurchaseRequestToolInput = {
+  title: string;
+  justification: string;
+  quantity: number;
+  estimateUsd: number;
+  itemUrl: string | null;
+  vendor: string;
+  seasonYear: number | undefined;
+  source: string;
+};
+
+type CadBriefToolInput = {
+  request: string;
+  title: string;
+  matchKey: string | undefined;
+  seasonYear: number | undefined;
+};
 
 const object = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Tool input must be an object");
@@ -149,8 +168,39 @@ export function summarizeOpenPurchaseRequests(
  * are pages the web tools may read without a search first; nothing else in it
  * is used here.
  */
-export function createVantageToolRegistry(options: { requestText?: string | null } = {}): AIToolRegistry {
+export function createVantageToolRegistry(
+  options: {
+    requestText?: string | null;
+    /**
+     * "propose" (default): write tools store an `ai_action_proposals` row and change nothing.
+     * "commit": write tools run — only `decideAiActionProposal` uses this, after a person pressed
+     * Confirm, on that person's own RLS session.
+     */
+    writeMode?: "propose" | "commit";
+  } = {},
+): AIToolRegistry {
   const web = createTeamWebSession(options.requestText);
+  const commit = options.writeMode === "commit";
+  const purchaseRequest = (definition: ToolDefinition<PurchaseRequestToolInput, Record<string, unknown>>) =>
+    commit
+      ? definition
+      : proposalOnly(definition, {
+          summarize: (input) =>
+            `Create a purchase request for ${input.quantity} × ${input.title}` +
+            (input.estimateUsd > 0 ? ` (about ${usdLabel(input.estimateUsd)})` : "") +
+            (input.vendor && input.vendor !== "unspecified" ? ` from ${input.vendor}` : ""),
+          // A proposal that could never be confirmed is not worth a card.
+          async precheck({ client, orgId }) {
+            const policy = await loadOrgAiPolicy(client, orgId);
+            return isFinanceInAiAllowed(policy) ? null : { ...FINANCE_IN_AI_DENIED, created: false };
+          },
+        });
+  const cadBrief = (definition: ToolDefinition<CadBriefToolInput, Record<string, unknown>>) =>
+    commit
+      ? definition
+      : proposalOnly(definition, {
+          summarize: (input) => `Create a CAD engineering brief: “${input.title.slice(0, 120)}”`,
+        });
   return new AIToolRegistry()
     .register(
       tool({
@@ -1392,7 +1442,7 @@ export function createVantageToolRegistry(options: { requestText?: string | null
       }),
     )
     .register(
-      tool({
+      purchaseRequest({
         name: "finance.create_purchase_request",
         description:
           "Create a pending purchase request (what/why/estimate/optional vendor URL). Requires Finance-in-AI opt-in. Never stores card or bank data.",
@@ -1552,7 +1602,7 @@ export function createVantageToolRegistry(options: { requestText?: string | null
       }),
     )
     .register(
-      tool({
+      cadBrief({
         name: "cad.create_brief",
         description:
           "Create a metered CAD engineering brief grounded in strategy.match, kickoff design priorities, FMEA risks, and knowledge (shared tool graph — no copy-paste)",

@@ -13,6 +13,7 @@ import {
   type MessageObjectLink,
 } from "../../../lib/messages/object-links";
 import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/history";
+import { attachRemovalNotices } from "../../../lib/messages/moderation";
 import { cachedSchemaSupport } from "../../../lib/schema-probe";
 import {
   assertChannelWritable,
@@ -910,6 +911,8 @@ async function listMessages(
     }
   }
   await attachObjectLinks(client, orgId, [...messageList, ...pinned]);
+  // "Removed by a team admin" (and, for the author, that it was theirs) — migration 0674.
+  await attachRemovalNotices(client, orgId, messageList);
 
   if (options?.markRead !== false) {
     await client.query(

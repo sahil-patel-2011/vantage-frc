@@ -1,0 +1,12 @@
+/* AI action proposals (.ai-proposal*) — components/ai-action-proposals.tsx. */
+.ai-proposals{display:grid;gap:8px;margin:8px 0}
+.ai-proposal{display:grid;gap:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-sm, 10px)}
+.ai-proposal header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ai-proposal-kind{font-weight:600;font-size:13px}
+.ai-proposal-for{color:var(--muted);font-size:12px}
+.ai-proposal-summary{margin:0;font-size:14px;line-height:1.45}
+.ai-proposal-note{margin:0;color:var(--muted);font-size:12px}
+.ai-proposal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ai-proposal-actions .app-button{min-height:44px}
+.ai-proposal-notice{margin:0;font-size:13px}
+.ai-proposal-notice.is-error{color:var(--critical)}

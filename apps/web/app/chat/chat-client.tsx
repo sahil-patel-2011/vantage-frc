@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
+import { AiActionProposals } from "../../components/ai-action-proposals";
+import { AiAgentStatus } from "../../components/ai-agent-status";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
@@ -435,6 +437,7 @@ export default function ChatClient({
 
       <AiHubRelated orgId={orgId} active="chat" />
       <ChatRelatedStrip orgId={orgId} />
+      <AiAgentStatus orgId={orgId} agents={["ask_ai", "web_research"]} className="ch-agent-status" />
 
       {shell === "ready" ? (
         <nav className="ch-gov" aria-label="AI governance">
@@ -641,6 +644,8 @@ export default function ChatClient({
                   meta={{ provider: lastAssistant.provider, modelId: lastAssistant.model }}
                 />
               ) : null}
+
+              <AiActionProposals orgId={orgId} refreshKey={messages.length} />
 
               {lastTools.length > 0 ? (
                 <div className="ch-last-tools" aria-live="polite">

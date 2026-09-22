@@ -8,6 +8,7 @@ import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import { redactFinanceTextForAi } from "./finance-redact";
 import { ProviderRateLimitError, isProviderQuotaOrCapacityStatus } from "./http-chat-adapter";
+import { formatContextItemForPrompt } from "./untrusted";
 
 /** Public HTTP generate endpoint documented by petals-infra/chat.petals.dev. */
 export const PETALS_DEFAULT_GENERATE_URL = "https://chat.petals.dev/api/v1/generate";
@@ -126,8 +127,9 @@ export function buildPetalsPrompt(input: {
   });
   const safeContext = sanitizePetalsContext(input.context);
   const parts = [system];
+  // One text prompt, no roles: the wrappers are what mark this as data (./untrusted.ts).
   for (const item of safeContext) {
-    parts.push(`[${item.type}:${item.id}] ${item.content}`);
+    parts.push(formatContextItemForPrompt(item));
   }
   for (const turn of input.history ?? []) {
     const role = turn.role === "assistant" ? "Assistant" : "User";

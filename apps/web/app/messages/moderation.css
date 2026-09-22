@@ -1,0 +1,25 @@
+/* Team chat moderation — message-moderation-actions.tsx and /messages/moderation. */
+.messages-page .messages article .message-report,
+.messages-page .messages article .message-remove,
+.messages-page .messages article .message-moderation-link{margin-top:0;padding:6px 10px;min-height:32px;background:transparent;border:1px solid var(--line);cursor:pointer;font:10px var(--font-ibm-mono),monospace;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center}
+.messages-page .messages article .message-remove{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 45%,var(--line))}
+.message-moderation-form{flex-basis:100%;display:grid;gap:8px;margin-top:6px;padding:10px 12px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs, 6px)}
+.message-moderation-form fieldset{border:0;margin:0;padding:0;display:grid;gap:4px}
+.message-moderation-form legend{font-weight:600;font-size:13px;margin-bottom:4px}
+.message-moderation-form label{display:grid;gap:4px;font-size:13px}
+.message-moderation-form fieldset label{display:flex;align-items:center;gap:8px;min-height:32px}
+.message-moderation-form textarea,.message-moderation-form input[type="text"]{font:inherit;padding:8px;border:1px solid var(--line);border-radius:var(--radius-xs, 6px);background:var(--surface);color:var(--ink)}
+.message-moderation-hint{margin:0;color:var(--muted);font-size:12px}
+.message-moderation-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.message-moderation-buttons .app-button{min-height:44px}
+.message-moderation-status{flex-basis:100%;margin:4px 0 0;font-size:12px}
+.messages-page .messages article.removed-by-admin em{color:var(--muted)}
+
+.moderation-page .moderation-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.moderation-report{display:grid;gap:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--warning, var(--accent));border-radius:var(--radius-sm, 10px)}
+.moderation-report header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+.moderation-report blockquote{margin:0;padding:8px 10px;background:var(--bg);border-radius:var(--radius-xs, 6px);white-space:pre-wrap;font-size:13px}
+.moderation-report .moderation-meta{margin:0;color:var(--muted);font-size:12px}
+.moderation-report .moderation-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.moderation-report .moderation-actions input{flex:1 1 220px;font:inherit;padding:8px;border:1px solid var(--line);border-radius:var(--radius-xs, 6px);background:var(--bg);color:var(--ink)}
+.moderation-report .app-button{min-height:44px}

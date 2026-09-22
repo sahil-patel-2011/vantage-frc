@@ -1,4 +1,5 @@
 import { resolveActiveSeasonYear } from "./season-year";
+import { isProposedActionOutput } from "./action-proposals";
 
 export type PlannedToolCall = { name: string; input: unknown };
 
@@ -351,6 +352,18 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
             name.startsWith("fmea.")
           ? ("model_inference" as const)
           : ("hard_metric" as const);
+
+  // A write tool only proposed its change (action-proposals.ts): say exactly that.
+  if (isProposedActionOutput(output)) {
+    return {
+      name,
+      status: output.status === "proposed" ? "ok" : "setup_required",
+      classification: "model_inference",
+      summary: output.message,
+      output,
+      input,
+    };
+  }
 
   if (name === "web.search") {
     const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};

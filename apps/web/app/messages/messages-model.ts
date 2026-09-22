@@ -1,5 +1,6 @@
 import { OBJECT_TYPE_OPTIONS, type MessageObjectLink } from "../../lib/messages/object-links";
 import { findMentionedUserIds, type MentionRef } from "../../lib/messages/mentions";
+import type { MessageRemoval } from "../../lib/messages/moderation-copy";
 
 export type Conversation = {
   id: string;
@@ -28,6 +29,8 @@ export type Message = {
   mine: boolean;
   mentions?: MentionRef[];
   objectLink?: MessageObjectLink | null;
+  /** Set when a team owner/admin removed it (migration 0674). */
+  removal?: MessageRemoval | null;
 };
 
 export type LinkTarget = MessageObjectLink & { subtitle?: string | null };
