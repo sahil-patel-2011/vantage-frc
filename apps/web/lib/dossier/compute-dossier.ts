@@ -243,6 +243,7 @@ export async function computeTeamDossier(
     client.query<{
       teamKey: string;
       eventKey: string;
+      eventName: string | null;
       year: number;
       epaTotal: number | null;
       epaAuto: number | null;
@@ -256,7 +257,7 @@ export async function computeTeamDossier(
       syncedAt: string | null;
     }>(
       `SELECT DISTINCT ON (m.event_key)
-          m.team_key AS "teamKey", m.event_key AS "eventKey", e.year,
+          m.team_key AS "teamKey", m.event_key AS "eventKey", e.name AS "eventName", e.year,
           m.epa_total AS "epaTotal", m.epa_auto AS "epaAuto",
           m.epa_teleop AS "epaTeleop", m.epa_endgame AS "epaEndgame",
           m.wins, m.losses, m.ties, m.rank, m.source,
@@ -287,6 +288,7 @@ export async function computeTeamDossier(
     teamKey: metric.teamKey,
     year: metric.year,
     eventKey: metric.eventKey,
+    eventName: metric.eventName,
     source: metric.source,
     epaTotal: metric.epaTotal,
     epaAuto: metric.epaAuto,

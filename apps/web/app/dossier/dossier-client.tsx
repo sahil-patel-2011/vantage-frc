@@ -18,6 +18,7 @@ import {
   type DossierShellKind,
 } from "../../lib/dossier/dossier-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
@@ -530,7 +531,9 @@ function LiveDossier({ view }: { view: Extract<DossierView, { status: "live" }> 
                   {card.citation.syncedAt
                     ? ` · synced ${new Date(card.citation.syncedAt).toLocaleDateString()}`
                     : ""}
-                  {card.citation.eventKey ? ` · ${card.citation.eventKey}` : ""}
+                  {card.citation.eventKey
+                    ? ` · ${scoutEventLabel({ eventName: card.citation.eventName, eventKey: card.citation.eventKey }) ?? ""}`
+                    : ""}
                 </small>
               </li>
             ))}
