@@ -234,6 +234,16 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
   };
 }
 
+/**
+ * Checkout stays with owners and admins unless the caller already decided.
+ * An omitted flag with an unknown role stays closed.
+ */
+export function cutoffCheckoutVisible(canCheckout: boolean | undefined, role?: string | null): boolean {
+  if (typeof canCheckout === "boolean") return canCheckout;
+  const normalized = (role ?? "").toLowerCase();
+  return normalized === "owner" || normalized === "admin";
+}
+
 export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] {
   const budgetsHref = cutoffBudgetsHref(orgId);
   const pricingHref = cutoffPricingHref(orgId);

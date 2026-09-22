@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui";
 import {
   buildUsageCutoffSnapshot,
+  cutoffCheckoutVisible,
   cutoffCtas,
   cutoffPricingHref,
   evaluateUsageCutoff,
@@ -14,6 +15,7 @@ import {
   type UsageCutoffAlert,
   type UsageCutoffSnapshot,
 } from "../lib/billing/usage-cutoff";
+import { fetchProductSession } from "../lib/nav/product-session";
 
 type BannerProps = {
   orgId: string;
@@ -22,7 +24,7 @@ type BannerProps = {
   errorCode?: string | null;
   className?: string;
   compact?: boolean;
-  /** When false, checkout stays with an owner or admin. Omitted keeps checkout actions. */
+  /** When false, checkout stays with an owner or admin. Omitted resolves from this account's role. */
   canCheckout?: boolean;
 };
 
@@ -57,6 +59,7 @@ function BannerShell({
   orgId,
   className,
   compact,
+  checkoutHeld,
 }: {
   level: "near" | "at";
   title: string;
@@ -66,6 +69,7 @@ function BannerShell({
   orgId: string;
   className?: string;
   compact?: boolean;
+  checkoutHeld?: boolean;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [hint, setHint] = useState("");
@@ -103,6 +107,7 @@ function BannerShell({
         </strong>
         <span className="usage-cutoff-banner-title">{title}</span>
         {!compact ? <p>{body}</p> : null}
+        {checkoutHeld ? <p>An owner or admin buys credits or changes the plan.</p> : null}
         {hint ? <p className="usage-cutoff-hint">{hint}</p> : null}
       </div>
       <div className="usage-cutoff-banner-ctas">
@@ -130,6 +135,22 @@ function BannerShell({
 
 /** Banner for near/at plan allowance, credits, pay-as-you-go, or team budget limits. */
 export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compact, canCheckout }: BannerProps) {
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof canCheckout === "boolean") return;
+    let cancelled = false;
+    setRole(null);
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((member) => member.orgId === orgId)?.role ?? session?.role ?? null;
+      setRole(membership);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, canCheckout]);
+
+  const allowCheckout = cutoffCheckoutVisible(canCheckout, role);
   let alert: UsageCutoffAlert | null = null;
   if (errorCode) {
     const mapped = messageForCutoffError(errorCode, orgId);
@@ -139,7 +160,8 @@ export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compa
         title={mapped.title}
         body={mapped.body}
         percent={null}
-        ctas={visibleCtas(mapped.ctas, canCheckout)}
+        ctas={visibleCtas(mapped.ctas, allowCheckout)}
+        checkoutHeld={mapped.ctas.some((cta) => cta.checkoutAction) && !allowCheckout}
         orgId={orgId}
         className={className}
         compact={compact}
@@ -148,13 +170,15 @@ export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compa
   }
   if (snapshot) alert = evaluateUsageCutoff(snapshot);
   if (!alert || alert.level === "ok") return null;
+  const ctas = cutoffCtas(alert, orgId);
   return (
     <BannerShell
       level={alert.level}
       title={alert.title}
       body={alert.body}
       percent={alert.percent}
-      ctas={visibleCtas(cutoffCtas(alert, orgId), canCheckout)}
+      ctas={visibleCtas(ctas, allowCheckout)}
+      checkoutHeld={ctas.some((cta) => cta.checkoutAction) && !allowCheckout}
       orgId={orgId}
       className={className}
       compact={compact}
