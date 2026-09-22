@@ -8,6 +8,8 @@ import type { GridCell, PointerPoint } from "../../lib/dashboard/grid-drag";
 export type Me = {
   userId?: string;
   name?: string;
+  /** From the profile when set; /api/me sends it (null when the profile has none). */
+  firstName?: string | null;
   orgId?: string | null;
   orgName?: string | null;
   teamNumber?: number | null;

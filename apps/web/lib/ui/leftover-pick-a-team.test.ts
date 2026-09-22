@@ -43,7 +43,11 @@ describe("leftover student chrome says Choose your team", () => {
 
   it("does not say OAuth to students on the onboarding GitHub hint", () => {
     const src = readFileSync(join(WEB_ROOT, "app/onboarding/onboarding-steps.tsx"), "utf8");
-    expect(src).toMatch(/Team → GitHub/);
+    // Names where to connect it, in words a student reads. The wording moved
+    // from "Team → GitHub" to "Team, then GitHub" (a screen reader says the
+    // arrow as "right arrow"); either says where to go, which is the point.
+    expect(src).toMatch(/Team(, then| →) GitHub/);
+    expect(src).toMatch(/githubConnectionHref\(/);
     expect(src).not.toMatch(/\bOAuth\b/);
     expect(src).not.toMatch(/\bencrypted PAT\b/);
   });
