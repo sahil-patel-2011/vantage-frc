@@ -203,6 +203,19 @@ describe("expired vs wrong code", () => {
     expect(invitedOnlyHint({ ...state, channel: "email-2fa" })).toBeNull();
   });
 
+  it("tells a closed email to join the waitlist instead of calling it a crash", () => {
+    const failure = classifyOtpFailure({
+      channel: "email-otp",
+      status: 403,
+      code: "WAITLIST_ONLY",
+      message: "Vantage is waitlist-only right now. Join the waitlist for access.",
+    });
+    expect(failure.kind).toBe("not_authorized");
+    expect(failure.needsNewCode).toBe(true);
+    expect(failure.message).toMatch(/waitlist/i);
+    expect(failure.message).not.toMatch(/Couldn’t sign in/);
+  });
+
   it("says nothing was sent when the mail provider is down", () => {
     const failure = classifyOtpFailure({
       channel: "email-otp",

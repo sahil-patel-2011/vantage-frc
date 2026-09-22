@@ -17,6 +17,7 @@ import {
   secondsUntil,
   isCodeComplete,
 } from "./otp-code";
+import { WAITLIST_ONLY_MESSAGE } from "./sign-in-flow";
 
 export type SignInStep = "identity" | "code" | "done";
 
@@ -325,6 +326,15 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
 
   if (/TOO_MANY_ATTEMPTS|too many attempts/i.test(text)) {
     return { kind: "too_many_attempts", message: LOCKED_MESSAGE, keepDigits: false, needsNewCode: true };
+  }
+
+  if (/waitlist|WAITLIST_ONLY/i.test(text)) {
+    return {
+      kind: "not_authorized",
+      message: WAITLIST_ONLY_MESSAGE,
+      keepDigits: false,
+      needsNewCode: true,
+    };
   }
 
   if (/INVALID_OTP|invalid otp|incorrect/i.test(text)) {

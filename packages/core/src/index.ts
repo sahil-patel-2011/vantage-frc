@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, haveIBeenPwned } from "better-auth/plugins";
 import { authDb } from "@vantage/db/auth";
@@ -130,7 +131,10 @@ function buildAuth() {
         before: async (user) => {
           const access = await resolveAuthEmailAccess(user.email);
           if (!access.allowed) {
-            throw new Error(WAITLIST_ONLY_MESSAGE);
+            throw new APIError("FORBIDDEN", {
+              message: WAITLIST_ONLY_MESSAGE,
+              code: "WAITLIST_ONLY",
+            });
           }
           return { data: user };
         },
