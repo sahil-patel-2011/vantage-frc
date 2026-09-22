@@ -1,4 +1,5 @@
 import { runScheduledResearchSweep } from "@vantage/intel-research/production-worker";
+import { runScheduledWorkbookSync } from "../microsoft/scheduled-sync";
 import { runMemberOnboarding } from "../member-onboarding/run-member-onboarding";
 import { runProductReleasePublish } from "../run-product-release-publish";
 import { runSponsorReminders } from "../run-sponsor-reminders";
@@ -9,6 +10,7 @@ export type SeasonCronPiggybacks = {
   productReleases: unknown;
   memberOnboarding: unknown;
   teamDossiers: unknown;
+  excelWorkbooks: unknown;
   research:
     | { ok: true; summary: unknown }
     | { ok: false; error: string };
@@ -34,6 +36,8 @@ export async function runSeasonCronPiggybacks(): Promise<SeasonCronPiggybacks> {
   // Team dossiers older than a week: a handful of TBA calls per team, at most
   // twenty teams a day, through the same coordinated client as the sync.
   const teamDossiers = await runSafely(() => runTeamDossierRefresh());
+  // Connected teams' Excel workbooks, at most a day stale without anyone pressing Sync.
+  const excelWorkbooks = await runSafely(() => runScheduledWorkbookSync());
   let research: SeasonCronPiggybacks["research"];
   try {
     research = { ok: true, summary: await runScheduledResearchSweep() };
@@ -43,7 +47,7 @@ export async function runSeasonCronPiggybacks(): Promise<SeasonCronPiggybacks> {
       error: error instanceof Error ? error.message : "Research sweep failed",
     };
   }
-  return { sponsorReminders, productReleases, memberOnboarding, teamDossiers, research };
+  return { sponsorReminders, productReleases, memberOnboarding, teamDossiers, excelWorkbooks, research };
 }
 
 async function runSafely(job: () => Promise<unknown>): Promise<unknown> {

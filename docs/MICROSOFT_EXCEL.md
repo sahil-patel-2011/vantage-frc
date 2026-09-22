@@ -245,7 +245,7 @@ refresh token Microsoft rotates on each use is re-encrypted and stored.
   (<https://learn.microsoft.com/en-us/graph/workbook-best-practice>). Large events with many scouting fields
   are the most likely to see `throttled`; waiting and syncing again is the fix.
 - Syncs run on request (owner/admin presses **Sync now**), inside one serverless invocation (`maxDuration` 60 s).
-  There is no scheduled/automatic sync yet.
+  The daily season cron also syncs every connected team whose workbook is more than 20 hours old (`lib/microsoft/scheduled-sync.ts`), running as the person who connected Microsoft and only while they are still an owner or admin. A team whose sign-in was revoked is skipped until someone reconnects.
 - The workbook must not be locked for editing in a way that blocks co-authoring; a `conflict` asks the user to
   close it and retry.
 - 20,000 rows per table, 60 flattened scouting columns (the rest in `data._more`).
@@ -275,7 +275,6 @@ part of the sync, because a two-way sync without rules silently loses data. The 
 
 ### Also not done
 
-- Automatic sync (on a schedule or after scouting activity) — would run through the worker queue with the
-  same `syncOrgWorkbook` code and the same per-team lock.
+- Sync right after scouting activity (today: nightly, plus Sync now).
 - Choosing a different folder, file, or a SharePoint/Teams document library (needs `Sites.*` scopes).
 - Multiple workbooks per team (e.g. one per event).
