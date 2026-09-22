@@ -79,12 +79,12 @@ function WidgetEmptyState({
 }) {
   const withOrg = (path: string) =>
     orgId ? `${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : path;
-  const ctaHref = hint.ctaHref ? withOrg(hint.ctaHref) : href;
+  const ctaHref = hint.noEmptyCta ? undefined : hint.ctaHref ? withOrg(hint.ctaHref) : href;
   return (
     <EmptyState compact title={hint.title} description={studentWidgetDescription(message, hint)}>
       {ctaHref && hint.ctaLabel ? (
         <a className="dash-empty-cta" href={ctaHref}>
-          {hint.ctaLabel}
+          {hint.ctaLabel} →
         </a>
       ) : null}
     </EmptyState>
@@ -112,7 +112,12 @@ export function WidgetShell({
 }) {
   const status = payload?.status ?? "setup_required";
   const showLive = status === "live";
-  const useChildren = preferChildren || (showLive && children != null && children !== false);
+  // A widget that renders its own body only when live used to leave a titled, blank card
+  // behind otherwise (Team todos, Notifications). No rendered child means the empty state.
+  const hasChildren = Array.isArray(children)
+    ? children.some((child) => child != null && child !== false)
+    : children != null && children !== false;
+  const useChildren = hasChildren && (preferChildren || showLive);
   const iconMeta = WIDGET_ICON[type];
   // Colored circle icons only when the widget has real live data — never decorate empty/waiting shells.
   const showIcon = showLive && Boolean(iconMeta);

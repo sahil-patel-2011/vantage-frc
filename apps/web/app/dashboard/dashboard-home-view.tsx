@@ -391,9 +391,15 @@ export function DashboardHomeView(props: {
             <strong>{now.title}</strong>
             {now.detail ? <p>{now.detail}</p> : null}
           </div>
-          <Button as="a" variant="primary" href={withOrgHref(now.href, orgId || null)}>
-            {now.cta}
-          </Button>
+          {now.quiet ? (
+            <a className="dash-now-quiet" href={withOrgHref(now.href, orgId || null)}>
+              {now.cta} →
+            </a>
+          ) : (
+            <Button as="a" variant="primary" href={withOrgHref(now.href, orgId || null)}>
+              {now.cta}
+            </Button>
+          )}
         </section>
       ) : null}
       {orgId && !editing ? <FirstWeekCard orgId={orgId} /> : null}

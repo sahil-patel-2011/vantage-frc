@@ -750,6 +750,9 @@ body.soft-nav-panel-open .soft-island{
   max-width:46ch;
 }
 .dash-now .app-button{flex:0 0 auto}
+/* Idle hero: the way in, without claiming the screen's one primary button. */
+.dash-now-quiet{flex:0 0 auto;color:var(--accent);font:650 14px var(--font-source-sans),ui-sans-serif;text-decoration:none;white-space:nowrap}
+.dash-now-quiet:hover{text-decoration:underline}
 @media (max-width:640px){
   .dash-now{flex-direction:column;align-items:stretch}
 }
@@ -885,7 +888,7 @@ body.has-app-shell .dash-widget:hover{
 .dash-widget.hero.is-empty .dash-empty,
 .dash-widget.hero.is-empty .soft-empty-compact{min-height:0;align-content:start;padding-top:4px}
 .dash-widget.hero.is-empty .dash-empty strong,
-.dash-widget.hero.is-empty .soft-empty-compact h2{font-size:clamp(20px,2.4vw,28px);letter-spacing:-.03em}
+.dash-widget.hero.is-empty .soft-empty-compact h2{font-size:var(--title-3,17px);letter-spacing:-.01em}
 /* Calm header: icon, title and status badge all centre on one optical line, and
    the meta line is the only thing allowed to be a second row. */
 .dash-widget>header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
@@ -923,7 +926,10 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .dash-empty strong{font:700 14px/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em}
 .dash-empty p{margin:0;color:var(--muted);font-size:13px;line-height:1.4;max-width:44ch}
 .dash-empty.calm{min-height:72px}
-.dash-empty-cta{display:inline-flex;align-items:center;width:max-content;min-height:36px;margin-top:2px;padding:0 12px;border-radius:var(--radius-xs);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+/* An empty card's way in is a quiet text link: six tinted buttons on one Home
+   screen, each saying "nothing here", out-shouted the one thing to do. */
+.dash-empty-cta{display:inline-flex;align-items:center;width:max-content;min-height:32px;margin-top:2px;color:var(--accent);font:650 13px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+.dash-empty-cta:hover{text-decoration:underline}
 /* EmptyState `compact` variant (components/ui/empty-state.tsx) — same rhythm as
    .dash-empty above, for slots that render the shared component instead of
    hand-rolled markup, without doubling the widget's own card border/shadow. */

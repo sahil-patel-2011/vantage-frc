@@ -95,9 +95,6 @@ export function dashboardNextActions(input: {
   const { orgId, shell } = input;
   if (shell === "loading") return [];
 
-  const role = (input.role ?? "").toLowerCase();
-  const isOwnerAdmin = role === "owner" || role === "admin";
-
   if (shell === "no_org") {
     // One short invite path — never a laundry list of accept/email/support rows.
     return [
@@ -143,15 +140,9 @@ export function dashboardNextActions(input: {
         primary: true,
       });
     }
-    if (input.hasAiProvider === false && isOwnerAdmin) {
-      actions.push({
-        id: "ai-provider",
-        label: "Add AI keys",
-        detail: "Optional. Add a key if you want the team’s own AI account.",
-        href: withOrgHref("/team/ai-keys", orgId),
-        primary: actions.length === 0,
-      });
-    }
+    // Team AI keys are optional (the platform credits cover AI), so they are not a
+    // Home step: an "Optional …" nag on everyone’s first screen is clutter. Owners
+    // find them in Team settings and in onboarding’s connect-tools step.
     return actions;
   }
 

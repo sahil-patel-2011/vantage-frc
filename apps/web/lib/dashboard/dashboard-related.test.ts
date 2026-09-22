@@ -73,16 +73,14 @@ describe("dashboard Soft-UI related", () => {
     expect(steps.find((step) => step.id === "workspace")?.href).toBe("/invite");
   });
 
-  it("points missing AI provider next action at AI API keys for owners", () => {
+  it("does not put optional AI keys on Home, even for owners", () => {
     const actions = dashboardNextActions({
       orgId: ORG,
       shell: "ready",
       hasAiProvider: false,
       role: "owner",
     });
-    const ai = actions.find((action) => action.id === "ai-provider");
-    expect(ai?.href).toBe(`/team/ai-keys?orgId=${ORG}`);
-    expect(ai?.label.toLowerCase()).toMatch(/ai keys|api keys/);
+    expect(actions.find((action) => action.id === "ai-provider")).toBeUndefined();
   });
 
   it("hides AI key next action from non-admin members", () => {

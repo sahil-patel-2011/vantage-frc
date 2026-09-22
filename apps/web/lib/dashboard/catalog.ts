@@ -248,6 +248,7 @@ export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardW
 }
 
 const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist", "quick_actions"]);
+const COMPACT_WHEN_EMPTY = new Set<DashboardWidgetType>(["next_match"]);
 
 /**
  * View-mode Home keeps every user-placed widget, including honest empty
@@ -266,8 +267,18 @@ export function homeViewLayout(
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
   const visible = layout.filter((item) => !(ready && SETUP_ONLY_WIDGETS.has(item.type)));
-  // A pinned card stays visible even when empty; keep the user's saved size.
-  return packDashboardLayout(visible);
+  // A pinned card stays visible even when empty and keeps the user's saved size — except
+  // the hero. An empty "Next match" at full hero height was the biggest thing on Home for
+  // every day of the year that is not an event day; it takes its minimum three rows until it is live.
+  const widgets = input.widgets ?? {};
+  const statusOf = (item: DashboardWidgetLayout) =>
+    (widgets[item.i] ?? widgets[item.type] ?? Object.values(widgets).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
+  const sized = visible.map((item) => {
+    if (!COMPACT_WHEN_EMPTY.has(item.type)) return item;
+    const status = statusOf(item);
+    return status && status !== "live" && item.h > 3 ? { ...item, h: 3 } : item;
+  });
+  return packDashboardLayout(sized);
 }
 
 export const WIDGET_CATALOG: WidgetCatalogEntry[] = [

@@ -120,7 +120,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           assigneeName: string | null;
         }> | undefined) ?? [];
       return (
-        <Shell type={type} title="Team todos" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId} preferChildren>
+        <Shell type={type} title="Team todos" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-metric-grid" style={{ marginBottom: items.length ? 10 : 0 }}>
               <div>

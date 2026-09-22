@@ -3,6 +3,8 @@ export type EmptyHint = {
   body: string;
   ctaHref?: string;
   ctaLabel?: string;
+  /** The Home hero already links here, so the empty card does not repeat it. */
+  noEmptyCta?: boolean;
 };
 
 /** Empty / setup copy a new student can act on — team, not workspace; no EPA / org / TBA-sync jargon. */
@@ -12,6 +14,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     body: "This fills in when the team’s event has a schedule.",
     ctaHref: "/my-day",
     ctaLabel: "Open My Day",
+    noEmptyCta: true,
   },
   recent_result: {
     title: "No scored matches",
@@ -90,6 +93,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     body: "Your next match, hours, and duties show up once the team has a schedule.",
     ctaHref: "/my-day",
     ctaLabel: "Open My Day",
+    noEmptyCta: true,
   },
   learn_progress: {
     title: "No learning track started",

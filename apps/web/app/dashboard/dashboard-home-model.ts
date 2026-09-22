@@ -67,6 +67,10 @@ export type HomeNowAction = {
   detail: string;
   href: string;
   cta: string;
+  /** Nothing to act on (idle, or still loading): offer the way in as a quiet link, not the
+   * screen's primary button. A blue "Open My Day" under "Nothing to do" asks for a click
+   * that leads nowhere new. */
+  quiet?: boolean;
 };
 
 function firstString(value: unknown): string | null {
@@ -165,6 +169,7 @@ export function homeNowAction(input: {
     detail: "When a match, duty, or task is assigned, it shows up here.",
     href: "/my-day",
     cta: "Open My Day",
+    quiet: true,
   };
 }
 
@@ -193,6 +198,7 @@ export function homeNowFromWidgets(input: {
       detail: "",
       href: "/my-day",
       cta: "Open My Day",
+      quiet: true,
     };
   }
   const byType = (type: string) => Object.values(input.widgets).find((row) => row.type === type)?.data;

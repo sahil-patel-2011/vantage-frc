@@ -192,6 +192,17 @@ describe("home view layout", () => {
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
   });
 
+  it("shrinks an empty next-match hero to its minimum height, and keeps it full size when live or still loading", () => {
+    const hero = DEFAULT_DASHBOARD_LAYOUT.find((item) => item.type === "next_match")!;
+    const view = (status?: string) =>
+      homeViewLayout([hero], { editing: false, shell: "ready", widgets: status ? { [hero.i]: { status } } : {} })[0]!.h;
+    expect(view("empty")).toBe(3);
+    expect(view("setup_required")).toBe(3);
+    expect(view("live")).toBe(hero.h);
+    expect(view()).toBe(hero.h);
+    expect(homeViewLayout([hero], { editing: true, shell: "ready", widgets: { [hero.i]: { status: "empty" } } })[0]!.h).toBe(hero.h);
+  });
+
   it("keeps custom next-match sizes after leaving edit mode", () => {
     const resized = applyWidgetSize(DEFAULT_DASHBOARD_LAYOUT[0]!, "m");
     const viewed = homeViewLayout([resized], { editing: false, shell: "ready" });
