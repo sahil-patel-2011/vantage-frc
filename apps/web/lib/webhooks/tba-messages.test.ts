@@ -120,7 +120,7 @@ describe("upcoming_match", () => {
     });
     expect(content.title).toBe("Qual 42 in 7 minutes");
     expect(content.body).toContain("254");
-    expect(content.url).toBe("/scouting");
+    expect(content.url).toBe("/scout/entry?matchKey=2026mil_qm42&teamKey=frc254");
     expect(content.urgent).toBe(true);
     expect(content.tag).toBe("upcoming:2026mil_qm42");
   });
@@ -130,6 +130,10 @@ describe("upcoming_match", () => {
     expect(
       upcomingMatchNotificationForScout({ message, assignedTeamKeys: ["frc254", "frc118"], now: NOW }).body,
     ).toContain("254, 118");
+    // Two robots: the form opens on the match and lets the scout pick which.
+    expect(
+      upcomingMatchNotificationForScout({ message, assignedTeamKeys: ["frc254", "frc118"], now: NOW }).url,
+    ).toBe("/scout/entry?matchKey=2026mil_qm42");
     expect(
       upcomingMatchNotificationForScout({ message, assignedTeamKeys: [], now: NOW }).body,
     ).toContain("You are scouting this match");

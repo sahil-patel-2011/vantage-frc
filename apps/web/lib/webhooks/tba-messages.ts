@@ -179,10 +179,16 @@ export function upcomingMatchNotificationForScout(input: {
       : teams.length === 1
         ? `You have ${teams[0]}`
         : `You have ${teams.join(", ")}`;
+  // Tapping it opens the Scouting app's form on this match — and on the robot, when the
+  // scout has exactly one — instead of the generic scouting page.
+  const params = new URLSearchParams();
+  if (input.message.matchKey) params.set("matchKey", input.message.matchKey);
+  if (input.message.matchKey && input.assignedTeamKeys.length === 1) params.set("teamKey", input.assignedTeamKeys[0]!);
+  const query = params.toString();
   return {
     title: `${label} ${countdownPhrase(minutes)}`,
     body: `${who}. Head to your station.`,
-    url: "/scouting",
+    url: query ? `/scout/entry?${query}` : "/scout/entry",
     tag: `upcoming:${input.message.matchKey ?? input.message.eventKey ?? "match"}`,
     urgent: minutes == null || minutes <= 15,
   };
