@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { PageHeader, Panel, Button } from "../../../components/ui";
+import { withOrgHref } from "../../../lib/nav/product-nav";
+import { fetchProductSession } from "../../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 
 type AuthPolicy = {
   allowPassword: boolean;
@@ -43,6 +46,8 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  /** Fail closed until /api/me confirms owner or admin. */
+  const [canManage, setCanManage] = useState(false);
   const loadedRef = useRef(false);
   loadedRef.current = loaded;
 
@@ -111,6 +116,22 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      if (!session) {
+        setCanManage(false);
+        return;
+      }
+      const membership = session.memberships?.find((entry) => entry.orgId === orgId);
+      setCanManage(strategyCanSync(membership?.role ?? session.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
   async function save(event: React.FormEvent) {
     event.preventDefault();
     const response = await fetch("/api/organizations/auth-policy", {
@@ -132,7 +153,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         description="Team sign-in policy, 2FA requirements, hub access for scouts/viewers, and delegated admin powers. Personal authenticator setup lives under Account → Security."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          {canManage ? <a href={withOrgHref("/team/admin", orgId)}>Team admin</a> : null}
           <a href={`/team/budgets?orgId=${orgId}`}>Chat limits</a>
           <a href={`/team/ai-keys?orgId=${orgId}`}>Team keys</a>
           <a href="/security">Personal 2FA</a>

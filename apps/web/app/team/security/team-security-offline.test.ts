@@ -34,6 +34,7 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
     expect(src).not.toMatch(/>API keys</);
+    expect(src).toMatch(/canManage \? <a href=\{withOrgHref\("\/team\/admin", orgId\)\}>Team admin<\/a>/);
   });
 
   it("no-org setup says Choose your team, not pick the team first", () => {
