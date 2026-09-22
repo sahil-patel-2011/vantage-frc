@@ -12,6 +12,7 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/"hub-access"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
+    expect(src).toMatch(/rosterReady && !editable.length/);
   });
 
   it("capabilities reads and writes the member-capabilities IndexedDB feature cache", () => {
@@ -22,6 +23,7 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
     expect(src).not.toMatch(/API keys/);
+    expect(src).toMatch(/rosterReady && !editable.length/);
   });
 
   it("sign-in policy reads and writes the auth-policy IndexedDB feature cache", () => {

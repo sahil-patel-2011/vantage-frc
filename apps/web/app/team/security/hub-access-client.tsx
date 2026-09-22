@@ -84,6 +84,8 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
   const [drafts, setDrafts] = useState<Record<string, Record<ClientHubId, string[] | null>>>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  /** True only after a member list actually loaded. A refused load must not offer Team admin. */
+  const [rosterReady, setRosterReady] = useState(false);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -102,6 +104,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
     setDrafts(nextDrafts);
     setFromCache(cached);
     setCachedAt(cachedAtValue);
+    setRosterReady(true);
     setLoading(false);
   }, []);
 
@@ -268,7 +271,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
               </article>
             ))}
           </div>
-          {!editable.length ? (
+          {rosterReady && !editable.length ? (
             <EmptyState
               soft
               title="No scouts or viewers to restrict"

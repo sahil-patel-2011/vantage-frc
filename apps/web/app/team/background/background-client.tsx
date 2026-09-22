@@ -84,12 +84,12 @@ function formFromPayload(data: {
   };
 }
 
-function TeamBackgroundRelated({ orgId }: { orgId: string }) {
+function TeamBackgroundRelated({ orgId, canEdit }: { orgId: string; canEdit: boolean }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
       <a href={withOrgHref("/writer", orgId)}>Writer</a>
       <a href={withOrgHref("/team/grants", orgId)}>Grant writing</a>
-      <a href={withOrgHref("/team/admin", orgId)}>Team admin</a>
+      {canEdit ? <a href={withOrgHref("/team/admin", orgId)}>Team admin</a> : null}
     </nav>
   );
 }
@@ -300,7 +300,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
         title={title}
         description="Mission, history, demographics, and achievements used by sponsorship one-pagers and grant drafts. Owners and admins edit this team only — never imported from another team."
       >
-        <TeamBackgroundRelated orgId={orgId} />
+        <TeamBackgroundRelated orgId={orgId} canEdit={view?.canEdit === true} />
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
       <OfflineBanner feature="Team background" fromCache={fromCache} cachedAt={cachedAt} />

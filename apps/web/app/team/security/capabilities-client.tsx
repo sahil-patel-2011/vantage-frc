@@ -75,6 +75,8 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
   const [drafts, setDrafts] = useState<Record<string, OrgCapability[]>>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  /** True only after a member list actually loaded. A refused load must not offer Team admin. */
+  const [rosterReady, setRosterReady] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const membersRef = useRef<Member[]>([]);
@@ -91,6 +93,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
     setDrafts(next);
     setFromCache(cached);
     setCachedAt(cachedAtValue);
+    setRosterReady(true);
     setLoading(false);
   }, []);
 
@@ -258,7 +261,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
               </article>
             ))}
           </div>
-          {!editable.length ? (
+          {rosterReady && !editable.length ? (
             <EmptyState
               soft
               title="No scouts or viewers to delegate"
