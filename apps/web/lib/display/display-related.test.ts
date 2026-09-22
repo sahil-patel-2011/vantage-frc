@@ -52,6 +52,13 @@ describe("display Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "event")?.href).toContain("tab=command");
   });
 
+  it("keeps board and token writes with owners and admins", () => {
+    const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0, canSync: false });
+    expect(actions[0]).toMatchObject({ id: "read", primary: true });
+    expect(actions.some((action) => action.id === "create-board" || action.id === "mint-token")).toBe(false);
+    expect(actions.find((action) => action.id === "scouting")?.label).toBe("Open Scouting");
+  });
+
   it("sends a scout to Scouting instead of Team Data", () => {
     const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0, canSync: false });
     expect(actions.find((action) => action.id === "team-data")).toBeUndefined();

@@ -138,6 +138,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   }
 
   async function saveBoard(editId?: string) {
+    if (!canSync) return;
     const boardName = name.trim();
     if (!boardName) {
       setMessage("Board name is required");
@@ -177,6 +178,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   }
 
   async function duplicateBoard(board: Board) {
+    if (!canSync) return;
     setName(`${board.name} copy`);
     setPreset(board.preset);
     setWidgets(fromGridLayout(board.widgets));
@@ -204,6 +206,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   }
 
   async function mintToken(boardId: string) {
+    if (!canSync) return;
     const r = await fetch("/api/display/boards", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -222,6 +225,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   }
 
   async function revokeToken(tokenId: string) {
+    if (!canSync) return;
     const r = await fetch("/api/display/boards", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -360,11 +364,17 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             <EmptyState
               soft
               title="Create your first display board"
-              description="Choose a preset below and save. Countdowns, ranks, and predictions stay blank until this board has an event."
+              description={
+                canSync
+                  ? "Choose a preset below and save. Countdowns, ranks, and predictions stay blank until this board has an event."
+                  : "An owner or admin saves a board and mints a pit TV token. Fullscreen stays available."
+              }
             >
+              {canSync ? (
               <Button as="a" variant="primary" href="#display-new-board">
                 Name this board
               </Button>
+              ) : null}
             </EmptyState>
           ) : null}
 
@@ -415,9 +425,13 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               ) : null}
 
               <div className="display-actions">
+                {canSync ? (
                 <Button variant="primary" type="submit">
                   Save board
                 </Button>
+                ) : (
+                <p className="app-muted">An owner or admin saves a board and mints a pit TV token. You can still open a saved board fullscreen.</p>
+                )}
                 <Button variant="secondary" type="button" onClick={resetToPreset}>
                   Reset to preset
                 </Button>
@@ -470,6 +484,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                     >
                       Open fullscreen
                     </a>
+                    {canSync ? (
+                    <>
                     <button type="button" onClick={() => void duplicateBoard(board)}>
                       Duplicate
                     </button>
@@ -487,6 +503,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                     >
                       Update
                     </button>
+                    </>
+                    ) : null}
                   </div>
                 </article>
               ))
@@ -529,7 +547,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               </div>
             ) : null}
 
-            {boards.length ? (
+            {canSync && boards.length ? (
               <div className="display-actions" style={{ marginBottom: "1rem" }}>
                 <label>
                   Board for new token
@@ -565,18 +583,24 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                             : "Never used"}
                       </small>
                     </div>
-                    {!token.revokedAt ? (
+                    {!token.revokedAt && canSync ? (
                       <button type="button" onClick={() => void revokeToken(token.id)}>
                         Revoke
                       </button>
-                    ) : (
+                    ) : token.revokedAt ? (
                       <span>Revoked</span>
+                    ) : (
+                      <span>Active</span>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="display-empty">No kiosk tokens yet. Mint one after saving a board.</p>
+              <p className="display-empty">
+                {canSync
+                  ? "No kiosk tokens yet. Mint one after saving a board."
+                  : "No kiosk tokens yet. An owner or admin mints one after saving a board."}
+              </p>
             )}
           </section>
         </div>

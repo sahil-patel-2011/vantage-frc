@@ -83,7 +83,15 @@ export function displaySetupNextActions(input: {
   const actions: DisplayNextAction[] = [];
   const setupHref = withOrgHref("/display", orgId);
 
-  if (boardCount === 0) {
+  if (input.canSync === false) {
+    actions.push({
+      id: "read",
+      label: boardCount === 0 ? "Read the display layout" : "Open a saved board",
+      detail: "An owner or admin saves a board and mints a pit TV token. Fullscreen stays available.",
+      href: setupHref,
+      primary: true,
+    });
+  } else if (boardCount === 0) {
     actions.push({
       id: "create-board",
       label: "Create your first board",
