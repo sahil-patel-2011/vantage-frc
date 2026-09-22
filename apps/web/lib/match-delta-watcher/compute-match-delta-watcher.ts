@@ -1,5 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { hubHref } from "../nav/hubs";
+import { scoutEventLabel } from "../scouting/scouting-related";
+import { strategyCanSync } from "../strategy/strategy-related";
 import { classifyMatchDelta, sortAlerts, summarizeAlerts } from ".";
 import type {
   MatchDeltaAlert,
@@ -44,9 +46,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -55,7 +57,9 @@ async function resolveOrg(
      LIMIT 1`,
     [userId, requestedOrg],
   );
-  return membership.rows[0] ?? null;
+  const row = membership.rows[0];
+  if (!row) return null;
+  return { orgId: row.orgId, teamNumber: row.teamNumber, role: row.role ?? null };
 }
 
 async function resolveEventKey(
@@ -148,19 +152,39 @@ export async function computeMatchDeltaWatcherView(
 
   const eventKey = await resolveEventKey(client, org.orgId, input.requestedEvent ?? null);
   if (!eventKey) {
+    const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1::uuid`,
+      [org.orgId],
+    );
+    const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+    const named = scoutEventLabel({ eventName: activeEvent.eventName, eventKey: activeEvent.eventKey });
+    const canScore = strategyCanSync(org.role);
+    const message = named
+      ? canScore
+        ? `${named} has no match predictions yet.`
+        : `${named} has no match predictions yet. An owner or admin scores them.`
+      : "Generate match predictions for an event before watching for deltas.";
+    const scoreStep: MatchDeltaSetupStep = {
+      id: "predictions",
+      label: "Score predictions",
+      detail: "Run the prediction model for an upcoming event",
+      href: hubHref("/competition", "strategy", org.orgId),
+    };
+    const scoutStep: MatchDeltaSetupStep = {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "You can still scout while an owner or admin scores predictions.",
+      href: hubHref("/competition", "scouting", org.orgId),
+    };
     return {
       status: "setup_required",
-      message: "Generate match predictions for an event before watching for deltas.",
-      steps: [
-        {
-          id: "predictions",
-          label: "Score predictions",
-          detail: "Run the prediction model for an upcoming event",
-          href: hubHref("/competition", "strategy", org.orgId),
-        },
-      ],
+      message,
+      steps: canScore ? [scoreStep] : [scoutStep],
       orgId: org.orgId,
-      eventKey: null,
+      eventKey: activeEvent.eventKey,
     };
   }
 

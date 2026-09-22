@@ -96,7 +96,44 @@ describe("computeMatchDeltaWatcherView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBe(ORG);
+      expect(view.message).toBe("Generate match predictions for an event before watching for deltas.");
+      expect(view.steps[0]?.label).toBe("Open Scouting");
     }
+  });
+
+  it("names the active event when a scout has no predictions yet", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254, role: "scout" }], rowCount: 1 };
+      }
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const view = await computeMatchDeltaWatcherView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") throw new Error("expected setup");
+    expect(view.message).toBe("Pacific Practice has no match predictions yet. An owner or admin scores them.");
+    expect(view.message).not.toContain("2026custom-");
+    expect(view.steps[0]?.label).toBe("Open Scouting");
+  });
+
+  it("asks an owner to score predictions for the active event", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254, role: "owner" }], rowCount: 1 };
+      }
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const view = await computeMatchDeltaWatcherView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") throw new Error("expected setup");
+    expect(view.message).toBe("Pacific Practice has no match predictions yet.");
+    expect(view.steps[0]?.label).toBe("Score predictions");
   });
 
   it("returns a live view with alerts and summary over mock rows", async () => {
