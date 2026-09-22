@@ -34,13 +34,16 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const orgId = params.get("orgId");
   const [me, setMe] = useState<Me | null>(null);
+  const [meSettled, setMeSettled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void fetch(`/api/me${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`)
       .then((response) => (response.ok ? (response.json() as Promise<Me>) : null))
       .then((data) => {
-        if (cancelled || !data) return;
+        if (cancelled) return;
+        setMeSettled(true);
+        if (!data) return;
         setMe(data);
         if (!orgId && data.orgId) {
           const next = new URLSearchParams(params.toString());
@@ -48,7 +51,9 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
           router.replace(`${pathname}?${next.toString()}`);
         }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) setMeSettled(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -56,6 +61,10 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
   }, [orgId]);
 
   const team = me?.teamNumber ? `Team ${me.teamNumber}` : me?.orgName ?? null;
+  // Without ?orgId the pages would render "Choose your team" for the moment it takes to
+  // look the team up, then swap to the real page. Hold them until the answer is in: a
+  // team fills the URL (and this clears), no team lets the page ask, a failure lets it try.
+  const resolvingTeam = !orgId && (!meSettled || Boolean(me?.orgId));
   const withOrg = (href: string) => (orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href);
 
   return (
@@ -89,8 +98,8 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
           Back to Vantage
         </a>
       </header>
-      <div id="scouting-main" className="scouting-main">
-        {children}
+      <div id="scouting-main" className="scouting-main" aria-busy={resolvingTeam || undefined}>
+        {resolvingTeam ? <p className="scouting-resolving">Opening your team…</p> : children}
       </div>
     </div>
   );

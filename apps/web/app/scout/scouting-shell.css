@@ -125,3 +125,14 @@
 .scout-home-pit a{display:flex;gap:8px;align-items:baseline;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-size:13px}
 .scout-home-pit a span{color:var(--muted);max-width:14ch;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media (prefers-reduced-motion:reduce){.scout-home-meter i{transition:none}}
+
+/* Held while the shell looks up the person's team (no ?orgId in the URL yet). */
+.scouting-resolving{margin:clamp(24px,6vw,48px) 0;color:var(--muted);font-size:14px}
+
+/* Match entry inside Scouting: a scout mid-match needs the form, not "Copy share link"
+   and "Print" (both still on Vantage's /scouting). On a phone the page's own subtitle
+   repeats what the frame already says, so it goes too and the first field moves up. */
+.scouting-main .scout-page .scout-header-meta{display:none}
+@media (max-width:720px){
+  .scouting-main .scout-page > .app-page-header :where(p,.app-page-description){display:none}
+}
