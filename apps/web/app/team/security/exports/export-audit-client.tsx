@@ -42,6 +42,7 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
   const [byAction, setByAction] = useState<Array<{ action: string; count: string }>>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [denied, setDenied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -50,8 +51,18 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
       const response = await fetch(`/api/organizations/export-audit?orgId=${orgId}`);
       const data = await response.json();
       if (!active) return;
-      if (!response.ok) setMessage(data.error ?? "Unable to load export audit");
-      else {
+      const errorText = typeof data.error === "string" ? data.error : "";
+      const refused =
+        response.status === 401 ||
+        response.status === 403 ||
+        /administrator access required/i.test(errorText);
+      if (!response.ok) {
+        setDenied(refused);
+        setEvents([]);
+        setByAction([]);
+        setMessage(refused ? "" : errorText || "Unable to load export audit");
+      } else {
+        setDenied(false);
         setMessage("");
         setEvents(data.events ?? []);
         setByAction(data.byAction ?? []);
@@ -71,8 +82,9 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">VANTAGE / DATA EXPORT AUDIT</span>
           <h1>Who took a copy of the team&apos;s data</h1>
           <p className="app-muted">
-            Every data export — requested, built, and downloaded — with who did it, the scope, and how large
-            the archive was. Exports are encrypted and expire after 24 hours.
+            {denied
+              ? "An owner or admin reads who exported the team's data."
+              : "Every data export — requested, built, and downloaded — with who did it, the scope, and how large the archive was. Exports are encrypted and expire after 24 hours."}
           </p>
         </div>
         <nav className="intel-actions" aria-label="Security links">
@@ -86,7 +98,7 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
       {message && <p role="status" className="telemetry-status">{message}</p>}
       {loading && <p className="app-muted">Loading export audit…</p>}
 
-      {!loading && !!byAction.length && (
+      {!loading && !denied && !!byAction.length && (
         <div className="tag-row" style={{ margin: "1rem 0" }}>
           {byAction.map((row) => (
             <span key={row.action}>
@@ -96,7 +108,7 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
         </div>
       )}
 
-      {!loading && (
+      {!loading && !denied && (
         <section className="intel-panel">
           <span className="eyebrow">EXPORT ACTIVITY · LAST {events.length}</span>
           {!events.length && <p className="app-muted">No data exports recorded for this team.</p>}
