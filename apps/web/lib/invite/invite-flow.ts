@@ -300,15 +300,13 @@ export function inviteNextActions(input: {
   }
 
   if (input.kind === "accepted") {
-    const workspaceHref = input.orgId
-      ? `/workspace?orgId=${encodeURIComponent(input.orgId)}`
-      : "/workspace";
+    const homeHref = input.orgId ? `/dashboard?orgId=${encodeURIComponent(input.orgId)}` : "/dashboard";
     return [
       {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Continue in the team you already joined.",
-        href: workspaceHref,
+        id: "home",
+        label: "Open Home",
+        detail: "You are on the team — Home shows your first week.",
+        href: homeHref,
         primary: true,
       },
     ];

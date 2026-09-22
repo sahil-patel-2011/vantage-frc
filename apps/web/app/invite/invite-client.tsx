@@ -294,8 +294,11 @@ export default function InviteClient() {
       } catch {
         /* ignore */
       }
+      // Home, on the team just joined — where the first-week steps are. The
+      // workspace page is a competition console; a new member landed on
+      // "Vantage Agent" and "CAD Agent" cards instead of what to do first.
       window.location.assign(
-        data.orgId ? `/workspace?orgId=${encodeURIComponent(data.orgId)}` : "/dashboard",
+        data.orgId ? `/dashboard?orgId=${encodeURIComponent(data.orgId)}` : "/dashboard",
       );
     } finally {
       setBusy(false);
