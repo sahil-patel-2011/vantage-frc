@@ -24,6 +24,9 @@ type Job = {
   error: string | null;
 };
 
+const EXPORT_ACTIVE_POLL_MS = 3000;
+const EXPORT_IDLE_POLL_MS = 30_000;
+
 const CATEGORY_ORDER = ["scouting", "reference", "strategy", "ai", "ops"] as const;
 const CATEGORY_LABELS: Record<string, string> = {
   scouting: "Scouting",
@@ -101,13 +104,21 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     setEventKey(eventFromUrl());
     setSelected(preselectedFromUrl());
     void load();
+
+  }, [orgId]);
+
+  // Poll fast only while a ZIP job is queued/running (progress bar + Cancel);
+  // otherwise a slow refresh still picks up jobs started elsewhere. This used to
+  // hit /api/exports every 3s for as long as the page stayed open.
+  const hasActiveJob = jobs.some((job) => job.status === "queued" || job.status === "running");
+  useEffect(() => {
     const timer = setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load();
-    }, 3000);
+    }, hasActiveJob ? EXPORT_ACTIVE_POLL_MS : EXPORT_IDLE_POLL_MS);
     return () => clearInterval(timer);
-     
-  }, [orgId]);
+
+  }, [orgId, hasActiveJob]);
 
   const available = useMemo(() => domains.filter((domain) => domain.scope === scope), [domains, scope]);
 

@@ -3,8 +3,8 @@ import {
   auth,
   getAdminTenureSnapshot,
   HUB_ACCESS_HUB_IDS,
-  listMemberHubAccess,
   listOrganizationMembers,
+  listOrgHubAccessByUser,
   ORG_CAPABILITIES,
   setMemberCapabilities,
   setMemberHubAccess,
@@ -41,10 +41,12 @@ export async function GET(request: Request) {
         `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
         [orgId, current.user.id],
       );
-      const hubAccessByUser: Record<string, MemberHubAccessRow[]> = {};
-      for (const member of members) {
-        hubAccessByUser[member.userId] = await listMemberHubAccess(client, orgId, member.userId);
-      }
+      // One set-based read for every member's hub allowlist (was one query per member).
+      const hubAccessByUser: Record<string, MemberHubAccessRow[]> = await listOrgHubAccessByUser(
+        client,
+        orgId,
+        members.map((member) => member.userId),
+      );
       const adminTenure = await getAdminTenureSnapshot(client, orgId);
       return {
         members,

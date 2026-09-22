@@ -12,7 +12,37 @@ export async function GET(request: Request) {
     const requestedOrg = new URL(request.url).searchParams.get("orgId");
 
     const profile = await withRls({ userId: session.user.id }, async (client) => {
-      const platform = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1`, [session.user.id]);
+      // The shell reads /api/me on every page load: the admin flag, account age,
+      // unread-notification count and profile arrive in ONE round trip (they
+      // were four sequential queries). Each is still its own RLS-scoped read.
+      const self = await client.query<{
+        platformAdmin: boolean;
+        createdAt: string | null;
+        unreadCount: string;
+        firstName: string | null;
+        displayName: string | null;
+        preferredTeamNumber: number | null;
+        primaryFocus: string | null;
+        teamRole: string | null;
+        onboardingCompletedAt: string | null;
+        hasProfile: boolean;
+      }>(
+        `SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=$1::uuid) AS "platformAdmin",
+                (SELECT created_at::text FROM users WHERE id=$1::uuid) AS "createdAt",
+                (SELECT count(*)::text FROM notifications
+                 WHERE user_id=$1::uuid AND read_at IS NULL) AS "unreadCount",
+                p.first_name AS "firstName",
+                p.display_name AS "displayName",
+                p.preferred_team_number AS "preferredTeamNumber",
+                p.primary_focus AS "primaryFocus",
+                p.team_role AS "teamRole",
+                p.onboarding_completed_at::text AS "onboardingCompletedAt",
+                (p.user_id IS NOT NULL) AS "hasProfile"
+         FROM (SELECT 1) AS one
+         LEFT JOIN profiles p ON p.user_id=$1::uuid`,
+        [session.user.id],
+      );
+      const selfRow = self.rows[0];
       const memberships = await client.query<{
         orgId: string;
         role: string;
@@ -30,19 +60,13 @@ export async function GET(request: Request) {
         (requestedOrg
           ? memberships.rows.find((row) => row.orgId === requestedOrg)
           : undefined) ?? memberships.rows[0] ?? null;
-      const created = await client.query<{ createdAt: string | null }>(
-        `SELECT created_at::text AS "createdAt" FROM users WHERE id=$1`,
-        [session.user.id],
-      );
-      const unread = await client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM notifications
-         WHERE user_id=$1 AND read_at IS NULL`,
-        [session.user.id],
-      );
       let unreadMessageCount = 0;
       if (activeMembership?.orgId) {
-        try {
-          const orgId = activeMembership.orgId;
+        // A savepoint, not a bare try/catch: a failed read here (chat tables
+        // missing on a fresh deploy) would otherwise abort the request's
+        // transaction and take every later read in /api/me down with it.
+        const orgId = activeMembership.orgId;
+        unreadMessageCount = await withSavepoint(client, async () => {
           const unreadMessages = await client.query<{ count: string }>(
             `WITH visible AS (
                SELECT c.id
@@ -70,28 +94,9 @@ export async function GET(request: Request) {
                AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)`,
             [orgId, session.user.id],
           );
-          unreadMessageCount = Number(unreadMessages.rows[0]?.count ?? 0);
-        } catch {
-          unreadMessageCount = 0;
-        }
+          return Number(unreadMessages.rows[0]?.count ?? 0);
+        }, 0);
       }
-      const profileRow = await client.query<{
-        firstName: string | null;
-        displayName: string | null;
-        preferredTeamNumber: number | null;
-        primaryFocus: string | null;
-        teamRole: string | null;
-        onboardingCompletedAt: string | null;
-      }>(
-        `SELECT first_name AS "firstName",
-                display_name AS "displayName",
-                preferred_team_number AS "preferredTeamNumber",
-                primary_focus AS "primaryFocus",
-                team_role AS "teamRole",
-                onboarding_completed_at::text AS "onboardingCompletedAt"
-         FROM profiles WHERE user_id=$1`,
-        [session.user.id],
-      );
       const tba = await resolveTbaConfigured(client, activeMembership?.orgId ?? null);
       let planCode: string | null = null;
       let planStatus: string | null = null;
@@ -155,7 +160,7 @@ export async function GET(request: Request) {
         sponsorsAllowed = row?.sponsorsAllowed ?? null;
       }
       return {
-        platformAdmin: Boolean(platform.rowCount),
+        platformAdmin: Boolean(selfRow?.platformAdmin),
         membership: activeMembership,
         // Real memberships only — never invent DEMO organizations for the Soft-UI picker.
         memberships: memberships.rows.map((row) => ({
@@ -164,10 +169,19 @@ export async function GET(request: Request) {
           teamNumber: row.teamNumber,
           role: row.role,
         })),
-        memberSince: created.rows[0]?.createdAt ?? null,
-        unreadNotificationCount: Number(unread.rows[0]?.count ?? 0),
+        memberSince: selfRow?.createdAt ?? null,
+        unreadNotificationCount: Number(selfRow?.unreadCount ?? 0),
         unreadMessageCount,
-        profile: profileRow.rows[0] ?? null,
+        profile: selfRow?.hasProfile
+          ? {
+              firstName: selfRow.firstName,
+              displayName: selfRow.displayName,
+              preferredTeamNumber: selfRow.preferredTeamNumber,
+              primaryFocus: selfRow.primaryFocus,
+              teamRole: selfRow.teamRole,
+              onboardingCompletedAt: selfRow.onboardingCompletedAt,
+            }
+          : null,
         tbaConfigured: tba.tbaConfigured,
         planCode,
         planStatus,

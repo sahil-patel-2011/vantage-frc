@@ -370,15 +370,19 @@ export async function bulkAddFromBom(
   },
 ): Promise<number> {
   let created = 0;
+  if (!input.bomEntryIds.length) return created;
+  // Read every selected BOM line in one query (was one per line); cards are
+  // still created in the caller's order, and unknown ids are still skipped.
+  const entries = await client.query<{ id: string; itemId: string; itemName: string; quantityNeeded: string }>(
+    `SELECT b.id::text AS id, b.item_id AS "itemId", i.name AS "itemName", b.quantity_needed AS "quantityNeeded"
+     FROM bom_entries b
+     JOIN inventory_items i ON i.id = b.item_id
+     WHERE b.id = ANY($1::uuid[]) AND b.org_id = $2::uuid`,
+    [input.bomEntryIds, input.orgId],
+  );
+  const byId = new Map(entries.rows.map((row) => [row.id.toLowerCase(), row]));
   for (const bomEntryId of input.bomEntryIds) {
-    const entry = await client.query<{ itemId: string; itemName: string; quantityNeeded: string }>(
-      `SELECT b.item_id AS "itemId", i.name AS "itemName", b.quantity_needed AS "quantityNeeded"
-       FROM bom_entries b
-       JOIN inventory_items i ON i.id = b.item_id
-       WHERE b.id = $1::uuid AND b.org_id = $2::uuid`,
-      [bomEntryId, input.orgId],
-    );
-    const row = entry.rows[0];
+    const row = byId.get(bomEntryId.toLowerCase());
     if (!row) continue;
     const quantity = Math.max(1, Math.ceil(Number(row.quantityNeeded) || 1));
     await addPart(client, {

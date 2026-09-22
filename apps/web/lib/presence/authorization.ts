@@ -68,6 +68,38 @@ export async function assertRosterMember(
   if (!roster.rowCount) throw new PresenceAuthError("That member is not on this team's roster.", 404);
 }
 
+const ROSTER_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Roster check for a whole batch ("save this meeting" records up to 200 rows):
+ * one query up front, then `assert(id)` per row in the caller's own order, so
+ * the first failing row still fails with the same error it always did. Ids that
+ * are not uuid-shaped skip the prefetch and fall back to assertRosterMember,
+ * which raises exactly what it raised before for them.
+ */
+export async function createRosterChecker(
+  client: PoolClient,
+  orgId: string,
+  targetUserIds: readonly string[],
+): Promise<(targetUserId: string) => Promise<void>> {
+  const candidates = [...new Set(targetUserIds.filter((id) => ROSTER_UUID_RE.test(id)))];
+  const onRoster = new Set<string>();
+  if (candidates.length) {
+    const roster = await client.query<{ userId: string }>(
+      `SELECT user_id::text AS "userId" FROM memberships
+       WHERE org_id = $1::uuid AND user_id = ANY($2::uuid[])`,
+      [orgId, candidates],
+    );
+    for (const row of roster.rows) onRoster.add(row.userId.toLowerCase());
+  }
+  return async (targetUserId) => {
+    if (!ROSTER_UUID_RE.test(targetUserId)) return assertRosterMember(client, orgId, targetUserId);
+    if (!onRoster.has(targetUserId.toLowerCase())) {
+      throw new PresenceAuthError("That member is not on this team's roster.", 404);
+    }
+  };
+}
+
 /** The owner of a shop session, scoped to the org so another team's log id is simply not found. */
 export async function loadHourLogOwner(
   client: PoolClient,

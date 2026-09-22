@@ -143,18 +143,35 @@ async function recomputeMatches(client: PoolClient, orgId: string, profile: Team
   );
   const catalog = catalogResult.rows.map(mapCatalogRow);
 
-  for (const grant of catalog) {
-    const outcome = evaluateGrantEligibility(profile, grant);
+  // Every page view re-scores the whole catalog: write the snapshot in ONE
+  // upsert (was one round trip per catalog grant). Catalog ids are primary
+  // keys, so DO UPDATE never touches the same row twice. The reason lists are
+  // ragged text[] per grant, so they travel as jsonb and keep their order.
+  if (catalog.length) {
+    const outcomes = catalog.map((grant) => {
+      const outcome = evaluateGrantEligibility(profile, grant);
+      return {
+        grantId: grant.id,
+        isEligible: outcome.isEligible,
+        score: outcome.score,
+        matchedReasons: outcome.matchedReasons,
+        unmetReasons: outcome.unmetReasons,
+      };
+    });
     await client.query(
       `INSERT INTO grant_eligibility_matcher_matches (org_id, grant_id, is_eligible, score, matched_reasons, unmet_reasons, computed_at)
-       VALUES ($1, $2, $3, $4, $5::text[], $6::text[], now())
+       SELECT $1::uuid, (r->>'grantId')::uuid, (r->>'isEligible')::boolean, (r->>'score')::int,
+              ARRAY(SELECT e FROM jsonb_array_elements_text(r->'matchedReasons') WITH ORDINALITY AS m(e, i) ORDER BY i),
+              ARRAY(SELECT e FROM jsonb_array_elements_text(r->'unmetReasons') WITH ORDINALITY AS u(e, i) ORDER BY i),
+              now()
+       FROM jsonb_array_elements($2::jsonb) AS r
        ON CONFLICT (org_id, grant_id) DO UPDATE SET
          is_eligible = EXCLUDED.is_eligible,
          score = EXCLUDED.score,
          matched_reasons = EXCLUDED.matched_reasons,
          unmet_reasons = EXCLUDED.unmet_reasons,
          computed_at = now()`,
-      [orgId, grant.id, outcome.isEligible, outcome.score, outcome.matchedReasons, outcome.unmetReasons],
+      [orgId, JSON.stringify(outcomes)],
     );
   }
 

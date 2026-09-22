@@ -5,6 +5,7 @@ import {
   assertCanTouchHourLog,
   assertRosterMember,
   canManagePresence,
+  createRosterChecker,
   loadHourLogOwner,
   PresenceAuthError,
   requirePresenceRole,
@@ -188,5 +189,45 @@ describe("assertCanManagePresence", () => {
       expect(error).toBeInstanceOf(PresenceAuthError);
       expect((error as PresenceAuthError).status).toBe(403);
     }
+  });
+});
+
+describe("createRosterChecker", () => {
+  it("checks a whole batch with one query and rejects exactly the off-roster ids", async () => {
+    const calls: unknown[][] = [];
+    const client = {
+      query: async (sql: string, params: unknown[] = []) => {
+        calls.push(params);
+        expect(sql).toMatch(/user_id = ANY\(\$2::uuid\[\]\)/);
+        const ids = params[1] as string[];
+        const rows = [GRACE, ADA].filter((id) => ids.includes(id)).map((userId) => ({ userId }));
+        return { rows, rowCount: rows.length };
+      },
+    } as unknown as import("@neondatabase/serverless").PoolClient;
+
+    const check = await createRosterChecker(client, ORG, [GRACE, ADA, OUTSIDER, GRACE]);
+    expect(calls).toEqual([[ORG, [GRACE, ADA, OUTSIDER]]]);
+    await expect(check(GRACE)).resolves.toBeUndefined();
+    await expect(check(ADA.toUpperCase())).resolves.toBeUndefined();
+    const foreign = await check(OUTSIDER).catch((error: unknown) => error);
+    expect(foreign).toBeInstanceOf(PresenceAuthError);
+    // Same wording as the single-row check, so the batch path leaks nothing new.
+    const single = await assertRosterMember(mockClient({}), ORG, OUTSIDER).catch((e: Error) => e.message);
+    expect((foreign as Error).message).toBe(single);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("falls back to the single-row check for ids that are not uuid-shaped", async () => {
+    const seen: string[] = [];
+    const client = {
+      query: async (sql: string) => {
+        seen.push(sql);
+        if (sql.includes("ANY(")) throw new Error("should not prefetch a non-uuid id");
+        return { rows: [], rowCount: 0 };
+      },
+    } as unknown as import("@neondatabase/serverless").PoolClient;
+    const check = await createRosterChecker(client, ORG, ["not-a-uuid"]);
+    await expect(check("not-a-uuid")).rejects.toBeInstanceOf(PresenceAuthError);
+    expect(seen).toHaveLength(1);
   });
 });

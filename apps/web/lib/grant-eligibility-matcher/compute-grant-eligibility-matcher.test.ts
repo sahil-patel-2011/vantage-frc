@@ -159,4 +159,52 @@ describe("computeGrantEligibilityView", () => {
     expect(view.profile.rookieYear).toBe(2024);
     expect(view.profile.mentorEmployers).toEqual(["Boeing Company"]);
   });
+
+  it("writes the whole catalog's match snapshot in one upsert, not one per grant", async () => {
+    const catalogRow = (id: string, name: string) => ({
+      id,
+      name,
+      funder: "Funder",
+      description: null,
+      amountMin: null,
+      amountMax: null,
+      applicationUrl: null,
+      eligibilityRules: {},
+      deadlineType: "rolling",
+      deadlineDate: null,
+      seasonYear: 2026,
+      isActive: true,
+    });
+    const inserts: unknown[][] = [];
+    const client = makeClient((sql, params) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      if (sql.startsWith("SELECT id, name, funder") && sql.includes("FROM grant_eligibility_matcher_catalog")) {
+        return {
+          rows: [
+            catalogRow(GRANT_ID, "A"),
+            catalogRow("33333333-3333-4333-8333-333333333333", "B"),
+            catalogRow("44444444-4444-4444-8444-444444444444", "C"),
+          ],
+        };
+      }
+      if (sql.includes("INSERT INTO grant_eligibility_matcher_matches")) {
+        inserts.push(params);
+        return { rows: [] };
+      }
+      return { rows: [] };
+    });
+
+    await computeGrantEligibilityView(client, { userId: USER, requestedOrg: ORG });
+
+    expect(inserts).toHaveLength(1);
+    const [orgParam, payload] = inserts[0] as [string, string];
+    expect(orgParam).toBe(ORG);
+    const rows = JSON.parse(payload) as Array<{ grantId: string; score: number; matchedReasons: string[] }>;
+    expect(rows.map((row) => row.grantId)).toEqual([
+      GRANT_ID,
+      "33333333-3333-4333-8333-333333333333",
+      "44444444-4444-4444-8444-444444444444",
+    ]);
+    expect(rows.every((row) => Number.isInteger(row.score) && Array.isArray(row.matchedReasons))).toBe(true);
+  });
 });

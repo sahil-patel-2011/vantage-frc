@@ -1,4 +1,4 @@
-import { auth, emitNotification, emitPreferredNotification } from "@vantage/core";
+import { auth, emitNotification, emitPreferredNotifications } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
@@ -471,6 +471,47 @@ function dmKeyFor(a: string, b: string) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** GET modes that answer before the thread branch, so they never long-poll. */
+const NON_THREAD_MODES = new Set(["members", "channels", "link_targets", "unread"]);
+
+/**
+ * Long-poll wait for a thread's next change. Every probe is its own short
+ * withRls transaction and the connection goes back to the pool between ticks.
+ * The old loop slept INSIDE the request transaction, so each open chat tab held
+ * one of the request pool's few connections (8; 3 on Supabase) idle in
+ * transaction for up to LONG_POLL_MAX_MS, starving every other route.
+ *
+ * The first probe keeps the old order of checks: membership (throws) and the
+ * team-chat gate come before any waiting, and a closed gate ends the wait at
+ * once so the caller's normal read returns the disabled payload immediately.
+ */
+async function waitForThreadUpdates(
+  context: { userId: string; orgId: string },
+  conversationId: string,
+  since: string,
+  waitMs: number,
+): Promise<void> {
+  const { userId, orgId } = context;
+  const deadline = Date.now() + waitMs;
+  let first = true;
+  while (Date.now() < deadline) {
+    const done = await withRls(context, async (client) => {
+      if (first) {
+        await requireMembership(client, orgId, userId);
+        const gate = await youthProtectionState(client, orgId, userId);
+        if (!gate.teamChatEnabled) return true;
+      }
+      const pinsSupported = await supportsMessagePins(client);
+      return hasThreadUpdates(client, orgId, conversationId, since, pinsSupported);
+    });
+    first = false;
+    if (done) return;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return;
+    await sleep(Math.min(LONG_POLL_TICK_MS, remaining));
+  }
 }
 
 function normalizeClaimedMentionIds(raw: unknown): string[] {
@@ -1136,14 +1177,13 @@ async function sendMessage(
       ? resolveMentionedUserIds(trimmed, members.rows, claimedMentionIds, userId)
       : [];
     if (mentionedIds.length) {
-      for (const mentionedUserId of mentionedIds) {
-        await client.query(
-          `INSERT INTO org_message_mentions (message_id, org_id, mentioned_user_id)
-           VALUES ($1, $2, $3)
-           ON CONFLICT DO NOTHING`,
-          [messageId, orgId, mentionedUserId],
-        );
-      }
+      await client.query(
+        `INSERT INTO org_message_mentions (message_id, org_id, mentioned_user_id)
+         SELECT $1::uuid, $2::uuid, mentioned_user_id
+         FROM unnest($3::uuid[]) AS mentioned_user_id
+         ON CONFLICT DO NOTHING`,
+        [messageId, orgId, mentionedIds],
+      );
     }
 
     const author = await client.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [userId]);
@@ -1151,8 +1191,10 @@ async function sendMessage(
     const preview = trimmed.slice(0, 120);
     const href = `/team?tab=messages&orgId=${encodeURIComponent(orgId)}&conversationId=${encodeURIComponent(conversationId)}`;
     const mentioned = new Set(mentionedIds);
-    for (const mentionedUserId of mentionedIds) {
-      await emitPreferredNotification(client, {
+    // One prefs read + one insert for the whole fan-out: a team-chat message
+    // used to cost two queries per member (prefs, then insert), in sequence.
+    await emitPreferredNotifications(client, [
+      ...mentionedIds.map((mentionedUserId) => ({
         userId: mentionedUserId,
         orgId,
         type: "message_mention",
@@ -1168,27 +1210,26 @@ async function sendMessage(
           body: `${fromName} mentioned you: ${preview}`,
           href,
         },
-      });
-    }
-    for (const member of members.rows) {
-      if (member.id === userId || mentioned.has(member.id)) continue;
-      await emitPreferredNotification(client, {
-        userId: member.id,
-        orgId,
-        type: "team_chat",
-        payload: {
-          conversationId,
-          messageId,
-          preview,
-          fromUserId: userId,
-          fromName,
-          // Every channel would otherwise arrive as the same undifferentiated line.
-          title: channelNotificationTitle(channelTitle),
-          body: `${fromName}: ${preview}`,
-          href,
-        },
-      });
-    }
+      })),
+      ...members.rows
+        .filter((member) => member.id !== userId && !mentioned.has(member.id))
+        .map((member) => ({
+          userId: member.id,
+          orgId,
+          type: "team_chat",
+          payload: {
+            conversationId,
+            messageId,
+            preview,
+            fromUserId: userId,
+            fromName,
+            // Every channel would otherwise arrive as the same undifferentiated line.
+            title: channelNotificationTitle(channelTitle),
+            body: `${fromName}: ${preview}`,
+            href,
+          },
+        })),
+    ]);
 
     await maybeBridgeTeamSlackMessage(client, {
       orgId,
@@ -1309,6 +1350,10 @@ export async function GET(request: Request) {
     const waitMs = clampWaitMs(url.searchParams.get("wait"));
     if (!orgId) throw new Error("orgId is required");
 
+    if (conversationId && since && waitMs > 0 && !NON_THREAD_MODES.has(mode)) {
+      await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, since, waitMs);
+    }
+
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireMembership(client, orgId, session.user.id);
 
@@ -1366,17 +1411,7 @@ export async function GET(request: Request) {
       }
 
       if (conversationId) {
-        const pinsSupported = await supportsMessagePins(client);
-        if (waitMs > 0 && since) {
-          const deadline = Date.now() + waitMs;
-          while (Date.now() < deadline) {
-            if (await hasThreadUpdates(client, orgId, conversationId, since, pinsSupported)) break;
-            const remaining = deadline - Date.now();
-            if (remaining <= 0) break;
-            await sleep(Math.min(LONG_POLL_TICK_MS, remaining));
-          }
-        }
-
+        // Any long-poll wait already ran above, outside this transaction.
         const thread = await listMessages(client, orgId, session.user.id, conversationId, since, {
           before,
           // Paging back through history should not rewrite read state; the
@@ -1391,7 +1426,9 @@ export async function GET(request: Request) {
           unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
           canManageChannels: canManageChannels(await memberRole(client, orgId, session.user.id)),
           channelArchiveSupported: await supportsChannelArchive(client),
-          youthProtection: await youthProtectionState(client, orgId, session.user.id),
+          // Same transaction as the gate read at the top: reuse it rather than
+          // re-running its four queries on every poll.
+          youthProtection,
           ...thread,
         };
       }
@@ -1407,7 +1444,7 @@ export async function GET(request: Request) {
         pinned: [] as MessageRow[],
         pinsSupported: await supportsMessagePins(client),
         mentionsSupported: await supportsMessageMentions(client),
-        youthProtection: await youthProtectionState(client, orgId, session.user.id),
+        youthProtection,
         conversation: null,
         supervisors: [] as SupervisorRef[],
         supervisionNotice: "",

@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { emitPreferredNotification } from "@vantage/core";
+import { emitPreferredNotifications } from "@vantage/core";
 import { withSavepoint } from "@vantage/db";
 
 function calendarHref(orgId: string, eventId: string): string {
@@ -73,21 +73,22 @@ async function fanOutCalendarEvent(
       : `${actorName} scheduled “${input.title}”.`;
   const href = calendarHref(input.orgId, input.eventId);
 
-  let emitted = 0;
-  for (const recipient of recipients) {
-    if (recipient.userId === input.actorUserId) continue;
-    const result = await emitPreferredNotification(client, {
-      userId: recipient.userId,
-      orgId: input.orgId,
-      type,
-      payload: {
-        title,
-        body,
-        eventId: input.eventId,
-        href,
-      },
-    });
-    if (result.emitted) emitted += 1;
-  }
-  return emitted;
+  // One prefs read + one insert for every recipient (was two queries each).
+  const results = await emitPreferredNotifications(
+    client,
+    recipients
+      .filter((recipient) => recipient.userId !== input.actorUserId)
+      .map((recipient) => ({
+        userId: recipient.userId,
+        orgId: input.orgId,
+        type,
+        payload: {
+          title,
+          body,
+          eventId: input.eventId,
+          href,
+        },
+      })),
+  );
+  return results.filter((result) => result.emitted).length;
 }

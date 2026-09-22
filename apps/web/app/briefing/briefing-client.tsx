@@ -304,10 +304,20 @@ export default function BriefingClient() {
     // Canonical param is matchKey; redirected pre-match pages may pass ?match=.
     selectedRef.current = pageParams.get("matchKey") ?? pageParams.get("match");
     void load(selectedRef.current);
+    // Background tabs skip the minute refresh (it used to keep hitting the
+    // briefing API all day); coming back to the tab refreshes at once.
     const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
       void load(selectedRef.current);
     }, 60_000);
-    return () => window.clearInterval(timer);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load(selectedRef.current);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [load]);
 
   if (!view) {

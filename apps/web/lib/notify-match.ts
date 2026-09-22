@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { emitPreferredNotification } from "@vantage/core";
+import { emitPreferredNotifications } from "@vantage/core";
 import { withSavepoint } from "@vantage/db";
 import {
   formatDiscordAnnouncement,
@@ -161,9 +161,10 @@ async function fanOutNextMatch(
     [input.orgId],
   );
 
-  let emitted = 0;
-  for (const recipient of recipients.rows) {
-    const result = await emitPreferredNotification(client, {
+  // Whole-team fan-out: one prefs read + one insert (was two queries per member).
+  const results = await emitPreferredNotifications(
+    client,
+    recipients.rows.map((recipient) => ({
       userId: recipient.userId,
       orgId: input.orgId,
       type: "match_alert",
@@ -177,9 +178,9 @@ async function fanOutNextMatch(
         ourAlliance: next.alliance,
         href: myDayHref,
       },
-    });
-    if (result.emitted) emitted += 1;
-  }
+    })),
+  );
+  const emitted = results.filter((result) => result.emitted).length;
 
   let announced = false;
   let discordPosted = false;

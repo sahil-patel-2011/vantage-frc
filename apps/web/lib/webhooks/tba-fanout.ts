@@ -18,7 +18,7 @@
  * CRON_SECRET-guarded drain.
  */
 import type { Pool, PoolClient } from "@neondatabase/serverless";
-import { emitPreferredNotification } from "@vantage/core";
+import { emitPreferredNotifications } from "@vantage/core";
 import { createSqlPool } from "@vantage/db/pool";
 import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import { buildPushPayload } from "../push/payload";
@@ -191,9 +191,10 @@ async function deliver(
     payload?: Record<string, unknown>;
   },
 ): Promise<{ notified: number; pushed: number; pruned: number }> {
-  const accepted: string[] = [];
-  for (const userId of input.userIds) {
-    const emitted = await emitPreferredNotification(client, {
+  // One prefs read + one inbox insert for the whole org (was two queries per member).
+  const emitted = await emitPreferredNotifications(
+    client,
+    input.userIds.map((userId) => ({
       userId,
       orgId: input.orgId,
       type: input.type,
@@ -204,9 +205,9 @@ async function deliver(
         source: "tba_webhook",
         ...(input.payload ?? {}),
       },
-    });
-    if (emitted.emitted) accepted.push(userId);
-  }
+    })),
+  );
+  const accepted = input.userIds.filter((_, index) => emitted[index]?.emitted);
   if (accepted.length === 0) return { notified: 0, pushed: 0, pruned: 0 };
 
   const subscriptions = await pushSubscriptionsFor(client, accepted);

@@ -211,14 +211,27 @@ export async function computePrivateEdgeView(
         agreementRate: Number(row.agreementRate),
         nSamples: row.nSamples,
       }));
-    for (const row of calibrations) {
+    // One set-based upsert instead of one round trip per (scout, field) pair.
+    // The GROUP BY above makes (field_key, scout_user_id) unique, so DO UPDATE
+    // never touches the same row twice in this statement.
+    if (calibrations.length) {
       await client.query(
         `INSERT INTO scout_field_reliability (
            org_id, event_key, field_key, scout_user_id, agreement_rate, n_samples, updated_at
-         ) VALUES ($1::uuid, $2, $3, $4::uuid, $5, $6, now())
+         )
+         SELECT $1::uuid, $2::text, c.field_key, c.scout_user_id, c.agreement_rate, c.n_samples, now()
+         FROM unnest($3::text[], $4::uuid[], $5::numeric[], $6::int[])
+           AS c(field_key, scout_user_id, agreement_rate, n_samples)
          ON CONFLICT (org_id, event_key, field_key, scout_user_id)
          DO UPDATE SET agreement_rate = EXCLUDED.agreement_rate, n_samples = EXCLUDED.n_samples, updated_at = now()`,
-        [input.orgId, input.eventKey, row.fieldKey, row.scoutUserId, row.agreementRate, row.nSamples],
+        [
+          input.orgId,
+          input.eventKey,
+          calibrations.map((row) => row.fieldKey),
+          calibrations.map((row) => row.scoutUserId),
+          calibrations.map((row) => row.agreementRate),
+          calibrations.map((row) => row.nSamples),
+        ],
       );
     }
   }, undefined);
@@ -308,12 +321,14 @@ export async function computePrivateEdgeView(
       subsystems: subsystems.rows,
       fieldSamples: [...fieldSamples.entries()].map(([fieldKey, sampleSize]) => ({ fieldKey, sampleSize })),
     });
-    for (const link of cadLinks) {
+    // Single insert for every link (was one round trip per link).
+    if (cadLinks.length) {
       await client.query(
         `INSERT INTO cad_scout_links (org_id, subsystem_id, field_key)
-         VALUES ($1::uuid, $2::uuid, $3)
+         SELECT $1::uuid, l.subsystem_id, l.field_key
+         FROM unnest($2::uuid[], $3::text[]) AS l(subsystem_id, field_key)
          ON CONFLICT (org_id, subsystem_id, field_key) DO NOTHING`,
-        [input.orgId, link.subsystemId, link.fieldKey],
+        [input.orgId, cadLinks.map((link) => link.subsystemId), cadLinks.map((link) => link.fieldKey)],
       );
     }
   }, undefined);
@@ -413,44 +428,51 @@ export async function computePrivateEdgeView(
   }, undefined);
 
   await withSavepoint(client, async () => {
-    for (const signal of view.pitSignals.slice(0, 40)) {
-      if (!signal.entryId) continue;
-      await client.query(
-        `INSERT INTO scout_pit_signals (
-           org_id, event_key, team_key, match_key, scout_entry_id, signal_kind, note, alliance_color
-         ) VALUES ($1::uuid, $2, $3, $4, $5::uuid, $6, $7, $8)
-         ON CONFLICT (org_id, scout_entry_id, signal_kind) DO NOTHING`,
-        [
-          input.orgId,
-          input.eventKey,
-          signal.teamKey,
-          signal.matchKey,
-          signal.entryId,
-          signal.signalKind,
-          signal.note,
-          signal.alliance,
-        ],
-      );
-      if (signal.teamKey === input.ourTeamKey) {
-        await client.query(
-          `INSERT INTO org_live_alerts (
-             org_id, event_key, type, severity, title, body, dedupe_key, source_refs
-           ) VALUES (
-             $1::uuid, $2, 'scout_pit', 'warning', $3, $4, $5,
-             jsonb_build_array(jsonb_build_object('source','match_scout_entries','id',$6,'observedAt', now()::text))
-           )
-           ON CONFLICT (org_id, dedupe_key) DO NOTHING`,
-          [
-            input.orgId,
-            input.eventKey,
-            `Scout: ${signal.signalKind.replace(/_/g, " ")}`,
-            `${signal.note}${signal.matchKey ? ` · ${signal.matchKey}` : ""}`,
-            `scout-pit:${input.eventKey}:${signal.teamKey}:${signal.entryId}:${signal.signalKind}`,
-            signal.entryId,
-          ],
-        );
-      }
-    }
+    // Two set-based inserts (signals, then our own team's alerts) instead of up
+    // to 80 round trips. Both are ON CONFLICT DO NOTHING, so duplicate keys in
+    // one statement are skipped exactly as the old per-row loop skipped them.
+    const signals = view.pitSignals.slice(0, 40).filter((signal) => signal.entryId);
+    if (!signals.length) return;
+    await client.query(
+      `INSERT INTO scout_pit_signals (
+         org_id, event_key, team_key, match_key, scout_entry_id, signal_kind, note, alliance_color
+       )
+       SELECT $1::uuid, $2::text, s.team_key, s.match_key, s.scout_entry_id, s.signal_kind, s.note, s.alliance_color
+       FROM unnest($3::text[], $4::text[], $5::uuid[], $6::text[], $7::text[], $8::text[])
+         AS s(team_key, match_key, scout_entry_id, signal_kind, note, alliance_color)
+       ON CONFLICT (org_id, scout_entry_id, signal_kind) DO NOTHING`,
+      [
+        input.orgId,
+        input.eventKey,
+        signals.map((signal) => signal.teamKey),
+        signals.map((signal) => signal.matchKey),
+        signals.map((signal) => signal.entryId),
+        signals.map((signal) => signal.signalKind),
+        signals.map((signal) => signal.note),
+        signals.map((signal) => signal.alliance),
+      ],
+    );
+    const ours = signals.filter((signal) => signal.teamKey === input.ourTeamKey);
+    if (!ours.length) return;
+    await client.query(
+      `INSERT INTO org_live_alerts (
+         org_id, event_key, type, severity, title, body, dedupe_key, source_refs
+       )
+       SELECT $1::uuid, $2::text, 'scout_pit', 'warning', a.title, a.body, a.dedupe_key,
+              jsonb_build_array(jsonb_build_object('source','match_scout_entries','id',a.entry_id,'observedAt', now()::text))
+       FROM unnest($3::text[], $4::text[], $5::text[], $6::text[]) AS a(title, body, dedupe_key, entry_id)
+       ON CONFLICT (org_id, dedupe_key) DO NOTHING`,
+      [
+        input.orgId,
+        input.eventKey,
+        ours.map((signal) => `Scout: ${signal.signalKind.replace(/_/g, " ")}`),
+        ours.map((signal) => `${signal.note}${signal.matchKey ? ` · ${signal.matchKey}` : ""}`),
+        ours.map(
+          (signal) => `scout-pit:${input.eventKey}:${signal.teamKey}:${signal.entryId}:${signal.signalKind}`,
+        ),
+        ours.map((signal) => signal.entryId),
+      ],
+    );
   }, undefined);
 
   return view;

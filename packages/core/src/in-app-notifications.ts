@@ -113,3 +113,61 @@ export async function emitPreferredNotification(
   await emitNotification(client, input);
   return { emitted: true };
 }
+
+type PreferredNotificationInput = {
+  userId: string;
+  orgId?: string;
+  type: string;
+  payload?: Record<string, unknown>;
+};
+
+/**
+ * Batch form of emitPreferredNotification for fan-outs (a team-chat message
+ * notifies every member): one prefs read for all recipients and one insert,
+ * instead of two queries per recipient. Same rules per input — a missing
+ * profile means default prefs, pref-free types always pass — and the inserted
+ * rows arrive in input order. Returns one `emitted` flag per input.
+ */
+export async function emitPreferredNotifications(
+  client: PoolClient,
+  inputs: readonly PreferredNotificationInput[],
+): Promise<Array<{ emitted: boolean }>> {
+  if (!inputs.length) return [];
+  const gatedUserIds = [
+    ...new Set(inputs.filter((input) => prefKeyForNotificationType(input.type)).map((input) => input.userId)),
+  ];
+  const prefsByUser = new Map<string, InAppNotificationPrefs>();
+  if (gatedUserIds.length) {
+    const result = await client.query<{ userId: string; notificationPrefs: unknown }>(
+      `SELECT user_id::text AS "userId", notification_prefs AS "notificationPrefs"
+       FROM profiles WHERE user_id = ANY($1::uuid[])`,
+      [gatedUserIds],
+    );
+    for (const row of result.rows) {
+      prefsByUser.set(row.userId.toLowerCase(), mergeInAppNotificationPrefs(row.notificationPrefs));
+    }
+  }
+  const flags = inputs.map((input) => {
+    const prefKey = prefKeyForNotificationType(input.type);
+    if (!prefKey) return { emitted: true };
+    const prefs = prefsByUser.get(input.userId.toLowerCase()) ?? mergeInAppNotificationPrefs(undefined);
+    return { emitted: prefs[prefKey] };
+  });
+  const allowed = inputs.filter((_, index) => flags[index]!.emitted);
+  if (allowed.length) {
+    await client.query(
+      `INSERT INTO notifications (user_id, org_id, type, payload)
+       SELECT n.user_id, n.org_id, n.type, n.payload::jsonb
+       FROM unnest($1::uuid[], $2::uuid[], $3::text[], $4::text[]) WITH ORDINALITY
+         AS n(user_id, org_id, type, payload, ord)
+       ORDER BY n.ord`,
+      [
+        allowed.map((input) => input.userId),
+        allowed.map((input) => input.orgId ?? null),
+        allowed.map((input) => input.type),
+        allowed.map((input) => JSON.stringify(input.payload ?? {})),
+      ],
+    );
+  }
+  return flags;
+}

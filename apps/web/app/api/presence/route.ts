@@ -30,6 +30,7 @@ import {
   assertCanRecordPresence,
   assertCanTouchHourLog,
   assertRosterMember,
+  createRosterChecker,
   loadHourLogOwner,
   PresenceAuthError,
   requirePresenceRole,
@@ -149,11 +150,20 @@ export async function POST(request: Request) {
           if (batch.length === 0) throw new Error("Nothing to record.");
           if (batch.length > 200) throw new Error("Too many rows in one request.");
 
+          // One roster read for the whole batch (was one query per row); each
+          // row is still checked in order, so the same row fails the same way.
+          const assertOnRoster = await createRosterChecker(
+            client,
+            orgId,
+            batch
+              .map((entry) => trimmedOrNull(entry?.targetUserId, 64))
+              .filter((id): id is string => Boolean(id)),
+          );
           for (const entry of batch) {
             const targetUserId = trimmedOrNull(entry.targetUserId, 64);
             if (!targetUserId) throw new Error("targetUserId is required");
             assertCanRecordPresence({ role, actorId: userId, targetUserId });
-            await assertRosterMember(client, orgId, targetUserId);
+            await assertOnRoster(targetUserId);
             await upsertPresenceRecord(client, {
               orgId,
               userId: targetUserId,

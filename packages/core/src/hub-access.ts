@@ -84,6 +84,46 @@ export async function listMemberHubAccess(
     }));
 }
 
+/**
+ * Load allowlist rows for many members in ONE query (the member admin list used
+ * to issue one query per member). Every requested user gets a key; an empty
+ * array ⇒ unrestricted, exactly as listMemberHubAccess returns per member.
+ */
+export async function listOrgHubAccessByUser(
+  client: PoolClient,
+  orgId: string,
+  userIds: readonly string[],
+): Promise<Record<string, MemberHubAccessRow[]>> {
+  const byUser: Record<string, MemberHubAccessRow[]> = {};
+  for (const userId of userIds) byUser[userId] = [];
+  if (!userIds.length) return byUser;
+  const result = await client.query<{ userId: string; hubId: string; allowedTabIds: string[] | null }>(
+    `SELECT user_id AS "userId", hub_id AS "hubId", allowed_tab_ids AS "allowedTabIds"
+     FROM membership_hub_access
+     WHERE org_id = $1 AND user_id = ANY($2::uuid[])
+     ORDER BY user_id ASC, hub_id ASC`,
+    [orgId, [...new Set(userIds)]],
+  );
+  return groupHubAccessRows(result.rows, byUser);
+}
+
+/** Pure grouping step for listOrgHubAccessByUser (rows arrive ordered by hub_id). */
+export function groupHubAccessRows(
+  rows: ReadonlyArray<{ userId: string; hubId: string; allowedTabIds: string[] | null }>,
+  byUser: Record<string, MemberHubAccessRow[]>,
+): Record<string, MemberHubAccessRow[]> {
+  for (const row of rows) {
+    if (!isHubId(row.hubId)) continue;
+    const list = byUser[row.userId];
+    if (!list) continue;
+    list.push({
+      hubId: row.hubId,
+      allowedTabIds: Array.isArray(row.allowedTabIds) ? row.allowedTabIds : [],
+    });
+  }
+  return byUser;
+}
+
 export function hubAccessToMap(rows: MemberHubAccessRow[]): MemberHubAccessMap | null {
   if (!rows.length) return null;
   const map: MemberHubAccessMap = {};
