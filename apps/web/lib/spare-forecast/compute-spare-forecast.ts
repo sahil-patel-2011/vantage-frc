@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { draftPurchaseRequestLines, forecastExhaustion, PURCHASE_REQUEST_STATUSES, seasonWindow, sortForecastLines } from ".";
+import { canDeleteSpareForecastRequest, draftPurchaseRequestLines, forecastExhaustion, PURCHASE_REQUEST_STATUSES, seasonWindow, sortForecastLines } from ".";
 import type {
   ExhaustionForecast,
   PurchaseRequestDraft,
@@ -32,6 +32,8 @@ export type SpareForecastView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      role?: string | null;
+      userId?: string | null;
       seasonYear: number;
       seasons: number[];
       /** Real is_spare inventory rows only — never DEMO spare counts. */
@@ -125,6 +127,7 @@ type PurchaseRequestRow = {
   lineItems: PurchaseRequestLineItem[];
   totalEstimatedCost: string;
   rationale: string;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -138,6 +141,7 @@ function mapPurchaseRequest(row: PurchaseRequestRow): PurchaseRequestDraft {
     lineItems: Array.isArray(row.lineItems) ? row.lineItems : [],
     totalEstimatedCost: Number(row.totalEstimatedCost) || 0,
     rationale: row.rationale,
+    createdBy: row.createdBy ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -147,9 +151,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -274,7 +278,7 @@ export async function computeSpareForecastView(
     loadForecastLines(client, org.orgId, seasonYear, input.asOf),
     client.query<PurchaseRequestRow>(
       `SELECT id, season_year AS "seasonYear", title, status, line_items AS "lineItems",
-              total_estimated_cost AS "totalEstimatedCost", rationale,
+              total_estimated_cost AS "totalEstimatedCost", rationale, created_by AS "createdBy",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM spare_forecast_purchase_requests
        WHERE org_id = $1 AND season_year = $2
@@ -294,6 +298,8 @@ export async function computeSpareForecastView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    role: org.role ?? "",
+    userId: input.userId,
     seasonYear,
     seasons,
     spareBinCount: forecastBundle.spareBinCount,
@@ -369,10 +375,22 @@ export async function updatePurchaseRequestStatus(
 
 export async function deletePurchaseRequest(
   client: PoolClient,
-  input: { orgId: string; requestId: string },
+  input: { orgId: string; requestId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM spare_forecast_purchase_requests WHERE id = $1 AND org_id = $2`, [
+  const found = await client.query<{ createdBy: string; role: string }>(
+    `SELECT r.created_by AS "createdBy", m.role
+     FROM spare_forecast_purchase_requests r
+     JOIN memberships m ON m.org_id = r.org_id AND m.user_id = $3
+     WHERE r.id = $1 AND r.org_id = $2`,
+    [input.requestId, input.orgId, input.userId],
+  );
+  if (!found.rowCount) throw new Error("Purchase request not found");
+  if (!canDeleteSpareForecastRequest({ role: found.rows[0]!.role, userId: input.userId, authorId: found.rows[0]!.createdBy })) {
+    throw new Error("You cannot delete this purchase request");
+  }
+  const deleted = await client.query(`DELETE FROM spare_forecast_purchase_requests WHERE id = $1 AND org_id = $2`, [
     input.requestId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this purchase request");
 }

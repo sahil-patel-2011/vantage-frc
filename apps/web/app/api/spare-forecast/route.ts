@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         case "delete-request": {
           const requestId = trimmedOrNull(body.requestId, 64);
           if (!requestId) throw new Error("requestId is required");
-          await deletePurchaseRequest(client, { orgId, requestId });
+          await deletePurchaseRequest(client, { orgId, requestId, userId });
           break;
         }
         default:
@@ -115,6 +115,12 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof Error && error.message === "Purchase request not found") {
+      return Response.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "You cannot delete this purchase request") {
+      return Response.json({ error: error.message }, { status: 403 });
+    }
     return failMeteredAi(error, "Spare-parts forecast request failed");
   }
 }

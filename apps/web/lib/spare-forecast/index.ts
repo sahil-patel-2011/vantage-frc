@@ -17,6 +17,19 @@ export type { SeasonHorizon };
 
 export const PURCHASE_REQUEST_STATUSES: PurchaseRequestStatus[] = ["draft", "approved", "ordered", "dismissed"];
 
+/** Delete matches spare_forecast_purchase_requests RLS: the author, or an owner or admin. */
+export function canDeleteSpareForecastRequest(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 /** FRC build+competition season window used as the forecast horizon (Jan 1 kickoff through mid-summer champs). */
 export const SEASON_START_MONTH_DAY = { month: 0, day: 1 } as const;
 export const SEASON_LENGTH_DAYS = 200;

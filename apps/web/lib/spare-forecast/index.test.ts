@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   SEASON_LENGTH_DAYS,
+  canDeleteSpareForecastRequest,
   draftPurchaseRequestLines,
   forecastExhaustion,
   forecastUrgencyLabel,
   seasonWindow,
   sortForecastLines,
 } from ".";
+
+describe("canDeleteSpareForecastRequest", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteSpareForecastRequest({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteSpareForecastRequest({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteSpareForecastRequest({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteSpareForecastRequest({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 import type { SpareForecastLine } from "./types";
 
 const OFFSEASON = new Date("2026-08-31T16:00:00.000Z");
