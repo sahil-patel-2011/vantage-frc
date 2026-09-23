@@ -160,6 +160,8 @@ describe("syncOrgWorkbook", () => {
     expect(finish.params[4]).toBeGreaterThan(0);
     const conn = log.find((q) => q.sql.includes("UPDATE org_microsoft_connections"))!;
     expect(conn.sql).toContain("last_error = NULL");
+    // Stamped with the mirror's content hash, so the Google+Excel card compares like with like.
+    expect(conn.params[2]).toMatch(/^[a-f0-9]{32}$/);
   });
 
   it("marks the run 'partial' and names the failed sheet when one table fails", async () => {

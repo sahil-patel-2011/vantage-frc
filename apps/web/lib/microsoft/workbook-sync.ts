@@ -13,6 +13,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { contentHash } from "../mirror/mirror-hash";
 import { listPickList } from "../picklist";
 import { describeGraphError, isGraphError } from "./graph";
 import {
@@ -387,11 +388,14 @@ export async function syncOrgWorkbook(client: PoolClient, orgId: string, options
     [run.id, summary.status, finishedAt, JSON.stringify(summary.tablesWritten), summary.rowsWritten, summary.error?.slice(0, 2000) ?? null, orgId],
   );
   if (summary.status === "succeeded") {
+    // The same content hash the Google+Excel mirror stamps (lib/mirror/mirror-hash.ts), so an
+    // Excel-only sync never leaves the mirror card claiming the copies match when they do not.
     await client.query(
       `UPDATE org_microsoft_connections
-          SET last_sync_at = $2::timestamptz, last_error = NULL, last_error_at = NULL, updated_at = now()
+          SET last_sync_at = $2::timestamptz, last_sync_hash = $3::text, last_error = NULL, last_error_at = NULL,
+              throttled_until = NULL, updated_at = now()
         WHERE org_id = $1::uuid`,
-      [orgId, finishedAt],
+      [orgId, finishedAt, contentHash(tables)],
     );
   } else {
     await client.query(
