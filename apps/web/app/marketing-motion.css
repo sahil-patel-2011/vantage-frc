@@ -189,8 +189,10 @@
         box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06), 0 8px 24px -18px rgba(15, 23, 42, 0.35);
       }
     }
+    /* `both`, unlike the entrances: past 120px of scroll the shadow must stay on, and
+       box-shadow leaves no transform behind to trap fixed-position children. */
     .marketing-lux header.nav {
-      animation: mk-header-lift linear backwards;
+      animation: mk-header-lift linear both;
       animation-timeline: scroll();
       animation-range: 0 120px;
     }
