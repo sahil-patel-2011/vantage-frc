@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { Panel, Button } from "../../components/ui";
 import { formatAccountOrgLabel } from "../../lib/account";
 import type { AccountView, OrgContext } from "./account-types";
+import { RecoveryEmailSettings } from "./recovery-email-settings";
 
 export function AccountProfilePanel({
   account,
@@ -20,7 +21,7 @@ export function AccountProfilePanel({
   onFirstNameChange,
   onLastNameChange,
   onDateOfBirthChange,
-  onRecoveryEmailChange,
+  onRecoveryEmailChange: _onRecoveryEmailChange,
   onPhoneE164Change,
   onOtpCodeChange,
   onSave,
@@ -113,16 +114,7 @@ export function AccountProfilePanel({
           Sign-in email
           <input value={account.email ?? ""} readOnly disabled />
         </label>
-        <label>
-          Recovery email
-          <input
-            type="email"
-            value={recoveryEmail}
-            onChange={(event) => onRecoveryEmailChange(event.target.value)}
-            autoComplete="email"
-            placeholder="A second inbox for account recovery"
-          />
-        </label>
+        <RecoveryEmailSettings suggested={recoveryEmail} />
         <label>
           Phone number for text codes
           <input

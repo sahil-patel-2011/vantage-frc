@@ -60,6 +60,7 @@ import {
   type SessionProbe,
   type SignInBusy,
 } from "./sign-in-model";
+import { SignInRecovery } from "./sign-in-recovery";
 import { SignInSessionView } from "./sign-in-session";
 import "../product-styles";
 import "./sign-in-flow.css";
@@ -678,6 +679,9 @@ export default function SignInClient({
             setPasswordPanel("reset");
           }}
         />
+        {emailAvailable && flow.step === "identity" && passwordPanel === "closed" ? (
+          <SignInRecovery nextPath={resolvedNext} />
+        ) : null}
         <AccessFooter />
       </div>
     </SignInCard>

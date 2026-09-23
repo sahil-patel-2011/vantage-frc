@@ -282,6 +282,7 @@ export * from "./auth-access";
 export * from "./bootstrap-owner";
 export * from "./onboarding";
 export * from "./email-2fa";
+export * from "./recovery-email";
 export { getAuthCapabilities };
 
 export type OrgRole = "owner" | "admin" | "scout" | "viewer";

@@ -399,3 +399,39 @@
     font-size: 25px;
   }
 }
+
+/* Recovery email (recovery-email-settings.tsx): sits in the profile form like a field. */
+.account-recovery {
+  display: grid;
+  gap: 6px;
+}
+.account-recovery-label {
+  color: var(--muted);
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.account-recovery-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.account-recovery-row > input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.account-recovery small {
+  line-height: 1.45;
+}
+.account-recovery-ok,
+.account-recovery-error {
+  margin: 0;
+  font-size: 13px;
+}
+.account-recovery-ok {
+  color: var(--good, var(--ink));
+}
+.account-recovery-error {
+  color: var(--danger, var(--ink));
+}

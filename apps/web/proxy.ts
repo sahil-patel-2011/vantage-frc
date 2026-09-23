@@ -37,6 +37,8 @@ const PUBLIC_PREFIXES = [
   // Redeems a one-time Vantage ↔ Scouting handoff token; it is what creates the
   // session on this host, so it cannot require one (migration 0670).
   "/api/handoff/accept",
+  // Sign-in with a recovery email: sends and checks its own codes, then sets the session.
+  "/api/recovery",
   "/api/invites/preview",
   "/api/waitlist",
   "/api/admin/bootstrap-owner",
