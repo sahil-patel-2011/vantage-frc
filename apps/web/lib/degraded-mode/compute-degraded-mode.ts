@@ -114,7 +114,7 @@ export async function computeDegradedModeView(
     canSync: strategyCanSync(org.role),
     health,
     showBanner: shouldShowDegradedBanner(health.mode),
-    fallbacks: computeDegradedFallbacks(health.mode, org.orgId),
+    fallbacks: computeDegradedFallbacks(health.mode, org.orgId, strategyCanSync(org.role)),
     activeAcknowledgment,
     recentAcknowledgments,
     computedAt: new Date().toISOString(),

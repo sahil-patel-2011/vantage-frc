@@ -363,13 +363,19 @@ function SourcesPanel({ view }: { view: LiveView }) {
   );
 }
 
+function visibleFallbacks(view: LiveView) {
+  if (view.canSync) return view.fallbacks;
+  return view.fallbacks.filter((fallback) => !fallback.href.includes("/team/data"));
+}
+
 function FallbacksPanel({ view }: { view: LiveView }) {
-  if (view.fallbacks.length === 0) return null;
+  const fallbacks = visibleFallbacks(view);
+  if (fallbacks.length === 0) return null;
   return (
     <Panel>
       <h2 style={{ marginTop: 0 }}>Read-only fallbacks while degraded</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.fallbacks.map((fallback) => (
+        {fallbacks.map((fallback) => (
           <li key={fallback.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
             <div>
               <strong>{fallback.label}</strong>

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { computeDegradedFallbacks } from ".";
 import { computeDegradedModeView } from "./compute-degraded-mode";
 
 type QueryCall = { text: string; values: unknown[] };
@@ -64,6 +65,8 @@ describe("computeDegradedModeView", () => {
     expect(view.health.mode).toBe("degraded");
     expect(view.showBanner).toBe(true);
     expect(view.fallbacks.length).toBeGreaterThan(0);
+    expect(view.fallbacks.map((fallback) => fallback.href).join(" ")).not.toContain("/team/data");
+    expect(view.fallbacks.some((fallback) => fallback.href.includes("tab=scouting"))).toBe(true);
     expect(view.activeAcknowledgment).toBeNull();
   });
 
@@ -98,7 +101,25 @@ describe("computeDegradedModeView", () => {
     expect(view.status).toBe("live");
     if (view.status !== "live") return;
     expect(view.canSync).toBe(true);
+    expect(view.fallbacks.some((fallback) => fallback.id === "team-data" && fallback.href.includes("/team/data"))).toBe(true);
     expect(view.activeAcknowledgment?.id).toBe("ack-1");
     expect(view.recentAcknowledgments).toHaveLength(1);
+  });
+});
+
+describe("computeDegradedFallbacks", () => {
+  it("fails closed when Team Data access is omitted", () => {
+    const fallbacks = computeDegradedFallbacks("degraded", "org-1");
+    expect(fallbacks.map((fallback) => fallback.href).join(" ")).not.toContain("/team/data");
+    expect(fallbacks[0]?.href).toContain("tab=scouting");
+  });
+
+  it("keeps Team → Data for an owner or admin", () => {
+    const fallbacks = computeDegradedFallbacks("degraded", "org-1", true);
+    expect(fallbacks[0]?.href).toBe("/team/data?orgId=org-1");
+  });
+
+  it("returns nothing while sources are healthy", () => {
+    expect(computeDegradedFallbacks("ok", "org-1", true)).toEqual([]);
   });
 });
