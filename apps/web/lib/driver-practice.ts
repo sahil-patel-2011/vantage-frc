@@ -43,8 +43,23 @@ export type DriverSession = {
   buildTaskTitle: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Session author. Missing on older cached snapshots, which fail closed for delete. */
+  createdBy?: string | null;
   cycles: DriverCycle[];
 };
+
+/** Delete matches driver_sessions RLS: the author, or an owner or admin. */
+export function canDeleteDriverSession(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
 
 export type DriverPracticeMember = { userId: string; name: string | null };
 
@@ -58,6 +73,8 @@ export type DriverPracticeContext = {
   teamNumber: number | null;
   role: string | null;
   eventKey: string | null;
+  /** Signed-in member. Missing on older cached snapshots, which fail closed for delete. */
+  userId?: string | null;
 };
 
 export type DriverPracticeView =

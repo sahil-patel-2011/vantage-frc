@@ -11,6 +11,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   actionBreakdown,
+  canDeleteDriverSession,
   sessionStats,
   SUGGESTED_ACTIONS,
   type DriverCycle,
@@ -202,7 +203,7 @@ function CycleList({
 }
 
 function SessionDetail({
-  session, membersById, orgId, attendanceEvents, buildTasks, busyKey, run,
+  session, membersById, orgId, attendanceEvents, buildTasks, busyKey, canDelete, run,
 }: {
   session: DriverSession;
   membersById: Map<string, DriverPracticeMember>;
@@ -210,6 +211,7 @@ function SessionDetail({
   attendanceEvents: LinkableAttendance[];
   buildTasks: LinkableBuildTask[];
   busyKey: string | null;
+  canDelete: boolean;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
   const stats = useMemo(() => sessionStats(session.cycles), [session.cycles]);
@@ -236,18 +238,20 @@ function SessionDetail({
             <p className="practice-muted">No session goal yet — add one so the drive team knows the target for the day.</p>
           )}
         </div>
-        <button
-          type="button"
-          className="practice-text-btn danger"
-          disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete "${session.title}" and all its reps?`)) {
-              void run({ action: "delete_session", orgId, id: session.id }, "delete");
-            }
-          }}
-        >
-          Delete session
-        </button>
+        {canDelete ? (
+          <button
+            type="button"
+            className="practice-text-btn danger"
+            disabled={busy}
+            onClick={() => {
+              if (confirm(`Delete "${session.title}" and all its reps?`)) {
+                void run({ action: "delete_session", orgId, id: session.id }, "delete");
+              }
+            }}
+          >
+            Delete session
+          </button>
+        ) : null}
       </header>
 
       <div className="practice-links-row">
@@ -724,6 +728,11 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
               attendanceEvents={attendanceEvents}
               buildTasks={buildTasks}
               busyKey={busyKey}
+              canDelete={canDeleteDriverSession({
+                role: context.role,
+                userId: context.userId,
+                authorId: selected.createdBy,
+              })}
               run={run}
             />
           ) : null}
