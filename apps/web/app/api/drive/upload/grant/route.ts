@@ -182,7 +182,7 @@ export async function POST(request: Request) {
         if (!chosen?.baseUrl) {
           return {
             destination: "refused" as const,
-            reason: `Storage node "${decision.nodeName}" lost its reachable URL — set it on /team/storage.`,
+            reason: `Storage node "${decision.nodeName}" lost its reachable URL.`,
           };
         }
         if (!chosen.encryptedAccessKey) {

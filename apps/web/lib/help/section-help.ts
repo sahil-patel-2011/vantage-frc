@@ -268,14 +268,12 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Competition day and the night after, as soon as match video exists.",
     moments: ["comp-day", "after"],
     how: [
-      "Pair a Pi with the video role at Team → AI relays.",
       "Paste a YouTube, official match video, uploaded file, or pit camera link.",
       "Wait for the timeline. Each event is labelled from video.",
       "Tap Confirm to keep it as video evidence. That does not overwrite scout counts.",
     ],
     tips: ["If no video Pi is online the video stays Waiting and the page says so."],
     related: [
-      { label: "AI relays", href: "/team/relays" },
       { label: "Match notes", href: "/match-notes-timeline" },
     ],
   },
@@ -651,60 +649,12 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Mark a file available offline when you will need it in the stands.",
     ],
     tips: [
-      "Files over the hosted cap belong on a paired storage node, not the cloud database.",
+      "Large photos and videos belong in the team's Google Drive folder, linked from Connectors.",
       "The old Team Library still lists inside Files until those rows are copied into Team files.",
     ],
     related: [
-      { label: "Storage node", href: "/team/storage" },
       { label: "Playbook", href: "/team/knowledge" },
       { label: "Media library", href: "/media-library" },
-    ],
-  },
-  {
-    id: "team.team-storage",
-    hub: "team",
-    tab: "team-storage",
-    title: "Storage node",
-    what: "A self-hosted always-on box (a Raspberry Pi in the shop is the canonical choice) that stores the team's large files on its own disk — bytes on your hardware, only metadata in the cloud.",
-    why: "Large media and exports would otherwise max out the hosted database; your own disk is cheap and yours.",
-    when: "Preseason to set up; it runs unattended after that.",
-    moments: ["preseason", "build"],
-    how: [
-      "Run the single service file on the box and note the 8-character pairing code it prints.",
-      "An owner or admin enters the code at /team/storage to pair.",
-      "Watch the node report real disk stats — Online within a minute of its first heartbeat.",
-      "For access away from the shop LAN, give it a public URL (Tailscale Funnel or cloudflared) and paste it into the node's card.",
-    ],
-    tips: [
-      "The cloud cannot reach a node behind your router without a public URL — the UI says node-unreachable honestly rather than pretending.",
-      "The node refuses writes past its disk quota instead of filling the card.",
-    ],
-    related: [
-      { label: "Files", href: "/files" },
-      { label: "Media library", href: "/media-library" },
-    ],
-  },
-  {
-    id: "team.team-relays",
-    hub: "team",
-    tab: "team-relays",
-    title: "AI relays",
-    what: "Raspberry Pis that run Ask AI, Bugbot, assembly manuals, and video analysis. Pair with a code the installer prints — never a website cookie.",
-    why: "The shop's own computers answer first so chats stay fast and cheap, then the team's keys, then hosted keys as a last resort.",
-    when: "Set up before build season; it runs unattended after that.",
-    moments: ["preseason", "build", "comp-day"],
-    how: [
-      "Install the relay worker on a Pi. It prints an 8-character code.",
-      "An owner or admin types that code at Team → AI relays.",
-      "Give the Pi a role: chat, agent, or video. When the video Pi is idle it can run agent jobs too.",
-      "Watch the card: online means a heartbeat in the last two minutes.",
-    ],
-    tips: [
-      "Do not paste a Freebuff website cookie. That is not allowed. Paste the relay endpoint and token, or approve the pairing code.",
-    ],
-    related: [
-      { label: "Connectors", href: "/connectors" },
-      { label: "Video", href: "/video-analysis" },
     ],
   },
   {
@@ -1588,7 +1538,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     hub: "media",
     tab: "media-library",
     title: "Media library",
-    what: "The team's photo and video shelf: albums, client-generated thumbnails, and honest size caps (8 MB photos after downscale, 4 MiB hosted-cloud videos; 100 MB only on a paired storage node).",
+    what: "The team's photo and video shelf: albums, client-generated thumbnails, and honest size caps (8 MB photos after downscale, 4 MiB hosted-cloud videos; longer clips go in the team's Google Drive folder).",
     why: "Build-season photos and event clips end up findable for the media kit, awards, and sponsors instead of scattered across phones.",
     when: "All season — upload the week the photos are taken.",
     moments: ["preseason", "build", "pre-comp", "comp-day", "after"],
@@ -1600,7 +1550,6 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: ["Duplicates are caught by content hash; an over-cap upload is refused with the real size and cap named."],
     related: [
       { label: "Media kit", href: "/media-kit" },
-      { label: "Storage node", href: "/team/storage" },
       { label: "Match video", href: "/match-video-index" },
     ],
   },

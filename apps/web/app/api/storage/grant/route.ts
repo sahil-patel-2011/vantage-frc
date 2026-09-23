@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       );
       const chosen = nodeRow.rows[0];
       if (!chosen?.baseUrl) {
-        return { destination: "refused", reason: `Storage node "${decision.nodeName}" lost its reachable URL — set it on /team/storage.` };
+        return { destination: "refused", reason: `Storage node "${decision.nodeName}" lost its reachable URL.` };
       }
       if (!chosen.encryptedAccessKey) {
         return {

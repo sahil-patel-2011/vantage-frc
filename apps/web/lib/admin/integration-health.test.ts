@@ -230,7 +230,6 @@ describe("buildIntegrationHealthReport — setup_required behavior", () => {
   it("never reports setup_required for storage — it works with zero platform config", () => {
     const report = buildIntegrationHealthReport(baseInputs());
     expect(findCheck(report, "cloud-storage").state).toBe("healthy");
-    expect(findCheck(report, "storage-node").state).toBe("healthy");
   });
 });
 

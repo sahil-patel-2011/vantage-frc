@@ -586,17 +586,6 @@ export function buildIntegrationHealthReport(input: IntegrationHealthInputs): In
     lastSuccessAt: null,
     remediation: null,
   });
-  checks.push({
-    id: "storage-node",
-    category: "Storage",
-    label: "Self-hosted storage node (optional)",
-    state: "healthy",
-    verification: "config_only",
-    reason:
-      "Opt-in per-team pairing under Team → Storage; no platform-wide credential is required for this feature to work.",
-    lastSuccessAt: null,
-    remediation: null,
-  });
 
   return {
     generatedAt: now.toISOString(),

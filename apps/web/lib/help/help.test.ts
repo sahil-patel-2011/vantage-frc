@@ -226,7 +226,6 @@ describe("help search index", () => {
     expect(searchHelpArticles("subscription bridge")[0]?.slug).toBe("ai-bridge");
     expect(searchHelpArticles("team library folders")[0]?.slug).toBe("team-library");
     expect(searchHelpArticles("reimbursement receipt")[0]?.slug).toBe("reimbursements");
-    expect(searchHelpArticles("storage node raspberry pi")[0]?.slug).toBe("storage-node");
     expect(searchHelpArticles("agent config cursor")[0]?.slug).toBe("agent-config");
     expect(searchHelpArticles("ollama local model").map((hit) => hit.slug)).toContain("local-ai");
     expect(searchHelpArticles("pricing plans").map((hit) => hit.slug)).toContain(

@@ -17,7 +17,6 @@ import {
   connectorsPageDescription,
 } from "../../lib/connectors/catalog";
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
-import MicrosoftExcelCard from "./microsoft-excel-card";
 import SpreadsheetMirrorCard from "./spreadsheet-mirror-card";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -278,7 +277,7 @@ export default function ConnectorsClient() {
       {!orgId ? (
         <p className="connector-banner" role="status">
           You are not in a team, so team-linked connectors below show deployment configuration only.{" "}
-          <a href="/workspace">Choose your team</a> to link GitHub, Discord, Slack or a storage node.
+          <a href="/workspace">Choose your team</a> to link GitHub, Discord, Slack or Google Sheets.
         </p>
       ) : null}
 
@@ -357,7 +356,6 @@ export default function ConnectorsClient() {
         })}
       </ul>
       {orgId ? <SpreadsheetMirrorCard orgId={orgId} /> : null}
-      {orgId ? <MicrosoftExcelCard orgId={orgId} /> : null}
     </main>
   );
 }

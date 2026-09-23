@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { aiKeysEncryptionStatus } from "../../../../../lib/ai-keys/kms-status";
 import { googleSheetsSetupStatus } from "../../../../../lib/google-sheets/google-api";
@@ -24,20 +25,30 @@ export async function GET(request: Request) {
 
     const data = await withRls({ userId: user.id, orgId }, async (client) => {
       const role = await requireWorkbookViewer(client, orgId, user.id);
-      return { canManage: roleCanManageWorkbook(role), states: await readCopyStates(client, orgId) };
+      return {
+        canManage: roleCanManageWorkbook(role),
+        platformAdmin: await isPlatformAdmin(client),
+        states: await readCopyStates(client, orgId),
+      };
     });
 
     const google = googleSheetsSetupStatus();
     const microsoft = microsoftSetupStatus();
     const encryption = aiKeysEncryptionStatus();
-    const summary = summarizeMirror(data.states.copies, new Date());
+    // Excel appears only once this deployment can offer it (or a team already linked it);
+    // until then a team sees one Google copy, not a card nagging about the other.
+    const copies = data.states.copies.filter(
+      (copy) => copy.copy !== "excel" || microsoft.configured || copy.connected || data.platformAdmin,
+    );
+    const summary = summarizeMirror(copies, new Date());
 
     return json({
       migrated: data.states.migrated,
       setupMessage: !data.states.migrated ? MIRROR_NOT_MIGRATED_MESSAGE : encryption.ok ? null : encryption.message,
       canManage: data.canManage,
       summary,
-      copies: data.states.copies.map((copy) => ({
+      platformAdmin: data.platformAdmin,
+      copies: copies.map((copy) => ({
         copy: copy.copy,
         connected: copy.connected,
         lastSyncAt: copy.lastSyncAt,
@@ -55,13 +66,13 @@ export async function GET(request: Request) {
           configured: google.configured,
           oauthOffered: google.oauthOffered,
           message: google.message,
-          missingEnv: data.canManage ? google.missingEnv : [],
-          callbackUrl: data.canManage ? google.callbackUrl : null,
+          missingEnv: data.platformAdmin ? google.missingEnv : [],
+          callbackUrl: data.platformAdmin ? google.callbackUrl : null,
         },
         excel: {
           configured: microsoft.configured,
           message: microsoft.message,
-          missingEnv: data.canManage ? microsoft.missingEnv : [],
+          missingEnv: data.platformAdmin ? microsoft.missingEnv : [],
         },
       },
     });

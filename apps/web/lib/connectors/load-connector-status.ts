@@ -63,7 +63,7 @@ export async function loadConnectorProofs(
 
   const orgId = input.orgId;
 
-  const [github, onshape, discord, slack, tba, storage, relay] = await Promise.all([
+  const [github, onshape, discord, slack, tba, relay] = await Promise.all([
     // Any non-disabled row, whatever its status: a row in `error` is a link
     // whose token GitHub refused, and reporting that as "Not connected" sends
     // the reader off to create a second OAuth App instead of reconnecting.
@@ -102,15 +102,6 @@ export async function loadConnectorProofs(
       `SELECT count(*)::text AS count FROM data_source_credentials
        WHERE source='tba' AND disabled_at IS NULL
          AND (org_id IS NULL OR org_id = $1::uuid)`,
-      [orgId],
-    ),
-    safeRows<{ name: string; lastHeartbeatAt: string | null }>(
-      client,
-      `SELECT name, last_heartbeat_at::text AS "lastHeartbeatAt"
-       FROM storage_nodes
-       WHERE org_id=$1::uuid AND revoked_at IS NULL
-       ORDER BY last_heartbeat_at DESC NULLS LAST
-       LIMIT 1`,
       [orgId],
     ),
     safeRows<{ machineName: string; lastSeenAt: string | null }>(
@@ -182,17 +173,6 @@ export async function loadConnectorProofs(
     };
   }
 
-  const storageRow = storage[0];
-  if (storageRow) {
-    proofs["storage-node"] = {
-      linked: true,
-      account: storageRow.name,
-      note: storageRow.lastHeartbeatAt
-        ? `Paired and last heard from at ${storageRow.lastHeartbeatAt}.`
-        : "Paired, but it has never sent a heartbeat — check that the node agent is running on the team machine.",
-    };
-  }
-
   const relayRow = relay[0];
   if (relayRow) {
     proofs["fusion-relay"] = {
@@ -201,26 +181,6 @@ export async function loadConnectorProofs(
       note: relayRow.lastSeenAt
         ? `Paired and last seen at ${relayRow.lastSeenAt}. Fusion runs on that laptop; it is never driven from the cloud.`
         : "Paired, but the relay has never checked in — start the Vantage add-in inside Fusion 360 on that laptop.",
-    };
-  }
-
-  const freeRelay = await safeRows<{ name: string; lastHeartbeatAt: string | null }>(
-    client,
-    `SELECT name, last_heartbeat_at::text AS "lastHeartbeatAt"
-     FROM relay_nodes
-     WHERE org_id=$1::uuid AND revoked_at IS NULL
-     ORDER BY last_heartbeat_at DESC NULLS LAST
-     LIMIT 1`,
-    [orgId],
-  );
-  const freeRelayRow = freeRelay[0];
-  if (freeRelayRow) {
-    proofs["free-relay"] = {
-      linked: true,
-      account: freeRelayRow.name,
-      note: freeRelayRow.lastHeartbeatAt
-        ? `Paired and last heard from at ${freeRelayRow.lastHeartbeatAt}.`
-        : "Paired, but it has never sent a heartbeat — start the Pi relay.",
     };
   }
 

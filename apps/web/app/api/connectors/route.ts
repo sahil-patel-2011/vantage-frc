@@ -13,10 +13,11 @@
  * settings link with "orgId is required" is the failure this whole change is
  * about.
  */
-import { auth } from "@vantage/core";
+import { auth, isPlatformAdmin } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { connectorAudienceFromRole } from "../../../lib/connectors/catalog";
+import { connectorsForViewer } from "../../../lib/connectors/team-view";
 import {
   buildConnectorStatuses,
   loadConnectorProofs,
@@ -40,11 +41,11 @@ export async function GET(request: Request) {
          LIMIT 1`,
         [session.user.id, requestedOrgId],
       );
-      return membership.rows[0] ?? null;
+      return { membership: membership.rows[0] ?? null, platformAdmin: await isPlatformAdmin(client) };
     });
 
-    const orgId = resolved?.orgId ?? null;
-    const role = resolved?.role ?? null;
+    const orgId = resolved.membership?.orgId ?? null;
+    const role = resolved.membership?.role ?? null;
     const canManage = role === "owner" || role === "admin";
     const audience = connectorAudienceFromRole(canManage);
 
@@ -56,13 +57,16 @@ export async function GET(request: Request) {
           loadConnectorProofs(client, { userId: session.user.id, orgId: null }),
         );
 
-    const connectors = buildConnectorStatuses(process.env, proofs, audience);
+    const connectors = connectorsForViewer(buildConnectorStatuses(process.env, proofs, audience), {
+      platformAdmin: resolved.platformAdmin,
+    });
 
     return Response.json({
       orgId,
       role,
       /** Only owners and admins may change a team-scoped link. */
       canManage,
+      platformAdmin: resolved.platformAdmin,
       summary: summarizeConnectors(connectors),
       connectors,
     });
@@ -70,7 +74,7 @@ export async function GET(request: Request) {
     // A connectors page that 500s is the exact complaint. Answer with the
     // environment-only view. Role is unknown here, so student copy — env-var
     // names stay on the owner/admin path above.
-    const connectors = buildConnectorStatuses(process.env, {}, "student");
+    const connectors = connectorsForViewer(buildConnectorStatuses(process.env, {}, "student"), { platformAdmin: false });
     return Response.json({
       orgId: null,
       role: null,

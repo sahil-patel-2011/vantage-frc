@@ -72,7 +72,7 @@ export async function PUT(request: Request, context: RouteContext) {
       const cap = Math.min(dbCapForKind(item.kind), cloudUploadCapBytes());
       if (content.byteLength > cap) {
         return {
-          error: `Upload is ${formatMediaBytes(content.byteLength)} — over the ${formatMediaBytes(cap)} cloud upload limit. Media this size belongs on a paired storage node (/team/storage).`,
+          error: `Upload is ${formatMediaBytes(content.byteLength)} — over the ${formatMediaBytes(cap)} cloud upload limit. Put media this size in your team's Google Drive folder instead.`,
           status: 413,
         };
       }

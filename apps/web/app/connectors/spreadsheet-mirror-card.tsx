@@ -215,15 +215,13 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
           <h2 id="mirror-title">Spreadsheet copies</h2>
           {summary ? (
             <Badge tone={summary.identical ? "good" : anyConnected ? "info" : "neutral"}>
-              {summary.identical ? "Identical" : anyConnected ? "Syncing" : "Off"}
+              {summary.identical ? (status && status.copies.length === 1 ? "Up to date" : "Identical") : anyConnected ? "Not synced" : "Off"}
             </Badge>
           ) : null}
         </div>
         <p className="connector-detail">
-          Two live copies of your roster, matches, scouting and pick list — one in Google Sheets, one in Microsoft Excel —
-          written from Vantage together so they always say the same thing. If one provider is down or asks Vantage to slow
-          down, the other keeps working and the first catches up on the next sync. Match and team data comes from
-          Vantage&apos;s own The Blue Alliance cache, so the copies add no TBA calls.
+          Your roster, matches, scouting and pick list in a spreadsheet you own. Vantage keeps it up to date, and edits
+          you make there can be pulled back in.
         </p>
       </div>
 

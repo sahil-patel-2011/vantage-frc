@@ -40,10 +40,14 @@ describe("a pairing endpoint tells a machine agent the truth about a setup probl
 });
 
 describe("the pairing connectors on the settings page", () => {
-  it("tells a storage node reader where the pairing code comes from", () => {
-    const status = describeConnector(connectorById("storage-node"), {});
-    expect(status.detail).toMatch(/storage-node agent/i);
-    expect(status.permissions.join(" ")).toMatch(/pairing code/i);
+  it("reports a paired Fusion laptop as Connected by its own name, from a real row only", () => {
+    const status = describeConnector(connectorById("fusion-relay"), { FUSION_RELAY_SIGNING_SECRET: "x" }, {
+      linked: true,
+      account: "shop-laptop",
+      note: "Paired and last seen at 2026-09-09T20:00:00Z.",
+    });
+    expect(status.statusLine).toBe("Connected as shop-laptop");
+    expect(status.detail).toContain("last seen");
   });
 
   it("says Fusion is local by design rather than implying a missing cloud integration", () => {
@@ -52,24 +56,4 @@ describe("the pairing connectors on the settings page", () => {
     expect(status.statusLine).toBe("Not configured — set FUSION_RELAY_SIGNING_SECRET");
   });
 
-  it("reports a paired node as Connected by its own name, from a real row only", () => {
-    const status = describeConnector(connectorById("storage-node"), {}, {
-      linked: true,
-      account: "shop-pi",
-      note: "Paired and last heard from at 2026-09-09T20:00:00Z.",
-    });
-    expect(status.statusLine).toBe("Connected as shop-pi");
-    expect(status.detail).toContain("last heard from");
-  });
-
-  it("does not call a node Connected just because it was paired and never checked in", () => {
-    // The note carries the truth; the badge stays Connected because the pairing
-    // row is real, and the detail is what says the agent is not running.
-    const status = describeConnector(connectorById("storage-node"), {}, {
-      linked: true,
-      account: "shop-pi",
-      note: "Paired, but it has never sent a heartbeat — check that the node agent is running on the team machine.",
-    });
-    expect(status.detail).toMatch(/never sent a heartbeat/);
-  });
 });

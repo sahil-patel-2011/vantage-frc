@@ -7,7 +7,6 @@ export const VIDEO_ANALYSIS_RELATED_LINKS = [
   { id: "command", label: "Event day", kind: "hub" as const, tab: "command" },
   { id: "match-notes", label: "Match notes", kind: "path" as const, path: "/match-notes-timeline" },
   { id: "match-video", label: "Match video", kind: "path" as const, path: "/video" },
-  { id: "relays", label: "AI relays", kind: "path" as const, path: "/team/relays" },
 ] as const;
 
 export type VideoAnalysisRelatedId = (typeof VIDEO_ANALYSIS_RELATED_LINKS)[number]["id"];

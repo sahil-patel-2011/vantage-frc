@@ -56,12 +56,12 @@ export type NodeEligibility =
 /** Why (or why not) this node can take an upload of `byteSize` right now. */
 export function nodeEligibilityFor(node: CandidateNode | null, byteSize: number): NodeEligibility {
   if (!node) {
-    return { eligible: false, reason: "No storage node is paired. Pair one on /team/storage." };
+    return { eligible: false, reason: "No storage node is paired.." };
   }
   if (!node.baseUrl) {
     return {
       eligible: false,
-      reason: `"${node.name}" has no reachable URL configured, so your browser cannot send it files. Set one on /team/storage (Cloudflare Tunnel or Tailscale).`,
+      reason: `"${node.name}" has no reachable URL configured, so your browser cannot send it files.`,
     };
   }
   if (!isBrowserReachableUrl(node.baseUrl)) {

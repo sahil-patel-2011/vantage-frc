@@ -35,7 +35,11 @@ export function summarizeMirror(states: State[], now: Date): MirrorSummary {
     .filter((state) => state.lastSyncHash && state.lastSyncAt)
     .sort((a, b) => Date.parse(b.lastSyncAt!) - Date.parse(a.lastSyncAt!))[0];
   const hashes = new Set(connected.map((state) => state.lastSyncHash ?? ""));
-  const identical = connected.length === 2 && hashes.size === 1 && !hashes.has("");
+  // One offered copy (Excel not available here): it is "identical" once it holds a sync.
+  const identical =
+    states.length === 1
+      ? connected.length === 1 && Boolean(connected[0]!.lastSyncHash)
+      : connected.length === 2 && hashes.size === 1 && !hashes.has("");
 
   const copies = states.map((state) => {
     const label = mirrorCopyLabel(state.copy);
@@ -48,7 +52,7 @@ export function summarizeMirror(states: State[], now: Date): MirrorSummary {
         detail: `${label} asked Vantage to slow down; the other copy is carrying the load and ${label} catches up on the next sync.`,
       };
     }
-    if (state.lastError && /sign-in expired|reconnect|decrypt/i.test(state.lastError)) {
+    if (state.lastError && /sign-in expired|reconnect|decrypt|secret|disconnect|sign-in page|no longer exists|older version/i.test(state.lastError)) {
       return { copy: state.copy, health: "attention" as const, detail: state.lastError };
     }
     if (!state.lastSyncHash) {
@@ -64,8 +68,14 @@ export function summarizeMirror(states: State[], now: Date): MirrorSummary {
     return { copy: state.copy, health: "in_sync" as const, detail: `${label} holds the latest copy.` };
   });
 
-  const headline =
-    connected.length === 0
+  const single = states.length === 1 ? states[0]! : null;
+  const headline = single
+    ? !single.connected
+      ? `Connect ${mirrorCopyLabel(single.copy)} to keep a live copy of this team's data.`
+      : single.lastSyncAt
+        ? `${mirrorCopyLabel(single.copy)} is connected.`
+        : "Connected. Press Sync now to fill it."
+    : connected.length === 0
       ? "Connect Google Sheets and Microsoft Excel to keep two live copies of this team's data."
       : connected.length === 1
         ? `Only ${mirrorCopyLabel(connected[0]!.copy)} is connected. Connect the other for a second, independent copy.`

@@ -74,7 +74,7 @@ export async function PUT(request: Request, context: RouteContext) {
       const cloudCap = Math.min(LIBRARY_DB_CAP_BYTES, cloudUploadCapBytes());
       if (content.byteLength > cloudCap) {
         return {
-          error: `Upload is ${formatLibraryBytes(content.byteLength)} — over the ${formatLibraryBytes(cloudCap)} cloud upload limit. Files this size belong on a paired storage node (/team/storage).`,
+          error: `Upload is ${formatLibraryBytes(content.byteLength)} — over the ${formatLibraryBytes(cloudCap)} cloud upload limit. Put files this size in your team's Google Drive folder instead.`,
           status: 413,
         };
       }

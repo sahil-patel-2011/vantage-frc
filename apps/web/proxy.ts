@@ -73,10 +73,6 @@ const PUBLIC_PREFIXES = [
   // enforced by the route itself (no session cookie).
   "/api/agent/release-notes",
   // Pi relay pairing: the worker prints a code and polls; approval stays session-gated.
-  "/api/relay/pair/start",
-  "/api/relay/pair/poll",
-  "/api/storage-node/pair/start",
-  "/api/storage-node/pair/poll",
   // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
   "/api/cad/pair/start",
   "/api/cad/pair/poll",

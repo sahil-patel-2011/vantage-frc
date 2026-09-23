@@ -256,7 +256,6 @@ const SHELL_ROUTES = [
   "/team/prompts",
   "/team/security",
   "/team/slack",
-  "/team/storage",
   "/troubleshoot",
   "/tuning",
   "/weight-budget",

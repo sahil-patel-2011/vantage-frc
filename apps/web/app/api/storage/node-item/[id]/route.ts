@@ -72,7 +72,7 @@ export async function GET(request: Request, context: RouteContext) {
           status: 409,
           reason:
             `Stored on "${row.nodeName}", but the node has no reachable URL configured. ` +
-            `Set one on /team/storage (Cloudflare Tunnel or Tailscale) to fetch it from here.`,
+            `Its owner can download it from the node directly.`,
           lanUrls,
         };
       }
@@ -82,7 +82,7 @@ export async function GET(request: Request, context: RouteContext) {
           status: 409,
           reason:
             `Stored on "${row.nodeName}", but its URL (${row.baseUrl}) is plain http — browsers on a secure page cannot load it. ` +
-            `Give the node an https URL on /team/storage.`,
+            `The node needs an https address.`,
           lanUrls,
         };
       }

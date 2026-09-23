@@ -14,12 +14,6 @@ const SURFACES = [
     ready: "Start typing to search",
   },
   {
-    path: "/team/storage",
-    heading: "Self-hosted storage",
-    crumb: "Team / Storage",
-    ready: "Pair a node",
-  },
-  {
     path: "/team/ai-usage",
     heading: "Your keys usage",
     crumb: /AI\s*\/\s*Your keys usage/,

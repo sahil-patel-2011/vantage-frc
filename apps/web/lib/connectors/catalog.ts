@@ -34,9 +34,7 @@ export type ConnectorId =
   | "slack"
   | "email"
   | "stripe"
-  | "storage-node"
   | "fusion-relay"
-  | "free-relay"
   | "claude-code";
 
 /**
@@ -228,21 +226,6 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     hasDisconnectAction: false,
   },
   {
-    id: "storage-node",
-    label: "Team storage node",
-    powers: "Keeping large CAD and video files on a machine the team owns instead of paying for cloud storage.",
-    scope: "team",
-    requiredEnv: [],
-    optionalEnv: [],
-    callbackPath: "/api/storage-node/pair/poll",
-    callbackLabel: "Poll URL the node reads while pairing",
-    providerConsole: "Run the storage-node agent on the team machine; it prints a pairing code",
-    permissions: ["A pairing code approved by an owner or admin"],
-    managePath: "/team/storage",
-    hasConnectAction: false,
-    hasDisconnectAction: false,
-  },
-  {
     id: "fusion-relay",
     label: "Fusion 360 relay",
     powers: "Driving Fusion 360 on a laptop from Vantage. Fusion has no cloud API; the relay is local by design.",
@@ -254,22 +237,6 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     providerConsole: "Install the Vantage Fusion add-in on the laptop, then pair it from CAD Connections",
     permissions: ["A pairing code approved by an owner or admin"],
     managePath: "/cad/connections",
-    hasConnectAction: false,
-    hasDisconnectAction: false,
-  },
-  {
-    id: "free-relay",
-    label: "Free relay (Pi)",
-    powers: "Ask AI, Bugbot, assembly manuals and video analysis on the team's Raspberry Pi instead of a paid key.",
-    scope: "team",
-    requiredEnv: [],
-    optionalEnv: ["FREE_RELAY_BASE_URL", "FREE_RELAY_API_KEY", "FREE_RELAY_MODEL"],
-    callbackPath: "/api/relay/pair/poll",
-    callbackLabel: "Poll URL the Pi reads while pairing",
-    providerConsole:
-      "Run the Vantage relay worker on the Pi (scripts/pi/install-free-relay.sh). It prints a pairing code. Do not paste a Freebuff website cookie — that is not allowed.",
-    permissions: ["A pairing code approved by an owner or admin", "A DeepSeek endpoint the team owns"],
-    managePath: "/team/relays",
     hasConnectAction: false,
     hasDisconnectAction: false,
   },
@@ -494,12 +461,8 @@ export function studentPermissionsCopy(id: ConnectorId): string {
       return "Send invites and team notices.";
     case "stripe":
       return "Team plan upgrades and usage credits.";
-    case "storage-node":
-      return "Keep large CAD and video files on a team machine.";
     case "fusion-relay":
       return "Fusion stays on this computer. Pair it from CAD Connections.";
-    case "free-relay":
-      return "Run Ask AI on the team's Raspberry Pi.";
     case "claude-code":
       return "Sign in to Claude Code on one computer and pair it here.";
     default: {

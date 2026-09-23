@@ -926,7 +926,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Where the bytes live",
         body: [
           "Uploads within the cap are stored in the team database. Images preview inline; everything else is a download card that keeps its original filename.",
-          "Teams with a self-hosted storage node (/team/storage) can hold large media on their own hardware — see the storage node article.",
+          "Large photos and videos live in the team's own Google Drive folder, linked from Connectors.",
         ],
       },
     ],
@@ -1342,9 +1342,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Uploading",
         body: [
-          "Photos (JPEG/PNG/WebP) are downscaled in the browser before upload and land under the 8 MB in-database cap; hosted-cloud videos (MP4/WebM) are capped at 4 MiB because Vercel rejects larger bodies. Pair a storage node (/team/storage) for clips up to the 100 MB schema ceiling.",
+          "Photos (JPEG/PNG/WebP) are downscaled in the browser before upload and land under the 8 MB in-database cap; hosted-cloud videos (MP4/WebM) are capped at 4 MiB because Vercel rejects larger bodies. Longer clips belong in the team's Google Drive folder.",
           "Thumbnails and video poster frames are generated on your device; duplicates are caught by content hash instead of stored twice.",
-          "Bigger videos belong on a paired storage node (/team/storage) or on YouTube via the Match Video Index.",
+          "Bigger videos belong in the team's Google Drive folder or on YouTube via the Match Video Index.",
         ],
       },
       {
@@ -1645,52 +1645,6 @@ export const HELP_ARTICLES: HelpArticle[] = [
       },
     ],
   },
-  {
-    id: "storage-node",
-    slug: "storage-node",
-    title: "Self-hosted storage node",
-    summary:
-      "Run a Raspberry Pi (or any Node 20+ box) that stores your team's large files on its own disk — bytes on your hardware, only metadata in the cloud.",
-    category: "integrations",
-    keywords: [
-      "storage node",
-      "raspberry pi",
-      "self host",
-      "self-hosted",
-      "disk",
-      "quota",
-      "pairing",
-      "tailscale",
-      "cloudflared",
-      "large files",
-    ],
-    relatedHref: "/team/storage",
-    sections: [
-      {
-        heading: "What it is",
-        body: [
-          "A single dependency-free service file your team runs on an always-on computer — a Pi in the shop is the canonical choice. It holds large binaries (media, exports, scans) so the hosted database never maxes out.",
-          "Only metadata (hash, size, type, which node) lives in the cloud; the bytes live on your hardware, content-addressed and verified on every write.",
-        ],
-      },
-      {
-        heading: "Pairing and health",
-        body: [
-          "The node prints an 8-character code; a team owner or admin enters it at /team/storage to pair.",
-          "It heartbeats every 60 seconds with real disk stats and an incremental integrity scrub. A gap over 5 minutes shows degraded; over 30 minutes, offline — items on an unreachable node say so with a last-seen time, never faked as available.",
-          "The node enforces a disk quota (20 GB by default) and refuses writes past it instead of filling your SD card.",
-        ],
-      },
-      {
-        heading: "The networking truth",
-        body: [
-          "On the same LAN, devices reach the node directly. From anywhere else, the cloud cannot reach a box behind your router — there is no relay.",
-          "For remote access, give the node a public URL (Tailscale Funnel or cloudflared are the sane options) and paste it into its card on /team/storage. Until then, remote file requests honestly report the node as unreachable.",
-          "Unpair on /team/storage revokes the node's token immediately; wipe its data directory to fully decommission.",
-        ],
-      },
-    ],
-  },
 
   // ------------------------------------------------------------- Admin & owner
   {
@@ -1724,7 +1678,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What only owners/admins can do",
         body: [
-          "Invite and role-change members (/team/admin), restrict hubs and tabs per scout/viewer (/team/security), set team-wide AI keys, budgets, and governance, approve storage-node pairings (/team/storage), and edit the funding profile (/team/background).",
+          "Invite and role-change members (/team/admin), restrict hubs and tabs per scout/viewer (/team/security), set team-wide AI keys, budgets, and governance, and edit the funding profile (/team/background).",
           "Restricted Library and agent-config items always stay visible to owners/admins, and finance approvals (orders, reimbursements) are owner/admin actions.",
         ],
       },
@@ -1733,31 +1687,6 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Exports (/exports) produce audited CSV/ZIP takeout for this team. Keys are never included.",
           "Billing belongs to the team's billing owner; plans and hosted credits are managed from /pricing and AI → Controls.",
-        ],
-      },
-    ],
-  },
-  {
-    id: "ai-relays",
-    slug: "ai-relays",
-    category: "integrations",
-    title: "Pair an AI relay (Raspberry Pi)",
-    summary: "A Pi on the team network runs Ask AI, Bugbot, assembly manuals, and video analysis. Pair it with a code — never a website cookie.",
-    keywords: ["relay", "raspberry pi", "freebuff", "deepseek", "pair"],
-    relatedHref: "/team/relays",
-    sections: [
-      {
-        heading: "What you see",
-        body: [
-          "Team → AI relays lists whether a Pi is paired and when it last checked in.",
-          "Approve the 8-character code the installer prints. That is the same pattern as the storage node.",
-        ],
-      },
-      {
-        heading: "What to do",
-        body: [
-          "On the Pi, run the relay installer. It prints a code. An owner or admin types that code here.",
-          "Do not paste a Freebuff website cookie. That is not allowed. The Pi uses the team's own endpoint and token.",
         ],
       },
     ],
