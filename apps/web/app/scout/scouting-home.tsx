@@ -162,6 +162,11 @@ export function ScoutingHome() {
         await putFeatureSnapshot("match-sim", orgId, predictions);
         saved.push("predictions");
       }
+      const schedule = (await read(`/api/schedule?orgId=${org}`)) as { status?: string } | null;
+      if (schedule?.status === "ready") {
+        await putFeatureSnapshot("schedule", orgId, schedule);
+        saved.push("the match schedule");
+      }
       const picklist = await read(`/api/picklist-collab?orgId=${org}`);
       if (picklist) {
         await putFeatureSnapshot("picklist-collab", orgId, picklist);

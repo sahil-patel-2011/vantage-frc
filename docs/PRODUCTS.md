@@ -121,10 +121,16 @@ is cross-origin, and browsers will not install from it.
 Every `/scout/*` page is an offline shell route (`public/sw.js`, mirrored in
 `lib/offline/shell-routes.ts`), so the Scouting app opens with no signal once it has been loaded
 once. **Get this phone ready** on Scouting's home does that loading up front: it asks the browser
-to keep the site's data, saves this event's forms, assignments, predictions and pick list where each
-page reads its offline copy, and has the service worker store all five pages with the scripts and
+to keep the site's data, saves this event's forms, assignments, match schedule, predictions, pick list
+and **every team's lookup page** where each page reads its offline copy, and has the service worker store all five pages with the scripts and
 styles they name (`WARM_ROUTES`, tested in `lib/offline/sw-warm-routes.test.ts`). The note under the
-button says only what was actually saved. Scouting keeps unsynced entries, photos and cached event data in IndexedDB (`lib/scout-offline.ts`).
+button says only what was actually saved.
+
+With no signal: **Teams** opens on the event's saved team list, search filters that list (number
+prefix or nickname), and any team opens from its saved page (`lib/intel/offline-teams.ts`).
+**Predict** still lists the upcoming matches with the schedule's saved estimates; a full simulation
+waits for signal because it runs on the server. **Scout** saves entries to the device and sends them
+when the connection is back. Scouting keeps unsynced entries, photos and cached event data in IndexedDB (`lib/scout-offline.ts`).
 Browsers treat that as best-effort storage and may clear it under pressure. Scouting's home shows
 what this device holds and how much room is left (`navigator.storage.estimate()`), and offers **Keep
 scouting data on this device**, which calls `navigator.storage.persist()`. Once granted, the browser

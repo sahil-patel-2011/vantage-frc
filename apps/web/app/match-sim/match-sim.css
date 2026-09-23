@@ -13,6 +13,7 @@
 .msim-upcoming{display:grid;gap:8px}
 .msim-upcoming h2{margin:0;font-size:var(--title-3,17px)}
 .msim-upcoming ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.msim-upcoming-note{margin:0;color:var(--muted);font-size:13px}
 .msim-upcoming button{
   display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;gap:10px;
   width:100%;min-height:48px;padding:8px 14px;border:1px solid var(--line);border-radius:var(--radius-sm,12px);
