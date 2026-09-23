@@ -12,5 +12,8 @@ describe("Season Costs last snapshot stays on the phone", () => {
     expect(src).toMatch(/"costs"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Season Costs"/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
   });
 });

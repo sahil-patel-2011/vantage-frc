@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
@@ -23,11 +23,26 @@ import type {
   SubscriptionWithAnnual,
 } from "../../lib/costs/types";
 import { hubHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./costs.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type LiveView = Extract<CostsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -203,6 +218,7 @@ export default function CostsClient() {
       setSeason(data.seasonYear);
       setFromCache(false);
       setCachedAt(null);
+      if (data.orgId) persistOrgIdInUrl(data.orgId);
       await persistCostsSnapshot(orgHint, seasonHint, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -300,12 +316,17 @@ export default function CostsClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist = !view.orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page costs-page">
         <PageHeader
           breadcrumbs="Business / Season Costs"
           title="Season Costs"
-          description="Track real event spend, subscriptions, and live AI/API usage — separate from Business purchase approvals."
+          description={
+            offerWaitlist
+              ? withWaitlistLink(view.message)
+              : "Track real event spend, subscriptions, and live AI/API usage — separate from Business purchase approvals."
+          }
         >
           {view.orgId ? <CostsRelated orgId={view.orgId} /> : null}
         </PageHeader>
@@ -315,8 +336,24 @@ export default function CostsClient() {
             {error}
           </p>
         ) : null}
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
-          {view.steps[0] ? (
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "costs-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="costs-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="costs-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
             </Button>
