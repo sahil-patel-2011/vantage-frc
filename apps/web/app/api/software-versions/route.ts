@@ -48,7 +48,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to track software versions." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to track software versions."
+            : "Choose your team to track software versions, or join the waitlist.",
+        };
+      }
 
       const components = await client.query<ComponentRow>(
         `SELECT c.id, c.component, c.category, c.installed_version AS "installedVersion", c.target_version AS "targetVersion",
