@@ -9,6 +9,7 @@
  * the hub section links to them.
  */
 
+import { MarketingAccountTextLink } from "./site-header";
 import {
   MARKETING_HELPERS,
   MARKETING_HUBS,
@@ -127,7 +128,7 @@ export function HomeShowcase() {
             {" · "}
             <a href="/pricing">What it costs</a>
             {" · "}
-            <a href="/signin">Sign in</a>
+            <MarketingAccountTextLink />
           </p>
         </div>
       </section>

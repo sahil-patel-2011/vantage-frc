@@ -46,6 +46,29 @@ function closeMobileMenu(event: { currentTarget: Element }) {
   (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
 }
 
+export function MarketingAccountTextLink() {
+  const signedIn = useSignedIn();
+  const link = marketingFooterAccountLink(signedIn);
+  return <a href={link.href}>{link.label}</a>;
+}
+
+export function MarketingInvitedNote() {
+  const signedIn = useSignedIn();
+  return (
+    <p className="lux-hero-note">
+      {signedIn ? (
+        <a href="/dashboard">Open your team</a>
+      ) : (
+        <>
+          Already invited? <a href="/signin">Sign in</a>
+        </>
+      )}
+      {" · "}
+      Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
+    </p>
+  );
+}
+
 export function MarketingHeroActions() {
   const signedIn = useSignedIn();
   return (
