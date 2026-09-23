@@ -151,7 +151,7 @@ export async function POST(request: Request) {
         case "delete-report": {
           const reportId = trimmedOrNull(body.reportId, 64);
           if (!reportId) throw new Error("reportId is required");
-          await deleteReport(client, { orgId, reportId });
+          await deleteReport(client, { orgId, reportId, userId });
           break;
         }
         default:
@@ -163,6 +163,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "Report not found") return Response.json({ error: message }, { status: 404 });
+    if (message === "You cannot delete this report") return Response.json({ error: message }, { status: 403 });
     return failMeteredAi(error, "Pit-repair triage request failed");
   }
 }

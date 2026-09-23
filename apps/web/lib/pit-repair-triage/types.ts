@@ -7,6 +7,19 @@ export type TriageDecision = "fix" | "swap" | "monitor";
 
 export type TriageStatus = "open" | "staged" | "resolved";
 
+/** Delete matches pit_repair_triage_reports RLS: the member who logged the report, or an owner or admin. */
+export function canDeletePitRepairReport(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 /** Deterministic triage recommendation, grounded only in the supplied inputs. */
 export type TriageResult = {
   decision: TriageDecision;
@@ -54,6 +67,7 @@ export type TriageReport = {
   rationale: string;
   prestageRecommended: boolean;
   status: TriageStatus;
+  recordedBy?: string;
   createdAt: string;
   updatedAt: string;
 };

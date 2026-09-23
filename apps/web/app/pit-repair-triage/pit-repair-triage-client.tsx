@@ -22,7 +22,7 @@ import {
   triageDecisionLabel,
 } from "../../lib/pit-repair-triage";
 import type { PitRepairTriageView } from "../../lib/pit-repair-triage/compute-pit-repair-triage";
-import type { TriageDecision, TriageStatus } from "../../lib/pit-repair-triage/types";
+import { canDeletePitRepairReport, type TriageDecision, type TriageStatus } from "../../lib/pit-repair-triage/types";
 import {
   PIT_REPAIR_TRIAGE_RELATED_INCLUDE,
   classifyPitRepairTriageShell,
@@ -563,18 +563,21 @@ function ReportsList({
                   {report.subsystemName} · {STATUS_LABEL[report.status]} · confidence {pct(report.confidence)}
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${report.title}"?`)) {
-                    mutate({ action: "delete-report", reportId: report.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
+              {canDeletePitRepairReport({ role: view.role, userId: view.userId, authorId: report.recordedBy }) ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  aria-label={`Delete ${report.title}`}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${report.title}"?`)) {
+                      mutate({ action: "delete-report", reportId: report.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
             </header>
             {report.symptomNote ? <p className="prt-tip">{report.symptomNote}</p> : null}
             {report.photoUrl ? (
