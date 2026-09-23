@@ -15,7 +15,7 @@ import {
   businessDefaultTab,
   fundingModelFromFlags,
 } from "../../lib/funding-profile";
-import { SoftAccessDenied } from "../../components/hub-access-gate";
+import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";
 import { sectionHelpFor } from "../../lib/help/section-help";
 import {
   clientCanAccessHub,
@@ -327,7 +327,7 @@ export default function BusinessClient() {
         breadcrumbs="Business"
         title="Business"
         heading="Business is not available"
-        description="Your team admin limited which sections you can open. Ask an owner to update section access under Team → Security."
+        description={HUB_SECTION_DENIED_COPY}
       />
     );
   }

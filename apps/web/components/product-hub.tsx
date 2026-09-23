@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HelpTip } from "./help-tip";
-import { HubTabForbidden } from "./hub-access-gate";
+import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "./ui";
 import { sectionHelpFor } from "../lib/help/section-help";
@@ -246,7 +246,7 @@ export function ProductHubShell({
           badge="Access limited"
           badgeTone="setup"
           title={`${hub.label} is not available`}
-          description="Your access to this section is limited. An owner or admin can change that."
+          description={HUB_SECTION_DENIED_COPY}
         >
           <Button as="a" variant="primary" href="/dashboard">
             Home

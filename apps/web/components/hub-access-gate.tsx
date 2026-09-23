@@ -10,6 +10,14 @@ import {
 } from "../lib/nav/hub-access-filter";
 import { useClientAccessProfile } from "../lib/nav/use-client-access";
 
+/** Whole hub closed. The buttons go home and to the manual, so the note does not name Security. */
+export const HUB_SECTION_DENIED_COPY =
+  "Your access to this section is limited. An owner or admin can change that.";
+
+/** One tab closed inside a hub the member can still open. */
+export const HUB_TAB_DENIED_COPY =
+  "Your access to this section is limited. Pick another tab, or ask an owner or admin to change that.";
+
 /** Soft-UI forbidden / funding-disabled shell — never hard-crash the route. */
 export function SoftAccessDenied({
   breadcrumbs,
@@ -56,10 +64,7 @@ export function HubTabForbidden({
     <section className="app-card soft-panel product-hub-setup soft-access-denied">
       <span className="app-badge setup">Access limited</span>
       <h2>{tabLabel ? `${tabLabel} is not available` : `${hubLabel} is not available`}</h2>
-      <p className="app-muted">
-        Your team admin limited which {hubLabel} sections you can open. Pick another tab, or ask an
-        owner to update section access under Team → Security.
-      </p>
+      <p className="app-muted">{HUB_TAB_DENIED_COPY}</p>
       <div className="product-hub-setup-actions soft-btn-row">
         <Button as="a" variant="primary" href="/dashboard">
           Back to Home
