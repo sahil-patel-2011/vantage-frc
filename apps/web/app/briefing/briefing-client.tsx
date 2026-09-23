@@ -10,7 +10,7 @@ import {
   type BriefingPrediction,
 } from "../../lib/briefing";
 import { capabilityLabel } from "../../lib/briefing/plan-sections";
-import { briefingSetupAction } from "../../lib/briefing/setup-action";
+import { briefingPartnerSyncHref, briefingSetupAction } from "../../lib/briefing/setup-action";
 import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
 import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
 import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
@@ -386,6 +386,7 @@ export default function BriefingClient() {
   }
 
   const orgId = view.context.orgId;
+  const partnerSyncHref = briefingPartnerSyncHref(orgId, view.context.role);
   const teamKey = view.context.teamNumber != null ? `frc${view.context.teamNumber}` : null;
   const side = view.ourAlliance;
   const ourKeys = side === "red" ? view.match.red : side === "blue" ? view.match.blue : [];
@@ -665,8 +666,15 @@ export default function BriefingClient() {
             </>
           ) : (
             <EmptyHint>
-              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync ratings in{" "}
-              <a href={withOrg("/team/data", orgId)}>Team Data</a>
+              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>
+              {partnerSyncHref ? (
+                <>
+                  {" or sync ratings in "}
+                  <a href={partnerSyncHref}>Team Data</a>
+                </>
+              ) : (
+                ". An owner or admin syncs ratings."
+              )}
             </EmptyHint>
           )}
         </Section>

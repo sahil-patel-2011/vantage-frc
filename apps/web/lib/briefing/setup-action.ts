@@ -32,3 +32,12 @@ export function briefingSetupAction(input: {
   }
   return { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" };
 }
+
+/**
+ * Team Data link on the empty partner-ratings hint.
+ * Omitted or any non-owner role fails closed so a scout stays on Scouting.
+ */
+export function briefingPartnerSyncHref(orgId?: string | null, role?: string | null): string | null {
+  if (!strategyCanSync(role)) return null;
+  return withOrgHref("/team/data", orgId);
+}
