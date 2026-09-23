@@ -47,7 +47,7 @@ function advisories(posture: Posture, orgId: string): Advisory[] {
     list.push({
       level: "warn",
       text: "Only one owner/admin. Add a backup admin so access isn't lost if that account is unavailable.",
-      href: `/team?orgId=${orgId}`,
+      href: `/team/admin?orgId=${encodeURIComponent(orgId)}`,
       hrefLabel: "Manage members",
     });
   }
@@ -67,7 +67,7 @@ function advisories(posture: Posture, orgId: string): Advisory[] {
     list.push({
       level: "info",
       text: `${posture.pendingInvites} invitation${posture.pendingInvites === 1 ? "" : "s"} still pending. Revoke any you no longer expect to be accepted.`,
-      href: `/team?orgId=${orgId}`,
+      href: `/team/admin?orgId=${encodeURIComponent(orgId)}`,
       hrefLabel: "Invitation ledger",
     });
   }
@@ -139,7 +139,7 @@ export default function PostureClient({ orgId }: { orgId: string }) {
         <nav className="intel-actions" aria-label="Security links">
           <a href={`/team/security?orgId=${orgId}`}>Access policy</a>
           <a href={`/team/audit?orgId=${orgId}`}>Audit log</a>
-          {posture ? <a href={`/team?orgId=${orgId}`}>Team admin</a> : null}
+          {posture ? <a href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>Team admin</a> : null}
         </nav>
       </header>
 
