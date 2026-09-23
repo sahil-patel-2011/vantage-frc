@@ -44,6 +44,11 @@ describe("classifyLoadFailure", () => {
     expect(copy.title).toBe("You don't have access to this");
     expect(copy.showRetry).toBe(false);
     expect(copy.badge).toBe("No access");
+    expect(copy.description).toBe(
+      "Your team role does not include this section. An owner or admin can change that.",
+    );
+    expect(copy.description).not.toMatch(/Security/);
+    expect(copy.primary).toEqual({ label: "Back to Home", href: "/dashboard" });
   });
 
   it("falls back to unknown for a generic failure", () => {

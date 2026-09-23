@@ -246,7 +246,7 @@ export function ProductHubShell({
           badge="Access limited"
           badgeTone="setup"
           title={`${hub.label} is not available`}
-          description="Your access to this section is limited. Ask an owner to update it under Security."
+          description="Your access to this section is limited. An owner or admin can change that."
         >
           <Button as="a" variant="primary" href="/dashboard">
             Home
