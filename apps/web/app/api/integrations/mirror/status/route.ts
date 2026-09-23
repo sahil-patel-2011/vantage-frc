@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       providers: {
         google: {
           configured: google.configured,
+          oauthOffered: google.oauthOffered,
           message: google.message,
           missingEnv: data.canManage ? google.missingEnv : [],
           callbackUrl: data.canManage ? google.callbackUrl : null,

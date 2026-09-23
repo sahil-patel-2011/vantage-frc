@@ -1,5 +1,5 @@
 import { withRls } from "@vantage/db";
-import { buildGoogleAuthorizeUrl, getGoogleSheetsConfig } from "../../../../../lib/google-sheets/google-api";
+import { buildGoogleAuthorizeUrl, getGoogleSheetsConfig, googleSheetsSetupStatus } from "../../../../../lib/google-sheets/google-api";
 import {
   createGoogleOAuthState,
   googlePkceChallenge,
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   if (!isUuid(orgId)) return googleConnectorsRedirect(base, null, "error", "invalid_team");
 
   const config = getGoogleSheetsConfig();
-  if (!config) return googleConnectorsRedirect(base, orgId, "error", "setup_required");
+  if (!config || !googleSheetsSetupStatus().oauthOffered) return googleConnectorsRedirect(base, orgId, "error", "use_apps_script");
 
   try {
     await withRls({ userId: user.id, orgId }, (client) => requireWorkbookManager(client, orgId, user.id));

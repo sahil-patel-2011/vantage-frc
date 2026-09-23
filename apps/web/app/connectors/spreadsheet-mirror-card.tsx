@@ -39,7 +39,7 @@ type Status = {
   summary: MirrorSummary;
   copies: Copy[];
   providers: {
-    google: { configured: boolean; message: string | null; missingEnv: string[]; callbackUrl: string | null };
+    google: { configured: boolean; oauthOffered?: boolean; message: string | null; missingEnv: string[]; callbackUrl: string | null };
     excel: { configured: boolean; message: string | null; missingEnv: string[] };
   };
 };
@@ -73,6 +73,7 @@ const HEALTH_BADGE: Record<MirrorSummary["copies"][number]["health"], { tone: "g
 const CALLBACK_REASONS: Record<string, string> = {
   denied: "Google sign-in was cancelled or refused.",
   setup_required: "Google Sheets is not set up on this server yet.",
+  use_apps_script: "Connect Google Sheets with the Apps Script steps below. Google sign-in is not needed.",
   api_disabled: "The Google Sheets API is not enabled on this server's Google Cloud project.",
   no_offline_access: "Google did not grant offline access, so Vantage could not keep the spreadsheet updated. Connect again.",
   not_migrated: "This server needs a database update before Google Sheets can be connected.",
@@ -284,7 +285,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                         Open {copy.copy === "excel" ? "workbook" : "spreadsheet"}
                       </Button>
                     ) : null}
-                    {!copy.connected && status.canManage && provider.configured ? (
+                    {!copy.connected && status.canManage && (copy.copy === "google" ? status.providers.google.oauthOffered : provider.configured) ? (
                       <Button
                         as="a"
                         variant="secondary"
@@ -307,7 +308,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                   {copy.copy === "google" && !copy.connected && status.canManage ? (
                     <AppsScriptConnect
                       orgId={orgId}
-                      open={!provider.configured}
+                      open={!status.providers.google.oauthOffered}
                       onConnected={(text) => {
                         setMessage({ ok: true, text });
                         void load();
@@ -315,16 +316,9 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                     />
                   ) : null}
                   {!provider.configured && status.canManage && copy.copy !== "google" ? (
-                    <div className="mirror-setup">
-                      <p>{provider.message}</p>
-                      {provider.missingEnv.length ? (
-                        <p>
-                          Missing: {provider.missingEnv.map((name) => <code key={name}>{name}</code>)}
-                        </p>
-                      ) : null}
-                    </div>
+                    <p className="mirror-setup">Excel isn&apos;t available on Vantage yet. Google Sheets works on its own in the meantime.</p>
                   ) : null}
-                  {copy.copy === "google" && !copy.connected && status.canManage && status.providers.google.callbackUrl ? (
+                  {copy.copy === "google" && !copy.connected && status.canManage && status.providers.google.oauthOffered && status.providers.google.callbackUrl ? (
                     <details className="mirror-setup">
                       <summary>Or: Google sign-in through Vantage&apos;s Google Cloud project</summary>
                       <p>

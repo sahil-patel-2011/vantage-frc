@@ -74,6 +74,12 @@ export function getGoogleSheetsConfig(env: NodeJS.ProcessEnv = process.env): Goo
 
 export type GoogleSheetsSetupStatus = {
   configured: boolean;
+  /**
+   * Offer "Connect with Google" for Sheets. Off unless GOOGLE_SHEETS_OAUTH=1: it needs the
+   * Sheets API enabled on the sign-in client's Google Cloud project, and without that Google
+   * stops the flow on its own screen. Apps Script needs no Cloud project and is always offered.
+   */
+  oauthOffered: boolean;
   missingEnv: string[];
   callbackUrl: string;
   message: string | null;
@@ -83,6 +89,7 @@ export function googleSheetsSetupStatus(env: NodeJS.ProcessEnv = process.env): G
   const missingEnv = googleSheetsMissingEnv(env);
   return {
     configured: missingEnv.length === 0,
+    oauthOffered: missingEnv.length === 0 && env.GOOGLE_SHEETS_OAUTH?.trim() === "1",
     missingEnv,
     callbackUrl: googleSheetsCallbackUrl(env),
     message: missingEnv.length ? GOOGLE_SHEETS_SETUP_MESSAGE : null,
