@@ -31,6 +31,7 @@ import {
   type EventDayPlanShellKind,
 } from "../../lib/event-day-plan/event-day-plan-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -132,6 +133,8 @@ function PlanShell({
   shell,
   error,
   onRetry,
+  action,
+  emptyTitle,
   children,
 }: {
   description: string;
@@ -139,12 +142,20 @@ function PlanShell({
   shell: EventDayPlanShellKind;
   error?: string;
   onRetry?: () => void;
+  /** Planner step from the loaded view. The helper's Team Data link is not a fallback. */
+  action?: { href: string; label: string } | null;
+  emptyTitle?: string;
   children?: ReactNode;
 }) {
   const actions = eventDayPlanNextActions({ orgId, shell });
   const copy = eventDayPlanShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "event-day-plan", orgId);
-  const setup = shell === "setup" ? eventDayPlanSetupSteps(orgId)[0] : null;
+  const helperStep = shell === "setup" ? eventDayPlanSetupSteps(orgId)[0] : null;
+  const setupButton =
+    action ??
+    (helperStep && helperStep.id !== "team-data"
+      ? { href: helperStep.href, label: helperStep.label }
+      : null);
 
   return (
     <main className="module-page edp-page soft-gate">
@@ -172,12 +183,12 @@ function PlanShell({
           soft
           badge={shell === "setup" ? "Needs setup" : copy.badge}
           badgeTone="setup"
-          title={copy.title}
-          description={error ?? copy.description}
+          title={emptyTitle ?? copy.title}
+          description={action && orgId ? description : (error ?? copy.description)}
         >
-          {setup ? (
-            <Button as="a" variant="primary" href={setup.href}>
-              {setup.label}
+          {setupButton ? (
+            <Button as="a" variant="primary" href={setupButton.href}>
+              {setupButton.label}
             </Button>
           ) : null}
           {shell === "empty" ? (
@@ -357,11 +368,19 @@ export default function EventDayPlanClient() {
   }
 
   if (shell === "setup") {
+    const setupView = view?.status === "setup_required" ? view : null;
+    const step = setupView?.steps[0] ?? null;
     return (
       <PlanShell
-        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        description={setupView ? setupView.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        emptyTitle={setupView?.orgId ? setupView.message : undefined}
+        action={
+          step
+            ? { href: withOrgHref(step.href, orgId), label: step.label }
+            : null
+        }
       >
         <OfflineBanner feature="Event-day plan" fromCache={fromCache} cachedAt={cachedAt} />
       </PlanShell>
