@@ -15,6 +15,8 @@ describe("leftover Schedule student chrome", () => {
     expect(client).not.toMatch(/shell === "setup" \? "Setup"/);
     expect(client).not.toMatch(/badge="Setup"/);
     expect(client).toMatch(/Choose your team/);
+    expect(client).toContain('href="/#waitlist"');
+    expect(client).toMatch(/persistOrgIdInUrl/);
     expect(client).toMatch(/No matches yet/);
     expect(client).toMatch(/badgeTone=\{shell === "setup" \? "setup" : ""\}/);
     expect(client).not.toMatch(/shell === "setup" \|\| shell === "empty"/);

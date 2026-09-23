@@ -138,11 +138,13 @@ describe("alliance helpers", () => {
 
 describe("buildScheduleView", () => {
   it("is setup_required without an org or active event", () => {
-    expect(
-      buildScheduleView({
-        context: { ...CONTEXT, orgId: null, eventKey: null },
-      }).status,
-    ).toBe("setup_required");
+    const noOrg = buildScheduleView({
+      context: { ...CONTEXT, orgId: null, eventKey: null },
+    });
+    expect(noOrg.status).toBe("setup_required");
+    if (noOrg.status === "setup_required") {
+      expect(noOrg.message).toMatch(/join the waitlist/i);
+    }
     expect(
       buildScheduleView({
         context: { ...CONTEXT, eventKey: null },

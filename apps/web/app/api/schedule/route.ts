@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       if (!row) {
         return buildScheduleView({
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
-          setupMessage: "Choose your team to view the match schedule.",
+          setupMessage: "Choose your team to view the match schedule, or join the waitlist.",
         });
       }
 

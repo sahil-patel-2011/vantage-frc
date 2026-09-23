@@ -17,6 +17,11 @@
 .sched-next-actions li span{color:var(--muted);font-size:12px;line-height:1.35}
 .sched-next-actions li .app-button{flex:none}
 .sched-empty{display:grid;gap:12px;justify-items:start;padding:26px}
+.sched-setup{animation:sched-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes sched-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.sched-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.sched-setup-waitlist,.sched-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.sched-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 .sched-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 1px var(--accent)}
 .sched-hero-main{display:grid;gap:2px}
 .sched-hero-kicker{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
@@ -77,6 +82,8 @@
   .sched-hero-detail{justify-items:start}
   .sched-header-actions{justify-content:flex-start}
   .sched-next-actions li{flex-direction:column;align-items:stretch}
+  .sched-setup-actions{display:grid;width:100%}
+  .sched-setup-actions .app-button{width:100%;justify-content:center}
 }
 
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
