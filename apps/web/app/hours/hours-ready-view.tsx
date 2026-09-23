@@ -300,20 +300,22 @@ export function HoursReadyView({
                 </span>
                 <span className="hours-kind">{HOUR_KIND_LABELS[record.kind]}</span>
                 <b className="dur">{hoursRecordLineHours(record, now)}</b>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  className="hours-link danger"
-                  aria-label="Delete entry"
-                  disabled={busy}
-                  onClick={() => {
-                    if (confirm("Delete this hours entry?")) {
-                      void run({ action: "delete_record", orgId, id: record.id }, `del:${record.id}`);
-                    }
-                  }}
-                >
-                  ✕
-                </Button>
+                {canAdmin || record.userId === selfId ? (
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className="hours-link danger"
+                    aria-label="Delete entry"
+                    disabled={busy}
+                    onClick={() => {
+                      if (confirm("Delete this hours entry?")) {
+                        void run({ action: "delete_record", orgId, id: record.id }, `del:${record.id}`);
+                      }
+                    }}
+                  >
+                    ✕
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>
