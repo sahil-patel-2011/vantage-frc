@@ -2,12 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { REUSE_ASSESSMENT_STATUSES, REUSE_RECOMMENDATIONS, SUBSYSTEM_CATEGORIES, assessReuse } from ".";
-import type {
-  ReuseAssessment,
-  ReuseAssessmentStatus,
-  ReuseCandidate,
-  ReuseRecommendation,
-  SubsystemCategory,
+import {
+  canDeleteReuseAssessment,
+  type ReuseAssessment,
+  type ReuseAssessmentStatus,
+  type ReuseCandidate,
+  type ReuseRecommendation,
+  type SubsystemCategory,
 } from "./types";
 
 export { REUSE_ASSESSMENT_STATUSES, REUSE_RECOMMENDATIONS, SUBSYSTEM_CATEGORIES };
@@ -33,6 +34,8 @@ export type ReuseAdvisorView =
       teamNumber: number | null;
       seasonYear: number;
       seasons: number[];
+      role?: string;
+      userId?: string;
       candidates: ReuseCandidate[];
       assessments: ReuseAssessment[];
       computedAt: string;
@@ -58,9 +61,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -105,6 +108,7 @@ type AssessmentRow = {
   rationale: string;
   status: string;
   notes: string | null;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -126,6 +130,7 @@ function mapAssessment(row: AssessmentRow): ReuseAssessment {
     rationale: row.rationale,
     status: isStatus(row.status) ? row.status : "open",
     notes: row.notes,
+    createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -193,7 +198,7 @@ export async function computeReuseAdvisorView(
                 source_subsystem_id AS "sourceSubsystemId", source_season_year AS "sourceSeasonYear",
                 fmea_failure_count AS "fmeaFailureCount", fmea_high_severity_count AS "fmeaHighSeverityCount",
                 design_review_count AS "designReviewCount", design_review_pass_count AS "designReviewPassCount",
-                recommendation, confidence, rationale, status, notes,
+                recommendation, confidence, rationale, status, notes, created_by AS "createdBy",
                 created_at AS "createdAt", updated_at AS "updatedAt"
          FROM reuse_advisor_assessments
          WHERE org_id = $1 AND season_year = $2
@@ -253,6 +258,8 @@ export async function computeReuseAdvisorView(
     teamNumber: org.teamNumber,
     seasonYear,
     seasons,
+    role: org.role ?? "",
+    userId: input.userId,
     candidates,
     assessments: assessmentResult.rows.map(mapAssessment),
     computedAt: new Date().toISOString(),
@@ -360,10 +367,24 @@ export async function updateAssessmentStatus(
 
 export async function deleteAssessment(
   client: PoolClient,
-  input: { orgId: string; assessmentId: string },
+  input: { orgId: string; assessmentId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM reuse_advisor_assessments WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ createdBy: string }>(
+    `SELECT created_by AS "createdBy" FROM reuse_advisor_assessments WHERE id = $1 AND org_id = $2`,
+    [input.assessmentId, input.orgId],
+  );
+  const createdBy = existing.rows[0]?.createdBy;
+  if (!createdBy) throw new Error("Assessment not found");
+  if (!canDeleteReuseAssessment({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+    throw new Error("You cannot delete this assessment");
+  }
+  const deleted = await client.query(`DELETE FROM reuse_advisor_assessments WHERE id = $1 AND org_id = $2`, [
     input.assessmentId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this assessment");
 }

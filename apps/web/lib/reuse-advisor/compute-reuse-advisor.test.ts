@@ -1,6 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeReuseAdvisorView, recordAssessment } from "./compute-reuse-advisor";
+import { canDeleteReuseAssessment } from "./types";
+
+describe("canDeleteReuseAssessment", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteReuseAssessment({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteReuseAssessment({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteReuseAssessment({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteReuseAssessment({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteReuseAssessment({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteReuseAssessment({ role: null, userId: null, authorId: "noah" })).toBe(false);
+    expect(canDeleteReuseAssessment({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+  });
+});
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";

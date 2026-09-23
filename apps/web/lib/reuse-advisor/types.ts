@@ -20,6 +20,18 @@ export type ReuseRecommendation = "reuse" | "modify" | "avoid";
 
 export type ReuseAssessmentStatus = "open" | "accepted" | "dismissed";
 
+export function canDeleteReuseAssessment(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 /** Inputs the deterministic recommendation is grounded in — nothing else. */
 export type ReuseAssessInput = {
   fmeaFailureCount: number;
@@ -70,6 +82,7 @@ export type ReuseAssessment = {
   rationale: string;
   status: ReuseAssessmentStatus;
   notes: string | null;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -9,7 +9,12 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { REUSE_ASSESSMENT_STATUSES, reuseRecommendationLabel, subsystemCategoryLabel } from "../../lib/reuse-advisor";
 import type { ReuseAdvisorView } from "../../lib/reuse-advisor/compute-reuse-advisor";
-import type { ReuseAssessmentStatus, ReuseCandidate, ReuseRecommendation } from "../../lib/reuse-advisor/types";
+import {
+  canDeleteReuseAssessment,
+  type ReuseAssessmentStatus,
+  type ReuseCandidate,
+  type ReuseRecommendation,
+} from "../../lib/reuse-advisor/types";
 
 const RECOMMENDATION_TONE: Record<ReuseRecommendation, string> = {
   reuse: "good",
@@ -430,18 +435,25 @@ function AssessmentsPanel({
                   {pct(assessment.confidence)}
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete assessment for "${assessment.subsystemName}"?`)) {
-                    mutate({ action: "delete-assessment", assessmentId: assessment.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
+              {canDeleteReuseAssessment({
+                role: view.role,
+                userId: view.userId,
+                authorId: assessment.createdBy,
+              }) ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  aria-label={`Delete ${assessment.subsystemName}`}
+                  onClick={() => {
+                    if (window.confirm(`Delete assessment for "${assessment.subsystemName}"?`)) {
+                      mutate({ action: "delete-assessment", assessmentId: assessment.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
             </header>
             <small className="app-muted">{assessment.rationale}</small>
             {assessment.status === "open" ? (
