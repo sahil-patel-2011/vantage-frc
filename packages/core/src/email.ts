@@ -3,6 +3,8 @@ import { createSqlPool } from "@vantage/db/pool";
 import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import {
   authEmailFrom,
+  gmailSmtpFallbackPassword,
+  gmailSmtpFallbackUser,
   gmailSmtpPassword,
   gmailSmtpUser,
   isConsumerMailboxFrom,
@@ -154,14 +156,23 @@ export class GmailSmtpEmailProvider implements EmailProvider {
     private readonly from: string,
   ) {}
   private async send(to: string, subject: string, text: string) {
-    await sendGmailSmtp({
-      user: this.user,
-      appPassword: this.appPassword,
-      from: this.from,
-      to,
-      subject,
-      text,
-    });
+    try {
+      await sendGmailSmtp({ user: this.user, appPassword: this.appPassword, from: this.from, to, subject, text });
+    } catch (error) {
+      // A second Gmail account (GMAIL_SMTP_FALLBACK_USER / _APP_PASSWORD) keeps codes flowing
+      // when the first is locked, over its daily limit, or its app password was revoked.
+      const fallbackUser = gmailSmtpFallbackUser();
+      const fallbackPassword = gmailSmtpFallbackPassword();
+      if (!fallbackUser || !fallbackPassword || fallbackUser.toLowerCase() === this.user.toLowerCase()) throw error;
+      await sendGmailSmtp({
+        user: fallbackUser,
+        appPassword: fallbackPassword,
+        from: gmailSmtpFrom(fallbackUser),
+        to,
+        subject,
+        text,
+      });
+    }
   }
   async sendOtp(message: OtpEmail) {
     await this.send(

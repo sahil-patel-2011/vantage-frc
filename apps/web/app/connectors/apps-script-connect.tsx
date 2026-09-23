@@ -30,10 +30,28 @@ export default function AppsScriptConnect({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // One secret per team in this browser, kept until it connects: reopening the page shows
+  // the same script, so a script copied earlier still matches what Connect sends.
   // Generated after mount so server and client render the same markup.
+  const storageKey = `vantage.appsScriptSecret.${orgId}`;
   useEffect(() => {
-    setSecret((current) => current || newAppsScriptSecret());
-  }, []);
+    let kept: string;
+    try {
+      kept = window.localStorage.getItem(storageKey) ?? "";
+    } catch {
+      kept = "";
+    }
+    const next = isAppsScriptSecret(kept) ? kept : newAppsScriptSecret();
+    setSecret((current) => current || next);
+  }, [storageKey]);
+  useEffect(() => {
+    if (!isAppsScriptSecret(secret.trim().toLowerCase())) return;
+    try {
+      window.localStorage.setItem(storageKey, secret.trim().toLowerCase());
+    } catch {
+      // storage blocked: the secret lasts until the page closes
+    }
+  }, [secret, storageKey]);
 
   const cleanSecret = secret.trim().toLowerCase();
   const secretOk = isAppsScriptSecret(cleanSecret);

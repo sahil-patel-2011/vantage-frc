@@ -22,6 +22,15 @@ import { APPS_SCRIPT_VERSION, isAppsScriptSecret, isAppsScriptUrl } from "./apps
 import { GoogleSheetsError } from "./google-api";
 import { planTableChunks } from "./sheets-target";
 
+/**
+ * JSON with every non-ASCII character written as \uXXXX. The script signs what Apps Script
+ * decoded from the request, and its charset handling for text bodies is not guaranteed to
+ * be UTF-8; an all-ASCII body reads back byte-for-byte, and JSON.parse restores the text.
+ */
+export function asciiJson(value: unknown): string {
+  return JSON.stringify(value).replace(/[\u007f-\uffff]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
 export const APPS_SCRIPT_PREFIX = "apps-script:";
 export const MAX_CELLS_PER_SCRIPT_CALL = 200_000;
 const ECHO_HOST = "script.googleusercontent.com";
@@ -65,7 +74,7 @@ export class AppsScriptBridge {
 
   /** Signed POST; follows Google's one redirect to the script's output. */
   async call<T extends { ok: boolean; error?: string }>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
-    const body = JSON.stringify({ action, ts: this.now(), ...payload });
+    const body = asciiJson({ action, ts: this.now(), ...payload });
     const sig = createHmac("sha256", this.secret).update(body).digest("hex");
     let response = await this.send(`${this.url}?sig=${sig}`, { method: "POST", body, headers: { "content-type": "text/plain;charset=utf-8" } });
     if (response.status >= 300 && response.status < 400) {
@@ -107,7 +116,7 @@ export class AppsScriptBridge {
     if (!data || data.ok !== true) {
       const error = String(data?.error ?? "unknown");
       if (error === "signature") {
-        throw bridgeError("auth_expired", "The Apps Script refused Vantage's signature: its secret does not match. Set it up again from Connectors.", "signature");
+        throw bridgeError("auth_expired", "Your Google Sheet's script has a different secret from the one Vantage saved. Press Disconnect, then connect again and paste the secret from the VANTAGE_SECRET line of your script.", "signature");
       }
       if (error === "stale") {
         throw bridgeError("unavailable", "The Apps Script refused the request as out of date. Try again.", "stale");

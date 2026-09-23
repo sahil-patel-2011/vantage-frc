@@ -110,7 +110,7 @@ export function WaitlistForm({
         <h3>{unavailable.title}</h3>
         <p>{unavailable.body}</p>
         <p>
-          <a href="mailto:sahiljpatel2011@gmail.com">Email Sahil</a>
+          <a href="mailto:vantagefrc@gmail.com">Email us</a>
         </p>
       </div>
     );

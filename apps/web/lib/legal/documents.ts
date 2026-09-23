@@ -46,7 +46,7 @@ export const LEGAL_LAST_UPDATED = "September 22, 2026";
 // human. It has to be one that is actually read: this product holds data
 // about minors, and a policy pointing at a mailbox nobody owns is worse
 // than no address at all.
-export const LEGAL_CONTACT_EMAIL = "sahiljpatel2011@gmail.com";
+export const LEGAL_CONTACT_EMAIL = "vantagefrc@gmail.com";
 
 export type LegalSection = {
   /** Stable anchor slug — `/privacy#what-we-collect` must keep working. */

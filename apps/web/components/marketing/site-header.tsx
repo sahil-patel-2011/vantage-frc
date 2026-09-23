@@ -74,7 +74,7 @@ export function MarketingInvitedNote({
         </>
       )}
       {" · "}
-      Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
+      Questions? <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a>
     </p>
   );
 }
@@ -256,7 +256,7 @@ export function SiteFooter() {
           <a href="/pricing">What it costs</a>
           <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
-          <a href="mailto:sahiljpatel2011@gmail.com">Contact</a>
+          <a href="mailto:vantagefrc@gmail.com">Contact</a>
         </nav>
         <nav className="marketing-footer-col" aria-label="Legal">
           <b>Legal</b>

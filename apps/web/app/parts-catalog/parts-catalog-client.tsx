@@ -266,7 +266,7 @@ export default function PartsCatalogClient() {
       <footer className="pc-foot app-muted">
         No prices here on purpose — the vendor page is the price. Part numbers are shown only where they are certain;
         otherwise the vendor link searches by name. Think something is wrong or missing? Tell{" "}
-        <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>.
+        <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a>.
       </footer>
     </main>
   );

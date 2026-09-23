@@ -82,7 +82,7 @@ export function organizationSoftwareJsonLd() {
         name: "Vantage",
         alternateName: ["Vantage FRC"],
         url: SITE_URL,
-        email: "sahiljpatel2011@gmail.com",
+        email: "vantagefrc@gmail.com",
         description:
           "Competition operations platform for FIRST Robotics Competition (FRC) teams.",
         logo: `${SITE_URL}/vantage-logo.svg`,

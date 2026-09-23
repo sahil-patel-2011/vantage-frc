@@ -33,7 +33,7 @@ export default function PricingPage() {
           </p>
           <p className="pricing-access-note">
             Vantage is invite-only. Join the waitlist and we will email you when your team is set up, or write to{" "}
-            <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a> if you want to talk it through
+            <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a> if you want to talk it through
             first.
           </p>
           <MarketingRouteActions companion={{ href: "#credits", label: "How AI credits work" }} />

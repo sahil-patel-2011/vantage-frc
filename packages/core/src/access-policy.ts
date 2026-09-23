@@ -49,6 +49,15 @@ export function gmailSmtpPassword() {
   return firstRuntimeEnv("GMAIL_SMTP_APP_PASSWORD", "GMAIL_APP_PASSWORD", "SMTP_PASSWORD", "SMTP_PASS");
 }
 
+/** Optional second Gmail account used when the first one fails to send. */
+export function gmailSmtpFallbackUser() {
+  return firstRuntimeEnv("GMAIL_SMTP_FALLBACK_USER");
+}
+
+export function gmailSmtpFallbackPassword() {
+  return firstRuntimeEnv("GMAIL_SMTP_FALLBACK_APP_PASSWORD");
+}
+
 /** Resend cannot deliver from consumer mailboxes; the API accepts the call and Gmail drops it. */
 export function isConsumerMailboxFrom(from: string) {
   return /@(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|msn)\./i.test(from);

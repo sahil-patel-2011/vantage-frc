@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { AppsScriptBridge, AppsScriptTarget, bridgeSpreadsheetId, bridgeUrlOf } from "./apps-script-bridge";
+import { AppsScriptBridge, AppsScriptTarget, asciiJson, bridgeSpreadsheetId, bridgeUrlOf } from "./apps-script-bridge";
 import { checkAppsScript } from "./connect-apps-script";
 import { APPS_SCRIPT_VERSION, appsScriptSource, isAppsScriptUrl, newAppsScriptSecret } from "./apps-script-source";
 
@@ -148,6 +148,12 @@ describe("the Apps Script bridge", () => {
     const loaded = loadScript(secret);
     const late = new AppsScriptBridge(URL_OK, secret, { fetchImpl: googleFetch(loaded.script).impl, now: () => Date.now() - 10 * 60_000 });
     await expect(late.ping()).rejects.toMatchObject({ code: "stale" });
+  });
+
+  it("signs an all-ASCII body so Apps Script's charset cannot change it", () => {
+    const body = asciiJson({ note: "Team 6925 — Peña 🤖", n: 1 });
+    expect(/^[\x20-\x7e]*$/.test(body)).toBe(true);
+    expect(JSON.parse(body)).toEqual({ note: "Team 6925 — Peña 🤖", n: 1 });
   });
 
   it("explains a deployment that is not open to Anyone", async () => {
