@@ -191,7 +191,7 @@ export function buildRankingsView(input: {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Choose your team to view event rankings.",
+      message: input.setupMessage ?? "Choose your team to view event rankings, or join the waitlist.",
     };
   }
   if (!input.context.eventKey) {

@@ -149,11 +149,13 @@ describe("mapTbaPlayoffMatches", () => {
 
 describe("buildRankingsView", () => {
   it("is setup_required without an org or active event", () => {
-    expect(
-      buildRankingsView({
-        context: { ...CONTEXT, orgId: null, eventKey: null },
-      }).status,
-    ).toBe("setup_required");
+    const noOrg = buildRankingsView({
+      context: { ...CONTEXT, orgId: null, eventKey: null },
+    });
+    expect(noOrg.status).toBe("setup_required");
+    if (noOrg.status === "setup_required") {
+      expect(noOrg.message).toMatch(/join the waitlist/i);
+    }
     expect(
       buildRankingsView({
         context: { ...CONTEXT, eventKey: null },

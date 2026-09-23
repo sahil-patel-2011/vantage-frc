@@ -2,6 +2,10 @@
    .rank- prefixed and theme-aware. Alliance red/blue ride the shared
    --app-critical / --app-accent tokens so dots and chips survive dark mode. */
 .rank-empty{display:grid;gap:12px;justify-items:start;padding:26px}
+.rank-setup{animation:rank-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes rank-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.rank-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.rank-setup-waitlist{color:var(--accent);font-weight:650;text-underline-offset:2px;min-height:44px;display:inline-flex;align-items:center}
 .rank-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .rank-standing{padding:6px 12px;color:var(--accent);background:transparent;border:1px solid var(--accent);border-radius:var(--radius-pill);font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
 .rank-tabs{display:inline-flex;align-self:start;justify-self:start;width:max-content;padding:3px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill)}
@@ -60,4 +64,6 @@
   .rank-epa{flex:1 1 calc(100% - 110px)}
   .rank-epa-split{white-space:normal}
   .rank-header-actions{justify-content:flex-start}
+  .rank-setup-actions{display:grid;width:100%}
+  .rank-setup-actions .app-button{width:100%;justify-content:center}
 }

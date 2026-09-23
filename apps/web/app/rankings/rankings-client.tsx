@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
@@ -21,8 +21,23 @@ import {
   rankingsEmptyAction,
   shouldRefreshRankings,
 } from "../../lib/rankings/tba-cache";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function isRankingsView(value: unknown): value is RankingsView {
   if (!value || typeof value !== "object") return false;
@@ -192,6 +207,7 @@ export default function RankingsClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistRankingsSnapshot(urlOrg, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -310,10 +326,24 @@ export default function RankingsClient() {
           </div>
         </header>
         <OfflineBanner feature="Rankings" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+        <EmptyState
+          badge="Needs setup"
+          badgeTone="setup"
+          soft
+          title="Choose your team"
+          description={view.context.orgId ? view.message : withWaitlistLink(view.message)}
+          className={view.context.orgId ? undefined : "rank-setup"}
+        >
+          <div className="rank-setup-actions">
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            {view.context.orgId ? null : (
+              <a className="rank-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            )}
+          </div>
         </EmptyState>
       </main>
     );
