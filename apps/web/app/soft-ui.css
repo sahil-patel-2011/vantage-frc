@@ -1549,7 +1549,7 @@ body.has-app-shell main:has(.scan-empty :is(.is-primary,.app-button.primary)) :i
 /* The same rule the other way round: when the add form is already on screen, its
    submit is the action and the empty state's "Add a …" (which only scrolls to that
    form) steps down. */
-body.has-app-shell main:has(form:not(.scan-empty *) :is(.is-primary,.app-button.primary)[type="submit"]) .scan-empty :is(.is-primary,.app-button.primary):not([type="submit"]){
+body.has-app-shell main:has(form:not(:is(.scan-empty,.soft-empty-compact) *) :is(.is-primary,.app-button.primary)[type="submit"]) :is(.scan-empty,.soft-empty-compact) :is(.is-primary,.app-button.primary):not([type="submit"]){
   color:var(--ink)!important;background:var(--surface)!important;border:1px solid var(--line)!important;box-shadow:none!important;
 }
 body.has-app-shell .app-button.ghost{
