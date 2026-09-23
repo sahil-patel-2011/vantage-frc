@@ -343,9 +343,9 @@ export default function MatchStrategyCardsClient() {
       ? { href: "/workspace", label: "Choose your team" }
       : !setupView?.eventKey
         ? { href: hubHref("/competition", "command", orgId), label: "Set active event" }
-        : setupView.canSync === false
-          ? { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" }
-          : { href: withOrgHref("/team/data", orgId), label: "Sync Team Data" };
+        : setupView.canSync === true
+          ? { href: withOrgHref("/team/data", orgId), label: "Sync Team Data" }
+          : { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" };
     return (
       <CardsShell
         description={setupView ? setupView.message : shellCopy.description}

@@ -189,7 +189,7 @@ function DraftShell({
   title,
   primary,
   onRetry,
-  canSync = true,
+  canSync = false,
   eventName = null,
   children,
 }: {
@@ -567,7 +567,7 @@ export default function DraftClient() {
         shell={shell}
         title={failure?.title}
         primary={failure?.primary}
-        canSync={data ? data.canEdit : true}
+        canSync={data?.canEdit === true}
         eventName={data && "eventName" in data ? data.eventName : null}
         error={
           failure

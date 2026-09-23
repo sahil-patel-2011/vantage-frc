@@ -140,7 +140,7 @@ function PickClockShell({
   onRetry,
   fromCache = false,
   cachedAt = null,
-  canSync = true,
+  canSync = false,
   eventName = null,
   children,
 }: {
@@ -492,7 +492,7 @@ export default function PickClockClient({
         shell="empty"
         fromCache={fromCache}
         cachedAt={cachedAt}
-        canSync={readyView ? readyView.canEdit !== false : true}
+        canSync={readyView?.canEdit === true}
         eventName={readyView?.eventName ?? null}
         error={
           excludedCount > 0
