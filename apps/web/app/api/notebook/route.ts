@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseNotebookAction, summarizeNotebook, type BuildPhase } from "../../../lib/notebook";
+import { canDeleteNotebookEntry, parseNotebookAction, summarizeNotebook, type BuildPhase } from "../../../lib/notebook";
 import {
   assertNotebookImageAttachments,
   listNotebookImageLibrary,
@@ -39,7 +39,7 @@ function fail(error: unknown) {
 
 type EntryRow = {
   id: string; seasonYear: number; entryDate: string; phase: BuildPhase; subsystem: string;
-  title: string; body: string; tags: string[]; byName: string | null; updatedAt: string;
+  title: string; body: string; tags: string[]; byName: string | null; authorUserId: string; updatedAt: string;
 };
 
 type NotebookEntryView = EntryRow & {
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 
       const entries = await client.query<EntryRow>(
         `SELECT n.id, n.season_year AS "seasonYear", n.entry_date::text AS "entryDate", n.phase, n.subsystem,
-                n.title, n.body, n.tags, u.name AS "byName", n.updated_at::text AS "updatedAt"
+                n.title, n.body, n.tags, u.name AS "byName", n.author_user_id AS "authorUserId", n.updated_at::text AS "updatedAt"
          FROM notebook_entries n LEFT JOIN users u ON u.id = n.author_user_id
          WHERE n.org_id = $1 AND ($2::text IS NULL OR n.subsystem = $2::text)
          ORDER BY n.entry_date DESC, n.created_at DESC
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         entries: viewed,
         imageLibrary,
         summary: { ...counts, ...evidence },
@@ -183,6 +183,17 @@ export async function POST(request: Request) {
           return { ok: true, hasImageEvidence: notebookEntryHasImageEvidence(photos) };
         }
         case "delete_entry": {
+          const found = await client.query<{ authorUserId: string; role: string }>(
+            `SELECT n.author_user_id AS "authorUserId", m.role
+             FROM notebook_entries n
+             JOIN memberships m ON m.org_id = n.org_id AND m.user_id = $3
+             WHERE n.id = $1 AND n.org_id = $2`,
+            [action.id, action.orgId, userId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Entry not found");
+          if (!canDeleteNotebookEntry({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.authorUserId })) {
+            throw new HttpError(403, "You cannot delete this entry");
+          }
           const deleted = await client.query(`DELETE FROM notebook_entries WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this entry");
           return { ok: true };

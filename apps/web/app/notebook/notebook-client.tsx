@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
-import { BUILD_PHASE_LABEL, BUILD_PHASES, type BuildPhase } from "../../lib/notebook";
+import { BUILD_PHASE_LABEL, BUILD_PHASES, canDeleteNotebookEntry, type BuildPhase } from "../../lib/notebook";
 import type { NotebookImageAttachment } from "../../lib/notebook/attachments";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -21,6 +21,7 @@ type Entry = {
   body: string;
   tags: string[];
   byName: string | null;
+  authorUserId?: string | null;
   updatedAt: string;
   attachments: NotebookImageAttachment[];
   hasImageEvidence: boolean;
@@ -30,7 +31,7 @@ type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       entries: Entry[];
       imageLibrary: NotebookImageAttachment[];
       summary: {
@@ -556,7 +557,14 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
           <p className="app-muted">No entries yet — document your first design decision above.</p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 16 }}>
-            {view.entries.map((entry) => (
+            {view.entries.map((entry) => {
+              const canDelete = canDeleteNotebookEntry({
+                role: view.context.role,
+                userId: view.context.userId,
+                authorId: entry.authorUserId,
+              });
+              const canWrite = view.context.role !== "viewer";
+              return (
               <li key={entry.id}>
                 <strong>{entry.title}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
@@ -626,29 +634,35 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
                     )}
                   </details>
                 ) : null}
-                {view.context.role !== "viewer" ? (
+                {canWrite || canDelete ? (
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      title="Copy this entry into the team wiki so it outlives the season"
-                      onClick={() => void promoteEntry(entry.id)}
-                    >
-                      Send to wiki
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}
-                    >
-                      Delete
-                    </Button>
+                    {canWrite ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        title="Copy this entry into the team wiki so it outlives the season"
+                        onClick={() => void promoteEntry(entry.id)}
+                      >
+                        Send to wiki
+                      </Button>
+                    ) : null}
+                    {canDelete ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        aria-label={`Delete entry ${entry.title}`}
+                        onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}
+                      >
+                        Delete
+                      </Button>
+                    ) : null}
                   </div>
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </Panel>
