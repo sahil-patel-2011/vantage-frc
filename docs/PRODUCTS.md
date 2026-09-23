@@ -97,9 +97,30 @@ Local development uses two names for the same server: `localhost:3401` is Vantag
 `127.0.0.1:3401` is Scouting. Browsers treat these as different sites, so the handoff is exercised
 for real. `allowedDevOrigins` lets the dev server serve its scripts to `127.0.0.1`.
 
+## What a scout sees first
+
+- **Your next robot.** Scouting's home names the person's next primary assignment ("148 · Q34 ·
+  Red 2") and its one primary button is "Scout 148 in Q34", which opens the entry form with that
+  match and robot already selected. Backups, robots somebody already filed, and matches that ran
+  more than 15 minutes ago are skipped (`lib/scouting/next-duty.ts`). Vantage's Home says the same
+  thing ("You're scouting next") right after the team's own next match.
+- **Upcoming-match pushes open the form.** The TBA "upcoming match" reminder links to
+  `/scout/entry?matchKey=…&teamKey=…`, not the generic scouting page.
+- **Predict without typing.** The Predict tab lists the next unplayed matches with the schedule's own
+  win estimate; one tap runs the simulation and scrolls to the result (`lib/match-sim/upcoming.ts`).
+
+## Installing Scouting on a phone
+
+`/scout` links its own manifest (`public/scout.webmanifest`): "Add to Home Screen" from Scouting
+installs **Scouting**, which opens at `/scout` and has shortcuts to match entry, team lookup and the
+pick list. On the Scouting host the manifest is served locally; a manifest redirected to another host
+is cross-origin, and browsers will not install from it.
+
 ## Offline and device storage
 
-Scouting keeps unsynced entries, photos and cached event data in IndexedDB (`lib/scout-offline.ts`).
+Every `/scout/*` page is an offline shell route (`public/sw.js`, mirrored in
+`lib/offline/shell-routes.ts`), so the Scouting app opens with no signal once it has been loaded
+once. Scouting keeps unsynced entries, photos and cached event data in IndexedDB (`lib/scout-offline.ts`).
 Browsers treat that as best-effort storage and may clear it under pressure. Scouting's home shows
 what this device holds and how much room is left (`navigator.storage.estimate()`), and offers **Keep
 scouting data on this device**, which calls `navigator.storage.persist()`. Once granted, the browser
