@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
+import { dashboardNextActions } from "../../../lib/dashboard/dashboard-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
@@ -104,7 +105,11 @@ function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
     return [{ href: "/invite", label: "Open invite", detail: "Use the link sent to your email." }];
   }
   if (tbaConfigured === false) {
-    return [{ href: withOrgHref("/team/data", orgId), label: "Connect match results", detail: "Match times for this team." }];
+    return dashboardNextActions({ orgId, shell: "tba" }).map((action) => ({
+      href: action.href,
+      label: action.label,
+      detail: action.detail,
+    }));
   }
   return [
     { href: hubHref("/competition", "command", orgId), label: "Set active event", detail: "Competition cards need an event." },
@@ -580,8 +585,7 @@ export function renderOpsWidget({
       );
     case "quick_actions": {
       const fromPayload = (data.links as Array<{ href: string; label: string; detail: string }> | undefined) ?? [];
-      const needsSetup = !orgId || tbaConfigured === false;
-      const links = needsSetup || fromPayload.length === 0 ? setupQuickActions(orgId, tbaConfigured) : fromPayload;
+      const links = fromPayload.length > 0 ? fromPayload : setupQuickActions(orgId, tbaConfigured);
       return (
         <Shell
           type={type}
