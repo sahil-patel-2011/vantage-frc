@@ -49,10 +49,6 @@
   font-size: 13px;
 }
 
-.dr-note-inline {
-  color: var(--muted);
-}
-
 /* Handing someone write access to the team record takes a second step. */
 .dr-confirm {
   margin: 8px 0 0;

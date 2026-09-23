@@ -7,9 +7,6 @@
 .srk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .srk-panel{display:grid;gap:12px}
 .srk-panel h2{margin:0}
-.srk-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.srk-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.srk-tip{margin:0}
 .srk-candidates-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
 .srk-generate{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .srk-generate input{min-width:220px}
@@ -24,5 +21,5 @@
 .srk-status-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:900px){
   .srk-header-actions{justify-content:flex-start}
-  .srk-next-actions li,.srk-setup-steps li,.srk-candidate-header,.srk-checklist-header,.srk-pack-row{flex-direction:column;align-items:stretch}
+  .srk-next-actions li,.srk-candidate-header,.srk-checklist-header,.srk-pack-row{flex-direction:column;align-items:stretch}
 }

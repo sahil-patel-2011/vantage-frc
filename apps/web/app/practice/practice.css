@@ -1,4 +1,4 @@
-﻿/* Practice Planner — Soft-UI Team surface. Scoped .practice-* selectors. */
+/* Practice Planner — Soft-UI Team surface. Scoped .practice-* selectors. */
 .practice-page{
   /* --prac-deep/--prac-glow are the hero's own palette; the hero is a deliberate
      always-dark stage (white text in both themes). Everything else rides tokens. */

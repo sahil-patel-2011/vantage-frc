@@ -25,10 +25,6 @@
   background: transparent;
   box-shadow: inset 0 -2px 0 var(--accent);
 }
-.product-hub-subtabs {
-  margin: 0 0 14px;
-  flex-wrap: wrap;
-}
 /* Visible tool switcher for a workbench — replaces a <select> whose options
    could not be discovered without opening it. Chips wrap instead of scrolling
    off-screen so a thumb on a phone can reach every tool. */
@@ -102,52 +98,6 @@
     transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
   }
 }
-
-.product-hub-featured {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 12px;
-}
-.product-hub-featured .app-button {
-  min-height: 34px;
-  padding: 6px 12px;
-  font-size: 12px;
-}
-.product-hub-more {
-  margin: 0 0 14px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-.product-hub-more > summary {
-  cursor: pointer;
-  font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
-  color: var(--muted);
-  list-style-position: outside;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-}
-.product-hub-more-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-top: 10px;
-}
-.product-hub-more-links a {
-  font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
-  color: var(--accent);
-  text-decoration: none;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 2px;
-}
-.product-hub-more-links a:hover { text-decoration: underline; }
-.product-hub-more-links a[data-featured="yes"] {
-  font-weight: 700;
-}
 .product-hub-panel > main.module-page,
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
@@ -177,7 +127,6 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 }
 /* Duplicate sibling strips inside Team/Build surfaces — hub tabs already cover these. */
 .product-hub-panel .team-hub-related,
-.product-hub-panel .tc-ops-related,
 .product-hub-panel .fmea-related,
 .product-hub-panel .batt-related,
 .product-hub-panel .practice-hero-links,
@@ -189,7 +138,6 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 .product-hub-panel .edc-next-actions,
 .product-hub-panel .myday-next-actions,
 .product-hub-panel .strategy-setup-steps,
-.product-hub-panel .scout-setup-steps,
 .product-hub-panel .att-next-actions,
 .product-hub-panel .todos-next-actions,
 .product-hub-panel .todos-metrics,
@@ -329,8 +277,7 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 .product-hub--build .cad-module,
 .product-hub--build .cdc-page,
 .product-hub--build .batt-page,
-.product-hub--build .fmea-page,
-.product-hub--build .proto-page {
+.product-hub--build .fmea-page {
   width: 100%;
   max-width: none;
   margin: 0;
@@ -340,8 +287,7 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 .product-hub--build .cad-module .app-page-header,
 .product-hub--build .cdc-page .app-page-header,
 .product-hub--build .batt-page .app-page-header,
-.product-hub--build .fmea-page .app-page-header,
-.product-hub--build .proto-page .app-page-header {
+.product-hub--build .fmea-page .app-page-header {
   display: none;
 }
 .product-hub--build .build-hub-related {
@@ -427,18 +373,6 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     flex: 0 0 auto;
     min-height: 44px;
     white-space: nowrap;
-  }
-  .product-hub-featured {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .product-hub-featured::-webkit-scrollbar { display: none; }
-  .product-hub-featured .app-button {
-    flex: 0 0 auto;
-    min-height: 44px;
   }
   .product-hub-panel .practice-hero {
     grid-template-columns: 1fr;

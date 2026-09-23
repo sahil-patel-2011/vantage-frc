@@ -15,7 +15,6 @@
 .stn-inline-form label{display:grid;gap:4px;font-size:.85em;flex:1 1 220px;min-width:0}
 .stn-inline-form input{min-height:44px;width:100%}
 .stn-url-hint{flex-basis:100%}
-.stn-code{overflow-x:auto;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--line);font-size:.85em;margin:0}
 .stn-note{margin:0}
 .stn-notice{margin:0}
 .stn-missing{font-weight:600}

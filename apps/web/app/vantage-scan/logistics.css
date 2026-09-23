@@ -8,7 +8,6 @@
 
 .product-hub--logistics,
 .scan-hub--logistics,
-.logistics-page,
 .log-page {
   --scan-group-a: "TRAVEL";
   --scan-group-b: "PACKING";
@@ -129,7 +128,6 @@
 @media (max-width: 720px) {
   .product-hub--logistics,
 .scan-hub--logistics,
-.logistics-page,
 .log-page {
     gap: 14px;
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
@@ -150,13 +148,12 @@
 @media (prefers-reduced-motion: reduce) {
   .product-hub--logistics,
 .scan-hub--logistics,
-.logistics-page,
-.log-page *, .product-hub--logistics,
+.log-page *,
+.product-hub--logistics,
 .scan-hub--logistics,
-.logistics-page,
-.log-page *::before, .product-hub--logistics,
+.log-page *::before,
+.product-hub--logistics,
 .scan-hub--logistics,
-.logistics-page,
 .log-page *::after {
     animation: none !important;
     transition: none !important;
@@ -165,7 +162,6 @@
 
 :root[data-theme='dark'] .product-hub--logistics,
 .scan-hub--logistics,
-.logistics-page,
 .log-page {
   --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }

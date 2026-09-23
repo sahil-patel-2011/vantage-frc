@@ -1,4 +1,3 @@
-.dash-home .dash-customize-primary { min-height: 44px; border: 1px solid var(--vt-blue); border-radius: 12px; padding: 10px 16px; background: var(--vt-blue); color: #fff; font-weight: 700; cursor: pointer; }
 /* The card's ••• menu floats over its top-right corner. It used to be a white
    36px strip stacked above the card — a different colour and radius from the
    card under it — so every widget looked like it had a detached empty header. */

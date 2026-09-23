@@ -3,14 +3,6 @@
   display:grid;
   gap:16px;
 }
-.chem-heading{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:4px;
-}
 .chem-related{
   display:flex;
   flex-wrap:wrap;
@@ -18,24 +10,6 @@
   justify-content:flex-end;
 }
 .chem-next-actions{margin:0}
-.chem-setup-steps{
-  list-style:none;
-  margin:0;
-  padding:0;
-  display:grid;
-  gap:10px;
-}
-.chem-setup-steps li{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 0;
-  border-bottom:1px solid var(--line);
-}
-.chem-setup-steps li:last-child{border-bottom:0}
-.chem-setup-steps p{margin:4px 0 0}
 .chem-empty{
   margin:0;
   padding:14px;
@@ -67,7 +41,6 @@
 }
 .chem-panel{min-height:auto}
 @media (max-width:800px){
-  .chem-heading{flex-direction:column}
   .chem-related{justify-content:flex-start}
   .chem-kpis{grid-template-columns:1fr}
 }

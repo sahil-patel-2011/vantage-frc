@@ -76,20 +76,12 @@
   padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--bg);
 }
 .signoff-gates .gate-name{font-size:13px;font-weight:600}
-.signoff-gates .gate-detail{color:var(--muted);font-size:11px}
 
 .signoff-panel{display:grid;gap:12px;align-content:start;min-width:0;margin-bottom:4px}
 .signoff-panel h2{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .signoff-panel>p{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
 .signoff-form-actions{display:flex;gap:12px;align-items:center;margin-top:4px;flex-wrap:wrap}
 .signoff-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
-.signoff-setup-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;width:min(100%,420px)}
-.signoff-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--bg)}
-.signoff-setup-steps li div{display:grid;gap:2px;min-width:0}
-.signoff-setup-steps strong{font-size:13px}
-.signoff-setup-steps span{color:var(--muted);font-size:12px}
-.signoff-row-links{display:flex;flex-wrap:wrap;gap:8px}
-.signoff-row-links a{font-size:12px;font-weight:600}
 
 @media(max-width:720px){
   .signoff-summary{grid-template-columns:1fr 1fr}

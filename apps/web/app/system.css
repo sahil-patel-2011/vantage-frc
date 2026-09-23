@@ -240,10 +240,6 @@ html[data-motion="reduced"] {
   --motion: 0;
 }
 
-.marketing-v2 {
-  --m-paper: #f2f3f5;
-}
-
 .marketing-lux {
   --m-ink: #10202c;
   --m-muted: #53606b;
@@ -538,9 +534,7 @@ html[data-theme="dark"] .marketing-lux {
    rail, the cross-link strip, and the TeamOps strip. They are one control with
    one shape and one density rule — compact for a mouse, 44px for a thumb. */
 .hub-tool-chip,
-.settings-bar-chip,
 .help-cat-chip,
-.dash-hub-rail a,
 .team-ops-nav a,
 .team-ops-nav span,
 .product-hub-related .app-button {
@@ -558,18 +552,14 @@ html[data-theme="dark"] .marketing-lux {
   white-space: nowrap;
 }
 .hub-tool-chip.is-active,
-.settings-bar-chip.is-active,
 .help-cat-chip[aria-pressed="true"],
-.dash-hub-rail a[aria-current="page"],
 .team-ops-nav :where(a, span).active,
 .team-ops-nav :where(a, span)[aria-current="page"] {
   font-weight: 700;
 }
 @media (pointer: coarse) {
   .hub-tool-chip,
-  .settings-bar-chip,
   .help-cat-chip,
-  .dash-hub-rail a,
   .team-ops-nav a,
   .team-ops-nav span,
   .product-hub-related .app-button {

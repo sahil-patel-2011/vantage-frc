@@ -8,9 +8,6 @@
 .mdw-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .mdw-panel{display:grid;gap:12px}
 .mdw-panel h2{margin:0}
-.mdw-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.mdw-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.mdw-tip{margin:0}
 .mdw-config-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .mdw-config-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .mdw-check{display:flex;gap:6px;align-items:center}
@@ -19,5 +16,5 @@
 .mdw-block{display:block}
 @media(max-width:900px){
   .mdw-header-actions{justify-content:flex-start}
-  .mdw-next-actions li,.mdw-setup-steps li,.mdw-alert-row,.mdw-config-header{flex-direction:column;align-items:stretch}
+  .mdw-next-actions li,.mdw-alert-row,.mdw-config-header{flex-direction:column;align-items:stretch}
 }

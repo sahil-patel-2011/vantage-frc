@@ -39,15 +39,6 @@
 
 /* ---------------------------------------------------------------- page ---- */
 
-/* One centred column. Reading a dashboard is reading, and a line of text
-   stretched across a 27-inch monitor is not read, it is scanned and lost. */
-.kit-page {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
 /* --------------------------------------------------------------- eyebrow -- */
 
 /* The small uppercase label above a group. Quiet enough to skip, present
@@ -73,13 +64,8 @@
 }
 
 .kit-card + .kit-card,
-.kit-card + .kit-eyebrow,
-.kit-stack > * + * {
+.kit-card + .kit-eyebrow {
   margin-top: 16px;
-}
-
-.kit-stack {
-  display: block;
 }
 
 /* ------------------------------------------------------------------ tile -- */
@@ -129,17 +115,6 @@
 
 /* ------------------------------------------------------------------- row -- */
 
-/**
- * Tile, title, subtitle, chevron. The whole row is the target, because a
- * 44-pixel chevron at the end of a 600-pixel row is a needlessly small thing
- * to ask a thumb to find.
- */
-.kit-rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .kit-row {
   display: flex;
   align-items: center;
@@ -167,7 +142,6 @@
 
 /* Hairlines between rows, never above the first or below the last, so a card
    never looks like it has a stray line floating inside it. */
-.kit-rows > li + li .kit-row,
 .kit-row + .kit-row {
   border-top: 1px solid var(--line-soft);
 }
@@ -350,53 +324,10 @@
 
 /* ------------------------------------------------------------------ grid -- */
 
-/**
- * Destinations as a two-up grid of cards rather than one long list.
- *
- * A list of twelve places is read top to bottom and the bottom four are never
- * reached. Two columns halves the scroll and lets the tinted tiles form a
- * pattern people navigate by colour instead of by reading every label.
- */
-.kit-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.kit-grid > li {
-  display: flex;
-}
-
-.kit-grid .kit-row {
-  border: 1px solid var(--line-soft);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-/* The grid's rows are separate cards, so the hairline that separates stacked
-   rows inside one card must not appear here. */
-.kit-grid .kit-row + .kit-row {
-  border-top: 1px solid var(--line-soft);
-}
-
-@media (max-width: 620px) {
-  .kit-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 /* The account tabs are links, not buttons, so they need the anchor reset the
    segment's buttons get for free. */
 .kit-segment a {
   text-decoration: none;
-}
-
-.settings-tabs {
-  margin: 0 0 18px;
 }
 
 /* --------------------------------------------------------------- related -- */

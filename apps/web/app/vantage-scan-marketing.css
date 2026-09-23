@@ -44,11 +44,9 @@
   color: var(--scan-navy);
   letter-spacing: -0.035em;
 }
-.marketing-site .lux-hero-note,
-.marketing-site .hero-copy {
+.marketing-site .lux-hero-note {
   max-width: 62ch;
 }
-.marketing-site .hero-waitlist,
 .marketing-site .waitlist-form,
 .marketing-site .confirmation {
   border-radius: 16px;
@@ -61,8 +59,7 @@
   border-color: transparent;
 }
 .marketing-site .legal h1,
-.marketing-site .pricing-hero h1,
-.marketing-site .route-hero h1 {
+.marketing-site .pricing-hero h1 {
   color: var(--scan-navy);
 }
 .marketing-site .pricing-grid article {

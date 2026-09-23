@@ -39,21 +39,6 @@
   margin: 0;
 }
 
-.prs-steps {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.prs-steps li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
 .prs-empty-action {
   min-height: 44px;
   display: inline-flex;
@@ -238,10 +223,5 @@
   .prs-marks,
   .prs-flag-actions {
     justify-content: flex-start;
-  }
-
-  .prs-steps li {
-    flex-direction: column;
-    align-items: stretch;
   }
 }

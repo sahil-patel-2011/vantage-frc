@@ -45,8 +45,7 @@
 }
 
 .product-hub--sign-in .signin-card,
-.product-hub--sign-in .signin-waitlist,
-.product-hub--sign-in .signin-method-panel {
+.product-hub--sign-in .signin-waitlist {
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));
   border-radius: var(--scan-radius, 16px);

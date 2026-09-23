@@ -15,13 +15,6 @@
 }
 .scout-data-impact-related{display:flex;flex-wrap:wrap;gap:8px}
 .scout-data-impact-next-actions{margin:0}
-.scout-data-impact-tip{margin:0}
-.scout-data-impact-setup-steps{
-  list-style:none;padding:0;margin:0;display:grid;gap:10px;
-}
-.scout-data-impact-setup-steps li{
-  display:flex;justify-content:space-between;gap:12px;align-items:center;
-}
 .scout-data-impact-footer-links{margin:0}
 .scout-data-impact-event{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
@@ -92,7 +85,7 @@
 .scout-data-impact-form{display:grid;gap:10px}
 @media (max-width:900px){
   .scout-data-impact-header-meta{justify-content:flex-start}
-  .scout-data-impact-next-actions li,.scout-data-impact-setup-steps li{flex-direction:column;align-items:stretch}
+  .scout-data-impact-next-actions li{flex-direction:column;align-items:stretch}
   .scout-data-impact-kpis{grid-template-columns:1fr 1fr}
 }
 @media (max-width:520px){

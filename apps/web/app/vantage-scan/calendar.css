@@ -43,8 +43,7 @@
   line-height: 1.5;
 }
 
-.product-hub--calendar .aii-panel,
-.product-hub--calendar .cal-add-grid {
+.product-hub--calendar .aii-panel {
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));
   border-radius: var(--scan-radius, 16px);

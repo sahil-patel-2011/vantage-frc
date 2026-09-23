@@ -7,13 +7,10 @@
 .cdl-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
 .cdl-status-row{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
 .cdl-panel{display:grid;gap:12px}
-.cdl-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.cdl-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.cdl-tip{margin:0}
 .cdl-history{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .cdl-history-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .cdl-history-row small{display:block}
 @media(max-width:900px){
   .cdl-header-actions{justify-content:flex-start}
-  .cdl-next-actions li,.cdl-setup-steps li,.cdl-history-row{flex-direction:column;align-items:stretch}
+  .cdl-next-actions li,.cdl-history-row{flex-direction:column;align-items:stretch}
 }

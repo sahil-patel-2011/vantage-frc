@@ -76,32 +76,6 @@
   gap: 8px;
 }
 
-.start-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius:var(--radius-sm);
-  border: 1px solid var(--start-line);
-  background: var(--start-card);
-  color: var(--start-ink);
-  font: 600 13px/1 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.start-btn.primary {
-  border-color: transparent;
-  background: var(--start-accent);
-  color: #fff;
-}
-
-.start-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
 .start-track {
   display: grid;
   gap: 10px;

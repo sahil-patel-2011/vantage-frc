@@ -6,8 +6,6 @@
 .evr-panel{display:grid;gap:12px}
 .evr-panel-title{margin:0}
 .evr-tip{margin:0}
-.evr-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.evr-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .evr-remaining-head{display:grid;gap:4px}
 .evr-remaining-value{font-size:2rem;line-height:1.1}
 .evr-remaining-headline{margin:0}
@@ -27,7 +25,6 @@
 @media(max-width:640px){
   .evr-item{flex-direction:column;align-items:stretch}
   .evr-item-actions{justify-content:flex-start}
-  .evr-setup-steps li{flex-direction:column;align-items:stretch}
   .evr-remaining-row{flex-direction:column;align-items:stretch}
   .evr-remaining-row-meta{justify-content:flex-start}
 }

@@ -7,8 +7,6 @@
 .prt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .prt-panel{display:grid;gap:12px}
 .prt-panel h2{margin:0}
-.prt-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.prt-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .prt-tip{margin:0}
 .prt-reinspect{margin:0;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--line));background:color-mix(in srgb,var(--warning) 12%,var(--surface));color:var(--warning);font-size:12px;font-weight:600;line-height:1.4}
 .prt-report-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
@@ -29,5 +27,5 @@
 .prt-ref-row{display:flex;justify-content:space-between;gap:8px}
 @media(max-width:900px){
   .prt-header-actions{justify-content:flex-start}
-  .prt-next-actions li,.prt-setup-steps li,.prt-report-header,.prt-ref-row{flex-direction:column;align-items:stretch}
+  .prt-next-actions li,.prt-report-header,.prt-ref-row{flex-direction:column;align-items:stretch}
 }

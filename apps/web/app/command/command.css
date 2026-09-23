@@ -24,10 +24,6 @@
   font: 400 15px/1.45 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-.edc-shell-actions {
-  margin: 0;
-}
-
 .edc-freshness {
   margin: 0 0 14px;
   padding: 10px 14px;

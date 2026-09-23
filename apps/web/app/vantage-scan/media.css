@@ -8,8 +8,7 @@
 
 .product-hub--media,
 .scan-hub--media,
-.media-page,
-.media-layout {
+.media-page {
   --scan-group-a: "MONEY";
   --scan-group-b: "SPONSORS";
   --scan-group-c: "OUTREACH";
@@ -44,7 +43,6 @@
   line-height: 1.5;
 }
 
-.product-hub--media .media-grid,
 .product-hub--media .media-tab-panel,
 .product-hub--media .media-panel-list {
   background: var(--surface);
@@ -130,8 +128,7 @@
 @media (max-width: 720px) {
   .product-hub--media,
 .scan-hub--media,
-.media-page,
-.media-layout {
+.media-page {
     gap: 14px;
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
@@ -150,13 +147,12 @@
   .product-hub--media,
 .scan-hub--media,
 .media-page,
-.media-layout *, .product-hub--media,
+.product-hub--media,
 .scan-hub--media,
 .media-page,
-.media-layout *::before, .product-hub--media,
+.product-hub--media,
 .scan-hub--media,
-.media-page,
-.media-layout *::after {
+.media-page {
     animation: none !important;
     transition: none !important;
   }
@@ -164,8 +160,7 @@
 
 :root[data-theme='dark'] .product-hub--media,
 .scan-hub--media,
-.media-page,
-.media-layout {
+.media-page {
   --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 

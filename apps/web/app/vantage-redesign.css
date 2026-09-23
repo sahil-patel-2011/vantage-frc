@@ -113,24 +113,6 @@ body.has-app-shell {
   backdrop-filter: blur(20px) saturate(1.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .04);
 }
-.soft-island-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 56px;
-  padding: 6px 10px;
-  border-radius: var(--vt-radius-pill);
-  color: var(--vt-muted);
-  font: 600 10px var(--vt-font);
-  text-decoration: none;
-  transition: color .15s ease, background .15s ease;
-}
-.soft-island-tab svg { width: 22px; height: 22px; }
-.soft-island-tab:hover { color: var(--vt-ink); }
-.soft-island-tab[data-active="true"] { color: var(--vt-blue); background: var(--vt-blue-soft); }
-.soft-island-tab .soft-island-dot { display: none; }
 
 /* ===== Drawer ===== */
 .soft-drawer {
@@ -152,54 +134,6 @@ body.has-app-shell {
   padding: 12px;
   margin-bottom: 16px;
   background: var(--vt-surface-2);
-}
-
-.soft-drawer-group { margin-bottom: 8px; }
-.soft-drawer-group-label {
-  font: 700 11px var(--vt-font);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: var(--vt-muted-light);
-  padding: 8px 12px 4px;
-}
-.soft-drawer-group-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  font: 700 14px var(--vt-font);
-  color: var(--vt-ink);
-}
-.soft-drawer-group-head .soft-group-icon {
-  width: 32px; height: 32px; border-radius: var(--vt-radius-xs); display: grid; place-items: center;
-}
-.soft-drawer-group-head .soft-group-icon svg { width: 18px; height: 18px; }
-
-.soft-drawer-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--vt-radius-sm);
-  color: var(--vt-ink-secondary);
-  font: 500 14px var(--vt-font);
-  text-decoration: none;
-  transition: background .12s ease;
-}
-.soft-drawer-item:hover { background: var(--vt-line-soft); }
-.soft-drawer-item[data-active="true"] { background: var(--vt-lavender); color: var(--vt-blue); font-weight: 600; }
-.soft-drawer-item .soft-item-icon {
-  width: 32px; height: 32px; border-radius: var(--vt-radius-xs); display: grid; place-items: center;
-  background: var(--vt-line-soft); color: var(--vt-muted); flex: none;
-}
-.soft-drawer-item[data-active="true"] .soft-item-icon { background: var(--vt-surface); color: var(--vt-blue); }
-.soft-drawer-item .soft-item-icon svg { width: 16px; height: 16px; }
-.soft-drawer-item .soft-item-chevron { margin-left: auto; color: var(--vt-muted-light); }
-
-.soft-drawer-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--vt-line); }
-.soft-drawer-foot-text {
-  text-align: center; font: 600 10px var(--vt-font); letter-spacing: .05em;
-  color: var(--vt-muted-light); padding: 8px 0;
 }
 
 /* ===== Card System ===== */
@@ -409,31 +343,10 @@ body.has-app-shell {
 
 /* ===== Scouting Filter Bar ===== */
 .vt-scout-filter-note { margin: 0 0 12px; font: 500 12px/1.45 var(--vt-font); color: var(--vt-muted); }
-.vt-scout-filter { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-.vt-scout-filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.vt-scout-filter-label { font: 700 10px var(--vt-font); text-transform: uppercase; letter-spacing: .04em; color: var(--vt-muted-light); white-space: nowrap; }
-.vt-scout-filter-pills { display: flex; gap: 4px; flex-wrap: wrap; }
-.vt-scout-pill {
-  padding: 5px 12px; border-radius: var(--vt-radius-pill); border: 1px solid var(--vt-line);
-  background: var(--vt-surface); font: 600 11px var(--vt-font); color: var(--vt-muted);
-  cursor: pointer; transition: all .12s ease; white-space: nowrap;
-}
-.vt-scout-pill[data-active="true"] { background: var(--vt-blue); color: #fff; border-color: var(--vt-blue); }
-.vt-scout-select {
-  padding: 5px 10px; border-radius: var(--vt-radius-xs); border: 1px solid var(--vt-line);
-  background: var(--vt-surface); font: 600 12px var(--vt-font); color: var(--vt-ink); cursor: pointer;
-}
 
 /* ===== Utility ===== */
-.vt-hidden { display: none !important; }
 .vt-flex { display: flex; }
 .vt-items-center { align-items: center; }
 .vt-justify-between { justify-content: space-between; }
 .vt-gap-2 { gap: 8px; }
-.vt-gap-3 { gap: 12px; }
-.vt-mt-2 { margin-top: 8px; }
-.vt-mt-4 { margin-top: 16px; }
 .vt-mb-4 { margin-bottom: 16px; }
-.vt-text-muted { color: var(--vt-muted); }
-.vt-text-sm { font-size: 13px; }
-.vt-text-xs { font-size: 11px; }

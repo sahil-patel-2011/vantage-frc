@@ -1,4 +1,4 @@
-﻿/* Marketing v3 — engineered warmth visual redesign. Layers over .marketing-lux. */
+/* Marketing v3 — engineered warmth visual redesign. Layers over .marketing-lux. */
 /* Anchored sections land below the sticky header */
 .marketing-lux [id]{scroll-margin-top:76px}
 
@@ -58,78 +58,11 @@
 }
 .marketing-lux .lux-hero-note{font-size:13px!important;max-width:36rem}
 
-/* â”€â”€ Hero visual: the agent-teaching panel â”€â”€ */
-.marketing-lux .hero-teach{
-  position:relative;z-index:1;justify-self:end;width:min(100%,478px);
-  border:1px solid var(--m-line);border-radius:20px;overflow:hidden;
-  background:var(--m-surface);box-shadow:var(--m-card-shadow-lg);
-  animation:lux-rise .85s .12s var(--ease-out) both;
-}
-.marketing-lux .hero-teach-chrome{
-  display:flex;align-items:center;gap:10px;padding:12px 16px;
-  border-bottom:1px solid var(--m-line-soft);background:var(--m-surface-2);
-}
-.marketing-lux .hero-teach-dots{display:inline-flex;gap:5px}
-.marketing-lux .hero-teach-dots i{width:8px;height:8px;border-radius:50%;background:var(--m-line-strong)}
-.marketing-lux .hero-teach-chrome strong{font:600 12.5px/1.2 var(--m-sans);letter-spacing:-.01em}
-.marketing-lux .hero-teach-chrome b{
-  margin-left:auto;padding:5px 9px;border:1px solid var(--m-line);border-radius:999px;
-  color:var(--m-muted);font:600 9.5px/1 var(--m-mono);letter-spacing:.09em;text-transform:uppercase;
-  white-space:nowrap;
-}
-.marketing-lux .hero-teach-body{display:grid;gap:12px;padding:16px}
-.marketing-lux .hero-teach-msg{max-width:94%}
-.marketing-lux .hero-teach-who{
-  display:block;margin:0 0 5px;color:var(--m-muted);
-  font:600 9.5px/1 var(--m-mono);letter-spacing:.09em;text-transform:uppercase;
-}
-.marketing-lux .hero-teach-msg p{
-  margin:0;padding:10px 13px;
-  border:1px solid var(--m-line-soft);border-radius:13px;border-top-left-radius:4px;
-  background:var(--m-surface-2);color:var(--m-ink);
-  font-size:13.5px;line-height:1.5;
-}
-.marketing-lux .hero-teach-shot{
-  padding:13px 15px 14px;border-radius:14px;
-  border:1px solid var(--m-warm-line);background:var(--m-warm-soft);
-}
-.marketing-lux .hero-teach-shot-tag{
-  display:inline-block;color:var(--m-warm);
-  font:700 10px/1 var(--m-mono);letter-spacing:.12em;text-transform:uppercase;
-}
-.marketing-lux .hero-teach-shot p{
-  margin:7px 0 11px;color:var(--m-ink);
-  font:600 13.5px/1.45 var(--m-sans);letter-spacing:-.012em;
-}
-.marketing-lux .hero-teach-chips{display:flex;flex-wrap:wrap;gap:8px}
-.marketing-lux .hero-teach-chips span{
-  display:inline-flex;align-items:center;gap:7px;padding:7px 13px;
-  border:1px solid var(--m-line-strong);border-radius:999px;
-  background:var(--m-surface);color:var(--m-muted);
-  font:600 12px/1.2 var(--m-sans);
-}
-.marketing-lux .hero-teach-chips .is-picked{
-  border-color:var(--m-warm);color:var(--m-warm);
-  box-shadow:0 0 0 1px var(--m-warm) inset;
-}
-.marketing-lux .hero-teach-chips .is-picked::before{
-  content:"";width:6px;height:6px;border-radius:50%;background:var(--m-warm);
-}
-.marketing-lux .hero-teach-shot em{
-  display:block;margin-top:10px;color:var(--m-muted);
-  font-style:normal;font-size:11.5px;line-height:1.4;
-}
-.marketing-lux .hero-teach-note{
-  padding:10px 16px 12px;border-top:1px solid var(--m-line-soft);
-  color:var(--m-muted);font-size:11px;line-height:1.4;
-}
-
 /* â”€â”€ Section rhythm: eyebrow + headline + lede, alternate quiet/loud â”€â”€ */
 .marketing-lux .lux-problem,
 .marketing-lux .lux-runs,
 .marketing-lux .lux-fit,
-.marketing-lux .lux-loop,
-.marketing-lux .lux-memory{
+.marketing-lux .lux-loop{
   padding:var(--m-section-pad) var(--m-pad-x);
 }
 .marketing-lux .lux-loop,
@@ -140,7 +73,6 @@
     var(--m-paper);
   background-size:28px 28px,28px 28px,auto;
 }
-.marketing-lux .lux-memory{background:transparent}
 .marketing-lux .lux-eyebrow{
   margin:0 0 12px;color:var(--m-warm);
   font:600 11.5px/1.2 var(--m-mono);letter-spacing:.14em;text-transform:uppercase;
@@ -158,17 +90,11 @@
   margin:0;max-width:58ch;color:var(--m-muted);
   font-size:var(--m-step-0);line-height:1.55;
 }
-.marketing-lux .lux-lede{
-  max-width:62ch;font-size:var(--m-step-1);line-height:1.6;
-}
 .marketing-lux .lux-closer{max-width:62ch;font-size:var(--m-step-0);line-height:1.6}
 
 /* â”€â”€ One card recipe, reused everywhere â”€â”€ */
 .marketing-lux .lux-feature-grid li,
 .marketing-lux .lux-loop-steps li,
-.marketing-lux .lux-role-grid li,
-.marketing-lux .lux-deep-link-grid a,
-.marketing-lux .lux-callout,
 .marketing-lux .soft-waitlist-form,
 .marketing-lux .waitlist-form,
 .marketing-lux .pricing-grid article{
@@ -179,23 +105,18 @@
 }
 .marketing-lux .lux-feature-grid li,
 .marketing-lux .lux-loop-steps li,
-.marketing-lux .lux-role-grid li,
-.marketing-lux .lux-deep-link-grid a,
 .marketing-lux .pricing-grid article{
   transition:transform .28s var(--ease-out),box-shadow .28s ease,border-color .28s ease;
 }
 .marketing-lux .lux-feature-grid li:hover,
 .marketing-lux .lux-loop-steps li:hover,
-.marketing-lux .lux-role-grid li:hover,
-.marketing-lux .lux-deep-link-grid a:hover,
 .marketing-lux .pricing-grid article:hover{
   transform:translateY(-3px);
   border-color:var(--m-line-strong);
   box-shadow:var(--m-card-shadow-lg);
 }
 .marketing-lux .lux-feature-grid li:focus-within,
-.marketing-lux .lux-loop-steps li:focus-within,
-.marketing-lux .lux-deep-link-grid a:focus-visible{
+.marketing-lux .lux-loop-steps li:focus-within{
   outline:2px solid var(--m-blue);outline-offset:3px;
 }
 .marketing-lux .lux-feature-grid{gap:14px}
@@ -215,30 +136,6 @@
   border:1px solid var(--m-warm-line);
   font:600 12.5px/1 var(--m-mono);
 }
-.marketing-lux .lux-rules li b{color:var(--m-ink)}
-
-/* Runs list: icon + term + one honest line */
-.marketing-lux .lux-runs-list>div{align-items:start}
-.marketing-lux .lux-runs-list dt{
-  display:flex;align-items:center;gap:12px;
-  font-size:var(--m-step-1);letter-spacing:-.022em;
-}
-.marketing-lux .lux-dt-icon{
-  display:grid;place-items:center;flex:none;
-  width:34px;height:34px;border-radius:10px;
-  color:var(--m-warm);background:var(--m-warm-soft);
-  border:1px solid var(--m-warm-line);
-}
-.marketing-lux .lux-runs-list dd{max-width:62ch}
-.marketing-lux .lux-runs-list>div:hover dt{color:var(--m-warm)}
-@media(hover:none){.marketing-lux .lux-runs-list>div:hover dt{color:var(--m-ink)}}
-
-/* Memory callout: quoted cross-feature question gets the warm spine */
-.marketing-lux .lux-callout{
-  padding:24px 26px;border-left:3px solid var(--m-warm);
-  border-top-left-radius:6px;border-bottom-left-radius:6px;
-}
-.marketing-lux .lux-callout q{color:var(--m-ink)}
 
 /* FAQ: warm plus marker, roomier summary */
 .marketing-lux .faq-item summary i::before,
@@ -273,7 +170,6 @@
 
 /* Route heroes (for-teams, pricing, features) share the scale */
 .marketing-lux .lux-route-hero h1,
-.marketing-lux .route-hero h1,
 .marketing-lux .pricing-hero h1{
   font-weight:650;font-size:var(--m-step-4);line-height:1.08;font-family:var(--m-sans);letter-spacing:-.038em;
   /* Display type keeps its own measure now that the container spans the content
@@ -281,7 +177,6 @@
   max-width:17ch;
 }
 .marketing-lux .lux-route-hero>p:not(.lux-wordmark),
-.marketing-lux .route-hero>p:not(.lux-wordmark),
 .marketing-lux .pricing-hero>p:not(.lux-wordmark){
   font-size:var(--m-step-0);line-height:1.55;max-width:58ch;
 }
@@ -338,26 +233,19 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
     grid-template-columns:1fr;min-height:0;align-items:start;
     padding-top:clamp(40px,7vw,64px);gap:clamp(32px,6vw,44px);
   }
-  .marketing-lux .hero-teach{justify-self:stretch;width:100%;max-width:520px}
   .marketing-lux .marketing-footer{grid-template-columns:1fr}
   .marketing-lux .marketing-footer .marketing-footer-cols{justify-content:start}
 }
 @media(max-width:680px){
   .marketing-lux .lux-hero-inner{padding-top:36px;padding-bottom:44px}
   .marketing-lux .lux-hero h1{font-size:clamp(32px,9vw,40px)}
-  .marketing-lux .hero-teach{max-width:none}
-  .marketing-lux .hero-teach-chrome b{display:none}
   .marketing-lux .marketing-footer .marketing-footer-cols{
     grid-template-columns:repeat(2,minmax(120px,1fr));width:100%;
   }
-  .marketing-lux .lux-callout{padding:18px 18px 18px 20px}
 }
 @media(prefers-reduced-motion:reduce){
-  .marketing-lux .hero-teach{animation:none!important}
   .marketing-lux .lux-feature-grid li:hover,
   .marketing-lux .lux-loop-steps li:hover,
-  .marketing-lux .lux-role-grid li:hover,
-  .marketing-lux .lux-deep-link-grid a:hover,
   .marketing-lux .pricing-grid article:hover,
   .marketing-lux .button.primary:hover,
   .marketing-lux .button.secondary:hover{transform:none}
@@ -467,26 +355,6 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 .marketing-lux .mk-pillars .mk-pillar-copy{color:var(--m-muted);font-size:14px;line-height:1.5}
 .marketing-lux .mk-pillars .lux-card-icon{margin:0}
 
-/* -- The rules band inside "how it works" -- */
-.marketing-lux .mk-rules{margin-top:clamp(28px,3.5vw,40px);max-width:var(--m-content)}
-.marketing-lux .mk-rules h3{
-  margin:0;color:var(--m-muted);
-  font:600 11.5px/1.2 var(--m-mono);letter-spacing:.14em;text-transform:uppercase;
-}
-.marketing-lux .mk-rules .lux-rules{margin-top:16px}
-
-/* -- Honest footnote under the trust strip -- */
-.marketing-lux .mk-footnote{
-  max-width:70ch;margin:clamp(22px,3vw,30px) 0 0;padding:16px 18px;
-  border:1px solid var(--m-line);border-left:3px solid var(--m-warm);
-  border-radius:6px var(--m-card-radius) var(--m-card-radius) 6px;
-  background:var(--m-surface);
-  color:var(--m-muted);font-size:14px;line-height:1.55;
-}
-.marketing-lux .mk-footnote b{color:var(--m-ink);font-weight:600}
-.marketing-lux .mk-footnote a{color:var(--m-warm);font-weight:600;text-decoration:none}
-.marketing-lux .mk-footnote a:hover{text-decoration:underline;text-underline-offset:3px}
-
 /* -- Pricing teaser: figures come from the billing catalog -- */
 .marketing-lux .mk-price{
   padding:var(--m-section-pad) var(--m-pad-x);
@@ -523,9 +391,6 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 .marketing-lux .mk-price-foot a:not(.button){
   color:var(--m-ink);font-weight:600;text-decoration:underline;text-underline-offset:3px;
 }
-
-/* -- /for-teams closing actions sit where the waitlist form does -- */
-.marketing-lux .mk-waitlist-links{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
 
 /* -- Touch: every footer route is a real target on a phone -- */
 @media(pointer:coarse){
@@ -570,7 +435,6 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   .marketing-lux .lux-hero .actions{flex-direction:column;align-items:stretch;gap:10px}
   .marketing-lux .lux-hero .actions .button{width:100%}
   .marketing-lux .lux-route-hero .actions .button{width:100%}
-  .marketing-lux .mk-waitlist-links .button{width:100%}
   .marketing-lux .mk-mock-rows>div{flex-wrap:wrap;gap:2px}
   .marketing-lux .mk-mock-rows dd{margin-left:0;text-align:left}
 }
@@ -589,7 +453,6 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 }
 .marketing-lux .lux-hero h1,
 .marketing-lux .lux-route-hero h1,
-.marketing-lux .route-hero h1,
 .marketing-lux .pricing-hero h1,
 .marketing-lux .lux-section-head h2{
   color:var(--m-ink);
@@ -638,7 +501,6 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 .marketing-lux .lux-runs,
 .marketing-lux .lux-fit,
 .marketing-lux .lux-loop,
-.marketing-lux .lux-memory,
 .marketing-lux .mk-price{
   padding:clamp(56px,7vw,88px) var(--m-pad-x);
 }
@@ -671,7 +533,6 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
  * p rules further up), not on the container.
  */
 .marketing-lux .lux-route-hero,
-.marketing-lux .route-hero,
 .marketing-lux .pricing-hero{
   max-width:calc(var(--m-content) + var(--m-pad-x) * 2);
   margin-inline:auto;
@@ -795,8 +656,7 @@ html:has(.marketing-lux){scroll-padding-top:76px}
  * this one band at the page edge while its seven siblings were centred. Matched
  * on specificity here, where this sheet's later position decides it.
  */
-.marketing-lux .pricing-page > .pricing-trial,
-.marketing-lux .pricing-page > .pricing-alternates{
+.marketing-lux .pricing-page > .pricing-trial{
   max-width:calc(var(--m-content) + var(--m-pad-x) * 2);
   margin-inline:auto;
 }
@@ -837,6 +697,5 @@ html:has(.marketing-lux){scroll-padding-top:76px}
    the hero is one column. */
 @media(max-width:999px){
   .marketing-lux .lux-hero-inner{grid-template-columns:1fr;align-items:start}
-  .marketing-lux .mk-mock,
-  .marketing-lux .hero-teach{justify-self:stretch;width:100%;max-width:560px}
+  .marketing-lux .mk-mock{justify-self:stretch;width:100%;max-width:560px}
 }

@@ -55,14 +55,6 @@
   box-shadow: var(--scan-shadow, 0 10px 28px rgba(13, 53, 96, 0.06));
 }
 
-.product-hub--prototype-tracker .ptk-empty-links {
-  justify-items: start;
-  text-align: left;
-  border: 1px dashed color-mix(in srgb, var(--scan-navy, var(--ink)) 22%, var(--line));
-  background: color-mix(in srgb, var(--scan-navy, var(--ink)) 3%, var(--surface));
-  padding: clamp(20px, 3vw, 32px);
-}
-
 .product-hub--prototype-tracker .ptk-next-actions,
 .product-hub--prototype-tracker .ptk-header-actions {
   display: flex;
@@ -157,9 +149,5 @@
 .scan-hub--prototype-tracker,
 .ptk-page {
   --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-}
-
-:root[data-theme='dark'] .product-hub--prototype-tracker .ptk-empty-links {
-  background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
 

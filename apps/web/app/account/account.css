@@ -5,13 +5,6 @@
   max-width: 720px;
 }
 
-.account-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .account-related {
   margin: 0 0 2px;
 }
@@ -166,13 +159,6 @@
   font-size: 12px;
 }
 
-.account-empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
-}
-
 .account-identity-scope {
   display: block;
   margin-top: 4px;
@@ -181,73 +167,8 @@
   line-height: 1.35;
 }
 
-.settings-connections {
-  display: grid;
-  gap: 14px;
-}
-
 .connections-related {
   margin: 0;
-}
-
-.settings-connections-grid {
-  margin: 0;
-}
-
-.settings-connection-card {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-
-.settings-connection-card-top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-
-.settings-connection-card-top h2 {
-  margin: 0;
-  font-size:var(--title-3);
-  letter-spacing:var(--tracking-tight);
-}
-
-.settings-connection-card .app-badge {
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.settings-connection-card p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.settings-connection-card a {
-  color: var(--accent);
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 13px;
-}
-
-.settings-connection-footer {
-  display: grid;
-  gap: 8px;
-}
-
-.settings-connection-footer h2 {
-  margin: 0;
-  font-size:var(--title-3);
-}
-
-.settings-connection-footer p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 @media (max-width: 640px) {

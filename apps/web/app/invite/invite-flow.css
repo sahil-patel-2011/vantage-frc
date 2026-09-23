@@ -193,32 +193,6 @@
   text-decoration: none;
 }
 
-.workspace-related-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin: 0 0 18px;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--line);
-}
-
-.workspace-related-strip a {
-  color: var(--accent);
-  font: 700 12px var(--font-ibm-plex-sans), system-ui, sans-serif;
-  text-decoration: none;
-}
-
-.workspace-related-strip a:hover {
-  text-decoration: underline;
-}
-
-.workspace-membership-count {
-  margin: 0 0 12px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 .workspace-org-pick {
   margin: 0 0 18px;
 }

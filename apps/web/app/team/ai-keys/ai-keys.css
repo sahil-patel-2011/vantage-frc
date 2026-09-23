@@ -362,8 +362,7 @@
   and the free swarm — so text fields keep the stacked layout they want.
 */
 .ai-keys-mode label,
-.ai-keys-pool label,
-.ai-keys-models label {
+.ai-keys-pool label {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -372,9 +371,7 @@
 .ai-keys-mode input[type="checkbox"],
 .ai-keys-mode input[type="radio"],
 .ai-keys-pool input[type="checkbox"],
-.ai-keys-pool input[type="radio"],
-.ai-keys-models input[type="checkbox"],
-.ai-keys-models input[type="radio"] {
+.ai-keys-pool input[type="radio"] {
   /* Undo the full-width, 44px-tall sizing meant for text inputs. */
   flex: none;
   width: 16px;
@@ -386,8 +383,7 @@
   accent-color: var(--accent);
 }
 .ai-keys-mode legend,
-.ai-keys-pool legend,
-.ai-keys-models legend {
+.ai-keys-pool legend {
   font-weight: 700;
   padding-inline: 4px;
 }

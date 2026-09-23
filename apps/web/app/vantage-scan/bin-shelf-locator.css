@@ -43,13 +43,6 @@
   line-height: 1.5;
 }
 
-.product-hub--bin-shelf-locator .bsl-panel {
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));
-  border-radius: var(--scan-radius, 16px);
-  box-shadow: var(--scan-shadow, 0 10px 28px rgba(13, 53, 96, 0.06));
-}
-
 .product-hub--bin-shelf-locator .soft-empty {
   justify-items: start;
   text-align: left;

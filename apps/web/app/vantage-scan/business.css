@@ -8,8 +8,7 @@
 
 .product-hub--business,
 .scan-hub--business,
-.business-page,
-.biz-layout {
+.business-page {
   --scan-group-a: "MONEY";
   --scan-group-b: "SPONSORS";
   --scan-group-c: "OUTREACH";
@@ -45,8 +44,6 @@
 }
 
 .product-hub--business .biz-grid,
-.product-hub--business .biz-list,
-.product-hub--business .biz-panel,
 .product-hub--business .biz-table {
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));
@@ -89,7 +86,6 @@
   text-transform: uppercase;
 }
 
-.product-hub--business .biz-form,
 .product-hub--business .biz-field {
   min-height: 44px;
 }
@@ -124,8 +120,7 @@
 @media (max-width: 720px) {
   .product-hub--business,
 .scan-hub--business,
-.business-page,
-.biz-layout {
+.business-page {
     gap: 14px;
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
@@ -144,13 +139,12 @@
   .product-hub--business,
 .scan-hub--business,
 .business-page,
-.biz-layout *, .product-hub--business,
+.product-hub--business,
 .scan-hub--business,
 .business-page,
-.biz-layout *::before, .product-hub--business,
+.product-hub--business,
 .scan-hub--business,
-.business-page,
-.biz-layout *::after {
+.business-page {
     animation: none !important;
     transition: none !important;
   }
@@ -158,8 +152,7 @@
 
 :root[data-theme='dark'] .product-hub--business,
 .scan-hub--business,
-.business-page,
-.biz-layout {
+.business-page {
   --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 

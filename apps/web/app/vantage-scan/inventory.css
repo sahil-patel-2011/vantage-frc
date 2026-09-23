@@ -51,7 +51,6 @@
   box-shadow: var(--scan-shadow, 0 10px 28px rgba(13, 53, 96, 0.06));
 }
 
-.product-hub--inventory .inventory-empty,
 .product-hub--inventory .inventory-list-empty {
   justify-items: start;
   text-align: left;
@@ -159,7 +158,6 @@
   --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
-:root[data-theme='dark'] .product-hub--inventory .inventory-empty,
 .product-hub--inventory .inventory-list-empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }

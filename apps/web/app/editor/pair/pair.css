@@ -15,10 +15,8 @@
 .pair-device-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .pair-device-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .pair-tip{margin:0}
-.pair-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.pair-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 @media(max-width:900px){
   .pair-header-actions{justify-content:flex-start}
   .pair-layout{grid-template-columns:1fr}
-  .pair-next-actions li,.pair-setup-steps li,.pair-device-card{flex-direction:column;align-items:stretch}
+  .pair-next-actions li,.pair-device-card{flex-direction:column;align-items:stretch}
 }

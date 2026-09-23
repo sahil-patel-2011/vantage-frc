@@ -15,13 +15,6 @@
 }
 .scout-crossval-related{display:flex;flex-wrap:wrap;gap:8px}
 .scout-crossval-next-actions{margin:0}
-.scout-crossval-tip{margin:0}
-.scout-crossval-setup-steps{
-  list-style:none;padding:0;margin:0;display:grid;gap:10px;
-}
-.scout-crossval-setup-steps li{
-  display:flex;justify-content:space-between;gap:12px;align-items:center;
-}
 .scout-crossval-footer-links{margin:0}
 .scout-crossval-event{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
@@ -93,7 +86,7 @@
 .scout-crossval-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media (max-width:900px){
   .scout-crossval-header-meta{justify-content:flex-start}
-  .scout-crossval-next-actions li,.scout-crossval-setup-steps li{flex-direction:column;align-items:stretch}
+  .scout-crossval-next-actions li{flex-direction:column;align-items:stretch}
   .scout-crossval-kpis{grid-template-columns:1fr 1fr}
 }
 @media (max-width:520px){

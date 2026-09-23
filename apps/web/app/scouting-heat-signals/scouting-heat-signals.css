@@ -5,9 +5,6 @@
 .shs-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .shs-panel{display:grid;gap:12px}
 .shs-panel h2{margin:0}
-.shs-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.shs-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.shs-tip{margin:0}
 .shs-team-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
 .shs-team-card{padding:12px;display:grid;gap:8px}
 .shs-team-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
@@ -15,5 +12,5 @@
 .shs-entry-list{list-style:none;padding:0;margin:0;display:grid;gap:4px}
 .shs-entry-row{display:flex;justify-content:space-between;gap:8px}
 @media(max-width:900px){
-  .shs-next-actions li,.shs-setup-steps li,.shs-team-header,.shs-entry-row{flex-direction:column;align-items:stretch}
+  .shs-next-actions li,.shs-team-header,.shs-entry-row{flex-direction:column;align-items:stretch}
 }

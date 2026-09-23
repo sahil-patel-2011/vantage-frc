@@ -15,13 +15,6 @@
 }
 .scout-coverage-live-related{display:flex;flex-wrap:wrap;gap:8px}
 .scout-coverage-live-next-actions{margin:0}
-.scout-coverage-live-tip{margin:0}
-.scout-coverage-live-setup-steps{
-  list-style:none;padding:0;margin:0;display:grid;gap:10px;
-}
-.scout-coverage-live-setup-steps li{
-  display:flex;justify-content:space-between;gap:12px;align-items:center;
-}
 .scout-coverage-live-footer-links{margin:0}
 .scout-coverage-live-event{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
@@ -85,7 +78,7 @@
 .scout-coverage-live-row-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 @media (max-width:900px){
   .scout-coverage-live-header-meta{justify-content:flex-start}
-  .scout-coverage-live-next-actions li,.scout-coverage-live-setup-steps li{flex-direction:column;align-items:stretch}
+  .scout-coverage-live-next-actions li{flex-direction:column;align-items:stretch}
   .scout-coverage-live-kpis{grid-template-columns:1fr 1fr}
 }
 @media (max-width:520px){

@@ -18,8 +18,7 @@
   min-width: 0;
 }
 
-.product-hub--help .app-page-header,
-.product-hub--help .help-header-actions {
+.product-hub--help .app-page-header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -60,7 +59,6 @@
   padding: clamp(20px, 3vw, 32px);
 }
 
-.product-hub--help .help-header-actions,
 .product-hub--help .help-article-actions,
 .product-hub--help .product-hub-related {
   display: flex;
@@ -128,8 +126,7 @@
     gap: 14px;
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
-  .product-hub--help .app-page-header,
-  .product-hub--help .help-header-actions {
+  .product-hub--help .app-page-header {
     flex-direction: column;
     align-items: stretch;
   }

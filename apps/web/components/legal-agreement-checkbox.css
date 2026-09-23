@@ -53,13 +53,6 @@
   text-decoration-thickness: 2px;
 }
 
-.legal-consent-hint.legal-consent-hint {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .legal-consent-error.legal-consent-error {
   margin: 4px 0 0;
   color: var(--critical);

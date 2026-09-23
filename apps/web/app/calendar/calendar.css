@@ -90,16 +90,13 @@
 /* Add-milestone form. */
 .cal-add{display:grid;gap:10px}
 .cal-add h2{margin:0;font-size:var(--title-3)}
-.cal-add-grid{display:grid;grid-template-columns:minmax(200px,1fr) 140px 150px 150px;gap:8px}
 .cal-add button[type="submit"]{justify-self:start}
 
 @media(max-width:820px){
   .cal-hero{flex-direction:column}
   .cal-hero-progress{max-width:none;width:100%}
-  .cal-add-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:520px){
-  .cal-add-grid{grid-template-columns:1fr}
   .cal-countdown{font-size:26px}
 }
 

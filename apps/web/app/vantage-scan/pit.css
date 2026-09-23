@@ -17,8 +17,7 @@
   min-width: 0;
 }
 
-.product-hub--pit .app-page-header,
-.product-hub--pit .pit-header {
+.product-hub--pit .app-page-header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -130,8 +129,7 @@
     gap: 14px;
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
-  .product-hub--pit .app-page-header,
-  .product-hub--pit .pit-header {
+  .product-hub--pit .app-page-header {
     flex-direction: column;
     align-items: stretch;
   }

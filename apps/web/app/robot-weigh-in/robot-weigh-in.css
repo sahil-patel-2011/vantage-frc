@@ -7,8 +7,8 @@
 .rwi-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .rwi-panel{display:grid;gap:12px}
 .rwi-panel h2{margin:0}
-.rwi-setup-steps,.rwi-list,.rwi-trend{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.rwi-setup-steps li,.rwi-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.rwi-list,.rwi-trend{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.rwi-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .rwi-tip,.rwi-block{margin:0;display:block}
 .rwi-playoff-cue{margin:0;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid color-mix(in srgb,var(--warning) 38%,var(--line));background:color-mix(in srgb,var(--warning) 12%,var(--surface));color:var(--warning);font-size:12px;font-weight:600;line-height:1.4}
 .rwi-trend li{display:grid;grid-template-columns:100px 1fr 90px;gap:8px;align-items:center}
@@ -17,6 +17,6 @@
 .rwi-checks label{display:flex;gap:6px;align-items:center}
 @media(max-width:900px){
   .rwi-header-actions{justify-content:flex-start}
-  .rwi-next-actions li,.rwi-setup-steps li,.rwi-row{flex-direction:column;align-items:stretch}
+  .rwi-next-actions li,.rwi-row{flex-direction:column;align-items:stretch}
   .rwi-trend li{grid-template-columns:1fr}
 }

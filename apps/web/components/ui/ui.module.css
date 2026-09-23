@@ -618,26 +618,16 @@
 }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
 .btnSm { min-height: var(--control-h-sm); padding: var(--control-pad-sm); font-size: 12px; }
-.btnMd { min-height: var(--control-h); padding: var(--control-pad); }
 .btnLg { min-height: 48px; padding: 0 18px; font-size: 15px; }
 @media (pointer: coarse) {
-  .btnSm, .btnMd, .btnLg { min-height: 44px; }
+  .btnSm, .btnLg { min-height: 44px; }
 }
-/* --soft-accent-ink, not #fff: dark accent is a light blue; white text on it is 2.7:1. */
-.btnPrimary { background: var(--accent); color: var(--accent-ink); }
-.btnPrimary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 85%, #000); }
 .btnSecondary {
   background: var(--bg);
   color: var(--ink);
   border-color: var(--line);
 }
 .btnSecondary:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
-.btnGhost { background: transparent; color: var(--ink); }
-.btnGhost:hover:not(:disabled) { background: var(--surface-2); }
-/* --app-critical-fill is the one destructive fill in the product (it is what
-   `.app-button.danger` paints); #dc2626 here was a second one, light-only. */
-.btnDanger { background: var(--critical-fill); color: #fff; }
-.btnDanger:hover:not(:disabled) { background: var(--critical); }
 .btnIcon {
   min-width: 24px;
   min-height: 24px;

@@ -2,36 +2,6 @@
    Scoped to .dash-* additions; base dashboard styles live in soft-ui.css. */
 
 /* ---- Stable workflow launchpad ---- */
-.dash-quick-start{
-  display:grid;gap:10px;margin:0 0 16px;padding:12px;
-  border:1px solid var(--line);border-radius:var(--radius);
-  background:color-mix(in srgb,var(--surface) 94%,var(--accent-soft));
-  box-shadow:var(--shadow);
-}
-.dash-quick-start-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:0 2px}
-.dash-quick-start-heading>strong{font:750 13px/1.2 var(--font-source-sans),ui-sans-serif;color:var(--ink)}
-.dash-quick-start-heading>span{color:var(--muted);font-size:11px}
-.dash-quick-start-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.dash-quick-start-links>a{
-  display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;
-  min-height:58px;padding:9px 10px;border:1px solid color-mix(in srgb,var(--line) 88%,transparent);
-  border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);text-decoration:none;
-  transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;
-}
-.dash-quick-start-links>a:hover{
-  border-color:color-mix(in srgb,var(--accent) 42%,var(--line));
-  box-shadow:var(--shadow);transform:translateY(-1px);
-}
-.dash-quick-start-links>a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
-.dash-quick-start-links>a>i{
-  display:grid;place-items:center;width:34px;height:34px;border-radius:var(--radius-xs);
-  background:var(--accent-soft);color:var(--accent);
-}
-.dash-quick-start-links>a>i svg{width:17px;height:17px}
-.dash-quick-start-links>a>span{display:grid;gap:2px;min-width:0}
-.dash-quick-start-links>a strong{font-size:13px;line-height:1.15}
-.dash-quick-start-links>a small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:10.5px}
-.dash-quick-start-links>a>b{color:var(--accent);font-size:14px}
 
 .dash-grid-skeleton{
   position:absolute;inset:12px;border-radius:var(--radius);
@@ -72,29 +42,10 @@
   background:var(--surface);color:var(--ink);font:650 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
 }
 .dash-board-manage:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
-.dash-board-dots{display:inline-flex;align-items:center;gap:6px;margin-left:4px}
-.dash-board-dots button{
-  width:7px;height:7px;padding:0;border:0;border-radius:var(--radius-pill);cursor:pointer;
-  background:color-mix(in srgb,var(--muted) 45%,transparent);
-  transition:transform .15s ease,background .15s ease;
-}
-.dash-board-dots button[aria-current="true"]{background:var(--accent);transform:scale(1.25)}
 .dash-board-current{
   display:inline-flex;align-items:center;gap:8px;min-height:28px;color:var(--muted);font-size:12px;
 }
 .dash-board-current strong{color:var(--ink);font-size:13px;letter-spacing:-.01em}
-
-.dash-boards-sheet{
-  position:fixed;z-index:96;left:50%;bottom:0;transform:translateX(-50%);
-  width:min(520px,100vw);max-height:min(78vh,640px);padding:18px 18px calc(20px + var(--safe-bottom));
-  border-radius:22px 22px 0 0;background:var(--surface);border:1px solid var(--line);border-bottom:0;
-  /* Bottom sheet: the shadow must throw UPWARD, so this one stays directional
-     rather than taking --shadow-pop. Depth matched to the pop token. */
-  box-shadow:0 -16px 40px rgba(12,17,24,.26);overflow:auto;animation:dash-sheet-up .28s ease;
-}
-.dash-boards-sheet header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-.dash-boards-sheet h2{margin:0;font-size:var(--title-2);letter-spacing:var(--tracking-tight)}
-.dash-boards-sheet header p{margin:4px 0 0;color:var(--muted);font-size:13px}
 .dash-boards-group{margin:0 0 16px}
 .dash-boards-group>p{
   margin:0 0 8px;color:var(--muted);font:700 11px/1 ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
@@ -171,13 +122,13 @@
   color:var(--muted);font-size:11px;
 }
 .dash-grid-guide span{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.dash-snap-hud,.dash-drop-coach{
+.dash-snap-hud{
   position:absolute;z-index:4;top:12px;left:50%;transform:translateX(-50%);
   display:inline-flex;align-items:center;gap:10px;min-height:32px;padding:6px 12px;border-radius:var(--radius-pill);
   background:var(--ink);color:var(--bg);font-size:11px;pointer-events:none;
   box-shadow:var(--shadow-pop);
 }
-.dash-snap-hud strong,.dash-drop-coach strong{font-size:11px}
+.dash-snap-hud strong{font-size:11px}
 .dash-snap-hud b{font:700 11px ui-monospace,monospace;color:var(--accent)}
 .dash-grid-wrap.receiving-widget{outline:2px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:4px}
 .dash-dock-tidy span{margin-right:4px;opacity:.8}
@@ -402,7 +353,6 @@
 }
 @media (prefers-reduced-motion:reduce){
   .dash-home .dash-pgrid>.dash-grid-item,.dash-drop-slot{transition:none}
-  .dash-home .dash-grid-item.jiggling{animation:none}
 }
 
 @media (max-width:720px){
@@ -414,11 +364,6 @@
   }
 }
 @media (max-width:640px){
-  .dash-quick-start{padding:10px}
-  .dash-quick-start-heading{display:grid;gap:3px}
-  .dash-quick-start-links{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .dash-quick-start-links>a{grid-template-columns:32px minmax(0,1fr);min-height:60px}
-  .dash-quick-start-links>a>b{display:none}
   .dash-board-switcher{max-width:100%;overflow-x:auto}
   .dash-item-tools{gap:8px}
   .dash-grid-guide{flex-wrap:wrap}
@@ -449,43 +394,6 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-}
-.dash-learn-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 10px;
-}
-.dash-learn-heading strong {
-  font-size: 14px;
-}
-.dash-learn-heading span {
-  color: var(--muted);
-  font-size: 12px;
-}
-.dash-learn-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 8px;
-}
-.dash-learn-links a {
-  display: grid;
-  gap: 2px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xs);
-  background: var(--bg);
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 13px;
-}
-.dash-learn-links a:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-}
-.dash-learn-links small {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
 }
 
 /* Widget chrome uses the product tokens, never leftover --soft-* / --app-* aliases. */

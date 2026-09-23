@@ -7,8 +7,6 @@
 .picklist-collab-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 .picklist-collab-layout{display:grid;gap:16px}
 .picklist-collab-panel{display:grid;gap:12px}
-.picklist-collab-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.picklist-collab-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .picklist-collab-tip{margin:0;display:block}
 .picklist-collab-status-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .picklist-collab-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
@@ -31,7 +29,7 @@
 }
 @media(max-width:900px){
   .picklist-collab-header-actions{justify-content:flex-start}
-  .picklist-collab-next-actions li,.picklist-collab-setup-steps li{flex-direction:column;align-items:stretch}
+  .picklist-collab-next-actions li{flex-direction:column;align-items:stretch}
 }
 
 /* Every team at the event, ranked by the sliders (the dynamic pick list). */

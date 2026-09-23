@@ -65,8 +65,7 @@
 }
 
 .product-hub--invite .invite-actions,
-.product-hub--invite .invite-next-actions,
-.product-hub--invite .workspace-related-strip {
+.product-hub--invite .invite-next-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

@@ -9,18 +9,8 @@
 .inventory-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
 .inventory-stats strong{font-size:1.5rem}
 .inventory-stats .warn strong{color:var(--critical)}
-.inventory-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .inventory-link{padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .inventory-link.danger{color:var(--critical)}
-.inventory-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.inventory-summary-tile{display:grid;gap:3px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
-.inventory-summary-tile strong{font-size:24px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inventory-summary-tile span{color:var(--muted);font-size:11px}
-.inventory-summary-tile.warn strong{color:var(--critical)}
-.inventory-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
-.inventory-tabs button{padding:10px 12px;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;font-weight:700;font-size:13px;cursor:pointer}
-.inventory-tabs button.active{color:var(--ink);border-bottom-color:var(--accent)}
-.inventory-tabs b{margin-left:6px;padding:1px 6px;background:var(--surface-2);border-radius:var(--radius-pill);color:var(--muted);font-size:10px}
 .inventory-section{display:grid;gap:12px}
 .inventory-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .inventory-search{flex:1;min-width:200px}
@@ -98,7 +88,6 @@
 @media(max-width:760px){
   .inventory-setup-actions{display:grid;width:100%}
   .inventory-setup-actions .app-button{width:100%;justify-content:center}
-  .inventory-summary{grid-template-columns:1fr 1fr}
   .inventory-item-main{grid-template-columns:1fr auto;grid-template-areas:"id qty" "actions actions"}
   .inventory-item-id{grid-area:id}
   .inventory-item-qty{grid-area:qty}

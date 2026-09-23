@@ -47,7 +47,6 @@
 .product-hub--intel .intel-panels,
 .product-hub--intel .intel-hero-card,
 .product-hub--intel .intel-lookup-grid,
-.product-hub--intel .intel-metric-grid,
 .product-hub--intel .intel-lookup-board {
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));

@@ -9,8 +9,6 @@
   --mcl-blue-line:color-mix(in srgb,var(--accent) 40%,var(--line));
 }
 .mcl-page input,.mcl-page select,.mcl-page textarea{min-height:44px;padding:10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
-.mcl-related{display:grid;gap:0;margin:0 0 4px}
-.mcl-related .product-hub-related{margin-bottom:10px}
 .mcl-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-xs);color:var(--critical);background:color-mix(in srgb,var(--critical) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--critical) 32%,var(--line));font-size:12px;font-weight:600}
 .mcl-stack{display:grid;gap:16px}
 .mcl-next-actions{display:grid;gap:10px;margin:0;padding:16px 18px}

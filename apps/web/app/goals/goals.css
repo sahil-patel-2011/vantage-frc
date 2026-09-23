@@ -81,16 +81,9 @@
 .goals-row-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .goals-row-actions label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px}
 .goals-row-actions input[type="number"]{width:100px;min-height:34px;padding:6px 10px}
-.goals-row-links{display:flex;flex-wrap:wrap;gap:8px}
-.goals-row-links a{font-size:12px;font-weight:600}
 
 .goals-form-actions{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
 .goals-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
-.goals-setup-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;width:min(100%,420px)}
-.goals-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--bg)}
-.goals-setup-steps li div{display:grid;gap:2px;min-width:0}
-.goals-setup-steps strong{font-size:13px}
-.goals-setup-steps span{color:var(--muted);font-size:12px}
 
 @media(max-width:720px){
   .goals-summary{grid-template-columns:1fr 1fr}

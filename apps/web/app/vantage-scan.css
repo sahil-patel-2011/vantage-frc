@@ -197,8 +197,7 @@ body.has-app-shell .soft-island {
      vantage-chrome.css), so the edge has to be layered in here. */
   box-shadow: var(--material-edge), 0 12px 32px rgba(13, 53, 96, 0.12);
 }
-body.has-app-shell .soft-island a[aria-current="page"],
-body.has-app-shell .soft-island-more.is-open {
+body.has-app-shell .soft-island a[aria-current="page"] {
   color: var(--scan-rail-ink);
   background: var(--scan-rail);
 }
@@ -220,12 +219,10 @@ body.has-app-shell .soft-scrim {
 }
 
 /* Nav rows: stable left edge, current = navy inset, not a rainbow of hues. */
-body.has-app-shell .soft-drawer nav a,
-body.has-app-shell .soft-nav-row a {
+body.has-app-shell .soft-drawer nav a {
   border-radius: var(--scan-radius-sm);
 }
-body.has-app-shell .soft-drawer a[aria-current="page"],
-body.has-app-shell .soft-nav-row a[aria-current="page"] {
+body.has-app-shell .soft-drawer a[aria-current="page"] {
   color: var(--scan-navy);
   background: var(--scan-navy-soft);
   box-shadow: inset 3px 0 0 var(--scan-navy);
@@ -316,7 +313,6 @@ body.has-app-shell .app-badge.demo {
 
 /* --- Empty / setup / error ------------------------------------------------- */
 body.has-app-shell .soft-empty,
-body.has-app-shell .app-empty,
 body.has-app-shell .scan-empty {
   justify-items: start;
   text-align: left;
@@ -326,17 +322,13 @@ body.has-app-shell .scan-empty {
   border-radius: var(--scan-radius);
 }
 body.has-app-shell .soft-empty > h2,
-body.has-app-shell .soft-empty > h1,
-body.has-app-shell .app-empty > h2 {
+body.has-app-shell .soft-empty > h1 {
   color: var(--scan-navy);
 }
-body.has-app-shell .soft-empty > :where(a, button, .app-button),
-body.has-app-shell .app-empty > :where(a, button, .app-button),
-body.has-app-shell .scan-empty > :where(a, button, .app-button) {
+body.has-app-shell .soft-empty > :where(a, button, .app-button), body.has-app-shell .scan-empty > :where(a, button, .app-button) {
   margin-top: 6px;
 }
-body.has-app-shell .soft-empty > :where(div, .soft-btn-row),
-body.has-app-shell .app-empty > :where(div, .soft-btn-row) {
+body.has-app-shell .soft-empty > :where(div, .soft-btn-row) {
   justify-content: flex-start;
 }
 
@@ -411,9 +403,7 @@ body.has-app-shell .dash-setup-steps {
   padding: 0;
   list-style: none;
 }
-body.has-app-shell .dash-now,
-body.has-app-shell .dash-now-card,
-body.has-app-shell .dash-next {
+body.has-app-shell .dash-now {
   border-color: color-mix(in srgb, var(--scan-navy) 14%, var(--line));
 }
 
@@ -430,8 +420,7 @@ body.has-app-shell .strategy-setup-steps li {
 }
 
 /* --- Product hub related strip -------------------------------------------- */
-body.has-app-shell .product-hub-related a,
-body.has-app-shell .hub-related a {
+body.has-app-shell .product-hub-related a {
   color: var(--scan-navy);
   text-decoration: none;
   font-weight: 700;
@@ -440,9 +429,7 @@ body.has-app-shell .hub-related a {
 
 /* --- Chat / Drive / CAD leftover chrome that still paints in product ------ */
 body.has-app-shell .chat-page,
-body.has-app-shell .cad-workspace,
 body.has-app-shell .intel-app,
-body.has-app-shell .scout-app,
 body.has-app-shell .module-page {
   color: var(--ink);
 }
@@ -454,15 +441,6 @@ body.has-app-shell .cad-jobs button.active {
 }
 
 /* --- Sign-in (product-adjacent, loaded with product styles when shelled) -- */
-.auth-card {
-  border-radius: var(--scan-radius);
-  box-shadow: var(--scan-shadow-lift);
-  border-color: color-mix(in srgb, var(--scan-navy) 12%, var(--line));
-}
-.auth-card h1 {
-  color: var(--scan-navy);
-  letter-spacing: -0.03em;
-}
 
 /* --- Density: ADHD prefers grouping over cramped equal gaps --------------- */
 body.has-app-shell .module-page,
@@ -488,8 +466,7 @@ body.has-app-shell .product-hub > .app-page-header {
     -webkit-overflow-scrolling: touch;
   }
   body.has-app-shell .scan-empty,
-  body.has-app-shell .soft-empty,
-  body.has-app-shell .app-empty {
+  body.has-app-shell .soft-empty {
     padding: 20px 16px;
   }
   body.has-app-shell .dash-home-header {
@@ -520,18 +497,15 @@ body.has-app-shell .product-hub > .app-page-header {
 }
 
 /* --- Onboarding / workspace picker ---------------------------------------- */
-body.has-app-shell .onboard-steps,
 body.has-app-shell .scan-rail {
   margin-bottom: 18px;
 }
-body.has-app-shell .workspace-page .quick.primary,
-body.has-app-shell .workspace-page .home-cta {
+body.has-app-shell .workspace-page .quick.primary {
   background: var(--scan-navy) !important;
   color: #fff !important;
 }
 
 /* --- Files / Drive leftover chrome (do not invent quotas) ---------------- */
-body.has-app-shell .files-page,
 body.has-app-shell .drive-page,
 body.has-app-shell [class*="files-"] {
   --scan-group-a: "MY FILES";
@@ -544,8 +518,7 @@ body.has-app-shell .admin-org {
 }
 
 /* --- Help / account ---------------------------------------------------------- */
-body.has-app-shell .help-cat-chip[aria-pressed="true"],
-body.has-app-shell .settings-bar-chip[aria-pressed="true"] {
+body.has-app-shell .help-cat-chip[aria-pressed="true"] {
   background: var(--scan-navy-soft);
   color: var(--scan-navy);
   border-color: color-mix(in srgb, var(--scan-navy) 30%, var(--line));
@@ -573,8 +546,7 @@ body.has-app-shell .data-source-degraded-banner {
 }
 
 /* --- Onboarding / sign-in (often no app shell) ---------------------------- */
-.onboarding-page,
-.auth-page {
+.onboarding-page {
   --scan-navy: #0d3560;
   --scan-gold: #e8b923;
   --scan-gold-ink: #10202c;
@@ -584,8 +556,7 @@ body.has-app-shell .data-source-degraded-banner {
   color: var(--scan-navy, #0d3560);
   letter-spacing: 0.08em;
 }
-.onboarding-flow-header h1,
-.auth-card h1 {
+.onboarding-flow-header h1 {
   color: var(--scan-navy, #0d3560);
   letter-spacing: -0.03em;
 }
@@ -609,10 +580,6 @@ body.has-app-shell .data-source-degraded-banner {
 .onboarding-load-shell {
   text-align: left;
   justify-items: start;
-}
-.auth-card .google-button {
-  min-height: 44px;
-  border-radius: var(--scan-radius-sm, 12px);
 }
 
 /* Dashboard widgets: one now-card, empty widgets stay off-stage via existing logic */

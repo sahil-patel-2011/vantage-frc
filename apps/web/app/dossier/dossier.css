@@ -18,24 +18,6 @@
   justify-content:flex-end;
 }
 .dossier-next-actions{margin:0}
-.dossier-setup-steps{
-  list-style:none;
-  margin:0;
-  padding:0;
-  display:grid;
-  gap:10px;
-}
-.dossier-setup-steps li{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 0;
-  border-bottom:1px solid var(--line);
-}
-.dossier-setup-steps li:last-child{border-bottom:0}
-.dossier-setup-steps p{margin:4px 0 0}
 .dossier-empty{
   margin:0;
   padding:14px;

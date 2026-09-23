@@ -58,7 +58,6 @@
   padding: clamp(20px, 3vw, 32px);
 }
 
-.product-hub--match-checklist .mcl-related,
 .product-hub--match-checklist .mcl-next-actions {
   display: flex;
   flex-wrap: wrap;

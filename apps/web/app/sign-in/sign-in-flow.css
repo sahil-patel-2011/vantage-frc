@@ -30,24 +30,6 @@
   margin-bottom: 14px;
 }
 
-.signin-eyebrow {
-  display: block;
-  margin: 0 0 8px;
-  text-align: center;
-  color: var(--muted);
-  font: 600 10px var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0.08em;
-}
-
-.signin-progress-label {
-  margin: 0 0 10px;
-  text-align: center;
-  color: var(--muted);
-  font: 600 11px var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .signin-card h1 {
   font-size: clamp(27px, 5vw, 34px);
   letter-spacing: -0.035em;
@@ -61,13 +43,6 @@
 
 .signin-google {
   width: 100%;
-}
-
-.signin-email-toggle {
-  display: block;
-  width: 100%;
-  min-height: 42px;
-  text-align: center;
 }
 
 .signin-waitlist {
@@ -252,58 +227,6 @@
   cursor: not-allowed;
 }
 
-.signin-method-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 0 0 16px;
-}
-
-.signin-method-tabs button {
-  min-height: 42px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--bg);
-  color: var(--muted);
-  font: 600 13px var(--font-source-sans), ui-sans-serif;
-  cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
-}
-
-.signin-method-tabs button:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-
-.signin-method-tabs button[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-  box-shadow: none;
-}
-
-.signin-method-panel {
-  display: grid;
-  gap: 12px;
-}
-
-.signin-method-heading {
-  display: grid;
-  gap: 3px;
-  margin: 0 0 2px;
-}
-
-.signin-method-heading span {
-  color: var(--muted);
-  font: 600 10px var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.signin-method-heading strong {
-  font-size: 14px;
-}
-
 .signin-setup-shell {
   display: grid;
   gap: 8px;
@@ -348,36 +271,6 @@
   box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-.signin-access-note {
-  grid-template-columns: 30px 1fr;
-  gap: 10px;
-  align-items: start;
-  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
-  background: var(--positive-soft);
-  color: var(--positive);
-}
-
-.signin-access-note > b.signin-access-mark {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  color: var(--accent-ink);
-  background: var(--positive-fill);
-  font-size: 12px;
-}
-
-.signin-access-note > span {
-  display: grid;
-  gap: 3px;
-}
-
-.signin-access-note > span > b {
-  color: var(--positive);
-  font-size: 13px;
-}
-
 .signin-footer {
   flex-direction: column;
   align-items: stretch;
@@ -390,79 +283,6 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
-}
-
-.signin-cta-block {
-  display: grid;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.signin-cta-block > p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.signin-cta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.signin-cta-row a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--line);
-  background: var(--bg);
-  color: var(--ink);
-  font: 600 13px var(--font-source-sans), ui-sans-serif;
-  text-decoration: none;
-}
-
-.signin-cta-row a.primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink);
-}
-
-.signin-price-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--line);
-}
-
-.signin-price-strip li {
-  display: grid;
-  gap: 4px;
-  padding: 10px 8px;
-  background: var(--bg);
-  text-align: center;
-}
-
-.signin-price-strip span {
-  color: var(--muted);
-  font: 600 10px var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.signin-price-strip strong {
-  font: 600 13px var(--font-source-sans), ui-sans-serif;
-  color: var(--ink);
 }
 
 @media (max-width: 520px) {
@@ -485,10 +305,6 @@
     border-radius: var(--radius);
   }
 
-  .signin-price-strip {
-    grid-template-columns: 1fr;
-  }
-
   .signin-footer-modes {
     flex-direction: column;
     align-items: flex-start;
@@ -508,8 +324,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .signin-google,
-  .signin-code-box,
-  .signin-method-tabs button {
+  .signin-code-box {
     transition: none;
   }
 

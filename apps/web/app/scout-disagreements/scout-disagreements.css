@@ -15,13 +15,6 @@
 }
 .scout-disagreements-related{display:flex;flex-wrap:wrap;gap:8px}
 .scout-disagreements-next-actions{margin:0}
-.scout-disagreements-tip{margin:0}
-.scout-disagreements-setup-steps{
-  list-style:none;padding:0;margin:0;display:grid;gap:10px;
-}
-.scout-disagreements-setup-steps li{
-  display:flex;justify-content:space-between;gap:12px;align-items:center;
-}
 .scout-disagreements-footer-links{margin:0}
 .scout-disagreements-season{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
@@ -104,7 +97,7 @@
 .scout-disagreements-audit li:last-child{border-bottom:0}
 @media (max-width:900px){
   .scout-disagreements-header-meta{justify-content:flex-start}
-  .scout-disagreements-next-actions li,.scout-disagreements-setup-steps li{flex-direction:column;align-items:stretch}
+  .scout-disagreements-next-actions li{flex-direction:column;align-items:stretch}
   .scout-disagreements-kpis{grid-template-columns:1fr 1fr}
 }
 @media (max-width:520px){

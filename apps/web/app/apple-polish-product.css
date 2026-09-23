@@ -190,8 +190,7 @@ body.has-app-shell .soft-island {
   backdrop-filter: saturate(180%) blur(24px);
 }
 
-body.has-app-shell .soft-island a[aria-current="page"],
-body.has-app-shell .soft-island-more.is-open {
+body.has-app-shell .soft-island a[aria-current="page"] {
   color: #2563eb;
   background: rgba(37, 99, 235, .1);
 }
@@ -204,7 +203,6 @@ body.has-app-shell .soft-island-editor > section {
   backdrop-filter: saturate(180%) blur(28px);
 }
 
-body.has-app-shell .soft-badge,
 body.has-app-shell .app-badge {
   letter-spacing: .03em;
 }
