@@ -57,22 +57,25 @@ jobs:
         run: npm run build --workspace=@vantage/web
 
   browser:
-    name: Playwright (${{ matrix.shard }}/3)
+    name: Playwright (${{ matrix.shard }}/6)
     # Private-repo Actions minutes: skip Chromium on draft pushes.
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    # Three shards, each with its own Postgres service and dev server. One job ran
-    # 55+ minutes and the runner was shut down part-way through (the dev server
-    # compiling every route for ~360 specs is heavy), which reported red for
-    # reasons unrelated to the code. Specs clear their own rows, so a shard does
-    # not depend on rows another file created. fail-fast off: one red shard
-    # should not hide the results of the other two.
+    # Six shards, each with its own Postgres service and dev server, plus swap.
+    # `next dev` keeps every route it has compiled in memory: measured locally at
+    # 5.6 GB after 82 specs and still climbing. A private-repo runner has ~7 GB,
+    # so the runner was killed ("received a shutdown signal") about six minutes
+    # into the tests — as one job, and again as three shards. A sixth of the routes
+    # per dev server keeps each one well under that, and the swap turns a spike
+    # into a slower run instead of a dead runner. Specs clear their own rows, so a
+    # shard does not depend on rows another file created. fail-fast off: one red
+    # shard should not hide the results of the others.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
-    # A full signed-in pass is around 55 minutes in one job; a third of it is ~20.
+        shard: [1, 2, 3, 4, 5, 6]
+    # A full signed-in pass is around 55 minutes in one job; a sixth is ~10.
     #
     # Still one worker per shard: within a shard the specs share one dev server and
     # one database, and several create rows another spec then counts. Across
@@ -156,8 +159,16 @@ jobs:
       - name: Install Chromium system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+      - name: Add swap (next dev keeps every compiled route in memory)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 10G /mnt/vantage-swap
+          sudo chmod 600 /mnt/vantage-swap
+          sudo mkswap /mnt/vantage-swap
+          sudo swapon /mnt/vantage-swap
+          free -h
       - name: Run browser tests
-        run: npm run test:browser -- --reporter=line,html --shard=${{ matrix.shard }}/3
+        run: npm run test:browser -- --reporter=line,html --shard=${{ matrix.shard }}/6
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
