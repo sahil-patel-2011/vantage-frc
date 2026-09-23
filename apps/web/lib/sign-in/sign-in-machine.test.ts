@@ -222,7 +222,10 @@ describe("expired vs wrong code", () => {
     );
     expect(isCodeExpired(state, NOW + 1_000)).toBe(false);
     expect(state.code).toBe("");
-    expect(run(state, { type: "code_changed", code: "111111" }).failure?.kind).toBe("not_authorized");
+    expect(canResendCode(state, NOW + 1_000)).toBe(false);
+    const retyped = run(state, { type: "code_changed", code: "111111" });
+    expect(retyped.failure?.kind).toBe("not_authorized");
+    expect(canSubmitCode(retyped, NOW + 1_000)).toBe(false);
   });
 
   it("says nothing was sent when the mail provider is down", () => {

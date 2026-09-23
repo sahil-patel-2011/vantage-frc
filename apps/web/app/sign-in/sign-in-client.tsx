@@ -54,6 +54,7 @@ import {
   readOnboardingGate,
   sessionProbeFromPayload,
   showCodeClock,
+  showCodeResend,
   storedInviteTokenFrom,
   type PasswordPanel,
   type SessionProbe,
@@ -616,6 +617,7 @@ export default function SignInClient({
             invalid={Boolean(flow.failure)}
             expired={expired}
             showClock={showCodeClock(flow.failure?.kind)}
+            showResend={showCodeResend(flow.failure?.kind)}
             codeSeconds={codeSeconds}
             resendReady={resendReady}
             resendSeconds={resendSeconds}

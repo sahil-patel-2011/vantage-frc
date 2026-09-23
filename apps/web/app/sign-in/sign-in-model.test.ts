@@ -3,6 +3,7 @@ import { PENDING_INVITE_STORAGE_KEY } from "../../lib/invite";
 import {
   codeExpiryCopy,
   showCodeClock,
+  showCodeResend,
   continueAsLabel,
   describeSignInBusy,
   emailSubmitLabel,
@@ -69,6 +70,8 @@ describe("sign-in-model", () => {
     expect(showCodeClock("expired")).toBe(true);
     expect(showCodeClock(null)).toBe(true);
     expect(showCodeClock("not_authorized")).toBe(false);
+    expect(showCodeResend("expired")).toBe(true);
+    expect(showCodeResend("not_authorized")).toBe(false);
     expect(inviteBannerBody("a@team.org")).toMatch(/Sign in as a@team.org/);
     expect(inviteBannerBody(null)).toMatch(/acceptance screen/);
   });

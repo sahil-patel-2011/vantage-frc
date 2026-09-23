@@ -239,10 +239,13 @@ export function isCodeExpired(state: SignInFlowState, now: number): boolean {
 }
 
 export function canResendCode(state: SignInFlowState, now: number): boolean {
+  // Another code to the same closed address fails the same way. Edit the email or join the waitlist.
+  if (state.failure?.kind === "not_authorized") return false;
   return state.step === "code" && resendSecondsRemaining(state, now) === 0;
 }
 
 export function canSubmitCode(state: SignInFlowState, now: number): boolean {
+  if (state.failure?.kind === "not_authorized") return false;
   return state.step === "code" && isCodeComplete(state.code) && !isCodeExpired(state, now);
 }
 
