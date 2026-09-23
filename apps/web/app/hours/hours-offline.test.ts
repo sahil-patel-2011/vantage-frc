@@ -9,7 +9,13 @@ describe("Hours last snapshot stays on the phone", () => {
     const client = readFileSync(join(DIR, "hours-client.tsx"), "utf8");
     const chrome = readFileSync(join(DIR, "hours-chrome.tsx"), "utf8");
     const ready = readFileSync(join(DIR, "hours-ready-view.tsx"), "utf8");
+    const route = readFileSync(join(DIR, "../api/hours/route.ts"), "utf8");
     const src = `${client}\n${chrome}\n${ready}`;
+    expect(src).toMatch(/href="\/#waitlist"/);
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
+    expect(route).toContain("Choose your team to track build hours, or join the waitlist.");
+    expect(route).toContain("Choose your team to track build hours.");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"hours"/);
