@@ -78,7 +78,9 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to track build hours.",
+          message: requestedOrg
+            ? "Choose your team to track build hours."
+            : "Choose your team to track build hours, or join the waitlist.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
         } satisfies BuildHoursView;
       }

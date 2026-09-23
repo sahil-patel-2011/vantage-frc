@@ -101,7 +101,9 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to run the scan-in kiosk.",
+          message: requestedOrg
+            ? "Choose your team to run the scan-in kiosk."
+            : "Choose your team to run the scan-in kiosk, or join the waitlist.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
         } satisfies KioskView;
       }

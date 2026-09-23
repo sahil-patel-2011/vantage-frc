@@ -71,7 +71,9 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to open the robot blueprint.",
+          message: requestedOrg
+            ? "Choose your team to open the robot blueprint."
+            : "Choose your team to open the robot blueprint, or join the waitlist.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null, seasonYear: new Date().getFullYear() },
         } satisfies BlueprintView;
       }

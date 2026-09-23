@@ -19,7 +19,7 @@
  * load shows the real message with a retry.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
@@ -45,9 +45,24 @@ import {
   downscaleDimensions,
 } from "../../lib/scouting/media-downscale";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./reimbursements.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 const ACTION_LABELS: Record<ReimbursementAction, string> = {
   submit: "Submit for approval",
@@ -135,6 +150,7 @@ async function persistReimbursementsSnapshot(orgHint: string, data: Reimbursemen
 
 export default function ReimbursementsClient() {
   const [view, setView] = useState<ReimbursementsView | null>(null);
+  const [requestedOrg, setRequestedOrg] = useState(false);
   const [budget, setBudget] = useState<BudgetVsActualView | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +173,7 @@ export default function ReimbursementsClient() {
   const load = useCallback(async () => {
     const params = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(Boolean(orgHint));
     const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
     let hadCache = Boolean(viewRef.current);
     try {
@@ -206,6 +223,7 @@ export default function ReimbursementsClient() {
         );
         return;
       }
+      if (next.status === "ready" && next.orgId) persistOrgIdInUrl(next.orgId);
       setView(next);
       setStatus("ready");
       setError(null);
@@ -376,6 +394,10 @@ export default function ReimbursementsClient() {
   );
 
   const ready = view && view.status === "ready" ? view : null;
+  const offerWaitlist =
+    Boolean(view && view.status === "setup_required") &&
+    !requestedOrg &&
+    Boolean(view && view.status === "setup_required" && view.message.toLowerCase().includes(WAITLIST_PHRASE));
   const canFile = Boolean(orgId) && amount.trim() !== "" && description.trim() !== "" && !busy;
 
   const budgetLines = useMemo<BudgetLine[]>(
@@ -384,7 +406,7 @@ export default function ReimbursementsClient() {
   );
 
   return (
-    <div className="rb-page">
+    <div className={offerWaitlist ? "rb-page rb-setup-page" : "rb-page"}>
       <PageHeader
         breadcrumbs={
           <>
@@ -393,7 +415,11 @@ export default function ReimbursementsClient() {
           </>
         }
         title="Reimbursements"
-        description="Money someone on the team already spent out of their own pocket — filed with a receipt, approved once, paid once, and recorded in the team ledger."
+        description={
+          offerWaitlist && view && view.status === "setup_required"
+            ? withWaitlistLink(view.message)
+            : "Money someone on the team already spent out of their own pocket — filed with a receipt, approved once, paid once, and recorded in the team ledger."
+        }
       />
       <OfflineBanner feature="Reimbursements" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -426,11 +452,19 @@ export default function ReimbursementsClient() {
           title="Choose your team"
           badge="Needs setup"
           badgeTone="setup"
-          description={view.message}
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "rb-setup" : undefined}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          <div className={offerWaitlist ? "rb-setup-actions" : undefined}>
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            {offerWaitlist ? (
+              <a className="rb-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            ) : null}
+          </div>
         </EmptyState>
       ) : null}
 

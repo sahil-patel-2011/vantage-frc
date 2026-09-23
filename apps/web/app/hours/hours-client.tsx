@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   type BuildHoursView,
   type HourKind,
@@ -60,6 +60,7 @@ export default function HoursClient() {
   const [online, setOnline] = useState(true);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [requestedOrg, setRequestedOrg] = useState(false);
   const viewRef = useRef<BuildHoursView | null>(null);
   viewRef.current = view;
 
@@ -71,6 +72,7 @@ export default function HoursClient() {
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(Boolean(orgHint));
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<BuildHoursView>("hours", orgHint || "_");
@@ -122,6 +124,7 @@ export default function HoursClient() {
         return;
       }
       setError("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -259,11 +262,14 @@ export default function HoursClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist =
+      !requestedOrg && view.message.toLowerCase().includes("join the waitlist");
     return (
       <HoursSetupShell
         message={view.message}
         fromCache={fromCache}
         cachedAt={cachedAt}
+        offerWaitlist={offerWaitlist}
       />
     );
   }
