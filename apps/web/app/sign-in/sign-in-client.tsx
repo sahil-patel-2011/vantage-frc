@@ -384,11 +384,9 @@ export default function SignInClient({
 
   /** Auto-submit the moment the sixth digit lands — never twice for one code. */
   useEffect(() => {
-    if (flow.step !== "code") return;
     if (busy !== "idle") return;
-    if (!isCodeComplete(flow.code)) return;
+    if (!canSubmitCode(flow, Date.now())) return;
     if (flow.code === lastSubmittedCode.current) return;
-    if (isCodeExpired(flow, Date.now())) return;
     void verifyCode();
   }, [busy, flow, verifyCode]);
 
