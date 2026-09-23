@@ -22,7 +22,7 @@ export function aiKeysEncryptionStatus(): AiKeysEncryptionStatus {
       setupRequired: true,
       message:
         message.includes("forbidden in production") || message.includes("KMS")
-          ? "Envelope encryption needs AWS_KMS_KEY_ID (or a non-production local vault). API keys cannot be saved until KMS is configured."
+          ? "Key encryption is not configured: set VANTAGE_KMS_MASTER_KEY (base64 of 32 random bytes, openssl rand -base64 32) or AWS_KMS_KEY_ID. Keys and connector sign-ins cannot be saved until then."
           : message,
     };
   }

@@ -1018,6 +1018,46 @@ export class LocalKmsService implements KeyManagementService {
   }
 }
 
+/**
+ * Production KMS without a cloud KMS bill: a random 256-bit master key held in the
+ * deployment's encrypted environment (Vercel "sensitive" variable VANTAGE_KMS_MASTER_KEY,
+ * base64 of exactly 32 bytes — `openssl rand -base64 32`). Same envelope as AWS: every
+ * secret gets its own random data key, and only the data key is wrapped (AES-256-GCM) with
+ * the master key. The key id carries a fingerprint of the master key, so a rotated or wrong
+ * key fails loudly ("KMS key mismatch") instead of decrypting garbage.
+ *
+ * Trade-off versus AWS KMS: the master key exists in the runtime's memory rather than only
+ * inside an HSM. AWS_KMS_KEY_ID, when set, still wins.
+ */
+export class EnvKeyKmsService implements KeyManagementService {
+  readonly keyId: string;
+  private readonly wrappingKey: Buffer;
+
+  constructor(masterKeyBase64: string) {
+    const key = Buffer.from(masterKeyBase64.trim(), "base64");
+    if (key.length !== 32) {
+      throw new Error("VANTAGE_KMS_MASTER_KEY must be base64 of exactly 32 random bytes (openssl rand -base64 32)");
+    }
+    this.wrappingKey = key;
+    this.keyId = `env-kms:v1:${createHash("sha256").update(key).digest("hex").slice(0, 12)}`;
+  }
+
+  async generateDataKey() {
+    const plaintext = randomBytes(32);
+    const nonce = randomBytes(12);
+    const cipher = createCipheriv("aes-256-gcm", this.wrappingKey, nonce);
+    const body = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+    return { plaintext, encrypted: Buffer.concat([nonce, cipher.getAuthTag(), body]) };
+  }
+
+  async decryptDataKey(encrypted: Uint8Array) {
+    const value = Buffer.from(encrypted);
+    const decipher = createDecipheriv("aes-256-gcm", this.wrappingKey, value.subarray(0, 12));
+    decipher.setAuthTag(value.subarray(12, 28));
+    return Buffer.concat([decipher.update(value.subarray(28)), decipher.final()]);
+  }
+}
+
 export type EncryptedSecret = {
   ciphertext: string;
   nonce: string;
@@ -1069,10 +1109,12 @@ export async function decryptSecret(
   }
 }
 
+/** AWS KMS when configured, else the env master key, else the local dev service (refused in production). */
 export function createKms(): KeyManagementService {
-  return process.env.AWS_KMS_KEY_ID
-    ? new AwsKmsService(process.env.AWS_KMS_KEY_ID)
-    : new LocalKmsService();
+  if (process.env.AWS_KMS_KEY_ID) return new AwsKmsService(process.env.AWS_KMS_KEY_ID);
+  const master = process.env.VANTAGE_KMS_MASTER_KEY?.trim();
+  if (master) return new EnvKeyKmsService(master);
+  return new LocalKmsService();
 }
 
 /**
