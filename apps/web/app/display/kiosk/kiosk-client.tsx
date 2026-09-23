@@ -295,7 +295,7 @@ export default function KioskClient({
               <small>
                 {data.eventStatus?.source
                   ? `from ${data.eventStatus.source}`
-                  : "Sync Team Data ratings"}
+                  : "No ratings saved"}
               </small>
             </article>
             <article>

@@ -704,8 +704,9 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         })}
         {!grouped.length ? (
           <p className="app-muted">
-            Match schedule is empty. Sync Team Data after the event schedule publishes — nothing is
-            invented.
+            {view.canAssign
+              ? "Match schedule is empty. Sync Team Data after the event schedule publishes."
+              : "Match schedule is empty. An owner or admin syncs the schedule after it publishes."}
           </p>
         ) : null}
       </section>

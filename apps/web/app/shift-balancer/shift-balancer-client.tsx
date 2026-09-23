@@ -368,7 +368,10 @@ function GeneratePlanForm({
         </p>
       ) : eventLabel ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {eventLabel} has no qualification matches cached yet. Sync Team Data or generate a numeric plan below.
+          Active event {eventLabel} has no qualification matches cached yet.{" "}
+          {view.canPublish
+            ? "Sync Team Data or generate a numeric plan below."
+            : "An owner or admin syncs the schedule, or generate a numeric plan below."}
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>

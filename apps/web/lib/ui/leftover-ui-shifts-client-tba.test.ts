@@ -9,5 +9,6 @@ describe("leftover Shift balancer client student copy", () => {
     const src = readFileSync(join(WEB, "app/shift-balancer/shift-balancer-client.tsx"), "utf8");
     expect(src).not.toContain("Sync TBA or generate a numeric plan below.");
     expect(src).toContain("Sync Team Data or generate a numeric plan below.");
+    expect(src).toContain("An owner or admin syncs the schedule, or generate a numeric plan below.");
   });
 });
