@@ -13,7 +13,8 @@ import { googleConnectorsRedirect } from "../../../../../lib/google-sheets/route
 import { createSpreadsheet } from "../../../../../lib/google-sheets/sheets-target";
 import { HttpError, requireWorkbookManager } from "../../../../../lib/microsoft/authz";
 import { encryptRefreshToken, readWorkbookNaming } from "../../../../../lib/microsoft/connection-store";
-import { appBaseUrl, currentUser } from "../../../../../lib/microsoft/route-helpers";
+import { resolveAuthBaseURL } from "@vantage/core";
+import { currentUser } from "../../../../../lib/microsoft/route-helpers";
 import { workbookFileName } from "../../../../../lib/microsoft/workbook-target";
 
 export const maxDuration = 60;
@@ -35,7 +36,9 @@ export const maxDuration = 60;
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const base = appBaseUrl(url);
+  // Back to the canonical app host, not the callback host: Google returns to the registered
+  // sign-in origin, where the owner usually has no session.
+  const base = resolveAuthBaseURL();
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
 
