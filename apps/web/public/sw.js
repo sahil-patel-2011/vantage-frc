@@ -332,6 +332,53 @@ async function navigateWithShellFallback(request) {
   }
 }
 
+/*
+ * "Get this phone ready for the event" (Scouting home). A page is only in the
+ * shell cache once someone has opened it online, so a scout who never opened
+ * Predict before losing signal could not open it at the venue. This fetches
+ * each requested shell page now, stores it under its path (the key
+ * networkFirstShell falls back to), and stores the /_next/static scripts and
+ * styles its HTML names, without which the cached page could not run.
+ *
+ * Only shell paths are accepted, a redirected response (the sign-in page) is
+ * never stored as the route, and at most 20 paths per message.
+ */
+async function warmRoutes(paths) {
+  const shell = await caches.open(SHELL_CACHE);
+  const assets = await caches.open(ASSET_CACHE);
+  let pages = 0;
+  let files = 0;
+  for (const raw of paths.slice(0, 20)) {
+    if (typeof raw !== "string" || !raw.startsWith("/")) continue;
+    const url = new URL(raw, self.location.origin);
+    if (url.origin !== self.location.origin || !isShellPath(url.pathname)) continue;
+    try {
+      const response = await fetch(url.href, { credentials: "include" });
+      if (!response.ok || response.redirected) continue;
+      const html = await response.clone().text();
+      await shell.put(new Request(new URL(url.pathname, self.location.origin).href), response);
+      pages += 1;
+      const names = new Set();
+      for (const match of html.matchAll(/(?:src|href)="(\/_next\/static\/[^"?#]+)"/g)) names.add(match[1]);
+      for (const name of names) {
+        if (await assets.match(name)) continue;
+        try {
+          const asset = await fetch(name);
+          if (asset.ok) {
+            await assets.put(name, asset);
+            files += 1;
+          }
+        } catch {
+          // One missing chunk should not stop the rest.
+        }
+      }
+    } catch {
+      // Offline mid-warm: report what was saved.
+    }
+  }
+  return { pages, files };
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(precacheShell().then(() => self.skipWaiting()));
 });
@@ -354,6 +401,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "WARM_SHELL") {
     event.waitUntil(precacheShell());
+  }
+  if (event.data && event.data.type === "WARM_ROUTES") {
+    const port = event.ports && event.ports[0];
+    const paths = Array.isArray(event.data.paths) ? event.data.paths : [];
+    event.waitUntil(
+      warmRoutes(paths).then(
+        (result) => port && port.postMessage(result),
+        () => port && port.postMessage({ pages: 0, files: 0 }),
+      ),
+    );
   }
 });
 

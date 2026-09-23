@@ -120,7 +120,11 @@ is cross-origin, and browsers will not install from it.
 
 Every `/scout/*` page is an offline shell route (`public/sw.js`, mirrored in
 `lib/offline/shell-routes.ts`), so the Scouting app opens with no signal once it has been loaded
-once. Scouting keeps unsynced entries, photos and cached event data in IndexedDB (`lib/scout-offline.ts`).
+once. **Get this phone ready** on Scouting's home does that loading up front: it asks the browser
+to keep the site's data, saves this event's forms, assignments, predictions and pick list where each
+page reads its offline copy, and has the service worker store all five pages with the scripts and
+styles they name (`WARM_ROUTES`, tested in `lib/offline/sw-warm-routes.test.ts`). The note under the
+button says only what was actually saved. Scouting keeps unsynced entries, photos and cached event data in IndexedDB (`lib/scout-offline.ts`).
 Browsers treat that as best-effort storage and may clear it under pressure. Scouting's home shows
 what this device holds and how much room is left (`navigator.storage.estimate()`), and offers **Keep
 scouting data on this device**, which calls `navigator.storage.persist()`. Once granted, the browser

@@ -3,7 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui";
-import { pendingCounts } from "../../lib/scout-offline";
+import { putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { warmOfflineRoutes } from "../../lib/offline/warm-routes";
+import { cacheEvent, pendingCounts } from "../../lib/scout-offline";
+import { SCOUTING_NAV } from "./scouting-shell";
 import { deviceStorageSummary, formatBytes, type DeviceStorage } from "../../lib/scouting/device-storage";
 import {
   type DutyAssignment,
@@ -62,7 +65,8 @@ export function ScoutingHome() {
   const [roster, setRoster] = useState<Roster | null>(null);
   const [queue, setQueue] = useState<{ entries: number; media: number; quarantined: number } | null>(null);
   const [storage, setStorage] = useState<DeviceStorage | null>(null);
-  const [persisting, setPersisting] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [readyNote, setReadyNote] = useState<string | null>(null);
   const [duty, setDuty] = useState<NextDuty | null>(null);
 
   // The person's own next robot, from the same bootstrap the entry form loads.
@@ -116,12 +120,64 @@ export function ScoutingHome() {
     return () => window.clearInterval(id);
   }, [refreshDevice]);
 
-  async function keepOnDevice() {
-    setPersisting(true);
+  /*
+    One tap before the venue. Three things a scout would otherwise have to know to do:
+    ask the browser to keep this site's data, save this event's forms, assignments,
+    predictions and pick list where each page looks for its offline copy, and have the
+    service worker store every Scouting page with its scripts. The note says exactly
+    what was saved — pages only when the worker confirms it.
+  */
+  async function getReady() {
+    if (!orgId) return;
+    setPreparing(true);
+    const saved: string[] = [];
+    const org = encodeURIComponent(orgId);
+    const read = async (url: string): Promise<unknown> => {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        return response.ok ? await response.json() : null;
+      } catch {
+        return null;
+      }
+    };
     try {
-      await navigator.storage?.persist?.();
+      try {
+        await navigator.storage?.persist?.();
+      } catch {
+        // Not every browser offers it; the rest still helps.
+      }
+      const bootstrap = await read(`/api/scouting/bootstrap?orgId=${org}`);
+      if (bootstrap) {
+        await cacheEvent(orgId, bootstrap);
+        await putFeatureSnapshot("scouting", orgId, bootstrap);
+        saved.push("forms and assignments");
+      }
+      const predictions = await read(`/api/match-sim?orgId=${org}`);
+      if (predictions) {
+        await putFeatureSnapshot("match-sim", orgId, predictions);
+        saved.push("predictions");
+      }
+      const picklist = await read(`/api/picklist-collab?orgId=${org}`);
+      if (picklist) {
+        await putFeatureSnapshot("picklist-collab", orgId, picklist);
+        saved.push("the pick list");
+      }
+      const warmed = await warmOfflineRoutes(SCOUTING_NAV.map((item) => withOrg(item.href)));
+      const data =
+        saved.length > 1 ? `${saved.slice(0, -1).join(", ")} and ${saved[saved.length - 1]}` : (saved[0] ?? null);
+      if (warmed && warmed.pages > 0) {
+        setReadyNote(
+          `Saved ${warmed.pages} pages${data ? ` and ${data}` : ""}. This phone can scout with no signal.`,
+        );
+      } else if (data) {
+        setReadyNote(
+          `Saved ${data}. Each page is kept the first time you open it online — open the tabs once before you lose signal.`,
+        );
+      } else {
+        setReadyNote("Nothing could be saved. Check the connection and try again.");
+      }
     } finally {
-      setPersisting(false);
+      setPreparing(false);
       await refreshDevice();
     }
   }
@@ -207,19 +263,22 @@ export function ScoutingHome() {
             <dd>{storage?.available != null ? formatBytes(storage.available) : "—"}</dd>
           </div>
         </dl>
-        {storage && storage.persisted === false && storage.persistSupported ? (
-          <div className="scout-home-persist">
-            <p>
-              This browser may clear saved scouting when space runs low. Keep it on this device so a day of queued
-              entries cannot disappear.
-            </p>
-            <Button variant="secondary" type="button" disabled={persisting} onClick={() => void keepOnDevice()}>
-              {persisting ? "Asking the browser…" : "Keep scouting data on this device"}
-            </Button>
-          </div>
-        ) : storage?.persisted ? (
-          <p className="scout-home-kept">Saved scouting stays on this device until it syncs.</p>
-        ) : null}
+        <div className="scout-home-persist">
+          <p role="status">
+            {readyNote ??
+              (storage?.persisted
+                ? "Saved scouting stays on this device until it syncs. Before the venue, save the pages and this event too."
+                : "Before you lose signal at the venue, save the Scouting pages and this event on this phone, and keep the browser from clearing them.")}
+          </p>
+          <Button
+            variant="secondary"
+            type="button"
+            disabled={preparing || !online || !orgId}
+            onClick={() => void getReady()}
+          >
+            {preparing ? "Saving for offline…" : readyNote ? "Save again" : "Get this phone ready"}
+          </Button>
+        </div>
       </section>
 
       {unscouted.length > 0 ? (
