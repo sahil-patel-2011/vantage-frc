@@ -1,6 +1,6 @@
 "use client";
 
-import { categoryLabel, INVENTORY_CATEGORIES, type InventoryItem } from "../../lib/inventory";
+import { canDeleteInventoryRow, categoryLabel, INVENTORY_CATEGORIES, type InventoryItem } from "../../lib/inventory";
 import { ItemRow } from "./inventory-items";
 import { type ReadyView, type RunFn } from "./inventory-model";
 
@@ -9,6 +9,8 @@ export function InventoryStockPanel({
   visibleItems,
   locations,
   orgId,
+  role,
+  userId,
   busyKey,
   run,
   search,
@@ -26,6 +28,8 @@ export function InventoryStockPanel({
   visibleItems: InventoryItem[];
   locations: ReadyView["locations"];
   orgId: string;
+  role: string | null;
+  userId: string | null;
   busyKey: string | null;
   run: RunFn;
   search: string;
@@ -72,7 +76,15 @@ export function InventoryStockPanel({
       {items.length === 0 ? null : (
         <ul className="inventory-items">
           {visibleItems.map((item) => (
-            <ItemRow key={item.id} item={item} locations={locations} orgId={orgId} busyKey={busyKey} run={run} />
+            <ItemRow
+              key={item.id}
+              item={item}
+              locations={locations}
+              orgId={orgId}
+              busyKey={busyKey}
+              canDelete={canDeleteInventoryRow({ role, userId, authorId: item.createdBy })}
+              run={run}
+            />
           ))}
           {visibleItems.length === 0 ? (
             <p className="app-muted inventory-list-empty">No items match these filters.</p>

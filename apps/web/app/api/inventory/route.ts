@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  canDeleteInventoryRow,
   parseInventoryAction,
   type BomEntry,
   type InventoryItem,
@@ -80,7 +81,8 @@ export async function GET(request: Request) {
                   i.part_number AS "partNumber", i.vendor, i.unit,
                   i.quantity::float8 AS quantity, i.min_quantity::float8 AS "minQuantity",
                   i.unit_cost::float8 AS "unitCost", i.location_id AS "locationId", l.name AS "locationName",
-                  i.subsystem, i.notes, i.archived, i.updated_at::text AS "updatedAt"
+                  i.subsystem, i.notes, i.archived, i.updated_at::text AS "updatedAt",
+                  i.created_by AS "createdBy"
            FROM inventory_items i
            LEFT JOIN inventory_locations l ON l.id = i.location_id
            WHERE i.org_id = $1
@@ -88,7 +90,7 @@ export async function GET(request: Request) {
           [row.orgId],
         ),
         client.query<InventoryLocation>(
-          `SELECT l.id, l.name, l.kind, l.notes,
+          `SELECT l.id, l.name, l.kind, l.notes, l.created_by AS "createdBy",
                   (SELECT count(*)::int FROM inventory_items i WHERE i.location_id = l.id) AS "itemCount"
            FROM inventory_locations l
            WHERE l.org_id = $1
@@ -115,7 +117,13 @@ export async function GET(request: Request) {
 
       return {
         status: "ready",
-        context: { orgId: row.orgId, orgName: row.orgName, teamNumber: row.teamNumber, role: row.role },
+        context: {
+          orgId: row.orgId,
+          orgName: row.orgName,
+          teamNumber: row.teamNumber,
+          role: row.role,
+          userId: session.user.id,
+        },
         items: items.rows,
         locations: locations.rows,
         transactions: transactions.rows,
@@ -136,7 +144,7 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
-      await membershipRole(client, action.orgId, userId);
+      const role = await membershipRole(client, action.orgId, userId);
 
       switch (action.action) {
         case "create_item": {
@@ -185,6 +193,14 @@ export async function POST(request: Request) {
         }
 
         case "delete_item": {
+          const found = await client.query<{ createdBy: string }>(
+            `SELECT created_by AS "createdBy" FROM inventory_items WHERE id = $1 AND org_id = $2`,
+            [action.id, action.orgId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Item not found");
+          if (!canDeleteInventoryRow({ role, userId, authorId: found.rows[0]!.createdBy })) {
+            throw new HttpError(403, "You cannot delete this item");
+          }
           const deleted = await client.query(`DELETE FROM inventory_items WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,
@@ -233,6 +249,14 @@ export async function POST(request: Request) {
         }
 
         case "delete_location": {
+          const found = await client.query<{ createdBy: string }>(
+            `SELECT created_by AS "createdBy" FROM inventory_locations WHERE id = $1 AND org_id = $2`,
+            [action.id, action.orgId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Location not found");
+          if (!canDeleteInventoryRow({ role, userId, authorId: found.rows[0]!.createdBy })) {
+            throw new HttpError(403, "You cannot delete this location");
+          }
           const deleted = await client.query(`DELETE FROM inventory_locations WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,

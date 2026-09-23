@@ -64,6 +64,8 @@ export type InventoryLocation = {
   kind: LocationKind;
   notes: string;
   itemCount: number;
+  /** Location author. Missing on older cached snapshots, which fail closed for delete. */
+  createdBy?: string | null;
 };
 
 export type InventoryItem = {
@@ -91,6 +93,8 @@ export type InventoryItem = {
   notes: string;
   archived: boolean;
   updatedAt: string;
+  /** Item author. Missing on older cached snapshots, which fail closed for delete. */
+  createdBy?: string | null;
 };
 
 export type InventoryTransaction = {
@@ -117,7 +121,22 @@ export type InventoryContext = {
   orgName: string | null;
   teamNumber: number | null;
   role: string | null;
+  /** Signed-in member. Missing on older cached snapshots, which fail closed for delete. */
+  userId?: string | null;
 };
+
+/** Delete matches inventory location and item RLS: the author, or an owner or admin. */
+export function canDeleteInventoryRow(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
 
 export type InventoryView =
   | {

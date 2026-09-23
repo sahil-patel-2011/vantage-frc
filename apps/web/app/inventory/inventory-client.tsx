@@ -230,6 +230,8 @@ export default function InventoryClient() {
           visibleItems={visibleItems}
           locations={locations}
           orgId={readyOrgId}
+          role={view.context.role}
+          userId={view.context.userId ?? null}
           busyKey={busyKey}
           run={run}
           search={search}
