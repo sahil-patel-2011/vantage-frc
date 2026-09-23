@@ -149,6 +149,11 @@ or a phone number is.
   `finance_purchase_log` via `/api/business/finance`), sponsor contributions, fundraiser proceeds,
   and season costs do **not** write `finance_audit_log` rows; only budget plans and purchase
   requests do. Deletes on the desk are hard deletes with no audit trail.
+  **Fixed 2026-09-22** (`0677_finance_audit_triggers.sql`): an AFTER INSERT/UPDATE/DELETE trigger on
+  `finance_funding_sources`, `finance_purchase_log`, `sponsor_contributions`, `fundraiser_events`,
+  `season_costs` and `season_budgets` writes the row before and after, attributed to the session user,
+  whichever code path made the change. Deletes are now on the record; no-op re-saves are not; writes
+  with no app user (worker maintenance) are skipped rather than attributed to someone invented.
 - **G3 — `vantage_worker` is `BYPASSRLS`:** any code running as the worker role sees all orgs'
   finance rows. Mitigated by the lint ban on `@vantage/db/admin` in request code and worker-only
   usage, but the role remains the platform's widest data path.
