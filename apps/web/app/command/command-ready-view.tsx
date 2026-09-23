@@ -113,7 +113,7 @@ export function CommandReadyView({
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
-      <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
+      <DataSourceDegradedBanner health={snap?.dataSourceHealth} canOpenTeamData={snap.canSetEvent === true} />
       {snap?.nexus ? (
         <p className="edc-freshness" role="status">
           Nexus queue: {snap.nexus.nowQueuing ?? "none posted"}

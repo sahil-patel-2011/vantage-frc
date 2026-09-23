@@ -217,7 +217,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </div>
       </section>
       <QuickActions orgId={orgId} />
-      <DataSourceDegradedBanner health={data.dataSourceHealth} />
+      <DataSourceDegradedBanner health={data.dataSourceHealth} canOpenTeamData={isOwnerAdmin} />
       <aside className="freshness-marker" role="status">
         <strong>TBA cache</strong>
         <span>

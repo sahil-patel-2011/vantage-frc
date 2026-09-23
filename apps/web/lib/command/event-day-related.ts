@@ -99,7 +99,10 @@ export type EventDaySetupStep = {
   href: string;
 };
 
-export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
+export function eventDaySetupSteps(
+  orgId?: string | null,
+  options?: { canSetEvent?: boolean },
+): EventDaySetupStep[] {
   if (!orgId) {
     return [
       {
@@ -110,13 +113,21 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
       },
     ];
   }
+  const canSetEvent = options?.canSetEvent === true;
   return dropRelatedStripDuplicates(orgId, [
-    {
-      id: "team-data",
-      label: "Set the event you’re at",
-      detail: "Pull the match schedule for the event you’re at.",
-      href: withOrgHref("/team/data", orgId),
-    },
+    canSetEvent
+      ? {
+          id: "team-data",
+          label: "Set the event you’re at",
+          detail: "Pull the match schedule for the event you’re at.",
+          href: withOrgHref("/team/data", orgId),
+        }
+      : {
+          id: "scouting",
+          label: "Open Scouting",
+          detail: "An owner or admin syncs the schedule. You can still scout.",
+          href: hubHref("/competition", "scouting", orgId),
+        },
   ]);
 }
 
@@ -237,10 +248,11 @@ export function eventDayShellNextActions(input: {
   orgId?: string | null;
   shell: EventDayShellKind;
   hasActiveEvent?: boolean;
+  canSetEvent?: boolean;
 }): EventDayShellNextAction[] {
   const orgId = input.orgId ?? null;
   if (!orgId || input.shell === "setup") {
-    return setupActionsFrom(eventDaySetupSteps(orgId));
+    return setupActionsFrom(eventDaySetupSteps(orgId, { canSetEvent: input.canSetEvent }));
   }
   return dropRelatedStripDuplicates(orgId, eventDayShellNextActionCandidates(input));
 }

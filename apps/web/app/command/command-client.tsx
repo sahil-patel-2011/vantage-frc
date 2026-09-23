@@ -323,7 +323,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
             {" · "}
             {formatEventDayMatchCount(snap?.matches.length ?? 0, Boolean(snap))} upcoming matches
           </p>
-          <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
+          <DataSourceDegradedBanner health={snap?.dataSourceHealth} canOpenTeamData={snap?.canSetEvent === true} />
         </EventDayShell>
         {eventPicker}
       </>

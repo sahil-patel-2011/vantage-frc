@@ -611,7 +611,7 @@ export function PickListWorkbench({
       aria-label="Pick list workbench"
     >
       <OfflineBanner feature="Pick desk" fromCache={fromCache} cachedAt={cachedAt} />
-      <DataSourceDegradedBanner health={desk.dataSourceHealth} compact />
+      <DataSourceDegradedBanner health={desk.dataSourceHealth} compact canOpenTeamData={desk.canEdit} />
       <header className="pick-desk-heading">
         <div>
           {desk.pickMode === "low_data_tba" ? (

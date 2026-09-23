@@ -57,13 +57,24 @@ export function eventDayNextActions(
   }
 
   if (snap?.tbaConfigured === false) {
-    actions.push({
-      id: "tba",
-      label: "Set the event schedule",
-      detail: "Sync the schedule under Team → Data. Event Day stays blank until matches exist.",
-      href: snap?.links.teamData ?? withOrgHref("/team/data", orgId),
-      primary: !snap?.eventKey ? false : true,
-    });
+    const canSync = snap.canSetEvent === true;
+    actions.push(
+      canSync
+        ? {
+            id: "tba",
+            label: "Set the event schedule",
+            detail: "Sync the schedule under Team → Data. Event Day stays blank until matches exist.",
+            href: snap.links.teamData ?? withOrgHref("/team/data", orgId),
+            primary: Boolean(snap.eventKey),
+          }
+        : {
+            id: "tba",
+            label: "Open Scouting",
+            detail: "An owner or admin syncs the schedule. You can still scout.",
+            href: snap.links.scouting ?? hubHref("/competition", "scouting", orgId),
+            primary: Boolean(snap.eventKey),
+          },
+    );
   }
 
   const next = snap?.matches[0] ?? null;

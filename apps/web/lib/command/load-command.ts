@@ -177,11 +177,15 @@ export async function loadEventDayCommand(
     },
     {
       id: "tba",
-      label: "Sync the event schedule",
+      label: canSetEvent ? "Sync the event schedule" : "Open Scouting",
       detail: tbaAccess.tbaConfigured
-        ? "The schedule is connected — confirm freshness under Team → Data if matches are missing."
-        : "Ask a mentor to connect the event schedule under Team → Data. Match times stay empty until then.",
-      href: links.teamData,
+        ? canSetEvent
+          ? "The schedule is connected — confirm freshness under Team → Data if matches are missing."
+          : "The schedule is connected. An owner or admin refreshes it if matches are missing."
+        : canSetEvent
+          ? "Connect the event schedule under Team → Data. Match times stay empty until then."
+          : "An owner or admin syncs the schedule. You can still scout.",
+      href: canSetEvent ? links.teamData : links.scouting,
       done: tbaAccess.tbaConfigured,
     },
     {

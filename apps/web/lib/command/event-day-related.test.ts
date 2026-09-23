@@ -47,12 +47,17 @@ describe("eventDaySetupSteps", () => {
     expect(eventDaySetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 
-  it("keeps Set the event; packing / checklist / tools / inspection live on the related strip", () => {
-    const steps = eventDaySetupSteps("org-1");
-    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
-    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  it("keeps Set the event for an owner; a scout opens Scouting", () => {
+    const owner = eventDaySetupSteps("org-1", { canSetEvent: true });
+    expect(owner.map((s) => s.id)).toEqual(["team-data"]);
+    expect(owner[0]?.href).toBe("/team/data?orgId=org-1");
+    expect(owner.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+    expect(owner.every((s) => !/demo/i.test(s.href))).toBe(true);
+    for (const steps of [eventDaySetupSteps("org-1"), eventDaySetupSteps("org-1", { canSetEvent: false })]) {
+      expect(steps.map((s) => s.id)).toEqual(["scouting"]);
+      expect(steps[0]?.href).toBe("/competition?tab=scouting&orgId=org-1");
+      expect(steps[0]?.href).not.toContain("/team/data");
+    }
   });
 });
 

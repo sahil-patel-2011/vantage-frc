@@ -387,7 +387,7 @@ export default function DossierClient() {
 
       <OfflineBanner feature="Dossier" fromCache={fromCache} cachedAt={cachedAt} />
 
-      <DataSourceDegradedBanner health={view?.dataSourceHealth} />
+      <DataSourceDegradedBanner health={view?.dataSourceHealth} canOpenTeamData={view?.canSync === true} />
 
       <Panel as="form" className="dossier-search-panel dossier-panel" onSubmit={onSearch}>
         <FormRow

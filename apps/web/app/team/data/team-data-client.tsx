@@ -589,7 +589,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
-      <DataSourceDegradedBanner health={dataSourceHealth} />
+      <DataSourceDegradedBanner health={dataSourceHealth} canOpenTeamData />
 
       {shell === "empty" ? (
         <>

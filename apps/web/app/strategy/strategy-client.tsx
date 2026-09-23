@@ -285,7 +285,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         </p>
       ) : null}
 
-      <DataSourceDegradedBanner health={view?.dataSourceHealth} />
+      <DataSourceDegradedBanner health={view?.dataSourceHealth} canOpenTeamData={canSync} />
 
       {view ? <TbaKeyHint view={view} /> : null}
 

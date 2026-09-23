@@ -17,6 +17,7 @@ import {
   dashboardSetupSteps,
 } from "../../lib/dashboard/dashboard-related";
 import type { DataSourceHealthView } from "../../lib/reference-health";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import {
   resolveGrid,
   useMeasuredCanvas,
@@ -250,6 +251,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       nextActions={nextActions}
       setupSteps={setupSteps}
       dataSourceHealth={dataSourceHealth}
+      canOpenTeamData={strategyCanSync(home.role)}
       tbaConfigured={tbaConfigured}
       setupRequired={setupRequired}
       eventName={home.context.eventName}
