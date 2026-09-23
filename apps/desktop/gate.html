@@ -149,7 +149,14 @@
         animation: pulse 1.4s ease-in-out infinite;
       }
       @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
-      @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+      .card { animation: shell-arrive 180ms ease-out both; }
+      @keyframes shell-arrive {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pulse, .card { animation: none; }
+      }
       .countdown { margin-top: 6px; font-size: 0.82rem; color: var(--muted); }
       .error-text { color: var(--danger); font-size: 0.92rem; line-height: 1.5; }
       .fine { margin-top: 18px; font-size: 0.82rem; }
@@ -178,6 +185,9 @@
             <button class="button primary" id="start" type="button">Sign in with your browser</button>
             <button class="linkish" id="open-browser" type="button">
               Having trouble? Open Vantage in your browser
+            </button>
+            <button class="linkish" id="request-access" type="button">
+              New to Vantage? Request access
             </button>
           </div>
           <p class="fine">You stay signed in between launches on this machine.</p>
@@ -224,6 +234,7 @@
           <div class="actions">
             <button class="button primary" id="retry" type="button">Try again</button>
             <button class="linkish" id="error-open-browser" type="button">Open Vantage in your browser instead</button>
+            <button class="linkish" id="error-request-access" type="button">New to Vantage? Request access</button>
           </div>
         </div>
 
@@ -302,6 +313,12 @@
         wire("cancel", function () { bridge.cancel(); });
         wire("open-browser", function () { bridge.openInBrowser(); });
         wire("error-open-browser", function () { bridge.openInBrowser(); });
+        wire("request-access", function () {
+          if (bridge.requestAccess) bridge.requestAccess();
+        });
+        wire("error-request-access", function () {
+          if (bridge.requestAccess) bridge.requestAccess();
+        });
       })();
     </script>
   </body>
