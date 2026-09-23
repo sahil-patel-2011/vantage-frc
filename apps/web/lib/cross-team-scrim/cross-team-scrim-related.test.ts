@@ -13,16 +13,22 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("crossTeamScrimRelatedLinks", () => {
-  it("builds Calendar / Scouting / Team Data via hubHref / withOrgHref", () => {
+  it("builds Calendar / Scouting and hides Team Data unless an owner can open it", () => {
     const links = crossTeamScrimRelatedLinks("org-1", {
       include: [...CROSS_TEAM_SCRIM_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["calendar", "scouting", "team-data"]);
+    expect(links.map((l) => l.id)).toEqual(["calendar", "scouting"]);
     expect(links.find((l) => l.id === "calendar")?.href).toBe("/team?tab=calendar&orgId=org-1");
     expect(links.find((l) => l.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
+    expect(links.some((l) => l.href.includes("/team/data"))).toBe(false);
+    const owner = crossTeamScrimRelatedLinks("org-1", {
+      include: [...CROSS_TEAM_SCRIM_RELATED_INCLUDE],
+      canOpenTeamData: true,
+    });
+    expect(owner.map((l) => l.id)).toEqual(["calendar", "scouting", "team-data"]);
+    expect(owner.find((l) => l.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
   });
 
   it("never uses DEMO labels or hrefs", () => {
@@ -39,7 +45,10 @@ describe("crossTeamScrimSetupSteps", () => {
     expect(steps.find((s) => s.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
+    expect(steps.some((s) => s.href.includes("/team/data"))).toBe(false);
+    expect(crossTeamScrimSetupSteps("org-1", true).find((s) => s.id === "team-data")?.href).toBe(
+      "/team/data?orgId=org-1",
+    );
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });
@@ -97,18 +106,31 @@ describe("crossTeamScrimNextActions", () => {
     expect(actions[0]?.id).toBe("workspace");
     expect(actions.some((a) => a.id === "calendar")).toBe(true);
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
+    expect(actions.some((a) => a.href.includes("/team/data"))).toBe(false);
+    expect(
+      crossTeamScrimNextActions({ orgId: null, shell: "setup", canOpenTeamData: true }).some(
+        (a) => a.id === "team-data",
+      ),
+    ).toBe(true);
   });
 
-  it("empty shell points at propose + Calendar / Scouting / Team Data", () => {
+  it("empty shell points at propose + Calendar / Scouting and hides Team Data", () => {
     const actions = crossTeamScrimNextActions({
       orgId: "org-1",
       shell: "empty",
       inviteCount: 0,
     });
     expect(actions[0]?.id).toBe("propose");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["calendar", "scouting", "team-data"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(expect.arrayContaining(["calendar", "scouting"]));
+    expect(actions.some((a) => a.href.includes("/team/data"))).toBe(false);
+    expect(
+      crossTeamScrimNextActions({
+        orgId: "org-1",
+        shell: "empty",
+        inviteCount: 0,
+        canOpenTeamData: true,
+      }).some((a) => a.id === "team-data"),
+    ).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
@@ -121,7 +143,16 @@ describe("crossTeamScrimNextActions", () => {
       upcomingCount: 1,
     });
     expect(actions[0]?.id).toBe("upcoming");
-    expect(actions.some((a) => a.id === "team-data")).toBe(true);
+    expect(actions.some((a) => a.href.includes("/team/data"))).toBe(false);
+    expect(
+      crossTeamScrimNextActions({
+        orgId: "org-1",
+        shell: "ready",
+        inviteCount: 2,
+        upcomingCount: 1,
+        canOpenTeamData: true,
+      }).some((a) => a.id === "team-data"),
+    ).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
   });
 });

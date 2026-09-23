@@ -31,10 +31,17 @@ export const CROSS_TEAM_SCRIM_RELATED_INCLUDE: CrossTeamScrimRelatedId[] = [
  */
 export function crossTeamScrimRelatedLinks(
   orgId?: string | null,
-  options?: { active?: CrossTeamScrimRelatedId; include?: CrossTeamScrimRelatedId[] },
+  options?: {
+    active?: CrossTeamScrimRelatedId;
+    include?: CrossTeamScrimRelatedId[];
+    /** Owner/admin only. Omitted fails closed so a scout never gets Team Data. */
+    canOpenTeamData?: boolean;
+  },
 ): CrossTeamScrimRelatedLink[] {
   const include = options?.include ? new Set(options.include) : null;
+  const canOpenTeamData = options?.canOpenTeamData === true;
   return CROSS_TEAM_SCRIM_RELATED_LINKS.filter((link) => {
+    if (link.id === "team-data" && !canOpenTeamData) return false;
     if (link.id === options?.active) return false;
     if (include && !include.has(link.id)) return false;
     return true;
@@ -74,8 +81,16 @@ export type CrossTeamScrimSetupStep = {
   href: string;
 };
 
-export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimSetupStep[] {
-  return [
+function dropTeamData<T extends { id: string }>(items: T[], canOpenTeamData: boolean): T[] {
+  if (canOpenTeamData) return items;
+  return items.filter((item) => item.id !== "team-data");
+}
+
+export function crossTeamScrimSetupSteps(
+  orgId?: string | null,
+  canOpenTeamData = false,
+): CrossTeamScrimSetupStep[] {
+  return dropTeamData([
     {
       id: "workspace",
       label: "Choose your team",
@@ -100,7 +115,7 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
       detail: "Confirm team context for partner outreach.",
       href: withOrgHref("/team/data", orgId),
     },
-  ];
+  ], canOpenTeamData);
 }
 
 /** Real invite counts only — never invent DEMO totals. */
@@ -155,7 +170,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "Unavailable",
         title: "Could not load scrim scheduling",
         description:
-          "A network or server issue blocked invites. Retry, or open Calendar / Scouting / Team Data while it reloads.",
+          "A network or server issue blocked invites. Retry, or open Calendar or Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -171,7 +186,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "No invites yet",
         title: "Propose a scrimmage with a nearby team",
         description:
-          "Invites and data-share agreements stay blank until you log a real partner. Cross-check Calendar, Scouting, and Team Data.",
+          "Invites and data-share agreements stay blank until you log a partner.",
       };
     default:
       return {
@@ -192,20 +207,23 @@ export function crossTeamScrimNextActions(input: {
   shell: CrossTeamScrimShellKind;
   inviteCount?: number;
   upcomingCount?: number;
+  /** Owner/admin only. Omitted fails closed so a scout never gets Team Data. */
+  canOpenTeamData?: boolean;
 }): CrossTeamScrimNextAction[] {
   const orgId = input.orgId ?? null;
   const inviteCount = input.inviteCount ?? 0;
   const upcomingCount = input.upcomingCount ?? 0;
+  const canOpenTeamData = input.canOpenTeamData === true;
 
   if (!orgId || input.shell === "setup") {
     // One list, not two: the setup shell offers exactly the setup steps. These
     // used to be a second hand-written copy of crossTeamScrimSetupSteps with the same ids and
     // different wording, so the screen showed the same guided list twice.
-    return setupActionsFrom(crossTeamScrimSetupSteps(orgId));
+    return setupActionsFrom(crossTeamScrimSetupSteps(orgId, canOpenTeamData));
   }
 
   if (input.shell === "error") {
-    return [
+    return dropTeamData([
       {
         id: "retry",
         label: "Retry Scrim Scheduling",
@@ -231,11 +249,11 @@ export function crossTeamScrimNextActions(input: {
         detail: "Team inventory stays independent of scrim invites.",
         href: withOrgHref("/team/data", orgId),
       },
-    ];
+    ], canOpenTeamData);
   }
 
   if (input.shell === "empty" || inviteCount === 0) {
-    return [
+    return dropTeamData([
       {
         id: "propose",
         label: "Propose a scrim",
@@ -261,10 +279,10 @@ export function crossTeamScrimNextActions(input: {
         detail: "Confirm partner team numbers from the public record.",
         href: withOrgHref("/team/data", orgId),
       },
-    ];
+    ], canOpenTeamData);
   }
 
-  return [
+  return dropTeamData([
     {
       id: "upcoming",
       label: upcomingCount > 0 ? "Review upcoming scrims" : "Scrim board ready",
@@ -293,5 +311,5 @@ export function crossTeamScrimNextActions(input: {
       detail: "Verify partner team context from the public record.",
       href: withOrgHref("/team/data", orgId),
     },
-  ];
+  ], canOpenTeamData);
 }
