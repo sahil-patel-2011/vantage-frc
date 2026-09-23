@@ -75,6 +75,7 @@ export default function AppShell() {
   const [islandMessage, setIslandMessage] = useState("");
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
+  const [teamsLoaded, setTeamsLoaded] = useState(false);
   const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [pathSearch, setPathSearch] = useState("");
   const [navQuery, setNavQuery] = useState("");
@@ -204,9 +205,10 @@ export default function AppShell() {
   }, [navOpen, navQuery, orgId]);
 
   useEffect(() => {
+    let cancelled = false;
     void fetchProductSession(orgId || null)
       .then((data) => {
-        if (!data) return;
+        if (cancelled || !data) return;
         setMe(data as Me);
         const rows = (Array.isArray(data.memberships) ? data.memberships : []).filter(
           (row): row is MembershipOption => Boolean(row?.orgId),
@@ -218,7 +220,13 @@ export default function AppShell() {
         setUnreadMessages(Number.isFinite(messages) && messages > 0 ? Math.floor(messages) : 0);
         if (!orgId && data.orgId) setOrgId(data.orgId);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setTeamsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [orgId, pathname]);
 
   useEffect(() => {
@@ -579,6 +587,7 @@ export default function AppShell() {
         workspaceOpen={workspaceOpen}
         setWorkspaceOpen={setWorkspaceOpen}
         memberships={memberships}
+        teamsLoaded={teamsLoaded}
         orderedMemberships={orderedMemberships}
         switchWorkspaceHref={switchWorkspaceHref}
         onWorkspaceSwitch={onWorkspaceSwitch}
