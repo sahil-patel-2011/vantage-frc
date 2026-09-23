@@ -8,6 +8,8 @@
  * Do not add a link from memory.
  */
 
+import { LIVE_SITE_ORIGIN } from "../site";
+
 export type LabTrack = "programming" | "mechanical";
 
 export type TeamResourceLink = {
@@ -55,12 +57,11 @@ export const LAB_TRACKS: ReadonlyArray<{ id: LabTrack; title: string; blurb: str
  * One command that sets a Windows laptop up for robot code, or brings an old
  * one current. Paste it into PowerShell.
  *
- * It resolves WPILib and PathPlanner from their official release feeds at run
+ * It resolves WPILib, PathPlanner and Choreo from their official release feeds at run
  * time rather than pinning a version here, so it does not go stale mid-season.
  * The script is `apps/web/public/team-setup.ps1`.
  */
-export const TEAM_6925_SETUP_COMMAND =
-  "irm https://vantage-frc-web.vercel.app/team-setup.ps1 | iex";
+export const TEAM_6925_SETUP_COMMAND = `irm ${LIVE_SITE_ORIGIN}/team-setup.ps1 | iex`;
 
 export const TEAM_6925_RESOURCES: TeamResourceGroup[] = [
   // ── Programming ────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ export const TEAM_6925_RESOURCES: TeamResourceGroup[] = [
     track: "programming",
     title: "Set up your laptop",
     blurb:
-      "One command installs VS Code, Git, WPILib and PathPlanner — and updates them if you already have them. Run it in PowerShell. WPILib is about 2.5 GB, so do it on home Wi-Fi, not at an event.",
+      "One command installs VS Code, Git, GitHub Desktop, the GitHub CLI, WPILib, PathPlanner, Choreo, REV Hardware Client and Phoenix Tuner X — and updates them if you already have them. It also signs you in to GitHub. Run it in PowerShell. WPILib is about 2.5 GB, so do it on home Wi-Fi, not at an event.",
     links: [
       {
         label: "Zero to Robot — the official walkthrough",

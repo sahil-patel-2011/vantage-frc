@@ -48,6 +48,11 @@ const config: NextConfig = {
         { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
         { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
       ],
+    }, {
+      // Windows PowerShell 5.1 `irm` decodes by charset; without one the
+      // script's non-ASCII punctuation arrives garbled.
+      source: "/team-setup.ps1",
+      headers: [{ key: "Content-Type", value: "text/plain; charset=utf-8" }],
     }];
   },
 };
