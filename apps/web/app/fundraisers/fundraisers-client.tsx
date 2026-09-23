@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
 import { FUNDRAISERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { fundraisersNextActions } from "../../lib/business/fundraisers-next-actions";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   FUNDRAISER_TYPE_LABEL,
@@ -49,6 +49,21 @@ type View =
         completed: number;
       };
     };
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 const STATUS_FLOW: Record<FundraiserStatus, FundraiserStatus | null> = {
   planned: "active",
@@ -189,6 +204,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
         setView(data);
         setFromCache(false);
         setCachedAt(null);
+        if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
         await persistFundraisersSnapshot(orgHint, seasonHint, data);
       } catch {
         if (hadCache || viewRef.current) {
@@ -290,6 +306,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
 
   if (view.status === "setup_required") {
     const setupOrg = view.orgId ?? orgId;
+    const offerWaitlist = !setupOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     const nextActions = fundraisersNextActions({ orgId: setupOrg, eventCount: 0 });
     return (
       <main className="module-page fr-page">
@@ -298,7 +315,9 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
             <span className="breadcrumbs">Business / Fundraisers</span>
             <h1>Fundraisers</h1>
             <p className="app-muted">
-              Team-run events for this team. Proceeds post to finance once you record them.
+              {offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Team-run events for this team. Proceeds post to finance once you record them."}
             </p>
           </div>
         </header>
@@ -311,8 +330,24 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
           />
         ) : null}
         <OfflineBanner feature="Fundraisers" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
-          {nextActions[0] ? (
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "fr-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="fr-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="fr-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : nextActions[0] ? (
             <Button as="a" variant="primary" href={nextActions[0].href}>
               {nextActions[0].label}
             </Button>

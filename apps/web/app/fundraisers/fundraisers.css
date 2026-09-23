@@ -126,7 +126,15 @@
   flex: none;
 }
 
+.fr-setup{animation:fr-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes fr-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.fr-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.fr-setup-waitlist,.fr-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.fr-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+
 @media (max-width: 860px) {
+  .fr-setup-actions{display:grid;width:100%}
+  .fr-setup-actions .app-button{width:100%;justify-content:center}
   .fr-grid {
     grid-template-columns: 1fr;
   }
