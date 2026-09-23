@@ -122,6 +122,8 @@ describe("onboardingBuddyShellCopy", () => {
     }
     expectPlainCopy(onboardingBuddyShellCopy("empty").description);
     expect(onboardingBuddyShellCopy("setup").badge).toBe("Needs setup");
+    expect(onboardingBuddyShellCopy("setup").description).toMatch(/Choose your team/);
+    expect(onboardingBuddyShellCopy("setup").description).not.toMatch(/pick a team/i);
   });
 });
 

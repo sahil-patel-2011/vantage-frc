@@ -18,7 +18,7 @@ export function aiBridgeShellCopy(kind: "no-team" | "setup" | "ready"): {
       return {
         badge: "Needs setup",
         title: "Choose your team",
-        description: "Pick your team before pairing Claude Code to it.",
+        description: "Choose your team before pairing Claude Code to it.",
       };
     case "setup":
       return {

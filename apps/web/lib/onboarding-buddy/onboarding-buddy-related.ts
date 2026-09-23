@@ -182,8 +182,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         kind,
         badge: "Needs setup",
         title: "Choose your team",
-        description:
-          "Join or pick a team before pairing members.",
+        description: "Choose your team to open buddy pairings.",
       };
     case "empty":
       return {

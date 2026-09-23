@@ -203,6 +203,16 @@ const RULES: readonly Rule[] = [
     why: 'say "Choose your team" — the button and the sentence use the same words',
   },
   {
+    label: "Join or pick a team",
+    pattern: /\bjoin or pick a team\b/i,
+    why: 'say "Choose your team"',
+  },
+  {
+    label: "Pick your team",
+    pattern: /\bpick your team\b/i,
+    why: 'say "Choose your team" — the button and the sentence use the same words',
+  },
+  {
     label: "Select a page",
     pattern: /\bSelect a page\b/,
     why: 'say "Choose a page"',

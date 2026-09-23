@@ -20,6 +20,8 @@ const JOIN_OR_PICK_FILES = [
   "lib/team/team-admin-related.ts",
   "app/team/admin/page.tsx",
   "lib/ai-chat/ai-chat-related.ts",
+  "lib/onboarding-buddy/onboarding-buddy-related.ts",
+  "lib/ai-bridge/ai-bridge-related.ts",
 ] as const;
 
 const SCOUT_ROBOT_FILES = [
