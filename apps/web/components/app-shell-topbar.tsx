@@ -48,6 +48,7 @@ export function AppShellTopbar({
   crumbHint,
   orgId,
   navOpen,
+  menuOpen,
   onOpenNav,
   onOpenTeams,
 
@@ -75,6 +76,8 @@ export function AppShellTopbar({
   crumbHint: string | null;
   orgId: string;
   navOpen: boolean;
+  /** Wide screens: whether the left menu is showing (the button turns into an X). */
+  menuOpen: boolean;
   onOpenNav: () => void;
   /** Opens the drawer with the team picker already expanded. */
   onOpenTeams: () => void;
@@ -102,11 +105,11 @@ export function AppShellTopbar({
             other app. The right side is for things you act on. */}
         {navOpen ? null : (
           <button
-            className="soft-icon-btn soft-menu-btn"
+            className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
             data-tour="menu"
             type="button"
-            aria-label="Menu and search"
-            aria-expanded={navOpen}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen || navOpen}
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onOpenNav}
           >

@@ -95,6 +95,8 @@ export default function AppShell() {
   const focusSearchOnOpen = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
+  /** Wide screens: the left menu is hidden until the three-line button opens it (remembered per browser). */
+  const [railOpen, setRailOpen] = useState(false);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -110,6 +112,30 @@ export default function AppShell() {
     setNavOpen(false);
     setWorkspaceOpen(false);
   }, []);
+
+  useEffect(() => {
+    try {
+      setRailOpen(window.localStorage.getItem("vantage.rail") === "open");
+    } catch {
+      // storage blocked: start closed
+    }
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("rail-open", railOpen);
+    try {
+      window.localStorage.setItem("vantage.rail", railOpen ? "open" : "closed");
+    } catch {
+      // storage blocked: the choice lasts until reload
+    }
+    return () => document.body.classList.remove("rail-open");
+  }, [railOpen]);
+
+  /** The three-line button: the left menu on wide screens, the menu sheet on phones. */
+  const toggleMenu = useCallback(() => {
+    if (window.matchMedia("(min-width: 1024px)").matches) setRailOpen((open) => !open);
+    else openNav({ focusSearch: true });
+  }, [openNav]);
 
   // Plain in-app links navigate without reloading the app (lib/nav/soft-navigation.ts).
   // On document, bubble phase: runs after React's handlers, so next/link clicks it
@@ -575,7 +601,8 @@ export default function AppShell() {
         crumbHint={crumbHint}
         orgId={orgId}
         navOpen={navOpen}
-        onOpenNav={() => openNav({ focusSearch: true })}
+        menuOpen={railOpen}
+        onOpenNav={toggleMenu}
         // Pressing the team name opens the drawer already showing the team
         // picker, so switching, leaving and joining are one tap from every
         // page rather than three from behind the avatar.
