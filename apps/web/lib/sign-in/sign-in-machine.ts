@@ -231,6 +231,9 @@ export function resendSecondsRemaining(state: SignInFlowState, now: number): num
 }
 
 export function isCodeExpired(state: SignInFlowState, now: number): boolean {
+  // A closed account is not a dead code. The alert says to join the waitlist.
+  // Treating it as expired told the reader to send another code to the same address.
+  if (state.failure?.kind === "not_authorized") return false;
   if (state.failure?.needsNewCode) return true;
   return Boolean(state.codeExpiresAt) && codeSecondsRemaining(state, now) === 0;
 }

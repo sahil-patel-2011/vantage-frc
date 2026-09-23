@@ -214,6 +214,15 @@ describe("expired vs wrong code", () => {
     expect(failure.needsNewCode).toBe(true);
     expect(failure.message).toMatch(/waitlist/i);
     expect(failure.message).not.toMatch(/Couldn’t sign in/);
+    const state = run(
+      initialSignInState(),
+      { type: "code_sent", now: NOW, email: "outsider@example.com" },
+      { type: "code_changed", code: "402917" },
+      { type: "code_failed", now: NOW + 1_000, failure },
+    );
+    expect(isCodeExpired(state, NOW + 1_000)).toBe(false);
+    expect(state.code).toBe("");
+    expect(run(state, { type: "code_changed", code: "111111" }).failure?.kind).toBe("not_authorized");
   });
 
   it("says nothing was sent when the mail provider is down", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PENDING_INVITE_STORAGE_KEY } from "../../lib/invite";
 import {
   codeExpiryCopy,
+  showCodeClock,
   continueAsLabel,
   describeSignInBusy,
   emailSubmitLabel,
@@ -65,6 +66,9 @@ describe("sign-in-model", () => {
     expect(passwordSubmitLabel("password", { resetSent: false, working: true })).toBe("Signing in…");
     expect(resendLabel({ ready: false, busy: "idle", seconds: 12 })).toMatch(/Resend in/);
     expect(codeExpiryCopy(true, 0)).toMatch(/no longer valid/i);
+    expect(showCodeClock("expired")).toBe(true);
+    expect(showCodeClock(null)).toBe(true);
+    expect(showCodeClock("not_authorized")).toBe(false);
     expect(inviteBannerBody("a@team.org")).toMatch(/Sign in as a@team.org/);
     expect(inviteBannerBody(null)).toMatch(/acceptance screen/);
   });

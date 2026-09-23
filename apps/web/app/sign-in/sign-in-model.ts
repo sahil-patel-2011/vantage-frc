@@ -83,6 +83,11 @@ export function codeExpiryCopy(expired: boolean, seconds: number): string {
     : `Expires in ${formatCountdown(seconds)}.`;
 }
 
+/** Closed access has its own sentence. A countdown would say the code is still the way in. */
+export function showCodeClock(failureKind: string | null | undefined): boolean {
+  return failureKind !== "not_authorized";
+}
+
 export function inviteBannerBody(email: string | null | undefined): string {
   return email
     ? `Sign in as ${email} — this invite only works for that address. You’ll land back on the acceptance screen.`

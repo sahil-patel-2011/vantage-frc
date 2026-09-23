@@ -14,6 +14,7 @@ export function SignInCodeStep({
   emailAvailable,
   invalid,
   expired,
+  showClock,
   codeSeconds,
   resendReady,
   resendSeconds,
@@ -35,6 +36,7 @@ export function SignInCodeStep({
   emailAvailable: boolean;
   invalid: boolean;
   expired: boolean;
+  showClock: boolean;
   codeSeconds: number;
   resendReady: boolean;
   resendSeconds: number;
@@ -67,9 +69,11 @@ export function SignInCodeStep({
         onChange={onCodeChange}
       />
 
-      <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
-        {codeExpiryCopy(expired, codeSeconds)}
-      </p>
+      {showClock ? (
+        <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
+          {codeExpiryCopy(expired, codeSeconds)}
+        </p>
+      ) : null}
 
       <button className="signin-submit" disabled={!submitReady || working}>
         {verifySubmitLabel(busy)}

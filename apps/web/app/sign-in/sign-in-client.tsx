@@ -53,6 +53,7 @@ import { SignInIdentityStep, SignInPasswordFooter } from "./sign-in-identity";
 import {
   readOnboardingGate,
   sessionProbeFromPayload,
+  showCodeClock,
   storedInviteTokenFrom,
   type PasswordPanel,
   type SessionProbe,
@@ -614,6 +615,7 @@ export default function SignInClient({
             emailAvailable={emailAvailable}
             invalid={Boolean(flow.failure)}
             expired={expired}
+            showClock={showCodeClock(flow.failure?.kind)}
             codeSeconds={codeSeconds}
             resendReady={resendReady}
             resendSeconds={resendSeconds}
