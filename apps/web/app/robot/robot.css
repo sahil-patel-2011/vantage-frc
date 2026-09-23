@@ -53,3 +53,12 @@
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--muted);font-size:10px}
+.robot-setup{animation:robot-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes robot-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.robot-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.robot-setup-waitlist,.robot-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.robot-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+  .robot-setup-actions{display:grid;width:100%}
+  .robot-setup-actions .app-button{width:100%;justify-content:center}
+}

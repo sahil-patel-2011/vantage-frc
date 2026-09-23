@@ -1,12 +1,12 @@
 "use client";
 import { teamProseLabel } from "../../components/app-shell-model";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -19,6 +19,21 @@ import {
   type EnrichedSubsystem,
   type PriorityOption,
 } from "../../lib/robot-blueprint";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -246,6 +261,7 @@ function SubsystemCard({
 
 export default function RobotClient() {
   const [view, setView] = useState<BlueprintView | null>(null);
+  const [requestedOrg, setRequestedOrg] = useState(false);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -261,6 +277,7 @@ export default function RobotClient() {
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(Boolean(orgHint));
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<BlueprintView>("robot", orgHint || "_");
@@ -294,6 +311,7 @@ export default function RobotClient() {
         return;
       }
       setError("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -400,20 +418,36 @@ export default function RobotClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist = !requestedOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page robot-page">
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Build / Robot</span>
             <h1>Robot Blueprint</h1>
-            <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
+            <p>
+              {offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Every subsystem linked to its CAD, code, strategy priority, and live ops data."}
+            </p>
           </div>
         </header>
         <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState className="robot-empty" title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+        <EmptyState
+          className={offerWaitlist ? "robot-empty robot-setup" : "robot-empty"}
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+        >
+          <div className={offerWaitlist ? "robot-setup-actions" : undefined}>
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            {offerWaitlist ? (
+              <a className="robot-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            ) : null}
+          </div>
         </EmptyState>
       </main>
     );
