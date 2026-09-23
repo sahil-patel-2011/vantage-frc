@@ -46,7 +46,9 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to file a reimbursement.",
+          message: isUuid(requestedOrg)
+            ? "Choose your team to file a reimbursement."
+            : "Choose your team to file a reimbursement, or join the waitlist.",
           orgId: null,
         } satisfies ReimbursementsView;
       }
