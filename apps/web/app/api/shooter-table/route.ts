@@ -45,7 +45,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to tune your shooter." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to tune your shooter."
+            : "Choose your team to tune your shooter, or join the waitlist.",
+        };
+      }
 
       const points = await client.query<PointRow>(
         `SELECT id, table_name AS "tableName", distance_ft::float8 AS "distanceFt", rpm::float8 AS "rpm",
