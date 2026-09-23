@@ -28,7 +28,7 @@ import {
   type HoursSelfViewShellKind,
 } from "../../lib/hours-self-view/hours-self-view-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   clearFeatureSnapshot,
@@ -38,6 +38,21 @@ import {
   queueProductWrite,
 } from "../../lib/offline";
 import "./hours-self-view.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type LiveView = Extract<HoursSelfViewView, { status: "live" }>;
 
@@ -110,13 +125,15 @@ function HoursShell({
   shell,
   error,
   onRetry,
+  offerWaitlist = false,
   children,
 }: {
-  description: string;
+  description: ReactNode;
   orgId?: string | null;
   shell: HoursSelfViewShellKind;
   error?: string;
   onRetry?: () => void;
+  offerWaitlist?: boolean;
   children?: ReactNode;
 }) {
   const actions = hoursSelfViewNextActions({ orgId, shell });
@@ -125,7 +142,7 @@ function HoursShell({
   const setup = shell === "setup" ? hoursSelfViewSetupSteps(orgId)[0] : null;
 
   return (
-    <main className="module-page hsv-page soft-gate">
+    <main className={offerWaitlist ? "module-page hsv-page soft-gate hsv-setup-page" : "module-page hsv-page soft-gate"}>
       <PageHeader
         breadcrumbs={
           <>
@@ -151,13 +168,21 @@ function HoursShell({
           badge={copy.badge}
           badgeTone="setup"
           title={copy.title}
-          description={error ?? copy.description}
+          description={offerWaitlist ? description : error ?? copy.description}
+          className={offerWaitlist ? "hsv-setup" : undefined}
         >
-          {setup ? (
-            <Button as="a" variant="primary" href={setup.href}>
-              {setup.label}
-            </Button>
-          ) : null}
+          <div className={offerWaitlist ? "hsv-setup-actions" : undefined}>
+            {setup ? (
+              <Button as="a" variant="primary" href={setup.href}>
+                {setup.label}
+              </Button>
+            ) : null}
+            {offerWaitlist ? (
+              <a className="hsv-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            ) : null}
+          </div>
         </EmptyState>
       )}
       {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
@@ -172,6 +197,7 @@ export default function HoursSelfViewClient() {
   const [busy, setBusy] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [requestedOrg, setRequestedOrg] = useState(false);
   const viewRef = useRef<HoursSelfViewView | null>(null);
   viewRef.current = view;
 
@@ -179,6 +205,7 @@ export default function HoursSelfViewClient() {
     void (async () => {
       const params = new URLSearchParams(window.location.search);
       const urlOrg = params.get("orgId")?.trim() ?? "";
+      setRequestedOrg(Boolean(urlOrg));
       let hadCache = Boolean(viewRef.current);
       try {
         const cached = await getFeatureSnapshot<HoursSelfViewView>("hours-self-view", urlOrg || "_");
@@ -223,6 +250,7 @@ export default function HoursSelfViewClient() {
           }
           return;
         }
+        if (data.status === "live" && data.orgId) persistOrgIdInUrl(data.orgId);
         setView(data);
         setFromCache(false);
         setCachedAt(null);
@@ -333,11 +361,22 @@ export default function HoursSelfViewClient() {
     );
   }
   if (shell === "setup" || view?.status !== "live") {
+    const offerWaitlist =
+      view?.status === "setup_required" &&
+      !requestedOrg &&
+      view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <HoursShell
-        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        description={
+          offerWaitlist && view?.status === "setup_required"
+            ? withWaitlistLink(view.message)
+            : view?.status === "setup_required"
+              ? view.message
+              : shellCopy.description
+        }
         orgId={orgId}
         shell="setup"
+        offerWaitlist={offerWaitlist}
       >
         <OfflineBanner feature="My Hours" fromCache={fromCache} cachedAt={cachedAt} />
       </HoursShell>
