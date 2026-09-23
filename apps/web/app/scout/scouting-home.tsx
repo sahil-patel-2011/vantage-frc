@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui";
 import { putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { warmOfflineRoutes } from "../../lib/offline/warm-routes";
+import { loadRoster, prefetchEventTeams } from "../../lib/intel/offline-teams";
 import { cacheEvent, pendingCounts } from "../../lib/scout-offline";
 import { SCOUTING_NAV } from "./scouting-shell";
 import { deviceStorageSummary, formatBytes, type DeviceStorage } from "../../lib/scouting/device-storage";
@@ -99,7 +100,11 @@ export function ScoutingHome() {
       .then((data) => {
         if (!cancelled) setRoster(data);
       })
-      .catch(() => undefined);
+      .catch(async () => {
+        // No signal: the event's teams as last saved, so pit coverage still shows.
+        const saved = await loadRoster(orgId);
+        if (!cancelled && saved?.roster.length) setRoster({ roster: saved.roster });
+      });
     return () => {
       cancelled = true;
     };
@@ -161,6 +166,13 @@ export function ScoutingHome() {
       if (picklist) {
         await putFeatureSnapshot("picklist-collab", orgId, picklist);
         saved.push("the pick list");
+      }
+      // Every team at the event, so the Teams tab can look any of them up with no signal.
+      const teams = await prefetchEventTeams(orgId, {
+        onProgress: (done, total) => setReadyNote(`Saving the event's teams… ${done} of ${total}`),
+      });
+      if (teams && teams.saved > 0) {
+        saved.push(teams.saved === 1 ? "one team's page" : `${teams.saved} teams' pages`);
       }
       const warmed = await warmOfflineRoutes(SCOUTING_NAV.map((item) => withOrg(item.href)));
       const data =

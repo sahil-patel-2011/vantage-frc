@@ -38,6 +38,13 @@ import { DataSourcePicker } from "../analytics/data-source-picker";
 import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
 import { filterRowsBySource } from "../../lib/analytics/lovat-data-source";
 import { parseLookupNote, type LookupNote } from "../../lib/intel/lookup-notes";
+import {
+  loadRoster,
+  loadTeamResponse,
+  saveRoster,
+  saveTeamResponse,
+  searchRosterOffline,
+} from "../../lib/intel/offline-teams";
 import type { EventRatingRow } from "../../lib/intel/lovat-lookup";
 import { useAppleMotion } from "../../lib/motion/use-apple-motion";
 import "./intel.css";
@@ -55,6 +62,33 @@ function isIntelBoardView(value: unknown): value is IntelBoardView {
   if (!value || typeof value !== "object") return false;
   const row = value as { intel?: { team?: { teamNumber?: unknown } } };
   return typeof row.intel?.team?.teamNumber === "number";
+}
+
+type TeamResponse = {
+  team?: IntelDetail;
+  similarTeams?: Array<IntelSearchTeam & { epaTotal: number }>;
+  scoutObservations?: IntelScoutNote[];
+  activeEvent?: IntelActiveEvent | null;
+  fieldRatings?: EventRatingRow[];
+  lookupNote?: unknown;
+  error?: string;
+};
+
+/** One shape for a live response and a saved one (lib/intel/offline-teams.ts). */
+function boardFromTeamResponse(data: TeamResponse, fallbackEvent: IntelActiveEvent | null): IntelBoardView | null {
+  if (!data.team) return null;
+  return {
+    intel: data.team,
+    similar: data.similarTeams ?? [],
+    scoutNotes: data.scoutObservations ?? [],
+    activeEvent: data.activeEvent ?? fallbackEvent,
+    fieldRatings: Array.isArray(data.fieldRatings) ? data.fieldRatings : [],
+    lookupNote: parseLookupNote(
+      data.lookupNote ?? null,
+      data.team.team.teamKey,
+      Boolean((data.lookupNote as { canEdit?: boolean } | null)?.canEdit),
+    ),
+  };
 }
 
 async function persistIntelSnapshot(orgHint: string, data: IntelBoardView): Promise<void> {
@@ -156,15 +190,21 @@ function IntelLive({ orgId }: { orgId: string }) {
     if (!orgId) return;
     let cancelled = false;
     void (async () => {
+      // The saved list first, so a pit with no signal still opens on the event's teams.
+      const saved = await loadRoster(orgId);
+      if (!cancelled && saved?.roster.length) setRoster(saved.roster);
       try {
         const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=`, {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         if (!response.ok) return;
         const data = (await response.json()) as { roster?: IntelRosterTeam[] };
-        if (!cancelled && Array.isArray(data.roster)) setRoster(data.roster);
+        if (!cancelled && Array.isArray(data.roster)) {
+          setRoster(data.roster);
+          void saveRoster(orgId, data.roster);
+        }
       } catch {
-        // Offline or slow — the search box is still there.
+        // Offline or slow — the saved list (if any) and the search box are still there.
       }
     })();
     return () => {
@@ -208,6 +248,24 @@ function IntelLive({ orgId }: { orgId: string }) {
       setStatus("");
       setMessageKind("success");
     } catch {
+      // No signal: search the event's saved team list instead of failing.
+      const saved = roster.length ? roster : ((await loadRoster(orgId))?.roster ?? []);
+      if (saved.length) {
+        setResults(
+          searchRosterOffline(saved, query).map((team) => ({
+            teamKey: team.teamKey,
+            teamNumber: team.teamNumber,
+            nickname: team.nickname,
+            city: null,
+            stateProv: null,
+            atActiveEvent: true,
+          })),
+        );
+        setStatus("Offline — searched this event's teams saved on this device.");
+        setMessageKind("success");
+        setFetchFailed(false);
+        return;
+      }
       if (viewRef.current) {
         setFromCache(true);
         setStatus("Could not refresh the lookup. Showing the last copy on this device.");
@@ -221,6 +279,22 @@ function IntelLive({ orgId }: { orgId: string }) {
     }
   }
 
+  /** No signal, or the lookup failed: show this team as saved on the device, if it is. */
+  async function showSavedTeam(teamNumber: number): Promise<boolean> {
+    const saved = await loadTeamResponse<TeamResponse>(orgId, teamNumber);
+    const board = saved ? boardFromTeamResponse(saved.data, viewRef.current?.activeEvent ?? null) : null;
+    if (!saved || !board) return false;
+    setView(board);
+    setSummary("");
+    setComparison(null);
+    setFromCache(true);
+    setCachedAt(saved.cachedAt);
+    setFetchFailed(false);
+    setStatus(`Offline — Team ${teamNumber} as saved on this device.`);
+    setMessageKind("success");
+    return true;
+  }
+
   async function select(teamNumber: number) {
     setStatus(`Loading Team ${teamNumber}…`);
     setLoadingTeam(true);
@@ -231,15 +305,7 @@ function IntelLive({ orgId }: { orgId: string }) {
       const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`, {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as {
-        team?: IntelDetail;
-        similarTeams?: Array<IntelSearchTeam & { epaTotal: number }>;
-        scoutObservations?: IntelScoutNote[];
-        activeEvent?: IntelActiveEvent | null;
-        fieldRatings?: EventRatingRow[];
-        lookupNote?: unknown;
-        error?: string;
-      };
+      const data = (await response.json()) as TeamResponse;
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           setView(null);
@@ -252,6 +318,7 @@ function IntelLive({ orgId }: { orgId: string }) {
           void clearFeatureSnapshot("intel", orgId || "_");
           return;
         }
+        if (await showSavedTeam(teamNumber)) return;
         if (viewRef.current) {
           setFromCache(true);
           setStatus("Could not refresh this team. Showing the last copy on this device.");
@@ -276,14 +343,8 @@ function IntelLive({ orgId }: { orgId: string }) {
         setMessageKind("error");
         return;
       }
-      const next: IntelBoardView = {
-        intel: data.team,
-        similar: data.similarTeams ?? [],
-        scoutNotes: data.scoutObservations ?? [],
-        activeEvent: data.activeEvent ?? viewRef.current?.activeEvent ?? null,
-        fieldRatings: Array.isArray(data.fieldRatings) ? data.fieldRatings : [],
-        lookupNote: parseLookupNote(data.lookupNote ?? null, data.team.team.teamKey, Boolean((data.lookupNote as { canEdit?: boolean } | null)?.canEdit)),
-      };
+      const next = boardFromTeamResponse(data, viewRef.current?.activeEvent ?? null)!;
+      void saveTeamResponse(orgId, teamNumber, data);
       setView(next);
       setSummary("");
       setComparison(null);
@@ -293,6 +354,7 @@ function IntelLive({ orgId }: { orgId: string }) {
       setCachedAt(null);
       await persistIntelSnapshot(orgId, next);
     } catch {
+      if (await showSavedTeam(teamNumber)) return;
       if (viewRef.current) {
         setFromCache(true);
         setStatus("Could not refresh this team. Showing the last copy on this device.");
