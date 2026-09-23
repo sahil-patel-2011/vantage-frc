@@ -30,10 +30,17 @@ export const ONBOARDING_BUDDY_RELATED_INCLUDE: OnboardingBuddyRelatedId[] = [
  */
 export function onboardingBuddyRelatedLinks(
   orgId?: string | null,
-  options?: { active?: OnboardingBuddyRelatedId; include?: OnboardingBuddyRelatedId[] },
+  options?: {
+    active?: OnboardingBuddyRelatedId;
+    include?: OnboardingBuddyRelatedId[];
+    /** Owner/admin only. Omitted fails closed so a scout never gets Team Data. */
+    canOpenTeamData?: boolean;
+  },
 ): OnboardingBuddyRelatedLink[] {
   const include = options?.include ? new Set(options.include) : null;
+  const canOpenTeamData = options?.canOpenTeamData === true;
   return ONBOARDING_BUDDY_RELATED_LINKS.filter((link) => {
+    if (link.id === "team-data" && !canOpenTeamData) return false;
     if (link.id === options?.active) return false;
     if (include && !include.has(link.id)) return false;
     return true;
@@ -70,8 +77,16 @@ export type OnboardingBuddySetupStep = {
   href: string;
 };
 
-export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBuddySetupStep[] {
-  return [
+function dropTeamData<T extends { id: string }>(items: T[], canOpenTeamData: boolean): T[] {
+  if (canOpenTeamData) return items;
+  return items.filter((item) => item.id !== "team-data");
+}
+
+export function onboardingBuddySetupSteps(
+  orgId?: string | null,
+  canOpenTeamData = false,
+): OnboardingBuddySetupStep[] {
+  return dropTeamData([
     {
       id: "workspace",
       label: "Choose your team",
@@ -96,7 +111,7 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
       detail: "Membership and role tools stay blank until real members join.",
       href: hubHref("/team", "onboarding-buddy", orgId),
     },
-  ];
+  ], canOpenTeamData);
 }
 
 /** Real pairing / member counts only — never invent DEMO totals. */
@@ -176,7 +191,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "No pairings yet",
         title: "Pair your first buddy",
         description:
-          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Your team, Onboarding, and Team Data.",
+          "First-week plans stay blank until you pair a real new member with a tenured buddy.",
       };
     default:
       return {
@@ -198,14 +213,17 @@ export function onboardingBuddyNextActions(input: {
   unpairedCount?: number;
   pairingCount?: number;
   memberCount?: number;
+  /** Owner/admin only. Omitted fails closed so a scout never gets Team Data. */
+  canOpenTeamData?: boolean;
 }): OnboardingBuddyNextAction[] {
   const orgId = input.orgId ?? null;
   const unpairedCount = input.unpairedCount ?? 0;
   const pairingCount = input.pairingCount ?? 0;
+  const canOpenTeamData = input.canOpenTeamData === true;
 
   if (!orgId || input.shell === "setup") {
     if (!orgId) {
-      return [
+      return dropTeamData([
         {
           id: "workspace",
           label: "Choose your team",
@@ -225,9 +243,9 @@ export function onboardingBuddyNextActions(input: {
           detail: "Team context stays empty until a team and Team Data sync exist.",
           href: withOrgHref("/team/data", null),
         },
-      ];
+      ], canOpenTeamData);
     }
-    return [
+    return dropTeamData([
       {
         id: "workspace",
         label: "Choose your team",
@@ -245,13 +263,13 @@ export function onboardingBuddyNextActions(input: {
         id: "team-data",
         label: "Open Team Data",
         detail: "Confirm real team/event context for this team.",
-        href: withOrgHref("/team/data", orgId),
+          href: withOrgHref("/team/data", orgId),
       },
-    ];
+    ], canOpenTeamData);
   }
 
   if (input.shell === "error") {
-    return [
+    return dropTeamData([
       {
         id: "retry",
         label: "Retry Onboarding Buddy",
@@ -275,13 +293,13 @@ export function onboardingBuddyNextActions(input: {
         id: "team-data",
         label: "Open Team Data",
         detail: "Team inventory stays available when this surface is down.",
-        href: withOrgHref("/team/data", orgId),
+          href: withOrgHref("/team/data", orgId),
       },
-    ];
+    ], canOpenTeamData);
   }
 
   if (input.shell === "empty" || pairingCount === 0) {
-    return [
+    return dropTeamData([
       {
         id: "pair",
         label: unpairedCount > 0 ? "Pair a new member" : "Wait for a new member",
@@ -308,12 +326,12 @@ export function onboardingBuddyNextActions(input: {
         id: "workspace",
         label: "Choose your team",
         detail: "Invite or switch teams if membership for this org looks incomplete.",
-        href: withOrgHref("/workspace", orgId),
+          href: withOrgHref("/workspace", orgId),
       },
-    ];
+    ], canOpenTeamData);
   }
 
-  return [
+  return dropTeamData([
     {
       id: "unpaired",
       label: unpairedCount > 0 ? "Review unpaired members" : "All recent joiners paired",
@@ -342,5 +360,5 @@ export function onboardingBuddyNextActions(input: {
       detail: "Switch or confirm the active organization for these pairings.",
       href: withOrgHref("/workspace", orgId),
     },
-  ];
+  ], canOpenTeamData);
 }

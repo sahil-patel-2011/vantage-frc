@@ -18,9 +18,18 @@ describe("onboardingBuddyRelatedLinks", () => {
     const links = onboardingBuddyRelatedLinks("org-1", {
       include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["workspace", "onboarding", "team-data"]);
+    expect(links.map((l) => l.id)).toEqual(["workspace", "onboarding"]);
     expect(links.find((l) => l.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
     expect(links.find((l) => l.id === "onboarding")?.href).toBe("/onboarding?orgId=org-1");
+    expect(links.some((l) => l.href.includes("/team/data"))).toBe(false);
+  });
+
+  it("keeps Team Data for an owner or admin", () => {
+    const links = onboardingBuddyRelatedLinks("org-1", {
+      include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
+      canOpenTeamData: true,
+    });
+    expect(links.map((l) => l.id)).toEqual(["workspace", "onboarding", "team-data"]);
     expect(links.find((l) => l.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
   });
 
@@ -35,7 +44,10 @@ describe("onboardingBuddySetupSteps", () => {
     const steps = onboardingBuddySetupSteps("org-1");
     expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
     expect(steps.find((s) => s.id === "onboarding")?.href).toBe("/onboarding?orgId=org-1");
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
+    expect(steps.some((s) => s.href.includes("/team/data"))).toBe(false);
+    expect(onboardingBuddySetupSteps("org-1", true).find((s) => s.id === "team-data")?.href).toBe(
+      "/team/data?orgId=org-1",
+    );
     expect(steps.find((s) => s.id === "team")?.href).toBe(
       "/team?tab=onboarding-buddy&orgId=org-1",
     );
@@ -118,7 +130,12 @@ describe("onboardingBuddyNextActions", () => {
     const actions = onboardingBuddyNextActions({ orgId: null, shell: "setup" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions.some((a) => a.id === "onboarding")).toBe(true);
-    expect(actions.some((a) => a.id === "team-data")).toBe(true);
+    expect(actions.some((a) => a.href.includes("/team/data"))).toBe(false);
+    expect(
+      onboardingBuddyNextActions({ orgId: null, shell: "setup", canOpenTeamData: true }).some(
+        (a) => a.id === "team-data",
+      ),
+    ).toBe(true);
   });
 
   it("empty shell points at pair + Workspace / Onboarding / Team Data", () => {
@@ -129,9 +146,17 @@ describe("onboardingBuddyNextActions", () => {
       pairingCount: 0,
     });
     expect(actions[0]?.id).toBe("pair");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["onboarding", "team-data", "workspace"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(expect.arrayContaining(["onboarding", "workspace"]));
+    expect(actions.some((a) => a.href.includes("/team/data"))).toBe(false);
+    expect(
+      onboardingBuddyNextActions({
+        orgId: "org-1",
+        shell: "empty",
+        unpairedCount: 2,
+        pairingCount: 0,
+        canOpenTeamData: true,
+      }).some((a) => a.id === "team-data"),
+    ).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
@@ -145,7 +170,17 @@ describe("onboardingBuddyNextActions", () => {
       memberCount: 5,
     });
     expect(actions[0]?.id).toBe("unpaired");
-    expect(actions.some((a) => a.id === "team-data")).toBe(true);
+    expect(actions.some((a) => a.href.includes("/team/data"))).toBe(false);
+    expect(
+      onboardingBuddyNextActions({
+        orgId: "org-1",
+        shell: "ready",
+        unpairedCount: 1,
+        pairingCount: 3,
+        memberCount: 5,
+        canOpenTeamData: true,
+      }).some((a) => a.id === "team-data"),
+    ).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
   });
 });

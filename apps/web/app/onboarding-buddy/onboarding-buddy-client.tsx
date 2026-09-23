@@ -20,7 +20,9 @@ import {
 } from "../../lib/onboarding-buddy/onboarding-buddy-related";
 import type { OnboardingBuddyMember, OnboardingBuddyPairing } from "../../lib/onboarding-buddy/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./onboarding-buddy.css";
 
@@ -47,9 +49,16 @@ async function persistOnboardingBuddySnapshot(
   }
 }
 
-function BuddyRelatedStrip({ orgId }: { orgId?: string | null }) {
+function BuddyRelatedStrip({
+  orgId,
+  canOpenTeamData,
+}: {
+  orgId?: string | null;
+  canOpenTeamData: boolean;
+}) {
   const links = onboardingBuddyRelatedLinks(orgId, {
     include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
+    canOpenTeamData,
   });
   if (!links.length) return null;
   return (
@@ -91,6 +100,7 @@ function BuddyShell({
   shell,
   error,
   onRetry,
+  canOpenTeamData,
   children,
 }: {
   description: string;
@@ -98,12 +108,13 @@ function BuddyShell({
   shell: OnboardingBuddyShellKind;
   error?: string;
   onRetry?: () => void;
+  canOpenTeamData: boolean;
   children?: ReactNode;
 }) {
-  const actions = onboardingBuddyNextActions({ orgId, shell });
+  const actions = onboardingBuddyNextActions({ orgId, shell, canOpenTeamData });
   const copy = onboardingBuddyShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "onboarding-buddy", orgId);
-  const setup = shell === "setup" ? onboardingBuddySetupSteps(orgId)[0] : null;
+  const setup = shell === "setup" ? onboardingBuddySetupSteps(orgId, canOpenTeamData)[0] : null;
 
   return (
     <main className="module-page onboarding-buddy-page soft-gate">
@@ -117,7 +128,7 @@ function BuddyShell({
         title="Onboarding Buddy"
         description={description}
       >
-        <BuddyRelatedStrip orgId={orgId} />
+        <BuddyRelatedStrip orgId={orgId} canOpenTeamData={canOpenTeamData} />
       </PageHeader>
       {children}
       <EmptyState
@@ -160,6 +171,7 @@ export default function OnboardingBuddyClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [canSync, setCanSync] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<OnboardingBuddyView | null>(null);
@@ -228,6 +240,15 @@ export default function OnboardingBuddyClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (!cancelled) setCanSync(strategyCanSync(session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
   const pairingCount = view?.status === "live" ? view.pairings.length : 0;
   const unpairedCount = view?.status === "live" ? view.unpairedMembers.length : 0;
   const memberCount = view?.status === "live" ? view.members.length : 0;
@@ -246,9 +267,11 @@ export default function OnboardingBuddyClient() {
     unpairedCount,
     pairingCount,
     memberCount,
+    canOpenTeamData: canSync,
   });
   const relatedLinks = onboardingBuddyRelatedLinks(orgId, {
     include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
+    canOpenTeamData: canSync,
   });
   const teamHref = hubWorkbenchHref("team", "onboarding-buddy", orgId);
   const showTiles = shouldShowOnboardingBuddySummaryTiles({
@@ -287,7 +310,7 @@ export default function OnboardingBuddyClient() {
 
   if (shell === "loading") {
     return (
-      <BuddyShell description={shellCopy.description} orgId={null} shell="loading">
+      <BuddyShell description={shellCopy.description} orgId={null} shell="loading" canOpenTeamData={canSync}>
         <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
     );
@@ -301,6 +324,7 @@ export default function OnboardingBuddyClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
+        canOpenTeamData={canSync}
       >
         <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
@@ -313,6 +337,7 @@ export default function OnboardingBuddyClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        canOpenTeamData={canSync}
       >
         <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
@@ -321,7 +346,7 @@ export default function OnboardingBuddyClient() {
 
   if (view?.status !== "live") {
     return (
-      <BuddyShell description={shellCopy.description} orgId={orgId} shell="setup">
+      <BuddyShell description={shellCopy.description} orgId={orgId} shell="setup" canOpenTeamData={canSync}>
         <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
       </BuddyShell>
     );
