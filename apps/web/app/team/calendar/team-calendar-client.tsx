@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   dayCountLabel,
@@ -69,6 +69,21 @@ import { CalendarSyncPanel } from "./calendar-sync-panel";
 import { GitHubCalendarHint } from "./github-calendar-hint";
 import { DayTasks } from "./task-chip";
 import { TimedCalendarGrid } from "./timed-calendar-grid";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function isSubteamCalendarView(value: unknown): value is SubteamCalendarView {
   if (!value || typeof value !== "object") return false;
@@ -193,6 +208,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistTeamCalendarSnapshot(urlOrg, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -398,6 +414,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist =
+      !view.context.orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
@@ -405,17 +423,23 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             <div>
               <span className="breadcrumbs">Team / Calendar</span>
               <h1>Calendar</h1>
+              {offerWaitlist ? <p>{withWaitlistLink(view.message)}</p> : null}
             </div>
           </header>
         ) : null}
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
-        <div className="app-card tc-empty">
+        <div className={`app-card tc-empty${offerWaitlist ? " tc-setup" : ""}`}>
           <strong>Choose your team</strong>
-          <p className="app-muted">{view.message}</p>
+          <p className="app-muted">{offerWaitlist ? withWaitlistLink(view.message) : view.message}</p>
           <div className="tc-guide-actions">
             <Button as="a" variant="primary" href="/workspace">
               Choose your team
             </Button>
+            {offerWaitlist ? (
+              <a className="tc-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            ) : null}
           </div>
         </div>
       </main>
