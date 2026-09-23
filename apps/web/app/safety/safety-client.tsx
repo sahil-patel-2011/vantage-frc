@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../components/ui";
 import {
@@ -15,10 +15,26 @@ import {
 } from "../../lib/safety";
 import { canDeleteSafetyIncident } from "../../lib/safety/authorization";
 import { hubHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./safety.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Incident = {
   id: string; title: string; severity: IncidentSeverity; occurredOn: string; location: string; description: string;
@@ -68,7 +84,7 @@ function SafetyRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function SafetyHeader({ orgId }: { orgId?: string | null }) {
+function SafetyHeader({ orgId, description }: { orgId?: string | null; description?: ReactNode }) {
   const teamHref = orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team";
   return (
     <PageHeader
@@ -79,7 +95,7 @@ function SafetyHeader({ orgId }: { orgId?: string | null }) {
         </>
       }
       title="Safety log"
-      description="Incidents, near-misses, and who is cleared on which tools."
+      description={description ?? "Incidents, near-misses, and who is cleared on which tools."}
     >
       <SafetyRelated orgId={orgId} />
     </PageHeader>
@@ -150,6 +166,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         }
         return;
       }
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -233,16 +250,35 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
-          <SafetyHeader orgId={orgId} />
+        <main className="module-page safety-page">
+          <SafetyHeader
+            orgId={orgId}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+          />
           <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
-            <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            soft
+            title="Choose your team"
+            description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+            className={offerWaitlist ? "safety-setup" : undefined}
+          >
+            <div className={offerWaitlist ? "safety-setup-actions" : undefined}>
+              <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+              {offerWaitlist ? (
+                <a className="safety-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              ) : null}
+            </div>
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {

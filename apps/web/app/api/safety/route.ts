@@ -50,7 +50,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to track safety." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to track safety."
+            : "Choose your team to track safety, or join the waitlist.",
+        };
+      }
 
       const [incidents, certs] = await Promise.all([
         client.query<IncidentRow>(
