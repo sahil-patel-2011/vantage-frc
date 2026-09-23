@@ -103,6 +103,8 @@ describe("visitShellCopy / visitSetupSteps", () => {
     const copy = visitShellCopy("empty");
     expect(copy.badge).toBe("No visits yet");
     expectPlainCopy(copy.description);
+    expect(visitShellCopy("setup").description).toMatch(/join the waitlist/i);
+    expect(visitShellCopy("empty").description).not.toMatch(/join the waitlist/i);
   });
 });
 

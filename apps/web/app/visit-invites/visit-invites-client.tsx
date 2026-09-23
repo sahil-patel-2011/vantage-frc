@@ -13,7 +13,7 @@ import {
   StatRowSkeleton,
   StatTile, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   VISIT_RELATED_INCLUDE,
@@ -43,6 +43,21 @@ import {
 } from "../../lib/visit-invites";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function isVisitInvitesView(value: unknown): value is VisitInvitesView {
   if (!value || typeof value !== "object") return false;
@@ -108,6 +123,7 @@ function VisitShell({
   canManage,
   error,
   onRetry,
+  offerWaitlist = false,
   children,
 }: {
   title: string;
@@ -117,10 +133,12 @@ function VisitShell({
   canManage?: boolean;
   error?: string;
   onRetry?: () => void;
+  offerWaitlist?: boolean;
   children?: ReactNode;
 }) {
   const copy = visitShellCopy(shell);
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const linkedDescription = offerWaitlist ? withWaitlistLink(description) : description;
 
   if (shell === "loading") {
     return (
@@ -151,12 +169,13 @@ function VisitShell({
 
   return (
     <main className="visit-page module-page">
-      <PageHeader navPath="/visit-invites" title="Visit Invites" description={description}>
+      <PageHeader navPath="/visit-invites" title="Visit Invites" description={linkedDescription}>
         <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
       </PageHeader>
       {children}
       <EmptyState
         soft
+        className={offerWaitlist ? "visit-setup" : undefined}
         badge={
           shell === "setup"
             ? "Setup"
@@ -166,10 +185,17 @@ function VisitShell({
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
         title={title || copy.title}
-        description={description || copy.description}
+        description={offerWaitlist ? withWaitlistLink(description) : description || copy.description}
       >
         {shell === "setup" ? (
-          <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
+          offerWaitlist ? (
+            <div className="visit-setup-actions">
+              <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
+              <a className="visit-setup-waitlist" href="/#waitlist">Join the waitlist</a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
+          )
         ) : null}
         {shell === "empty" && canManage ? (
           <Button as="a" variant="primary" href={visitInvitesShareHref(orgId) + "#visit-create"}>
@@ -248,6 +274,7 @@ export default function VisitInvitesClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistVisitInvitesSnapshot(q, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -325,12 +352,15 @@ export default function VisitInvitesClient() {
 
   if (view.status === "setup_required") {
     const copy = visitShellCopy("setup");
+    const sentence = view.message || copy.description;
+    const offerWaitlist = !view.context.orgId && sentence.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <VisitShell
         title={copy.title}
-        description={view.message || copy.description}
+        description={sentence}
         orgId={view.context.orgId}
         shell="setup"
+        offerWaitlist={offerWaitlist}
       >
         <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
       </VisitShell>

@@ -325,7 +325,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before logging shop tours or demo days.",
+          "Choose your team to plan shop tours and demo days, or join the waitlist.",
       };
     case "empty":
       return {

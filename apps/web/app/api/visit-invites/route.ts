@@ -76,7 +76,7 @@ async function loadView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose your team to plan shop tours and demo days.",
+      message: "Choose your team to plan shop tours and demo days, or join the waitlist.",
       context: { orgId: null, orgName: null },
     };
   }
