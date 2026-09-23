@@ -177,6 +177,10 @@ export const PRODUCTION_AUTH_ALIASES = [
   "https://teamvantage.vercel.app",
   "https://vantagefrcweb.vercel.app",
   "https://vantagerobotics.vercel.app",
+  // The Scouting product's own address (docs/PRODUCTS.md). Also added from
+  // NEXT_PUBLIC_SCOUTING_ORIGIN at runtime; listed here so a deployment missing
+  // that variable still accepts sign-in and sign-out from the Scouting host.
+  "https://vantagefrc-scouting.vercel.app",
   // Retired, and kept deliberately: a session or an OAuth round trip started
   // before the host went away still arrives with this origin, and dropping it
   // from the allowlist turns that into an "Invalid origin" rejection rather

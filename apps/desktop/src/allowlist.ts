@@ -22,6 +22,9 @@ export const PRODUCTION_APP_HOSTS = [
   "teamvantage.vercel.app",
   "vantagefrcweb.vercel.app",
   "vantagerobotics.vercel.app",
+  // The Scouting product (docs/PRODUCTS.md): same deployment, its own address.
+  // Without it the top bar's "Scouting" button was a navigation the shell refused.
+  "vantagefrc-scouting.vercel.app",
 ] as const;
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
