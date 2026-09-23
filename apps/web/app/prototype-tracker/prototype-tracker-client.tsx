@@ -16,7 +16,12 @@ import {
   recommendationBadgeTone,
   shouldShowPrototypeSummaryTiles,
 } from "../../lib/prototype-tracker/prototype-related";
-import type { DecisionRecommendation, DecisionStatus, TestOutcome } from "../../lib/prototype-tracker/types";
+import {
+  canDeletePrototypeRow,
+  type DecisionRecommendation,
+  type DecisionStatus,
+  type TestOutcome,
+} from "../../lib/prototype-tracker/types";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -470,18 +475,21 @@ function TestsList({
                     {test.subsystemName} · {test.testDate}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${test.title}"?`)) {
-                      void mutate({ action: "delete-test", testId: test.id });
-                    }
-                  }}
-                >
-                  Delete
-                </button>
+                {canDeletePrototypeRow({ role: view.role, userId: view.userId, authorId: test.loggedBy }) ? (
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={busy}
+                    aria-label={`Delete ${test.title}`}
+                    onClick={() => {
+                      if (window.confirm(`Delete "${test.title}"?`)) {
+                        void mutate({ action: "delete-test", testId: test.id });
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                ) : null}
               </header>
               {test.hypothesis ? (
                 <p className="ptk-hypothesis">
@@ -584,18 +592,25 @@ function DecisionsList({
                     {pct(decision.confidence)}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${decision.decisionTitle}"?`)) {
-                      void mutate({ action: "delete-decision", decisionId: decision.id });
-                    }
-                  }}
-                >
-                  Delete
-                </button>
+                {canDeletePrototypeRow({
+                  role: view.role,
+                  userId: view.userId,
+                  authorId: decision.createdBy,
+                }) ? (
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={busy}
+                    aria-label={`Delete ${decision.decisionTitle}`}
+                    onClick={() => {
+                      if (window.confirm(`Delete "${decision.decisionTitle}"?`)) {
+                        void mutate({ action: "delete-decision", decisionId: decision.id });
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                ) : null}
               </header>
               <p className="ptk-result">{decision.decisionRecord}</p>
               <details>

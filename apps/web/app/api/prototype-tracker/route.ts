@@ -147,13 +147,13 @@ export async function POST(request: Request) {
         case "delete-test": {
           const testId = trimmedOrNull(body.testId, 64);
           if (!testId) throw new Error("testId is required");
-          await deleteTest(client, { orgId, testId });
+          await deleteTest(client, { orgId, testId, userId });
           break;
         }
         case "delete-decision": {
           const decisionId = trimmedOrNull(body.decisionId, 64);
           if (!decisionId) throw new Error("decisionId is required");
-          await deleteDecision(client, { orgId, decisionId });
+          await deleteDecision(client, { orgId, decisionId, userId });
           break;
         }
         default:
@@ -165,6 +165,13 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "Prototype test not found" || message === "Decision not found") {
+      return Response.json({ error: message }, { status: 404 });
+    }
+    if (message === "You cannot delete this prototype test" || message === "You cannot delete this decision") {
+      return Response.json({ error: message }, { status: 403 });
+    }
     return failMeteredAi(error, "Prototype tracker request failed");
   }
 }
