@@ -1,12 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./weight-budget.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 import { stale125WeightLimitCue } from "../../lib/weight-budget";
 import {
   NO_WEIGH_IN_CLOSE_CUE,
@@ -193,6 +209,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       if (data.status === "ready") setLimitDraft(String(data.summary.limitLbs));
       await persistWeightBudgetSnapshot(orgHint, seasonHint, data);
       if (!weighInResponse || !weighInResponse.ok) {
@@ -289,9 +306,10 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page weight-budget-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -300,18 +318,38 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
               </>
             }
             title="Weight budget"
-            description="Planned pounds from logged components."
+            description={
+              offerWaitlist ? withWaitlistLink(view.message) : "Planned pounds from logged components."
+            }
           >
             <WeightBudgetRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Weight budget" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "weight-budget-setup" : undefined}
+          >
+            {offerWaitlist ? (
+              <div className="weight-budget-setup-actions">
+                <Button as="a" variant="primary" href="/workspace">
+                  Choose your team
+                </Button>
+                <a className="weight-budget-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              </div>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {

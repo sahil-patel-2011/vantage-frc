@@ -55,7 +55,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to budget weight." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to budget weight."
+            : "Choose your team to budget weight, or join the waitlist.",
+        };
+      }
 
       const [components, settings] = await Promise.all([
         client.query<ComponentRow>(
