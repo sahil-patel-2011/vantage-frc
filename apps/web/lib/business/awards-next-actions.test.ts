@@ -27,6 +27,23 @@ describe("awardsNextActions Soft-UI helpers", () => {
     expect(actions[0]).toMatchObject({ id: "draft", primary: true });
   });
 
+  it("hides submission writes from members who cannot manage the team", () => {
+    const empty = awardsNextActions({ orgId: "org-1", submissionCount: 0, canManage: false });
+    expect(empty.map((action) => action.id)).toEqual(["read", "impact"]);
+    expect(empty[0]?.detail).toMatch(/owner or admin/);
+    expect(empty.some((action) => action.id === "start")).toBe(false);
+
+    const ready = awardsNextActions({
+      orgId: "org-1",
+      submissionCount: 2,
+      incompleteEssayCount: 3,
+      canManage: false,
+    });
+    expect(ready[0]?.id).toBe("read");
+    expect(ready.some((action) => action.id === "draft" || action.id === "status")).toBe(false);
+    ready.forEach((action) => expectPlainCopy(action.detail));
+  });
+
   it("suggests status updates when essays are done but none won", () => {
     const actions = awardsNextActions({
       orgId: "org-1",

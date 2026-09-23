@@ -21,6 +21,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "./counter-book.css";
 
 function isCounterBookView(value: unknown): value is CounterBookView {
@@ -366,7 +367,12 @@ export default function CounterBookClient() {
       ) : null}
 
       <div className="counter-book-layout">
-        <GenerateReportForm busy={busy} mutate={mutate} />
+        <GenerateReportForm
+          busy={busy}
+          mutate={mutate}
+          eventKey={view.eventKey}
+          eventName={view.eventName}
+        />
         {shell === "ready" ? <ReportList view={view} busy={busy} mutate={mutate} /> : null}
         <Panel className="counter-book-tip" aria-label="Counter-book tip">
           <span className="eyebrow">Grounding path</span>
@@ -383,12 +389,18 @@ export default function CounterBookClient() {
 function GenerateReportForm({
   busy,
   mutate,
+  eventKey: activeEventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const [teamKey, setTeamKey] = useState("");
   const [eventKey, setEventKey] = useState("");
+  const lockedEvent = activeEventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || eventKey.trim();
 
   return (
     <Panel
@@ -398,7 +410,7 @@ function GenerateReportForm({
       onSubmit={(event) => {
         event.preventDefault();
         if (!teamKey.trim()) return;
-        mutate({ action: "generate-report", teamKey: teamKey.trim(), eventKey: eventKey.trim() || undefined });
+        mutate({ action: "generate-report", teamKey: teamKey.trim(), eventKey: submittedEvent || undefined });
         setTeamKey("");
         setEventKey("");
       }}
@@ -411,9 +423,19 @@ function GenerateReportForm({
         <FormRow label="Opponent team key" hint="e.g. frc254">
           <input value={teamKey} onChange={(e) => setTeamKey(e.target.value)} placeholder="frc254" required />
         </FormRow>
-        <FormRow label="Event key (optional)" hint="Limit to matches scouted at one event">
-          <input value={eventKey} onChange={(e) => setEventKey(e.target.value)} placeholder="2026casj" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event" hint="Limit to matches scouted at this event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)" hint="Limit to matches scouted at one event">
+            <input value={eventKey} onChange={(e) => setEventKey(e.target.value)} placeholder="2026casj" />
+          </FormRow>
+        )}
       </FormGrid>
       <div>
         <Button variant="primary" type="submit" disabled={busy || !teamKey.trim()}>
@@ -461,7 +483,7 @@ function ReportCard({
           <h2 style={{ margin: 0 }}>{report.title}</h2>
           <small className="app-muted">
             {report.matchesScouted} scouted match(es)
-            {report.eventKey ? ` · ${report.eventKey}` : ""} · {new Date(report.createdAt).toLocaleDateString()}
+            {report.eventKey ? ` · ${scoutEventLabel({ eventKey: report.eventKey })}` : ""} · {new Date(report.createdAt).toLocaleDateString()}
           </small>
         </div>
         <button

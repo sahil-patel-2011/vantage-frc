@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Badge, Button } from "../../components/ui";
 import {
   dashboardSetupBannerLabel,
@@ -30,7 +31,7 @@ export function DashboardSetupBanner({
       <div>
         <Badge tone="setup">Setup</Badge>
         <h2>{dashboardSetupTitle(shell)}</h2>
-        <p>{dashboardSetupBlurb(shell)}</p>
+        <p>{setupBlurb(shell)}</p>
       </div>
       {primary && label ? (
         <Button as="a" variant="primary" href={href}>
@@ -38,5 +39,22 @@ export function DashboardSetupBanner({
         </Button>
       ) : null}
     </section>
+  );
+}
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function setupBlurb(shell: DashboardShellKind): ReactNode {
+  const text = dashboardSetupBlurb(shell);
+  if (shell !== "no_org") return text;
+  const at = text.indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{WAITLIST_PHRASE}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
   );
 }

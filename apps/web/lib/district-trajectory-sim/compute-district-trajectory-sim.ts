@@ -1,4 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+import { strategyCanSync } from "../strategy/strategy-related";
 import { runMonteCarloTrajectory } from ".";
 import type { RemainingEvent, TrajectoryRunSummary, TrajectoryScenario } from "./types";
 
@@ -49,13 +52,31 @@ function setupRequiredView(message: string, orgId: string | null = null): Trajec
   return { status: "setup_required", message, steps: setupSteps(orgId), orgId };
 }
 
+/** Team Data only for an owner or admin. Everyone else stays on Scouting. */
+function syncOrScoutView(orgId: string, canSync: boolean, message: string): TrajectoryView {
+  const step: TrajectorySetupStep = canSync
+    ? {
+        id: "team-data",
+        label: "Sync Team Data",
+        detail: "Season numbers show up here after Team Data syncs them.",
+        href: withOrgHref("/team/data", orgId),
+      }
+    : {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "An owner or admin syncs season numbers. You can still scout.",
+        href: hubHref("/competition", "scouting", orgId),
+      };
+  return { status: "setup_required", message, steps: [step], orgId };
+}
+
 async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role AS "role"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -121,9 +142,13 @@ export async function computeTrajectoryView(
   );
   const teamKey = teamResult.rows[0]?.teamKey ?? null;
   if (!teamKey) {
-    return setupRequiredView(
-      "No reference-cache record for your team yet — Team Data sync has not picked it up.",
+    const canSync = strategyCanSync(org.role);
+    return syncOrScoutView(
       org.orgId,
+      canSync,
+      canSync
+        ? "No public team record is saved yet. Sync Team Data, then open this page again."
+        : "No public team record is saved yet. An owner or admin syncs it.",
     );
   }
 
@@ -177,9 +202,13 @@ export async function computeTrajectoryView(
   const fieldStats = computeFieldStats(fieldValues);
 
   if (baselineEpa == null || fieldStats.sampleSize < MIN_FIELD_SAMPLES) {
-    return setupRequiredView(
-      "Not enough cached rating data yet for your team and district — sync Team Data first.",
+    const canSync = strategyCanSync(org.role);
+    return syncOrScoutView(
       org.orgId,
+      canSync,
+      canSync
+        ? "Not enough cached rating data yet for your team and district — sync Team Data first."
+        : "Not enough cached rating data yet for your team and district. An owner or admin syncs ratings.",
     );
   }
 

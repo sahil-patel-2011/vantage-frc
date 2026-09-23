@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  canDeleteKnowledgePage,
   KNOWLEDGE_RELATED_INCLUDE,
   KNOWLEDGE_TEMPLATES,
   KNOWLEDGE_TEMPLATE_KINDS,
@@ -575,9 +576,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             </>
           ) : null}
           {canEditAi ? null : (
-            <div className="kb-ai-links">
-              <a href={`/team/knowledge/history?orgId=${orgId}`}>History</a>
-            </div>
+            <p className="app-muted">An owner or admin reads change history. You can still read this summary.</p>
           )}
         </section>
       ) : null}
@@ -800,7 +799,13 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                       ...(creating
                         ? [{ id: "cancel", label: "Cancel", disabled: busy, onClick: cancelCreate } satisfies ActionSpec]
                         : []),
-                      ...(!creating && ready.selected
+                      ...(!creating &&
+                      ready.selected &&
+                      canDeleteKnowledgePage({
+                        role: ready.role,
+                        userId: ready.userId,
+                        authorId: ready.selected.createdBy,
+                      })
                         ? [
                             {
                               id: "delete",

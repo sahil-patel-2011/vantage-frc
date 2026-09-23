@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { expectPlainCopy } from "../../../lib/ui/copy-assertions";
 import { DASHBOARD_WIDGET_TYPES } from "../../../lib/dashboard/catalog";
-import { emptyHintFor, studentWidgetDescription, WIDGET_EMPTY_COPY } from "./widget-empty-copy";
+import { emptyHintFor, studentWidgetDescription, syncStatusDestination, WIDGET_EMPTY_COPY } from "./widget-empty-copy";
 
 const ENGINEERING = /\b(EPA|org|workspace|Statbotics|TBA sync|The Blue Alliance|setup_required|reference tables)\b/i;
 
@@ -39,5 +39,17 @@ describe("Home widget empty copy", () => {
     expect(studentWidgetDescription("Ask a mentor to connect match results so cards can fill in.", hint)).toBe(
       "Ask a mentor to connect match results so cards can fill in.",
     );
+  });
+
+  it("keeps Sync status on Scouting unless an owner or admin may open Team Data", () => {
+    expect(emptyHintFor("sync_status").ctaHref).toBe("/competition?tab=scouting");
+    expect(emptyHintFor("sync_status").ctaLabel).toBe("Open Scouting");
+    expect(syncStatusDestination("org-1").href).toBe("/competition?tab=scouting&orgId=org-1");
+    expect(syncStatusDestination("org-1", false).label).toBe("Open Scouting");
+    expect(syncStatusDestination("org-1", true)).toEqual({
+      href: "/team/data?orgId=org-1",
+      label: "Open Team Data",
+    });
+    expect(syncStatusDestination(null, true).href).toBe("/team/data");
   });
 });

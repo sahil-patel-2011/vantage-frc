@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { distinctValues, scoutDisagreementStatusLabel } from "../../lib/scout-disagreements";
 import { type ScoutDisagreementsView } from "../../lib/scout-disagreements/compute-scout-disagreements";
@@ -395,7 +396,12 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
     return (
       <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="empty">
         <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
-        <LogDisagreementForm busy={busy} mutate={mutate} />
+        <LogDisagreementForm
+          busy={busy}
+          mutate={mutate}
+          eventKey={view?.status === "live" ? view.eventKey : null}
+          eventName={view?.status === "live" ? view.eventName : null}
+        />
       </ScoutDisagreementsShell>
     );
   }
@@ -448,7 +454,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
       ) : null}
 
       {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
-      <LogDisagreementForm busy={busy} mutate={mutate} />
+      <LogDisagreementForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
       <Queue view={view} busy={busy} mutate={mutate} />
       <AuditLog view={view} />
       <ScoutDisagreementsNextActionsPanel actions={nextActions} />
@@ -649,9 +655,13 @@ function AuditLog({ view }: { view: LiveView }) {
 function LogDisagreementForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -670,6 +680,8 @@ function LogDisagreementForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   const canSubmit =
     form.matchNumber.trim() &&
@@ -692,7 +704,7 @@ function LogDisagreementForm({
           teamNumber: Number(form.teamNumber),
           fieldKey: form.fieldKey,
           fieldLabel: form.fieldLabel,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           values: [
             { source: form.sourceA || "Scout A", value: form.valueA },
             { source: form.sourceB || "Scout B", value: form.valueB },
@@ -718,9 +730,19 @@ function LogDisagreementForm({
         <FormRow label="Field label">
           <input value={form.fieldLabel} onChange={set("fieldLabel")} placeholder="Auto mobility" required />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          </FormRow>
+        )}
       </FormGrid>
       <FormGrid min={160}>
         <FormRow label="Scout A name">

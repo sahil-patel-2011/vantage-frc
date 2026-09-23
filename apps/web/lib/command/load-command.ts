@@ -7,6 +7,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
 import { finalizeStrategyRecompute } from "../strategy/recompute";
+import { commandSetupMessage } from "./event-day-related";
 import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
 import { buildNexusQueueSnapshot } from "./nexus-queue";
@@ -176,11 +177,15 @@ export async function loadEventDayCommand(
     },
     {
       id: "tba",
-      label: "Sync the event schedule",
+      label: canSetEvent ? "Sync the event schedule" : "Open Scouting",
       detail: tbaAccess.tbaConfigured
-        ? "The schedule is connected — confirm freshness under Team → Data if matches are missing."
-        : "Ask a mentor to connect the event schedule under Team → Data. Match times stay empty until then.",
-      href: links.teamData,
+        ? canSetEvent
+          ? "The schedule is connected — confirm freshness under Team → Data if matches are missing."
+          : "The schedule is connected. An owner or admin refreshes it if matches are missing."
+        : canSetEvent
+          ? "Connect the event schedule under Team → Data. Match times stay empty until then."
+          : "An owner or admin syncs the schedule. You can still scout.",
+      href: canSetEvent ? links.teamData : links.scouting,
       done: tbaAccess.tbaConfigured,
     },
     {
@@ -216,9 +221,10 @@ export async function loadEventDayCommand(
     return {
       ...base,
       status: "setup_required",
-      message: !row.eventKey
-        ? "Set your active event to turn Event Day Command into your field-side OS."
-        : "Set your team's number so we can filter your match queue.",
+      message: commandSetupMessage({
+        eventKey: row.eventKey,
+        canSetEvent,
+      }),
       matches: [],
       scoutQueue: [],
       briefs: [],

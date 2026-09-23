@@ -44,24 +44,41 @@ export function shouldShowDegradedBanner(mode: DegradedModeBannerMode): boolean 
   return mode !== "ok";
 }
 
+function scoutingFallbackHref(orgId: string | null): string {
+  const params = new URLSearchParams({ tab: "scouting" });
+  if (orgId) params.set("orgId", orgId);
+  return `/competition?${params.toString()}`;
+}
+
 /**
  * Read-only fallback surfaces to point teams at while a mode is degraded.
  * Skips fallbacks that don't apply for a healthy mode (empty list).
+ * Team → Data is owner/admin only; omitted `canOpenTeamData` fails closed.
  */
 export function computeDegradedFallbacks(
   mode: DegradedModeBannerMode,
   orgId: string | null,
+  canOpenTeamData = false,
 ): DegradedModeFallback[] {
   if (mode === "ok") return [];
   const org = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-  const fallbacks: DegradedModeFallback[] = [
-    {
-      id: "team-data",
-      label: "Team → Data",
-      detail: "Review the last saved rankings and schedule, then sync again when Team Data is back.",
-      href: `/team/data${org}`,
-    },
-  ];
+  const fallbacks: DegradedModeFallback[] = canOpenTeamData
+    ? [
+        {
+          id: "team-data",
+          label: "Team → Data",
+          detail: "Review the last saved rankings and schedule, then sync again when Team Data is back.",
+          href: `/team/data${org}`,
+        },
+      ]
+    : [
+        {
+          id: "scouting",
+          label: "Scouting",
+          detail: "An owner or admin refreshes rankings and the schedule. You can still scout from the last saved rows.",
+          href: scoutingFallbackHref(orgId),
+        },
+      ];
   if (mode === "unavailable" || mode === "degraded") {
     fallbacks.push({
       id: "strategy-cache",

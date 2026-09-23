@@ -80,5 +80,11 @@ export function securityErrorResponse(error: unknown, fallback: string) {
   const message = error instanceof Error && !/^[0-9A-Z]{5}$/.test(databaseCode)
     ? error.message
     : fallback;
-  return json(message, 400);
+  // A scout opening an admin route is not a bad form. 400 made the screen
+  // offer Retry for a role that will never change.
+  const status =
+    /access denied|administrator access|membership required|not a member/i.test(message)
+      ? 403
+      : 400;
+  return json(message, status);
 }

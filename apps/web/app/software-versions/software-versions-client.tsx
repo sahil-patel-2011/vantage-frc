@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   COMMON_COMPONENTS,
@@ -19,6 +19,22 @@ import {
   type VersionStatus,
 } from "../../lib/software-versions";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./software-versions.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Component = {
   id: string;
@@ -192,6 +208,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
         );
         return;
       }
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -286,9 +303,10 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page sv-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -297,18 +315,36 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
               </>
             }
             title="Software versions"
-            description="Installed vs target for libraries, images, and firmware."
+            description={
+              offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Installed vs target for libraries, images, and firmware."
+            }
           >
             <SoftwareVersionsRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Software versions" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "sv-setup" : undefined}
+          >
+            <div className={offerWaitlist ? "sv-setup-actions" : undefined}>
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              {offerWaitlist ? (
+                <a className="sv-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              ) : null}
+            </div>
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {

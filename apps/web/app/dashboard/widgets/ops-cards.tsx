@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
+import { dashboardNextActions } from "../../../lib/dashboard/dashboard-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../../lib/youtube";
@@ -9,7 +10,7 @@ import { ratingSplit, ratingValue, splitWidths } from "../../../lib/dashboard/ra
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
-import { emptyHintFor, WidgetShell as Shell } from "./widget-shell";
+import { emptyHintFor, syncStatusDestination, WidgetShell as Shell } from "./widget-shell";
 import { OnboardingChecklistCard } from "./onboarding-card";
 
 function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }) {
@@ -104,7 +105,11 @@ function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
     return [{ href: "/invite", label: "Open invite", detail: "Use the link sent to your email." }];
   }
   if (tbaConfigured === false) {
-    return [{ href: withOrgHref("/team/data", orgId), label: "Connect match results", detail: "Match times for this team." }];
+    return dashboardNextActions({ orgId, shell: "tba" }).map((action) => ({
+      href: action.href,
+      label: action.label,
+      detail: action.detail,
+    }));
   }
   return [
     { href: hubHref("/competition", "command", orgId), label: "Set active event", detail: "Competition cards need an event." },
@@ -116,11 +121,14 @@ export function renderOpsWidget({
   payload,
   orgId,
   tbaConfigured,
+  canOpenTeamData = false,
 }: {
   type: string;
   payload?: WidgetPayload;
   orgId: string;
   tbaConfigured?: boolean;
+  /** Owner or admin may open Team Data from Sync status. Omitted stays closed. */
+  canOpenTeamData?: boolean;
 }): ReactNode {
   const data = payload?.data ?? {};
   const withOrg = (href: string) => withOrgHref(href, orgId || null);
@@ -334,8 +342,10 @@ export function renderOpsWidget({
     }
     case "sync_status": {
       const sources = (data.sources as Array<{ source: string; status: string; lastSuccessAt: string | null }> | undefined) ?? [];
+      const destination = syncStatusDestination(orgId, canOpenTeamData);
+      const syncHint = { title: hint.title, body: hint.body, ctaLabel: destination.label };
       return (
-        <Shell type={type} title="Sync status" payload={payload} href={withOrg("/team/data")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Sync status" payload={payload} href={destination.href} emptyHint={syncHint} orgId={orgId}>
           {payload?.status === "live" ? (
             <ul className="dash-checklist">
               {sources.map((source) => (
@@ -580,8 +590,7 @@ export function renderOpsWidget({
       );
     case "quick_actions": {
       const fromPayload = (data.links as Array<{ href: string; label: string; detail: string }> | undefined) ?? [];
-      const needsSetup = !orgId || tbaConfigured === false;
-      const links = needsSetup || fromPayload.length === 0 ? setupQuickActions(orgId, tbaConfigured) : fromPayload;
+      const links = fromPayload.length > 0 ? fromPayload : setupQuickActions(orgId, tbaConfigured);
       return (
         <Shell
           type={type}

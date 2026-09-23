@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -18,14 +18,31 @@ import {
   groupPacking,
   isPackingQueueableAction,
   packProgress,
+  packingListTitle,
   type PackingList,
   type PackingView,
 } from "../../lib/packing";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function isPackingView(value: unknown): value is PackingView {
   if (!value || typeof value !== "object") return false;
@@ -91,7 +108,9 @@ function ListDetail({
           <h2>{list.title}</h2>
           <p className="app-muted">
             {progress.packed}/{progress.total} packed
-            {list.eventKey ? ` · ${list.eventKey}` : ""}
+            {list.eventKey
+              ? ` · ${scoutEventLabel({ eventKey: list.eventKey }) ?? ""}`
+              : ""}
             {list.createdByName ? ` · by ${list.createdByName}` : ""}
           </p>
         </div>
@@ -111,6 +130,7 @@ function ListDetail({
             Reset
           </button>
           ) : null}
+          {list.canManageMaster ? (
           <button
             type="button"
             className="pack-link danger"
@@ -123,6 +143,7 @@ function ListDetail({
           >
             Delete
           </button>
+          ) : null}
         </div>
       </header>
 
@@ -380,6 +401,7 @@ export default function PackingClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistPackingSnapshot(urlOrg, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -519,13 +541,19 @@ export default function PackingClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist =
+      !view.context.orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page pack-page">
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Packing</span>
             <h1>Packing Lists</h1>
-            <p>Competition load-out checklists so nothing gets left in the shop.</p>
+            <p>
+              {offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Competition load-out checklists so nothing gets left in the shop."}
+            </p>
             <PackingRelatedStrip orgId={view.context.orgId} />
           </div>
         </header>
@@ -535,11 +563,23 @@ export default function PackingClient() {
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description={view.message}
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "pack-setup" : undefined}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          {offerWaitlist ? (
+            <div className="pack-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="pack-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          )}
         </EmptyState>
       </main>
     );
@@ -549,8 +589,12 @@ export default function PackingClient() {
   const lists = view.lists;
   const selected = lists.find((list) => list.id === selectedId) ?? lists[0] ?? null;
 
+  const eventLabel = scoutEventLabel({
+    eventName: view.context.eventName,
+    eventKey: view.context.eventKey,
+  });
   const createList = () => {
-    const title = newTitle.trim() || (view.context.eventKey ? `Load-out · ${view.context.eventKey}` : "Competition load-out");
+    const title = packingListTitle(newTitle, eventLabel);
     void run(
       { action: "create_list", orgId, title, eventKey: view.context.eventKey, seedTemplate: true },
       "create",
@@ -596,7 +640,7 @@ export default function PackingClient() {
 
       {lists.length === 0 ? (
         <div className="app-card pack-empty">
-          <strong>No packing lists yet</strong>
+          <strong>{eventLabel ? `No packing lists yet for ${eventLabel}` : "No packing lists yet"}</strong>
           <p className="app-muted">Create one — it seeds the standard competition load-out (batteries, tools, spares, drive station, safety).</p>
           <Button variant="primary" type="button" disabled={busyKey === "create"} onClick={createList}>
             Create competition load-out

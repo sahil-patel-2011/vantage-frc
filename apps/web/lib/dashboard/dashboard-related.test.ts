@@ -6,6 +6,7 @@ import {
   dashboardNextActions,
   dashboardSetupBannerLabel,
   dashboardSetupBannerPrimary,
+  dashboardSetupBlurb,
   dashboardSetupSteps,
 } from "./dashboard-related";
 
@@ -71,6 +72,10 @@ describe("dashboard Soft-UI related", () => {
     const steps = dashboardSetupSteps({ orgId: null });
     expect(steps.find((step) => step.id === "workspace")?.label).toBe("Choose your team");
     expect(steps.find((step) => step.id === "workspace")?.href).toBe("/invite");
+    expect(steps.find((step) => step.id === "workspace")?.detail).toMatch(/waitlist/i);
+    expect(dashboardSetupBlurb("no_org")).toBe(
+      "Open the invite sent to your email, or join the waitlist.",
+    );
   });
 
   it("does not put optional AI keys on Home, even for owners", () => {
@@ -81,6 +86,21 @@ describe("dashboard Soft-UI related", () => {
       role: "owner",
     });
     expect(actions.find((action) => action.id === "ai-provider")).toBeUndefined();
+  });
+
+  it("sends a scout to scouting while match results wait on an admin", () => {
+    const actions = dashboardNextActions({ orgId: ORG, shell: "tba", role: "scout" });
+    expect(actions[0]?.label).toBe("Open Scouting");
+    expect(actions[0]?.href).toContain("/competition");
+    expect(actions[0]?.href).not.toContain("/team/data");
+    const steps = dashboardSetupSteps({
+      orgId: ORG,
+      tbaConfigured: false,
+      role: "scout",
+    });
+    expect(steps.find((step) => step.id === "tba")?.href).not.toContain("/team/data");
+    const owner = dashboardNextActions({ orgId: ORG, shell: "tba", role: "owner" });
+    expect(owner[0]?.href).toContain("/team/data");
   });
 
   it("hides AI key next action from non-admin members", () => {

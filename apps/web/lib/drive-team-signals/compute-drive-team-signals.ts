@@ -21,6 +21,8 @@ export type DriveTeamSignalsView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      eventKey: string | null;
+      eventName: string | null;
       sheets: DriveTeamSignalSheet[];
       summary: DriveTeamSignalsSummary;
       computedAt: string;
@@ -35,6 +37,7 @@ type SheetRow = {
   title: string;
   gameYear: number;
   eventKey: string | null;
+  eventName: string | null;
   signals: unknown;
   notes: string | null;
   createdAt: string;
@@ -47,6 +50,7 @@ function mapSheet(row: SheetRow): DriveTeamSignalSheet {
     title: row.title,
     gameYear: row.gameYear,
     eventKey: row.eventKey,
+    eventName: row.eventName ?? null,
     signals: sanitizeSignals(row.signals),
     notes: row.notes,
     createdAt: row.createdAt,
@@ -90,22 +94,33 @@ export async function computeDriveTeamSignalsView(
   }
 
   const sheetResult = await client.query<SheetRow>(
-    `SELECT id, title, game_year AS "gameYear", event_key AS "eventKey", signals, notes,
-            created_at::text AS "createdAt", updated_at::text AS "updatedAt"
-     FROM drive_team_signals_sheets
-     WHERE org_id = $1
-     ORDER BY game_year DESC, created_at DESC
+    `SELECT s.id, s.title, s.game_year AS "gameYear", s.event_key AS "eventKey", e.name AS "eventName",
+            s.signals, s.notes, s.created_at::text AS "createdAt", s.updated_at::text AS "updatedAt"
+     FROM drive_team_signals_sheets s
+     LEFT JOIN events_ref e ON e.event_key = s.event_key
+     WHERE s.org_id = $1
+     ORDER BY s.game_year DESC, s.created_at DESC
      LIMIT 100`,
     [org.orgId],
   );
 
   const sheets = sheetResult.rows.map(mapSheet);
   const summary = summarizeSheets(sheets);
+  const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+     FROM org_active_context c
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     WHERE c.org_id = $1::uuid`,
+    [org.orgId],
+  );
+  const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
 
   return {
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    eventKey: activeEvent.eventKey,
+    eventName: activeEvent.eventName,
     sheets,
     summary,
     computedAt: new Date().toISOString(),

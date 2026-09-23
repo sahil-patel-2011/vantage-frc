@@ -39,6 +39,7 @@ import {
   type OpponentIntel,
 } from "../briefing";
 import type { DriverCycle, DriverSession } from "../driver-practice";
+import { scoutEventLabel } from "../scouting/scouting-related";
 import { composeMatchCopilotCallouts } from "../match-copilot";
 import {
   loadBatteryFleet,
@@ -464,9 +465,12 @@ export async function computeBriefingView(
     ourRows.find((entry) => entry.redScore == null || entry.blueScore == null) ??
     ourRows[0];
   if (!selected) {
+    const eventLabel = scoutEventLabel({ eventName: row.eventName, eventKey: row.eventKey });
     return {
       status: "setup_required",
-      message: "No matches for your team at this event yet — sync TBA first.",
+      message: eventLabel
+        ? `${eventLabel} has no matches for your team yet.`
+        : "No matches for your team at this event yet.",
       context,
     };
   }

@@ -52,7 +52,7 @@ export async function GET(request: Request) {
       if (!row) {
         return buildRankingsView({
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
-          setupMessage: "Choose your team to view event rankings.",
+          setupMessage: "Choose your team to view event rankings, or join the waitlist.",
         });
       }
 

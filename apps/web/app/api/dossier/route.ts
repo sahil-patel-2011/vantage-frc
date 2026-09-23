@@ -41,6 +41,7 @@ export async function GET(request: Request) {
         steps: dossierSetupSteps(null),
         orgId: null,
         teamNumber: null,
+        canSync: false,
         referenceAccess: {
           tbaConfigured: Boolean(process.env.TBA_AUTH_KEY?.trim()),
           platformEnvKey: Boolean(process.env.TBA_AUTH_KEY?.trim()),

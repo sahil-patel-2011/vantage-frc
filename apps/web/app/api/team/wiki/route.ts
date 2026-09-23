@@ -147,6 +147,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "Wiki page not found") return Response.json({ error: message }, { status: 404 });
+    if (message === "You cannot delete this page") return Response.json({ error: message }, { status: 403 });
     return fail(error);
   }
 }

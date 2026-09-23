@@ -154,8 +154,20 @@ describe("attendance Soft-UI helpers", () => {
       selectedEventId: E1,
     });
     expect(ready[0]?.id).toBe("mark-empty");
+    expect(ready[0]?.label).toMatch(/^Mark /);
     expect(ready.some((a) => a.id === "practice")).toBe(true);
     expect(ready.some((a) => a.id === "calendar")).toBe(true);
+
+    const scout = attendanceNextActions({
+      orgId: "org-1",
+      eventCount: 2,
+      emptyRollCount: 1,
+      canManage: false,
+      selectedEventId: E1,
+    });
+    expect(scout[0]?.id).toBe("mark-empty");
+    expect(scout[0]?.label).toBe("Empty rolls wait on an owner or admin");
+    expect(scout[0]?.href).toContain("/team");
 
     expect(attendanceNextActions({ eventCount: 0, emptyRollCount: 0, canManage: false }).map((a) => a.id)).toEqual([
       "workspace",

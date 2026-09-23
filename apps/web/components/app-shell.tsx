@@ -22,6 +22,7 @@ import {
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { commandCatalog, searchCommands } from "../lib/nav/command-search";
+import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { fetchProductSession } from "../lib/nav/product-session";
 import { Icon, type IconName } from "./icon";
@@ -74,6 +75,7 @@ export default function AppShell() {
   const [islandMessage, setIslandMessage] = useState("");
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
+  const [teamsLoaded, setTeamsLoaded] = useState(false);
   const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [pathSearch, setPathSearch] = useState("");
   const [navQuery, setNavQuery] = useState("");
@@ -203,9 +205,10 @@ export default function AppShell() {
   }, [navOpen, navQuery, orgId]);
 
   useEffect(() => {
+    let cancelled = false;
     void fetchProductSession(orgId || null)
       .then((data) => {
-        if (!data) return;
+        if (cancelled || !data) return;
         setMe(data as Me);
         const rows = (Array.isArray(data.memberships) ? data.memberships : []).filter(
           (row): row is MembershipOption => Boolean(row?.orgId),
@@ -217,7 +220,13 @@ export default function AppShell() {
         setUnreadMessages(Number.isFinite(messages) && messages > 0 ? Math.floor(messages) : 0);
         if (!orgId && data.orgId) setOrgId(data.orgId);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setTeamsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [orgId, pathname]);
 
   useEffect(() => {
@@ -344,6 +353,10 @@ export default function AppShell() {
     ];
   }, [me.platformAdmin]);
 
+  const canManageTeam = useMemo(() => {
+    const membershipRole = orgId ? memberships.find((row) => row.orgId === orgId)?.role : undefined;
+    return settingsRoleTier(membershipRole ?? me.role) === "owner-admin";
+  }, [memberships, me.role, orgId]);
   const queryActive = navQuery.trim().length > 0;
   const commandHits = useMemo(
     () =>
@@ -352,9 +365,10 @@ export default function AppShell() {
             limit: 8,
             isAllowed: navHrefAllowed,
             recentHrefs: recentCommands,
+            canManageTeam,
           })
         : [],
-    [navQuery, navHrefAllowed, paletteCatalog, queryActive, recentCommands],
+    [canManageTeam, navQuery, navHrefAllowed, paletteCatalog, queryActive, recentCommands],
   );
 
   const goToCommand = useCallback(
@@ -573,6 +587,7 @@ export default function AppShell() {
         workspaceOpen={workspaceOpen}
         setWorkspaceOpen={setWorkspaceOpen}
         memberships={memberships}
+        teamsLoaded={teamsLoaded}
         orderedMemberships={orderedMemberships}
         switchWorkspaceHref={switchWorkspaceHref}
         onWorkspaceSwitch={onWorkspaceSwitch}

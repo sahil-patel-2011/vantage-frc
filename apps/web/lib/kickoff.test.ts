@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canDeleteKickoffRow,
   kickoffSummary,
   parseKickoffAction,
   pointsPerSecond,
@@ -8,6 +9,18 @@ import {
   type RuleNote,
   type ScoringAction,
 } from "./kickoff";
+
+describe("canDeleteKickoffRow", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteKickoffRow({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteKickoffRow({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteKickoffRow({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteKickoffRow({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteKickoffRow({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteKickoffRow({ role: null, userId: null, authorId: "noah" })).toBe(false);
+    expect(canDeleteKickoffRow({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+  });
+});
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const ID = "22222222-2222-4222-8222-222222222222";

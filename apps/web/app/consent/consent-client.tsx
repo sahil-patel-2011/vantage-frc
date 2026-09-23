@@ -1,14 +1,40 @@
 "use client";
 import { Button, EmptyState } from "../../components/ui";
-import { useCallback, useEffect, useState } from "react";
-import { FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { canDeleteConsentForm, FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
+import { persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./consent.css";
 
-type Form = { id: string; seasonYear: number; name: string; formType: FormType; required: boolean; documentUrl: string | null; notes: string };
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
+
+type Form = {
+  id: string;
+  seasonYear: number;
+  name: string;
+  formType: FormType;
+  required: boolean;
+  documentUrl: string | null;
+  notes: string;
+  createdBy?: string | null;
+};
 type ConsentRecord = { id: string; formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null; byName: string | null };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; forms: Form[]; records: ConsentRecord[]; summary: { requiredForms: number; totalForms: number; peopleTracked: number; fullyComplete: number; outstanding: number; perForm: { formId: string; submitted: number; verified: number }[] } };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; forms: Form[]; records: ConsentRecord[]; summary: { requiredForms: number; totalForms: number; peopleTracked: number; fullyComplete: number; outstanding: number; perForm: { formId: string; submitted: number; verified: number }[] } };
 
 const STATUS_LABEL: Record<RecordStatus, string> = { pending: "Pending", submitted: "Submitted", verified: "Verified" };
 const NEXT_STATUS: Record<RecordStatus, RecordStatus | null> = { pending: "submitted", submitted: "verified", verified: null };
@@ -34,6 +60,7 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
       setErrorStatus(response.status);
       return;
     }
+    if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
     setView(data);
     if (data.status === "ready" && !recordForm.formId && data.forms[0]) {
       setRecordForm((prev) => ({ ...prev, formId: data.forms[0]!.id }));
@@ -111,18 +138,38 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
     );
   }
   if (view.status === "setup_required") {
+    const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
-      <main className="intel-app">
+      <main className="intel-app consent-page">
         <header className="intel-header">
           <div>
             <span className="eyebrow">FORMS</span>
             <h1>Forms &amp; consent</h1>
+            {offerWaitlist ? <p>{withWaitlistLink(view.message)}</p> : null}
           </div>
         </header>
-        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+        <EmptyState
+          badge="Needs setup"
+          badgeTone="setup"
+          soft
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "consent-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="consent-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="consent-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          )}
         </EmptyState>
       </main>
     );
@@ -181,7 +228,15 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
                 <small>{FORM_TYPE_LABEL[f.formType]} · {stat?.submitted ?? 0}/{view.summary.peopleTracked} submitted · {stat?.verified ?? 0} verified{f.documentUrl ? "" : ""}</small>
                 {f.documentUrl && <div><a href={f.documentUrl} target="_blank" rel="noreferrer">Blank form ↗</a></div>}
               </div>
-              {view.context.role !== "viewer" && <Button variant="ghost" type="button" onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>Delete</Button>}
+              {canDeleteConsentForm({
+                role: view.context.role,
+                userId: view.context.userId,
+                authorId: f.createdBy,
+              }) ? (
+                <Button variant="ghost" type="button" aria-label={`Delete form ${f.name}`} onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>
+                  Delete
+                </Button>
+              ) : null}
             </article>
           );
         })}

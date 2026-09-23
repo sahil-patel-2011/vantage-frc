@@ -171,7 +171,7 @@ export function buildScheduleView(input: {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Choose your team to view the match schedule.",
+      message: input.setupMessage ?? "Choose your team to view the match schedule, or join the waitlist.",
     };
   }
   if (!input.context.eventKey) {

@@ -86,11 +86,18 @@
 .inventory-bom li em{font-style:normal;font-size:11px;font-weight:700}
 .inventory-bom li button{color:var(--muted)}
 .inventory-tip{margin:0}
+.inventory-setup{animation:inventory-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes inventory-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.inventory-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.inventory-setup-waitlist,.inventory-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.inventory-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 @media(max-width:900px){
   .inventory-header-actions{justify-content:flex-start}
   .inventory-next-actions li{flex-direction:column;align-items:stretch}
 }
 @media(max-width:760px){
+  .inventory-setup-actions{display:grid;width:100%}
+  .inventory-setup-actions .app-button{width:100%;justify-content:center}
   .inventory-summary{grid-template-columns:1fr 1fr}
   .inventory-item-main{grid-template-columns:1fr auto;grid-template-areas:"id qty" "actions actions"}
   .inventory-item-id{grid-area:id}

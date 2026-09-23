@@ -9,6 +9,18 @@ export type DecisionRecommendation = "adopt" | "iterate" | "reject" | "needs_mor
 
 export type DecisionStatus = "draft" | "finalized";
 
+export function canDeletePrototypeRow(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export type PrototypeTest = {
   id: string;
   seasonYear: number;
@@ -21,6 +33,7 @@ export type PrototypeTest = {
   metricLabel: string | null;
   metricValue: number | null;
   metricTarget: number | null;
+  loggedBy?: string;
   createdAt: string;
 };
 
@@ -41,6 +54,7 @@ export type PrototypeDecision = {
   decisionRecord: string;
   notebookEntry: string;
   status: DecisionStatus;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };

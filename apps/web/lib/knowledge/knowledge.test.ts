@@ -3,6 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import {
   applyKnowledgeTemplate,
   applyKnowledgeWikiAction,
+  canDeleteKnowledgePage,
   knowledgeHitHref,
   parseKnowledgeWikiAction,
   slugifyTitle,
@@ -22,6 +23,18 @@ function mockClient(handler: (sql: string, params: unknown[]) => { rows: unknown
     query: vi.fn((sql: string, params: unknown[] = []) => Promise.resolve(handler(sql, params))),
   } as unknown as PoolClient;
 }
+
+describe("canDeleteKnowledgePage", () => {
+  it("keeps delete with the author or an owner or admin", () => {
+    expect(canDeleteKnowledgePage({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteKnowledgePage({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteKnowledgePage({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteKnowledgePage({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteKnowledgePage({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteKnowledgePage({ role: null, userId: null, authorId: "noah" })).toBe(false);
+    expect(canDeleteKnowledgePage({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+  });
+});
 
 describe("knowledge wiki helpers", () => {
   it("slugifies titles", () => {
@@ -164,11 +177,37 @@ describe("knowledge wiki helpers", () => {
     );
     expect(updateCall?.[1]).toEqual(expect.arrayContaining([ID, ORG]));
 
+    const lookup = (client.query as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
+      String(call[0]).includes("SELECT created_by"),
+    );
+    expect(lookup?.[1]).toEqual([ID, ORG]);
     const deleteCall = (client.query as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
       String(call[0]).includes("DELETE FROM knowledge_pages"),
     );
-    expect(deleteCall?.[1]).toEqual([ID, ORG]);
+    expect(deleteCall).toBeUndefined();
     expect(FOREIGN_ORG).not.toBe(ORG);
+  });
+
+  it("refuses a scout delete of someone else's page", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ role: "scout", orgName: "Team A", teamNumber: 100 }], rowCount: 1 };
+      }
+      if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }], rowCount: 1 };
+      if (sql.includes("SELECT created_by")) {
+        return { rows: [{ createdBy: "ada" }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    await expect(
+      applyKnowledgeWikiAction(client, USER, { action: "delete_page", orgId: ORG, id: ID }),
+    ).rejects.toThrow(/You cannot delete this page/);
+
+    const deleteCall = (client.query as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
+      String(call[0]).includes("DELETE FROM knowledge_pages"),
+    );
+    expect(deleteCall).toBeUndefined();
   });
 
   it("blocks linking to pages outside the caller's org", async () => {

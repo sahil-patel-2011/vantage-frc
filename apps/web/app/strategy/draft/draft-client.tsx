@@ -11,7 +11,9 @@ import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failu
 import {
   DRAFT_RELATED_INCLUDE,
   classifyDraftShell,
+  draftEmptyAction,
   draftNextActions,
+  draftWaitingCopy,
   draftRelatedLinks,
   draftSetupSteps,
   draftShellCopy,
@@ -187,6 +189,8 @@ function DraftShell({
   title,
   primary,
   onRetry,
+  canSync = false,
+  eventName = null,
   children,
 }: {
   orgId?: string | null;
@@ -197,12 +201,16 @@ function DraftShell({
   /** The action that actually resolves the failure, when one exists. */
   primary?: { label: string; href: string };
   onRetry?: () => void;
+  /** False for a scout or viewer — Team Data is owner/admin only. */
+  canSync?: boolean;
+  eventName?: string | null;
   children?: ReactNode;
 }) {
   const actions = draftNextActions({ orgId, shell });
   const copy = draftShellCopy(shell);
+  const description = shell === "empty" ? draftWaitingCopy(eventName) : copy.description;
   const setup = shell === "setup" ? draftSetupSteps(orgId)[0] : null;
-  const teamDataHref = withOrgHref("/team/data", orgId);
+  const emptyAction = draftEmptyAction({ orgId, canEdit: canSync });
 
   return (
     <main className="module-page strategy-draft-page draft-board-workbench soft-gate">
@@ -228,7 +236,7 @@ function DraftShell({
         }
         badgeTone="setup"
         title={title ?? copy.title}
-        description={error ?? copy.description}
+        description={error ?? description}
         aria-busy={shell === "loading"}
       >
         {primary ? (
@@ -247,8 +255,8 @@ function DraftShell({
           </Button>
         ) : null}
         {shell === "empty" && !primary ? (
-          <Button as="a" variant="primary" href={teamDataHref}>
-            Sync Team Data
+          <Button as="a" variant="primary" href={emptyAction.href}>
+            {emptyAction.label}
           </Button>
         ) : null}
       </EmptyState>
@@ -559,6 +567,8 @@ export default function DraftClient() {
         shell={shell}
         title={failure?.title}
         primary={failure?.primary}
+        canSync={data?.canEdit === true}
+        eventName={data && "eventName" in data ? data.eventName : null}
         error={
           failure
             ? failure.description

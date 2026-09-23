@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
+  canDeleteSubsystem,
   MOTORS,
   SUBSYSTEM_CATEGORIES,
   computeFreeSpeedFps,
@@ -15,6 +16,22 @@ import {
   type SubsystemCategory,
 } from "../../lib/subsystems";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./subsystems.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Subsystem = {
   id: string;
@@ -27,11 +44,12 @@ type Subsystem = {
   notes: string;
   byName: string | null;
   freeSpeedFps: number | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; subsystems: Subsystem[] };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; subsystems: Subsystem[] };
 
 const EMPTY = {
   name: "",
@@ -183,6 +201,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistSubsystemsSnapshot(orgHint, seasonHint, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -273,9 +292,10 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page subsystems-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -284,18 +304,40 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
               </>
             }
             title="Subsystem specs"
-            description="Motors, reduction, and wheel size for each mechanism."
+            description={
+              offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Motors, reduction, and wheel size for each mechanism."
+            }
           >
             <SubsystemsRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Subsystem specs" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "subsystems-setup" : undefined}
+          >
+            {offerWaitlist ? (
+              <div className="subsystems-setup-actions">
+                <Button as="a" variant="primary" href="/workspace">
+                  Choose your team
+                </Button>
+                <a className="subsystems-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              </div>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {
@@ -438,11 +480,16 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
                     {s.notes ? ` · ${s.notes}` : ""}
                   </small>
                 </div>
-                {view.context.role !== "viewer" ? (
+                {canDeleteSubsystem({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: s.createdBy,
+                }) ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="danger"
+                    aria-label={`Delete subsystem ${s.name}`}
                     onClick={() => void post({ action: "delete_subsystem", id: s.id }, "Subsystem removed.")}
                   >
                     Delete

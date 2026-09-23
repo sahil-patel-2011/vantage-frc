@@ -190,7 +190,7 @@ const REASONS: Record<string, string> = {
   not_migrated: "This server needs a database update before Microsoft can be connected.",
   microsoft: "Microsoft returned an error. Try again in a few minutes.",
   missing_code: "Microsoft did not return a sign-in code. Start Connect again.",
-  invalid_team: "Choose your team first.",
+  invalid_team: "Choose your team, then connect again.",
   failed: "Connecting failed. Try again.",
 };
 

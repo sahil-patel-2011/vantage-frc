@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
@@ -15,7 +15,7 @@ import {
   type ImpactView,
 } from "../../lib/impact/compute-impact";
 import type { ImpactAudience, ImpactAwardTag, ImpactCategory, ImpactTier } from "../../lib/impact/types";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { draftsToPayload, ParticipantNames, PeoplePanel, WhoHelped, type ParticipantDraft } from "./people";
 import "./impact.css";
@@ -42,6 +42,21 @@ function tierTone(tier: ImpactTier): string {
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
 }
 
 type LiveView = Extract<ImpactView, { status: "live" }>;
@@ -159,6 +174,7 @@ export default function ImpactClient() {
         setSeason(data.seasonYear);
         setFromCache(false);
         setCachedAt(null);
+        if (data.orgId) persistOrgIdInUrl(data.orgId);
         await persistImpactSnapshot(urlOrg, seasonHint, data);
       } catch {
         if (hadCache || viewRef.current) {
@@ -222,6 +238,10 @@ export default function ImpactClient() {
   }, [view, orgId]);
 
   const relatedOrg = orgId ?? (view?.status === "setup_required" ? view.orgId : null) ?? null;
+  const offerWaitlist =
+    view?.status === "setup_required" &&
+    !view.orgId &&
+    view.message.toLowerCase().includes(WAITLIST_PHRASE);
 
   return (
     <main className="module-page impact-page">
@@ -233,7 +253,11 @@ export default function ImpactClient() {
           </>
         }
         title="Community impact"
-        description="Log outreach, STEM demos, and mentoring — the evidence trail for Impact and Engineering Inspiration. Readiness uses only what you record."
+        description={
+          offerWaitlist && view?.status === "setup_required"
+            ? withWaitlistLink(view.message)
+            : "Log outreach, STEM demos, and mentoring — the evidence trail for Impact and Engineering Inspiration. Readiness uses only what you record."
+        }
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           {view?.status === "live" && view.seasons.length > 0 ? (
@@ -308,15 +332,29 @@ export default function ImpactClient() {
       ) : view == null ? (
         <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
-        <>
-          <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
-            {nextActions[0] ? (
-              <Button as="a" variant="primary" href={nextActions[0].href}>
-                {nextActions[0].label}
+        <EmptyState
+          soft
+          badge="Needs setup"
+          badgeTone="setup"
+          title={offerWaitlist ? "Choose your team" : view.message}
+          description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+          className={offerWaitlist ? "impact-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="impact-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
               </Button>
-            ) : null}
-          </EmptyState>
-        </>
+              <a className="impact-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : nextActions[0] ? (
+            <Button as="a" variant="primary" href={nextActions[0].href}>
+              {nextActions[0].label}
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           {view.summary.totalEvents > 0 ? <ImpactNextActions actions={nextActions} /> : null}

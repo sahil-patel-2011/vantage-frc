@@ -6,8 +6,10 @@ import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistan
 import { narrateCodeFindings } from "../../lib/agent-narration/narration";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import {
   bugbotBilledNote,
   enforceBugbotFileCap,
@@ -98,14 +100,20 @@ export function CodeClient({
   const [dismissTarget, setDismissTarget] = useState<BugbotFinding | null>(null);
   const [dismissReason, setDismissReason] = useState("");
   const [showCoverage, setShowCoverage] = useState(false);
+  /** Fail closed until /api/me confirms owner or admin. */
+  const [canConnect, setCanConnect] = useState(false);
 
   const hasSource = Boolean(content.trim());
   const showMeteredBanner = Boolean(orgId) && related === "ai";
-  const relatedLinks = codeCoachRelatedLinks(orgId || null, { include: [...CODE_COACH_RELATED_INCLUDE] });
+  const relatedLinks = codeCoachRelatedLinks(orgId || null, {
+    include: [...CODE_COACH_RELATED_INCLUDE],
+    canConnect,
+  });
   const nextActions = codeCoachNextActions({
     orgId: orgId || null,
     hasSource,
     hasReview: Boolean(review),
+    canConnect,
   });
   const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
   const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
@@ -134,6 +142,26 @@ export function CodeClient({
     [review, path],
   );
   const bugbotNarrations = useMemo(() => narrateCodeFindings(bugbot?.findings ?? []), [bugbot]);
+
+  useEffect(() => {
+    if (!orgId) {
+      setCanConnect(false);
+      return;
+    }
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      if (!session) {
+        setCanConnect(false);
+        return;
+      }
+      const membership = session.memberships?.find((entry) => entry.orgId === orgId);
+      setCanConnect(strategyCanSync(membership?.role ?? session.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
 
   useEffect(() => {
     if (!focusBugbot) return;
@@ -428,7 +456,11 @@ export function CodeClient({
       return;
     }
     if (useRepo && !githubConnected) {
-      setMessage("Connect GitHub in Team admin before scanning a repo.");
+      setMessage(
+        canConnect
+          ? "Connect GitHub in Team admin before scanning a repo."
+          : "An owner or admin connects GitHub before a repo scan. Paste a file to review it without GitHub.",
+      );
       return;
     }
     // A repo pass is one metered call PER PLANNED CHUNK. Running them here (rather
@@ -810,6 +842,7 @@ export function CodeClient({
       budgetsHref={budgetsHref}
       keysHref={keysHref}
       githubHref={githubHref}
+      canConnect={canConnect}
       showMeteredBanner={showMeteredBanner}
       cutoffCode={cutoffCode}
       nextActions={nextActions}

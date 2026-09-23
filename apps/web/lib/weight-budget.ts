@@ -14,6 +14,20 @@ export function stale125WeightLimitCue(limitLbs: number | null | undefined): str
   return STALE_125_WEIGHT_LIMIT_CUE;
 }
 
+/** Owners and admins can remove any logged part. A scout can remove only their own. */
+export function weightComponentCanDelete(
+  role: string | null | undefined,
+  createdBy: string | null | undefined,
+  userId: string | null | undefined,
+): boolean {
+  const normalized = (role ?? "").toLowerCase();
+  if (normalized === "owner" || normalized === "admin") return true;
+  if (normalized !== "scout") return false;
+  const author = createdBy?.trim() ?? "";
+  const actor = userId?.trim() ?? "";
+  return author.length > 0 && author === actor;
+}
+
 export type ComponentInput = { name: string; subsystem: string; weightLbs: number; quantity: number; notes: string };
 
 export function validateComponent(raw: Record<string, unknown>): { ok: true; value: ComponentInput } | { ok: false; error: string } {

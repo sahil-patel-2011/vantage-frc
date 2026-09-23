@@ -104,8 +104,15 @@
   .costs-summary{grid-template-columns:1fr 1fr}
   .costs-breakdown li,.costs-cat-list li{grid-template-columns:1fr}
 }
+.costs-setup{animation:costs-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes costs-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.costs-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.costs-setup-waitlist,.costs-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.costs-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 @media(max-width:560px){
   .costs-summary{grid-template-columns:1fr}
   .costs-next-actions li{flex-direction:column;align-items:stretch}
   .costs-ai-toggle{margin-left:0}
+  .costs-setup-actions{display:grid;width:100%}
+  .costs-setup-actions .app-button{width:100%;justify-content:center}
 }

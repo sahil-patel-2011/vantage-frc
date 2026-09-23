@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { parseAutoRoutineAction, summarizeRoutines, validateRoutine } from "./auto-routines";
+import { canDeleteAutoRoutine, parseAutoRoutineAction, summarizeRoutines, validateRoutine } from "./auto-routines";
+
+describe("canDeleteAutoRoutine", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteAutoRoutine({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteAutoRoutine({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteAutoRoutine({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteAutoRoutine({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("validateRoutine", () => {
   it("requires a name", () => {

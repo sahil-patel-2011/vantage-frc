@@ -1,5 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { alliancePartners, resolveOwnAllianceColor, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
+import { scoutEventLabel } from "../scouting/scouting-related";
+import { strategyCanSync } from "../strategy/strategy-related";
 import { toBriefingMatchCardPayload, type MatchStrategyBriefingPayload } from "./briefing-payload";
 import type { MatchStrategyAlliance, MatchStrategyCard, MatchStrategyRoleAssignment } from "./types";
 
@@ -18,6 +20,7 @@ export type MatchStrategyCardsView =
       steps: MatchStrategySetupStep[];
       orgId: string | null;
       eventKey: string | null;
+      canSync: boolean;
     }
   | {
       status: "live";
@@ -35,14 +38,15 @@ async function resolveOrgContext(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null; eventKey: string | null; eventName: string | null } | null> {
+): Promise<{ orgId: string; teamNumber: number | null; role: string; eventKey: string | null; eventName: string | null } | null> {
   const result = await client.query<{
     orgId: string;
     teamNumber: number | null;
+    role: string;
     eventKey: string | null;
     eventName: string | null;
   }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber",
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role,
             c.active_event_key AS "eventKey", e.name AS "eventName"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
@@ -138,6 +142,7 @@ export async function computeMatchStrategyCardsView(
       steps: baseSteps,
       orgId: null,
       eventKey: null,
+      canSync: false,
     };
   }
 
@@ -148,6 +153,7 @@ export async function computeMatchStrategyCardsView(
       steps: baseSteps,
       orgId: context.orgId,
       eventKey: context.eventKey,
+      canSync: strategyCanSync(context.role),
     };
   }
 
@@ -171,12 +177,18 @@ export async function computeMatchStrategyCardsView(
   );
 
   if (matchResult.rowCount === 0) {
+    const eventLabel = scoutEventLabel({ eventName: context.eventName, eventKey: context.eventKey });
+    const canSync = strategyCanSync(context.role);
+    const named = eventLabel ? `${eventLabel} has no matches for your team yet.` : "No matches for your team at this event yet.";
     return {
       status: "setup_required",
-      message: "No matches found for your team at the active event yet. Sync Team Data so the schedule can fill in.",
+      message: canSync
+        ? `${named} Sync Team Data so the schedule can fill in.`
+        : `${named} An owner or admin syncs the schedule. You can still scout.`,
       steps: baseSteps.map((step) => (step.id === "schedule" ? { ...step, done: false } : step)),
       orgId: context.orgId,
       eventKey: context.eventKey,
+      canSync,
     };
   }
 

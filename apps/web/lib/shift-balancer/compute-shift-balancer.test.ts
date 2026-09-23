@@ -34,7 +34,7 @@ describe("computeShiftBalancerView", () => {
   it("computes a live view with plan summary from mock rows", async () => {
     const now = new Date().toISOString();
     const { client } = makeClient([
-      { rows: [{ orgId: "org-1", teamNumber: 254 }] },
+      { rows: [{ orgId: "org-1", teamNumber: 254, role: "owner" }] },
       {
         rows: [
           { id: "scout-a", name: "Ada", active: true },
@@ -60,7 +60,7 @@ describe("computeShiftBalancerView", () => {
           },
         ],
       },
-      { rows: [{ eventKey: "2026casj" }] },
+      { rows: [{ eventKey: "2026casj", eventName: "San Jose" }] },
       { rows: [{ qualCount: 12 }] },
     ]);
 
@@ -77,7 +77,26 @@ describe("computeShiftBalancerView", () => {
     expect(view.latestSummary?.totalShifts).toBe(4);
     expect(view.latestSummary?.scoutsUsed).toBe(3);
     expect(view.eventKey).toBe("2026casj");
+    expect(view.eventName).toBe("San Jose");
     expect(view.qualMatchCount).toBe(12);
+    expect(view.canPublish).toBe(true);
+  });
+
+  it("keeps schedule publish with owners and admins", async () => {
+    const { client } = makeClient([
+      { rows: [{ orgId: "org-1", teamNumber: 254, role: "scout" }] },
+      { rows: [] },
+      { rows: [] },
+      { rows: [{ eventKey: null, eventName: null }] },
+      { rows: [{ qualCount: 0 }] },
+      { rows: [] },
+    ]);
+
+    const view = await computeShiftBalancerView(client, { userId: "user-1", requestedOrg: "org-1" });
+
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.canPublish).toBe(false);
   });
 });
 

@@ -14,6 +14,8 @@ export function SignInCodeStep({
   emailAvailable,
   invalid,
   expired,
+  showClock,
+  showResend,
   codeSeconds,
   resendReady,
   resendSeconds,
@@ -35,6 +37,8 @@ export function SignInCodeStep({
   emailAvailable: boolean;
   invalid: boolean;
   expired: boolean;
+  showClock: boolean;
+  showResend: boolean;
   codeSeconds: number;
   resendReady: boolean;
   resendSeconds: number;
@@ -67,34 +71,40 @@ export function SignInCodeStep({
         onChange={onCodeChange}
       />
 
-      <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
-        {codeExpiryCopy(expired, codeSeconds)}
-      </p>
+      {showClock ? (
+        <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
+          {codeExpiryCopy(expired, codeSeconds)}
+        </p>
+      ) : null}
 
       <button className="signin-submit" disabled={!submitReady || working}>
         {verifySubmitLabel(busy)}
       </button>
 
-      <div className="signin-footer-modes">
-        <button
-          type="button"
-          className="signin-link"
-          disabled={!resendReady || working || !emailAvailable}
-          onClick={onResend}
-        >
-          {resendLabel({ ready: resendReady, busy, seconds: resendSeconds })}
-        </button>
-        {channel === "email-2fa" ? (
-          <button
-            type="button"
-            className="signin-link"
-            disabled={working}
-            onClick={() => onSwitchAccount(`/signin?next=${encodeURIComponent(resolvedNext)}`)}
-          >
-            Use another account
-          </button>
-        ) : null}
-      </div>
+      {showResend || channel === "email-2fa" ? (
+        <div className="signin-footer-modes">
+          {showResend ? (
+            <button
+              type="button"
+              className="signin-link"
+              disabled={!resendReady || working || !emailAvailable}
+              onClick={onResend}
+            >
+              {resendLabel({ ready: resendReady, busy, seconds: resendSeconds })}
+            </button>
+          ) : null}
+          {channel === "email-2fa" ? (
+            <button
+              type="button"
+              className="signin-link"
+              disabled={working}
+              onClick={() => onSwitchAccount(`/signin?next=${encodeURIComponent(resolvedNext)}`)}
+            >
+              Use another account
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   );
 }

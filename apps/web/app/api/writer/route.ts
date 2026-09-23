@@ -161,17 +161,21 @@ export async function POST(request: Request) {
 
   try {
     const result = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query<{ orgName: string | null; teamNumber: number | null }>(
-        `SELECT o.name AS "orgName", o.team_number AS "teamNumber"
+      const member = await client.query<{ orgName: string | null; teamNumber: number | null; role: string }>(
+        `SELECT o.name AS "orgName", o.team_number AS "teamNumber", m.role::text AS role
          FROM memberships m
          JOIN organizations o ON o.id = m.org_id
-         WHERE m.org_id = $1 AND m.user_id = $2`,
+         WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid`,
         [orgId, userId],
       );
       if (!member.rowCount) throw new Error("forbidden");
+      const role = member.rows[0]?.role ?? "";
 
       switch (action) {
         case "set-profile": {
+          if (role !== "owner" && role !== "admin") {
+            throw new Error("Organization administrator access required");
+          }
           await setProfile(client, {
             orgId,
             userId,
@@ -366,6 +370,10 @@ export async function POST(request: Request) {
 
     return Response.json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/administrator access required/i.test(message)) {
+      return Response.json({ error: message }, { status: 403 });
+    }
     return failMeteredAi(error, "Writing assistant request failed");
   }
 }

@@ -167,7 +167,15 @@
   margin-top: 0;
 }
 
+.awards-setup{animation:awards-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes awards-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.awards-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.awards-setup-waitlist,.awards-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.awards-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+
 @media (max-width: 900px) {
+  .awards-setup-actions{display:grid;width:100%}
+  .awards-setup-actions .app-button{width:100%;justify-content:center}
   .awards-grid {
     grid-template-columns: 1fr;
   }

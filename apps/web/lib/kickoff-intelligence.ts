@@ -620,4 +620,5 @@ export type KickoffIntelligenceRecord = {
   adviceLabel: typeof KICKOFF_ADVICE_LABEL;
   createdAt: string;
   appliedAt: string | null;
+  createdBy?: string;
 };

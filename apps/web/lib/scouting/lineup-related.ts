@@ -2,6 +2,7 @@ import type { CoverageGapStatus, CoverageSlotInput } from "@vantage/scouting/cov
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
+import { scoutEventLabel } from "./scouting-related";
 
 /** Soft-UI related surfaces for Lineup & Coverage (never DEMO %). */
 export const LINEUP_RELATED_LINKS = [
@@ -321,6 +322,19 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
   }
 }
 
+/** Empty-board sentence. Owners sync; scouts are sent to Scouting. */
+export function lineupEmptyDescription(input: {
+  eventName?: string | null;
+  eventKey?: string | null;
+  canAssign: boolean;
+}): string {
+  const named = scoutEventLabel({ eventName: input.eventName, eventKey: input.eventKey });
+  const lead = named ? `${named} has no match schedule yet.` : "No match schedule is synced yet.";
+  return input.canAssign
+    ? `${lead} Sync Team Data so the schedule can fill in.`
+    : `${lead} An owner or admin syncs the schedule. You can still scout.`;
+}
+
 /**
  * Soft-UI next actions for Lineup empty/setup shells.
  * Points at Scouting / Strategy / Form builder — never invents DEMO %.
@@ -331,6 +345,8 @@ export function lineupNextActions(input: {
   totalSlots?: number;
   unscouted?: number;
   gapCount?: number;
+  /** Owner/admin may sync the schedule. Scouts get Scouting instead of Team Data. */
+  canAssign?: boolean;
 }): LineupNextAction[] {
   const orgId = input.orgId ?? null;
   const unscouted = input.unscouted ?? 0;
@@ -372,20 +388,33 @@ export function lineupNextActions(input: {
   }
 
   if (input.shell === "empty" || totalSlots === 0) {
+    const scoutPrimary = input.canAssign === false;
     return [
-      {
-        id: "command",
-        label: "Sync event schedule",
-        detail: "Match slots stay blank until the schedule publishes and syncs.",
-        href: hubHref("/competition", "command", orgId),
-        primary: true,
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Start assignments once the schedule lands — rates stay blank until then.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
+      scoutPrimary
+        ? {
+            id: "scouting",
+            label: "Open Scouting",
+            detail: "Match slots stay blank until an owner or admin syncs the schedule. You can still scout.",
+            href: hubHref("/competition", "scouting", orgId),
+            primary: true,
+          }
+        : {
+            id: "team-data",
+            label: "Sync Team Data",
+            detail: "Match slots stay blank until the schedule publishes and syncs.",
+            href: withOrgHref("/team/data", orgId),
+            primary: true,
+          },
+      ...(scoutPrimary
+        ? []
+        : [
+            {
+              id: "scouting",
+              label: "Open Scouting",
+              detail: "Start assignments once the schedule lands — rates stay blank until then.",
+              href: hubHref("/competition", "scouting", orgId),
+            },
+          ]),
       {
         id: "forms",
         label: "Open Form builder",

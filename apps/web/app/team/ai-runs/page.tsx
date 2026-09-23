@@ -17,7 +17,7 @@ export default async function TeamAiRunsPage({
         <PageHeader
           breadcrumbs="Team / Ask AI history"
           title="Ask AI history"
-          description="Ask AI history is recorded for one team — choose your team first."
+          description="Ask AI history is recorded for one team. Choose your team to open it."
         />
         <EmptyState
           soft

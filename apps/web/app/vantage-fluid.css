@@ -224,3 +224,22 @@ textarea {
     border-color var(--dur-tint) var(--ease-out),
     box-shadow var(--dur-tint) var(--ease-out);
 }
+
+/* First screens a person sees: sign-in, onboarding, and home. A few pixels
+   of rise, then still. Duration is 0ms when motion is reduced, so the
+   keyframes finish on the resting state and nothing is left translated. */
+@keyframes page-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.signin-page,
+.onboarding-flow-page,
+.dash-home {
+  animation: page-arrive var(--dur-move) var(--ease-settle) both;
+}
+
+.signin-card,
+.onboarding-flow-card {
+  animation: page-arrive var(--dur-page) var(--ease-settle) both;
+}

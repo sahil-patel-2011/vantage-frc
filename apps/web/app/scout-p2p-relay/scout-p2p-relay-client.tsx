@@ -8,6 +8,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { relayDeviceRoleLabel, relaySessionStatusLabel } from "../../lib/scout-p2p-relay";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { ScoutP2pRelayView } from "../../lib/scout-p2p-relay/compute-scout-p2p-relay";
 import type { RelayDeviceRole } from "../../lib/scout-p2p-relay/types";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -343,7 +344,12 @@ export default function ScoutP2pRelayClient() {
       <PitMeshNextActions />
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
-        <StartSessionForm busy={busy} mutate={mutate} />
+        <StartSessionForm
+          busy={busy}
+          mutate={mutate}
+          eventKey={view.eventKey}
+          eventName={view.eventName}
+        />
         <Sessions view={view} busy={busy} mutate={mutate} />
       </div>
     </main>
@@ -402,7 +408,7 @@ function Sessions({
             <li key={sess.id} className="app-card soft-panel" style={{ display: "grid", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
                 <div>
-                  <strong>{sess.eventKey}</strong>
+                  <strong>{scoutEventLabel(sess) ?? "Your event"}</strong>
                   <small className="app-muted" style={{ display: "block" }}>
                     {relaySessionStatusLabel(sess.status)} · Captain: {sess.captainDeviceLabel}
                   </small>
@@ -422,7 +428,7 @@ function Sessions({
                     className="text-button"
                     disabled={busy}
                     onClick={() => {
-                      if (window.confirm(`Delete relay session "${sess.eventKey}"?`)) {
+                      if (window.confirm(`Delete relay session "${scoutEventLabel(sess) ?? "Your event"}"?`)) {
                         mutate({ action: "delete-session", sessionId: sess.id });
                       }
                     }}
@@ -461,14 +467,20 @@ function Sessions({
 function StartSessionForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
+  const lockedEvent = eventKey?.trim() ?? "";
   const empty = useMemo(() => ({ eventKey: "", captainDeviceLabel: "" }), []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -476,23 +488,33 @@ function StartSessionForm({
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.eventKey.trim() || !form.captainDeviceLabel.trim()) return;
-        mutate({ action: "start-session", eventKey: form.eventKey, captainDeviceLabel: form.captainDeviceLabel });
+        if (!submittedEvent || !form.captainDeviceLabel.trim()) return;
+        mutate({ action: "start-session", eventKey: submittedEvent, captainDeviceLabel: form.captainDeviceLabel });
         setForm(empty);
       }}
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Start relay session</h2>
       <FormGrid min={160}>
-        <FormRow label="Event key">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026test" required />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026test" required />
+          </FormRow>
+        )}
         <FormRow label="Captain device">
           <input value={form.captainDeviceLabel} onChange={set("captainDeviceLabel")} placeholder="Captain iPad" required />
         </FormRow>
       </FormGrid>
       <div>
-        <Button variant="primary" type="submit" disabled={busy || !form.eventKey.trim() || !form.captainDeviceLabel.trim()}>
+        <Button variant="primary" type="submit" disabled={busy || !submittedEvent || !form.captainDeviceLabel.trim()}>
           Start session
         </Button>
       </div>

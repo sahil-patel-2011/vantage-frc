@@ -101,6 +101,7 @@ type EntryRow = {
 type MetricsRow = {
   teamKey: string;
   eventKey: string;
+  eventName: string | null;
   epaTotal: number | null;
   epaAuto: number | null;
   epaTeleop: number | null;
@@ -174,12 +175,14 @@ export async function computeOpponentWatchlistView(
 
   const [metricsResult, matchResult, snapshotResult] = await Promise.all([
     client.query<MetricsRow>(
-      `SELECT DISTINCT ON (team_key) team_key AS "teamKey", event_key AS "eventKey",
-              epa_total AS "epaTotal", epa_auto AS "epaAuto", epa_teleop AS "epaTeleop",
-              epa_endgame AS "epaEndgame", rank
-       FROM team_event_metrics
-       WHERE team_key = ANY($1::text[])
-       ORDER BY team_key, synced_at DESC`,
+      `SELECT DISTINCT ON (m.team_key) m.team_key AS "teamKey", m.event_key AS "eventKey",
+              e.name AS "eventName",
+              m.epa_total AS "epaTotal", m.epa_auto AS "epaAuto", m.epa_teleop AS "epaTeleop",
+              m.epa_endgame AS "epaEndgame", m.rank
+       FROM team_event_metrics m
+       LEFT JOIN events_ref e ON e.event_key = m.event_key
+       WHERE m.team_key = ANY($1::text[])
+       ORDER BY m.team_key, m.synced_at DESC`,
       [teamKeys],
     ),
     client.query<MatchRow>(
@@ -287,6 +290,7 @@ export async function computeOpponentWatchlistView(
       current: metrics
         ? {
             eventKey: metrics.eventKey,
+            eventName: metrics.eventName,
             epaTotal: currentEpa,
             epaAuto: metrics.epaAuto != null ? Number(metrics.epaAuto) : null,
             epaTeleop: metrics.epaTeleop != null ? Number(metrics.epaTeleop) : null,

@@ -59,24 +59,39 @@ describe("context-aware match fields", () => {
     expect(next[1]?.config?.visibleWhen).toBeUndefined();
   });
 
-  it("infers REBUILT field keys and prepends match phase when missing", () => {
+  it("keeps a summary form complete when the author did not add a phase", () => {
     expect(inferPhaseFromKey("auto_fuel")).toBe("auto");
     expect(inferPhaseFromKey("teleop_fuel")).toBe("teleop");
     expect(inferPhaseFromKey("tower_level")).toBe("endgame");
     expect(inferPhaseFromKey("fuel_passed")).toBeNull();
     const rebuilt = withInferredPhaseRules([
-      { key: "auto_fuel" },
-      { key: "teleop_fuel" },
+      { key: "auto_fuel", required: true },
+      { key: "teleop_fuel", required: true },
       { key: "tower_level" },
       { key: "notes" },
     ]);
-    expect(rebuilt[0]?.key).toBe("gamePhase");
-    expect(visibleFields(rebuilt, {}).map((field) => field.key)).toEqual(["gamePhase", "auto_fuel", "notes"]);
-    expect(visibleFields(rebuilt, { gamePhase: "teleop" }).map((field) => field.key)).toEqual([
+    expect(rebuilt.map((field) => field.key)).toEqual(["auto_fuel", "teleop_fuel", "tower_level", "notes"]);
+    expect(visibleFields(rebuilt, {}).map((field) => field.key)).toEqual([
+      "auto_fuel",
+      "teleop_fuel",
+      "tower_level",
+      "notes",
+    ]);
+    expect(ensureGamePhaseField([{ key: "gamePhase" }, { key: "notes" }])).toHaveLength(2);
+  });
+
+  it("gates fields when the author already asked for a match phase", () => {
+    const live = withInferredPhaseRules([
+      { key: "gamePhase" },
+      { key: "auto_fuel" },
+      { key: "teleop_fuel" },
+      { key: "notes" },
+    ]);
+    expect(visibleFields(live, {}).map((field) => field.key)).toEqual(["gamePhase", "auto_fuel", "notes"]);
+    expect(visibleFields(live, { gamePhase: "teleop" }).map((field) => field.key)).toEqual([
       "gamePhase",
       "teleop_fuel",
       "notes",
     ]);
-    expect(ensureGamePhaseField([{ key: "gamePhase" }, { key: "notes" }])).toHaveLength(2);
   });
 });

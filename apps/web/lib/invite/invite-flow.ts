@@ -182,12 +182,12 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
   if (kind === "missing_token") {
     return {
       kind,
-      eyebrow: "INVITE LINK INCOMPLETE",
-      title: "This invitation link is incomplete",
+      eyebrow: "NO INVITE OPEN",
+      title: "No invite is open",
       description:
         detail?.trim() ||
-        "Open the full link from your invite email or the copy your captain shared. People without an invite go to the waitlist.",
-      badge: "Link missing",
+        "Open the full link from the email your captain sent. If you were not invited, join the waitlist.",
+      badge: "No invite",
     };
   }
   if (kind === "auth_required") {
@@ -327,10 +327,10 @@ export function inviteNextActions(input: {
   if (input.kind === "missing_token") {
     return [
       {
-        id: "signin",
-        label: "Open invite from email",
-        detail: "Use the full link in the invitation. Partial URLs cannot be accepted.",
-        href: "/signin",
+        id: "waitlist",
+        label: "Join the waitlist",
+        detail: "Use this when no invite was sent to your email.",
+        href: "/#waitlist",
         primary: true,
       },
     ];

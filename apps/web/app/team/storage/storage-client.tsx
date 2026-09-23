@@ -56,14 +56,14 @@ async function persistStorageSnapshot(orgId: string, data: StorageNodeViewData):
   }
 }
 
-function SetupInstructions() {
+function SetupInstructions({ canPair }: { canPair: boolean }) {
   return (
     <Panel className="stn-panel">
       <h2>Run a storage computer</h2>
       <p className="app-muted stn-note">
-        On the computer that will keep large files, run the storage app. It prints an 8-character code — enter
-        it below. On your shop or pit network it serves files directly. To reach it from anywhere, save a public
-        URL on the card for that computer. Without one, files stay on that network only.
+        {canPair
+          ? "On the computer that will keep large files, run the storage app. It prints an 8-character code — enter it below. On your shop or pit network it serves files directly. To reach it from anywhere, save a public URL on the card for that computer. Without one, files stay on that network only."
+          : "On the computer that will keep large files, an owner or admin runs the storage app and enters the code it prints. On your shop or pit network it serves files directly. Without a public URL, files stay on that network only."}
       </p>
     </Panel>
   );
@@ -438,48 +438,56 @@ export default function StorageNodesClient() {
           </ul>
         </Panel>
       ) : (
-        <SetupInstructions />
+        <SetupInstructions canPair={view.canPair} />
       )}
 
-      <Panel className="stn-panel">
-        <h2>Pair a node</h2>
-        <p className="app-muted stn-note">
-          Run the storage app on that computer. It prints an 8-character code — paste it here. Owners and admins
-          can approve pairings.
-        </p>
-        <form
-          className="stn-inline-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void approvePairing();
-          }}
-        >
-          <label>
-            Pairing code
-            <input
-              value={pairCode}
-              onChange={(event) => setPairCode(event.target.value)}
-              placeholder="ABCD-EFGH"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
-          <label>
-            Node name (optional)
-            <input
-              value={pairName}
-              onChange={(event) => setPairName(event.target.value)}
-              placeholder="pi-shop"
-              maxLength={100}
-            />
-          </label>
-          <Button type="submit" disabled={busy || !pairCode.trim()}>
-            Approve pairing
-          </Button>
-        </form>
-      </Panel>
+      {view.canPair ? (
+        <Panel className="stn-panel">
+          <h2>Pair a node</h2>
+          <p className="app-muted stn-note">
+            Run the storage app on that computer. It prints an 8-character code — paste it here.
+          </p>
+          <form
+            className="stn-inline-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void approvePairing();
+            }}
+          >
+            <label>
+              Pairing code
+              <input
+                value={pairCode}
+                onChange={(event) => setPairCode(event.target.value)}
+                placeholder="ABCD-EFGH"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+            <label>
+              Node name (optional)
+              <input
+                value={pairName}
+                onChange={(event) => setPairName(event.target.value)}
+                placeholder="pi-shop"
+                maxLength={100}
+              />
+            </label>
+            <Button type="submit" disabled={busy || !pairCode.trim()}>
+              Approve pairing
+            </Button>
+          </form>
+        </Panel>
+      ) : (
+        <Panel className="stn-panel">
+          <h2>Pair a node</h2>
+          <p className="app-muted stn-note">
+            An owner or admin approves the code the storage computer prints. Paired computers still show up here.
+          </p>
+        </Panel>
+      )}
 
-      {view.nodes.length > 0 ? <SetupInstructions /> : null}
+      {view.nodes.length > 0 ? <SetupInstructions canPair={view.canPair} /> : null}
 
       {view.recentItems.length > 0 ? (
         <Panel className="stn-panel">

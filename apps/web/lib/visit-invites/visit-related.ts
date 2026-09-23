@@ -100,7 +100,7 @@ export function visitNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick the team you are on, and the visits you invited people to show up here.",
+        detail: "Choose your team, and the visits you invited people to show up here.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -325,7 +325,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before logging shop tours or demo days.",
+          "Choose your team to plan shop tours and demo days, or join the waitlist.",
       };
     case "empty":
       return {

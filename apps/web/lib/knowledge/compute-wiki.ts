@@ -1,14 +1,15 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { canEditDocs } from "../capabilities/org-capabilities";
 import { knowledgeHitHref, snippetFrom } from "./helpers";
-import type {
-  KnowledgeLink,
-  KnowledgePageDetail,
-  KnowledgePageSummary,
-  KnowledgeSearchHit,
-  KnowledgeTemplateKind,
-  KnowledgeWikiAction,
-  KnowledgeWikiView,
+import {
+  canDeleteKnowledgePage,
+  type KnowledgeLink,
+  type KnowledgePageDetail,
+  type KnowledgePageSummary,
+  type KnowledgeSearchHit,
+  type KnowledgeTemplateKind,
+  type KnowledgeWikiAction,
+  type KnowledgeWikiView,
 } from "./types";
 
 type MemberRow = {
@@ -91,6 +92,7 @@ export async function getKnowledgePage(
     pinned: boolean;
     updatedAt: string;
     createdAt: string;
+    createdBy: string | null;
     createdByName: string | null;
     updatedByName: string | null;
     linkCount: string;
@@ -98,6 +100,7 @@ export async function getKnowledgePage(
     `SELECT p.id, p.slug, p.title, p.body, p.template_kind AS "templateKind",
             p.season_year AS "seasonYear", p.tags, p.pinned,
             p.updated_at AS "updatedAt", p.created_at AS "createdAt",
+            p.created_by AS "createdBy",
             cu.name AS "createdByName", uu.name AS "updatedByName",
             (SELECT count(*)::int FROM knowledge_links l WHERE l.page_id = p.id AND l.org_id = p.org_id) AS "linkCount"
      FROM knowledge_pages p
@@ -149,6 +152,7 @@ export async function getKnowledgePage(
     ...mapPage(row),
     body: row.body,
     createdAt: row.createdAt,
+    createdBy: row.createdBy ?? undefined,
     createdByName: row.createdByName,
     updatedByName: row.updatedByName,
     links: mappedLinks,
@@ -345,6 +349,7 @@ export async function loadKnowledgeWikiView(
       orgName: member.orgName,
       teamNumber: member.teamNumber,
       role: member.role,
+      userId: input.userId,
       // Editing is a granted role since 0621: owners and admins implicitly,
       // everyone else only with an `edit_docs` capability the team OWNER issued
       // (/doc-roles). Reading stays open to the whole team.
@@ -374,7 +379,7 @@ export async function applyKnowledgeWikiAction(
   userId: string,
   action: KnowledgeWikiAction,
 ): Promise<void> {
-  await requireMember(client, action.orgId, userId);
+  const member = await requireMember(client, action.orgId, userId);
 
   // RLS refuses these writes anyway (knowledge_pages_editor_* in 0621); this
   // turns "new row violates row-level security policy" into a sentence.
@@ -442,11 +447,20 @@ export async function applyKnowledgeWikiAction(
   }
 
   if (action.action === "delete_page") {
+    const existing = await client.query<{ createdBy: string }>(
+      `SELECT created_by AS "createdBy" FROM knowledge_pages WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [action.id, action.orgId],
+    );
+    const createdBy = existing.rows[0]?.createdBy;
+    if (!createdBy) throw new Error("Wiki page not found");
+    if (!canDeleteKnowledgePage({ role: member.role, userId, authorId: createdBy })) {
+      throw new Error("You cannot delete this page");
+    }
     const deleted = await client.query(
       `DELETE FROM knowledge_pages WHERE id = $1::uuid AND org_id = $2::uuid`,
       [action.id, action.orgId],
     );
-    if (!deleted.rowCount) throw new Error("Wiki page not found");
+    if (!deleted.rowCount) throw new Error("You cannot delete this page");
     return;
   }
 

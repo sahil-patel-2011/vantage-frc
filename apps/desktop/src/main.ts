@@ -32,7 +32,7 @@ import {
   serializeWindowState,
   type WindowState,
 } from "./window-state";
-import { NET_ERR, offlineReasonFromLoadError } from "./shell-copy";
+import { NET_ERR, offlineReasonFromLoadError, shellWaitlistUrl } from "./shell-copy";
 import { UpdateService, type UpdateStatus } from "./update-service";
 
 const PARTITION = "persist:vantage";
@@ -262,6 +262,10 @@ function installLinkIpc() {
     if (!senderIsShellPage(event)) return;
     void shell.openExternal(startOrigin).catch(() => undefined);
   });
+  ipcMain.handle("desktop-link:open-waitlist", (event) => {
+    if (!senderIsShellPage(event)) return;
+    void shell.openExternal(shellWaitlistUrl(startOrigin)).catch(() => undefined);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -326,7 +330,7 @@ async function readWindowState(): Promise<WindowState> {
   } catch {
     raw = undefined;
   }
-  const displays = screen.getAllDisplays().map((display) => display.bounds);
+  const displays = screen.getAllDisplays().map((display) => display.workArea);
   return parseWindowState(raw, displays);
 }
 

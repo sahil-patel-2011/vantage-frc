@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canDeleteWhiteboardPlay,
   defaultRobots,
   FIELD_H,
   FIELD_W,
@@ -11,6 +12,15 @@ import {
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const ID = "22222222-2222-4222-8222-222222222222";
+
+describe("canDeleteWhiteboardPlay", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteWhiteboardPlay({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteWhiteboardPlay({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteWhiteboardPlay({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteWhiteboardPlay({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("simplifyStroke", () => {
   it("keeps endpoints and drops sub-epsilon jitter", () => {

@@ -30,7 +30,7 @@ Kickoff, CAD, Code, Robot. Bugbot is a Code tab; FMEA, batteries, and inspection
 Chat, Writer, Agent, Controls, Notes. API keys, memory, and usage live under Controls.
 
 ## Island navigation
-Default Soft-UI island apps: Home, Compete, Team, Business (customizable to four apps). Drawer pillars: Competition, Team, Logistics, Business, Build, AI.
+Default island apps: Home, Matches, Scout, and Stats (customizable to four apps). Drawer pillars: Competition, Team, Logistics, Business, Build. Ask AI is a control, not a pillar.
 
 ## Data and honesty rules
 - Reference caches: The Blue Alliance and Statbotics with freshness stamps (setup may be required).

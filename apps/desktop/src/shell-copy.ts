@@ -83,6 +83,18 @@ export function offlineCopy(reason: OfflineReason): OfflineCopy {
   return { ...copy, retry: OFFLINE_RETRY, hint: OFFLINE_HINT };
 }
 
+/**
+ * The sign-in window opens this in the system browser. The path and query of
+ * the app origin are dropped so a deep link cannot ride along.
+ */
+export function shellWaitlistUrl(origin: string): string {
+  const url = new URL(origin);
+  url.pathname = "/";
+  url.search = "";
+  url.hash = "waitlist";
+  return url.href;
+}
+
 export const GATE_UNSUPPORTED_TITLE = "Update needed";
 export const GATE_UNSUPPORTED_BODY =
   "This copy of Vantage is too old to sign in. Download a new copy and replace this app.";

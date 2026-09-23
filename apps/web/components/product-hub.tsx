@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HelpTip } from "./help-tip";
-import { HubTabForbidden } from "./hub-access-gate";
+import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "./ui";
 import { sectionHelpFor } from "../lib/help/section-help";
@@ -16,12 +16,15 @@ import {
   hubLegacyHref,
   hubPrimaryTabs,
   hubStripTabs,
+  hubTabsForMember,
   hubWorkbenchId,
   isHubTab,
   type ProductHubDef,
 } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { fetchProductSession } from "../lib/nav/product-session";
 import { fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../lib/nav/resolve-org";
+import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { useClientAccessProfile } from "../lib/nav/use-client-access";
 
 type ProductHubShellProps = {
@@ -148,14 +151,19 @@ export function ProductHubShell({
   const [tab, setTab] = useState(hub.defaultTab);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgReady, setOrgReady] = useState(false);
+  const [canManageTeam, setCanManageTeam] = useState(false);
+  const [manageReady, setManageReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
   /** Tools inside the open workbench — the workbench root itself is the tab above. */
   const toolTabs = useMemo(() => {
     const inner = hubStripTabs(hub, workbenchId, tab).filter((entry) => entry.group === workbenchId);
-    if (!inner.length) return [];
-    if (primaryTabs.some((entry) => entry.id === workbenchId)) return inner;
-    return filterTabsByHubAccess(inner, access.hubAccess, accessHubId);
-  }, [access.hubAccess, accessHubId, hub, primaryTabs, tab, workbenchId]);
+    const strip = !inner.length
+      ? []
+      : primaryTabs.some((entry) => entry.id === workbenchId)
+        ? inner
+        : filterTabsByHubAccess(inner, access.hubAccess, accessHubId);
+    return hubTabsForMember(strip, canManageTeam);
+  }, [access.hubAccess, accessHubId, canManageTeam, hub, primaryTabs, tab, workbenchId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +187,31 @@ export function ProductHubShell({
       cancelled = true;
     };
   }, [hub]);
+
+  useEffect(() => {
+    if (!orgReady) return;
+    let cancelled = false;
+    setManageReady(false);
+    setCanManageTeam(false);
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const activeOrg = orgId ?? session?.orgId ?? null;
+      const membershipRole = session?.memberships?.find((row) => row.orgId === activeOrg)?.role;
+      setCanManageTeam(settingsRoleTier(membershipRole ?? session?.role) === "owner-admin");
+      setManageReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, orgReady]);
+
+  useEffect(() => {
+    if (!manageReady || canManageTeam || tab !== "team-admin") return;
+    const fallback = primaryTabs[0]?.id ?? hub.defaultTab;
+    if (fallback === tab) return;
+    setTab(fallback);
+    writeTabToUrl(fallback, hub.defaultTab);
+  }, [canManageTeam, hub, manageReady, primaryTabs, tab]);
 
   useEffect(() => {
     if (!access.ready || hubDenied || !primaryTabs.length) return;
@@ -213,7 +246,7 @@ export function ProductHubShell({
           badge="Access limited"
           badgeTone="setup"
           title={`${hub.label} is not available`}
-          description="Your access to this section is limited. Ask an owner to update it under Security."
+          description={HUB_SECTION_DENIED_COPY}
         >
           <Button as="a" variant="primary" href="/dashboard">
             Home
@@ -326,13 +359,16 @@ export function HubOrgGate({
         badge="Needs setup"
         badgeTone="setup"
         title="Choose your team"
-        description={`Choose your team to open ${label}.`}
+        description={`Choose your team to open ${label}, or join the waitlist.`}
         className="product-hub-setup"
       >
         <div className="product-hub-setup-actions">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
+          <a className="product-hub-setup-waitlist" href="/#waitlist">
+            Join the waitlist
+          </a>
         </div>
       </EmptyState>
     );

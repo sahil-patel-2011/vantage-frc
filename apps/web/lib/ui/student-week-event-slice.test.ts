@@ -30,12 +30,13 @@ const THIS_SLICE = [
 ] as const;
 
 describe("student-week Event day / Hours / Pick desk slice", () => {
-  it("Event Day related strip is packing, match checklist, tool checkout, inspection", () => {
+  it("Event Day related strip is packing, match checklist, tool checkout, inspection, save for offline", () => {
     expect([...EVENT_DAY_RELATED_INCLUDE]).toEqual([
       "packing",
       "match-checklist",
       "tool-checkout",
       "inspection",
+      "offline",
     ]);
     const links = eventDayRelatedLinks("org-1", { include: [...EVENT_DAY_RELATED_INCLUDE] });
     expect(links.map((link) => link.id)).toEqual([
@@ -43,6 +44,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
       "match-checklist",
       "tool-checkout",
       "inspection",
+      "offline",
     ]);
     expect(eventDayShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(eventDayShellCopy("setup").description);

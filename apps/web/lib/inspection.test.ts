@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   groupByCategory,
   INSPECTION_TEMPLATE,
+  canDeleteAuthoredRow,
   inspectionProgress,
   parseInspectionAction,
   weightStatus,
@@ -40,6 +41,17 @@ function weight(overrides: Partial<RobotWeight>): RobotWeight {
     ...overrides,
   };
 }
+
+describe("canDeleteAuthoredRow", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteAuthoredRow({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteAuthoredRow({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteAuthoredRow({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteAuthoredRow({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteAuthoredRow({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+    expect(canDeleteAuthoredRow({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("INSPECTION_TEMPLATE", () => {
   it("covers the core FRC inspection areas with unique requirements", () => {

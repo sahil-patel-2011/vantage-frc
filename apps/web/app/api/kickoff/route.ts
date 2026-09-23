@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  canDeleteKickoffRow,
   parseKickoffAction,
   type DesignPriority,
   type DesignPriorityPatch,
@@ -33,6 +34,47 @@ async function requireSession() {
 async function requireMembership(client: PoolClient, orgId: string, userId: string) {
   const row = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`, [orgId, userId]);
   if (!row.rowCount) throw new HttpError(403, "Organization membership required");
+}
+
+type KickoffDeleteTable = "game_scoring_actions" | "design_priorities" | "kickoff_rule_notes";
+
+async function assertKickoffAuthorDelete(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    id: string;
+    table: KickoffDeleteTable;
+    missing: string;
+    denied: string;
+  },
+) {
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const sql = kickoffAuthorSql(input.table);
+  const existing = await client.query<{ createdBy: string }>(sql, [input.id, input.orgId]);
+  const createdBy = existing.rows[0]?.createdBy;
+  if (!createdBy) throw new HttpError(404, input.missing);
+  if (!canDeleteKickoffRow({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+    throw new HttpError(403, input.denied);
+  }
+}
+
+function kickoffAuthorSql(table: KickoffDeleteTable): string {
+  switch (table) {
+    case "game_scoring_actions":
+      return `SELECT created_by AS "createdBy" FROM game_scoring_actions WHERE id = $1 AND org_id = $2`;
+    case "design_priorities":
+      return `SELECT created_by AS "createdBy" FROM design_priorities WHERE id = $1 AND org_id = $2`;
+    case "kickoff_rule_notes":
+      return `SELECT created_by AS "createdBy" FROM kickoff_rule_notes WHERE id = $1 AND org_id = $2`;
+    default: {
+      const unreachable: never = table;
+      return unreachable;
+    }
+  }
 }
 
 function fail(error: unknown) {
@@ -89,7 +131,8 @@ export async function GET(request: Request) {
       const [actions, priorities, ruleNotes, nextSeasonSignals] = await Promise.all([
         client.query<ScoringAction>(
           `SELECT a.id, a.season_year AS "seasonYear", a.label, a.phase, a.points::float8 AS points,
-                  a.est_seconds::float8 AS "estSeconds", a.notes, a.sort_order AS "sortOrder"
+                  a.est_seconds::float8 AS "estSeconds", a.notes, a.sort_order AS "sortOrder",
+                  a.created_by AS "createdBy"
            FROM game_scoring_actions a
            WHERE a.org_id = $1
            ORDER BY a.season_year DESC, a.sort_order, a.created_at
@@ -98,7 +141,7 @@ export async function GET(request: Request) {
         ),
         client.query<DesignPriority>(
           `SELECT p.id, p.season_year AS "seasonYear", p.capability, p.rationale, p.weight, p.status,
-                  p.linked_action_id AS "linkedActionId"
+                  p.linked_action_id AS "linkedActionId", p.created_by AS "createdBy"
            FROM design_priorities p
            WHERE p.org_id = $1
            ORDER BY p.season_year DESC, p.weight DESC, p.created_at
@@ -106,7 +149,8 @@ export async function GET(request: Request) {
           [row.orgId],
         ),
         client.query<RuleNote>(
-          `SELECT n.id, n.season_year AS "seasonYear", n.question, n.answer, n.rule_ref AS "ruleRef", n.status
+          `SELECT n.id, n.season_year AS "seasonYear", n.question, n.answer, n.rule_ref AS "ruleRef", n.status,
+                  n.created_by AS "createdBy"
            FROM kickoff_rule_notes n
            WHERE n.org_id = $1
            ORDER BY n.season_year DESC, n.created_at DESC
@@ -141,6 +185,7 @@ export async function GET(request: Request) {
           orgName: row.orgName,
           teamNumber: row.teamNumber,
           role: row.role,
+          userId: session.user.id,
           defaultSeasonYear,
         },
         actions: actions.rows,
@@ -202,11 +247,19 @@ export async function POST(request: Request) {
         }
 
         case "delete_action": {
+          await assertKickoffAuthorDelete(client, {
+            orgId: action.orgId,
+            userId,
+            id: action.id,
+            table: "game_scoring_actions",
+            missing: "Scoring action not found",
+            denied: "You cannot delete this scoring action",
+          });
           const deleted = await client.query(`DELETE FROM game_scoring_actions WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,
           ]);
-          if (!deleted.rowCount) throw new HttpError(404, "Scoring action not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this scoring action");
           return { ok: true };
         }
 
@@ -231,11 +284,19 @@ export async function POST(request: Request) {
         }
 
         case "delete_priority": {
+          await assertKickoffAuthorDelete(client, {
+            orgId: action.orgId,
+            userId,
+            id: action.id,
+            table: "design_priorities",
+            missing: "Design priority not found",
+            denied: "You cannot delete this design priority",
+          });
           const deleted = await client.query(`DELETE FROM design_priorities WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,
           ]);
-          if (!deleted.rowCount) throw new HttpError(404, "Design priority not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this design priority");
           return { ok: true };
         }
 
@@ -287,11 +348,19 @@ export async function POST(request: Request) {
         }
 
         case "delete_rule_note": {
+          await assertKickoffAuthorDelete(client, {
+            orgId: action.orgId,
+            userId,
+            id: action.id,
+            table: "kickoff_rule_notes",
+            missing: "Rule note not found",
+            denied: "You cannot delete this rule note",
+          });
           const deleted = await client.query(`DELETE FROM kickoff_rule_notes WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,
           ]);
-          if (!deleted.rowCount) throw new HttpError(404, "Rule note not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this rule note");
           return { ok: true };
         }
 

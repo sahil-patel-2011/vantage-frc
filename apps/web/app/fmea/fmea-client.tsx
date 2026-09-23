@@ -6,7 +6,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
-import { fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
+import { canDeleteFmeaFailure, fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
 import { FMEA_CONTEXTS, FMEA_STATUSES, type FmeaView } from "../../lib/fmea/compute-fmea";
 import {
   FMEA_BUILD_RELATED_INCLUDE,
@@ -773,6 +773,8 @@ function FailureList({
             busy={busy}
             mutate={mutate}
             orgId={orgId}
+            role={view.role}
+            userId={view.userId}
           />
         ))}
       </div>
@@ -785,11 +787,15 @@ function FailureCard({
   busy,
   mutate,
   orgId,
+  role,
+  userId,
 }: {
   evaluation: FmeaEvaluation;
   busy: boolean;
   mutate: Mutate;
   orgId: string | null;
+  role?: string | null;
+  userId?: string | null;
 }) {
   const f = evaluation.failure;
   const rowClass = [
@@ -857,9 +863,19 @@ function FailureCard({
             ))}
           </select>
         </label>
-        <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm("Delete this failure entry?")) { mutate({ action: "delete-failure", failureId: f.id }); } }}>
-          Delete
-        </Button>
+        {canDeleteFmeaFailure({ role, userId, authorId: f.recordedBy }) ? (
+          <Button
+            variant="secondary"
+            type="button"
+            disabled={busy}
+            aria-label={`Delete ${f.title}`}
+            onClick={() => {
+              if (window.confirm("Delete this failure entry?")) mutate({ action: "delete-failure", failureId: f.id });
+            }}
+          >
+            Delete
+          </Button>
+        ) : null}
         {f.recordedByName ? <small className="app-muted">Logged by {f.recordedByName}</small> : null}
       </div>
 

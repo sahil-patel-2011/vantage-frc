@@ -273,7 +273,7 @@ export default function SupportTicketsClient() {
           soft
           badge="Needs setup"
           badgeTone="setup"
-          title={view.message ?? "Choose your team first."}
+          title={view.message ?? "Choose your team."}
           description="Choose your team, then return here to submit a real ticket."
         >
           <Button as="a" variant="primary" href="/workspace">

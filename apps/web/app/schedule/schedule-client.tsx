@@ -6,7 +6,9 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
 import { Button, EmptyState, Panel } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
+import { persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SCHEDULE_RELATED_INCLUDE,
@@ -56,6 +58,21 @@ function labelOf(match: ScheduleMatch): string {
  * `teamKey` is threaded through so "our alliance" / "our result" are filled in for
  * the team's own team and left blank when no team number is set.
  */
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
+
 function scheduleCsvColumns(teamKey: string | null): CsvColumn<ScheduleMatch>[] {
   const slot = (side: "red" | "blue", index: number): CsvColumn<ScheduleMatch> => ({
     key: `${side}${index + 1}`,
@@ -439,7 +456,7 @@ function ScheduleShell({
   children,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   orgId?: string | null;
   shell: ScheduleShellKind;
   fetchFailed?: boolean;
@@ -500,6 +517,7 @@ function ScheduleShell({
         title={failure ? failure.title : title}
         description={failure ? failure.description : description}
         aria-busy={shell === "loading" || undefined}
+        className={shell === "setup" && !orgId ? "sched-setup" : undefined}
       >
         {failure?.primary ? (
           <Button as="a" variant="primary" href={failure.primary.href}>
@@ -511,7 +529,16 @@ function ScheduleShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
+        {shell === "setup" && !orgId ? (
+          <div className="sched-setup-actions">
+            <Button as="a" variant="primary" href={workspaceHref}>
+              Choose your team
+            </Button>
+            <a className="sched-setup-waitlist" href="/#waitlist">
+              Join the waitlist
+            </a>
+          </div>
+        ) : shell === "setup" ? (
           <Button as="a" variant="primary" href={workspaceHref}>
             Choose your team
           </Button>
@@ -571,6 +598,7 @@ export default function ScheduleClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       const cacheOrg = data.context.orgId || orgId;
       if (cacheOrg) await putFeatureSnapshot("schedule", cacheOrg, data);
     } catch {
@@ -658,10 +686,11 @@ export default function ScheduleClient() {
 
   if (view.status === "setup_required") {
     const orgId = view.context.orgId;
+    const noTeam = !orgId;
     return (
       <ScheduleShell
-        title="Almost there"
-        description={view.message}
+        title={noTeam ? "Choose your team" : "Almost there"}
+        description={noTeam ? withWaitlistLink(view.message) : view.message}
         orgId={orgId}
         shell="setup"
         fromCache={fromCache}
@@ -693,12 +722,15 @@ export default function ScheduleClient() {
   const later = groups.later.filter(keep);
   const visible = [...played, ...(groups.now ? [groups.now] : []), ...upNext, ...later];
   const shell: ScheduleShellKind = view.matches.length === 0 ? "empty" : "ready";
+  const canSync = strategyCanSync(view.context.role);
   const nextActions = scheduleNextActions({
     orgId,
     shell,
     hasActiveEvent: Boolean(view.context.eventKey),
     matchCount: view.matches.length,
+    canSync,
   });
+  const emptyFollowUp = nextActions.find((action) => action.id === "team-data" || action.id === "scouting");
   const eventLabel = view.context.eventName ?? view.context.eventKey ?? "Active event";
 
   const row = (match: ScheduleMatch) => (
@@ -808,7 +840,13 @@ export default function ScheduleClient() {
             badgeTone="setup"
             title={scheduleCacheRequiredCopy().title}
             description={scheduleCacheRequiredCopy().description}
-          />
+          >
+            {emptyFollowUp ? (
+              <Button as="a" variant="primary" href={emptyFollowUp.href}>
+                {emptyFollowUp.label}
+              </Button>
+            ) : null}
+          </EmptyState>
       ) : (
         <>
           <div className="sched-controls">

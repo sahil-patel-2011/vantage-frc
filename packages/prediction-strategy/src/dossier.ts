@@ -8,8 +8,16 @@ export type DossierCitation = {
   detail: string;
   syncedAt?: string | null;
   eventKey?: string | null;
+  eventName?: string | null;
   year?: number | null;
 };
+
+function eventDisplayLabel(eventKey: string, eventName?: string | null): string {
+  const name = eventName?.trim();
+  if (name) return name;
+  if (eventKey.includes("custom-")) return "Your event";
+  return eventKey;
+}
 
 export type DossierFactCard = {
   id: string;
@@ -150,17 +158,19 @@ export function buildTeamDossierFacts(input: {
     const preferred = preferMetric(input.eventMetrics.filter((row) => row.eventKey === eventKey));
     const source = normalizeSource(preferred?.source);
     if (!preferred || !source) continue;
+    const label = eventDisplayLabel(eventKey, preferred.eventName);
     if (preferred.epaTotal != null) {
       cards.push({
         id: `event-epa-${eventKey}`,
         category: "event",
-        title: `${eventKey} EPA`,
+        title: `${label} EPA`,
         value: String(round1(preferred.epaTotal)),
         citation: {
           source,
-          detail: `${source} team_event_metrics for ${eventKey}.`,
+          detail: `${source} team_event_metrics for ${label}.`,
           syncedAt: preferred.syncedAt ?? null,
           eventKey,
+          eventName: label,
           year: preferred.year,
         },
       });
@@ -174,13 +184,14 @@ export function buildTeamDossierFacts(input: {
       cards.push({
         id: `event-record-${eventKey}`,
         category: "record",
-        title: `${eventKey} record`,
+        title: `${label} record`,
         value: `${record}${rankBit}`,
         citation: {
           source,
-          detail: `${source} event W-L-T${preferred.rank != null ? " and rank" : ""} for ${eventKey}.`,
+          detail: `${source} event W-L-T${preferred.rank != null ? " and rank" : ""} for ${label}.`,
           syncedAt: preferred.syncedAt ?? null,
           eventKey,
+          eventName: label,
           year: preferred.year,
         },
       });

@@ -71,6 +71,7 @@ export function summarizeDataQuality(checks: DataQualityCheck[]): DataQualitySco
       const dis = cc.filter((r) => r.agreement === false);
       return {
         eventKey,
+        eventName: rows.find((row) => row.eventName)?.eventName ?? null,
         checks: rows.length,
         coverage: expected > 0 ? round(clamp01(captured / expected)) : 0,
         disagreementRate: cc.length > 0 ? round(clamp01(dis.length / cc.length)) : 0,

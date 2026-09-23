@@ -30,11 +30,13 @@ export type CustomEventSubmission = {
 function AddEventForm({
   busy,
   year,
+  message,
   onSubmit,
   onCancel,
 }: {
   busy: boolean;
   year: number;
+  message?: string;
   onSubmit: (draft: CustomEventSubmission) => void;
   onCancel: () => void;
 }) {
@@ -106,6 +108,11 @@ function AddEventForm({
           ))}
         </ul>
       ) : null}
+      {message ? (
+        <p className="edc-add-event-problems" role="alert">
+          {message}
+        </p>
+      ) : null}
       <p className="edc-muted">
         Scouting, the schedule and strategy all treat this exactly like a district
         event. Match results will not arrive from The Blue Alliance, so anything
@@ -136,6 +143,7 @@ export function CommandEventPicker({
   onSelect,
   onClear,
   onCreate,
+  message,
 }: {
   open: boolean;
   query: string;
@@ -149,6 +157,7 @@ export function CommandEventPicker({
   onSelect: (eventKey: string) => void;
   onClear: () => void;
   onCreate: (draft: CustomEventSubmission) => void;
+  message?: string;
 }) {
   const [adding, setAdding] = useState(false);
   if (!open) return null;
@@ -165,6 +174,7 @@ export function CommandEventPicker({
           <AddEventForm
             busy={busy}
             year={year}
+            message={message}
             onSubmit={onCreate}
             onCancel={() => setAdding(false)}
           />
@@ -209,6 +219,11 @@ export function CommandEventPicker({
                 </li>
               )}
             </ul>
+            {message ? (
+              <p className="edc-add-event-problems" role="alert">
+                {message}
+              </p>
+            ) : null}
             <div className="edc-event-footer">
               <Button variant="secondary" type="button" onClick={() => setAdding(true)}>
                 Add an event that isn’t listed

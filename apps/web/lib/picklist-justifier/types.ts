@@ -87,6 +87,7 @@ export type PickListSummary = {
   id: string;
   name: string;
   eventKey: string;
+  eventName: string | null;
   entryCount: number;
   updatedAt: string;
 };

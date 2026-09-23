@@ -69,8 +69,10 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to run inspection prep.",
-          context: { orgId: null, orgName: null, teamNumber: null, role: null },
+          message: requestedOrg
+            ? "Choose your team to run inspection prep."
+            : "Choose your team to run inspection prep, or join the waitlist.",
+          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
         } satisfies InspectionView;
       }
 
@@ -78,7 +80,8 @@ export async function GET(request: Request) {
         client.query<InspectionItem>(
           `SELECT i.id, i.robot_label AS "robotLabel", i.category, i.requirement, i.status, i.note,
                   i.is_custom AS "isCustom", i.sort_order AS "sortOrder",
-                  cb.name AS "checkedByName", i.checked_at::text AS "checkedAt"
+                  cb.name AS "checkedByName", i.checked_at::text AS "checkedAt",
+                  i.created_by AS "createdBy"
            FROM inspection_items i
            LEFT JOIN users cb ON cb.id = i.checked_by
            WHERE i.org_id = $1
@@ -87,7 +90,8 @@ export async function GET(request: Request) {
         ),
         client.query<RobotWeight>(
           `SELECT w.id, w.robot_label AS "robotLabel", w.total_lbs::float8 AS "totalLbs", w.config, w.note,
-                  w.weighed_at::text AS "weighedAt", u.name AS "recordedByName"
+                  w.weighed_at::text AS "weighedAt", u.name AS "recordedByName",
+                  w.recorded_by AS "recordedBy"
            FROM robot_weights w
            LEFT JOIN users u ON u.id = w.recorded_by
            WHERE w.org_id = $1
@@ -103,7 +107,13 @@ export async function GET(request: Request) {
 
       return {
         status: "ready",
-        context: { orgId: row.orgId, orgName: row.orgName, teamNumber: row.teamNumber, role: row.role },
+        context: {
+          orgId: row.orgId,
+          orgName: row.orgName,
+          teamNumber: row.teamNumber,
+          role: row.role,
+          userId: session.user.id,
+        },
         items: items.rows,
         weights: weights.rows,
         weightLimitLbs: settings.rows[0]?.weightLimitLbs ?? DEFAULT_WEIGHT_LIMIT_LBS,

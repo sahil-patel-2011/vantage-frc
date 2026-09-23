@@ -21,6 +21,7 @@ export function CalendarSyncPanel({
   scope,
   subteamId,
   github,
+  canManage,
   onScopeChange,
   onSubteamChange,
   busyKey,
@@ -32,6 +33,7 @@ export function CalendarSyncPanel({
   scope: CalendarFeedScope;
   subteamId: string;
   github: GitHubCalendarOverlay | undefined;
+  canManage: boolean;
   onScopeChange: (scope: CalendarFeedScope) => void;
   onSubteamChange: (subteamId: string) => void;
   busyKey: string | null;
@@ -172,7 +174,7 @@ export function CalendarSyncPanel({
         </div>
       )}
 
-      <GitHubCalendarHint overlay={github} orgId={orgId} />
+      <GitHubCalendarHint overlay={github} orgId={orgId} canManage={canManage} />
     </section>
   );
 }

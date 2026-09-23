@@ -1,15 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
-import { BUILD_PHASE_LABEL, BUILD_PHASES, type BuildPhase } from "../../lib/notebook";
+import { BUILD_PHASE_LABEL, BUILD_PHASES, canDeleteNotebookEntry, type BuildPhase } from "../../lib/notebook";
 import type { NotebookImageAttachment } from "../../lib/notebook/attachments";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./notebook.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Entry = {
   id: string;
@@ -21,6 +37,7 @@ type Entry = {
   body: string;
   tags: string[];
   byName: string | null;
+  authorUserId?: string | null;
   updatedAt: string;
   attachments: NotebookImageAttachment[];
   hasImageEvidence: boolean;
@@ -30,7 +47,7 @@ type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       entries: Entry[];
       imageLibrary: NotebookImageAttachment[];
       summary: {
@@ -218,6 +235,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setEntryPhotos({});
       if (!subsystemFilter) await persistNotebookSnapshot(orgHint, seasonHint, data);
     } catch {
@@ -369,9 +387,10 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page notebook-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -380,18 +399,40 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
               </>
             }
             title="Engineering notebook"
-            description="Dated design decisions with real photos or video."
+            description={
+              offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Dated design decisions with real photos or video."
+            }
           >
             <NotebookRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Engineering notebook" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "notebook-setup" : undefined}
+          >
+            {offerWaitlist ? (
+              <div className="notebook-setup-actions">
+                <Button as="a" variant="primary" href="/workspace">
+                  Choose your team
+                </Button>
+                <a className="notebook-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              </div>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {
@@ -556,7 +597,14 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
           <p className="app-muted">No entries yet — document your first design decision above.</p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 16 }}>
-            {view.entries.map((entry) => (
+            {view.entries.map((entry) => {
+              const canDelete = canDeleteNotebookEntry({
+                role: view.context.role,
+                userId: view.context.userId,
+                authorId: entry.authorUserId,
+              });
+              const canWrite = view.context.role !== "viewer";
+              return (
               <li key={entry.id}>
                 <strong>{entry.title}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
@@ -626,29 +674,35 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
                     )}
                   </details>
                 ) : null}
-                {view.context.role !== "viewer" ? (
+                {canWrite || canDelete ? (
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      title="Copy this entry into the team wiki so it outlives the season"
-                      onClick={() => void promoteEntry(entry.id)}
-                    >
-                      Send to wiki
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}
-                    >
-                      Delete
-                    </Button>
+                    {canWrite ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        title="Copy this entry into the team wiki so it outlives the season"
+                        onClick={() => void promoteEntry(entry.id)}
+                      >
+                        Send to wiki
+                      </Button>
+                    ) : null}
+                    {canDelete ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        aria-label={`Delete entry ${entry.title}`}
+                        onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}
+                      >
+                        Delete
+                      </Button>
+                    ) : null}
                   </div>
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </Panel>

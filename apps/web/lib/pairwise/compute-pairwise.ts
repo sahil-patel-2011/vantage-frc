@@ -43,6 +43,7 @@ export type PairwiseView =
       teamNumber: number | null;
       seasonYear: number;
       eventKey: string | null;
+      eventName: string | null;
       eventTeams: number[];
       criteria: PairwiseCriterion[];
       criterionId: string | null;
@@ -170,8 +171,11 @@ export async function computePairwiseView(
             loggedByName: string;
             createdAt: string;
           }> }),
-      client.query<{ eventKey: string | null }>(
-        `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
+      client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1`,
         [org.orgId],
       ),
       client.query<{ teamKey: string }>(
@@ -200,6 +204,7 @@ export async function computePairwiseView(
       teamNumber: org.teamNumber,
       seasonYear,
       eventKey: context.rows[0]?.eventKey ?? null,
+      eventName: context.rows[0]?.eventName ?? null,
       eventTeams: eventTeams.rows
         .map((row) => teamKeyNumber(row.teamKey))
         .filter((value): value is number => value != null),

@@ -120,6 +120,8 @@ export type InspectionItem = {
   sortOrder: number;
   checkedByName: string | null;
   checkedAt: string | null;
+  /** Member who added a custom row. Absent on older cached copies. */
+  createdBy?: string | null;
 };
 
 export type RobotWeight = {
@@ -130,6 +132,8 @@ export type RobotWeight = {
   note: string;
   weighedAt: string;
   recordedByName: string | null;
+  /** Member who logged the weigh-in. Absent on older cached copies. */
+  recordedBy?: string | null;
 };
 
 export type InspectionContext = {
@@ -137,7 +141,21 @@ export type InspectionContext = {
   orgName: string | null;
   teamNumber: number | null;
   role: string | null;
+  userId?: string | null;
 };
+
+/** Delete matches inspection RLS: the author, or an owner or admin. */
+export function canDeleteAuthoredRow(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
 
 export type InspectionView =
   | {

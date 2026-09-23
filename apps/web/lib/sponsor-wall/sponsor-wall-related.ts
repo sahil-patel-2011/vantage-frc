@@ -185,6 +185,8 @@ export function sponsorWallNextActions(input: {
   shell: SponsorWallShellKind;
   entryCount?: number;
   publishedCount?: number;
+  /** Omitted keeps the owner add action. Explicit false is a member who cannot publish the wall. */
+  canManage?: boolean;
 }): SponsorWallNextAction[] {
   const orgId = input.orgId ?? null;
   const entryCount = input.entryCount ?? 0;
@@ -222,6 +224,23 @@ export function sponsorWallNextActions(input: {
   }
 
   if (input.shell === "empty" || entryCount === 0) {
+    if (input.canManage === false) {
+      return [
+        {
+          id: "sponsors",
+          label: "Open Sponsor CRM",
+          detail: "An owner or admin publishes the wall. Names stay in the CRM.",
+          href: hubHref("/business", "sponsors", orgId),
+          primary: true,
+        },
+        {
+          id: "sponsorship",
+          label: "Open Sponsorship",
+          detail: "Align wall tiers with real package language.",
+          href: hubHref("/business", "sponsorship", orgId),
+        },
+      ];
+    }
     return [
       {
         id: "add",
@@ -241,6 +260,30 @@ export function sponsorWallNextActions(input: {
         label: "Open Sponsorship",
         detail: "Align wall tiers with real package language.",
         href: hubHref("/business", "sponsorship", orgId),
+      },
+    ];
+  }
+
+  if (input.canManage === false) {
+    return [
+      {
+        id: "sponsors",
+        label: "Open Sponsor CRM",
+        detail: "An owner or admin publishes the wall. Names stay in the CRM.",
+        href: hubHref("/business", "sponsors", orgId),
+        primary: true,
+      },
+      {
+        id: "sponsorship",
+        label: "Open Sponsorship",
+        detail: "Keep tier language aligned with real packages.",
+        href: hubHref("/business", "sponsorship", orgId),
+      },
+      {
+        id: "sponsor-suite",
+        label: "Open Sponsor Suite",
+        detail: "Pair wall shout-outs with suite assets.",
+        href: hubHref("/business", "sponsor-suite", orgId),
       },
     ];
   }

@@ -17,6 +17,7 @@ import {
   secondsUntil,
   isCodeComplete,
 } from "./otp-code";
+import { WAITLIST_ONLY_MESSAGE } from "./sign-in-flow";
 
 export type SignInStep = "identity" | "code" | "done";
 
@@ -230,15 +231,21 @@ export function resendSecondsRemaining(state: SignInFlowState, now: number): num
 }
 
 export function isCodeExpired(state: SignInFlowState, now: number): boolean {
+  // A closed account is not a dead code. The alert says to join the waitlist.
+  // Treating it as expired told the reader to send another code to the same address.
+  if (state.failure?.kind === "not_authorized") return false;
   if (state.failure?.needsNewCode) return true;
   return Boolean(state.codeExpiresAt) && codeSecondsRemaining(state, now) === 0;
 }
 
 export function canResendCode(state: SignInFlowState, now: number): boolean {
+  // Another code to the same closed address fails the same way. Edit the email or join the waitlist.
+  if (state.failure?.kind === "not_authorized") return false;
   return state.step === "code" && resendSecondsRemaining(state, now) === 0;
 }
 
 export function canSubmitCode(state: SignInFlowState, now: number): boolean {
+  if (state.failure?.kind === "not_authorized") return false;
   return state.step === "code" && isCodeComplete(state.code) && !isCodeExpired(state, now);
 }
 
@@ -325,6 +332,15 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
 
   if (/TOO_MANY_ATTEMPTS|too many attempts/i.test(text)) {
     return { kind: "too_many_attempts", message: LOCKED_MESSAGE, keepDigits: false, needsNewCode: true };
+  }
+
+  if (/waitlist|WAITLIST_ONLY/i.test(text)) {
+    return {
+      kind: "not_authorized",
+      message: WAITLIST_ONLY_MESSAGE,
+      keepDigits: false,
+      needsNewCode: true,
+    };
   }
 
   if (/INVALID_OTP|invalid otp|incorrect/i.test(text)) {

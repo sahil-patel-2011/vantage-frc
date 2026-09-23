@@ -11,7 +11,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile, Button } from "../../components/ui";
-import { CHECKLIST_STATUSES, priorityLabel } from "../../lib/spare-robot-kit";
+import { canDeleteSpareRobotKitChecklist, CHECKLIST_STATUSES, priorityLabel } from "../../lib/spare-robot-kit";
 import type { SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
 import type { ChecklistStatus, KitPriority } from "../../lib/spare-robot-kit/types";
 import {
@@ -478,18 +478,25 @@ function ChecklistsList({
                     {STATUS_LABEL[checklist.status]} · {packedCount}/{checklist.items.length} packed
                   </small>
                 </div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${checklist.title}"?`)) {
-                      mutate({ action: "delete-checklist", checklistId: checklist.id });
-                    }
-                  }}
-                >
-                  Delete
-                </button>
+                {canDeleteSpareRobotKitChecklist({
+                  role: view.role,
+                  userId: view.userId,
+                  authorId: checklist.createdBy,
+                }) ? (
+                  <button
+                    type="button"
+                    className="text-button"
+                    aria-label={`Delete checklist ${checklist.title}`}
+                    disabled={busy}
+                    onClick={() => {
+                      if (window.confirm(`Delete "${checklist.title}"?`)) {
+                        mutate({ action: "delete-checklist", checklistId: checklist.id });
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                ) : null}
               </header>
               <small className="app-muted">{checklist.rationale}</small>
               <ul className="srk-pack-list">

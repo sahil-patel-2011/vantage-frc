@@ -273,9 +273,11 @@ export default function TeamProfileClient() {
             badgeTone="setup"
             title={view.status === "none" ? "No profile yet" : "Gathering the public record"}
             description={
-              view.teamNumber
-                ? `Looking up team ${view.teamNumber} on the public record. This takes a few seconds and happens once; it refreshes weekly after that.`
-                : "This team has no team number, so there is nothing to look up. Set it on the Team settings page."
+              !view.teamNumber
+                ? "This team has no team number, so there is nothing to look up. Set it on the Team settings page."
+                : view.status === "none"
+                  ? `Team ${view.teamNumber} has no saved profile yet.`
+                  : `Looking up team ${view.teamNumber} on the public record. This takes a few seconds and happens once; it refreshes weekly after that.`
             }
           >
             {view.canBuild && view.orgId && view.status === "none" ? (

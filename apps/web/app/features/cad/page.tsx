@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
@@ -43,14 +43,9 @@ export default function CadFeaturePage() {
             runs only after approval. Onshape uses hosted OAuth. Fusion uses a desktop relay. Credentials are required.
             Nothing mutates CAD until a person checks the step.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="button secondary" href="/features">
-              Product overview
-            </a>
-          </div>
+          <MarketingRouteActions
+            companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
+          />
         </header>
 
         <section className="lux-showcase">
@@ -86,14 +81,11 @@ export default function CadFeaturePage() {
               <a href="/pricing">What it costs</a>
             </p>
           </div>
-          <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join waitlist
-            </a>
-            <a className="button secondary" href="/workflow">
-              How it works
-            </a>
-          </div>
+          <MarketingRouteActions
+            className="pricing-preview-actions"
+            guestLabel="Join waitlist"
+            companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
+          />
         </section>
       </main>
       <SiteFooter />

@@ -70,7 +70,7 @@ export function ScoutingShell({
   embedded?: boolean;
   children?: ReactNode;
 }) {
-  const copy = scoutingShellCopy(shell);
+  const copy = scoutingShellCopy(shell, { orgId });
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -127,7 +127,7 @@ export function ScoutingShell({
           </Button>
         ) : null}
         {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
+          <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Open Event Day" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>

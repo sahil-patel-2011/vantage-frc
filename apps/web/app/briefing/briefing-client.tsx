@@ -10,12 +10,14 @@ import {
   type BriefingPrediction,
 } from "../../lib/briefing";
 import { capabilityLabel } from "../../lib/briefing/plan-sections";
+import { briefingPartnerSyncHref, briefingSetupAction } from "../../lib/briefing/setup-action";
 import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
 import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
 import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { fmtMatchTime, stripFrc } from "../../lib/schedule-board";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import {
   formatPredictionWinDisplay,
   predictionWinDisplay,
@@ -373,6 +375,7 @@ export default function BriefingClient() {
   }
 
   if (view.status === "setup_required") {
+    const setupAction = briefingSetupAction(view.context);
     return (
       <main className="module-page brief-page">
         <header className="app-page-header">
@@ -384,8 +387,8 @@ export default function BriefingClient() {
         </header>
         <OfflineBanner feature="Pre-match briefing" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
-          <Button as="a" variant="primary" href={view.context.orgId ? "/command" : "/workspace"}>
-            {view.context.orgId ? "Set active event" : "Choose your team"}
+          <Button as="a" variant="primary" href={setupAction.href}>
+            {setupAction.label}
           </Button>
         </EmptyState>
       </main>
@@ -393,6 +396,7 @@ export default function BriefingClient() {
   }
 
   const orgId = view.context.orgId;
+  const partnerSyncHref = briefingPartnerSyncHref(orgId, view.context.role);
   const teamKey = view.context.teamNumber != null ? `frc${view.context.teamNumber}` : null;
   const side = view.ourAlliance;
   const ourKeys = side === "red" ? view.match.red : side === "blue" ? view.match.blue : [];
@@ -446,7 +450,7 @@ export default function BriefingClient() {
           <span className="breadcrumbs">Competition / Briefing</span>
           <h1>Pre-match briefing</h1>
           <p>
-            {view.context.eventName ?? view.context.eventKey}
+            {scoutEventLabel({ eventName: view.context.eventName, eventKey: view.context.eventKey })}
             {view.context.teamNumber != null ? ` — Team ${view.context.teamNumber}` : ""}
           </p>
         </div>
@@ -672,8 +676,14 @@ export default function BriefingClient() {
             </>
           ) : (
             <EmptyHint>
-              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync ratings in{" "}
-              <a href={withOrg("/team/data", orgId)}>Team Data</a>
+              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>{partnerSyncHref ? (
+                <>
+                  {" or sync ratings in "}
+                  <a href={partnerSyncHref}>Team Data</a>
+                </>
+              ) : (
+                ". An owner or admin syncs ratings."
+              )}
             </EmptyHint>
           )}
         </Section>

@@ -38,12 +38,18 @@ export class ScoutingRepository {
     const role = membership.rows[0]?.role ?? "viewer";
     const canManageSchemas = role === "owner" || role === "admin";
 
-    const context = await this.client.query<{ activeEventKey: string | null }>(
-      `SELECT active_event_key AS "activeEventKey"
-       FROM org_active_context WHERE org_id = $1`,
+    const context = await this.client.query<{
+      activeEventKey: string | null;
+      eventName: string | null;
+    }>(
+      `SELECT c.active_event_key AS "activeEventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1`,
       [orgId],
     );
     const eventKey = context.rows[0]?.activeEventKey ?? null;
+    const eventName = context.rows[0]?.eventName ?? null;
     const profile = await this.client.query<{
       name: string | null;
       email: string | null;
@@ -63,6 +69,7 @@ export class ScoutingRepository {
     if (!eventKey) {
       return {
         eventKey: null,
+        eventName: null,
         schemas: [],
         assignments: [],
         matches: [],
@@ -119,6 +126,7 @@ export class ScoutingRepository {
     ]);
     return {
       eventKey,
+      eventName,
       schemas: schemas.rows.map((row) => ({
         ...row,
         definition: stripScoutIdentityFields(

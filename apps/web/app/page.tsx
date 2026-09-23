@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { WaitlistForm } from "../components/marketing/waitlist-form";
-import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
+import {
+  MarketingHeroActions,
+  MarketingInvitedNote,
+  SiteFooter,
+  SiteHeader,
+} from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
 import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
@@ -38,14 +43,7 @@ export default function Home() {
                 any tablet, even with no Wi-Fi, and the strategy side turns those rows into who to pick and who is
                 likely to win.
               </p>
-              <div className="actions">
-                <a className="button primary" href="#waitlist">
-                  Join the waitlist
-                </a>
-                <a className="text-link" href="/signin">
-                  Already invited? Sign in
-                </a>
-              </div>
+              <MarketingHeroActions />
               {/* Three things a team can check rather than three adjectives.
                   Every one of them is a screen you can open. */}
               <ul className="mk-hero-proof">
@@ -70,11 +68,7 @@ export default function Home() {
             <p>
               Invite-only. We email when your team is set up. Joining the waitlist does not create an account.
             </p>
-            <p className="lux-hero-note">
-              Already invited? <a href="/signin">Sign in</a>
-              {" · "}
-              Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
-            </p>
+            <MarketingInvitedNote />
           </div>
           <WaitlistForm idPrefix="hero" />
         </section>

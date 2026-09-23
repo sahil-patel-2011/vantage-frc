@@ -54,10 +54,24 @@ export type KnowledgeLink = {
 export type KnowledgePageDetail = KnowledgePageSummary & {
   body: string;
   createdAt: string;
+  createdBy?: string;
   createdByName: string | null;
   updatedByName: string | null;
   links: KnowledgeLink[];
 };
+
+/** Page delete is the author, or an owner or admin who can edit docs. */
+export function canDeleteKnowledgePage(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
 
 export type KnowledgeSearchHit = {
   source: "wiki" | "decision" | "design_review";
@@ -76,6 +90,7 @@ export type KnowledgeWikiView =
       orgName: string;
       teamNumber: number | null;
       role: string;
+      userId?: string;
       canEdit: boolean;
       pages: KnowledgePageSummary[];
       selected: KnowledgePageDetail | null;

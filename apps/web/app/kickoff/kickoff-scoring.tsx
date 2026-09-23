@@ -2,19 +2,23 @@
 
 import { useState } from "react";
 import { EmptyState, Button } from "../../components/ui";
-import { PHASES, pointsPerSecond, rankActions, type Phase, type ScoringAction } from "../../lib/kickoff";
+import { canDeleteKickoffRow, PHASES, pointsPerSecond, rankActions, type Phase, type ScoringAction } from "../../lib/kickoff";
 import type { RunFn } from "./kickoff-model";
 
 export function ScoringSection({
   actions,
   orgId,
   seasonYear,
+  role,
+  userId,
   busyKey,
   run,
 }: {
   actions: ScoringAction[];
   orgId: string;
   seasonYear: number;
+  role?: string | null;
+  userId?: string | null;
   busyKey: string | null;
   run: RunFn;
 }) {
@@ -98,15 +102,17 @@ export function ScoringSection({
                   }}
                 />
                 <b className="kick-rate">{rate == null ? "—" : rate.toFixed(2)}</b>
-                <button
-                  type="button"
-                  className="kick-link danger"
-                  aria-label={`Delete ${action.label}`}
-                  disabled={busy}
-                  onClick={() => void run({ action: "delete_action", orgId, id: action.id }, rowKey)}
-                >
-                  ✕
-                </button>
+                {canDeleteKickoffRow({ role, userId, authorId: action.createdBy }) ? (
+                  <button
+                    type="button"
+                    className="kick-link danger"
+                    aria-label={`Delete ${action.label}`}
+                    disabled={busy}
+                    onClick={() => void run({ action: "delete_action", orgId, id: action.id }, rowKey)}
+                  >
+                    ✕
+                  </button>
+                ) : null}
               </div>
             );
           })}

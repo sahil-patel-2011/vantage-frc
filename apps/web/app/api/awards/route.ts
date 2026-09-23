@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const seasonYear = url.searchParams.get("seasonYear");
     if (!orgId) throw new Error("orgId is required");
-    const submissions = await withRls({ userId: current.user.id, orgId }, async (client) => {
+    const payload = await withRls({ userId: current.user.id, orgId }, async (client) => {
       const result = await client.query(
         `SELECT id, season_year AS "seasonYear", event_key AS "eventKey", award_type AS "awardType", title,
                 status, priority, deadline, owner_user_id AS "ownerUserId", summary, created_at AS "createdAt",
@@ -37,9 +37,21 @@ export async function GET(request: Request) {
          ORDER BY deadline NULLS LAST, season_year DESC`,
         seasonYear ? [orgId, Number(seasonYear)] : [orgId],
       );
-      return result.rows;
+      const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1::uuid`,
+        [orgId],
+      );
+      const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+      return {
+        submissions: result.rows,
+        eventKey: activeEvent.eventKey,
+        eventName: activeEvent.eventName,
+      };
     });
-    return Response.json({ submissions });
+    return Response.json(payload);
   } catch (error) { return fail(error); }
 }
 

@@ -108,6 +108,36 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
   ]);
 }
 
+/**
+ * Primary button on an empty or setup dossier.
+ * Team Data only when canSync is explicitly true. A setup step that is not
+ * Team Data (Choose your team) stays as written.
+ */
+export function dossierPrimaryAction(input: {
+  canSync?: boolean;
+  orgId?: string | null;
+  setup?: { href: string; label: string } | null;
+}): { href: string; label: string } {
+  const scouting = {
+    href: hubHref("/competition", "scouting", input.orgId),
+    label: "Open Scouting",
+  };
+  if (input.setup) {
+    const pointsAtTeamData = input.setup.href.includes("/team/data");
+    if (!pointsAtTeamData || input.canSync === true) {
+      return { href: input.setup.href, label: input.setup.label };
+    }
+    return scouting;
+  }
+  if (input.canSync === true) {
+    return {
+      href: withOrgHref("/team/data", input.orgId),
+      label: "Sync season metrics",
+    };
+  }
+  return scouting;
+}
+
 /** Real cited-fact counts only — never invent DEMO totals. */
 export function formatDossierMetric(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
@@ -196,6 +226,28 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
  * Soft-UI next actions for Team Dossier empty/setup shells.
  * Points at Strategy / Scouting / Pick desk — never invents DEMO stats.
  */
+/** What to say when the team is saved and season ratings are not. */
+export function dossierMissingRatingsMessage(teamNumber: number, canSync: boolean): string {
+  const lead = `Team ${teamNumber} is saved, but season ratings for this team are missing.`;
+  return canSync ? `${lead} Sync under Team Data.` : `${lead} An owner or admin syncs them.`;
+}
+
+/** What to say when the public team row is not saved yet. */
+export function dossierMissingIdentityMessage(
+  teamNumber: number,
+  canSync: boolean,
+  tbaConfigured: boolean,
+): string {
+  if (!tbaConfigured) {
+    return canSync
+      ? "This team's public page is not saved yet. Sync Team Data, then open the profile."
+      : "This team's public page is not saved yet. An owner or admin syncs Team Data.";
+  }
+  return canSync
+    ? `Team ${teamNumber} is not in the saved public list yet. Sync under Team Data, then retry.`
+    : `Team ${teamNumber} is not in the saved public list yet. An owner or admin syncs Team Data.`;
+}
+
 export function dossierNextActions(input: {
   orgId?: string | null;
   shell: DossierShellKind;

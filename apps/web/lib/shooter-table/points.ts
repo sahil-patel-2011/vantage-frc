@@ -5,6 +5,19 @@
 
 export type ShooterPointInput = { distanceFt: number; rpm: number | null; hoodAngle: number | null; notes: string };
 
+/** Delete matches shooter_points RLS: the author, or an owner or admin. */
+export function canDeleteShooterPoint(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 function optNonNeg(value: unknown, field: string): number | null {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);

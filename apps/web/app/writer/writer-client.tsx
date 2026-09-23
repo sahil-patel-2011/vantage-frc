@@ -5,7 +5,9 @@ import { AiHubRelated } from "../../components/ai-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { ModelProvenance, Button, EmptyState } from "../../components/ui";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   composeGrantAnswer,
@@ -117,6 +119,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [canManageProfile, setCanManageProfile] = useState(false);
   const viewRef = useRef<WriterView | null>(null);
   viewRef.current = view;
 
@@ -193,9 +196,22 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanManageProfile(strategyCanSync(membership?.role ?? session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
   const mutate = useCallback<Mutate>(
     (payload) => {
       if (!orgId || busy) return;
+      if (payload.action === "set-profile" && !canManageProfile) return;
       setBusy(true);
       setError("");
       void fetch("/api/writer", {
@@ -222,7 +238,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
     },
-    [orgId, season, busy],
+    [orgId, season, busy, canManageProfile],
   );
 
   const setupOrg =
@@ -329,6 +345,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           setBusy={setBusy}
           cutoffCode={cutoffCode}
           setCutoffCode={setCutoffCode}
+          canManageProfile={canManageProfile}
         />
       )}
     </main>
@@ -344,6 +361,7 @@ function WriterWorkspace({
   setBusy,
   cutoffCode,
   setCutoffCode,
+  canManageProfile,
 }: {
   view: LiveView;
   busy: boolean;
@@ -353,6 +371,7 @@ function WriterWorkspace({
   setBusy: (busy: boolean) => void;
   cutoffCode: string | null;
   setCutoffCode: (code: string | null) => void;
+  canManageProfile: boolean;
 }) {
   const [profile, setProfile] = useState(() => toForm(view.profile));
   useEffect(() => {
@@ -389,6 +408,7 @@ function WriterWorkspace({
         setProfile={setProfile}
         busy={busy}
         mutate={mutate}
+        canManageProfile={canManageProfile}
         thinProfile={!hasMission || !hasAchievements}
       />
       <Composer
@@ -438,12 +458,14 @@ function ProfilePanel({
   setProfile,
   busy,
   mutate,
+  canManageProfile,
   thinProfile,
 }: {
   profile: ProfileForm;
   setProfile: (updater: (prev: ProfileForm) => ProfileForm) => void;
   busy: boolean;
   mutate: Mutate;
+  canManageProfile: boolean;
   thinProfile: boolean;
 }) {
   const set = (key: keyof ProfileForm) => (event: { target: { value: string } }) =>
@@ -453,7 +475,11 @@ function ProfilePanel({
     <section className="app-card soft-panel writer-profile" style={{ display: "grid", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Team profile</h2>
-        <small className="app-muted">Used to tailor every draft — edits apply to the preview live.</small>
+        <small className="app-muted">
+          {canManageProfile
+            ? "Used to tailor every draft — edits apply to the preview live."
+            : "An owner or admin saves this team profile. Edits here stay on this page for the draft preview."}
+        </small>
       </div>
       {thinProfile ? (
         <div className="writer-empty-hint" role="status">
@@ -504,11 +530,13 @@ function ProfilePanel({
         <span className="app-muted">What funding pays for</span>
         <input value={profile.fundingNeed} onChange={set("fundingNeed")} placeholder="registration, materials, and travel" />
       </label>
-      <div>
-        <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "set-profile", teamName: profile.teamName || undefined, teamNumber: profile.teamNumber || undefined, region: profile.region || undefined, mission: profile.mission || undefined, achievements: profile.achievements || undefined, fundingNeed: profile.fundingNeed || undefined, fundingAskUsd: profile.fundingAskUsd || undefined, tone: profile.tone, }) }>
-          Save profile
-        </Button>
-      </div>
+      {canManageProfile ? (
+        <div>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "set-profile", teamName: profile.teamName || undefined, teamNumber: profile.teamNumber || undefined, region: profile.region || undefined, mission: profile.mission || undefined, achievements: profile.achievements || undefined, fundingNeed: profile.fundingNeed || undefined, fundingAskUsd: profile.fundingAskUsd || undefined, tone: profile.tone, }) }>
+            Save profile
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }

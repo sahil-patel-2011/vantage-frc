@@ -46,6 +46,7 @@ export default function AuditLogClient({ orgId }: { orgId: string }) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [denied, setDenied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -54,8 +55,17 @@ export default function AuditLogClient({ orgId }: { orgId: string }) {
       const response = await fetch(`/api/organizations/audit?orgId=${orgId}`);
       const data = await response.json();
       if (!active) return;
-      if (!response.ok) setMessage(data.error ?? "Unable to load audit log");
-      else {
+      const errorText = typeof data.error === "string" ? data.error : "";
+      const refused =
+        response.status === 401 ||
+        response.status === 403 ||
+        /administrator access required/i.test(errorText);
+      if (!response.ok) {
+        setDenied(refused);
+        setEvents([]);
+        setMessage(refused ? "" : errorText || "Unable to load audit log");
+      } else {
+        setDenied(false);
         setMessage("");
         setEvents(data.events ?? []);
       }
@@ -72,15 +82,17 @@ export default function AuditLogClient({ orgId }: { orgId: string }) {
       <span className="eyebrow">SECURITY AUDIT LOG</span>
       <h2>Recent membership &amp; access changes</h2>
       <p className="app-muted">
-        Every capability, role, invitation, and authentication-policy change is recorded here. Showing the
-        {events.length ? ` most recent ${events.length}` : " latest"} events.
+        {denied
+          ? "An owner or admin reads membership and access changes."
+          : `Every capability, role, invitation, and authentication-policy change is recorded here. Showing the${events.length ? ` most recent ${events.length}` : " latest"} events.`}
       </p>
       {message && <p role="status" className="telemetry-status">{message}</p>}
       {loading && <p className="app-muted">Loading audit log…</p>}
-      {!loading && !events.length && !message && (
+      {!loading && !denied && !events.length && !message && (
         <p className="app-muted">No audited changes yet.</p>
       )}
       {!loading &&
+        !denied &&
         events.map((event) => {
           const detail = describe(event);
           return (

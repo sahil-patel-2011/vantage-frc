@@ -245,7 +245,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
           </p>
         </div>
         <nav className="intel-actions" aria-label="Team links">
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          {isAdmin ? <a href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>Team admin</a> : null}
           <a href={`/team/knowledge?orgId=${orgId}`}>Team knowledge</a>
         </nav>
       </header>

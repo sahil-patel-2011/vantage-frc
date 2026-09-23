@@ -12,7 +12,9 @@ import {
   type EventDayShellKind,
   type EventDayShellNextAction,
 } from "../../lib/command/event-day-related";
+import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 
 export function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = eventDayRelatedLinks(orgId, {
@@ -76,7 +78,6 @@ export function EventDayShell({
 }) {
   const copy = eventDayShellCopy(shell);
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const teamDataHref = withOrgHref("/team/data", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
 
   const related = <EventDayRelatedStrip orgId={orgId} />;
@@ -112,14 +113,15 @@ export function EventDayShell({
     );
   }
 
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const primarySetupCta =
     canSetEvent && onSelectEvent ? (
       <Button variant="primary" type="button" onClick={onSelectEvent}>
         Set active event
       </Button>
     ) : (
-      <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
-        {orgId ? "Set the event you’re at" : "Choose your team"}
+      <Button as="a" variant="primary" href={orgId ? scoutingHref : workspaceHref}>
+        {orgId ? "Back to Scouting" : "Choose your team"}
       </Button>
     );
 
@@ -161,6 +163,7 @@ export function CommandReadyHeader({
   orgName,
   teamNumber,
   eventKey,
+  eventName,
   loading,
   computedAt,
   canSetEvent,
@@ -174,6 +177,7 @@ export function CommandReadyHeader({
   orgName: string | null;
   teamNumber: number | null;
   eventKey: string | null;
+  eventName?: string | null;
   loading: boolean;
   computedAt: string | null;
   canSetEvent: boolean;
@@ -181,6 +185,7 @@ export function CommandReadyHeader({
   onRefresh: () => void;
   headerActions?: ReactNode;
 }) {
+  const eventLabel = scoutEventLabel({ eventName, eventKey });
   const actions = headerActions ?? (
     <div className="edc-header-actions">
       {/* The board refreshes itself, so "Refresh" is the timestamp rather than a third
@@ -221,7 +226,7 @@ export function CommandReadyHeader({
         <>
           {orgName ?? "Your team"}
           {teamNumber ? ` · Team ${teamNumber}` : ""}
-          {eventKey ? ` · ${eventKey}` : ""}
+          {eventLabel ? ` · ${eventLabel}` : ""}
           {" — "}
           Next match, scout gaps, and briefs.
         </>

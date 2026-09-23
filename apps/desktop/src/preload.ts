@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld("vantageDesktop", {
     reopenApproval: (): Promise<void> => ipcRenderer.invoke("desktop-link:open-approval"),
     /** Fallback: open the Vantage web app in the system browser. */
     openInBrowser: (): Promise<void> => ipcRenderer.invoke("desktop-link:open-site"),
+    /** Open the public waitlist in the system browser. The page cannot choose the URL. */
+    requestAccess: (): Promise<void> => ipcRenderer.invoke("desktop-link:open-waitlist"),
     /** Subscribe to state updates; returns an unsubscribe function. */
     onState: (callback: (state: LinkState) => void): (() => void) => {
       const listener = (_event: IpcRendererEvent, state: LinkState) => callback(state);

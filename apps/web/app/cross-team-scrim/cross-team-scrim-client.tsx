@@ -23,7 +23,9 @@ import {
 } from "../../lib/cross-team-scrim/cross-team-scrim-related";
 import type { ScrimDataShareScope, ScrimStatus } from "../../lib/cross-team-scrim/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./cross-team-scrim.css";
 
@@ -62,9 +64,16 @@ async function persistCrossTeamScrimSnapshot(
   }
 }
 
-function ScrimRelatedStrip({ orgId }: { orgId?: string | null }) {
+function ScrimRelatedStrip({
+  orgId,
+  canOpenTeamData,
+}: {
+  orgId?: string | null;
+  canOpenTeamData: boolean;
+}) {
   const links = crossTeamScrimRelatedLinks(orgId, {
     include: [...CROSS_TEAM_SCRIM_RELATED_INCLUDE],
+    canOpenTeamData,
   });
   if (!links.length) return null;
   return (
@@ -106,6 +115,7 @@ function ScrimShell({
   shell,
   error,
   onRetry,
+  canOpenTeamData,
   children,
 }: {
   description: string;
@@ -113,12 +123,13 @@ function ScrimShell({
   shell: CrossTeamScrimShellKind;
   error?: string;
   onRetry?: () => void;
+  canOpenTeamData: boolean;
   children?: ReactNode;
 }) {
-  const actions = crossTeamScrimNextActions({ orgId, shell });
+  const actions = crossTeamScrimNextActions({ orgId, shell, canOpenTeamData });
   const copy = crossTeamScrimShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "cross-team-scrim", orgId);
-  const setup = shell === "setup" ? crossTeamScrimSetupSteps(orgId)[0] : null;
+  const setup = shell === "setup" ? crossTeamScrimSetupSteps(orgId, canOpenTeamData)[0] : null;
 
   return (
     <main className="module-page cross-team-scrim-page soft-gate">
@@ -132,7 +143,7 @@ function ScrimShell({
         title="Cross-Team Scrim Scheduling"
         description={description}
       >
-        <ScrimRelatedStrip orgId={orgId} />
+        <ScrimRelatedStrip orgId={orgId} canOpenTeamData={canOpenTeamData} />
       </PageHeader>
       {children}
       <EmptyState
@@ -176,6 +187,7 @@ export default function CrossTeamScrimClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [canSync, setCanSync] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<CrossTeamScrimView | null>(null);
@@ -252,6 +264,15 @@ export default function CrossTeamScrimClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (!cancelled) setCanSync(strategyCanSync(session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
   const inviteCount = view?.status === "live" ? view.invites.length : 0;
   const upcomingCount = view?.status === "live" ? view.upcoming.length : 0;
 
@@ -268,9 +289,11 @@ export default function CrossTeamScrimClient() {
     shell,
     inviteCount,
     upcomingCount,
+    canOpenTeamData: canSync,
   });
   const relatedLinks = crossTeamScrimRelatedLinks(orgId, {
     include: [...CROSS_TEAM_SCRIM_RELATED_INCLUDE],
+    canOpenTeamData: canSync,
   });
   const teamHref = hubWorkbenchHref("team", "cross-team-scrim", orgId);
   const showTiles = shouldShowCrossTeamScrimSummaryTiles({ inviteCount, upcomingCount });
@@ -306,7 +329,7 @@ export default function CrossTeamScrimClient() {
 
   if (shell === "loading") {
     return (
-      <ScrimShell description={shellCopy.description} orgId={null} shell="loading">
+      <ScrimShell description={shellCopy.description} orgId={null} shell="loading" canOpenTeamData={canSync}>
         <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
     );
@@ -320,6 +343,7 @@ export default function CrossTeamScrimClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
+        canOpenTeamData={canSync}
       >
         <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
@@ -332,6 +356,7 @@ export default function CrossTeamScrimClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        canOpenTeamData={canSync}
       >
         <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
@@ -340,7 +365,7 @@ export default function CrossTeamScrimClient() {
 
   if (view?.status !== "live") {
     return (
-      <ScrimShell description={shellCopy.description} orgId={orgId} shell="setup">
+      <ScrimShell description={shellCopy.description} orgId={orgId} shell="setup" canOpenTeamData={canSync}>
         <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
       </ScrimShell>
     );

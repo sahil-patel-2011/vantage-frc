@@ -11,6 +11,19 @@ export type PriorityStatus = (typeof PRIORITY_STATUSES)[number];
 export const RULE_STATUSES = ["open", "answered"] as const;
 export type RuleStatus = (typeof RULE_STATUSES)[number];
 
+/** Delete matches kickoff RLS: the row's author, or an owner or admin. */
+export function canDeleteKickoffRow(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 // ---------------------------------------------------------------------------
 // Row + view types (camelCase; the API casts numeric columns to JS numbers).
 // ---------------------------------------------------------------------------
@@ -24,6 +37,7 @@ export type ScoringAction = {
   estSeconds: number | null;
   notes: string;
   sortOrder: number;
+  createdBy?: string;
 };
 
 export type DesignPriority = {
@@ -34,6 +48,7 @@ export type DesignPriority = {
   weight: number;
   status: PriorityStatus;
   linkedActionId: string | null;
+  createdBy?: string;
 };
 
 export type RuleNote = {
@@ -43,6 +58,7 @@ export type RuleNote = {
   answer: string;
   ruleRef: string;
   status: RuleStatus;
+  createdBy?: string;
 };
 
 export type KickoffContext = {
@@ -50,6 +66,7 @@ export type KickoffContext = {
   orgName: string | null;
   teamNumber: number | null;
   role: string | null;
+  userId?: string | null;
   defaultSeasonYear: number;
 };
 

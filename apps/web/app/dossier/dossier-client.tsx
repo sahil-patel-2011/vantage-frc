@@ -9,6 +9,7 @@ import {
   DOSSIER_RELATED_INCLUDE,
   classifyDossierShell,
   dossierNextActions,
+  dossierPrimaryAction,
   dossierRelatedLinks,
   dossierSetupSteps,
   dossierShellCopy,
@@ -18,6 +19,7 @@ import {
   type DossierShellKind,
 } from "../../lib/dossier/dossier-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
@@ -97,6 +99,7 @@ function DossierNextActionsPanel({ actions }: { actions: DossierNextAction[] }) 
 
 function DossierShell({
   orgId,
+  canSync,
   shell,
   error,
   errorStatus,
@@ -104,6 +107,7 @@ function DossierShell({
   children,
 }: {
   orgId?: string | null;
+  canSync?: boolean;
   shell: DossierShellKind;
   error?: string;
   errorStatus?: number | null;
@@ -131,7 +135,8 @@ function DossierShell({
         )
       : null;
   const setup = shell === "setup" ? dossierSetupSteps(orgId)[0] : null;
-  const teamDataHref = withOrgHref("/team/data", orgId);
+  const setupAction = setup ? dossierPrimaryAction({ canSync, orgId, setup }) : null;
+  const emptyAction = dossierPrimaryAction({ canSync, orgId });
 
   return (
     <main className="module-page dossier-page dossier-workbench soft-gate">
@@ -174,14 +179,14 @@ function DossierShell({
             Retry
           </Button>
         ) : null}
-        {!failure?.primary && setup ? (
-          <Button as="a" variant="primary" href={setup.href}>
-            {setup.label}
+        {!failure?.primary && setupAction ? (
+          <Button as="a" variant="primary" href={setupAction.href}>
+            {setupAction.label}
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>
-            Sync season metrics
+          <Button as="a" variant="primary" href={emptyAction.href}>
+            {emptyAction.label}
           </Button>
         ) : null}
       </EmptyState>
@@ -322,6 +327,7 @@ export default function DossierClient() {
     return (
       <DossierShell
         orgId={view?.orgId ?? orgId}
+        canSync={view && view.status !== "live" ? view.canSync : undefined}
         shell={shell}
         error={
           shell === "error"
@@ -357,6 +363,10 @@ export default function DossierClient() {
     cardCount,
   });
   const emptyCopy = dossierShellCopy("empty");
+  const emptyPrimary = dossierPrimaryAction({
+    canSync: view?.status === "empty" ? view.canSync : false,
+    orgId: resolvedOrgId,
+  });
 
   return (
     <main className="module-page dossier-page dossier-workbench">
@@ -375,7 +385,7 @@ export default function DossierClient() {
 
       <OfflineBanner feature="Dossier" fromCache={fromCache} cachedAt={cachedAt} />
 
-      <DataSourceDegradedBanner health={view?.dataSourceHealth} />
+      <DataSourceDegradedBanner health={view?.dataSourceHealth} canOpenTeamData={view?.canSync === true} />
 
       <Panel as="form" className="dossier-search-panel dossier-panel" onSubmit={onSearch}>
         <FormRow
@@ -424,15 +434,15 @@ export default function DossierClient() {
             className="dossier-empty"
             badge="No facts yet"
             badgeTone="setup"
-            title={view?.status === "empty" ? view.message : emptyCopy.title}
+            title={emptyCopy.title}
             description={
               view?.status === "empty"
                 ? `${view.message} Cards stay blank until real rows exist.`
                 : emptyCopy.description
             }
           >
-            <Button as="a" variant="primary" href={withOrgHref("/team/data", resolvedOrgId)}>
-              Sync season metrics
+            <Button as="a" variant="primary" href={emptyPrimary.href}>
+              {emptyPrimary.label}
             </Button>
           </EmptyState>
         </>
@@ -511,7 +521,9 @@ function LiveDossier({ view }: { view: Extract<DossierView, { status: "live" }> 
                   {card.citation.syncedAt
                     ? ` · synced ${new Date(card.citation.syncedAt).toLocaleDateString()}`
                     : ""}
-                  {card.citation.eventKey ? ` · ${card.citation.eventKey}` : ""}
+                  {card.citation.eventKey
+                    ? ` · ${scoutEventLabel({ eventName: card.citation.eventName, eventKey: card.citation.eventKey }) ?? ""}`
+                    : ""}
                 </small>
               </li>
             ))}

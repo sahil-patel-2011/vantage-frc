@@ -88,8 +88,8 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     },
     {
       id: "command",
-      label: "Set active event",
-      detail: "Event Day picks the event match and pit forms use.",
+      label: "Open Event Day",
+      detail: "An owner or admin sets the event match and pit forms use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -154,6 +154,39 @@ export function scoutingOfflineBannerDetail(input: {
   return undefined;
 }
 
+/**
+ * What a scout should read where the page names the event.
+ *
+ * A district key is already the name people say. A team-made key embeds the
+ * org id, so it is not a label — use the saved name, or a plain fallback.
+ */
+export type NamedEventKey = { eventKey: string; eventName: string | null };
+
+/** Accept a cached event key string or a `{ eventKey, eventName }` row. */
+export function namedEventOption(value: unknown): NamedEventKey | null {
+  if (typeof value === "string") {
+    const eventKey = value.trim();
+    return eventKey ? { eventKey, eventName: null } : null;
+  }
+  if (!value || typeof value !== "object" || !("eventKey" in value)) return null;
+  const eventKey = (value as { eventKey?: unknown }).eventKey;
+  if (typeof eventKey !== "string" || !eventKey.trim()) return null;
+  const eventName = (value as { eventName?: unknown }).eventName;
+  return { eventKey, eventName: typeof eventName === "string" ? eventName : null };
+}
+
+export function scoutEventLabel(input: {
+  eventName?: string | null;
+  eventKey?: string | null;
+}): string | null {
+  const name = input.eventName?.trim();
+  if (name) return name;
+  const key = input.eventKey?.trim() ?? "";
+  if (!key) return null;
+  if (key.includes("custom-")) return "Your event";
+  return key;
+}
+
 /** Classify main Scouting Soft-UI shell — never invents DEMO entries. */
 export function classifyScoutingShell(input: {
   loading?: boolean;
@@ -170,7 +203,10 @@ export function classifyScoutingShell(input: {
 }
 
 /** Soft-UI empty / setup / error copy — never DEMO entries. */
-export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
+export function scoutingShellCopy(
+  kind: ScoutingShellKind,
+  context?: { orgId?: string | null },
+): ScoutingEmptyCopy {
   switch (kind) {
     case "loading":
       return {
@@ -186,6 +222,15 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
         description: "Could not load scouting. Retry, or open forms while it reloads.",
       };
     case "setup":
+      if (context?.orgId) {
+        return {
+          kind,
+          badge: "Needs setup",
+          title: "Waiting on an event",
+          description:
+            "This team is already chosen. An owner or admin sets the event, and then match and pit forms load.",
+        };
+      }
       return {
         kind,
         badge: "Needs setup",
@@ -265,8 +310,8 @@ export function scoutingNextActions(input: {
       return [
         {
           id: "command",
-          label: "Set active event",
-          detail: "Event Day picks the event match and pit forms use.",
+          label: "Open Event Day",
+          detail: "An owner or admin sets the event match and pit forms use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },

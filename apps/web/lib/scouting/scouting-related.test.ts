@@ -8,6 +8,8 @@ import {
   scoutingRelatedLinks,
   scoutingSetupSteps,
   scoutingShellCopy,
+  namedEventOption,
+  scoutEventLabel,
   shouldShowScoutingRecentEntries,
 } from "./scouting-related";
 
@@ -99,6 +101,28 @@ describe("scoutingOfflineBannerDetail", () => {
   });
 });
 
+describe("namedEventOption", () => {
+  it("keeps a saved name and still accepts a plain key from an older cache", () => {
+    expect(namedEventOption({ eventKey: "2026custom-org", eventName: "Pacific Practice" })).toEqual({
+      eventKey: "2026custom-org",
+      eventName: "Pacific Practice",
+    });
+    expect(namedEventOption("2026orwil")).toEqual({ eventKey: "2026orwil", eventName: null });
+    expect(namedEventOption("  ")).toBeNull();
+  });
+});
+
+describe("scoutEventLabel", () => {
+  it("uses the saved name and hides a team-made key", () => {
+    expect(scoutEventLabel({ eventName: "Pacific Practice", eventKey: "2026custom-org-pacific" })).toBe(
+      "Pacific Practice",
+    );
+    expect(scoutEventLabel({ eventName: "  ", eventKey: "2026custom-org-pacific" })).toBe("Your event");
+    expect(scoutEventLabel({ eventKey: "2026orwil" })).toBe("2026orwil");
+    expect(scoutEventLabel({ eventKey: null })).toBeNull();
+  });
+});
+
 describe("classifyScoutingShell", () => {
   it("classifies loading / error / setup / empty / ready without DEMO entries", () => {
     expect(classifyScoutingShell({ loading: true })).toBe("loading");
@@ -123,7 +147,15 @@ describe("scoutingShellCopy", () => {
     expect(scoutingShellCopy("empty").badge).toBe("Forms required");
     expect(scoutingShellCopy("empty").description).not.toMatch(/DEMO/i);
     expect(scoutingShellCopy("setup").badge).toBe("Needs setup");
+    expect(scoutingShellCopy("setup").title).toBe("Choose your team");
     expect(scoutingShellCopy("ready").description).not.toMatch(/DEMO/i);
+  });
+
+  it("asks for an event once the team is already chosen", () => {
+    const copy = scoutingShellCopy("setup", { orgId: "org-1" });
+    expect(copy.title).toBe("Waiting on an event");
+    expect(copy.description).toMatch(/owner or admin/);
+    expect(copy.title).not.toMatch(/Choose your team/);
   });
 });
 

@@ -34,7 +34,7 @@ export type CodeCoachRelatedLink = {
  */
 export function codeCoachRelatedLinks(
   orgId?: string | null,
-  options?: { include?: CodeCoachRelatedId[] },
+  options?: { include?: CodeCoachRelatedId[]; canConnect?: boolean },
 ): CodeCoachRelatedLink[] {
   if (!orgId) return [];
   const include = options?.include ? new Set(options.include) : null;
@@ -46,7 +46,11 @@ export function codeCoachRelatedLinks(
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "budgets", label: "Budgets", href: hubHref("/ai", "budgets", orgId) },
   ];
-  return all.filter((link) => !include || include.has(link.id));
+  return all.filter((link) => {
+    if (include && !include.has(link.id)) return false;
+    if (link.id === "github" && options?.canConnect === false) return false;
+    return true;
+  });
 }
 
 /** Primary Soft-UI strip: CAD · GitHub · AI chat. */
@@ -68,6 +72,8 @@ export function codeCoachNextActions(input: {
   orgId?: string | null;
   hasSource?: boolean;
   hasReview?: boolean;
+  /** When false, GitHub setup stays a note. Omitted keeps the owner link. */
+  canConnect?: boolean;
 }): CodeCoachNextAction[] {
   const orgId = input.orgId ?? null;
 
@@ -111,12 +117,19 @@ export function codeCoachNextActions(input: {
       href: hubHref("/build", "cad", orgId),
       primary: !actions.some((a) => a.primary),
     },
-    {
-      id: "github",
-      label: "Connect GitHub",
-      detail: "Link a robot-code repo so Bugbot can scan it. PAT or OAuth — read-only, never a push.",
-      href: githubConnectionHref(orgId),
-    },
+    input.canConnect === false
+      ? {
+          id: "github",
+          label: "Ask an owner to connect GitHub",
+          detail: "An owner or admin links the robot-code repo. Paste a file here to review it without GitHub.",
+          href: "#cdc-source",
+        }
+      : {
+          id: "github",
+          label: "Connect GitHub",
+          detail: "Link a robot-code repo so Bugbot can scan it. PAT or OAuth — read-only, never a push.",
+          href: githubConnectionHref(orgId),
+        },
     {
       id: "chat",
       label: "Open AI chat",

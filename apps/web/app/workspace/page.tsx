@@ -16,6 +16,7 @@ import {
 import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "../invite/invite-flow.css";
 
 export const metadata = {
@@ -193,13 +194,15 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         <div>
           <span className="eyebrow">ACTIVE EVENT</span>
           <h1>{data.context.eventName ?? "No event selected"}</h1>
-          <p>
-            {data.context.eventKey
-              ? data.context.eventKey
-              : isOwnerAdmin
-                ? "Set the active event to load match queues."
-                : "An owner or admin sets the active event."}
-          </p>
+          {data.context.eventName?.trim() ? null : (
+            <p>
+              {data.context.eventKey
+                ? scoutEventLabel({ eventKey: data.context.eventKey })
+                : isOwnerAdmin
+                  ? "Set the active event to load match queues."
+                  : "An owner or admin sets the active event."}
+            </p>
+          )}
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {!data.context.eventKey && isOwnerAdmin ? (
@@ -214,7 +217,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </div>
       </section>
       <QuickActions orgId={orgId} />
-      <DataSourceDegradedBanner health={data.dataSourceHealth} />
+      <DataSourceDegradedBanner health={data.dataSourceHealth} canOpenTeamData={isOwnerAdmin} />
       <aside className="freshness-marker" role="status">
         <strong>TBA cache</strong>
         <span>

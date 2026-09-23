@@ -34,6 +34,19 @@ export function isComplete(status: RecordStatus) {
   return status === "submitted" || status === "verified";
 }
 
+/** Delete matches consent_forms RLS: the author, or an owner or admin. */
+export function canDeleteConsentForm(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export type FormInput = { name: string; formType: FormType; required: boolean; documentUrl: string | null };
 
 export function validateForm(raw: Record<string, unknown>): { ok: true; value: FormInput } | { ok: false; error: string } {

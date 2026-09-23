@@ -8,6 +8,7 @@ import {
   mapTbaPlayoffMatches,
   mapTbaRankedTeams,
   rankingsCacheRequiredCopy,
+  rankingsEmptyAction,
   shouldRefreshRankings,
   type TbaRankCacheRow,
 } from "./tba-cache";
@@ -148,11 +149,13 @@ describe("mapTbaPlayoffMatches", () => {
 
 describe("buildRankingsView", () => {
   it("is setup_required without an org or active event", () => {
-    expect(
-      buildRankingsView({
-        context: { ...CONTEXT, orgId: null, eventKey: null },
-      }).status,
-    ).toBe("setup_required");
+    const noOrg = buildRankingsView({
+      context: { ...CONTEXT, orgId: null, eventKey: null },
+    });
+    expect(noOrg.status).toBe("setup_required");
+    if (noOrg.status === "setup_required") {
+      expect(noOrg.message).toMatch(/join the waitlist/i);
+    }
     expect(
       buildRankingsView({
         context: { ...CONTEXT, eventKey: null },
@@ -204,6 +207,32 @@ describe("rankingsCacheRequiredCopy", () => {
     const copy = rankingsCacheRequiredCopy();
     expect(copy.description).toMatch(/cache/i);
     expect(copy.description).toMatch(/blank/i);
+    expect(copy.description).toMatch(/Sync Team Data under Team/);
     expect(`${copy.title} ${copy.description}`).not.toMatch(/\bDEMO\b/);
+  });
+});
+
+describe("rankingsEmptyAction", () => {
+  it("sends an owner or admin to Team Data with the team id", () => {
+    for (const role of ["owner", "admin"]) {
+      const action = rankingsEmptyAction({ orgId: CONTEXT.orgId, role });
+      expect(action.label).toBe("Open Team Data");
+      expect(action.href).toContain("/team/data");
+      expect(action.href).toContain(`orgId=${CONTEXT.orgId}`);
+      expect(action.description).toBe(rankingsCacheRequiredCopy().description);
+    }
+  });
+
+  it("sends a scout or viewer to Scouting instead of Team Data", () => {
+    for (const role of ["member", "scout", "viewer", null]) {
+      const action = rankingsEmptyAction({ orgId: CONTEXT.orgId, role });
+      expect(action.label).toBe("Open Scouting");
+      expect(action.href).toContain("/competition");
+      expect(action.href).toContain("tab=scouting");
+      expect(action.href).toContain(`orgId=${CONTEXT.orgId}`);
+      expect(action.href).not.toContain("/team/data");
+      expect(action.description).toMatch(/owner or admin/);
+      expect(action.description).not.toMatch(/\d+%/);
+    }
   });
 });

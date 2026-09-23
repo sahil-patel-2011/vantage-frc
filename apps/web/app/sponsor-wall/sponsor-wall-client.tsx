@@ -18,8 +18,10 @@ import {
 } from "../../lib/sponsor-wall/sponsor-wall-related";
 import type { SponsorWallTheme, SponsorWallTier } from "../../lib/sponsor-wall/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-wall.css";
 
@@ -159,6 +161,7 @@ export default function SponsorWallClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [canManage, setCanManage] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<SponsorWallView | null>(null);
@@ -224,6 +227,19 @@ export default function SponsorWallClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
+      setCanManage(strategyCanSync(membership?.role ?? session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
   const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
   const publishedCount = view?.status === "live" ? view.summary.publishedEntries : 0;
   const tierCount = view?.status === "live" ? view.summary.byTier.length : 0;
@@ -242,6 +258,7 @@ export default function SponsorWallClient() {
     shell,
     entryCount,
     publishedCount,
+    canManage,
   });
   const relatedLinks = sponsorWallRelatedLinks(orgId, {
     include: [...SPONSOR_WALL_RELATED_INCLUDE],
@@ -253,7 +270,7 @@ export default function SponsorWallClient() {
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
-      if (!orgId || busy) return;
+      if (!orgId || busy || !canManage) return;
       setBusy(true);
       setError("");
       try {
@@ -276,7 +293,7 @@ export default function SponsorWallClient() {
         setBusy(false);
       }
     },
-    [orgId, busy],
+    [orgId, busy, canManage],
   );
 
   if (shell === "loading") {
@@ -380,7 +397,7 @@ export default function SponsorWallClient() {
         </section>
       ) : null}
 
-      {shell === "empty" ? (
+      {shell === "empty" && canManage ? (
         <EmptyState
           soft
           badge="No sponsors yet"
@@ -395,9 +412,9 @@ export default function SponsorWallClient() {
       ) : null}
 
       <div className="sponsor-wall-layout">
-        <SettingsForm view={view} busy={busy} mutate={mutate} />
-        <AddEntryForm busy={busy} mutate={mutate} />
-        <WallPreview view={view} busy={busy} mutate={mutate} />
+        <SettingsForm view={view} busy={busy} mutate={mutate} canManage={canManage} />
+        {canManage ? <AddEntryForm busy={busy} mutate={mutate} /> : null}
+        <WallPreview view={view} busy={busy} mutate={mutate} canManage={canManage} />
         <Panel className="sponsor-wall-tip" aria-label="Sponsor Wall tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
@@ -414,15 +431,32 @@ function SettingsForm({
   view,
   busy,
   mutate,
+  canManage,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  canManage: boolean;
 }) {
   const [headline, setHeadline] = useState(view.settings.headline);
   const [subtitle, setSubtitle] = useState(view.settings.subtitle ?? "");
   const [theme, setTheme] = useState<SponsorWallTheme>(view.settings.theme);
   const [published, setPublished] = useState(view.settings.published);
+
+  if (!canManage) {
+    return (
+      <Panel style={{ display: "grid", gap: 10 }}>
+        <h2 style={{ margin: 0 }}>Wall settings</h2>
+        <p className="app-muted" style={{ margin: 0 }}>
+          An owner or admin publishes the sponsor wall. You can still read the entries.
+        </p>
+        <p style={{ margin: 0 }}>
+          {view.settings.headline}
+          {view.settings.published ? " · Public" : " · Draft"}
+        </p>
+      </Panel>
+    );
+  }
 
   return (
     <Panel
@@ -565,10 +599,12 @@ function WallPreview({
   view,
   busy,
   mutate,
+  canManage,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  canManage: boolean;
 }) {
   if (view.entries.length === 0) {
     return (
@@ -607,6 +643,7 @@ function WallPreview({
               </small>
               {item.message ? <small className="app-muted">{item.message}</small> : null}
             </div>
+            {canManage ? (
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button
                 type="button"
@@ -629,6 +666,7 @@ function WallPreview({
                 Delete
               </button>
             </div>
+            ) : null}
           </li>
         ))}
       </ul>

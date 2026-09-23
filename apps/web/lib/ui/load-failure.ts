@@ -44,6 +44,9 @@ const FORBIDDEN_PATTERNS = [
   "access denied",
   "insufficient role",
   "permission",
+  // assertOrgCapability and requireOrgAdmin say this, and several routes
+  // still answer 400 for it. The words are the role check.
+  "administrator access",
 ];
 
 /**
@@ -160,7 +163,7 @@ export function loadFailureCopy(
         badge: "No access",
         title: "You don't have access to this",
         description:
-          "Your team role does not include this section. An owner or admin can change it under Security.",
+          "Your team role does not include this section. An owner or admin can change that.",
         primary: { label: "Back to Home", href: "/dashboard" },
         showRetry: false,
       };

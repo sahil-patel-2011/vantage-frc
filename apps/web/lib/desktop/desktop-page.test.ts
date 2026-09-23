@@ -17,10 +17,11 @@ describe("desktop download page student copy", () => {
   });
 
   it("tells a student how to get the Windows app and that unsigned is expected", () => {
-    expect(src).toMatch(/Windows downloads/);
+    expect(src).toMatch(/Download for Windows/);
+    expect(src).toMatch(/No Windows build is published yet/);
     expect(src).toMatch(/SmartScreen/);
     expect(src).toMatch(/signing certificate/);
-    expect(src).toMatch(/GitHub Releases/);
+    expect(src).not.toMatch(/vantage-frc\/releases/);
     expect(src).toMatch(/docs\/DESKTOP\.md/);
   });
 });

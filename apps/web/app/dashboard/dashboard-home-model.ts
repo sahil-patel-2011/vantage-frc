@@ -48,7 +48,10 @@ export function homeHeaderDetail(input: {
   // Silent: the card below is headed "Choose your team" and its button says
   // the same words again. Three sightings of one instruction on one screen.
   if (!input.orgId) return "";
-  if (input.tbaConfigured === false) {
+  const namedEvent = typeof input.eventName === "string" && input.eventName.trim().length > 0;
+  // The event row under this header already names a set event. Saying a mentor
+  // still has to connect one contradicts that row.
+  if (input.tbaConfigured === false && !namedEvent) {
     return "Your week — next match, hours, and what to do now. Match times fill in after a mentor connects the event.";
   }
   // Deliberately silent. The SETUP card below is driven by this same state and

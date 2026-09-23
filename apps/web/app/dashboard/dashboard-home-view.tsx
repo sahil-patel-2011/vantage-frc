@@ -103,6 +103,7 @@ export function DashboardHomeView(props: {
   nextActions: DashboardNextAction[];
   setupSteps: DashboardSetupStep[];
   dataSourceHealth: DataSourceHealthView | null;
+  canOpenTeamData?: boolean;
   tbaConfigured: boolean | undefined;
   setupRequired: boolean;
   eventName: unknown;
@@ -196,6 +197,7 @@ export function DashboardHomeView(props: {
     nextActions,
     setupSteps,
     dataSourceHealth,
+    canOpenTeamData = false,
     tbaConfigured,
     setupRequired,
     eventName,
@@ -482,7 +484,7 @@ export function DashboardHomeView(props: {
       <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
 
       {meLoaded && orgId && tbaConfigured !== false ? (
-        <DataSourceDegradedBanner health={dataSourceHealth} />
+        <DataSourceDegradedBanner health={dataSourceHealth} canOpenTeamData={canOpenTeamData} />
       ) : null}
 
       {editing ? (
@@ -638,6 +640,7 @@ export function DashboardHomeView(props: {
                         payload={widgets[item.type]}
                         orgId={orgId}
                         tbaConfigured={tbaConfigured}
+                        canOpenTeamData={canOpenTeamData}
                         onCardPointerDown={(event, target) => {
                           if (!editing) return;
                           const node = event.target as HTMLElement;

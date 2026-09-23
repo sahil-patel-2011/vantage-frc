@@ -254,6 +254,7 @@ export function EventCard({
             <button
               type="button"
               className="tc-text-btn"
+              aria-label={editing ? `Close ${event.title}` : `Edit ${event.title}`}
               disabled={busy}
               onClick={editing ? onCancelEdit : onStartEdit}
             >
@@ -261,7 +262,13 @@ export function EventCard({
             </button>
           ) : null}
           {canDelete ? (
-            <button type="button" className="tc-text-btn" disabled={busy} onClick={onDelete}>
+            <button
+              type="button"
+              className="tc-text-btn"
+              aria-label={`Remove ${event.title}`}
+              disabled={busy}
+              onClick={onDelete}
+            >
               Remove
             </button>
           ) : null}

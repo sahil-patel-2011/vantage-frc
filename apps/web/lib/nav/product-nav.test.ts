@@ -33,7 +33,7 @@ describe("product-nav", () => {
       "/dashboard",
       "/competition",
       "/competition?tab=scouting",
-      "/analytics",
+      "/rankings",
     ]);
   });
 

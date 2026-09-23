@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRICING_CATALOG } from "@vantage/billing/catalog";
 import { describe, expect, it } from "vitest";
+import { defaultIslandLabelList } from "../nav/island-preferences";
 import { PRODUCT_HUBS, isHubTab } from "../nav/hubs";
 import {
   HELP_ARTICLES,
@@ -206,6 +207,13 @@ describe("help search index", () => {
     const hits = searchHelpArticles("bottom island");
     expect(hits[0]?.slug).toBe("bottom-island");
     expect(hits[0]?.href).toBe("/help/bottom-island");
+  });
+
+  it("describes the island people actually get", () => {
+    const article = getHelpArticle("bottom-island");
+    const text = articleText(article!);
+    expect(text).toContain(defaultIslandLabelList());
+    expect(text).not.toMatch(/Compete|Media/);
   });
 
   it("finds BYOK / Automode and Edit Home", () => {

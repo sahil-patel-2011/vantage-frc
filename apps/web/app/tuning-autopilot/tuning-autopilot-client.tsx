@@ -16,7 +16,7 @@ import {
   type TuningAutopilotNextAction,
   type TuningAutopilotShellKind,
 } from "../../lib/tuning-autopilot/tuning-autopilot-related";
-import type { TuningControllerType } from "../../lib/tuning-autopilot/types";
+import { canDeleteTuningAutopilotRow, type TuningControllerType } from "../../lib/tuning-autopilot/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -562,18 +562,25 @@ function SessionSwitcher({
                 Abandon
               </Button>
             ) : null}
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete session "${selected.session.subsystem}" and all its iterations?`)) {
-                  mutate({ action: "delete-session", sessionId: selected.session.id });
-                }
-              }}
-            >
-              Delete
-            </button>
+            {canDeleteTuningAutopilotRow({
+              role: view.role,
+              userId: view.userId,
+              authorId: selected.session.createdBy,
+            }) ? (
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                aria-label={`Delete session ${selected.session.subsystem}`}
+                onClick={() => {
+                  if (window.confirm(`Delete session "${selected.session.subsystem}" and all its iterations?`)) {
+                    mutate({ action: "delete-session", sessionId: selected.session.id });
+                  }
+                }}
+              >
+                Delete
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -852,16 +859,23 @@ function IterationHistory({
               </small>
               {iteration.notes ? <small className="app-muted">{iteration.notes}</small> : null}
             </div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() =>
-                mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })
-              }
-            >
-              Delete
-            </button>
+            {canDeleteTuningAutopilotRow({
+              role: view.role,
+              userId: view.userId,
+              authorId: iteration.loggedBy,
+            }) ? (
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                aria-label={`Delete iteration ${iteration.notes || `#${iteration.iterationIndex}`}`}
+                onClick={() =>
+                  mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })
+                }
+              >
+                Delete
+              </button>
+            ) : null}
           </li>
         ))}
       </ul>

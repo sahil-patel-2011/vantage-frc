@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 import { MARKETING_SEASON } from "../../lib/marketing/product-story";
 import "../marketing-showcase.css";
@@ -62,14 +62,9 @@ export default function WorkflowPage() {
             Scouting feeds strategy and event day. CAD, code, money, and the playbook live in the same org — without a
             pile of extra logins.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="button secondary" href="/features">
-              See the product
-            </a>
-          </div>
+          <MarketingRouteActions
+            companion={{ href: "/features", label: "See the product", variant: "secondary" }}
+          />
         </header>
 
         <section className="flow-map lux-content" aria-label="How Vantage works">

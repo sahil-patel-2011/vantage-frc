@@ -59,6 +59,27 @@ describe("computeScoutCoverageLiveView", () => {
     }
   });
 
+  it("names the active event when the schedule cache is empty", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234, role: "scout" }] };
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific" }] };
+      }
+      if (sql.includes("FROM events_ref")) return { rows: [{ eventName: "Pacific Practice" }] };
+      if (sql.includes("FROM matches_ref")) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const view = await computeScoutCoverageLiveView(client, { userId: USER, requestedOrg: ORG });
+
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") throw new Error("expected setup");
+    expect(view.message).toBe("Pacific Practice has no match schedule yet.");
+    expect(view.message).not.toContain("2026custom-");
+    expect(view.steps[0]?.label).toBe("Open Scouting");
+    expect(view.steps.some((step) => step.label === "Sync Team Data")).toBe(false);
+  });
+
   it("returns a live view with a coverage grid computed from schedule + scout entry counts", async () => {
     const client = makeClient((sql) => {
       if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234 }] };
@@ -98,6 +119,7 @@ describe("computeScoutCoverageLiveView", () => {
         };
       }
       if (sql.includes("FROM scout_coverage_live_nudges")) return { rows: [] };
+      if (sql.includes("FROM events_ref")) return { rows: [{ eventName: "Houston" }] };
       return { rows: [] };
     });
 
@@ -106,6 +128,7 @@ describe("computeScoutCoverageLiveView", () => {
     expect(view.status).toBe("live");
     if (view.status !== "live") throw new Error("expected live view");
     expect(view.eventKey).toBe(EVENT);
+    expect(view.eventName).toBe("Houston");
     expect(view.cells).toHaveLength(4);
     expect(view.summary.zeroCount).toBe(3);
     expect(view.summary.coveredCount).toBe(1);

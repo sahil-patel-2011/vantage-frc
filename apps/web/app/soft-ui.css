@@ -228,6 +228,11 @@ body.has-app-shell .app-topbar{display:none}
   /* Was blended toward #fff, which lightened this panel in dark. Blend toward
      the page ground instead so it reads one step under the card in both themes. */
   background:color-mix(in srgb,var(--surface) 92%,var(--bg));display:grid;gap:4px;
+  animation:soft-workspace-in var(--dur-press) var(--ease-settle) both;
+}
+@keyframes soft-workspace-in{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:none}
 }
 .soft-workspace-picker>a{
   display:grid;gap:2px;padding:10px 12px;border-radius:var(--radius-sm);text-decoration:none;color:inherit;
@@ -242,6 +247,7 @@ body.has-app-shell .app-topbar{display:none}
 .soft-workspace-empty{
   margin:0;padding:10px 12px;color:var(--muted);font-size:12px;line-height:1.4;
 }
+.soft-workspace-empty a{color:var(--accent);font-weight:650;text-underline-offset:2px}
 .soft-workspace-links{
   display:flex;flex-wrap:wrap;gap:6px;padding:6px 6px 4px;border-top:1px solid var(--line);margin-top:2px;
 }
@@ -342,7 +348,7 @@ body.has-app-shell .app-topbar{display:none}
 .soft-nav-group{margin:0}
 .soft-nav-caret{
   display:grid;place-items:center;width:18px;height:18px;color:var(--muted);
-  transform:rotate(0deg);transition:transform .22s var(--ease-settle);
+  transform:rotate(0deg);transition:transform var(--dur-press) var(--ease-settle);
 }
 .soft-nav-caret svg{width:14px;height:14px}
 .soft-nav-caret.open{transform:rotate(90deg)}
@@ -965,9 +971,15 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
     linear-gradient(165deg,color-mix(in srgb,var(--accent) 6%,var(--surface)) 0%,var(--surface) 48%,var(--surface) 100%);
   box-shadow:var(--shadow);
   align-items:start;
+  animation:dash-setup-in var(--dur-press) var(--ease-settle) both;
+}
+@keyframes dash-setup-in{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:none}
 }
 .dash-setup-banner h2{margin:10px 0 8px;font-size:var(--title-1);letter-spacing:var(--tracking-tight)}
 .dash-setup-banner>div>p{margin:0;max-width:42ch;color:var(--muted);line-height:1.5;font-size:var(--text-md)}
+.dash-setup-banner>div>p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
 /* When the banner's second column is a single call to action rather than a
    step list, the grid stretched that one button across ~600px and it read as a
    slab. A button is the size of its label, and with no step list to sit beside

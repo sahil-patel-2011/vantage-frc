@@ -11,7 +11,9 @@ import {
   overnightIntelSignalCount,
 } from "../../lib/overnight-intel/overnight-intel-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   OvernightIntelShell,
@@ -51,6 +53,7 @@ export default function OvernightIntelClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [canSync, setCanSync] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<OvernightIntelView | null>(null);
@@ -116,6 +119,15 @@ export default function OvernightIntelClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (!cancelled) setCanSync(strategyCanSync(session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
   const briefCount = view?.status === "live" ? view.briefs.length : 0;
   const signalCount = view?.status === "live" ? overnightIntelSignalCount(view.signals) : 0;
   const needsActiveEvent =
@@ -138,6 +150,7 @@ export default function OvernightIntelClient() {
     briefCount,
     signalCount,
     needsActiveEvent,
+    canOpenTeamData: canSync,
   });
   const competitionHref = hubWorkbenchHref("competition", "overnight-intel", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -195,6 +208,7 @@ export default function OvernightIntelClient() {
         orgId={orgId}
         shell="setup"
         needsActiveEvent={needsActiveEvent}
+        canOpenTeamData={canSync}
       >
         <OfflineBanner feature="Overnight brief" fromCache={fromCache} cachedAt={cachedAt} />
       </OvernightIntelShell>
@@ -203,7 +217,7 @@ export default function OvernightIntelClient() {
 
   if (view?.status !== "live") {
     return (
-      <OvernightIntelShell description={shellCopy.description} orgId={orgId} shell="setup">
+      <OvernightIntelShell description={shellCopy.description} orgId={orgId} shell="setup" canOpenTeamData={canSync}>
         <OfflineBanner feature="Overnight brief" fromCache={fromCache} cachedAt={cachedAt} />
       </OvernightIntelShell>
     );

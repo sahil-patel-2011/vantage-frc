@@ -82,11 +82,15 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-        orgId,
-        userId,
-      ]);
+      const member = await client.query<{ role: string }>(
+        `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+        [orgId, userId],
+      );
       if (!member.rowCount) throw new Error("forbidden");
+      const role = member.rows[0]?.role ?? "";
+      if (role !== "owner" && role !== "admin") {
+        throw new Error("Organization administrator access required");
+      }
 
       switch (action) {
         case "add-entry": {
@@ -152,7 +156,8 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = publicErrorMessage(error, "Sponsor Wall request failed");
-    const status = message === "forbidden" ? 403 : 400;
+    const status =
+      message === "forbidden" || /administrator access required/i.test(message) ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },

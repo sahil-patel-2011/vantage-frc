@@ -12,6 +12,8 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/"hub-access"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
+    expect(src).toMatch(/rosterReady && !editable.length/);
+    expect(src).toMatch(/Owners and admins set hub access/);
   });
 
   it("capabilities reads and writes the member-capabilities IndexedDB feature cache", () => {
@@ -22,6 +24,10 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
     expect(src).not.toMatch(/API keys/);
+    expect(src).toMatch(/rosterReady && !editable.length/);
+    expect(src).toMatch(/Owners and admins grant extra powers/);
+    expect(src).toMatch(/\/team\/admin\?orgId=/);
+    expect(src).not.toMatch(/href=\{`\/team\?orgId=/);
   });
 
   it("sign-in policy reads and writes the auth-policy IndexedDB feature cache", () => {
@@ -32,6 +38,9 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
     expect(src).not.toMatch(/>API keys</);
+    expect(src).toMatch(/canManage \? <a href=\{withOrgHref\("\/team\/admin", orgId\)\}>Team admin<\/a>/);
+    expect(src).toMatch(/Owners and admins set sign-in methods/);
+    expect(src).toMatch(/canEditPolicy/);
   });
 
   it("no-org setup says Choose your team, not pick the team first", () => {

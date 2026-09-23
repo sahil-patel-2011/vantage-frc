@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDebriefCoachPrompt,
+  canDeleteMatchDebrief,
   debriefTakeaways,
   parseMatchDebriefAction,
   summarizeDebriefs,
   validateDebrief,
 } from "./match-debrief";
+
+describe("canDeleteMatchDebrief", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteMatchDebrief({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteMatchDebrief({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteMatchDebrief({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteMatchDebrief({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("validateDebrief", () => {
   it("requires a match label", () => {

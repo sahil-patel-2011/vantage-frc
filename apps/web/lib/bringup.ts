@@ -16,6 +16,19 @@ export const BRINGUP_PHASE_LABEL: Record<BringupPhase, string> = {
 export const BRINGUP_RESULTS = ["pending", "pass", "fail", "na"] as const;
 export type BringupResult = (typeof BRINGUP_RESULTS)[number];
 
+/** Delete matches bringup_items RLS: the author, or an owner or admin. */
+export function canDeleteBringupItem(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export const BRINGUP_TEMPLATE: { phase: BringupPhase; label: string }[] = [
   { phase: "mechanical", label: "All fasteners installed and torqued" },
   { phase: "mechanical", label: "No mechanism interference through full range of motion" },

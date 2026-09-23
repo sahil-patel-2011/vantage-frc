@@ -5,6 +5,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DEFAULT_STATIONS, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -112,6 +113,10 @@ export default function ShiftBalancerClient() {
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
+      if (payload.action === "publish-plan") {
+        const current = viewRef.current;
+        if (!current || current.status !== "live" || !current.canPublish) return;
+      }
       setBusy(true);
       setError("");
       try {
@@ -334,6 +339,7 @@ function GeneratePlanForm({
   const [form, setForm] = useState(empty);
   // Backups need real matches (which ones are ours), so they only apply to the event-schedule plan.
   const [backups, setBackups] = useState(false);
+  const eventLabel = scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey });
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -359,13 +365,16 @@ function GeneratePlanForm({
   return (
     <Panel as="form" onSubmit={(event) => { event.preventDefault(); submit(false); }} style={{ display: "grid", gap: 10 }}>
       <h2 style={{ margin: 0 }}>Generate rotation</h2>
-      {view.eventKey && view.qualMatchCount > 0 ? (
+      {eventLabel && view.qualMatchCount > 0 ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has {view.qualMatchCount} cached qualification matches.
+          Active event {eventLabel} has {view.qualMatchCount} cached qualification {view.qualMatchCount === 1 ? "match" : "matches"}.
         </p>
-      ) : view.eventKey ? (
+      ) : eventLabel ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {view.eventKey} has no qualification matches cached yet. Sync Team Data or generate a numeric plan below.
+          Active event {eventLabel} has no qualification matches cached yet.{" "}
+          {view.canPublish
+            ? "Sync Team Data or generate a numeric plan below."
+            : "An owner or admin syncs the schedule, or generate a numeric plan below."}
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>
@@ -564,6 +573,11 @@ function PlansPanel({
         </p>
       ) : null}
       <h3 style={{ marginTop: 16 }}>All plans</h3>
+      {view.plans.length > 0 && !view.canPublish ? (
+        <p className="app-muted" style={{ margin: "8px 0 0" }}>
+          An owner or admin publishes a plan onto the schedule.
+        </p>
+      ) : null}
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
         {view.plans.map((plan) => (
           <li key={plan.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -573,15 +587,19 @@ function PlansPanel({
             <div style={{ display: "flex", gap: 6 }}>
               {/* Publishing writes the plan into scout_assignments, which the
                   schedule, the pre-match briefing, Event Day and Home already
-                  read — so the shift shows up wherever the scout is looking. */}
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => mutate({ action: "publish-plan", planId: plan.id })}
-              >
-                Publish to the schedule
-              </button>
+                  read — so the shift shows up wherever the scout is looking.
+                  That table is owner/admin write; a scout click used to surface
+                  a raw row-level security error. */}
+              {view.canPublish ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => mutate({ action: "publish-plan", planId: plan.id })}
+                >
+                  Publish to the schedule
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="text-button"

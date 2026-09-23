@@ -11,7 +11,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { nexusAttributionHref, parseNexusEvent, parseNexusMap } from "@vantage/reference";
 import { headers } from "next/headers";
-import { buildVenueMap, type NexusVenueMapView } from "../../../../lib/display";
+import { buildVenueMap, nexusVenueGapMessage, type NexusVenueMapView } from "../../../../lib/display";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export type { NexusVenueMapView };
@@ -65,7 +65,11 @@ export async function GET(request: Request) {
       const snapshot = cached.rows[0];
       if (!snapshot) {
         return setupRequired(
-          `No Nexus payload is cached for ${eventKey} yet. Nexus data appears once the event-day sync runs with a Nexus API key configured.`,
+          nexusVenueGapMessage({
+            eventName: row?.eventName ?? null,
+            eventKey,
+            reason: "no-cache",
+          }),
         );
       }
 
@@ -79,7 +83,11 @@ export async function GET(request: Request) {
       });
       if (!map) {
         return setupRequired(
-          `Nexus has not published venue geometry for ${eventKey}. Your own pit layout below is unaffected.`,
+          nexusVenueGapMessage({
+            eventName: row?.eventName ?? null,
+            eventKey,
+            reason: "no-geometry",
+          }),
         );
       }
 

@@ -95,6 +95,9 @@ export function dashboardNextActions(input: {
   const { orgId, shell } = input;
   if (shell === "loading") return [];
 
+  const role = (input.role ?? "").toLowerCase();
+  const isOwnerAdmin = role === "owner" || role === "admin";
+
   if (shell === "no_org") {
     // One short invite path — never a laundry list of accept/email/support rows.
     return [
@@ -111,13 +114,23 @@ export function dashboardNextActions(input: {
   const actions: DashboardNextAction[] = [];
 
   if (shell === "tba") {
-    actions.push({
-      id: "tba",
-      label: "Connect match results",
-      detail: "Needed for live match and rank widgets.",
-      href: withOrgHref("/team/data", orgId),
-      primary: true,
-    });
+    actions.push(
+      isOwnerAdmin
+        ? {
+            id: "tba",
+            label: "Connect match results",
+            detail: "Needed for live match and rank widgets.",
+            href: withOrgHref("/team/data", orgId),
+            primary: true,
+          }
+        : {
+            id: "scout-while-results",
+            label: "Open Scouting",
+            detail: "An owner or admin connects match results. You can still scout this event.",
+            href: hubHref("/competition", "scouting", orgId),
+            primary: true,
+          },
+    );
   }
 
   if (shell === "setup") {
@@ -189,7 +202,7 @@ export function dashboardSetupSteps(input: {
         ? isOwnerAdmin
           ? "Team selected"
           : "You’re on a team"
-        : "Open the invite sent to your email",
+        : "Open the invite sent to your email, or join the waitlist",
       href: hasOrg ? withOrgHref("/workspace", orgId) : "/invite",
       state: stateOf("workspace", hasOrg),
     },
@@ -203,8 +216,10 @@ export function dashboardSetupSteps(input: {
     {
       id: "tba",
       label: "Connect match results",
-      detail: "Match and rank data",
-      href: withOrgHref("/team/data", orgId),
+      detail: isOwnerAdmin ? "Match and rank data" : "An owner or admin connects this",
+      href: isOwnerAdmin
+        ? withOrgHref("/team/data", orgId)
+        : hubHref("/competition", "scouting", orgId),
       state: stateOf("tba", tbaDone),
     },
     {
@@ -251,7 +266,7 @@ export function dashboardSetupTitle(shell: DashboardShellKind): string {
 export function dashboardSetupBlurb(shell: DashboardShellKind): string {
   switch (shell) {
     case "no_org":
-      return "Open the invite sent to your email.";
+      return "Open the invite sent to your email, or join the waitlist.";
     case "setup":
       return "Set the event this board should follow.";
     case "tba":

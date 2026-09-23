@@ -113,8 +113,56 @@ describe("computeTrajectoryView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       // "EPA" is not student vocabulary; the message says "rating" on purpose.
+      // A missing role stays closed: scouts do not get Team Data.
       expect(view.message).toMatch(/not enough cached rating/i);
+      expect(view.message).toMatch(/owner or admin syncs ratings/i);
+      expect(view.message).not.toMatch(/Team Data/);
+      expect(view.steps[0]?.label).toBe("Open Scouting");
+      expect(view.steps[0]?.href).not.toContain("/team/data");
     }
+  });
+
+  it("keeps Team Data for an owner when district ratings are missing", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254, role: "owner" }] };
+      if (sql.includes("FROM org_active_context")) return { rows: [{ activeEventKey: "2026miket" }] };
+      if (sql.includes("FROM events_ref WHERE event_key")) return { rows: [{ districtKey: "fim", year: 2026 }] };
+      if (sql.includes("FROM teams_ref")) return { rows: [{ teamKey: "frc254" }] };
+      if (sql.includes("FROM team_year_metrics")) return { rows: [{ epaTotal: 45 }] };
+      if (sql.includes("FROM events_ref er")) {
+        return { rows: [{ eventKey: "2026miket", name: "Kettering", startDate: "2026-03-01", attended: true }] };
+      }
+      if (sql.includes("FROM team_event_metrics")) return { rows: [{ epaTotal: 30 }, { epaTotal: 32 }] };
+      if (sql.includes("FROM district_trajectory_sim_projections")) return { rows: [] };
+      if (sql.includes("FROM district_trajectory_sim_scenarios")) return { rows: [] };
+      throw new Error(`unexpected query: ${sql}`);
+    });
+
+    const view = await computeTrajectoryView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") return;
+    expect(view.message).toBe(
+      "Not enough cached rating data yet for your team and district — sync Team Data first.",
+    );
+    expect(view.steps[0]?.label).toBe("Sync Team Data");
+    expect(view.steps[0]?.href).toBe(`/team/data?orgId=${ORG}`);
+  });
+
+  it("sends a scout to Scouting when the public team record is missing", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254, role: "scout" }] };
+      if (sql.includes("FROM org_active_context")) return { rows: [{ activeEventKey: "2026miket" }] };
+      if (sql.includes("FROM events_ref WHERE event_key")) return { rows: [{ districtKey: "fim", year: 2026 }] };
+      if (sql.includes("FROM teams_ref")) return { rows: [] };
+      throw new Error(`unexpected query: ${sql}`);
+    });
+
+    const view = await computeTrajectoryView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") return;
+    expect(view.message).toMatch(/owner or admin syncs it/i);
+    expect(view.steps[0]?.href).toContain("tab=scouting");
+    expect(view.steps.some((step) => step.href.includes("/team/data"))).toBe(false);
   });
 
   it("computes a live projection from real cached EPA + district event data", async () => {

@@ -7,6 +7,7 @@ import { CHANGE_TYPES, SUBSYSTEMS, changeTypeLabel, subsystemLabel, verdictLabel
 import type { CodePerfView } from "../../lib/code-perf/compute-code-perf";
 import type { ChangeType, CorrelationVerdict, Subsystem } from "../../lib/code-perf/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -332,7 +333,7 @@ export default function CodePerfClient() {
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
         <LogChangeForm busy={busy} mutate={mutate} />
-        <LogMatchResultForm busy={busy} mutate={mutate} />
+        <LogMatchResultForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
         <ChangesList view={view} busy={busy} mutate={mutate} />
         <MatchResultsList view={view} busy={busy} mutate={mutate} />
       </div>
@@ -473,7 +474,7 @@ function MatchResultsList({
               <strong>{item.matchKey}</strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {item.occurredOn}
-                {item.eventKey ? ` · ${item.eventKey}` : ""} · auto {item.autoPoints} · teleop {item.teleopPoints} ·
+                {item.eventKey ? ` · ${scoutEventLabel({ eventKey: item.eventKey })}` : ""} · auto {item.autoPoints} · teleop {item.teleopPoints} ·
                 endgame {item.endgamePoints} · total {item.totalPoints}
               </small>
             </div>
@@ -588,9 +589,13 @@ function LogChangeForm({
 function LogMatchResultForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -607,6 +612,8 @@ function LogMatchResultForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -618,7 +625,7 @@ function LogMatchResultForm({
           action: "log-match-result",
           matchKey: form.matchKey,
           occurredOn: form.occurredOn,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           autoPoints: Number(form.autoPoints) || 0,
           teleopPoints: Number(form.teleopPoints) || 0,
           endgamePoints: Number(form.endgamePoints) || 0,
@@ -636,9 +643,19 @@ function LogMatchResultForm({
         <FormRow label="Date">
           <input type="date" value={form.occurredOn} onChange={set("occurredOn")} required />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          </FormRow>
+        )}
         <FormRow label="Auto points">
           <input type="number" min={0} value={form.autoPoints} onChange={set("autoPoints")} />
         </FormRow>

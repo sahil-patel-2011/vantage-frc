@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { pickCoverageRatio, rankContributions, summarizeByScout, totalEntriesInformingPicks } from ".";
 import type { PickImpact, ScoutContribution, ScoutDataImpactPick, ScoutImpactSummary } from "./types";
 import { resolveScoutOrg } from "../scout-org-access";
+import { scoutEventLabel } from "../scouting/scouting-related";
 
 export type ScoutDataImpactSetupStep = {
   id: string;
@@ -17,6 +18,7 @@ export type ScoutDataImpactView =
       steps: ScoutDataImpactSetupStep[];
       orgId: string | null;
       eventKey: string | null;
+      eventName: string | null;
     }
   | {
       status: "live";
@@ -125,6 +127,7 @@ export async function computeScoutDataImpactView(
       ],
       orgId: null,
       eventKey: input.eventKey ?? null,
+      eventName: null,
     };
   }
 
@@ -143,19 +146,36 @@ export async function computeScoutDataImpactView(
     : events[0]?.eventKey ?? null;
 
   if (!eventKey) {
+    const active = await client.query<{ eventKey: string | null; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1::uuid`,
+      [org.orgId],
+    );
+    const activeEvent = active.rows[0] ?? { eventKey: null, eventName: null };
+    const named = scoutEventLabel({
+      eventName: activeEvent.eventName,
+      eventKey: activeEvent.eventKey,
+    });
     return {
       status: "setup_required",
-      message: "No alliance picks have been logged yet. Log your final alliance-selection picks to see which scouting entries informed them.",
+      message: named
+        ? `No alliance picks have been logged for ${named} yet.`
+        : "No alliance picks have been logged yet. Log your final alliance-selection picks to see which scouting entries informed them.",
       steps: [
         {
           id: "log-picks",
           label: "Log alliance picks",
-          detail: "Record each pick after alliance selection wraps up",
-          href: "/scout-data-impact",
+          detail: named
+            ? `Record each pick for ${named} after alliance selection wraps up.`
+            : "Record each pick after alliance selection wraps up.",
+          href: "#log-alliance-pick",
         },
       ],
       orgId: org.orgId,
-      eventKey: null,
+      eventKey: activeEvent.eventKey,
+      eventName: activeEvent.eventName,
     };
   }
 

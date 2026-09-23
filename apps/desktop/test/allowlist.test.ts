@@ -143,4 +143,11 @@ describe("window state restore", () => {
     const state = sanitizeWindowState({ width: 1440, height: 920, maximized: true }, [display]);
     expect(state.maximized).toBe(true);
   });
+
+  it("fits the first launch onto a 1366-wide pit laptop", () => {
+    const laptop = { x: 0, y: 0, width: 1366, height: 768 };
+    expect(parseWindowState(undefined, [laptop])).toEqual({ width: 1366, height: 768 });
+    const nudged = sanitizeWindowState({ width: 1200, height: 720, x: 400, y: 80 }, [laptop]);
+    expect(nudged).toEqual({ width: 1200, height: 720, x: 166, y: 48 });
+  });
 });

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { detectConflicts, parseWiringAction, pcmPhCanCues, servoHubCues, servoPowerCues, summarizeWiring, validateDevice, type Device } from "./wiring";
+import { canDeleteWiringDevice, detectConflicts, parseWiringAction, pcmPhCanCues, servoHubCues, servoPowerCues, summarizeWiring, validateDevice, type Device } from "./wiring";
+
+describe("canDeleteWiringDevice", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteWiringDevice({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteWiringDevice({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteWiringDevice({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteWiringDevice({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 const dev = (over: Partial<Device> & { name: string }): Device => ({
   id: over.name, name: over.name, deviceType: "talonfx", canId: null, canBus: "rio", pdhPort: null, ...over,

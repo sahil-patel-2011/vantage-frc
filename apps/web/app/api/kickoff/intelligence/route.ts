@@ -5,6 +5,7 @@ import { CadRepository } from "@vantage/cad";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { canDeleteKickoffRow } from "../../../../lib/kickoff";
 import {
   buildCadBriefFromIntelligence,
   buildStrategyFromIntelligence,
@@ -107,6 +108,7 @@ type IntelligenceRow = {
   adviceLabel: typeof KICKOFF_ADVICE_LABEL;
   createdAt: string;
   appliedAt: string | null;
+  createdBy?: string;
 };
 
 function mapRow(row: IntelligenceRow): KickoffIntelligenceRecord {
@@ -128,6 +130,7 @@ function mapRow(row: IntelligenceRow): KickoffIntelligenceRecord {
     adviceLabel: row.adviceLabel,
     createdAt: row.createdAt,
     appliedAt: row.appliedAt,
+    createdBy: row.createdBy,
   };
 }
 
@@ -142,7 +145,8 @@ async function loadRecords(client: PoolClient, orgId: string, seasonYear?: numbe
             source_checksum AS "sourceChecksum",
             advice_label AS "adviceLabel",
             created_at::text AS "createdAt",
-            applied_at::text AS "appliedAt"
+            applied_at::text AS "appliedAt",
+            created_by AS "createdBy"
      FROM kickoff_game_intelligence
      WHERE org_id = $1 AND ($2::int IS NULL OR season_year = $2::int)
      ORDER BY season_year DESC, created_at DESC
@@ -305,6 +309,10 @@ export async function GET(request: Request) {
 
     const payload = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireMembership(client, orgId, session.user.id);
+      const membership = await client.query<{ role: string }>(
+        `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+        [orgId, session.user.id],
+      );
       const records = await loadRecords(client, orgId, seasonYear);
       return {
         status: records.length ? ("ready" as const) : ("empty" as const),
@@ -312,6 +320,8 @@ export async function GET(request: Request) {
           ? null
           : "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
         records,
+        role: membership.rows[0]?.role ?? "",
+        userId: session.user.id,
       };
     });
 
@@ -547,11 +557,24 @@ export async function POST(request: Request) {
         }
 
         case "delete": {
+          const membership = await client.query<{ role: string }>(
+            `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+            [action.orgId, userId],
+          );
+          const existing = await client.query<{ createdBy: string }>(
+            `SELECT created_by AS "createdBy" FROM kickoff_game_intelligence WHERE id = $1 AND org_id = $2`,
+            [action.id, action.orgId],
+          );
+          const createdBy = existing.rows[0]?.createdBy;
+          if (!createdBy) throw new HttpError(404, "Intelligence record not found");
+          if (!canDeleteKickoffRow({ role: membership.rows[0]?.role, userId, authorId: createdBy })) {
+            throw new HttpError(403, "You cannot delete this game summary");
+          }
           const deleted = await client.query(`DELETE FROM kickoff_game_intelligence WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,
           ]);
-          if (!deleted.rowCount) throw new HttpError(404, "Intelligence record not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this game summary");
           return { ok: true };
         }
 

@@ -26,7 +26,7 @@ import { AddItemForm } from "./inventory-items";
 import InventoryLabelTools from "./inventory-label-tools";
 import { LocationsPanel } from "./inventory-locations";
 import { BomPanel } from "./inventory-bom";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   INVENTORY_ADD_HREF,
@@ -113,6 +113,7 @@ export default function InventoryClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistInventorySnapshot(urlOrg, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -230,6 +231,8 @@ export default function InventoryClient() {
           visibleItems={visibleItems}
           locations={locations}
           orgId={readyOrgId}
+          role={view.context.role}
+          userId={view.context.userId ?? null}
           busyKey={busyKey}
           run={run}
           search={search}

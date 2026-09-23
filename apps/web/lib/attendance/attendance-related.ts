@@ -187,16 +187,26 @@ export function attendanceNextActions(input: {
   }
 
   if (input.emptyRollCount > 0) {
-    actions.push({
-      id: "mark-empty",
-      label: `Mark ${input.emptyRollCount} empty roll${input.emptyRollCount === 1 ? "" : "s"}`,
-      detail: "One-tap team members who showed up — totals use only names you add.",
-      href: attendanceEventHref(orgId, {
-        eventId: input.selectedEventId,
-        occurredOn: input.selectedOccurredOn,
-      }),
-      primary: true,
-    });
+    actions.push(
+      input.canManage
+        ? {
+            id: "mark-empty",
+            label: `Mark ${input.emptyRollCount} empty roll${input.emptyRollCount === 1 ? "" : "s"}`,
+            detail: "One-tap team members who showed up — totals use only names you add.",
+            href: attendanceEventHref(orgId, {
+              eventId: input.selectedEventId,
+              occurredOn: input.selectedOccurredOn,
+            }),
+            primary: true,
+          }
+        : {
+            id: "mark-empty",
+            label: "Empty rolls wait on an owner or admin",
+            detail: "Owners and admins mark who showed up. Totals stay blank until they do.",
+            href: hubHref("/team", "messages", orgId),
+            primary: true,
+          },
+    );
   }
 
   actions.push({

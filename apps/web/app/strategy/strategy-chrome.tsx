@@ -8,7 +8,9 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   STRATEGY_RELATED_INCLUDE,
   strategyRelatedLinks,
+  strategyCanSync,
   strategyShellCopy,
+  strategyWaitingCopy,
   type StrategyShellKind,
   type StrategyShellNextAction,
 } from "../../lib/strategy/strategy-related";
@@ -53,18 +55,22 @@ export function TbaKeyHint({ view }: { view: StrategyView }) {
   const access = view.tbaAccess;
   const stat = view.referenceAccess?.statbotics;
   if (access?.tbaConfigured && (stat?.cacheHasMetrics ?? true)) return null;
+  const canSync = strategyCanSync("actorRole" in view ? view.actorRole : null);
   return (
     <div className="strategy-reference-hints">
       {access && !access.tbaConfigured ? (
         <p className="telemetry-status" role="status">
-          Match results are not connected. Open Team → Data, connect match results, and pick this event.
-          Strategy stays empty until that schedule is in.
+          {canSync
+            ? "Match results are not connected. Open Team → Data, connect match results, and pick this event. Strategy stays empty until that schedule is in."
+            : "Match results are not connected. An owner or admin syncs them. You can still scout."}
         </p>
       ) : null}
       {stat && !stat.cacheHasMetrics ? (
         <p className="telemetry-status" role="status">
-          Team ratings have not synced yet ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows). Open
-          Team → Data and sync. Strategy stays empty until those ratings exist.
+          Team ratings have not synced yet ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows).{" "}
+          {canSync
+            ? "Open Team → Data and sync. Strategy stays empty until those ratings exist."
+            : "An owner or admin syncs Team Data. You can still scout."}
         </p>
       ) : null}
     </div>
@@ -81,6 +87,8 @@ export function StrategyShell({
   embedded = false,
   fromCache = false,
   cachedAt = null,
+  eventName = null,
+  canSync = false,
   children,
 }: {
   orgId?: string | null;
@@ -90,9 +98,12 @@ export function StrategyShell({
   embedded?: boolean;
   fromCache?: boolean;
   cachedAt?: string | null;
+  eventName?: string | null;
+  canSync?: boolean;
   children?: ReactNode;
 }) {
   const copy = strategyShellCopy(shell);
+  const description = shell === "empty" ? strategyWaitingCopy(eventName) : copy.description;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
@@ -128,7 +139,7 @@ export function StrategyShell({
         }
         badgeTone="setup"
         title={copy.title}
-        description={error ?? copy.description}
+        description={error ?? description}
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
@@ -140,7 +151,9 @@ export function StrategyShell({
           <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync Team Data</Button>
+          <Button as="a" variant="primary" href={canSync ? teamDataHref : hubHref("/competition", "scouting", orgId)}>
+            {canSync ? "Sync Team Data" : "Open Scouting"}
+          </Button>
         ) : null}
       </EmptyState>
     </Root>

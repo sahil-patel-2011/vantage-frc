@@ -101,6 +101,7 @@ export function CommandReadyView({
         orgName={snap.orgName ?? me.orgName ?? null}
         teamNumber={snap.teamNumber ?? me.teamNumber ?? null}
         eventKey={snap.eventKey ?? null}
+        eventName={snap.eventName ?? null}
         loading={loading && !snap}
         computedAt={snap.computedAt ?? null}
         canSetEvent={Boolean(snap.canSetEvent)}
@@ -112,7 +113,7 @@ export function CommandReadyView({
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
-      <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
+      <DataSourceDegradedBanner health={snap?.dataSourceHealth} canOpenTeamData={snap.canSetEvent === true} />
       {snap?.nexus ? (
         <p className="edc-freshness" role="status">
           Nexus queue: {snap.nexus.nowQueuing ?? "none posted"}

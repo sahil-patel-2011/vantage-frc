@@ -102,7 +102,10 @@ export type EventDaySetupStep = {
   href: string;
 };
 
-export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
+export function eventDaySetupSteps(
+  orgId?: string | null,
+  options?: { canSetEvent?: boolean },
+): EventDaySetupStep[] {
   if (!orgId) {
     return [
       {
@@ -113,13 +116,21 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
       },
     ];
   }
+  const canSetEvent = options?.canSetEvent === true;
   return dropRelatedStripDuplicates(orgId, [
-    {
-      id: "team-data",
-      label: "Set the event you’re at",
-      detail: "Pull the match schedule for the event you’re at.",
-      href: withOrgHref("/team/data", orgId),
-    },
+    canSetEvent
+      ? {
+          id: "team-data",
+          label: "Set the event you’re at",
+          detail: "Pull the match schedule for the event you’re at.",
+          href: withOrgHref("/team/data", orgId),
+        }
+      : {
+          id: "scouting",
+          label: "Open Scouting",
+          detail: "An owner or admin syncs the schedule. You can still scout.",
+          href: hubHref("/competition", "scouting", orgId),
+        },
   ]);
 }
 
@@ -176,6 +187,19 @@ export function eventDayEmptyTitle(input: {
   return eventDayShellCopy(input.shell).title;
 }
 
+/** The sentence Event Day shows when the team or the event is still missing. */
+export function commandSetupMessage(input: {
+  eventKey?: string | null;
+  canSetEvent: boolean;
+}): string {
+  if (!input.eventKey) {
+    return input.canSetEvent
+      ? "Set your active event to turn Event Day Command into your field-side OS."
+      : "An owner or admin sets the event this team is attending. Match times stay empty until then.";
+  }
+  return "Set your team's number so we can filter your match queue.";
+}
+
 /** Soft-UI empty / setup / error copy. */
 export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
   switch (kind) {
@@ -227,10 +251,11 @@ export function eventDayShellNextActions(input: {
   orgId?: string | null;
   shell: EventDayShellKind;
   hasActiveEvent?: boolean;
+  canSetEvent?: boolean;
 }): EventDayShellNextAction[] {
   const orgId = input.orgId ?? null;
   if (!orgId || input.shell === "setup") {
-    return setupActionsFrom(eventDaySetupSteps(orgId));
+    return setupActionsFrom(eventDaySetupSteps(orgId, { canSetEvent: input.canSetEvent }));
   }
   return dropRelatedStripDuplicates(orgId, eventDayShellNextActionCandidates(input));
 }

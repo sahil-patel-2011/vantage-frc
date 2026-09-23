@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { strategyCanSync } from "../strategy/strategy-related";
 import {
   DEFAULT_STATIONS,
   generateRotation,
@@ -33,12 +34,15 @@ export type ShiftBalancerView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string | null;
+      eventName: string | null;
       qualMatchCount: number;
       scouts: ShiftBalancerScout[];
       /** Team members a scout row can be linked to, so a plan can reach them. */
       members: Array<{ id: string; name: string }>;
       plans: ShiftBalancerPlan[];
       latestSummary: ShiftBalancerSummary | null;
+      /** True when this member may write the published scout schedule. */
+      canPublish: boolean;
       computedAt: string;
     };
 
@@ -82,9 +86,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -131,8 +135,11 @@ export async function computeShiftBalancerView(
        LIMIT 20`,
       [org.orgId],
     ),
-    client.query<{ eventKey: string | null }>(
-      `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
+    client.query<{ eventKey: string | null; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1`,
       [org.orgId],
     ),
     client.query<{ qualCount: number }>(
@@ -170,6 +177,7 @@ export async function computeShiftBalancerView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     eventKey: eventResult.rows[0]?.eventKey ?? null,
+    eventName: eventResult.rows[0]?.eventName ?? null,
     qualMatchCount: Number(qualResult.rows[0]?.qualCount) || 0,
     scouts,
     // Email is the fallback label, not a second field: a member who has not set
@@ -177,6 +185,7 @@ export async function computeShiftBalancerView(
     members: memberResult.rows.map((row) => ({ id: row.id, name: row.name || row.email })),
     plans,
     latestSummary,
+    canPublish: strategyCanSync(org.role),
     computedAt: new Date().toISOString(),
   };
 }

@@ -8,7 +8,7 @@ const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
 
 /** Returns queued rows in call order — mirrors the sequential query order inside
- * computeScoutDisagreementsView (resolveOrg, items, seasons, [audit]). */
+ * computeScoutDisagreementsView (resolveOrg, items, seasons, [audit], active event). */
 function queueClient(responses: Array<{ rows: unknown[] }>): PoolClient {
   let index = 0;
   return {
@@ -105,6 +105,26 @@ describe("computeScoutDisagreementsView", () => {
     expect(view.items[0]?.id).toBe("dis-open");
     expect(view.auditLog).toHaveLength(1);
     expect(view.auditLog[0]?.action).toBe("resolved");
+    expect(view.eventKey).toBeNull();
+    expect(view.eventName).toBeNull();
+  });
+
+  it("names the active event when the disagreement queue is empty", async () => {
+    const client = queueClient([
+      { rows: [{ orgId: ORG, teamNumber: 118 }] },
+      { rows: [] },
+      { rows: [] },
+      { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] },
+    ]);
+    const view = await computeScoutDisagreementsView(client, {
+      userId: USER,
+      requestedOrg: ORG,
+      seasonYear: 2026,
+    });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });
 

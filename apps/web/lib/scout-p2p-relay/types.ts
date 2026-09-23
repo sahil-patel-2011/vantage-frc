@@ -22,6 +22,7 @@ export type RelayEntry = {
 export type RelaySession = {
   id: string;
   eventKey: string;
+  eventName: string | null;
   seasonYear: number;
   captainDeviceLabel: string;
   status: RelaySessionStatus;

@@ -44,6 +44,7 @@ export async function GET(request: Request) {
           { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
+        canSync: false,
       } satisfies DegradedModeView,
       { status: 200 },
     );

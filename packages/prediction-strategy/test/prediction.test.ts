@@ -529,4 +529,49 @@ describe("season dossier fact cards", () => {
     expect(cards.every((card) => card.category === "identity")).toBe(true);
     expect(dossierHasReferenceFacts(cards)).toBe(false);
   });
+
+  it("names a team-made event instead of printing the key", () => {
+    const cards = buildTeamDossierFacts({
+      identity: {
+        teamKey: "frc9999",
+        teamNumber: 9999,
+        nickname: null,
+        name: "Ghost",
+        city: null,
+        stateProv: null,
+        country: null,
+        rookieYear: null,
+      },
+      yearMetrics: [],
+      eventMetrics: [
+        {
+          teamKey: "frc9999",
+          year: 2026,
+          eventKey: "2026custom-org-pacific-practice",
+          eventName: "Pacific Practice",
+          source: "tba",
+          epaTotal: 12,
+          wins: 1,
+          losses: 0,
+          ties: 0,
+        },
+        {
+          teamKey: "frc9999",
+          year: 2026,
+          eventKey: "2026custom-org-unnamed",
+          source: "tba",
+          epaTotal: 8,
+        },
+      ],
+    });
+    const named = cards.find((card) => card.id === "event-epa-2026custom-org-pacific-practice");
+    expect(named?.title).toBe("Pacific Practice EPA");
+    expect(named?.citation.detail).toBe("tba team_event_metrics for Pacific Practice.");
+    expect(cards.find((card) => card.id === "event-record-2026custom-org-pacific-practice")?.title).toBe(
+      "Pacific Practice record",
+    );
+    const unnamed = cards.find((card) => card.id === "event-epa-2026custom-org-unnamed");
+    expect(unnamed?.title).toBe("Your event EPA");
+    expect(unnamed?.citation.detail).not.toContain("2026custom-");
+  });
 });

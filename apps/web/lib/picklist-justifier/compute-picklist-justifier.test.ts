@@ -125,6 +125,7 @@ describe("computePicklistJustifierView", () => {
     expect(view.status).toBe("live");
     if (view.status === "live") {
       expect(view.eventKey).toBe("2026casj");
+      expect(view.pickLists[0]?.eventName).toBeNull();
       expect(view.entries).toHaveLength(1);
       expect(view.entries[0]?.teamNumber).toBe(254);
       expect(view.entries[0]?.tbaAvailable).toBe(true);
@@ -132,6 +133,34 @@ describe("computePicklistJustifierView", () => {
       expect(view.entries[0]?.rationale).toBeNull();
       expect(view.entries[0]?.pickClockReasons).toEqual([]);
     }
+  });
+
+  it("keeps the cached event name on each pick list", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG }], rowCount: 1 };
+      if (sql.includes("FROM pick_lists pl")) {
+        return {
+          rows: [
+            {
+              id: PICK_LIST,
+              name: "Practice picks",
+              eventKey: "2026custom-org-pacific",
+              eventName: "Pacific Practice",
+              entryCount: "0",
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    const view = await computePicklistJustifierView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live");
+    expect(view.pickLists[0]?.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });
 

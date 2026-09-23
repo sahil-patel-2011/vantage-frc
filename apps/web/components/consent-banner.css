@@ -42,8 +42,65 @@ body.has-app-shell .consent-banner {
   padding-bottom: calc(12px + var(--safe-bottom, 0px) + var(--island-clearance, 88px));
 }
 
+/* Sign-in, onboarding, invite, and desktop-link put their only action at the
+   bottom of the card. The banner is fixed, so that action sat under the card
+   and could not be pressed — the wrapper does not receive clicks, but the
+   card does. Extra padding lets the action scroll clear. scroll-margin is
+   what scroll-into-view uses, so a keyboard focus or a click that scrolls
+   the button into view lands it above the card instead of underneath it.
+   On a phone the stacked banner is taller than the desktop dock. */
+body:has(.consent-banner) .signin-page,
+body:has(.consent-banner) .onboarding-flow-page,
+body:has(.consent-banner) .invite-flow-page,
+body:has(.consent-banner) .desktop-link-page {
+  padding-bottom: 240px;
+}
+
+body:has(.consent-banner) .signin-page .signin-submit,
+body:has(.consent-banner) .onboarding-flow-page .signin-submit,
+body:has(.consent-banner) .invite-flow-page .signin-submit,
+body:has(.consent-banner) .desktop-link-page .signin-submit {
+  /* Larger than the desktop dock, so scroll-into-view treats the button as
+     hidden while any part of it sits under the card. */
+  scroll-margin-bottom: 360px;
+}
+
+@media (max-width: 759px) {
+  body:has(.consent-banner) .signin-page,
+  body:has(.consent-banner) .onboarding-flow-page,
+  body:has(.consent-banner) .invite-flow-page,
+  body:has(.consent-banner) .desktop-link-page {
+    padding-bottom: 460px;
+  }
+
+  body:has(.consent-banner) .signin-page .signin-submit,
+  body:has(.consent-banner) .onboarding-flow-page .signin-submit,
+  body:has(.consent-banner) .invite-flow-page .signin-submit,
+  body:has(.consent-banner) .desktop-link-page .signin-submit {
+    scroll-margin-bottom: 70vh;
+  }
+}
+
+/* On a phone the stacked question is taller than the clear band above it, so
+   the only action on an invite or sign-in card lands underneath it. Keep the
+   full text, but let that text scroll inside the card and pin Accept and
+   Decline so the card itself stays in the lower third. */
+@media (max-width: 759px) {
+  .consent-banner-card {
+    max-height: min(42vh, 280px);
+    grid-template-rows: minmax(0, 1fr) auto;
+    overflow: hidden;
+  }
+
+  .consent-banner-text {
+    overflow: auto;
+    min-height: 0;
+  }
+}
+
 .consent-banner-card {
   pointer-events: auto;
+  animation: consent-arrive var(--dur-move) var(--ease-settle) both;
   width: min(680px, 100%);
   display: grid;
   gap: 14px;
@@ -230,8 +287,23 @@ body:has(.consent-banner) {
   }
 }
 
+@keyframes consent-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .consent-banner-btn {
     transition: none;
+  }
+
+  .consent-banner-card {
+    animation: none;
   }
 }

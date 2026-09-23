@@ -17,7 +17,7 @@ export default async function TeamAuditPage({
         <PageHeader
           breadcrumbs="Team / Audit"
           title="Audit"
-          description="The membership, capability, and auth-policy trail belongs to one team — pick the team first."
+          description="The membership and access trail belongs to one team. Choose your team to read it."
         />
         <EmptyState
           soft

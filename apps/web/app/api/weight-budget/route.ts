@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { DEFAULT_WEIGHT_LIMIT_LBS, summarizeWeight } from "../../../lib/weight-budget";
+import { DEFAULT_WEIGHT_LIMIT_LBS, summarizeWeight, weightComponentCanDelete } from "../../../lib/weight-budget";
 import { parseWeightWrite, plannedLineSaveFromWrite, upsertPlannedLine } from "../../../lib/weight-budget/upsert";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
@@ -28,7 +28,16 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Weight budget request failed") }, { status });
 }
 
-type ComponentRow = { id: string; name: string; subsystem: string; weightLbs: number; quantity: number; notes: string; byName: string | null };
+type ComponentRow = {
+  id: string;
+  name: string;
+  subsystem: string;
+  weightLbs: number;
+  quantity: number;
+  notes: string;
+  byName: string | null;
+  createdBy: string | null;
+};
 
 export async function GET(request: Request) {
   try {
@@ -47,11 +56,19 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to budget weight." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to budget weight."
+            : "Choose your team to budget weight, or join the waitlist.",
+        };
+      }
 
       const [components, settings] = await Promise.all([
         client.query<ComponentRow>(
-          `SELECT c.id, c.name, c.subsystem, c.weight_lbs::float8 AS "weightLbs", c.quantity, c.notes, u.name AS "byName"
+          `SELECT c.id, c.name, c.subsystem, c.weight_lbs::float8 AS "weightLbs", c.quantity, c.notes,
+                  u.name AS "byName", c.created_by::text AS "createdBy"
            FROM weight_components c LEFT JOIN users u ON u.id = c.created_by
            WHERE c.org_id = $1 AND c.season_year = $2 ORDER BY c.subsystem, c.name`,
           [row.orgId, seasonYear],
@@ -67,7 +84,10 @@ export async function GET(request: Request) {
         status: "ready" as const,
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
         seasonYear,
-        components: components.rows,
+        components: components.rows.map(({ createdBy, ...component }) => ({
+          ...component,
+          canDelete: weightComponentCanDelete(row.role, createdBy, session.user.id),
+        })),
         summary: summarizeWeight(components.rows.map((c) => ({ subsystem: c.subsystem, weightLbs: c.weightLbs, quantity: c.quantity })), limitLbs),
       };
     });
@@ -89,6 +109,11 @@ export async function POST(request: Request) {
 
       switch (action.action) {
         case "set_limit": {
+          const admin = await client.query(
+            `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid AND role IN ('owner','admin')`,
+            [action.orgId, userId],
+          );
+          if (!admin.rowCount) throw new HttpError(403, "Organization administrator access required");
           await client.query(
             `INSERT INTO weight_settings (org_id, season_year, limit_lbs, updated_by)
              VALUES ($1,$2,$3,$4)

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AIAttribution, Button, EmptyState, PageHeader } from "../../components/ui";
 import {
@@ -9,19 +9,36 @@ import {
   expandSuccessState,
   type AiExpandState,
 } from "../../lib/ai-expand";
-import { MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { canDeleteMatchDebrief, MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./match-debrief.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Debrief = {
   id: string; seasonYear: number; eventKey: string; matchLabel: string; alliance: Alliance; result: MatchResult;
   pointsScored: number | null; cycleCount: number | null; drivetrainOk: boolean; mechanismsOk: boolean; autoOk: boolean;
   whatWorked: string; whatBroke: string; actionItems: string; byName: string | null; createdAt: string;
+  loggedBy?: string | null;
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; debriefs: Debrief[]; summary: { total: number; wins: number; losses: number; ties: number; record: string; avgPoints: number | null; openActionItems: number }; takeaways: string };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; debriefs: Debrief[]; summary: { total: number; wins: number; losses: number; ties: number; record: string; avgPoints: number | null; openActionItems: number }; takeaways: string };
 
 const RESULT_LABEL: Record<MatchResult, string> = { win: "Win", loss: "Loss", tie: "Tie", unknown: "—" };
 const EMPTY = { matchLabel: "", eventKey: "", alliance: "unknown", result: "unknown", pointsScored: "", cycleCount: "", drivetrainOk: true, mechanismsOk: true, autoOk: true, whatWorked: "", whatBroke: "", actionItems: "" };
@@ -107,6 +124,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistMatchDebriefSnapshot(orgHint, seasonHint, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -179,16 +197,39 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
     );
   }
   if (view.status === "setup_required") {
+    const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
-      <main className="intel-app">
+      <main className="intel-app match-debrief-page">
         {/* The app shell already says which product this is and where the page
             sits. A "VANTAGE / MATCH LOG" eyebrow inside the page said it a
             second time, in a different voice, and left this one page looking
             like it came from a different application. */}
-        <PageHeader breadcrumbs="Compete / Match debrief" title="Match debrief" />
+        <PageHeader
+          breadcrumbs="Compete / Match debrief"
+          title="Match debrief"
+          description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+        />
         <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+        <EmptyState
+          badge="Needs setup"
+          badgeTone="setup"
+          soft
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "match-debrief-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="match-debrief-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="match-debrief-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+          )}
         </EmptyState>
       </main>
     );
@@ -320,7 +361,15 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
               {d.whatWorked && <small>✓ {d.whatWorked}</small>}
               {d.whatBroke && <small>✗ {d.whatBroke}</small>}
             </div>
-            {view.context.role !== "viewer" && <button onClick={() => void post({ action: "delete_debrief", id: d.id }, "Debrief deleted.")}>Delete</button>}
+            {canDeleteMatchDebrief({
+              role: view.context.role,
+              userId: view.context.userId,
+              authorId: d.loggedBy,
+            }) ? (
+              <button type="button" aria-label={`Delete debrief ${d.matchLabel}`} onClick={() => void post({ action: "delete_debrief", id: d.id }, "Debrief deleted.")}>
+                Delete
+              </button>
+            ) : null}
           </article>
         ))}
       </section>

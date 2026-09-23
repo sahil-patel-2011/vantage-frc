@@ -49,6 +49,7 @@ export function AppShellNavPanel({
   workspaceOpen,
   setWorkspaceOpen,
   memberships,
+  teamsLoaded,
   orderedMemberships,
   switchWorkspaceHref,
   onWorkspaceSwitch,
@@ -87,6 +88,7 @@ export function AppShellNavPanel({
   workspaceOpen: boolean;
   setWorkspaceOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   memberships: MembershipOption[];
+  teamsLoaded: boolean;
   orderedMemberships: MembershipOption[];
   switchWorkspaceHref: (nextOrgId: string) => string;
   onWorkspaceSwitch: (nextOrgId: string) => void;
@@ -173,8 +175,16 @@ export function AppShellNavPanel({
             </button>
             {workspaceOpen ? (
               <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Your teams">
-                {memberships.length === 0 ? (
-                  <p className="soft-workspace-empty">No team yet — open an invite from email.</p>
+                {!teamsLoaded ? (
+                  <p className="soft-workspace-empty">Checking your team.</p>
+                ) : memberships.length === 0 ? (
+                  <p className="soft-workspace-empty">
+                    No team yet. Open an invite from your email, or{" "}
+                    <a href="/#waitlist" onClick={closeNav}>
+                      join the waitlist
+                    </a>
+                    .
+                  </p>
                 ) : (
                   orderedMemberships.map((row) => (
                     <a
@@ -200,7 +210,7 @@ export function AppShellNavPanel({
                     Manage teams
                   </a>
                   <a href="/invite" onClick={closeNav}>
-                    Invite
+                    Have an invite?
                   </a>
                 </div>
               </div>

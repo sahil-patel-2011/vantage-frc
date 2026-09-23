@@ -1,7 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import {
+  marketingDesktopWebLink,
+  marketingFooterAccountLink,
+  marketingHeaderLinks,
+  marketingHeroLinks,
+  marketingRoutePrimary,
+  marketingShowsAdminLink,
+} from "../../lib/marketing/account-links";
 import "./marketing-styles";
 
 const links = [
@@ -21,8 +31,154 @@ export function BrandLink({ href = "/" }: { href?: string }) {
   );
 }
 
+function useSignedIn(): boolean {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession().then((session) => {
+      if (!cancelled) setSignedIn(session?.authenticated === true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return signedIn;
+}
+
+function closeMobileMenu(event: { currentTarget: Element }) {
+  (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+}
+
+export function MarketingAccountTextLink() {
+  const signedIn = useSignedIn();
+  const link = marketingFooterAccountLink(signedIn);
+  return <a href={link.href}>{link.label}</a>;
+}
+
+export function MarketingInvitedNote({
+  lead,
+  className = "lux-hero-note",
+}: {
+  lead?: string;
+  className?: string;
+}) {
+  const signedIn = useSignedIn();
+  return (
+    <p className={className || undefined}>
+      {lead ? <>{lead} </> : null}
+      {signedIn ? (
+        <a href="/dashboard">Open your team</a>
+      ) : (
+        <>
+          Already invited? <a href="/signin">Sign in</a>
+        </>
+      )}
+      {" · "}
+      Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
+    </p>
+  );
+}
+
+export function MarketingRouteActions({
+  className = "actions",
+  guestLabel = "Join the waitlist",
+  guestHref = "/#waitlist",
+  signIn = false,
+  companion,
+}: {
+  className?: string;
+  guestLabel?: string;
+  guestHref?: string;
+  /** Guest-only text link. Hidden once a session exists. */
+  signIn?: boolean;
+  companion?: { href: string; label: string; variant?: "text" | "secondary" };
+}) {
+  const signedIn = useSignedIn();
+  const primary = marketingRoutePrimary(signedIn, { href: guestHref, label: guestLabel });
+  return (
+    <div className={className}>
+      <a className="button primary" href={primary.href}>
+        {primary.label}
+      </a>
+      {signIn && !signedIn ? (
+        <a className="text-link" href="/signin">
+          Already invited? Sign in
+        </a>
+      ) : null}
+      {companion ? (
+        <a
+          className={companion.variant === "secondary" ? "button secondary" : "text-link"}
+          href={companion.href}
+        >
+          {companion.label}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+/** Plan-card link. Guests join the waitlist. A signed-in member opens the team. */
+export function MarketingPlanLink({ guestLabel }: { guestLabel?: string }) {
+  const link = marketingRoutePrimary(useSignedIn(), guestLabel ? { label: guestLabel } : undefined);
+  return (
+    <a className="text-link" href={link.href}>
+      {link.label}
+    </a>
+  );
+}
+
+/** Owner or admin settings link. Everyone else gets the plan link instead. */
+export function MarketingAdminLink({ href, label }: { href: string; label: string }) {
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession().then((session) => {
+      if (!cancelled) setAdmin(marketingShowsAdminLink(session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  if (!admin) return <MarketingPlanLink />;
+  return (
+    <a className="text-link" href={href}>
+      {label}
+    </a>
+  );
+}
+
+export function MarketingDesktopWebLink({ primary }: { primary: boolean }) {
+  const web = marketingDesktopWebLink(useSignedIn());
+  return (
+    <a className={`button ${primary ? "primary" : "secondary"}`} href={web.href}>
+      {web.label}
+    </a>
+  );
+}
+
+export function MarketingHeroActions() {
+  const signedIn = useSignedIn();
+  return (
+    <div className="actions">
+      {marketingHeroLinks(signedIn).map((link) =>
+        link.primary ? (
+          <a className="button primary" href={link.href} key={link.label}>
+            {link.label}
+          </a>
+        ) : (
+          <a className="text-link" href={link.href} key={link.label}>
+            {link.label}
+          </a>
+        ),
+      )}
+    </div>
+  );
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
+  const signedIn = useSignedIn();
+  const account = marketingHeaderLinks(signedIn);
   const nav = (mobile = false) =>
     links.map(([href, label]) => (
       <a
@@ -33,14 +189,7 @@ export function SiteHeader() {
         }
         href={href}
         key={href}
-        onClick={
-          mobile
-            ? (event) =>
-                (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute(
-                  "open",
-                )
-            : undefined
-        }
+        onClick={mobile ? closeMobileMenu : undefined}
       >
         {label}
       </a>
@@ -51,12 +200,21 @@ export function SiteHeader() {
       <BrandLink />
       <nav aria-label="Primary navigation">{nav()}</nav>
       <div className="nav-actions">
-        <a className="sign-in-link" href="/signin">
-          Sign in
-        </a>
-        <a className="button compact waitlist-nav" href="/#waitlist">
-          Join waitlist
-        </a>
+        {account.map((link) =>
+          link.primary ? (
+            <a
+              className={link.href === "/#waitlist" ? "button compact waitlist-nav" : "button compact"}
+              href={link.href}
+              key={link.label}
+            >
+              {link.label}
+            </a>
+          ) : (
+            <a className="sign-in-link" href={link.href} key={link.label}>
+              {link.label}
+            </a>
+          ),
+        )}
       </div>
       <details className="mobile-menu">
         <summary aria-label="Open navigation">
@@ -66,8 +224,11 @@ export function SiteHeader() {
         </summary>
         <nav aria-label="Mobile navigation">
           {nav(true)}
-          <a href="/signin">Sign in</a>
-          <a href="/#waitlist">Join waitlist</a>
+          {account.map((link) => (
+            <a href={link.href} key={link.label} onClick={closeMobileMenu}>
+              {link.label}
+            </a>
+          ))}
         </nav>
       </details>
     </header>
@@ -75,6 +236,7 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
+  const account = marketingFooterAccountLink(useSignedIn());
   return (
     <footer className="marketing-footer">
       <div className="marketing-footer-brand">
@@ -92,7 +254,7 @@ export function SiteFooter() {
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>
           <a href="/pricing">What it costs</a>
-          <a href="/signin">Sign in</a>
+          <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
           <a href="mailto:sahiljpatel2011@gmail.com">Contact</a>
         </nav>

@@ -2,19 +2,23 @@
 
 import { useState } from "react";
 import { EmptyState, Button } from "../../components/ui";
-import type { RuleNote } from "../../lib/kickoff";
+import { canDeleteKickoffRow, type RuleNote } from "../../lib/kickoff";
 import type { RunFn } from "./kickoff-model";
 
 export function RulesSection({
   ruleNotes,
   orgId,
   seasonYear,
+  role,
+  userId,
   busyKey,
   run,
 }: {
   ruleNotes: RuleNote[];
   orgId: string;
   seasonYear: number;
+  role?: string | null;
+  userId?: string | null;
   busyKey: string | null;
   run: RunFn;
 }) {
@@ -69,15 +73,17 @@ export function RulesSection({
                     >
                       {note.status === "answered" ? "Reopen" : "Mark answered"}
                     </button>
-                    <button
-                      type="button"
-                      className="kick-link danger"
-                      aria-label={`Delete ${note.question}`}
-                      disabled={busy}
-                      onClick={() => void run({ action: "delete_rule_note", orgId, id: note.id }, rowKey)}
-                    >
-                      ✕
-                    </button>
+                    {canDeleteKickoffRow({ role, userId, authorId: note.createdBy }) ? (
+                      <button
+                        type="button"
+                        className="kick-link danger"
+                        aria-label={`Delete ${note.question}`}
+                        disabled={busy}
+                        onClick={() => void run({ action: "delete_rule_note", orgId, id: note.id }, rowKey)}
+                      >
+                        ✕
+                      </button>
+                    ) : null}
                   </span>
                 </div>
                 <textarea

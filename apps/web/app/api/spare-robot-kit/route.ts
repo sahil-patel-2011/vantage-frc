@@ -112,7 +112,7 @@ export async function POST(request: Request) {
         case "delete-checklist": {
           const checklistId = trimmedOrNull(body.checklistId, 64);
           if (!checklistId) throw new Error("checklistId is required");
-          await deleteChecklist(client, { orgId, checklistId });
+          await deleteChecklist(client, { orgId, checklistId, userId });
           break;
         }
         default:
@@ -124,6 +124,12 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof Error && error.message === "Checklist not found") {
+      return Response.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "You cannot delete this checklist") {
+      return Response.json({ error: error.message }, { status: 403 });
+    }
     return failMeteredAi(error, "Spare-robot-kit request failed");
   }
 }

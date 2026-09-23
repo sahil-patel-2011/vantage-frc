@@ -6,8 +6,10 @@ import {
   shouldShowStrategyWinRate,
   strategyNextActions,
   strategyRelatedLinks,
+  strategyCanSync,
   strategyShellCopy,
   strategyShellSetupSteps,
+  strategyWaitingCopy,
 } from "./strategy-related";
 
 describe("strategyRelatedLinks", () => {
@@ -73,6 +75,35 @@ describe("classifyStrategyShell", () => {
     expect(classifyStrategyShell({ status: "setup_required", orgId: null })).toBe("setup");
     expect(classifyStrategyShell({ status: "empty", orgId: "org-1" })).toBe("empty");
     expect(classifyStrategyShell({ status: "live", orgId: "org-1" })).toBe("ready");
+  });
+});
+
+describe("strategyWaitingCopy", () => {
+  it("names the event that has no match, and stays blank without one", () => {
+    expect(strategyWaitingCopy("Pacific Practice")).toBe(
+      "Pacific Practice has no scheduled match yet. Win chance stays blank until a match and stats are synced.",
+    );
+    expect(strategyWaitingCopy("  ")).toBe(
+      "Win chance stays blank until this event has a scheduled match and synced stats.",
+    );
+    expect(strategyWaitingCopy(null)).toBe(
+      "Win chance stays blank until this event has a scheduled match and synced stats.",
+    );
+    expect(strategyWaitingCopy(undefined)).toBe(strategyShellCopy("empty").description);
+    expect(strategyWaitingCopy("Pacific Practice")).not.toMatch(/\d+%/);
+  });
+});
+
+describe("strategyCanSync", () => {
+  it("lets only an owner or admin open Team Data from an empty board", () => {
+    expect(strategyCanSync("owner")).toBe(true);
+    expect(strategyCanSync("admin")).toBe(true);
+    expect(strategyCanSync("Admin")).toBe(true);
+    expect(strategyCanSync("scout")).toBe(false);
+    expect(strategyCanSync("viewer")).toBe(false);
+    expect(strategyCanSync("member")).toBe(false);
+    expect(strategyCanSync(null)).toBe(false);
+    expect(strategyCanSync(undefined)).toBe(false);
   });
 });
 

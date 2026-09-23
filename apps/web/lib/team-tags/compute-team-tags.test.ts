@@ -46,6 +46,7 @@ describe("teamTagsPickReasonsPayload", () => {
     teamNumber: 1678,
     seasonYear: 2026,
     eventKey: "2026casj",
+    eventName: "San Jose",
     eventTeams: [254],
     defs: [],
     assignments: [assignment],

@@ -9,10 +9,11 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, diagnosticSeverityLabel } from "../../lib/wiring-diagnoser";
 import type { WiringDiagnoserView } from "../../lib/wiring-diagnoser/compute-wiring-diagnoser";
-import type {
-  DiagnosticSeverity,
-  WireGauge,
-  WiringMapDevice,
+import {
+  canDeleteWiringCheck,
+  type DiagnosticSeverity,
+  type WireGauge,
+  type WiringMapDevice,
 } from "../../lib/wiring-diagnoser/types";
 
 const SEVERITY_TONE: Record<DiagnosticSeverity, string> = {
@@ -427,18 +428,21 @@ function ChecksList({
                   {check.expectedCircuits.length} circuit(s) · risk {pct(check.riskScore)}
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${check.boardName}" check?`)) {
-                    mutate({ action: "delete-check", checkId: check.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
+              {canDeleteWiringCheck({ role: view.role, userId: view.userId, authorId: check.createdBy }) ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  aria-label={`Delete ${check.boardName}`}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${check.boardName}" check?`)) {
+                      mutate({ action: "delete-check", checkId: check.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
             </header>
             <p style={{ margin: 0 }}>{check.summary}</p>
             {check.photoUrl ? (

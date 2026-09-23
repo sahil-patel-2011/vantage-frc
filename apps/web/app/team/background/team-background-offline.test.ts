@@ -12,5 +12,6 @@ describe("Team background last snapshot stays on the phone", () => {
     expect(src).toMatch(/"team-background"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team background"/);
+    expect(src).toMatch(/canEdit=\{view\?\.canEdit === true\}/);
   });
 });

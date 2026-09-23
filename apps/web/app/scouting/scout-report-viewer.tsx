@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { formatReportClock, scoutReportFromPayload } from "../../lib/scouting/scout-report";
+import { formatReportClock, scoutEntryByline, scoutReportFromPayload } from "../../lib/scouting/scout-report";
+import { describeMatchKey } from "../../lib/scouting/scout-target";
 import type { RecentEntry } from "./scouting-model";
 
 export function ScoutReportViewer({
@@ -35,11 +36,9 @@ export function ScoutReportViewer({
               onClick={() => setOpenId(open ? null : entry.id)}
             >
               <strong>
-                {entry.matchKey ?? "PIT"} · {entry.teamKey}
+                {entry.matchKey ? describeMatchKey(entry.matchKey) : "Pit"} · {entry.teamKey.replace(/^frc/i, "")}
               </strong>
-              <span>
-                {entry.scoutName} · {entry.source}
-              </span>
+              <span>{scoutEntryByline({ scoutName: entry.scoutName, source: entry.source })}</span>
               <small className="app-muted">
                 {entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}
               </small>

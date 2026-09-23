@@ -79,7 +79,7 @@ export async function listOnshapeDocuments(input: { orgId: string }): Promise<Li
   const orgId = String(input.orgId ?? "").trim();
   if (!orgId) throw new Error("orgId is required");
   if (DEMO_TOKEN.test(orgId)) {
-    throw new Error("Refusing DEMO org id. Choose your team first.");
+    throw new Error("Choose your team.");
   }
 
   const response = await fetch("/api/cad", {

@@ -69,6 +69,17 @@ export function availableSteps(
   return steps.filter((step) => present(step.target));
 }
 
+/** Accessible name on the tour dialog. Anything else with role=dialog is real work. */
+export const TOUR_DIALOG_LABEL = "Tour of Vantage";
+
+/**
+ * The tour's scrim covers the page. A form the person already opened — set
+ * active event, invite someone — has to stay clickable, so the tour waits.
+ */
+export function tourShouldYield(openDialogLabels: readonly (string | null)[]): boolean {
+  return openDialogLabels.some((label) => label !== TOUR_DIALOG_LABEL);
+}
+
 export type Rect = { top: number; left: number; width: number; height: number };
 export type Placement = { top: number; left: number; side: "top" | "bottom" | "left" | "right" };
 

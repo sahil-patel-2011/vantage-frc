@@ -257,7 +257,7 @@ export default function InviteClient() {
     }
     if (!inviteToken) {
       setMessageTone("error");
-      setMessage("This invitation link is incomplete.");
+      setMessage("No invite is open. Open the full link from your email.");
       return;
     }
     setBusy(true);

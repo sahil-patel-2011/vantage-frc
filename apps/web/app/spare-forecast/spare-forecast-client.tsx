@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
-import { PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
+import { canDeleteSpareForecastRequest, PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
 import type { SpareForecastView } from "../../lib/spare-forecast/compute-spare-forecast";
 import {
   SPARE_FORECAST_RELATED_INCLUDE,
@@ -669,18 +669,25 @@ function PurchaseRequestsList({
                   {request.lineItems.length} line item(s)
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${request.title}"?`)) {
-                    mutate({ action: "delete-request", requestId: request.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
+              {canDeleteSpareForecastRequest({
+                role: view.role,
+                userId: view.userId,
+                authorId: request.createdBy,
+              }) ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  aria-label={`Delete request ${request.title}`}
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${request.title}"?`)) {
+                      mutate({ action: "delete-request", requestId: request.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
             </header>
             <small className="app-muted">{request.rationale}</small>
             <ul className="factor-table spare-forecast-line-items">

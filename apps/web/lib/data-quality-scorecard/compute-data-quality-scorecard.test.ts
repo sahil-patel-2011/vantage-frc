@@ -32,7 +32,7 @@ describe("computeDataQualityScorecardView", () => {
       if (text.includes("FROM memberships")) {
         return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
       }
-      if (text.includes("ORDER BY check_date DESC")) {
+      if (text.includes("c.check_date DESC")) {
         return { rows: [] };
       }
       if (text.includes("SELECT DISTINCT season_year")) {
@@ -48,7 +48,32 @@ describe("computeDataQualityScorecardView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBe("org-1");
+      expect(view.steps[0]?.href).toBe("#data-quality-log");
+      expect(view.eventKey).toBeNull();
     }
+  });
+
+  it("names the active event when no quality checks are logged", async () => {
+    const client = mockClient(({ text }) => {
+      if (text.includes("FROM memberships")) {
+        return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
+      }
+      if (text.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] };
+      }
+      return { rows: [] };
+    });
+    const view = await computeDataQualityScorecardView(client, {
+      userId: "user-1",
+      requestedOrg: "org-1",
+      seasonYear: 2026,
+    });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") throw new Error("expected setup");
+    expect(view.message).toBe("No data-quality checks logged yet for Pacific Practice.");
+    expect(view.message).not.toContain("2026custom-");
+    expect(view.steps[0]?.href).toBe("#data-quality-log");
+    expect(view.eventName).toBe("Pacific Practice");
   });
 
   it("computes a live scorecard summary from logged checks", async () => {
@@ -56,13 +81,14 @@ describe("computeDataQualityScorecardView", () => {
       if (text.includes("FROM memberships")) {
         return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
       }
-      if (text.includes("ORDER BY check_date DESC")) {
+      if (text.includes("c.check_date DESC")) {
         return {
           rows: [
             {
               id: "chk-1",
-              eventKey: "2026casj",
-              matchKey: "qm1",
+              eventKey: "2026custom-org-pacific",
+              eventName: "Pacific Practice",
+              matchKey: "2026custom-org-pacific_qm1",
               scoutName: "Alice",
               checkDate: "2026-02-10",
               expectedDataPoints: 20,
@@ -93,6 +119,9 @@ describe("computeDataQualityScorecardView", () => {
       if (text.includes("SELECT DISTINCT season_year")) {
         return { rows: [{ seasonYear: 2026 }] };
       }
+      if (text.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] };
+      }
       return { rows: [] };
     });
     const view = await computeDataQualityScorecardView(client, {
@@ -107,7 +136,11 @@ describe("computeDataQualityScorecardView", () => {
     expect(view.summary.disagreementRate).toBeCloseTo(0.5, 3);
     expect(view.scorecard.score).toBeGreaterThan(0);
     expect(view.scorecard.grade).toBeDefined();
-    expect(view.summary.byEvent[0]?.eventKey).toBe("2026casj");
+    expect(view.summary.byEvent[0]?.eventKey).toBe("2026custom-org-pacific");
+    expect(view.summary.byEvent[0]?.eventName).toBe("Pacific Practice");
+    expect(view.checks[0]?.eventName).toBe("Pacific Practice");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
     expect(view.summary.byScout.map((s) => s.scoutName).sort()).toEqual(["Alice", "Bob"]);
   });
 });

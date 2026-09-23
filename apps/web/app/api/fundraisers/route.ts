@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to plan fundraisers." };
+      if (!row) return { status: "setup_required" as const, message: "Choose your team to plan fundraisers, or join the waitlist." };
 
       const events = await client.query<EventRow>(
         `SELECT e.id, e.season_year AS "seasonYear", e.name, e.type, e.event_date::text AS "eventDate",

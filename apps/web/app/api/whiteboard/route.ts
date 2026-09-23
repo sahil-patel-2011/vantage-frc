@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  canDeleteWhiteboardPlay,
   defaultRobots,
   parseWhiteboardAction,
   type PlayPatch,
@@ -62,14 +63,17 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to open the strategy whiteboard.",
+          message: requestedOrg
+            ? "Choose your team to open the strategy whiteboard."
+            : "Choose your team to open the strategy whiteboard, or join the waitlist.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null },
         } satisfies WhiteboardView;
       }
 
       const plays = await client.query<WhiteboardPlay>(
         `SELECT p.id, p.title, p.match_key AS "matchKey", p.description,
-                p.strokes, p.robots, u.name AS "createdByName", p.updated_at::text AS "updatedAt"
+                p.strokes, p.robots, p.created_by AS "createdBy",
+                u.name AS "createdByName", p.updated_at::text AS "updatedAt"
          FROM whiteboard_plays p
          LEFT JOIN users u ON u.id = p.created_by
          WHERE p.org_id = $1
@@ -80,7 +84,13 @@ export async function GET(request: Request) {
 
       return {
         status: "ready",
-        context: { orgId: row.orgId, orgName: row.orgName, teamNumber: row.teamNumber, role: row.role },
+        context: {
+          orgId: row.orgId,
+          orgName: row.orgName,
+          teamNumber: row.teamNumber,
+          role: row.role,
+          userId: session.user.id,
+        },
         plays: plays.rows,
       } satisfies WhiteboardView;
     });
@@ -122,6 +132,23 @@ export async function POST(request: Request) {
         }
 
         case "delete_play": {
+          const found = await client.query<{ createdBy: string; role: string }>(
+            `SELECT p.created_by AS "createdBy", m.role
+             FROM whiteboard_plays p
+             JOIN memberships m ON m.org_id = p.org_id AND m.user_id = $3
+             WHERE p.id = $1 AND p.org_id = $2`,
+            [action.id, action.orgId, userId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Play not found");
+          if (
+            !canDeleteWhiteboardPlay({
+              role: found.rows[0]!.role,
+              userId,
+              authorId: found.rows[0]!.createdBy,
+            })
+          ) {
+            throw new HttpError(403, "You cannot delete this play");
+          }
           const deleted = await client.query(`DELETE FROM whiteboard_plays WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,

@@ -20,6 +20,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "./opponent-watchlist.css";
 
 function isOpponentWatchlistView(value: unknown): value is OpponentWatchlistView {
@@ -486,7 +487,7 @@ function WatchedTeams({
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.current
-                  ? `Rating ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${entry.current.eventKey}`
+                  ? `Rating ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${scoutEventLabel({ eventName: entry.current.eventName, eventKey: entry.current.eventKey }) ?? "this event"}`
                   : "No stored rating yet"}
               </small>
               <small className="app-muted" style={{ display: "block" }}>

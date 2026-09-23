@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import ScoutingReconciliationPanel from "./scouting-reconciliation-panel";
 
 type InfluenceRow = {
@@ -229,7 +230,7 @@ export default function ScoutingTrustPanel({
                 <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "auto-assign", maximumConsecutiveMatches: 3 })}>
                   Balance shifts
                 </Button>
-                <Button variant="secondary" type="button" disabled={busy || !gaps.length} onClick={() => void mutate({ action: "nudge-gaps", message: `${gaps.length} scouting rows are uncovered at ${view.eventKey}.`, }) }>
+                <Button variant="secondary" type="button" disabled={busy || !gaps.length} onClick={() => void mutate({ action: "nudge-gaps", message: `${gaps.length} scouting rows are uncovered at ${scoutEventLabel({ eventKey: view.eventKey }) ?? "this event"}.`, }) }>
                   Nudge coordinator
                 </Button>
               </div>

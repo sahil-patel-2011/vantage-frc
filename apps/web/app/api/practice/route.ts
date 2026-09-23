@@ -94,7 +94,8 @@ export async function GET(request: Request) {
                   s.location, s.goal, s.notes,
                   s.attendance_event_id AS "attendanceEventId",
                   s.build_task_id AS "buildTaskId",
-                  s.created_at::text AS "createdAt", s.updated_at::text AS "updatedAt"
+                  s.created_at::text AS "createdAt", s.updated_at::text AS "updatedAt",
+                  s.created_by AS "createdBy"
            FROM driver_sessions s
            WHERE s.org_id = $1
            ORDER BY s.session_date DESC, s.created_at DESC`,
@@ -175,6 +176,7 @@ export async function GET(request: Request) {
           teamNumber: row.teamNumber,
           role: row.role,
           eventKey: row.eventKey,
+          userId: session.user.id,
         },
         sessions: sessionRows.rows.map((sessionRow) => {
           const linked = sessionRow.attendanceEventId

@@ -2,14 +2,15 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { scoreIterations, suggestNextGains } from ".";
-import type {
-  ScoredIteration,
-  TuningControllerType,
-  TuningGains,
-  TuningIteration,
-  TuningSession,
-  TuningSessionStatus,
-  TuningSuggestion,
+import {
+  canDeleteTuningAutopilotRow,
+  type ScoredIteration,
+  type TuningControllerType,
+  type TuningGains,
+  type TuningIteration,
+  type TuningSession,
+  type TuningSessionStatus,
+  type TuningSuggestion,
 } from "./types";
 
 export type TuningAutopilotSetupStep = {
@@ -45,6 +46,8 @@ export type TuningAutopilotView =
       iterations: ScoredIteration[];
       bestIterationId: string | null;
       suggestion: TuningSuggestion | null;
+      role?: string;
+      userId?: string;
       computedAt: string;
     };
 
@@ -56,9 +59,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -77,6 +80,7 @@ type SessionRow = {
   controllerType: string;
   goal: string;
   status: string;
+  createdBy: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -97,6 +101,7 @@ function mapSession(row: SessionRow): TuningSession {
     controllerType: isControllerType(row.controllerType) ? row.controllerType : "pid",
     goal: row.goal,
     status: isSessionStatus(row.status) ? row.status : "active",
+    createdBy: row.createdBy ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -192,7 +197,7 @@ export async function computeTuningAutopilotView(
   const [sessionResult, seasonResult] = await Promise.all([
     client.query<SessionRow>(
       `SELECT id, season_year AS "seasonYear", subsystem, controller_type AS "controllerType",
-              goal, status, created_at AS "createdAt", updated_at AS "updatedAt"
+              goal, status, created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM tuning_autopilot_sessions
        WHERE org_id = $1 AND season_year = $2
        ORDER BY created_at DESC`,
@@ -268,6 +273,8 @@ export async function computeTuningAutopilotView(
     iterations: scoredIterations,
     bestIterationId,
     suggestion,
+    role: org.role ?? "",
+    userId: input.userId,
     computedAt: new Date().toISOString(),
   };
 }
@@ -305,12 +312,26 @@ export async function updateSessionStatus(
 
 export async function deleteSession(
   client: PoolClient,
-  input: { orgId: string; sessionId: string },
+  input: { orgId: string; sessionId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM tuning_autopilot_sessions WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ createdBy: string }>(
+    `SELECT created_by AS "createdBy" FROM tuning_autopilot_sessions WHERE id = $1 AND org_id = $2`,
+    [input.sessionId, input.orgId],
+  );
+  const createdBy = existing.rows[0]?.createdBy;
+  if (!createdBy) throw new Error("Tuning session not found");
+  if (!canDeleteTuningAutopilotRow({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+    throw new Error("You cannot delete this tuning session");
+  }
+  const deleted = await client.query(`DELETE FROM tuning_autopilot_sessions WHERE id = $1 AND org_id = $2`, [
     input.sessionId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this tuning session");
 }
 
 /**
@@ -409,10 +430,24 @@ export async function logIteration(
 
 export async function deleteIteration(
   client: PoolClient,
-  input: { orgId: string; iterationId: string },
+  input: { orgId: string; iterationId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM tuning_autopilot_iterations WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ loggedBy: string }>(
+    `SELECT logged_by AS "loggedBy" FROM tuning_autopilot_iterations WHERE id = $1 AND org_id = $2`,
+    [input.iterationId, input.orgId],
+  );
+  const loggedBy = existing.rows[0]?.loggedBy;
+  if (!loggedBy) throw new Error("Tuning iteration not found");
+  if (!canDeleteTuningAutopilotRow({ role: role.rows[0]?.role, userId: input.userId, authorId: loggedBy })) {
+    throw new Error("You cannot delete this iteration");
+  }
+  const deleted = await client.query(`DELETE FROM tuning_autopilot_iterations WHERE id = $1 AND org_id = $2`, [
     input.iterationId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this iteration");
 }

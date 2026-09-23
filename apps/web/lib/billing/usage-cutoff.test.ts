@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildUsageCutoffSnapshot,
+  cutoffCheckoutVisible,
   cutoffCtas,
   evaluateUsageCutoff,
   isCutoffError,
@@ -71,6 +72,21 @@ describe("evaluateUsageCutoff", () => {
     const alert = evaluateUsageCutoff(snap);
     expect(alert?.level).toBe("near");
     expect(alert?.reason).toBe("org_budget");
+  });
+});
+
+describe("cutoffCheckoutVisible", () => {
+  it("keeps an explicit caller decision", () => {
+    expect(cutoffCheckoutVisible(true, "scout")).toBe(true);
+    expect(cutoffCheckoutVisible(false, "owner")).toBe(false);
+  });
+
+  it("hides checkout until the account is an owner or admin", () => {
+    expect(cutoffCheckoutVisible(undefined, undefined)).toBe(false);
+    expect(cutoffCheckoutVisible(undefined, "scout")).toBe(false);
+    expect(cutoffCheckoutVisible(undefined, "viewer")).toBe(false);
+    expect(cutoffCheckoutVisible(undefined, "owner")).toBe(true);
+    expect(cutoffCheckoutVisible(undefined, "admin")).toBe(true);
   });
 });
 

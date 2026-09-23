@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { desktopReleaseUnavailable, normalizeDesktopRelease } from "./release";
+import {
+  desktopReleaseUnavailable,
+  loadPublishedDesktopRelease,
+  normalizeDesktopRelease,
+  publishDesktopRelease,
+} from "./release";
 
 const NSIS =
   "https://github.com/sahil-patel-2011/vantage-frc/releases/download/desktop-v0.3.0/Vantage-0.3.0-win-x64-setup.exe";
@@ -50,5 +55,71 @@ describe("desktopReleaseUnavailable", () => {
     const body = desktopReleaseUnavailable("No desktop release published yet.");
     expect(body.version).toBeNull();
     expect(body.unsigned).toBe(true);
+  });
+});
+
+describe("publishDesktopRelease", () => {
+  it("keeps per-file digests and the written release notes", () => {
+    const release = publishDesktopRelease({
+      version: "0.4.0",
+      minimumSupported: "0.2.0",
+      sha256: "b".repeat(64),
+      downloads: { win_nsis: NSIS, win_msi: MSI, mac_dmg: DMG },
+      sha256ByDownload: {
+        win_nsis: "b".repeat(64),
+        win_msi: "c".repeat(64),
+        mac_dmg: "d".repeat(64),
+      },
+      releaseNotes: { headline: "Window remembers its size", added: ["MSI"], fixed: [], next: ["Signing"] },
+    });
+    expect(release?.sha256ByDownload?.mac_dmg).toBe("d".repeat(64));
+    expect(release?.releaseNotes?.headline).toBe("Window remembers its size");
+  });
+
+  it("drops a manifest whose download host is not allowlisted", () => {
+    expect(
+      publishDesktopRelease({
+        version: "0.3.0",
+        url: "https://evil.example/Vantage.exe",
+        sha256: "a".repeat(64),
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("loadPublishedDesktopRelease", () => {
+  it("returns 503-shaped body when GitHub has no release", async () => {
+    const fetchImpl = (async () => new Response("missing", { status: 404 })) as typeof fetch;
+    const result = await loadPublishedDesktopRelease(fetchImpl, "https://github.com/example/latest.json");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.body.version).toBeNull();
+      expect(result.body.error).toMatch(/no desktop release/i);
+    }
+  });
+
+  it("returns the allowlisted manifest when GitHub answers", async () => {
+    const fetchImpl = (async () =>
+      Response.json({
+        version: "0.4.0",
+        sha256: "b".repeat(64),
+        downloads: { win_nsis: NSIS, mac_dmg: DMG },
+        sha256ByDownload: { win_nsis: "b".repeat(64), mac_dmg: "d".repeat(64) },
+      })) as typeof fetch;
+    const result = await loadPublishedDesktopRelease(fetchImpl, "https://github.com/example/latest.json");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.release.url).toBe(NSIS);
+      expect(result.release.sha256ByDownload?.mac_dmg).toBe("d".repeat(64));
+    }
+  });
+
+  it("does not invent a URL when the feed is down", async () => {
+    const fetchImpl = (async () => {
+      throw new Error("offline");
+    }) as typeof fetch;
+    const result = await loadPublishedDesktopRelease(fetchImpl, "https://github.com/example/latest.json");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.body.downloads.win_nsis).toBeNull();
   });
 });

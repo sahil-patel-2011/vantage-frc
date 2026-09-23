@@ -52,6 +52,7 @@ export async function GET(request: Request) {
         ],
         orgId: null,
         eventKey: null,
+        canSync: false,
       } satisfies MatchStrategyCardsView,
       { status: 200 },
     );

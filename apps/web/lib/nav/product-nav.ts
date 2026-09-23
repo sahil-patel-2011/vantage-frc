@@ -192,7 +192,7 @@ export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
   { href: "/competition", label: "Matches", icon: "swords" },
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
-  { href: "/analytics", label: "Stats", icon: "stats" },
+  { href: "/rankings", label: "Stats", icon: "stats" },
 ];
 
 /** Allowlisted destinations for the four personal island slots. */

@@ -32,6 +32,7 @@ export type SpareRobotKitChecklist = {
   status: ChecklistStatus;
   items: KitChecklistItem[];
   rationale: string;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
 };

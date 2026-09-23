@@ -26,6 +26,7 @@ export type DriveTeamSignalSheet = {
   title: string;
   gameYear: number;
   eventKey: string | null;
+  eventName: string | null;
   signals: DriveTeamSignal[];
   notes: string | null;
   createdAt: string;

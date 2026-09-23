@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseShooterAction, summarizeTable } from "../../../lib/shooter-table";
+import { canDeleteShooterPoint, parseShooterAction, summarizeTable } from "../../../lib/shooter-table";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -27,7 +27,7 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Shooter table request failed") }, { status });
 }
 
-type PointRow = { id: string; tableName: string; distanceFt: number; rpm: number | null; hoodAngle: number | null; notes: string };
+type PointRow = { id: string; tableName: string; distanceFt: number; rpm: number | null; hoodAngle: number | null; notes: string; createdBy: string | null };
 
 export async function GET(request: Request) {
   try {
@@ -46,18 +46,25 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to tune your shooter." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to tune your shooter."
+            : "Choose your team to tune your shooter, or join the waitlist.",
+        };
+      }
 
       const points = await client.query<PointRow>(
         `SELECT id, table_name AS "tableName", distance_ft::float8 AS "distanceFt", rpm::float8 AS "rpm",
-                hood_angle::float8 AS "hoodAngle", notes
+                hood_angle::float8 AS "hoodAngle", notes, created_by AS "createdBy"
          FROM shooter_points WHERE org_id = $1 AND season_year = $2 ORDER BY table_name, distance_ft`,
         [row.orgId, seasonYear],
       );
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         points: points.rows,
         summary: summarizeTable(points.rows.map((p) => ({ distanceFt: p.distanceFt, rpm: p.rpm, hoodAngle: p.hoodAngle }))),
@@ -80,6 +87,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_point") {
+        const found = await client.query<{ createdBy: string; role: string }>(
+          `SELECT p.created_by AS "createdBy", m.role
+           FROM shooter_points p
+           JOIN memberships m ON m.org_id = p.org_id AND m.user_id = $3
+           WHERE p.id = $1 AND p.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Point not found");
+        if (!canDeleteShooterPoint({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+          throw new HttpError(403, "You cannot delete this point");
+        }
         const deleted = await client.query(`DELETE FROM shooter_points WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this point");
         return { ok: true };

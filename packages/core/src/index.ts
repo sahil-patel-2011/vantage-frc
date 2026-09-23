@@ -1,9 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, haveIBeenPwned } from "better-auth/plugins";
-import { APIError } from "better-auth/api";
 import { authDb } from "@vantage/db/auth";
 import { accounts, sessions, users, verifications } from "@vantage/db/schema";
 import {
@@ -204,6 +204,10 @@ function buildAuth() {
           throw new Error(
             "Email sign-in is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM, or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, are configured.",
           );
+        }
+        if (message.type === "sign-in") {
+          const access = await resolveAuthEmailAccess(message.email);
+          if (!access.allowed) return;
         }
         const emailProvider = createEmailProvider();
         await emailProvider.sendOtp(message);

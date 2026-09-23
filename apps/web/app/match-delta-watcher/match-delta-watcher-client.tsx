@@ -27,6 +27,7 @@ import {
   type MatchDeltaWatcherShellKind,
 } from "../../lib/match-delta-watcher/match-delta-watcher-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { namedEventOption, scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./match-delta-watcher.css";
@@ -103,6 +104,8 @@ function WatcherShell({
   shell,
   error,
   onRetry,
+  action,
+  emptyTitle,
   children,
 }: {
   description: string;
@@ -110,6 +113,8 @@ function WatcherShell({
   shell: MatchDeltaWatcherShellKind;
   error?: string;
   onRetry?: () => void;
+  action?: { href: string; label: string } | null;
+  emptyTitle?: string;
   children?: ReactNode;
 }) {
   const actions = matchDeltaWatcherNextActions({ orgId, shell });
@@ -143,10 +148,14 @@ function WatcherShell({
           soft
           badge={copy.badge}
           badgeTone="setup"
-          title={copy.title}
-          description={error ?? copy.description}
+          title={emptyTitle ?? copy.title}
+          description={action && orgId ? description : (error ?? copy.description)}
         >
-          {setup ? (
+          {action ? (
+            <Button as="a" variant="primary" href={action.href}>
+              {action.label}
+            </Button>
+          ) : setup ? (
             <Button as="a" variant="primary" href={setup.href}>
               {setup.label}
             </Button>
@@ -315,11 +324,15 @@ export default function MatchDeltaWatcherClient() {
   }
 
   if (shell === "setup") {
+    const setupView = view?.status === "setup_required" ? view : null;
+    const step = setupView?.orgId ? setupView.steps[0] : null;
     return (
       <WatcherShell
-        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        description={setupView ? setupView.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        emptyTitle={setupView?.orgId ? setupView.message : undefined}
+        action={step ? { href: step.href, label: step.label } : undefined}
       >
         <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
       </WatcherShell>
@@ -359,11 +372,15 @@ export default function MatchDeltaWatcherClient() {
                   load(next);
                 }}
               >
-                {view.events.map((key) => (
-                  <option key={key} value={key}>
-                    {key}
-                  </option>
-                ))}
+                {view.events.map((value) => {
+                  const event = namedEventOption(value);
+                  if (!event) return null;
+                  return (
+                    <option key={event.eventKey} value={event.eventKey}>
+                      {scoutEventLabel(event) ?? event.eventKey}
+                    </option>
+                  );
+                })}
               </select>
             </label>
           ) : null}
@@ -423,7 +440,9 @@ function ConfigPanel({
     <Panel className="mdw-panel">
       <header className="mdw-config-header">
         <div>
-          <h2>Watch settings — {view.eventKey}</h2>
+          <h2>
+            Watch settings — {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Your event"}
+          </h2>
           <small className="app-muted">
             {view.config ? "Configured from real scans" : "Not yet configured — using defaults until saved."}
           </small>

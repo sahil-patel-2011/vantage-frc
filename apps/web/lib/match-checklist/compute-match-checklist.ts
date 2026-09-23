@@ -41,6 +41,7 @@ export type MatchChecklistView =
       orgId: string;
       teamNumber: number | null;
       activeEventKey: string | null;
+      activeEventName: string | null;
       runs: MatchChecklistRun[];
       upcomingMatches: UpcomingBumperMatch[];
       summary: MatchChecklistSummary;
@@ -111,16 +112,26 @@ function findScheduleRow(
   });
 }
 
-async function loadActiveEventKey(client: PoolClient, orgId: string): Promise<string | null> {
+async function loadActiveEvent(
+  client: PoolClient,
+  orgId: string,
+): Promise<{ activeEventKey: string | null; activeEventName: string | null }> {
   try {
-    const result = await client.query<{ activeEventKey: string | null }>(
-      `SELECT active_event_key AS "activeEventKey"
-       FROM org_active_context WHERE org_id = $1::uuid LIMIT 1`,
+    const result = await client.query<{ activeEventKey: string | null; activeEventName: string | null }>(
+      `SELECT c.active_event_key AS "activeEventKey", e.name AS "activeEventName"
+       FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE c.org_id = $1::uuid
+       LIMIT 1`,
       [orgId],
     );
-    return result.rows[0]?.activeEventKey ?? null;
+    const row = result.rows[0];
+    return {
+      activeEventKey: row?.activeEventKey ?? null,
+      activeEventName: row?.activeEventName ?? null,
+    };
   } catch {
-    return null;
+    return { activeEventKey: null, activeEventName: null };
   }
 }
 
@@ -222,7 +233,7 @@ export async function computeMatchChecklistView(
     [org.orgId],
   );
 
-  const activeEventKey = await loadActiveEventKey(client, org.orgId);
+  const { activeEventKey, activeEventName } = await loadActiveEvent(client, org.orgId);
   const eventKeys = [
     activeEventKey,
     ...runResult.rows.map((row) => row.eventKey),
@@ -252,6 +263,7 @@ export async function computeMatchChecklistView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     activeEventKey,
+    activeEventName,
     runs,
     upcomingMatches,
     summary,

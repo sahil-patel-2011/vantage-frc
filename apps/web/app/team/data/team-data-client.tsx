@@ -7,8 +7,10 @@ import { TeamDataRelated } from "../../../components/team-data-related";
 import { EmptyState, Panel, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { loadFailureCopy } from "../../../lib/ui/load-failure";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
+import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import {
   TEAM_DATA_RELATED_INCLUDE,
   classifyTeamDataShell,
@@ -32,6 +34,7 @@ type TeamDataSnapshot = {
   inventory: InventoryRow[];
   reference: InventoryRow[];
   activeEventKey: string | null;
+  activeEventName?: string | null;
   credentials: Credential[];
   health: Record<string, unknown> | null;
   dataSourceHealth: DataSourceHealthView | null;
@@ -180,6 +183,8 @@ function TeamDataShell({
   orgId,
   shell,
   error,
+  badge,
+  primary,
   onRetry,
   children,
 }: {
@@ -188,6 +193,8 @@ function TeamDataShell({
   orgId?: string | null;
   shell: TeamDataShellKind;
   error?: string;
+  badge?: string;
+  primary?: { label: string; href: string };
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -207,13 +214,14 @@ function TeamDataShell({
       <EmptyState
         soft
         badge={
-          shell === "setup"
+          badge ??
+          (shell === "setup"
             ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
                 ? "No cache yet"
-                : undefined
+                : undefined)
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
         title={title}
@@ -224,6 +232,11 @@ function TeamDataShell({
         }
         aria-busy={shell === "loading" || undefined}
       >
+        {primary ? (
+          <Button as="a" variant="primary" href={primary.href}>
+            {primary.label}
+          </Button>
+        ) : null}
         {shell === "error" && onRetry ? (
           <Button variant="secondary" type="button" onClick={onRetry}>
             Retry
@@ -241,6 +254,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [reference, setReference] = useState<InventoryRow[]>([]);
   const [activeEventKey, setActiveEventKey] = useState<string | null>(null);
+  const [activeEventName, setActiveEventName] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [health, setHealth] = useState<Record<string, unknown> | null>(null);
   const [dataSourceHealth, setDataSourceHealth] = useState<DataSourceHealthView | null>(null);
@@ -263,6 +277,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     setInventory(data.inventory);
     setReference(data.reference);
     setActiveEventKey(data.activeEventKey ?? null);
+    setActiveEventName(data.activeEventName ?? null);
     setCredentials(data.credentials ?? []);
     setHealth(data.health ?? null);
     setDataSourceHealth(data.dataSourceHealth ?? null);
@@ -298,6 +313,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         setInventory([]);
         setReference([]);
         setActiveEventKey(null);
+        setActiveEventName(null);
         setCredentials([]);
         setHealth(null);
         setDataSourceHealth(null);
@@ -329,6 +345,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         inventory: data.inventory,
         reference: data.reference,
         activeEventKey: data.activeEventKey ?? null,
+        activeEventName: data.activeEventName ?? null,
         credentials: data.credentials ?? [],
         health: data.health ?? null,
         dataSourceHealth: data.dataSourceHealth ?? null,
@@ -341,6 +358,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         inventory: data.inventory,
         reference: data.reference,
         activeEventKey: data.activeEventKey ?? null,
+        activeEventName: data.activeEventName ?? null,
         credentials: data.credentials ?? [],
         health: data.health ?? null,
         dataSourceHealth: data.dataSourceHealth ?? null,
@@ -429,6 +447,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   }
 
   const hasActiveEvent = Boolean(activeEventKey);
+  const activeEventLabel = scoutEventLabel({ eventName: activeEventName, eventKey: activeEventKey }) ?? "Not set";
   const tbaConfigured = isTbaConfigured({
     credentialCount: credentials.length,
     dataSourceMode: dataSourceHealth?.mode ?? null,
@@ -473,16 +492,27 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   }
 
   if (shell === "error") {
+    const failure = forbidden ? loadFailureCopy("forbidden") : null;
     return (
       <TeamDataShell
-        title={forbidden ? "Admin access required" : "Team Data unavailable"}
-        description="Inventory and event data appear after your first sync."
+        title={failure?.title ?? "Team Data unavailable"}
+        description={
+          failure
+            ? "Owners and admins connect the event schedule here."
+            : "Inventory and event data appear after your first sync."
+        }
         orgId={orgId}
         shell="error"
-        error={error || message}
-        onRetry={() => {
-          void load();
-        }}
+        badge={failure?.badge}
+        error={forbidden ? failure?.description : error || message}
+        primary={failure?.primary}
+        onRetry={
+          forbidden
+            ? undefined
+            : () => {
+                void load();
+              }
+        }
       >
         <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
       </TeamDataShell>
@@ -559,7 +589,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
-      <DataSourceDegradedBanner health={dataSourceHealth} />
+      <DataSourceDegradedBanner health={dataSourceHealth} canOpenTeamData />
 
       {shell === "empty" ? (
         <>
@@ -568,7 +598,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             badge="No cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls the official event numbers.`}
+            description={`${activeEventLabel} is selected, but there are no match or ranking rows yet. Sync pulls the official event numbers.`}
           >
             <Button variant="primary" type="button" disabled={busy} onClick={() => void syncActiveEvent()}>
               {busy ? "Working…" : "Sync active event"}
@@ -581,7 +611,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <section className="app-card soft-panel team-data-panel">
           <h2>Team inventory</h2>
           <p className="app-muted">
-            Active event: <strong>{activeEventKey ?? "Not set"}</strong>
+            Active event: <strong>{activeEventLabel}</strong>
           </p>
           {inventory.length === 0 ? (
             <p className="app-muted">Nothing on this team yet — counts appear once your team adds data.</p>

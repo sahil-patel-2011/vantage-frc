@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../../components/ui";
 import {
   PAIR_RELATED_INCLUDE,
@@ -30,9 +31,16 @@ export type PairDevice = {
   createdAt: string;
 };
 
-function PairRelatedStrip({ orgId }: { orgId?: string | null }) {
+function PairRelatedStrip({
+  orgId,
+  canConnect,
+}: {
+  orgId?: string | null;
+  canConnect?: boolean;
+}) {
   const links = pairRelatedLinks(orgId, {
     include: [...PAIR_RELATED_INCLUDE],
+    canConnect,
   });
   if (!links.length) return null;
   return (
@@ -69,14 +77,16 @@ function PairShell({
   description,
   orgId,
   shell,
+  canConnect,
   children,
 }: {
   description: string;
   orgId?: string | null;
   shell: PairShellKind;
+  canConnect?: boolean;
   children?: ReactNode;
 }) {
-  const actions = pairNextActions({ orgId, shell });
+  const actions = pairNextActions({ orgId, shell, canConnect });
   const copy = pairShellCopy(shell);
   const buildHref = hubHref("/build", "code", orgId);
   const setup = shell === "setup" ? pairSetupSteps(orgId)[0] : null;
@@ -93,7 +103,7 @@ function PairShell({
         title="Pair VS Code"
         description={description}
       >
-        <PairRelatedStrip orgId={orgId} />
+        <PairRelatedStrip orgId={orgId} canConnect={canConnect} />
       </PageHeader>
       {children}
       <EmptyState
@@ -154,6 +164,7 @@ export default function PairClient({
 
   const hasOrgs = organizations.length > 0;
   const deviceCount = devices.length;
+  const canConnect = strategyCanSync(organizations.find((org) => org.id === orgId)?.role);
   const shell = classifyPairShell({
     hasOrgs,
     orgId: orgId || null,
@@ -165,9 +176,11 @@ export default function PairClient({
     shell,
     deviceCount,
     hasCode: Boolean(code.trim()),
+    canConnect,
   });
   const relatedLinks = pairRelatedLinks(orgId || null, {
     include: [...PAIR_RELATED_INCLUDE],
+    canConnect,
   });
   const buildHref = hubHref("/build", "code", orgId || null);
   const showTiles = shouldShowPairSummaryTiles({ deviceCount });
@@ -226,7 +239,12 @@ export default function PairClient({
 
   if (shell === "setup") {
     return (
-      <PairShell description={shellCopy.description} orgId={orgId || null} shell="setup" />
+      <PairShell
+        description={shellCopy.description}
+        orgId={orgId || null}
+        shell="setup"
+        canConnect={canConnect}
+      />
     );
   }
 

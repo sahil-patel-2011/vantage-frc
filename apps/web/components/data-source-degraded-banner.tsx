@@ -7,9 +7,11 @@ import "./data-source-degraded-banner.css";
 type Props = {
   health: DataSourceHealthView | null | undefined;
   compact?: boolean;
+  /** Owner or admin may open Team Data. Omitted stays closed. */
+  canOpenTeamData?: boolean;
 };
 
-export function DataSourceDegradedBanner({ health, compact = false }: Props) {
+export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamData = false }: Props) {
   if (!health?.degraded) return null;
 
   return (
@@ -26,9 +28,13 @@ export function DataSourceDegradedBanner({ health, compact = false }: Props) {
           <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
         ) : null}
       </div>
-      <Button as="a" variant="secondary" href={health.teamDataHref}>
-        Team → Data
-      </Button>
+      {canOpenTeamData ? (
+        <Button as="a" variant="secondary" href={health.teamDataHref}>
+          Team → Data
+        </Button>
+      ) : (
+        <p className="data-source-cache-note">An owner or admin refreshes this under Team → Data.</p>
+      )}
     </aside>
   );
 }

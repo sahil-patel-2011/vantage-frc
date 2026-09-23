@@ -124,6 +124,11 @@ describe("computeMatchStrategyCardsView", () => {
     });
     const view = await computeMatchStrategyCardsView(client, { userId: USER, requestedOrg: ORG });
     expect(view.status).toBe("setup_required");
+    if (view.status === "setup_required") {
+      expect(view.canSync).toBe(false);
+      expect(view.message).toMatch(/Champs has no matches/);
+      expect(view.message).toMatch(/owner or admin/);
+    }
   });
 
   it("returns a live view merging synced matches with any saved strategy card content", async () => {

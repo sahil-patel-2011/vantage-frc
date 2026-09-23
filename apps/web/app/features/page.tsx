@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { ProductHubCatalog } from "../../components/marketing/product-glances";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 import { MARKETING_HUBS, MARKETING_MENU } from "../../lib/marketing/product-story";
@@ -24,14 +24,9 @@ export default function FeaturesPage() {
             Six hubs. Each one is the same software mentors and students use on a build night.
             Related tools sit as tabs inside the hub.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="button secondary" href="/workflow">
-              How it works
-            </a>
-          </div>
+          <MarketingRouteActions
+            companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
+          />
           <nav className="mk-hub-jump" aria-label="Jump to hub">
             {MARKETING_HUBS.map((hub) => (
               <a href={`#${hub.id}`} key={hub.id}>

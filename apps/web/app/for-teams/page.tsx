@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 import { MARKETING_SEASON, MARKETING_STUDENT_PATH } from "../../lib/marketing/product-story";
 import "../marketing-showcase.css";
@@ -7,7 +7,7 @@ import "../marketing-showcase.css";
 export const metadata: Metadata = marketingPageMetadata({
   title: "For FRC teams — Vantage",
   description:
-    "How mentors, drive team, scouts, and business leads share one invite-only FRC app: scouting, CAD from a link, match video, and team ops.",
+    "How mentors, drive team, scouts, and business leads share one invite-only FRC app: scouting, CAD from a link, team chat, and team ops.",
   path: "/for-teams",
 });
 
@@ -34,7 +34,7 @@ const roles = [
   },
   {
     title: "Every member",
-    copy: "Home island is four apps: Home, Compete, Team, Build. Menu and search for the rest. Chat stays inside your team.",
+    copy: "Home island is four apps: Home, Matches, Scout, and Stats. Menu and search for the rest. Chat stays inside your team.",
   },
 ] as const;
 
@@ -47,17 +47,10 @@ export default function ForTeamsPage() {
           <p className="lux-kicker">For teams</p>
           <h1>Built for the whole FRC team.</h1>
           <p>
-            Mentors invite exact emails. Students open Home, then scout, paste a CAD link, watch match video, and
+            Mentors invite exact emails. Students open Home, then scout, paste a CAD link, talk with the team, and
             run the shop — one login, no extra help required.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="text-link" href="/signin">
-              Already invited? Sign in
-            </a>
-          </div>
+          <MarketingRouteActions signIn />
         </header>
 
         <section className="lux-pillars" aria-labelledby="day-one-title">
@@ -119,14 +112,10 @@ export default function ForTeamsPage() {
               and Max add hosted AI. See <a href="/pricing">pricing</a> or walk <a href="/workflow">how it works</a>.
             </p>
           </div>
-          <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="text-link" href="/pricing">
-              See plans
-            </a>
-          </div>
+          <MarketingRouteActions
+            className="pricing-preview-actions"
+            companion={{ href: "/pricing", label: "See plans" }}
+          />
         </section>
       </main>
       <SiteFooter />

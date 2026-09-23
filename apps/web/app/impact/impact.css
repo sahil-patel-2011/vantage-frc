@@ -153,7 +153,15 @@
   margin-top: 0;
 }
 
+.impact-setup{animation:impact-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes impact-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.impact-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.impact-setup-waitlist,.impact-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.impact-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+
 @media (max-width: 720px) {
+  .impact-setup-actions{display:grid;width:100%}
+  .impact-setup-actions .app-button{width:100%;justify-content:center}
   .impact-component {
     grid-template-columns: 1fr 48px;
   }

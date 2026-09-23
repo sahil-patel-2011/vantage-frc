@@ -7,7 +7,7 @@ import { Badge, EmptyState } from "../../../components/ui";
 import { type EmptyHint, studentWidgetDescription } from "./widget-empty-copy";
 
 export type { EmptyHint } from "./widget-empty-copy";
-export { emptyHintFor } from "./widget-empty-copy";
+export { emptyHintFor, syncStatusDestination } from "./widget-empty-copy";
 
 /**
  * Widget accents are HUES, named from the tone ramp (soft-ui.css). They used to

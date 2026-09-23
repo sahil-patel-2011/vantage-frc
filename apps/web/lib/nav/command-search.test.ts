@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MEDIA_ENABLED } from "../media-availability";
-import { commandCatalog, searchCommands, type CommandEntry } from "./command-search";
+import { commandCatalog, isTeamAdminCommand, searchCommands, type CommandEntry } from "./command-search";
 
 const catalog = commandCatalog();
 const top = (query: string, count = 1): string[] =>
@@ -133,6 +133,20 @@ describe("searchCommands gating and empty state", () => {
   it("does not repeat a recent that is also featured", () => {
     const results = searchCommands("", catalog, { recentHrefs: ["/dashboard"], limit: 8 });
     expect(results.filter((hit) => hit.href === "/dashboard")).toHaveLength(1);
+  });
+
+  it("hides Team admin and Invite a teammate when the member cannot manage the team", () => {
+    const invited = searchCommands("invite", catalog, { canManageTeam: false, limit: 12 });
+    expect(invited.some((hit) => isTeamAdminCommand(hit.href))).toBe(false);
+    const named = searchCommands("team admin", catalog, { canManageTeam: false, limit: 12 });
+    expect(named.some((hit) => isTeamAdminCommand(hit.href))).toBe(false);
+    const empty = searchCommands("", catalog, { canManageTeam: false, limit: 24 });
+    expect(empty.some((hit) => isTeamAdminCommand(hit.href))).toBe(false);
+  });
+
+  it("keeps Team admin when manage access is omitted", () => {
+    expect(hrefs("team admin")).toContain("/team/admin");
+    expect(searchCommands("invite a teammate", catalog).some((hit) => hit.href.startsWith("/team/admin"))).toBe(true);
   });
 });
 

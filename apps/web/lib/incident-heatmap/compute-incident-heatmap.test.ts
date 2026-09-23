@@ -91,5 +91,22 @@ describe("computeIncidentHeatmapView", () => {
     expect(intakeCells).toHaveLength(1);
     expect(intakeCells[0]?.count).toBe(2);
     expect(view.summary.buckets.length).toBeGreaterThan(0);
+    expect(view.eventKey).toBeNull();
+    expect(view.eventName).toBeNull();
+  });
+
+  it("names the active event on a live heatmap", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }] };
+      }
+      return { rows: [] };
+    });
+    const view = await computeIncidentHeatmapView(client, { userId: USER, requestedOrg: ORG, seasonYear: 2026 });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });

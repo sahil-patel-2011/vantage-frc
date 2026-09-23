@@ -8,6 +8,6 @@ describe("leftover Coverage sync student copy", () => {
   it("uses student chrome", () => {
     const src = readFileSync(join(WEB, "lib/scout-coverage-live/compute-scout-coverage-live.ts"), "utf8");
     expect(src).not.toContain("wait for the schedule to sync from TBA");
-    expect(src).toContain("wait for the schedule to sync from Team Data");
+    expect(src).toContain("until an owner or admin syncs the event schedule");
   });
 });

@@ -148,6 +148,17 @@ describe("chemistryNextActions", () => {
     expect(actions[0]?.detail).not.toMatch(/team_event_metrics/);
   });
 
+  it("sends a scout to Scouting when they cannot sync", () => {
+    const actions = chemistryNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      canEdit: false,
+    });
+    expect(actions[0]?.label).toBe("Open Scouting");
+    expect(actions[0]?.href).toContain("tab=scouting");
+    expect(actions[0]?.href).not.toContain("/team/data");
+  });
+
   it("does not add a second guided list on a scored board", () => {
     expect(
       chemistryNextActions({

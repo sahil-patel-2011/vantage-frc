@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { MarketingAdminLink, MarketingPlanLink } from "../../components/marketing/site-header";
 import {
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
@@ -121,12 +122,9 @@ const faqs: Array<{ q: string; a: string }> = [
   },
 ];
 
-function Cta({ label = "Join the waitlist", href = "/#waitlist" }: { label?: string; href?: string }) {
-  return (
-    <a className="text-link" href={href}>
-      {label}
-    </a>
-  );
+function Cta({ label, href }: { label?: string; href?: string }) {
+  if (href && label) return <MarketingAdminLink href={href} label={label} />;
+  return <MarketingPlanLink guestLabel={label} />;
 }
 
 function PlanArticle({ plan, footer }: { plan: PlanCard; footer?: ReactNode }) {
@@ -165,11 +163,7 @@ export function PricingCatalog() {
               <PlanArticle
                 key={plan.code}
                 plan={plan}
-                footer={
-                  <a className="text-link" href="/#waitlist">
-                    Join the waitlist
-                  </a>
-                }
+                footer={<Cta />}
               />
             ) : (
               <PlanArticle key={plan.code} plan={plan} />

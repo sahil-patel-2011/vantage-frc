@@ -22,7 +22,8 @@ export type ScoutCrossvalView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string | null;
-      events: string[];
+      eventName: string | null;
+      events: Array<{ eventKey: string; eventName: string | null }>;
       entries: CrossvalEntry[];
       summary: CrossvalSummary;
       computedAt: string;
@@ -114,12 +115,21 @@ export async function computeScoutCrossvalView(
     };
   }
 
-  const eventsResult = await client.query<{ eventKey: string }>(
-    `SELECT DISTINCT event_key AS "eventKey" FROM match_scout_entries WHERE org_id = $1 ORDER BY event_key DESC`,
+  const eventsResult = await client.query<{ eventKey: string; eventName: string | null }>(
+    `SELECT DISTINCT mse.event_key AS "eventKey", e.name AS "eventName"
+     FROM match_scout_entries mse
+     LEFT JOIN events_ref e ON e.event_key = mse.event_key
+     WHERE mse.org_id = $1
+     ORDER BY mse.event_key DESC`,
     [org.orgId],
   );
-  const events = eventsResult.rows.map((r) => r.eventKey);
-  const eventKey = input.eventKey && events.includes(input.eventKey) ? input.eventKey : events[0] ?? null;
+  const events = eventsResult.rows.map((row) => ({
+    eventKey: row.eventKey,
+    eventName: row.eventName ?? null,
+  }));
+  const eventKeys = events.map((event) => event.eventKey);
+  const eventKey = input.eventKey && eventKeys.includes(input.eventKey) ? input.eventKey : eventKeys[0] ?? null;
+  const eventName = events.find((event) => event.eventKey === eventKey)?.eventName ?? null;
 
   if (!eventKey) {
     return {
@@ -127,6 +137,7 @@ export async function computeScoutCrossvalView(
       orgId: org.orgId,
       teamNumber: org.teamNumber,
       eventKey: null,
+      eventName: null,
       events,
       entries: [],
       summary: summarizeCrossval([]),
@@ -198,6 +209,7 @@ export async function computeScoutCrossvalView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     eventKey,
+    eventName,
     events,
     entries,
     summary,

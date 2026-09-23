@@ -96,6 +96,32 @@ export function scoutReportFromPayload(payload: Record<string, unknown> | null |
   };
 }
 
+/** What a teammate should read next to a saved report. "manual" is not a name. */
+export function scoutSourceLabel(source: string | null | undefined): string {
+  switch (source) {
+    case "manual":
+      return "Form";
+    case "voice":
+      return "Voice";
+    case "import":
+      return "Imported";
+    case "video":
+      return "Video";
+    case null:
+    case undefined:
+    case "":
+      return "";
+    default:
+      return "";
+  }
+}
+
+export function scoutEntryByline(input: { scoutName?: string | null; source?: string | null }): string {
+  const name = input.scoutName?.trim() ?? "";
+  const source = scoutSourceLabel(input.source);
+  return [name, source].filter((part) => part.length > 0).join(" · ");
+}
+
 export function formatReportClock(atSeconds: number | null): string {
   if (atSeconds == null || !Number.isFinite(atSeconds)) return "—";
   const total = Math.max(0, Math.round(atSeconds));

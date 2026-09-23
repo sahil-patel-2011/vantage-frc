@@ -61,6 +61,8 @@ export function displaySetupNextActions(input: {
   boardCount?: number;
   activeTokenCount?: number;
   hasActiveEvent?: boolean | null;
+  /** Owner or admin can open Team Data. Omitted stays closed. */
+  canSync?: boolean;
 }): DisplayNextAction[] {
   const orgId = input.orgId ?? null;
   const boardCount = input.boardCount ?? 0;
@@ -81,7 +83,15 @@ export function displaySetupNextActions(input: {
   const actions: DisplayNextAction[] = [];
   const setupHref = withOrgHref("/display", orgId);
 
-  if (boardCount === 0) {
+  if (input.canSync !== true) {
+    actions.push({
+      id: "read",
+      label: boardCount === 0 ? "Read the display layout" : "Open a saved board",
+      detail: "An owner or admin saves a board and mints a pit TV token. Fullscreen stays available.",
+      href: setupHref,
+      primary: true,
+    });
+  } else if (boardCount === 0) {
     actions.push({
       id: "create-board",
       label: "Create your first board",
@@ -130,12 +140,19 @@ export function displaySetupNextActions(input: {
       detail: "Score a stored prediction so Win Prediction boards can show model odds from real metrics.",
       href: hubHref("/competition", "strategy", orgId),
     },
-    {
-      id: "team-data",
-      label: "Sync team data",
-      detail: "Pull rankings when ranks or matches are missing from the display.",
-      href: withOrgHref("/team/data", orgId),
-    },
+    input.canSync === true
+      ? {
+          id: "team-data",
+          label: "Sync team data",
+          detail: "Pull rankings when ranks or matches are missing from the display.",
+          href: withOrgHref("/team/data", orgId),
+        }
+      : {
+          id: "scouting",
+          label: "Open Scouting",
+          detail: "An owner or admin syncs rankings. You can still scout.",
+          href: hubHref("/competition", "scouting", orgId),
+        },
   );
 
   return actions;

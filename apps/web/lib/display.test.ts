@@ -10,6 +10,7 @@ import {
   isDisplayPreset,
   isDisplayWidgetType,
   matchLabel,
+  nexusVenueGapMessage,
   ourBumperColor,
   pitChromiumKioskCommand,
   queueCue,
@@ -17,6 +18,8 @@ import {
   recordLabel,
   stripFrc,
   formatDisplayPrediction,
+  kioskEventCommandEmptyCopy,
+  kioskNextMatchEmptyCopy,
   widgetValue,
 } from "./display";
 
@@ -69,6 +72,17 @@ describe("display helpers", () => {
     expect(past.label).toBe("QUEUE NOW");
     expect(past.queueNow).toBe(true);
     expect(queueCue(past)).toBe("QUEUE NOW");
+  });
+
+  it("keeps Team Data off the public pit board", () => {
+    expect(kioskNextMatchEmptyCopy(9999)).toBe(
+      "This board only shows matches that include team #9999. Queue time stays blank until those matches are on the schedule.",
+    );
+    expect(kioskNextMatchEmptyCopy(9999)).not.toMatch(/Team Data/);
+    expect(kioskEventCommandEmptyCopy()).toBe(
+      "This board stays blank until a rank, record, or next match is saved for the active event.",
+    );
+    expect(kioskEventCommandEmptyCopy()).not.toMatch(/Team Data/);
   });
 
   it("reads bumper color only from the real alliance lists", () => {
@@ -172,5 +186,33 @@ describe("display helpers", () => {
         scouting: { assignments: 0, reports: 0, openDisagreements: 0 },
       }),
     ).toBe(true);
+  });
+
+  it("names the active event when Nexus has no venue yet", () => {
+    expect(
+      nexusVenueGapMessage({
+        eventName: "Pacific Practice",
+        eventKey: "2026custom-47003f5c-pacific-practice",
+        reason: "no-cache",
+      }),
+    ).toBe(
+      "No Nexus payload is cached for Pacific Practice yet. Nexus data appears once the event-day sync runs with a Nexus API key configured.",
+    );
+    expect(
+      nexusVenueGapMessage({
+        eventName: null,
+        eventKey: "2026custom-47003f5c-pacific-practice",
+        reason: "no-geometry",
+      }),
+    ).toBe(
+      "Nexus has not published venue geometry for Your event. Your own pit layout below is unaffected.",
+    );
+    expect(
+      nexusVenueGapMessage({
+        eventName: null,
+        eventKey: "2026txho",
+        reason: "no-cache",
+      }),
+    ).toContain("2026txho");
   });
 });

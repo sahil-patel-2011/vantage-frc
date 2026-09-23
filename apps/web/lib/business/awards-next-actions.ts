@@ -15,6 +15,8 @@ export type AwardsNextActionContext = {
   inProgressCount?: number;
   wonCount?: number;
   incompleteEssayCount?: number;
+  /** When false, starting and editing stay with an owner or admin. Omitted keeps those actions. */
+  canManage?: boolean;
 };
 
 /**
@@ -38,6 +40,24 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
 
   const awardsHref = withOrgHref("/team/awards", orgId);
   const submissions = ctx.submissionCount ?? 0;
+
+  if (ctx.canManage === false) {
+    return [
+      {
+        id: "read",
+        label: submissions === 0 ? "Read the award catalog" : "Read the submissions",
+        detail: "An owner or admin starts a submission and updates essays. Saved essays stay readable.",
+        href: awardsHref,
+        primary: true,
+      },
+      {
+        id: "impact",
+        label: "Log community impact evidence",
+        detail: "Outreach hours and reach appear in narratives once someone records them.",
+        href: withOrgHref("/impact", orgId),
+      },
+    ];
+  }
 
   if (submissions === 0) {
     return [

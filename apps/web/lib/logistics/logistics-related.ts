@@ -138,7 +138,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before adding hotels and travel legs.",
+          "Choose your team to view lodging and travel, or join the waitlist.",
       };
     case "empty":
       return {
@@ -223,7 +223,7 @@ function logisticsShellNextActionCandidates(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick the team you are on, and travel, packing and duties fill in here.",
+        detail: "Choose your team, and travel, packing and duties fill in here.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

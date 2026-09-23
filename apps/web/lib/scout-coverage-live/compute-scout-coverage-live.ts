@@ -1,8 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { DEFAULT_THIN_THRESHOLD, matchLabel, rankCoverageGaps, summarizeCoverage } from ".";
 import type { CoverageCell, CoverageNudge, CoverageSummary } from "./types";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { computeScoutingCoverageView } from "../scouting/coverage";
 import { loadMissedAssignments, type MissedAssignmentRow } from "../scouting/assignment-accountability-load";
+import { scoutEventLabel } from "../scouting/scouting-related";
 
 export type ScoutCoverageLiveSetupStep = {
   id: string;
@@ -24,6 +27,7 @@ export type ScoutCoverageLiveView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string;
+      eventName: string | null;
       thinThreshold: number;
       cells: CoverageCell[];
       summary: CoverageSummary;
@@ -88,17 +92,28 @@ export async function computeScoutCoverageLiveView(
   }
 
   if (coverage.slots.length === 0) {
+    const named = scoutEventLabel({
+      eventName: coverage.eventName,
+      eventKey: coverage.eventKey,
+    });
+    const scoutStep: ScoutCoverageLiveSetupStep = {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "The schedule is not cached yet. You can still type a team and match on Scouting.",
+      href: hubHref("/competition", "scouting", coverage.orgId),
+    };
+    const syncStep: ScoutCoverageLiveSetupStep = {
+      id: "schedule",
+      label: "Sync Team Data",
+      detail: "Match slots stay blank until an owner or admin syncs the event schedule.",
+      href: withOrgHref("/team/data", coverage.orgId),
+    };
     return {
       status: "setup_required",
-      message: "No match schedule is synced for this event yet.",
-      steps: [
-        {
-          id: "schedule",
-          label: "Sync event schedule",
-          detail: "Confirm the event key and wait for the schedule to sync from Team Data",
-          href: "/competition",
-        },
-      ],
+      message: named
+        ? `${named} has no match schedule yet.`
+        : "No match schedule is synced for this event yet.",
+      steps: coverage.canAssign ? [syncStep, scoutStep] : [scoutStep],
       orgId: coverage.orgId,
       eventKey: coverage.eventKey,
     };
@@ -155,6 +170,7 @@ export async function computeScoutCoverageLiveView(
     orgId: coverage.orgId,
     teamNumber: coverage.teamNumber,
     eventKey: coverage.eventKey,
+    eventName: coverage.eventName,
     thinThreshold,
     cells,
     summary,

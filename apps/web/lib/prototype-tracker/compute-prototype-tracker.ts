@@ -2,12 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { DECISION_RECOMMENDATIONS, DECISION_STATUSES, TEST_OUTCOMES, draftDecision } from ".";
-import type {
-  DecisionRecommendation,
-  DecisionStatus,
-  PrototypeDecision,
-  PrototypeTest,
-  TestOutcome,
+import {
+  canDeletePrototypeRow,
+  type DecisionRecommendation,
+  type DecisionStatus,
+  type PrototypeDecision,
+  type PrototypeTest,
+  type TestOutcome,
 } from "./types";
 
 export { DECISION_RECOMMENDATIONS, DECISION_STATUSES, TEST_OUTCOMES };
@@ -33,6 +34,8 @@ export type PrototypeTrackerView =
       teamNumber: number | null;
       seasonYear: number;
       seasons: number[];
+      role?: string;
+      userId?: string;
       tests: PrototypeTest[];
       decisions: PrototypeDecision[];
       computedAt: string;
@@ -66,6 +69,7 @@ type TestRow = {
   metricLabel: string | null;
   metricValue: string | null;
   metricTarget: string | null;
+  loggedBy?: string;
   createdAt: string;
 };
 
@@ -82,6 +86,7 @@ function mapTest(row: TestRow): PrototypeTest {
     metricLabel: row.metricLabel,
     metricValue: row.metricValue == null ? null : Number(row.metricValue),
     metricTarget: row.metricTarget == null ? null : Number(row.metricTarget),
+    loggedBy: row.loggedBy,
     createdAt: row.createdAt,
   };
 }
@@ -95,6 +100,7 @@ type DecisionRow = {
   decisionRecord: string;
   notebookEntry: string;
   status: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -109,6 +115,7 @@ function mapDecision(row: DecisionRow): PrototypeDecision {
     decisionRecord: row.decisionRecord,
     notebookEntry: row.notebookEntry,
     status: isStatus(row.status) ? row.status : "draft",
+    createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -118,9 +125,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -156,7 +163,7 @@ export async function computePrototypeTrackerView(
       `SELECT id, season_year AS "seasonYear", subsystem_name AS "subsystemName", title, hypothesis,
               test_date::text AS "testDate", outcome, result_summary AS "resultSummary",
               metric_label AS "metricLabel", metric_value::text AS "metricValue",
-              metric_target::text AS "metricTarget", created_at AS "createdAt"
+              metric_target::text AS "metricTarget", logged_by AS "loggedBy", created_at AS "createdAt"
        FROM prototype_tracker_tests
        WHERE org_id = $1 AND season_year = $2
        ORDER BY test_date DESC, created_at DESC`,
@@ -165,7 +172,7 @@ export async function computePrototypeTrackerView(
     client.query<DecisionRow>(
       `SELECT d.id, d.test_id AS "testId", d.decision_title AS "decisionTitle", d.recommendation,
               d.confidence::text AS confidence, d.decision_record AS "decisionRecord",
-              d.notebook_entry AS "notebookEntry", d.status,
+              d.notebook_entry AS "notebookEntry", d.status, d.created_by AS "createdBy",
               d.created_at AS "createdAt", d.updated_at AS "updatedAt"
        FROM prototype_tracker_decisions d
        JOIN prototype_tracker_tests t ON t.id = d.test_id
@@ -188,6 +195,8 @@ export async function computePrototypeTrackerView(
     teamNumber: org.teamNumber,
     seasonYear,
     seasons,
+    role: org.role ?? "",
+    userId: input.userId,
     tests: testResult.rows.map(mapTest),
     decisions: decisionResult.rows.map(mapDecision),
     computedAt: new Date().toISOString(),
@@ -313,20 +322,48 @@ export async function updateDecisionStatus(
 
 export async function deleteTest(
   client: PoolClient,
-  input: { orgId: string; testId: string },
+  input: { orgId: string; testId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM prototype_tracker_tests WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ loggedBy: string }>(
+    `SELECT logged_by AS "loggedBy" FROM prototype_tracker_tests WHERE id = $1 AND org_id = $2`,
+    [input.testId, input.orgId],
+  );
+  const loggedBy = existing.rows[0]?.loggedBy;
+  if (!loggedBy) throw new Error("Prototype test not found");
+  if (!canDeletePrototypeRow({ role: role.rows[0]?.role, userId: input.userId, authorId: loggedBy })) {
+    throw new Error("You cannot delete this prototype test");
+  }
+  const deleted = await client.query(`DELETE FROM prototype_tracker_tests WHERE id = $1 AND org_id = $2`, [
     input.testId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this prototype test");
 }
 
 export async function deleteDecision(
   client: PoolClient,
-  input: { orgId: string; decisionId: string },
+  input: { orgId: string; decisionId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM prototype_tracker_decisions WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ createdBy: string }>(
+    `SELECT created_by AS "createdBy" FROM prototype_tracker_decisions WHERE id = $1 AND org_id = $2`,
+    [input.decisionId, input.orgId],
+  );
+  const createdBy = existing.rows[0]?.createdBy;
+  if (!createdBy) throw new Error("Decision not found");
+  if (!canDeletePrototypeRow({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+    throw new Error("You cannot delete this decision");
+  }
+  const deleted = await client.query(`DELETE FROM prototype_tracker_decisions WHERE id = $1 AND org_id = $2`, [
     input.decisionId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this decision");
 }

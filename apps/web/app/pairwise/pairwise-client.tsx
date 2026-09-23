@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { PairwiseView } from "../../lib/pairwise/compute-pairwise";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { PairwisePromoteResult } from "../../lib/pairwise/promote-to-pick-list";
 import { pairwiseRelatedLinks } from "../../lib/pairwise/pairwise-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -345,7 +346,7 @@ function LivePairwise({
       <Panel>
         <p className="app-muted">
           Inspired by Pairwise / Maneuver qualitative scouting, ranked with Bradley-Terry so a few honest taps beat a
-          guessed 1–10 scale. Event {view.eventKey ?? "not set"}.
+          guessed 1–10 scale. Event {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "not set"}.
         </p>
         <div className="pairwise-bout">
           <label>

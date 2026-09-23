@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { TRIAGE_DECISIONS, TRIAGE_STATUSES, triageRepair } from ".";
+import { canDeletePitRepairReport } from "./types";
 import { consumeForSource } from "../parts/store";
 import type { FmeaHistoryEntry, SpareCandidate, TriageDecision, TriageReport, TriageStatus } from "./types";
 
@@ -30,6 +31,8 @@ export type PitRepairTriageView =
       orgId: string;
       teamNumber: number | null;
       seasonYear: number;
+      role?: string;
+      userId?: string;
       seasons: number[];
       reports: TriageReport[];
       fmeaHistory: FmeaHistoryEntry[];
@@ -67,6 +70,7 @@ type ReportRow = {
   rationale: string;
   prestageRecommended: boolean;
   status: string;
+  recordedBy?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -90,6 +94,7 @@ function mapReport(row: ReportRow): TriageReport {
     rationale: row.rationale,
     prestageRecommended: Boolean(row.prestageRecommended),
     status: isStatus(row.status) ? row.status : "open",
+    recordedBy: row.recordedBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -141,9 +146,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -183,7 +188,7 @@ export async function computePitRepairTriageView(
               minutes_until_next_match AS "minutesUntilNextMatch", severity,
               prior_failure_count AS "priorFailureCount", spares_available AS "sparesAvailable",
               decision, confidence, rationale, prestage_recommended AS "prestageRecommended",
-              status, created_at AS "createdAt", updated_at AS "updatedAt"
+              status, recorded_by AS "recordedBy", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM pit_repair_triage_reports
        WHERE org_id = $1 AND season_year = $2
        ORDER BY created_at DESC`,
@@ -220,6 +225,8 @@ export async function computePitRepairTriageView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     seasonYear,
+    role: org.role ?? "",
+    userId: input.userId,
     seasons,
     reports: reportResult.rows.map(mapReport),
     fmeaHistory: fmeaResult.rows.map(mapFmea),
@@ -361,10 +368,24 @@ export async function updateReportStatus(
 
 export async function deleteReport(
   client: PoolClient,
-  input: { orgId: string; reportId: string },
+  input: { orgId: string; reportId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM pit_repair_triage_reports WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ recordedBy: string }>(
+    `SELECT recorded_by AS "recordedBy" FROM pit_repair_triage_reports WHERE id = $1 AND org_id = $2`,
+    [input.reportId, input.orgId],
+  );
+  const recordedBy = existing.rows[0]?.recordedBy;
+  if (!recordedBy) throw new Error("Report not found");
+  if (!canDeletePitRepairReport({ role: role.rows[0]?.role, userId: input.userId, authorId: recordedBy })) {
+    throw new Error("You cannot delete this report");
+  }
+  const deleted = await client.query(`DELETE FROM pit_repair_triage_reports WHERE id = $1 AND org_id = $2`, [
     input.reportId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this report");
 }

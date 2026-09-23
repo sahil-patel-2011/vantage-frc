@@ -1,6 +1,11 @@
 /* Packing Lists — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .pack-* prefixed and theme-aware. */
 .pack-page input{min-height:38px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
+.pack-setup{animation:pack-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes pack-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.pack-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.pack-setup-waitlist,.pack-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.pack-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 .pack-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pack-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .pack-link{padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
@@ -41,4 +46,4 @@
 .pack-inbox li{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs)}
 .pack-inbox-meta{display:block}
 .pack-inbox-actions{display:flex;gap:10px;flex:none}
-@media(max-width:860px){.pack-layout{grid-template-columns:1fr}.pack-list-nav{grid-auto-flow:column;grid-auto-columns:minmax(170px,1fr);overflow-x:auto}}
+@media(max-width:860px){.pack-layout{grid-template-columns:1fr}.pack-list-nav{grid-auto-flow:column;grid-auto-columns:minmax(170px,1fr);overflow-x:auto}.pack-setup-actions{display:grid;width:100%}.pack-setup-actions .app-button{width:100%;justify-content:center}}

@@ -10,6 +10,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 const WINNER_OPTIONS: TrainingWinner[] = ["red", "blue", "tie"];
@@ -354,7 +355,8 @@ function SummaryTiles({ view }: { view: LiveView }) {
 }
 
 function matchLabel(match: PracticeMatch): string {
-  return `${match.eventKey} · ${match.compLevel.toUpperCase()} ${match.matchNumber}`;
+  const event = scoutEventLabel({ eventKey: match.eventKey }) ?? "Your event";
+  return `${event} · ${match.compLevel.toUpperCase()} ${match.matchNumber}`;
 }
 
 function PracticeForm({
@@ -484,7 +486,7 @@ function RecentAttempts({
           >
             <div>
               <strong>
-                {attempt.eventKey} · {attempt.compLevel.toUpperCase()} {attempt.matchNumber}
+                {scoutEventLabel({ eventKey: attempt.eventKey }) ?? "Your event"} · {attempt.compLevel.toUpperCase()} {attempt.matchNumber}
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 Predicted {trainingWinnerLabel(attempt.predictedWinner)} ({attempt.predictedRedScore}-

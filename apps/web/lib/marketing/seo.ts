@@ -46,13 +46,13 @@ export function rootMarketingMetadata(): Metadata {
       template: "%s — Vantage",
     },
     description:
-      "Invite-only FRC software: scouting, Learn CAD, match video, and practice. Google or an email code. Mentors invite exact emails.",
+      "Invite-only FRC software: scouting, Learn CAD, team chat, and practice. Google or an email code. Mentors invite exact emails.",
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
       title: "Vantage — the FRC season in one login",
       description:
-        "Scout, learn CAD, watch match video, and run practice. Invite-only — no public signup.",
+        "Scout, learn CAD, talk with the team, and run practice. Invite-only — no public signup.",
       url: SITE_URL,
       type: "website",
       siteName: "Vantage",
@@ -62,7 +62,7 @@ export function rootMarketingMetadata(): Metadata {
       card: "summary_large_image",
       title: "Vantage — the FRC season in one login",
       description:
-        "Invite-only FRC software: offline scouting, Learn CAD, match video, and practice.",
+        "Invite-only FRC software: offline scouting, Learn CAD, team chat, and practice.",
       images: [OG_IMAGE.url],
     },
     robots: { index: true, follow: true },

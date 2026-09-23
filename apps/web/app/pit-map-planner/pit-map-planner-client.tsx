@@ -5,6 +5,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { venueShapeLabel, type NexusVenueMapView } from "../../lib/display";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { pitMapCategoryLabel, PIT_MAP_CATEGORIES } from "../../lib/pit-map-planner";
 import type { PitMapPlannerView } from "../../lib/pit-map-planner/compute-pit-map-planner";
 import type { PitMapItemCategory } from "../../lib/pit-map-planner/types";
@@ -298,7 +299,7 @@ function VenueMapPanel({ orgId }: { orgId: string }) {
   return (
     <Panel>
       <h2 style={{ marginTop: 0 }}>Venue pit map</h2>
-      <p className="app-muted">{`${venue.eventName ?? venue.eventKey} · frc.nexus`}</p>
+      <p className="app-muted">{`${scoutEventLabel({ eventName: venue.eventName, eventKey: venue.eventKey }) ?? "This event"} · frc.nexus`}</p>
       <svg
         viewBox={map.viewBox}
         role="img"

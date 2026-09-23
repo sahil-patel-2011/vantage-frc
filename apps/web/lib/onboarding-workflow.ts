@@ -74,6 +74,11 @@ export type OnboardingSignals = {
   kickoffReady: boolean;
   /** True when TBA schedule has an upcoming match for the team. */
   knowsNextMatch?: boolean;
+  /**
+   * Owner or admin may open Team Data. Omitted stays closed so a scout
+   * never gets a sync link.
+   */
+  canSyncTeamData?: boolean;
 };
 
 /**
@@ -125,13 +130,21 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
       done: signals.kickoffReady,
       href: `${ONBOARDING_PATH_HREFS.kickoff}${q}`,
     },
-    {
-      key: "tba",
-      label: "Sync Team Data",
-      detail: "Connect match and rank ingest",
-      done: signals.tbaConfigured,
-      href: `/team/data${q}`,
-    },
+    signals.canSyncTeamData
+      ? {
+          key: "tba",
+          label: "Sync Team Data",
+          detail: "Connect match and rank ingest",
+          done: signals.tbaConfigured,
+          href: `/team/data${q}`,
+        }
+      : {
+          key: "tba",
+          label: "Open Scouting",
+          detail: "An owner or admin syncs match and rank data. You can still scout.",
+          done: signals.tbaConfigured,
+          href: `/scouting${q}`,
+        },
     {
       key: "next_match",
       label: "Know your next match",

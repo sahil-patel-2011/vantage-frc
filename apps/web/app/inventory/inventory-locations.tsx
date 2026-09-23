@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "../../components/ui";
-import { LOCATION_KINDS } from "../../lib/inventory";
+import { canDeleteInventoryRow, LOCATION_KINDS } from "../../lib/inventory";
 import { type ReadyView, type RunFn } from "./inventory-model";
 
 export function LocationsPanel({
@@ -31,9 +31,15 @@ export function LocationsPanel({
                 {location.kind} · {location.itemCount} item{location.itemCount === 1 ? "" : "s"}
               </small>
             </div>
+            {canDeleteInventoryRow({
+              role: view.context.role,
+              userId: view.context.userId,
+              authorId: location.createdBy,
+            }) ? (
             <button
               type="button"
               className="inventory-link danger"
+              aria-label={`Delete location ${location.name}`}
               disabled={busyKey === `location:${location.id}`}
               onClick={() => {
                 if (confirm(`Delete location "${location.name}"? Items keep their stock but lose this location.`)) {
@@ -43,6 +49,7 @@ export function LocationsPanel({
             >
               Delete
             </button>
+            ) : null}
           </li>
         ))}
         {view.locations.length === 0 ? <p className="app-muted">No locations yet — add shelves, bins, or carts.</p> : null}

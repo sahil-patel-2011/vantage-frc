@@ -19,6 +19,8 @@ import type {
   EventCandidate,
   EventReadinessView,
 } from "../../lib/event-readiness/compute-event-readiness";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { canDeleteEventReadinessItem } from "../../lib/event-readiness";
 import type { ReadinessFlag, ScheduledItem } from "../../lib/event-readiness/schedule";
 import {
   READINESS_CATEGORIES,
@@ -373,7 +375,7 @@ function CreatePlanForm({
           >
             {candidates.map((candidate) => (
               <option key={candidate.eventKey} value={candidate.eventKey}>
-                {candidate.eventName ? `${candidate.eventName} (${candidate.eventKey})` : candidate.eventKey}
+                {scoutEventLabel({ eventName: candidate.eventName, eventKey: candidate.eventKey }) ?? candidate.eventKey}
               </option>
             ))}
             <option value="__manual__">Enter an event key by hand…</option>
@@ -485,6 +487,7 @@ function LivePlan({
     const today = new Date(`${view.today}T00:00:00Z`).getTime();
     return Math.round((start - today) / 86_400_000);
   }, [plan.eventStartDate, view.today]);
+  const eventLabel = scoutEventLabel({ eventName: plan.eventName, eventKey: plan.eventKey }) ?? plan.eventKey;
 
   return (
     <main className="module-page evr-page">
@@ -495,13 +498,13 @@ function LivePlan({
             {" / Event Readiness"}
           </>
         }
-        title={plan.eventName || plan.eventKey}
+        title={eventLabel}
         description={
           daysToEvent > 0
-            ? `${plan.eventKey} starts ${formatGroupDate(plan.eventStartDate)} — ${daysToEvent} day${daysToEvent === 1 ? "" : "s"} out.`
+            ? `${eventLabel} starts ${formatGroupDate(plan.eventStartDate)} — ${daysToEvent} day${daysToEvent === 1 ? "" : "s"} out.`
             : daysToEvent === 0
-              ? `${plan.eventKey} starts today.`
-              : `${plan.eventKey} started ${formatGroupDate(plan.eventStartDate)}.`
+              ? `${eventLabel} starts today.`
+              : `${eventLabel} started ${formatGroupDate(plan.eventStartDate)}.`
         }
       >
         {view.plans.length > 1 ? (
@@ -510,7 +513,7 @@ function LivePlan({
             <select value={plan.eventKey} onChange={(event) => onPickEvent(event.target.value)}>
               {view.plans.map((ref) => (
                 <option key={ref.id} value={ref.eventKey}>
-                  {ref.eventName || ref.eventKey}
+                  {scoutEventLabel({ eventName: ref.eventName, eventKey: ref.eventKey }) ?? ref.eventKey}
                 </option>
               ))}
             </select>
@@ -560,7 +563,7 @@ function LivePlan({
           </header>
           <ul className="evr-item-list">
             {group.items.map((item) => (
-              <ItemRow key={item.id} item={item} orgId={view.orgId} busy={busy} mutate={mutate} />
+              <ItemRow key={item.id} item={item} orgId={view.orgId} role={view.role} userId={view.userId} busy={busy} mutate={mutate} />
             ))}
           </ul>
         </Panel>
@@ -574,7 +577,7 @@ function LivePlan({
           </header>
           <ul className="evr-item-list">
             {countdown.undated.map((item) => (
-              <ItemRow key={item.id} item={item} orgId={view.orgId} busy={busy} mutate={mutate} />
+              <ItemRow key={item.id} item={item} orgId={view.orgId} role={view.role} userId={view.userId} busy={busy} mutate={mutate} />
             ))}
           </ul>
         </Panel>
@@ -588,11 +591,15 @@ function LivePlan({
 function ItemRow({
   item,
   orgId,
+  role,
+  userId,
   busy,
   mutate,
 }: {
   item: ScheduledReadinessItem;
   orgId: string;
+  role?: string | null;
+  userId?: string | null;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
@@ -647,18 +654,21 @@ function ItemRow({
             </option>
           ))}
         </select>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${item.title}"?`)) {
-              mutate({ action: "delete-item", itemId: item.id });
-            }
-          }}
-        >
-          Delete
-        </Button>
+        {canDeleteEventReadinessItem({ role, userId, authorId: item.createdBy }) ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Delete item ${item.title}`}
+            disabled={busy}
+            onClick={() => {
+              if (window.confirm(`Delete "${item.title}"?`)) {
+                mutate({ action: "delete-item", itemId: item.id });
+              }
+            }}
+          >
+            Delete
+          </Button>
+        ) : null}
       </div>
     </li>
   );

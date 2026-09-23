@@ -38,9 +38,17 @@ describe("overnightIntelSetupSteps", () => {
     expect(steps[0]?.href).toBe("/workspace");
   });
 
-  it("missing event is only Set active event", () => {
+  it("missing event sends a scout to Scouting", () => {
     const steps = overnightIntelSetupSteps("org-1", { needsActiveEvent: true });
     expect(steps.map((s) => s.id)).toEqual(["active-event"]);
+    expect(steps[0]?.label).toBe("Open Scouting");
+    expect(steps[0]?.href).toBe("/competition?tab=scouting&orgId=org-1");
+    expect(steps.some((s) => s.href.includes("/team/data"))).toBe(false);
+  });
+
+  it("missing event keeps Team Data for an owner or admin", () => {
+    const steps = overnightIntelSetupSteps("org-1", { needsActiveEvent: true, canOpenTeamData: true });
+    expect(steps[0]?.label).toBe("Set active event");
     expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
   });
 });
@@ -53,14 +61,22 @@ describe("overnightIntelNextActions", () => {
     expect(actions.some((a) => a.id === "command")).toBe(false);
   });
 
-  it("setup with missing active event points at Team Data", () => {
-    const actions = overnightIntelNextActions({
+  it("setup with a missing event hides Team Data unless the member can open it", () => {
+    const scout = overnightIntelNextActions({
       orgId: "org-1",
       shell: "setup",
       needsActiveEvent: true,
     });
-    expect(actions.map((a) => a.id)).toEqual(["active-event"]);
-    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
+    expect(scout.map((a) => a.id)).toEqual(["active-event"]);
+    expect(scout[0]?.href).toContain("tab=scouting");
+    expect(scout.some((a) => a.href.includes("/team/data"))).toBe(false);
+    const owner = overnightIntelNextActions({
+      orgId: "org-1",
+      shell: "setup",
+      needsActiveEvent: true,
+      canOpenTeamData: true,
+    });
+    expect(owner[0]?.href).toBe("/team/data?orgId=org-1");
   });
 
   it("empty and error shells do not paint a next-actions wall", () => {

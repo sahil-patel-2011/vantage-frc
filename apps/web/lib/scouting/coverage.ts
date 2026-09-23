@@ -64,6 +64,7 @@ export type ScoutingCoverageView =
       orgId: string;
       teamNumber: number | null;
       eventKey: string;
+      eventName: string | null;
       generatedAt: string;
       qualsOnly: boolean;
       /** True when this member's role may write scout_assignments (owner/admin only). */
@@ -228,7 +229,7 @@ export async function computeScoutingCoverageView(
 
   const matchKeys = matches.rows.map((row) => row.matchKey);
 
-  const [assignments, entryScouts, scouts, schemaRoles, watchlistKeys] = await Promise.all([
+  const [assignments, entryScouts, scouts, schemaRoles, watchlistKeys, eventNameRow] = await Promise.all([
     matchKeys.length
       ? client.query<LineupAssignmentCountRow>(
           `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::int AS count
@@ -254,6 +255,10 @@ export async function computeScoutingCoverageView(
     input.priorityTeamKeys !== undefined && input.priorityTeamKeys !== null
       ? Promise.resolve(watchlistTeamKeys(input.priorityTeamKeys.map((teamKey) => ({ teamKey }))))
       : loadWatchlistTeamKeys(client, org.orgId),
+    client.query<{ eventName: string | null }>(
+      `SELECT name AS "eventName" FROM events_ref WHERE event_key = $1::text`,
+      [eventKey],
+    ),
   ]);
 
   const slots = orderCoverageByWatchlist(
@@ -278,6 +283,7 @@ export async function computeScoutingCoverageView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     eventKey,
+    eventName: eventNameRow.rows[0]?.eventName ?? null,
     generatedAt: new Date().toISOString(),
     qualsOnly,
     canAssign: canWriteAssignments(org.role),

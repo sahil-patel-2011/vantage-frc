@@ -3,6 +3,7 @@ import {
   buildScoutTargets,
   groupScoutTargets,
   YOUR_MATCHES_GROUP_LABEL,
+  describeMatchKey,
   manualMatchKey,
   normalizeTeamKey,
   type ScheduledMatch,
@@ -192,5 +193,13 @@ describe("manualMatchKey", () => {
   it("refuses an empty event", () => {
     expect(manualMatchKey("", "qm", 1)).toBeNull();
     expect(manualMatchKey("   ", "qm", 1)).toBeNull();
+  });
+});
+
+describe("describeMatchKey", () => {
+  it("names the round instead of a team-made event key", () => {
+    expect(describeMatchKey("2026custom-1a2b3c4d-grits_qm12")).toBe("Qualification 12");
+    expect(describeMatchKey("2026gagai_sf2")).toBe("Semifinal 2");
+    expect(describeMatchKey("not-a-match")).toBe("not-a-match");
   });
 });

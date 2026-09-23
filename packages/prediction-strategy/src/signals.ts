@@ -7,6 +7,7 @@ export type EventMetricRow = {
   teamKey: string;
   year: number;
   eventKey?: string;
+  eventName?: string | null;
   source?: string;
   epaTotal: number | null;
   epaAuto?: number | null;

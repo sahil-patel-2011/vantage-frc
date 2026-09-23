@@ -1,6 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeFmeaView, createFailure, updateFailure } from "./compute-fmea";
+import { canDeleteFmeaFailure } from "./types";
+
+describe("canDeleteFmeaFailure", () => {
+  it("lets the logger and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteFmeaFailure({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteFmeaFailure({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteFmeaFailure({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteFmeaFailure({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteFmeaFailure({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteFmeaFailure({ role: null, userId: null, authorId: "noah" })).toBe(false);
+    expect(canDeleteFmeaFailure({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+  });
+});
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";

@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { computeFreeSpeedFps, motorFreeRpm, parseSubsystemAction, type SubsystemCategory } from "../../../lib/subsystems";
+import { canDeleteSubsystem, computeFreeSpeedFps, motorFreeRpm, parseSubsystemAction, type SubsystemCategory } from "../../../lib/subsystems";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -30,13 +30,15 @@ function fail(error: unknown) {
 type SubsystemRow = {
   id: string; name: string; category: SubsystemCategory; motorType: string; motorCount: number | null;
   gearReduction: number | null; wheelDiameterIn: number | null; notes: string; byName: string | null;
+  createdBy: string | null;
 };
 
 // Qualified with the `robot_subsystems s` alias: the list query joins `users u`,
 // which also has id/name, so unqualified columns raised
 // `column reference "id" is ambiguous` and the subsystem list never loaded.
 const SELECT_COLS = `s.id, s.name, s.category, s.motor_type AS "motorType", s.motor_count AS "motorCount",
-  s.gear_reduction::float8 AS "gearReduction", s.wheel_diameter_in::float8 AS "wheelDiameterIn", s.notes`;
+  s.gear_reduction::float8 AS "gearReduction", s.wheel_diameter_in::float8 AS "wheelDiameterIn", s.notes,
+  s.created_by AS "createdBy"`;
 
 export async function GET(request: Request) {
   try {
@@ -55,7 +57,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to spec your subsystems." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to spec your subsystems."
+            : "Choose your team to spec your subsystems, or join the waitlist.",
+        };
+      }
 
       const subsystems = await client.query<SubsystemRow>(
         `SELECT ${SELECT_COLS}, u.name AS "byName"
@@ -71,7 +80,7 @@ export async function GET(request: Request) {
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         subsystems: enriched,
       };
@@ -93,6 +102,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_subsystem") {
+        const found = await client.query<{ createdBy: string; role: string }>(
+          `SELECT s.created_by AS "createdBy", m.role
+           FROM robot_subsystems s
+           JOIN memberships m ON m.org_id = s.org_id AND m.user_id = $3
+           WHERE s.id = $1 AND s.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Subsystem not found");
+        if (!canDeleteSubsystem({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+          throw new HttpError(403, "You cannot delete this subsystem");
+        }
         const deleted = await client.query(`DELETE FROM robot_subsystems WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this subsystem");
         return { ok: true };

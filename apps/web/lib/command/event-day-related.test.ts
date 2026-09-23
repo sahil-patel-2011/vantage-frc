@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   EVENT_DAY_RELATED_INCLUDE,
   classifyEventDayShell,
+  commandSetupMessage,
   eventDayEmptyTitle,
   eventDayRelatedLinks,
   eventDaySetupSteps,
@@ -48,12 +49,17 @@ describe("eventDaySetupSteps", () => {
     expect(eventDaySetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 
-  it("keeps Set the event; packing / checklist / tools / inspection live on the related strip", () => {
-    const steps = eventDaySetupSteps("org-1");
-    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
-    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  it("keeps Set the event for an owner; a scout opens Scouting", () => {
+    const owner = eventDaySetupSteps("org-1", { canSetEvent: true });
+    expect(owner.map((s) => s.id)).toEqual(["team-data"]);
+    expect(owner[0]?.href).toBe("/team/data?orgId=org-1");
+    expect(owner.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+    expect(owner.every((s) => !/demo/i.test(s.href))).toBe(true);
+    for (const steps of [eventDaySetupSteps("org-1"), eventDaySetupSteps("org-1", { canSetEvent: false })]) {
+      expect(steps.map((s) => s.id)).toEqual(["scouting"]);
+      expect(steps[0]?.href).toBe("/competition?tab=scouting&orgId=org-1");
+      expect(steps[0]?.href).not.toContain("/team/data");
+    }
   });
 });
 
@@ -159,6 +165,12 @@ describe("eventDayShellNextActions", () => {
   it("ready boards keep scouting without repeating the related strip", () => {
     const actions = eventDayShellNextActions({ orgId: "org-1", shell: "ready" });
     expect(actions.map((a) => a.id)).toEqual(["scouting"]);
+  });
+
+  it("tells a scout that an admin sets the event", () => {
+    expect(commandSetupMessage({ eventKey: null, canSetEvent: false })).toMatch(/owner or admin/);
+    expect(commandSetupMessage({ eventKey: null, canSetEvent: true })).toMatch(/Set your active event/);
+    expect(commandSetupMessage({ eventKey: "2026casj", canSetEvent: false })).toMatch(/team's number/);
   });
 
   it("does not repeat header related-strip destinations as next actions", () => {

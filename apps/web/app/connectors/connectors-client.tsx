@@ -13,6 +13,7 @@ import {
   CONNECTORS_PAGE_LOADING,
   connectorAudienceFromRole,
   connectorScopeNote,
+  connectorSettingsPath,
   connectorsPageDescription,
 } from "../../lib/connectors/catalog";
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
@@ -292,6 +293,7 @@ export default function ConnectorsClient() {
           const badge = connectorBadge(connector.state, audience);
           const busy = busyId === connector.id;
           const managedByOthers = connector.scope === "team" && !canManage;
+          const settingsPath = connectorSettingsPath(connector.managePath, canManage);
           return (
             <li key={connector.id} className="app-card soft-panel connector-card">
               <div className="connector-head">
@@ -329,7 +331,7 @@ export default function ConnectorsClient() {
 
               <div className="connector-actions">
                 {connector.canConnect && connectorConnectEndpoint(connector.id) ? (
-                  <Button variant="primary" type="button" disabled={busy || !orgId || managedByOthers} title={ !orgId ? "Choose your team first — this link is saved per team." : managedByOthers ? "Only an owner or admin can change this team's link." : undefined } onClick={() => void connect(connector, orgId)}>
+                  <Button variant="primary" type="button" disabled={busy || !orgId || managedByOthers} title={!orgId ? "Choose your team. This link is saved per team." : managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void connect(connector, orgId)}>
                     {connector.state === "token_expired" ? "Reconnect" : "Connect"}
                   </Button>
                 ) : null}
@@ -340,9 +342,11 @@ export default function ConnectorsClient() {
                   </Button>
                 ) : null}
 
-                <Button as="a" href={orgId ? withOrg(connector.managePath, orgId) : connector.managePath} variant="ghost" size="sm">
-                  Open settings
-                </Button>
+                {settingsPath ? (
+                  <Button as="a" href={orgId ? withOrg(settingsPath, orgId) : settingsPath} variant="ghost" size="sm">
+                    Open settings
+                  </Button>
+                ) : null}
               </div>
               {connector.id === "onshape" && orgId ? (
                 <CadDocumentPicker orgId={orgId} connected={connector.state === "connected"} />

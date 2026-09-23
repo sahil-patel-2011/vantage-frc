@@ -7,6 +7,7 @@ import { acknowledgmentAgeMinutes, degradedModeReasonLabel, degradedModeSourceLa
 import type { DegradedModeView } from "../../lib/degraded-mode/compute-degraded-mode";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
@@ -54,10 +55,14 @@ async function persistDegradedModeSnapshot(orgHint: string, data: DegradedModeVi
   }
 }
 
-function DataSourceHealthRelated({ orgId }: { orgId?: string | null }) {
+function DataSourceHealthRelated({ orgId, canSync }: { orgId?: string | null; canSync: boolean }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <a href={withOrgHref("/team/data", orgId)}>Team Data</a>
+      {canSync ? (
+        <a href={withOrgHref("/team/data", orgId)}>Team Data</a>
+      ) : (
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+      )}
       <a href={withOrgHref("/rankings", orgId)}>Rankings</a>
       <a href={withOrgHref("/schedule", orgId)}>Schedule</a>
     </nav>
@@ -187,7 +192,7 @@ export default function DegradedModeClient() {
       title="Data-source health"
       description="See whether the schedule and rankings this team uses are up to date, and what the app falls back to when they are not."
     >
-      <DataSourceHealthRelated orgId={orgId} />
+      <DataSourceHealthRelated orgId={orgId} canSync={view?.canSync === true} />
     </PageHeader>
   );
 
@@ -358,13 +363,19 @@ function SourcesPanel({ view }: { view: LiveView }) {
   );
 }
 
+function visibleFallbacks(view: LiveView) {
+  if (view.canSync) return view.fallbacks;
+  return view.fallbacks.filter((fallback) => !fallback.href.includes("/team/data"));
+}
+
 function FallbacksPanel({ view }: { view: LiveView }) {
-  if (view.fallbacks.length === 0) return null;
+  const fallbacks = visibleFallbacks(view);
+  if (fallbacks.length === 0) return null;
   return (
     <Panel>
       <h2 style={{ marginTop: 0 }}>Read-only fallbacks while degraded</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.fallbacks.map((fallback) => (
+        {fallbacks.map((fallback) => (
           <li key={fallback.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
             <div>
               <strong>{fallback.label}</strong>

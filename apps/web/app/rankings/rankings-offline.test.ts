@@ -12,5 +12,9 @@ describe("Rankings last snapshot stays on the phone", () => {
     expect(src).toMatch(/"rankings"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Rankings"/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/join the waitlist/i);
+    expect(src).toContain('href="/workspace"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
   });
 });

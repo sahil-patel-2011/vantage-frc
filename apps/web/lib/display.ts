@@ -1,6 +1,7 @@
 ﻿// Display / pit-TV kiosk helpers. Never invent match/rank/prediction defaults.
 
 import type { NexusQueueSnapshot } from "./command/nexus-queue";
+import { scoutEventLabel } from "./scouting/scouting-related";
 import { isDemoPrediction, predictionWinDisplay } from "./strategy/prediction-display";
 
 export const DISPLAY_PRESETS = [
@@ -244,6 +245,18 @@ export function hasEventCommandSignal(
   if (snapshot.eventStatus?.rank != null) return true;
   if (snapshot.eventStatus?.wins != null || snapshot.eventStatus?.losses != null) return true;
   return snapshot.scouting.openDisagreements > 0;
+}
+
+/**
+ * Pit TV has no membership role. Empty boards say what is missing.
+ * They do not tell the room to open Team Data.
+ */
+export function kioskNextMatchEmptyCopy(teamNumber: number): string {
+  return `This board only shows matches that include team #${teamNumber}. Queue time stays blank until those matches are on the schedule.`;
+}
+
+export function kioskEventCommandEmptyCopy(): string {
+  return "This board stays blank until a rank, record, or next match is saved for the active event.";
 }
 
 export function formatDisplayPrediction(prediction: DisplayPrediction | null | undefined): string {
@@ -821,6 +834,28 @@ export function buildVenueMap(input: {
 /** What to print inside a pit box. Team number wins; otherwise the Nexus label. */
 export function venueShapeLabel(shape: VenueMapShape): string {
   return shape.teamNumber ?? shape.label ?? "";
+}
+
+/**
+ * Why the venue panel is empty. Names the active event; a team-made key
+ * without a stored name stays "Your event" so the org id never reaches the pit.
+ */
+export function nexusVenueGapMessage(input: {
+  eventName?: string | null;
+  eventKey?: string | null;
+  reason: "no-cache" | "no-geometry";
+}): string {
+  const label = scoutEventLabel(input) ?? "this event";
+  switch (input.reason) {
+    case "no-cache":
+      return `No Nexus payload is cached for ${label} yet. Nexus data appears once the event-day sync runs with a Nexus API key configured.`;
+    case "no-geometry":
+      return `Nexus has not published venue geometry for ${label}. Your own pit layout below is unaffected.`;
+    default: {
+      const unreachable: never = input.reason;
+      return unreachable;
+    }
+  }
 }
 
 /**

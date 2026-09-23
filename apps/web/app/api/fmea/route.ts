@@ -166,7 +166,7 @@ export async function POST(request: Request) {
         case "delete-failure": {
           const failureId = uuidOrNull(body.failureId) ?? trimmedOrNull(body.failureId, 64);
           if (!failureId) throw new Error("failureId is required");
-          await deleteFailure(client, { orgId, failureId });
+          await deleteFailure(client, { orgId, failureId, userId });
           break;
         }
         default:
@@ -179,7 +179,9 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = publicErrorMessage(error, "Failure log request failed");
-    const status = message === "forbidden" ? 403 : 400;
+    const denied = message === "You cannot delete this failure";
+    const missing = message === "Failure not found";
+    const status = message === "forbidden" || denied ? 403 : missing ? 404 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },

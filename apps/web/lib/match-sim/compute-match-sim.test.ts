@@ -141,9 +141,27 @@ describe("computeMatchSimView", () => {
     expect(view.status).toBe("live");
     if (view.status === "live") {
       expect(view.orgId).toBe(ORG);
+      expect(view.eventKey).toBeNull();
+      expect(view.eventName).toBeNull();
       expect(view.runs).toHaveLength(1);
       expect(view.active?.id).toBe("run-1");
     }
+  });
+
+  it("names the active event on a live simulator", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254 }], rowCount: 1 };
+      }
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ eventKey: "2026custom-org-pacific", eventName: "Pacific Practice" }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const view = await computeMatchSimView(client, { userId: USER, requestedOrg: ORG });
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.eventName).toBe("Pacific Practice");
+    expect(view.eventKey).toBe("2026custom-org-pacific");
   });
 });
 

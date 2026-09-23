@@ -97,7 +97,7 @@ function bannerCopy(
     return {
       bannerTitle: "Could not reach The Blue Alliance",
       bannerDetail: lastError
-        ? `${names} is down (${lastError}). Nothing is saved on this team yet — sync under Team → Data when it is back.`
+        ? `${names} is down (${lastError}). Nothing is saved on this team yet. Rankings stay blank until the source is back.`
         : `${names} is down and this team has no saved rankings yet.`,
     };
   }

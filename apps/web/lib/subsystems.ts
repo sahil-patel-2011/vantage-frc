@@ -41,6 +41,19 @@ export const SUBSYSTEM_CATEGORIES = [
 ] as const;
 export type SubsystemCategory = (typeof SUBSYSTEM_CATEGORIES)[number];
 
+/** Delete matches robot_subsystems RLS: the author, or an owner or admin. */
+export function canDeleteSubsystem(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 /**
  * Theoretical free speed in ft/s: wheel RPM (motor free RPM / reduction) times
  * wheel circumference, converted to feet per second. Returns null if any input

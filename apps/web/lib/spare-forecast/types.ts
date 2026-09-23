@@ -71,6 +71,7 @@ export type PurchaseRequestDraft = {
   lineItems: PurchaseRequestLineItem[];
   totalEstimatedCost: number;
   rationale: string;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
 };

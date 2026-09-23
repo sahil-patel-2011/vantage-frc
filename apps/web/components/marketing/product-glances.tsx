@@ -47,8 +47,8 @@ export function ProductHubCatalog() {
   );
 }
 
-const islandApps = ["Home", "Compete", "Team", "Business"] as const;
-const drawerPillars = ["Competition", "Team", "Logistics", "Business", "Media", "Build", "AI"] as const;
+const islandApps = ["Home", "Matches", "Scout", "Stats"] as const;
+const drawerPillars = ["Home", "Competition", "Team", "Logistics", "Business", "Build"] as const;
 const competitionTabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
 
 /** Hero chrome — labeled product areas, no invented match or scores. */
@@ -120,7 +120,7 @@ export function HeroProductVisual() {
 
         <nav className="hero-soft-island">
           {islandApps.map((app) => (
-            <span key={app} className={app === "Compete" ? "is-active" : undefined}>
+            <span key={app} className={app === "Matches" ? "is-active" : undefined}>
               {app}
             </span>
           ))}

@@ -3,6 +3,7 @@
 // The DURING-event hour-by-hour schedule is lib/event-day-plan, not this module.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { canDeleteEventReadinessItem } from ".";
 import type { RecordStatus } from "../consent";
 import type { InspectionStatus } from "../inspection";
 import {
@@ -63,6 +64,8 @@ export type EventReadinessView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      role?: string | null;
+      userId?: string | null;
       plan: ReadinessPlan;
       plans: PlanRef[];
       countdown: ReadinessCountdown<ReadinessItem>;
@@ -83,9 +86,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -151,6 +154,7 @@ type ItemRow = {
   sourceKind: ReadinessSourceKind;
   blockedReason: string;
   completedAt: string | null;
+  createdBy?: string | null;
 };
 
 async function loadItems(client: PoolClient, orgId: string, planId: string): Promise<ReadinessItem[]> {
@@ -159,7 +163,7 @@ async function loadItems(client: PoolClient, orgId: string, planId: string): Pro
             i.due_on::text AS "dueOn", i.days_before AS "daysBefore", i.status,
             i.owner_user_id AS "ownerUserId", u.name AS "ownerName",
             i.source_kind AS "sourceKind", i.blocked_reason AS "blockedReason",
-            i.completed_at AS "completedAt"
+            i.completed_at AS "completedAt", i.created_by AS "createdBy"
      FROM event_readiness_items i
      LEFT JOIN users u ON u.id = i.owner_user_id
      WHERE i.org_id = $1 AND i.plan_id = $2
@@ -352,6 +356,8 @@ export async function computeEventReadinessView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    role: org.role ?? "",
+    userId: input.userId,
     plan,
     plans,
     countdown: resolveDueDates({ eventStartDate: plan.eventStartDate, items, today }),
@@ -525,10 +531,22 @@ export async function assignItem(
 
 export async function deleteItem(
   client: PoolClient,
-  input: { orgId: string; itemId: string },
+  input: { orgId: string; itemId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM event_readiness_items WHERE id = $1::uuid AND org_id = $2`, [
+  const found = await client.query<{ createdBy: string; role: string }>(
+    `SELECT i.created_by AS "createdBy", m.role
+     FROM event_readiness_items i
+     JOIN memberships m ON m.org_id = i.org_id AND m.user_id = $3
+     WHERE i.id = $1::uuid AND i.org_id = $2`,
+    [input.itemId, input.orgId, input.userId],
+  );
+  if (!found.rowCount) throw new Error("Readiness item not found");
+  if (!canDeleteEventReadinessItem({ role: found.rows[0]!.role, userId: input.userId, authorId: found.rows[0]!.createdBy })) {
+    throw new Error("You cannot delete this readiness item");
+  }
+  const deleted = await client.query(`DELETE FROM event_readiness_items WHERE id = $1::uuid AND org_id = $2`, [
     input.itemId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this readiness item");
 }

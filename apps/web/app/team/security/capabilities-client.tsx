@@ -54,6 +54,15 @@ type CapabilitiesSnapshot = {
   adminTenure: AdminTenure | null;
 };
 
+function isAdministratorDenial(data: unknown): boolean {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      "error" in data &&
+      (data as { error?: unknown }).error === "Organization administrator access required",
+  );
+}
+
 function isCapabilitiesSnapshot(value: unknown): value is CapabilitiesSnapshot {
   if (!value || typeof value !== "object") return false;
   return Array.isArray((value as { members?: unknown }).members);
@@ -75,6 +84,9 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
   const [drafts, setDrafts] = useState<Record<string, OrgCapability[]>>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  /** True only after a member list actually loaded. A refused load must not offer Team admin. */
+  const [rosterReady, setRosterReady] = useState(false);
+  const [denied, setDenied] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const membersRef = useRef<Member[]>([]);
@@ -91,6 +103,8 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
     setDrafts(next);
     setFromCache(cached);
     setCachedAt(cachedAtValue);
+    setRosterReady(true);
+    setDenied(false);
     setLoading(false);
   }, []);
 
@@ -111,15 +125,12 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data: unknown = await response.json().catch(() => null);
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401 || response.status === 403 || isAdministratorDenial(data)) {
         setMembers([]);
+        setDenied(true);
         setFromCache(false);
         setCachedAt(null);
-        setMessage(
-          data && typeof data === "object" && "error" in data && typeof data.error === "string"
-            ? data.error
-            : "Unable to load members",
-        );
+        setMessage("");
         setLoading(false);
         return;
       }
@@ -221,6 +232,16 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
       <OfflineBanner feature="Team security" fromCache={fromCache} cachedAt={cachedAt} />
       <span className="eyebrow">Delegated admin powers</span>
       <h2>Member capabilities</h2>
+      {denied ? (
+        <EmptyState
+          soft
+          badge="No access"
+          badgeTone="setup"
+          title="Owners and admins grant extra powers"
+          description="An owner or admin decides who can manage keys, budgets, members, and team settings."
+        />
+      ) : (
+      <>
       <p className="app-muted">
         Grant elevated capabilities to scouts and viewers without promoting them to full team admin. Includes the team's
         keys / connectors and budgets. Changes are enforced on API routes and audited.
@@ -258,13 +279,13 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
               </article>
             ))}
           </div>
-          {!editable.length ? (
+          {rosterReady && !editable.length ? (
             <EmptyState
               soft
               title="No scouts or viewers to delegate"
               description="Invite members from Team admin, then grant the team's keys, budgets, or settings powers here."
             >
-              <Button as="a" variant="secondary" href={`/team?orgId=${orgId}`}>
+              <Button as="a" variant="secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
                 Open Team admin
               </Button>
             </EmptyState>
@@ -307,6 +328,8 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
             </article>
           ))}
         </>
+      )}
+      </>
       )}
     </Panel>
   );

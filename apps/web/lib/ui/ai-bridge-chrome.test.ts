@@ -23,6 +23,8 @@ describe("Claude Code student chrome", () => {
     expect(AI_BRIDGE_TITLE).toBe("Claude Code");
     expect(AI_BRIDGE_SETUP_STEPS).toHaveLength(3);
     expect(aiBridgeShellCopy("no-team").badge).toBe("Needs setup");
+    expect(aiBridgeShellCopy("no-team").description).toMatch(/Choose your team/);
+    expect(aiBridgeShellCopy("no-team").description).not.toMatch(/pick your team/i);
     expect(aiBridgeShellCopy("setup").title).toBe("Pair Claude Code");
     expectPlainCopy(aiBridgeShellCopy("setup").description);
 

@@ -352,7 +352,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
             badge="Needs setup"
             badgeTone="setup"
             title="Choose your team"
-            description="Pick the team you are on and you can build scouting forms with everyone else."
+            description="Choose your team and you can build scouting forms with everyone else."
           />
         ) : null}
       </FormBuilderShell>
@@ -396,7 +396,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description="Pick the team you are on and you can build scouting forms with everyone else."
+          description="Choose your team and you can build scouting forms with everyone else."
         />
       ) : null}
 

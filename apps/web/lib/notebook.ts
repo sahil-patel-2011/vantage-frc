@@ -17,6 +17,19 @@ export const BUILD_PHASES = [
 ] as const;
 export type BuildPhase = (typeof BUILD_PHASES)[number];
 
+/** Delete matches notebook_entries RLS: the entry's author, or an owner or admin. */
+export function canDeleteNotebookEntry(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export const BUILD_PHASE_LABEL: Record<BuildPhase, string> = {
   brainstorm: "Brainstorm",
   design: "Design",

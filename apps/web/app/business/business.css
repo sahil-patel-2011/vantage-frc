@@ -15,6 +15,12 @@
   align-items: flex-start;
 }
 
+.biz-setup{animation:biz-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes biz-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.biz-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.biz-setup-waitlist,.business-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.biz-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+
 .biz-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1330,6 +1336,8 @@
   .business-page {
     gap: 12px;
   }
+  .biz-setup-actions{display:grid;width:100%}
+  .biz-setup-actions .app-button{width:100%;justify-content:center}
   .biz-kpis {
     grid-template-columns: 1fr 1fr;
   }

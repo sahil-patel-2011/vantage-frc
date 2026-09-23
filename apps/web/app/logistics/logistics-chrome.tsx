@@ -20,6 +20,21 @@ import {
   type LogisticsShellNextAction,
 } from "../../lib/logistics/logistics-related";
 
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
+
 export function LogisticsNextActionsPanel({ actions }: { actions: LogisticsShellNextAction[] }) {
   if (!actions.length) return null;
   return (
@@ -100,12 +115,19 @@ export function LogisticsShell({
     );
   }
 
+  const setupText = error ?? copy.description;
+  const offerWaitlist =
+    shell === "setup" && !orgId && setupText.toLowerCase().includes(WAITLIST_PHRASE);
   return (
     <main className="log-page soft-gate">
       <PageHeader
         navPath="/logistics"
         title="Logistics"
-        description="Hotels, rooming, travel legs, and day-of checklists."
+        description={
+          offerWaitlist
+            ? withWaitlistLink(setupText)
+            : "Hotels, rooming, travel legs, and day-of checklists."
+        }
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
@@ -116,9 +138,17 @@ export function LogisticsShell({
         badge={copy.badge}
         badgeTone="setup"
         title={copy.title}
-        description={error ?? copy.description}
+        description={offerWaitlist ? withWaitlistLink(setupText) : setupText}
+        className={offerWaitlist ? "log-setup" : undefined}
       >
-        {shell === "setup" ? (
+        {offerWaitlist ? (
+          <div className="log-setup-actions">
+            <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
+            <a className="log-setup-waitlist" href="/#waitlist">
+              Join the waitlist
+            </a>
+          </div>
+        ) : shell === "setup" ? (
           <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
         ) : null}
         {shell === "empty" && canManage ? (

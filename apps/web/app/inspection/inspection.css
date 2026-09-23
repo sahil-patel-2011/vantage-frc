@@ -50,6 +50,15 @@
 .insp-weights li.over b{color:var(--critical)}
 .insp-weights b{font-variant-numeric:tabular-nums}
 @media(max-width:900px){.insp-layout,.insp-summary{grid-template-columns:1fr}.insp-item-main{flex-direction:column;align-items:flex-start}}
+.insp-setup{animation:insp-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes insp-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.insp-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.insp-setup-waitlist,.insp-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.insp-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+  .insp-setup-actions{display:grid;width:100%}
+  .insp-setup-actions .app-button{width:100%;justify-content:center}
+}
 
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}

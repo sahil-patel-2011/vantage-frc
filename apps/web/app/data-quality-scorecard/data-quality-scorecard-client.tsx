@@ -9,6 +9,8 @@ import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { describeMatchKey } from "../../lib/scouting/scout-target";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function gradeTone(grade: DataQualityGrade): string {
@@ -341,6 +343,14 @@ export default function DataQualityScorecardClient() {
               </Button>
             ) : null}
           </EmptyState>
+          {view.orgId ? (
+            <LogCheckForm
+              busy={busy}
+              mutate={mutate}
+              eventKey={view.eventKey}
+              eventName={view.eventName}
+            />
+          ) : null}
         </main>
       );
     case "live":
@@ -364,7 +374,7 @@ export default function DataQualityScorecardClient() {
       <div style={{ display: "grid", gap: 16 }}>
         <ScorecardPanel view={view} />
         <SummaryTiles view={view} />
-        <LogCheckForm busy={busy} mutate={mutate} />
+        <LogCheckForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
         {view.summary.totalChecks > 0 ? <Breakdowns view={view} /> : null}
         <RecentChecks view={view} busy={busy} mutate={mutate} />
       </div>
@@ -447,7 +457,7 @@ function Breakdowns({ view }: { view: LiveView }) {
         <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
           {summary.byEvent.map((row) => (
             <li key={row.eventKey} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span>{row.eventKey}</span>
+              <span>{scoutEventLabel({ eventName: row.eventName, eventKey: row.eventKey }) ?? row.eventKey}</span>
               <small className="app-muted">
                 {row.checks} · cov {pct(row.coverage)} · dis {pct(row.disagreementRate)}
               </small>
@@ -515,8 +525,8 @@ function RecentChecks({
           >
             <div>
               <strong>
-                {item.eventKey}
-                {item.matchKey ? ` · ${item.matchKey}` : ""}
+                {scoutEventLabel({ eventName: item.eventName, eventKey: item.eventKey }) ?? item.eventKey}
+                {item.matchKey ? ` · ${describeMatchKey(item.matchKey)}` : ""}
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {item.checkDate} · {item.scoutName} · {item.capturedDataPoints}/{item.expectedDataPoints} fields
@@ -537,7 +547,9 @@ function RecentChecks({
               className="text-button"
               disabled={busy}
               onClick={() => {
-                if (window.confirm(`Delete check for ${item.eventKey}${item.matchKey ? ` ${item.matchKey}` : ""}?`)) {
+                const eventLabel = scoutEventLabel({ eventName: item.eventName, eventKey: item.eventKey }) ?? item.eventKey;
+                const matchLabel = item.matchKey ? ` ${describeMatchKey(item.matchKey)}` : "";
+                if (window.confirm(`Delete check for ${eventLabel}${matchLabel}?`)) {
                   mutate({ action: "delete-check", checkId: item.id });
                 }
               }}
@@ -554,10 +566,15 @@ function RecentChecks({
 function LogCheckForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey?: string | null;
+  eventName?: string | null;
 }) {
+  const lockedEvent = eventKey?.trim() ?? "";
   const empty = useMemo(
     () => ({
       eventKey: "",
@@ -576,6 +593,7 @@ function LogCheckForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -583,10 +601,10 @@ function LogCheckForm({
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.eventKey.trim() || !form.scoutName.trim() || !form.checkDate) return;
+        if (!submittedEvent || !form.scoutName.trim() || !form.checkDate) return;
         mutate({
           action: "log-check",
-          eventKey: form.eventKey,
+          eventKey: submittedEvent,
           matchKey: form.matchKey || undefined,
           scoutName: form.scoutName,
           checkDate: form.checkDate,
@@ -603,9 +621,19 @@ function LogCheckForm({
     >
       <h2 style={{ margin: 0 }}>Log a quality check</h2>
       <FormGrid min={160}>
-        <FormRow label="Event key">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" required />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" required />
+          </FormRow>
+        )}
         <FormRow label="Match (optional)">
           <input value={form.matchKey} onChange={set("matchKey")} placeholder="qm12" />
         </FormRow>
@@ -644,7 +672,7 @@ function LogCheckForm({
         Cross-checked against another scout
       </label>
       <div>
-        <Button variant="primary" type="submit" disabled={busy || !form.eventKey.trim() || !form.scoutName.trim() || !form.checkDate}>
+        <Button variant="primary" type="submit" disabled={busy || !submittedEvent || !form.scoutName.trim() || !form.checkDate}>
           Log check
         </Button>
       </div>

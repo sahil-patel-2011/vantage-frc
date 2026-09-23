@@ -17,6 +17,7 @@ import {
   offlineCopy,
   offlineReasonFromLoadError,
   parseOfflineReason,
+  shellWaitlistUrl,
   studentUpdateError,
 } from "../src/shell-copy";
 
@@ -121,6 +122,25 @@ describe("bundled shell pages", () => {
     expect(gate).not.toMatch(/sign-in bridge/i);
   });
 
+  it("offers the same request-access line as the website, on the app origin only", () => {
+    expect(gate).toContain("New to Vantage? Request access");
+    expect(gate).toContain("requestAccess");
+    expect(visibleText(gate)).not.toMatch(SHELL_LEAK);
+    expect(readFileSync(join(DESKTOP, "src/preload.ts"), "utf8")).toContain("desktop-link:open-waitlist");
+    expect(readFileSync(join(DESKTOP, "src/main.ts"), "utf8")).toContain("shellWaitlistUrl");
+    expect(shellWaitlistUrl("http://localhost:3001")).toBe("http://localhost:3001/#waitlist");
+    expect(shellWaitlistUrl("https://vantage-frc-web.vercel.app/extra?x=1")).toBe(
+      "https://vantage-frc-web.vercel.app/#waitlist",
+    );
+  });
+
+  it("settles the shell cards and stops that motion when asked", () => {
+    for (const page of [offline, gate, update]) {
+      expect(page).toContain("shell-arrive");
+      expect(page).toMatch(/prefers-reduced-motion:\s*reduce/);
+    }
+  });
+
   it("keeps update copy student-readable and in the page", () => {
     expect(update).toContain(UPDATE_COPY.none.title);
     expect(update).toContain(UPDATE_COPY.none.body);
@@ -134,5 +154,12 @@ describe("bundled shell pages", () => {
     expect(visibleText(update)).not.toMatch(SHELL_LEAK);
     expect(update).not.toMatch(/portable build/i);
     expect(update).not.toMatch(/Last attempt:/);
+  });
+
+  it("lets a mentor select the update failure and the release notes", () => {
+    expect(update).toMatch(
+      /\.versions,\s*\.note,\s*\.notes,\s*\.card > p\s*\{[^}]*user-select:\s*text/,
+    );
+    expect(update).toContain("button:focus-visible");
   });
 });

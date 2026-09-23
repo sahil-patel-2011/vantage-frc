@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { UsageCutoffBanner, isCutoffError } from "../../components/usage-cutoff-banner";
 import { queueVoiceCapture, stableClientId } from "../../lib/scout-offline";
 import type { ScoutVoiceView } from "../../lib/scout-voice/compute-scout-voice";
-import type { ScoutVoiceSttSource } from "../../lib/scout-voice/types";
+import { canDeleteScoutVoiceNote, type ScoutVoiceSttSource } from "../../lib/scout-voice/types";
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -493,9 +493,17 @@ export default function ScoutVoiceNotesPanel({
                     Apply to form
                   </Button>
                 ) : null}
-                <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "delete-note", noteId: note.id })}>
-                  Delete
-                </Button>
+                {canDeleteScoutVoiceNote({ role: view.role, userId: view.userId, authorId: note.createdBy }) ? (
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Delete ${note.transcript}`}
+                    onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
+                  >
+                    Delete
+                  </Button>
+                ) : null}
               </div>
             </li>
           ))}

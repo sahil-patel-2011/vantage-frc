@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseWeightAction, summarizeWeight, validateComponent, DEFAULT_WEIGHT_LIMIT_LBS, stale125WeightLimitCue, STALE_125_WEIGHT_LIMIT_CUE } from "./weight-budget";
+import { parseWeightAction, summarizeWeight, validateComponent, DEFAULT_WEIGHT_LIMIT_LBS, stale125WeightLimitCue, STALE_125_WEIGHT_LIMIT_CUE, weightComponentCanDelete } from "./weight-budget";
 
 describe("validateComponent", () => {
   it("requires a name and non-negative weight", () => {
@@ -13,6 +13,17 @@ describe("validateComponent", () => {
     const result = validateComponent({ name: "Gearbox", weightLbs: 5 });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.quantity).toBe(1);
+  });
+});
+
+describe("weightComponentCanDelete", () => {
+  it("lets owners and admins remove any part, and a scout remove only their own", () => {
+    expect(weightComponentCanDelete("owner", "other", "me")).toBe(true);
+    expect(weightComponentCanDelete("admin", "other", "me")).toBe(true);
+    expect(weightComponentCanDelete("scout", "me", "me")).toBe(true);
+    expect(weightComponentCanDelete("scout", "other", "me")).toBe(false);
+    expect(weightComponentCanDelete("viewer", "me", "me")).toBe(false);
+    expect(weightComponentCanDelete(null, "me", "me")).toBe(false);
   });
 });
 

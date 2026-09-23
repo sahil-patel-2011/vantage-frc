@@ -143,13 +143,19 @@ export async function PATCH(request: Request) {
     const session = await current();
     const body = (await request.json()) as { orgId?: string; tokenId?: string };
     if (!body.orgId || !body.tokenId) throw new Error("Invalid token action");
-    await withRls({ userId: session.user.id, orgId: body.orgId }, (client) =>
-      client.query(
+    await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
+      const admin = await client.query(
+        `SELECT 1 FROM memberships
+         WHERE org_id = $1 AND user_id = $2 AND role IN ('owner', 'admin')`,
+        [body.orgId, session.user.id],
+      );
+      if (!admin.rowCount) throw new Error("Organization administrator access required");
+      await client.query(
         `UPDATE display_tokens SET revoked_at = now()
          WHERE id = $1 AND org_id = $2 AND revoked_at IS NULL`,
         [body.tokenId, body.orgId],
-      ),
-    );
+      );
+    });
     return Response.json({ success: true });
   } catch (error) {
     return fail(error);

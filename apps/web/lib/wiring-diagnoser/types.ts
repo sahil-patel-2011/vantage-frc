@@ -19,6 +19,18 @@ export type DiagnosticFlagType =
 
 export type DiagnosticSeverity = "info" | "warning" | "critical";
 
+export function canDeleteWiringCheck(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 /** A circuit as declared in the team's stored wiring diagram + power budget. */
 export type ExpectedCircuit = {
   channel: number;
@@ -77,6 +89,7 @@ export type WiringCheck = {
   flags: DiagnosticFlag[];
   riskScore: number;
   summary: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };

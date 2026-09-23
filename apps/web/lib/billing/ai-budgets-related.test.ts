@@ -128,6 +128,14 @@ describe("aiBudgetsNextActions", () => {
     expect(actions[0]?.primary).toBe(true);
     expect(actions[0]?.href).toBe("#org-hard-limits");
   });
+
+  it("keeps a member off the spend form", () => {
+    const actions = aiBudgetsNextActions({ orgId: "org-1", shell: "empty", canManage: false });
+    expect(actions[0]?.id).toBe("chat");
+    expect(actions[0]?.href).toContain("tab=chat");
+    expect(actions.some((action) => action.href.includes("#org-hard-limits"))).toBe(false);
+    expect(actions.some((action) => action.href.includes("/team/admin"))).toBe(false);
+  });
 });
 
 describe("classifyAiUsageShell + next actions", () => {

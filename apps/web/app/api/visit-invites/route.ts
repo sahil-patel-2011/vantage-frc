@@ -5,7 +5,9 @@ import { headers } from "next/headers";
 import { notifyCalendarEvent } from "../../../lib/notify-calendar";
 import {
   calendarTitleForVisit,
+  canDeleteVisitRow,
   canManageVisits,
+  canRemoveVisitRsvp,
   countHostGaps,
   parseVisitInviteAction,
   sortVisits,
@@ -75,7 +77,7 @@ async function loadView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose your team to plan shop tours and demo days.",
+      message: "Choose your team to plan shop tours and demo days, or join the waitlist.",
       context: { orgId: null, orgName: null },
     };
   }
@@ -329,11 +331,21 @@ export async function POST(request: Request) {
         }
         case "delete_visit": {
           if (!manage) throw new HttpError(403, "Only mentors, coaches, and admins can delete visits");
+          const existing = await client.query<{ createdBy: string }>(
+            `SELECT created_by::text AS "createdBy"
+             FROM visit_invites WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          const row = existing.rows[0];
+          if (!row) throw new HttpError(404, "Visit not found");
+          if (!canDeleteVisitRow({ role: member.role, userId, authorId: row.createdBy })) {
+            throw new HttpError(403, "You cannot delete this visit");
+          }
           const deleted = await client.query(
             `DELETE FROM visit_invites WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
-          if (!deleted.rowCount) throw new HttpError(404, "Visit not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this visit");
           break;
         }
         case "add_host": {
@@ -351,11 +363,21 @@ export async function POST(request: Request) {
         }
         case "remove_host": {
           if (!manage) throw new HttpError(403, "Only mentors, coaches, and admins can remove hosts");
+          const existing = await client.query<{ createdBy: string }>(
+            `SELECT created_by::text AS "createdBy"
+             FROM visit_invite_hosts WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          const row = existing.rows[0];
+          if (!row) throw new HttpError(404, "Host not found");
+          if (!canDeleteVisitRow({ role: member.role, userId, authorId: row.createdBy })) {
+            throw new HttpError(403, "You cannot delete this host");
+          }
           const deleted = await client.query(
             `DELETE FROM visit_invite_hosts WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
-          if (!deleted.rowCount) throw new HttpError(404, "Host not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this host");
           break;
         }
         case "add_demo": {
@@ -373,11 +395,21 @@ export async function POST(request: Request) {
         }
         case "remove_demo": {
           if (!manage) throw new HttpError(403, "Only mentors, coaches, and admins can remove demos");
+          const existing = await client.query<{ createdBy: string }>(
+            `SELECT created_by::text AS "createdBy"
+             FROM visit_invite_demos WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          const row = existing.rows[0];
+          if (!row) throw new HttpError(404, "Demo not found");
+          if (!canDeleteVisitRow({ role: member.role, userId, authorId: row.createdBy })) {
+            throw new HttpError(403, "You cannot delete this demo");
+          }
           const deleted = await client.query(
             `DELETE FROM visit_invite_demos WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
-          if (!deleted.rowCount) throw new HttpError(404, "Demo not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this demo");
           break;
         }
         case "set_rsvp": {
@@ -441,12 +473,19 @@ export async function POST(request: Request) {
           );
           const row = existing.rows[0];
           if (!row) throw new HttpError(404, "RSVP not found");
-          const allowed = row.userId === userId || row.createdBy === userId || manage;
-          if (!allowed) throw new HttpError(403, "You cannot remove this RSVP");
-          await client.query(
+          if (!canRemoveVisitRsvp({
+            role: member.role,
+            userId,
+            rsvpUserId: row.userId,
+            authorId: row.createdBy,
+          })) {
+            throw new HttpError(403, "You cannot remove this RSVP");
+          }
+          const deleted = await client.query(
             `DELETE FROM visit_invite_rsvps WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot remove this RSVP");
           break;
         }
         default:

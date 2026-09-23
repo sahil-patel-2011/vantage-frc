@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
@@ -37,14 +37,9 @@ export default function StrategyFeaturePage() {
             Competition Strategy, Alliance Selection Desk, pick clock, pairwise ranking, and Ask AI — sourced
             from Team Data and your scout entries. Empty until those exist.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="button secondary" href="#frc-assistant">
-              Ask AI
-            </a>
-          </div>
+          <MarketingRouteActions
+            companion={{ href: "#frc-assistant", label: "Ask AI", variant: "secondary" }}
+          />
         </header>
 
         <section className="assistant-story" id="frc-assistant" aria-labelledby="assistant-title">
@@ -93,14 +88,11 @@ export default function StrategyFeaturePage() {
               <a href="/workflow">How it works</a>
             </p>
           </div>
-          <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join waitlist
-            </a>
-            <a className="button secondary" href="/features">
-              Product overview
-            </a>
-          </div>
+          <MarketingRouteActions
+            className="pricing-preview-actions"
+            guestLabel="Join waitlist"
+            companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
+          />
         </section>
       </main>
       <SiteFooter />

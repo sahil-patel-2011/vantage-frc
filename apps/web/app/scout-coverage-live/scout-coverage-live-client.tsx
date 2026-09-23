@@ -28,6 +28,7 @@ import {
   type ScoutCoverageLiveShellKind,
 } from "../../lib/scout-coverage-live/scout-coverage-live-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -117,6 +118,9 @@ function ScoutCoverageLiveShell({
   shell,
   error,
   onRetry,
+  emptyTitle,
+  emptyDescription,
+  action,
   children,
 }: {
   description: string;
@@ -124,6 +128,9 @@ function ScoutCoverageLiveShell({
   shell: ScoutCoverageLiveShellKind;
   error?: string;
   onRetry?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  action?: { href: string; label: string } | null;
   children?: ReactNode;
 }) {
   const actions = scoutCoverageLiveNextActions({ orgId, shell });
@@ -164,10 +171,14 @@ function ScoutCoverageLiveShell({
                 : copy.badge
           }
           badgeTone="setup"
-          title={copy.title}
-          description={error ?? copy.description}
+          title={emptyTitle ?? copy.title}
+          description={emptyDescription ?? error ?? copy.description}
         >
-          {setup ? (
+          {action ? (
+            <Button as="a" variant="primary" href={action.href}>
+              {action.label}
+            </Button>
+          ) : setup ? (
             <Button as="a" variant="primary" href={setup.href}>
               {setup.label}
             </Button>
@@ -339,9 +350,14 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
     );
   }
   if (shell === "setup") {
+    const step = view?.status === "setup_required" ? view.steps[0] : null;
+    const hasTeam = Boolean(view?.orgId ?? orgId);
     return (
       <ScoutCoverageLiveShell
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        emptyTitle={hasTeam && view?.status === "setup_required" ? view.message : undefined}
+        emptyDescription={hasTeam && step ? step.detail : undefined}
+        action={step ? { href: step.href, label: step.label } : undefined}
         orgId={orgId}
         shell="setup"
       >
@@ -385,7 +401,9 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       <section className="scout-coverage-live-event" aria-label="Event and thin threshold">
         <div>
           <span className="app-muted">Event</span>
-          <strong style={{ display: "block" }}>{view.eventKey}</strong>
+          <strong style={{ display: "block" }}>
+            {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Your event"}
+          </strong>
         </div>
         <form
           onSubmit={(event) => {

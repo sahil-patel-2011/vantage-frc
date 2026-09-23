@@ -1,6 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { platformTbaEnvConfigured } from "@vantage/reference";
+import { dashboardNextActions } from "./dashboard-related";
 import { buildOnboardingChecklistSteps } from "../onboarding-workflow";
+import { strategyCanSync } from "../strategy/strategy-related";
 import { canAccessWidget, type DashboardWidgetType } from "./catalog";
 import {
   buildMentorHomeStrip,
@@ -25,6 +27,18 @@ export type WidgetPayload = {
 
 function stamp(status: WidgetDataStatus, type: DashboardWidgetType, data?: Record<string, unknown>, message?: string): WidgetPayload {
   return { type, status, updatedAt: new Date().toISOString(), data, message };
+}
+
+/** Empty competition snapshot. Team Data only when this member can sync. */
+export function competitionSnapshotGapMessage(eventKey: string | null, canSync: boolean): string {
+  if (eventKey) {
+    return canSync
+      ? "Match data is not connected for this team yet — open Team Data."
+      : "Match data is not connected for this team yet. An owner or admin connects it.";
+  }
+  return canSync
+    ? "Set an active event or connect match data under Team Data."
+    : "Set an active event. An owner or admin connects match data.";
 }
 
 export async function loadDashboardSnapshot(
@@ -404,9 +418,7 @@ export async function loadDashboardSnapshot(
       eventKey ? "empty" : "setup_required",
       "competition_snapshot",
       undefined,
-      eventKey
-        ? "Match data is not connected for this team yet — open Team Data."
-        : "Set an active event or connect match data under Team Data.",
+      competitionSnapshotGapMessage(eventKey, strategyCanSync(input.role)),
     );
   }
 
@@ -815,6 +827,21 @@ export async function loadDashboardSnapshot(
 
   async function quickActions() {
     const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
+    if (!tbaConfigured) {
+      const actions = dashboardNextActions({
+        orgId: input.orgId,
+        shell: "tba",
+        role: input.role,
+      });
+      widgets.quick_actions = stamp("setup_required", "quick_actions", {
+        links: actions.map((action) => ({
+          href: action.href,
+          label: action.label,
+          detail: action.detail,
+        })),
+      });
+      return;
+    }
     widgets.quick_actions = stamp("live", "quick_actions", {
       links: [
         { href: `/scouting${orgQuery}`, label: "Scout", detail: "Open assigned form" },
@@ -907,6 +934,7 @@ export async function loadDashboardSnapshot(
         hasLogistics,
         kickoffReady,
         knowsNextMatch,
+        canSyncTeamData: strategyCanSync(input.role),
       }),
       {
         key: "cad_brief",

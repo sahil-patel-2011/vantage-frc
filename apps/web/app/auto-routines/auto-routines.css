@@ -1,0 +1,9 @@
+.auto-routines-setup{animation:auto-routines-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes auto-routines-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.auto-routines-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.auto-routines-setup-waitlist,.auto-routines-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.auto-routines-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+  .auto-routines-setup-actions{display:grid;width:100%}
+  .auto-routines-setup-actions .app-button{width:100%;justify-content:center}
+}

@@ -8,6 +8,7 @@ export type WatchlistAlertType = "epa_up" | "epa_down" | "schedule_new" | "sched
 
 export type WatchlistCurrentMetrics = {
   eventKey: string;
+  eventName?: string | null;
   epaTotal: number | null;
   epaAuto: number | null;
   epaTeleop: number | null;

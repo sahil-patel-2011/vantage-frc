@@ -8,6 +8,7 @@ export {
   MAX_TAGS,
   MAX_TITLE,
   TEMPLATE_KIND_LABEL,
+  canDeleteKnowledgePage,
   type KnowledgeLink,
   type KnowledgePageDetail,
   type KnowledgePageSummary,

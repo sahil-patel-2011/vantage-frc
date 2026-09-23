@@ -50,6 +50,29 @@ describe("scheduleNextActions", () => {
     );
     expect(actions.every((a) => !/\bdemo match\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
+    expect(actions.some((a) => a.label === "Sync team data")).toBe(false);
+    expect(actions.some((a) => a.label === "Open Scouting")).toBe(true);
+  });
+
+  it("empty boards offer Team Data only to an owner or admin", () => {
+    const owner = scheduleNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      hasActiveEvent: true,
+      matchCount: 0,
+      canSync: true,
+    });
+    expect(owner.some((a) => a.id === "team-data" && a.label === "Sync team data")).toBe(true);
+    expect(owner.some((a) => a.label === "Open Scouting")).toBe(false);
+    const scout = scheduleNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      hasActiveEvent: true,
+      matchCount: 0,
+      canSync: false,
+    });
+    expect(scout.some((a) => a.label === "Sync team data")).toBe(false);
+    expect(scout.find((a) => a.id === "scouting")?.href).toBe("/competition?tab=scouting&orgId=org-1");
   });
 
   it("ready boards prioritize My Day", () => {

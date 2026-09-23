@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { missingFormsFor, parseConsentAction, summarizeConsent, validateForm, validateRecord } from "./consent";
+import {
+  canDeleteConsentForm,
+  missingFormsFor,
+  parseConsentAction,
+  summarizeConsent,
+  validateForm,
+  validateRecord,
+} from "./consent";
+
+describe("canDeleteConsentForm", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteConsentForm({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteConsentForm({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteConsentForm({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteConsentForm({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("validateForm", () => {
   it("requires a name and valid type", () => {

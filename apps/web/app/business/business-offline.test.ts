@@ -13,5 +13,8 @@ describe("Business last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Business"/);
     expect(src).toMatch(/hadCache \|\| viewRef\.current/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
   });
 });

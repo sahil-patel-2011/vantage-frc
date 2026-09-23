@@ -34,7 +34,7 @@ export type TuningIteration = {
   gains: TuningGains;
   result: TuningIterationResult;
   notes: string;
-  loggedBy: string;
+  loggedBy?: string;
   createdAt: string;
 };
 
@@ -45,9 +45,23 @@ export type TuningSession = {
   controllerType: TuningControllerType;
   goal: string;
   status: TuningSessionStatus;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Session delete uses created_by; iteration delete uses logged_by. Owners and admins may delete either. */
+export function canDeleteTuningAutopilotRow(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
 
 export type ScoredIteration = TuningIteration & { score: number };
 

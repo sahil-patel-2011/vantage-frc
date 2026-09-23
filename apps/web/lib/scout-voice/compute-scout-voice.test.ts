@@ -1,6 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeScoutVoiceView } from "./compute-scout-voice";
+import { canDeleteScoutVoiceNote } from "./types";
+
+describe("canDeleteScoutVoiceNote", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteScoutVoiceNote({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteScoutVoiceNote({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteScoutVoiceNote({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteScoutVoiceNote({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteScoutVoiceNote({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteScoutVoiceNote({ role: null, userId: null, authorId: "noah" })).toBe(false);
+    expect(canDeleteScoutVoiceNote({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+  });
+});
 import {
   estimateCloudSttCostUsd,
   isScoutVoiceConsentCurrent,

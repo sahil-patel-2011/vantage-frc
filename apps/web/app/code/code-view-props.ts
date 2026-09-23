@@ -28,6 +28,8 @@ export type CodeReadyViewProps = {
   budgetsHref: string;
   keysHref: string;
   githubHref: string;
+  /** Owner or admin can open Team admin to link GitHub. Scouts stay on this page. */
+  canConnect: boolean;
   showMeteredBanner: boolean;
   cutoffCode: string | null;
   nextActions: CodeCoachNextAction[];

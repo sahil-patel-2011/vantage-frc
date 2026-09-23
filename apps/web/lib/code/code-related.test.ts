@@ -22,6 +22,12 @@ describe("codeCoachRelatedLinks", () => {
     expect(links.find((l) => l.id === "github")?.href).toBe("/team/admin?orgId=org-1#github-connection");
     expect(links.find((l) => l.id === "chat")?.href).toContain("/ai");
   });
+
+  it("drops the Team admin GitHub link when the member cannot connect", () => {
+    const links = codeCoachRelatedLinks("org-1", { canConnect: false });
+    expect(links.find((l) => l.id === "github")).toBeUndefined();
+    expect(links.some((link) => link.href.includes("/team/admin"))).toBe(false);
+  });
 });
 
 describe("codeCoachNextActions", () => {
@@ -40,6 +46,15 @@ describe("codeCoachNextActions", () => {
 
     const ready = codeCoachNextActions({ orgId: "org-1", hasSource: true, hasReview: false });
     expect(ready[0]?.id).toBe("review");
+  });
+
+  it("keeps a scout on the editor instead of Team admin", () => {
+    const actions = codeCoachNextActions({ orgId: "org-1", hasSource: true, canConnect: false });
+    const github = actions.find((action) => action.id === "github");
+    expect(github?.label).toBe("Ask an owner to connect GitHub");
+    expect(github?.href).toBe("#cdc-source");
+    expect(actions.some((action) => action.href.includes("/team/admin"))).toBe(false);
+    expect(actions[0]?.id).toBe("review");
   });
 });
 

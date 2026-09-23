@@ -51,6 +51,8 @@ export type StorageNodeViewData =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      /** Owner or admin. Pairing a node is refused for everyone else. */
+      canPair: boolean;
       nodes: StorageNodeCard[];
       recentItems: StorageItemRow[];
       summary: StorageNodeSummary;
@@ -177,6 +179,7 @@ export async function computeStorageNodeView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    canPair: canManage,
     nodes,
     recentItems: itemResult.rows.map((row) => ({
       id: row.id,

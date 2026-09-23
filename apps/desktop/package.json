@@ -15,10 +15,10 @@
     "dist:all": "tsc && electron-builder --win nsis msi portable --mac dmg zip"
   },
   "devDependencies": {
-    "electron": "latest",
-    "electron-builder": "latest",
-    "typescript": "latest",
-    "vitest": "latest"
+    "electron": "43.4.1",
+    "electron-builder": "26.15.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
   },
   "build": {
     "appId": "app.vantage.frc",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { SoftAccessDenied } from "../../components/hub-access-gate";
+import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";
 import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
@@ -402,7 +402,7 @@ export default function MediaClient() {
         heading={hubDenied ? "Media is not available" : "This Media tab is not available"}
         description={
           error ||
-          "Your team admin limited which Media sections you can open. Ask an owner to update section access under Team → Security."
+          HUB_SECTION_DENIED_COPY
         }
       />
     );

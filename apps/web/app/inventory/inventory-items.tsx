@@ -18,12 +18,14 @@ export function ItemRow({
   locations,
   orgId,
   busyKey,
+  canDelete,
   run,
 }: {
   item: InventoryItem;
   locations: ReadyView["locations"];
   orgId: string;
   busyKey: string | null;
+  canDelete: boolean;
   run: RunFn;
 }) {
   const [mode, setMode] = useState<"none" | "adjust" | "edit">("none");
@@ -107,14 +109,18 @@ export function ItemRow({
                   setMode("none");
                 },
               },
-              {
-                id: "delete",
-                label: "Delete item",
-                intent: "destructive",
-                disabled: busy,
-                hint: "Removes the item and its stock history",
-                onClick: () => void run({ action: "delete_item", orgId, id: item.id }, `item:${item.id}`),
-              },
+              ...(canDelete
+                ? [
+                    {
+                      id: "delete",
+                      label: "Delete item",
+                      intent: "destructive" as const,
+                      disabled: busy,
+                      hint: "Removes the item and its stock history",
+                      onClick: () => void run({ action: "delete_item", orgId, id: item.id }, `item:${item.id}`),
+                    },
+                  ]
+                : []),
             ]}
           />
         </div>

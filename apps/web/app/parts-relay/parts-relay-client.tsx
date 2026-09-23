@@ -19,6 +19,7 @@ import type {
   PartsRelayLoanDirection,
 } from "../../lib/parts-relay/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type LiveView = Extract<PartsRelayView, { status: "live" }>;
@@ -282,9 +283,9 @@ export default function PartsRelayClient() {
 
       <div style={{ display: "grid", gap: 16 }}>
         <SummaryTiles view={view} />
-        <ListingForm busy={busy} mutate={mutate} />
+        <ListingForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
         <Listings view={view} busy={busy} mutate={mutate} />
-        <LoanForm busy={busy} mutate={mutate} />
+        <LoanForm busy={busy} mutate={mutate} eventKey={view.eventKey} eventName={view.eventName} />
         <Loans view={view} busy={busy} mutate={mutate} />
       </div>
     </main>
@@ -320,9 +321,13 @@ function SummaryTiles({ view }: { view: LiveView }) {
 function ListingForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -339,6 +344,8 @@ function ListingForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -353,7 +360,7 @@ function ListingForm({
           category: form.category,
           quantity: Number(form.quantity) || 1,
           condition: form.condition,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           notes: form.notes || undefined,
         });
         setForm(empty);
@@ -392,9 +399,19 @@ function ListingForm({
         <FormRow label="Quantity">
           <input type="number" min={1} value={form.quantity} onChange={set("quantity")} />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          </FormRow>
+        )}
       </FormGrid>
       <FormRow label="Notes (optional)">
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
@@ -440,7 +457,7 @@ function Listings({
               </strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {partsRelayCategoryLabel(item.category)} · {partsRelayConditionLabel(item.condition)} · qty {item.quantity}
-                {item.eventKey ? ` · ${item.eventKey}` : ""}
+                {item.eventKey ? ` · ${scoutEventLabel({ eventKey: item.eventKey })}` : ""}
               </small>
               {item.notes ? <small className="app-muted">{item.notes}</small> : null}
             </div>
@@ -478,9 +495,13 @@ function Listings({
 function LoanForm({
   busy,
   mutate,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -498,6 +519,8 @@ function LoanForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -511,7 +534,7 @@ function LoanForm({
           counterpartyTeam: form.counterpartyTeam,
           partName: form.partName,
           quantity: Number(form.quantity) || 1,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           loanedOn: form.loanedOn,
           dueBackOn: form.dueBackOn || undefined,
           notes: form.notes || undefined,
@@ -540,9 +563,19 @@ function LoanForm({
         <FormRow label="Quantity">
           <input type="number" min={1} value={form.quantity} onChange={set("quantity")} />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          </FormRow>
+        )}
         <FormRow label="Loaned on">
           <input type="date" value={form.loanedOn} onChange={set("loanedOn")} required />
         </FormRow>
@@ -598,7 +631,7 @@ function Loans({
                   qty {item.quantity} · loaned {item.loanedOn}
                   {item.dueBackOn ? ` · due ${item.dueBackOn}` : ""}
                   {item.returnedOn ? ` · returned ${item.returnedOn}` : ""}
-                  {item.eventKey ? ` · ${item.eventKey}` : ""}
+                  {item.eventKey ? ` · ${scoutEventLabel({ eventKey: item.eventKey })}` : ""}
                 </small>
                 {item.notes ? <small className="app-muted">{item.notes}</small> : null}
               </div>

@@ -18,11 +18,16 @@ describe("marketing chrome", () => {
     expect(heroStart).toBeGreaterThan(-1);
     expect(heroEnd).toBeGreaterThan(heroStart);
     const hero = page.slice(heroStart, heroEnd);
-    expect(hero.match(/className="button primary"/g)).toHaveLength(1);
-    expect(hero).toMatch(/Join the waitlist/);
-    expect(hero).toMatch(/Already invited\? Sign in/);
+    expect(hero).toMatch(/<MarketingHeroActions \/>/);
     expect(hero).not.toMatch(/button secondary/);
     expect(hero).not.toMatch(/Request access/);
+    const actions = src("components/marketing/site-header.tsx");
+    const links = src("lib/marketing/account-links.ts");
+    expect(actions).toMatch(/MarketingHeroActions/);
+    expect(links).toMatch(/Join the waitlist/);
+    expect(links).toMatch(/Already invited\? Sign in/);
+    expect(links).toMatch(/Open your team/);
+    expect(links).toMatch(/href: "\/dashboard"/);
   });
 
   it("does not dump dashboard routes or fake metrics on the public story", () => {
@@ -68,6 +73,7 @@ describe("marketing chrome", () => {
     expect(pricing).not.toMatch(/Request access/);
     expect(forTeams).not.toMatch(/\bSame org\b/);
     expect(forTeams).not.toMatch(/Start free/);
-    expect(forTeams).toMatch(/Already invited\? Sign in/);
+    expect(forTeams).toMatch(/MarketingRouteActions/);
+    expect(src("components/marketing/site-header.tsx")).toMatch(/Already invited\? Sign in/);
   });
 });

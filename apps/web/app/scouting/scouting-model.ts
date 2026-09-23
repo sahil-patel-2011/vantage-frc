@@ -14,6 +14,7 @@ export type OfficialFlag = {
 
 export type Bootstrap = {
   eventKey: string | null;
+  eventName?: string | null;
   schemas: ScoutSchema[];
   canManageSchemas?: boolean;
   assignments: Array<{

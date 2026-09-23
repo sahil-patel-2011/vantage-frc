@@ -4,7 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { upsertGearbox } from "../../../lib/gearbox/service";
 import { parseGearboxWrite } from "../../../lib/gearbox/upsert";
-import { compoundReduction, outputRpm, type Stage } from "../../../lib/gearbox";
+import { canDeleteGearbox, compoundReduction, outputRpm, type Stage } from "../../../lib/gearbox";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -29,7 +29,7 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Gearbox request failed") }, { status });
 }
 
-type GearboxRow = { id: string; name: string; subsystem: string; stages: Stage[]; motorFreeRpm: number | null; notes: string; byName: string | null };
+type GearboxRow = { id: string; name: string; subsystem: string; stages: Stage[]; motorFreeRpm: number | null; notes: string; byName: string | null; createdBy: string | null };
 
 export async function GET(request: Request) {
   try {
@@ -48,10 +48,18 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to design gearboxes." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to design gearboxes."
+            : "Choose your team to design gearboxes, or join the waitlist.",
+        };
+      }
 
       const gearboxes = await client.query<GearboxRow>(
-        `SELECT g.id, g.name, g.subsystem, g.stages, g.motor_free_rpm::float8 AS "motorFreeRpm", g.notes, u.name AS "byName"
+        `SELECT g.id, g.name, g.subsystem, g.stages, g.motor_free_rpm::float8 AS "motorFreeRpm", g.notes, u.name AS "byName",
+                g.created_by AS "createdBy"
          FROM gearboxes g LEFT JOIN users u ON u.id = g.created_by
          WHERE g.org_id = $1 AND g.season_year = $2 ORDER BY g.subsystem, g.name`,
         [row.orgId, seasonYear],
@@ -62,7 +70,7 @@ export async function GET(request: Request) {
         return { ...g, reduction, outputRpm: g.motorFreeRpm != null ? outputRpm(g.motorFreeRpm, reduction) : null };
       });
 
-      return { status: "ready" as const, context: { orgId: row.orgId, orgName: row.orgName, role: row.role }, seasonYear, gearboxes: enriched };
+      return { status: "ready" as const, context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id }, seasonYear, gearboxes: enriched };
     });
 
     return Response.json(view);
@@ -81,6 +89,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_gearbox") {
+        const found = await client.query<{ createdBy: string; role: string }>(
+          `SELECT g.created_by AS "createdBy", m.role
+           FROM gearboxes g
+           JOIN memberships m ON m.org_id = g.org_id AND m.user_id = $3
+           WHERE g.id = $1 AND g.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Gearbox not found");
+        if (!canDeleteGearbox({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+          throw new HttpError(403, "You cannot delete this gearbox");
+        }
         const deleted = await client.query(`DELETE FROM gearboxes WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this gearbox");
         return { ok: true };

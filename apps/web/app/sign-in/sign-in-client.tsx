@@ -53,6 +53,8 @@ import { SignInIdentityStep, SignInPasswordFooter } from "./sign-in-identity";
 import {
   readOnboardingGate,
   sessionProbeFromPayload,
+  showCodeClock,
+  showCodeResend,
   storedInviteTokenFrom,
   type PasswordPanel,
   type SessionProbe,
@@ -396,11 +398,9 @@ export default function SignInClient({
 
   /** Auto-submit the moment the sixth digit lands — never twice for one code. */
   useEffect(() => {
-    if (flow.step !== "code") return;
     if (busy !== "idle") return;
-    if (!isCodeComplete(flow.code)) return;
+    if (!canSubmitCode(flow, Date.now())) return;
     if (flow.code === lastSubmittedCode.current) return;
-    if (isCodeExpired(flow, Date.now())) return;
     void verifyCode();
   }, [busy, flow, verifyCode]);
 
@@ -628,6 +628,8 @@ export default function SignInClient({
             emailAvailable={emailAvailable}
             invalid={Boolean(flow.failure)}
             expired={expired}
+            showClock={showCodeClock(flow.failure?.kind)}
+            showResend={showCodeResend(flow.failure?.kind)}
             codeSeconds={codeSeconds}
             resendReady={resendReady}
             resendSeconds={resendSeconds}

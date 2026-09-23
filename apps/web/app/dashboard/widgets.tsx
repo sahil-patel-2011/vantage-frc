@@ -40,18 +40,28 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
   payload,
   orgId,
   tbaConfigured,
+  canOpenTeamData = false,
 }: {
   type: string;
   payload?: WidgetPayload;
   orgId: string;
   tbaConfigured?: boolean;
+  canOpenTeamData?: boolean;
 }) {
   const data = payload?.data ?? {};
   const withOrg = (href: string) => withOrgHref(href, orgId || null);
   const hint = emptyHintFor(type);
 
   if (!STUDENT_WIDGET_TYPES.has(type)) {
-    return <ExtraWidgetView type={type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />;
+    return (
+      <ExtraWidgetView
+        type={type}
+        payload={payload}
+        orgId={orgId}
+        tbaConfigured={tbaConfigured}
+        canOpenTeamData={canOpenTeamData}
+      />
+    );
   }
 
   switch (type) {
@@ -168,6 +178,14 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
       return <OnboardingChecklistCard steps={steps} payload={payload} orgId={orgId} />;
     }
     default:
-      return <ExtraWidgetView type={type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />;
+      return (
+      <ExtraWidgetView
+        type={type}
+        payload={payload}
+        orgId={orgId}
+        tbaConfigured={tbaConfigured}
+        canOpenTeamData={canOpenTeamData}
+      />
+    );
   }
 });

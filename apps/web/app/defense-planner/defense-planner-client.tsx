@@ -35,6 +35,7 @@ import {
 } from "../../lib/defense-planner/defense-planner-related";
 import type { DrivetrainType } from "../../lib/defense-planner/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./defense-planner.css";
@@ -446,7 +447,14 @@ export default function DefensePlannerClient() {
 
       <div style={{ display: "grid", gap: 16 }}>
         <RobotProfileForm view={view} busy={busy} mutate={mutate} />
-        <LogMatchupForm busy={busy} mutate={mutate} cutoffCode={cutoffCode} orgId={orgId} />
+        <LogMatchupForm
+          busy={busy}
+          mutate={mutate}
+          cutoffCode={cutoffCode}
+          orgId={orgId}
+          eventKey={view.eventKey}
+          eventName={view.eventName}
+        />
         <MatchupsPanel view={view} busy={busy} mutate={mutate} />
       </div>
     </main>
@@ -534,11 +542,15 @@ function LogMatchupForm({
   mutate,
   cutoffCode,
   orgId,
+  eventKey,
+  eventName,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   cutoffCode: string | null;
   orgId: string | null;
+  eventKey: string | null;
+  eventName: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -557,6 +569,8 @@ function LogMatchupForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const lockedEvent = eventKey?.trim() ?? "";
+  const submittedEvent = lockedEvent || form.eventKey.trim();
 
   return (
     <Panel
@@ -585,7 +599,7 @@ function LogMatchupForm({
           action: "log-matchup",
           opponentTeamNumber,
           opponentTeamName: form.opponentTeamName || undefined,
-          eventKey: form.eventKey || undefined,
+          eventKey: submittedEvent || undefined,
           opponentMassLbs,
           opponentDrivetrain: form.opponentDrivetrain,
           opponentCycleTimeSec,
@@ -609,9 +623,19 @@ function LogMatchupForm({
         <FormRow label="Team name (optional)">
           <input value={form.opponentTeamName} onChange={set("opponentTeamName")} />
         </FormRow>
-        <FormRow label="Event key (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026txho" />
-        </FormRow>
+        {lockedEvent ? (
+          <FormRow label="Event">
+            <input
+              readOnly
+              aria-label="Event"
+              value={scoutEventLabel({ eventName, eventKey: lockedEvent }) ?? ""}
+            />
+          </FormRow>
+        ) : (
+          <FormRow label="Event key (optional)">
+            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026txho" />
+          </FormRow>
+        )}
         <FormRow label="Their mass (lbs)">
           <input type="number" min={1} step="0.1" value={form.opponentMassLbs} onChange={set("opponentMassLbs")} required />
         </FormRow>
@@ -678,7 +702,7 @@ function MatchupsPanel({
                 <small className="app-muted" style={{ display: "block" }}>
                   {drivetrainLabel(matchup.opponentDrivetrain)} · {matchup.opponentMassLbs} lb ·{" "}
                   {matchup.opponentCycleTimeSec}s cycles · {matchup.opponentAvgPointsPerCycle} pts/cycle
-                  {matchup.eventKey ? ` · ${matchup.eventKey}` : ""}
+                  {matchup.eventKey ? ` · ${scoutEventLabel({ eventKey: matchup.eventKey })}` : ""}
                 </small>
               </div>
               <div style={{ textAlign: "right" }}>

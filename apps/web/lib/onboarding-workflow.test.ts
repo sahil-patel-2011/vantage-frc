@@ -56,6 +56,33 @@ describe("onboarding-workflow", () => {
     expect(steps.find((s) => s.key === "knowledge")?.href).toContain("/team/knowledge");
     expect(steps.find((s) => s.key === "logistics")?.href).toContain("/logistics");
     expect(steps.find((s) => s.key === "kickoff")?.href).toContain("/kickoff");
+    const tba = steps.find((s) => s.key === "tba");
+    expect(tba?.label).toBe("Open Scouting");
+    expect(tba?.href).toContain("/scouting");
+    expect(tba?.href).not.toContain("/team/data");
+  });
+
+  it("keeps Sync Team Data for an owner or admin and closes it otherwise", () => {
+    const base = {
+      orgId: ORG,
+      hasEventContext: true,
+      tbaConfigured: false,
+      hasScoutingSchemas: false,
+      hasAiProvider: false,
+      joinedSubteam: true,
+      hasKnowledge: true,
+      hasLogistics: true,
+      kickoffReady: true,
+      knowsNextMatch: true,
+    };
+    const owner = buildOnboardingChecklistSteps({ ...base, canSyncTeamData: true }).find((s) => s.key === "tba");
+    expect(owner?.label).toBe("Sync Team Data");
+    expect(owner?.href).toContain("/team/data");
+    for (const canSyncTeamData of [false, undefined] as const) {
+      const step = buildOnboardingChecklistSteps({ ...base, canSyncTeamData }).find((s) => s.key === "tba");
+      expect(step?.href).not.toContain("/team/data");
+      expect(step?.label).toBe("Open Scouting");
+    }
   });
 
   it("exposes season-only slice for role-based paths", () => {

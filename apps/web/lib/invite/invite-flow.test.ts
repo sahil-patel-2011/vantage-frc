@@ -15,7 +15,14 @@ import {
 describe("invite Soft-UI flow helpers", () => {
   it("tells people without an invite they are on the waitlist", () => {
     expect(inviteEmptyCopy("auth_required").description).toMatch(/waitlist/);
-    expect(inviteEmptyCopy("missing_token").description).toMatch(/waitlist/);
+    const missing = inviteEmptyCopy("missing_token");
+    expect(missing.title).toBe("No invite is open");
+    expect(missing.title).not.toMatch(/incomplete/);
+    expect(missing.description).toMatch(/waitlist/);
+    const actions = inviteNextActions({ kind: "missing_token" });
+    expect(actions).toHaveLength(1);
+    expect(actions[0]?.href).toBe("/#waitlist");
+    expect(actions[0]?.href).not.toContain("/signin");
   });
 
   it("formats clear team identity and roles", () => {

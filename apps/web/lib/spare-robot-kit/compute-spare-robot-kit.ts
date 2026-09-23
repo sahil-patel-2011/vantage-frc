@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { buildKitItems, CHECKLIST_STATUSES, checklistRationale, summarizeChecklistItems } from ".";
+import { buildKitItems, canDeleteSpareRobotKitChecklist, CHECKLIST_STATUSES, checklistRationale, summarizeChecklistItems } from ".";
 import type { ChecklistStatus, KitChecklistItem, SpareRobotKitChecklist } from "./types";
 
 export { CHECKLIST_STATUSES };
@@ -25,6 +25,8 @@ export type SpareRobotKitView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      role?: string | null;
+      userId?: string | null;
       seasonYear: number;
       seasons: number[];
       candidateItems: KitChecklistItem[];
@@ -62,6 +64,7 @@ type ChecklistRow = {
   status: string;
   items: KitChecklistItem[];
   rationale: string;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -74,6 +77,7 @@ function mapChecklist(row: ChecklistRow): SpareRobotKitChecklist {
     status: isStatus(row.status) ? row.status : "draft",
     items: Array.isArray(row.items) ? row.items : [],
     rationale: row.rationale,
+    createdBy: row.createdBy ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -83,9 +87,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -169,7 +173,7 @@ export async function computeSpareRobotKitView(
     loadCandidateItems(client, org.orgId, seasonYear),
     client.query<ChecklistRow>(
       `SELECT id, season_year AS "seasonYear", title, status, items,
-              rationale, created_at AS "createdAt", updated_at AS "updatedAt"
+              rationale, created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt"
        FROM spare_robot_kit_checklists
        WHERE org_id = $1 AND season_year = $2
        ORDER BY created_at DESC`,
@@ -188,6 +192,8 @@ export async function computeSpareRobotKitView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    role: org.role ?? "",
+    userId: input.userId,
     seasonYear,
     seasons,
     candidateItems,
@@ -270,12 +276,24 @@ export async function updateChecklistStatus(
 
 export async function deleteChecklist(
   client: PoolClient,
-  input: { orgId: string; checklistId: string },
+  input: { orgId: string; checklistId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM spare_robot_kit_checklists WHERE id = $1 AND org_id = $2`, [
+  const found = await client.query<{ createdBy: string; role: string }>(
+    `SELECT c.created_by AS "createdBy", m.role
+     FROM spare_robot_kit_checklists c
+     JOIN memberships m ON m.org_id = c.org_id AND m.user_id = $3
+     WHERE c.id = $1 AND c.org_id = $2`,
+    [input.checklistId, input.orgId, input.userId],
+  );
+  if (!found.rowCount) throw new Error("Checklist not found");
+  if (!canDeleteSpareRobotKitChecklist({ role: found.rows[0]!.role, userId: input.userId, authorId: found.rows[0]!.createdBy })) {
+    throw new Error("You cannot delete this checklist");
+  }
+  const deleted = await client.query(`DELETE FROM spare_robot_kit_checklists WHERE id = $1 AND org_id = $2`, [
     input.checklistId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this checklist");
 }
 
 export { summarizeChecklistItems };

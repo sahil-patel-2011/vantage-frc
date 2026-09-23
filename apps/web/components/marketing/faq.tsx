@@ -10,7 +10,7 @@ function faqAnchor(question: string) {
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Free software that runs an FRC team's season in one place: offline scouting, team lookup, match predictions and pick lists, CAD and build books, the calendar, chat, money and outreach. One Google or email-code login for every student and mentor.",
+    a: "Free, invite-only software that runs an FRC team's season in one place: offline scouting, team lookup, match predictions and pick lists, CAD from a pasteable link and build books, the calendar, chat, pit and shop ops, money and outreach. One Google or email-code login for every student and mentor.",
   },
   {
     q: "What does a new student see first?",

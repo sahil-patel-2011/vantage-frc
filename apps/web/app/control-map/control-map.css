@@ -14,6 +14,15 @@
 .control-map-card-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .control-map-controller{display:grid;gap:10px}
 .control-map-tip{margin:0}
+.control-map-setup{animation:control-map-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes control-map-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.control-map-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.control-map-setup-waitlist,.control-map-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.control-map-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+  .control-map-setup-actions{display:grid;width:100%}
+  .control-map-setup-actions .app-button{width:100%;justify-content:center}
+}
 @media(max-width:900px){
   .control-map-layout{grid-template-columns:1fr}
   .control-map-header-actions{justify-content:flex-start}

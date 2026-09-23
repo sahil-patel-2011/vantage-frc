@@ -135,6 +135,20 @@ export function classifyStrategyShell(input: {
   return "error";
 }
 
+/** Name the event that has no match, so the empty board is not anonymous. */
+export function strategyWaitingCopy(eventName?: string | null): string {
+  const name = eventName?.trim();
+  if (name) {
+    return `${name} has no scheduled match yet. Win chance stays blank until a match and stats are synced.`;
+  }
+  return "Win chance stays blank until this event has a scheduled match and synced stats.";
+}
+
+export function strategyCanSync(role?: string | null): boolean {
+  const normalized = (role ?? "").toLowerCase();
+  return normalized === "owner" || normalized === "admin";
+}
+
 /** Soft-UI empty / setup / error copy — never DEMO win rates. */
 export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
   switch (kind) {
@@ -164,8 +178,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
         kind,
         badge: "No prediction yet",
         title: "Waiting on a real matchup",
-        description:
-          "Win chance stays blank until this event has a scheduled match and synced stats.",
+        description: strategyWaitingCopy(undefined),
       };
     default:
       return {

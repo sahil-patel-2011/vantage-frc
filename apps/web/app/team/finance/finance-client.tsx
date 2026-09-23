@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { describeBudgetLine, type BudgetLine } from "../../../lib/finance/budget-vs-actual";
 import { validateBuySheet } from "../../../lib/finance/buy-sheet";
+import { fetchProductSession } from "../../../lib/nav/product-session";
+import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 import { formatSponsorUsd, sponsorPageTotals, teamContributionTotalUsd } from "../../../lib/sponsors/totals";
 
 type Category = {
@@ -66,6 +68,19 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
   const emptyRequestForm = { title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "", inventoryItemId: "" };
   const [requestForm, setRequestForm] = useState(emptyRequestForm);
+  const [canManage, setCanManage] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession(orgId).then((session) => {
+      if (cancelled) return;
+      const role = session?.memberships?.find((member) => member.orgId === orgId)?.role ?? session?.role;
+      setCanManage(strategyCanSync(role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
 
   async function load() {
     const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes, contributionsRes, budgetVsActualRes, sponsorsRes] = await Promise.all([
@@ -126,6 +141,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
 
   async function saveBudget(event: React.FormEvent) {
     event.preventDefault();
+    if (!canManage) return;
     const response = await fetch("/api/finance/budget", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, seasonYear, ...budgetForm }),
@@ -172,6 +188,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   }
 
   async function act(id: string, action: string) {
+    if (!canManage) return;
     const response = await fetch("/api/finance/purchase-requests", {
       method: "PATCH", headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, id, action }),
@@ -215,20 +232,29 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
       </section>
 
       <section className="admin-grid">
-        <form className="intel-panel" onSubmit={saveBudget}>
-          <span className="eyebrow">SET A CATEGORY BUDGET</span>
-          <p>Team leads set a monthly and/or season total per spending category (Parts, Travel, Registration, Tools…).</p>
-          <label>Category<input required value={budgetForm.categoryName} onChange={(e) => setBudgetForm({ ...budgetForm, categoryName: e.target.value })} placeholder="Parts" /></label>
-          <div className="budget-fields">
-            <label>Monthly limit ($)<input type="number" min="0" step="0.01" value={budgetForm.monthlyLimitUsd} onChange={(e) => setBudgetForm({ ...budgetForm, monthlyLimitUsd: e.target.value })} /></label>
-            <label>Season total ($)<input type="number" min="0" step="0.01" value={budgetForm.totalLimitUsd} onChange={(e) => setBudgetForm({ ...budgetForm, totalLimitUsd: e.target.value })} /></label>
-          </div>
-          <label>Notes<input value={budgetForm.notes} onChange={(e) => setBudgetForm({ ...budgetForm, notes: e.target.value })} /></label>
-          <button className="primary-action">Save category budget</button>
-        </form>
+        {canManage ? (
+          <form className="intel-panel" onSubmit={saveBudget}>
+            <span className="eyebrow">SET A CATEGORY BUDGET</span>
+            <p>Team leads set a monthly and/or season total per spending category (Parts, Travel, Registration, Tools…).</p>
+            <label>Category<input required value={budgetForm.categoryName} onChange={(e) => setBudgetForm({ ...budgetForm, categoryName: e.target.value })} placeholder="Parts" /></label>
+            <div className="budget-fields">
+              <label>Monthly limit ($)<input type="number" min="0" step="0.01" value={budgetForm.monthlyLimitUsd} onChange={(e) => setBudgetForm({ ...budgetForm, monthlyLimitUsd: e.target.value })} /></label>
+              <label>Season total ($)<input type="number" min="0" step="0.01" value={budgetForm.totalLimitUsd} onChange={(e) => setBudgetForm({ ...budgetForm, totalLimitUsd: e.target.value })} /></label>
+            </div>
+            <label>Notes<input value={budgetForm.notes} onChange={(e) => setBudgetForm({ ...budgetForm, notes: e.target.value })} /></label>
+            <button className="primary-action">Save category budget</button>
+          </form>
+        ) : (
+          <section className="intel-panel">
+            <span className="eyebrow">SET A CATEGORY BUDGET</span>
+            <p>An owner or admin sets category budgets. You can still submit a purchase request.</p>
+          </section>
+        )}
         <section className="intel-panel">
           <span className="eyebrow">CATEGORY BUDGETS — {seasonYear}</span>
-          {categories.length === 0 && budgetLines.length === 0 && <p>No categories yet — set one to start tracking spend.</p>}
+          {categories.length === 0 && budgetLines.length === 0 && (
+            <p>{canManage ? "No categories yet — set one to start tracking spend." : "No categories yet."}</p>
+          )}
           {categories.map((c) => {
             const line = budgetLines.find((row) => row.categoryId === c.categoryId);
             return (
@@ -279,6 +305,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
         </form>
         <section className="intel-panel invite-list">
           <span className="eyebrow">PURCHASE REQUESTS</span>
+          {!canManage ? <p>An owner or admin reviews purchase requests.</p> : null}
           {requests.length === 0 && <p>No requests yet.</p>}
           {requests.map((r) => (
             <article key={r.id}>
@@ -287,7 +314,9 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
                 <small>{r.requestedByName} · {r.quantity} × ${Number(r.unitCostUsd).toFixed(2)} = ${Number(r.totalCostUsd).toFixed(2)} · {r.categoryName ?? "uncategorized"}{r.neededBy ? ` · needed ${r.neededBy}` : ""}{r.justification ? ` · why: ${r.justification}` : ""} · {r.status}</small>
                 {r.itemUrl && <div><a href={r.itemUrl} target="_blank" rel="noreferrer">View item ↗</a></div>}
               </div>
-              <div>{(STATUS_ACTIONS[r.status] ?? []).map((a) => <button key={a.action} onClick={() => void act(r.id, a.action)}>{a.label}</button>)}</div>
+              {canManage ? (
+                <div>{(STATUS_ACTIONS[r.status] ?? []).map((a) => <button key={a.action} onClick={() => void act(r.id, a.action)}>{a.label}</button>)}</div>
+              ) : null}
             </article>
           ))}
         </section>

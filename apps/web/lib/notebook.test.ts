@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { parseNotebookAction, parseTags, summarizeNotebook, validateEntry } from "./notebook";
+import { canDeleteNotebookEntry, parseNotebookAction, parseTags, summarizeNotebook, validateEntry } from "./notebook";
+
+describe("canDeleteNotebookEntry", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteNotebookEntry({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteNotebookEntry({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteNotebookEntry({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteNotebookEntry({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteNotebookEntry({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("parseTags", () => {
   it("splits, trims, lowercases and dedupes a comma string", () => {

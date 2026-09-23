@@ -1,4 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+import { strategyCanSync } from "../strategy/strategy-related";
 import { computeAccuracy, summarizeAttempts } from ".";
 import type { PracticeMatch, TrainingAttempt, TrainingSummary, TrainingWinner } from "./types";
 
@@ -37,9 +40,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -168,17 +171,29 @@ export async function computeScoutTrainingView(
   const [practiceMatches, attempts] = await Promise.all([fetchPracticeMatches(client), fetchAttempts(client, org.orgId)]);
 
   if (practiceMatches.length === 0 && attempts.length === 0) {
+    const canSync = strategyCanSync(org.role);
     return {
       status: "setup_required",
-      message: "No historical match data is synced yet, so there is nothing to practice-scout against.",
-      steps: [
-        {
-          id: "reference-sync",
-          label: "Sync competition data",
-          detail: "Historical matches populate once your team's events sync under Team Data.",
-          href: "/competition",
-        },
-      ],
+      message: canSync
+        ? "No historical match data is synced yet, so there is nothing to practice-scout against. Sync Team Data after a completed event is in the cache."
+        : "No historical match data is synced yet, so there is nothing to practice-scout against. An owner or admin syncs completed matches. You can still scout.",
+      steps: canSync
+        ? [
+            {
+              id: "team-data",
+              label: "Sync Team Data",
+              detail: "Completed matches show up here after Team Data syncs them.",
+              href: withOrgHref("/team/data", org.orgId),
+            },
+          ]
+        : [
+            {
+              id: "scouting",
+              label: "Open Scouting",
+              detail: "Practice waits on completed matches. Live scouting is still open.",
+              href: hubHref("/competition", "scouting", org.orgId),
+            },
+          ],
       orgId: org.orgId,
     };
   }
