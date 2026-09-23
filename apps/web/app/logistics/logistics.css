@@ -71,6 +71,12 @@
   color: var(--accent);
 }
 
+.log-setup{animation:log-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes log-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.log-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.log-setup-waitlist,.log-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.log-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+
 .log-page {
   max-width: 960px;
   margin: 0 auto;
@@ -333,4 +339,6 @@
   .log-grid-form {
     grid-template-columns: 1fr;
   }
+  .log-setup-actions{display:grid;width:100%}
+  .log-setup-actions .app-button{width:100%;justify-content:center}
 }

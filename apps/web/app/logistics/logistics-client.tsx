@@ -22,7 +22,7 @@ import {
 import { LogisticsNextActionsPanel, LogisticsShell } from "./logistics-chrome";
 import { LogisticsDayPanel } from "./logistics-day";
 import { LogisticsManagePanel } from "./logistics-manage";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { canActOnline, type ActionBody } from "./logistics-model";
 import { LogisticsTripsPanel } from "./logistics-trips";
 
@@ -59,6 +59,7 @@ export default function LogisticsClient() {
       setFromCache(false);
       setCachedAt(null);
       setFetchFailed(false);
+      if (data.context?.orgId) persistOrgIdInUrl(data.context.orgId);
       const cacheOrg = data.status === "ready" ? data.context.orgId : orgId;
       if (cacheOrg) await putFeatureSnapshot("logistics", cacheOrg, data);
       if (data.status === "ready") {

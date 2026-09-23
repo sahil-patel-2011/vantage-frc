@@ -105,6 +105,8 @@ describe("logistics Soft-UI shells", () => {
       expect(copy.description).not.toMatch(/\bDEMO lodging\b.*invent/i);
       expect(JSON.stringify(copy)).not.toMatch(/\/demo/i);
     }
+    expect(logisticsShellCopy("setup").description).toMatch(/join the waitlist/i);
+    expect(logisticsShellCopy("empty").description).not.toMatch(/join the waitlist/i);
   });
 });
 
