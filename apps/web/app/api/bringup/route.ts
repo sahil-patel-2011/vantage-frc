@@ -53,7 +53,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to run bring-up." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to run bring-up."
+            : "Choose your team to run bring-up, or join the waitlist.",
+        };
+      }
 
       const items = await client.query<ItemRow>(
         `SELECT id, phase, label, result, note, sort_order AS "sortOrder", created_by AS "createdBy"
