@@ -13,6 +13,9 @@ describe("Season Calendar last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Calendar"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
     expect(src).toMatch(/if \(!view\)/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);

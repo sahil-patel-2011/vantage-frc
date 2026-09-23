@@ -2,6 +2,11 @@
    global stylesheet. All selectors are .cal-* prefixed and theme-aware. */
 .cal-page input,.cal-page select{min-height:38px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
 .cal-empty{display:grid;gap:12px;justify-items:start;padding:26px}
+.cal-setup{animation:cal-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes cal-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.cal-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.cal-setup-waitlist,.cal-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.cal-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 .cal-link{padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .cal-link.danger{color:var(--critical)}
 .cal-link:disabled{opacity:.5;cursor:default}
@@ -281,6 +286,8 @@
 /* A phone cannot show seven readable columns of chips, so the cells become
    squares that carry a count, and the agenda list below is the detail. */
 @media (max-width:720px){
+  .cal-setup-actions{display:grid;width:100%}
+  .cal-setup-actions .app-button{width:100%;justify-content:center}
   .cal-grid-day{min-height:62px;padding:3px}
   .cal-grid-entries{gap:1px}
   .cal-grid-chip{

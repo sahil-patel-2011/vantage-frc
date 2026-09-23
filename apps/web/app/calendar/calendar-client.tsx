@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { shopTimeLeft } from "../../lib/calendar/shop-time-left";
 import { restOfWeek } from "../../lib/calendar/rest-of-week";
@@ -12,7 +12,7 @@ import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
   getFeatureSnapshot,
@@ -42,6 +42,21 @@ import {
   type SeasonTemplateId,
 } from "../../lib/season-calendar";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<CalendarView, { status: "ready" }>;
@@ -404,6 +419,7 @@ export default function CalendarClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistCalendarSnapshot(urlOrg, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -533,14 +549,36 @@ export default function CalendarClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist =
+      !view.context.orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page cal-page">
-        <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
+        <PageHeader
+          breadcrumbs="Team / Calendar"
+          title="Season calendar"
+          description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+        />
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+        <EmptyState
+          soft
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "cal-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="cal-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="cal-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          )}
         </EmptyState>
       </main>
     );
