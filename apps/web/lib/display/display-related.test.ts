@@ -27,7 +27,12 @@ describe("display Soft-UI helpers", () => {
   });
 
   it("asks for first board when empty — never DEMO metrics", () => {
-    const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0, activeTokenCount: 0 });
+    const actions = displaySetupNextActions({
+      orgId: "org-1",
+      boardCount: 0,
+      activeTokenCount: 0,
+      canSync: true,
+    });
     expect(actions[0]?.id).toBe("create-board");
     expect(actions[0]?.primary).toBe(true);
     expect(actions.map((a) => a.id)).toContain("command");
@@ -36,7 +41,12 @@ describe("display Soft-UI helpers", () => {
   });
 
   it("prioritizes TV pairing after a board exists", () => {
-    const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 1, activeTokenCount: 0 });
+    const actions = displaySetupNextActions({
+      orgId: "org-1",
+      boardCount: 1,
+      activeTokenCount: 0,
+      canSync: true,
+    });
     expect(actions[0]?.id).toBe("mint-token");
     expect(actions[0]?.primary).toBe(true);
   });
@@ -47,6 +57,7 @@ describe("display Soft-UI helpers", () => {
       boardCount: 1,
       activeTokenCount: 1,
       hasActiveEvent: false,
+      canSync: true,
     });
     expect(actions.map((a) => a.id)).toContain("event");
     expect(actions.find((a) => a.id === "event")?.href).toContain("tab=command");
@@ -65,6 +76,20 @@ describe("display Soft-UI helpers", () => {
     expect(actions.find((action) => action.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
+  });
+
+  it("keeps Team Data closed when canSync is omitted", () => {
+    const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0 });
+    expect(actions[0]?.id).toBe("read");
+    expect(actions.some((action) => action.id === "create-board" || action.id === "team-data")).toBe(false);
+    expect(actions.find((action) => action.id === "scouting")?.label).toBe("Open Scouting");
+  });
+
+  it("opens Team Data when an owner or admin can sync", () => {
+    const actions = displaySetupNextActions({ orgId: "org-1", boardCount: 0, canSync: true });
+    expect(actions[0]?.id).toBe("create-board");
+    expect(actions.find((action) => action.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
+    expect(actions.find((action) => action.id === "team-data")?.label).toBe("Sync team data");
   });
 
   it("maps setup wizard steps from real counts only", () => {
