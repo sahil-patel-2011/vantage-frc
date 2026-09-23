@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, Button } from "../../components/ui";
@@ -13,11 +13,26 @@ import {
   type InspectionStatus,
   type InspectionView,
 } from "../../lib/inspection";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -130,6 +145,7 @@ export default function InspectionClient() {
   const [weightInput, setWeightInput] = useState("");
   const [weightConfig, setWeightConfig] = useState("with bumpers");
   const [limitInput, setLimitInput] = useState("");
+  const [requestedOrg, setRequestedOrg] = useState("");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<InspectionView | null>(null);
@@ -138,6 +154,7 @@ export default function InspectionClient() {
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(urlOrg);
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<InspectionView>("inspection", urlOrg || "_");
@@ -180,6 +197,7 @@ export default function InspectionClient() {
         return;
       }
       setError("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -289,26 +307,42 @@ export default function InspectionClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist = !requestedOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page insp-page">
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Inspection</span>
             <h1>Robot Inspection</h1>
-            <p>Self-inspect against the standard checklist before the real inspector arrives.</p>
+            <p>
+              {offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Self-inspect against the standard checklist before the real inspector arrives."}
+            </p>
           </div>
         </header>
         <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
-          className="insp-empty"
+          className={offerWaitlist ? "insp-empty insp-setup" : "insp-empty"}
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description={view.message}
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          {offerWaitlist ? (
+            <div className="insp-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="insp-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          )}
         </EmptyState>
       </main>
     );
