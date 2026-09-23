@@ -18,6 +18,7 @@ import {
   type ChemistryNextAction,
   type ChemistryShellKind,
 } from "../../lib/chemistry/chemistry-related";
+import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
@@ -80,6 +81,7 @@ function ChemistryShell({
   onRetry,
   fromCache = false,
   cachedAt = null,
+  canEdit = false,
   children,
 }: {
   orgId?: string | null;
@@ -88,6 +90,7 @@ function ChemistryShell({
   /** HTTP status of the failed load, so an expired session offers sign-in over Retry. */
   errorStatus?: number | null;
   onRetry?: () => void;
+  canEdit?: boolean;
   fromCache?: boolean;
   cachedAt?: string | null;
   children?: ReactNode;
@@ -149,8 +152,8 @@ function ChemistryShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>
-            Sync Team Data
+          <Button as="a" variant="primary" href={canEdit ? teamDataHref : hubHref("/competition", "scouting", orgId)}>
+            {canEdit ? "Sync Team Data" : "Open Scouting"}
           </Button>
         ) : null}
       </EmptyState>
@@ -404,7 +407,7 @@ export default function ChemistryClient({
     eventKey: view?.eventKey,
     seatCount,
     hasScore,
-    canEdit: view?.canEdit,
+    canEdit: view?.canEdit === true,
   });
   const emptyCopy = chemistryShellCopy("empty");
 
@@ -635,8 +638,8 @@ export default function ChemistryClient({
               : emptyCopy.description
           }
         >
-          <Button as="a" variant="primary" href={readyActions[0]?.href ?? withOrgHref("/team/data", orgId)}>
-            {readyActions[0]?.label ?? "Sync Team Data"}
+          <Button as="a" variant="primary" href={readyActions[0]?.href ?? (view?.canEdit === true ? withOrgHref("/team/data", orgId) : hubHref("/competition", "scouting", orgId))}>
+            {readyActions[0]?.label ?? (view?.canEdit === true ? "Sync Team Data" : "Open Scouting")}
           </Button>
         </EmptyState>
       )}

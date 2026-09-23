@@ -55,7 +55,7 @@ export function TbaKeyHint({ view }: { view: StrategyView }) {
   const access = view.tbaAccess;
   const stat = view.referenceAccess?.statbotics;
   if (access?.tbaConfigured && (stat?.cacheHasMetrics ?? true)) return null;
-  const canSync = "actorRole" in view && view.actorRole != null ? strategyCanSync(view.actorRole) : true;
+  const canSync = strategyCanSync("actorRole" in view ? view.actorRole : null);
   return (
     <div className="strategy-reference-hints">
       {access && !access.tbaConfigured ? (
@@ -88,7 +88,7 @@ export function StrategyShell({
   fromCache = false,
   cachedAt = null,
   eventName = null,
-  canSync = true,
+  canSync = false,
   children,
 }: {
   orgId?: string | null;

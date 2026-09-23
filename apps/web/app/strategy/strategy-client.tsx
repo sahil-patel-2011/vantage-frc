@@ -178,7 +178,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const orgId = view && "orgId" in view ? view.orgId : null;
   const eventName = view && "eventName" in view ? view.eventName : null;
   const actorRole = view && "actorRole" in view ? view.actorRole : undefined;
-  const canSync = actorRole == null ? true : strategyCanSync(actorRole);
+  const canSync = strategyCanSync(actorRole);
   const shell = classifyStrategyShell({
     loading,
     fetchFailed,
