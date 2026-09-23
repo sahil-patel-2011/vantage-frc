@@ -82,6 +82,9 @@ const PUBLIC_PREFIXES = [
   // Team agent-config bundle: session OR paired device token — the route
   // enforces both itself (apps/web/app/api/agent-config/bundle).
   "/api/agent-config/bundle",
+  // Google Sheets connect callback: proves itself with the HMAC-signed OAuth state (user +
+  // team, 15-minute expiry, PKCE), because Google may return to a host with no cookie.
+  "/api/integrations/google/callback",
   // VS Code / editor connector: device-code pair + bearer context (no session cookie).
   "/api/editor/pair/start",
   "/api/editor/pair/poll",

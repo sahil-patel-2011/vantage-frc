@@ -53,7 +53,7 @@ export const PREVIEW_LIST_CAP = 500;
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS"Z"'`;
 
-type Reads = Partial<Record<ImportEntity, WorkbookTableRead | null>>;
+export type Reads = Partial<Record<ImportEntity, WorkbookTableRead | null>>;
 
 /**
  * The Postgres side of the diff, scoped like the export (the active event, or every event

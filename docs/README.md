@@ -18,6 +18,7 @@ Start with the section that matches you. Each document says who it is for in its
 
 | Document | What it answers |
 |---|---|
+| [SPREADSHEET_MIRROR.md](SPREADSHEET_MIRROR.md) | Google Sheets and Excel as two identical copies of team data — sync, pull, rate limits |
 | [GITHUB_CONNECTION.md](GITHUB_CONNECTION.md) | Linking the robot-code repository for Bugbot, code help and calendar milestones |
 | [CLAUDE_CODE_CAD.md](CLAUDE_CODE_CAD.md) | Driving Onshape or Fusion 360 from Claude Code (`npx vantage-cad`) |
 | [CAD_RELAY.md](CAD_RELAY.md) | The Fusion 360 desktop relay: what runs on the laptop and why |

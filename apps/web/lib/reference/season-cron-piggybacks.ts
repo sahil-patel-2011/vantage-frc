@@ -1,5 +1,5 @@
 import { runScheduledResearchSweep } from "@vantage/intel-research/production-worker";
-import { runScheduledWorkbookSync } from "../microsoft/scheduled-sync";
+import { runScheduledMirrorSync } from "../mirror/scheduled-mirror";
 import { runMemberOnboarding } from "../member-onboarding/run-member-onboarding";
 import { runProductReleasePublish } from "../run-product-release-publish";
 import { runSponsorReminders } from "../run-sponsor-reminders";
@@ -36,8 +36,9 @@ export async function runSeasonCronPiggybacks(): Promise<SeasonCronPiggybacks> {
   // Team dossiers older than a week: a handful of TBA calls per team, at most
   // twenty teams a day, through the same coordinated client as the sync.
   const teamDossiers = await runSafely(() => runTeamDossierRefresh());
-  // Connected teams' Excel workbooks, at most a day stale without anyone pressing Sync.
-  const excelWorkbooks = await runSafely(() => runScheduledWorkbookSync());
+  // Connected teams' spreadsheet copies (Google Sheets and Excel), written from the TBA data
+  // the sync above just cached — at most a day stale, and never a TBA call of their own.
+  const excelWorkbooks = await runSafely(() => runScheduledMirrorSync());
   let research: SeasonCronPiggybacks["research"];
   try {
     research = { ok: true, summary: await runScheduledResearchSweep() };

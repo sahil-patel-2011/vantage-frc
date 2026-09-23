@@ -70,8 +70,11 @@ export async function listRecentRuns(client: PoolClient, orgId: string, limit = 
     await client.query<SyncRunView & { rowsWritten: number | string }>(
       `SELECT id::text AS id, started_at::text AS "startedAt", finished_at::text AS "finishedAt", status,
               rows_written AS "rowsWritten", tables_written AS "tablesWritten", error
-         FROM workbook_sync_runs
+         FROM workbook_sync_runs r
         WHERE org_id = $1::uuid
+          -- Excel runs only once 0682 adds the target column (Google Sheets runs share this table);
+          -- read through to_jsonb so the query works before and after that migration.
+          AND COALESCE(to_jsonb(r) ->> 'target', 'excel') = 'excel'
         ORDER BY started_at DESC
         LIMIT $2::int`,
       [orgId, Math.min(Math.max(1, limit), 20)],

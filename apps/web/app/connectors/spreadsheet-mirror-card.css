@@ -1,0 +1,112 @@
+/* Spreadsheet copies card. Reuses the connector-card chrome from connectors.css. */
+
+.mirror-card .mirror-headline {
+  margin: 4px 0 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.mirror-card .mirror-copies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.mirror-card .mirror-copy {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color var(--dur-tint) var(--ease-out), box-shadow var(--dur-move) var(--ease-out);
+}
+
+/* The copy that holds the latest data wears a quiet accent edge. */
+.mirror-card .mirror-copy[data-health="in_sync"] {
+  border-color: color-mix(in srgb, var(--positive, #16a34a) 35%, var(--line));
+}
+.mirror-card .mirror-copy[data-health="attention"] {
+  border-color: color-mix(in srgb, var(--critical, #dc2626) 40%, var(--line));
+}
+
+.mirror-card .mirror-copy header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mirror-card .mirror-copy dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.mirror-card .mirror-copy dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.mirror-card .mirror-copy dt {
+  color: var(--muted);
+}
+.mirror-card .mirror-copy dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.mirror-card .mirror-copy-note,
+.mirror-card .mirror-setup {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.mirror-card .mirror-setup code {
+  margin-right: 6px;
+  overflow-wrap: anywhere;
+}
+.mirror-card .mirror-setup ol {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.mirror-card .mirror-setup summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.mirror-card .mirror-copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mirror-card .mirror-copy-actions:empty {
+  display: none;
+}
+
+.mirror-card .mirror-import {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  animation: page-arrive var(--dur-move) var(--ease-settle) backwards;
+}
+.mirror-card .mirror-import-head {
+  margin: 0;
+}
+.mirror-card .mirror-conflicts {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
