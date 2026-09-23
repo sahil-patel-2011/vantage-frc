@@ -85,7 +85,23 @@ export async function openGoogleCopy(
       await recordGoogleError(client, input.orgId, error);
       return { status: "encryption_unavailable", error };
     }
-    return new AppsScriptTarget(new AppsScriptBridge(bridgeUrl, shared));
+    const bridge = new AppsScriptBridge(bridgeUrl, shared);
+    // Keep the card's name and link current when the owner renames the spreadsheet in
+    // Google (File → Rename). A failed ping is not fatal: the write reports the real error.
+    try {
+      const ping = await bridge.ping();
+      const name = ping.name?.slice(0, 200);
+      if (name && name !== secret.spreadsheetName && secret.spreadsheetId) {
+        await storeSpreadsheetLocation(client, input.orgId, {
+          spreadsheetId: secret.spreadsheetId,
+          url: ping.url && /^https:\/\/docs\.google\.com\/spreadsheets\//.test(ping.url) ? ping.url : "",
+          name,
+        });
+      }
+    } catch {
+      // fall through to the write
+    }
+    return new AppsScriptTarget(bridge);
   }
   if (!input.config) {
     return { status: "google_unavailable", error: "Google Sheets sign-in is not set up on this server. Connect through Apps Script instead." };

@@ -23,6 +23,7 @@ import {
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { commandCatalog, searchCommands } from "../lib/nav/command-search";
 import { settingsRoleTier } from "../lib/nav/settings-nav";
+import { softNavigationTarget } from "../lib/nav/soft-navigation";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { fetchProductSession } from "../lib/nav/product-session";
 import { Icon, type IconName } from "./icon";
@@ -92,6 +93,8 @@ export default function AppShell() {
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
   const focusSearchOnOpen = useRef(false);
+  /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
+  const [locationTick, setLocationTick] = useState(0);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -108,12 +111,51 @@ export default function AppShell() {
     setWorkspaceOpen(false);
   }, []);
 
+  // Plain in-app links navigate without reloading the app (lib/nav/soft-navigation.ts).
+  // On document, bubble phase: runs after React's handlers, so next/link clicks it
+  // already handled arrive with defaultPrevented and are skipped.
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      const path = softNavigationTarget(
+        event,
+        {
+          href: anchor.getAttribute("href") ?? "",
+          target: anchor.getAttribute("target") ?? "",
+          hasDownload: anchor.hasAttribute("download"),
+          rel: anchor.getAttribute("rel") ?? "",
+          fullReload: Boolean(anchor.closest("[data-full-reload]")),
+        },
+        new URL(window.location.href),
+      );
+      if (!path) return;
+      event.preventDefault();
+      const before = window.location.href;
+      router.push(path);
+      // The router updates the address asynchronously; follow it for up to ~3s.
+      let tries = 0;
+      const follow = () => {
+        if (window.location.href !== before) setLocationTick((tick) => tick + 1);
+        else if (++tries < 60) window.setTimeout(follow, 50);
+      };
+      window.setTimeout(follow, 0);
+    };
+    const onPop = () => setLocationTick((tick) => tick + 1);
+    document.addEventListener("click", onClick);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      document.removeEventListener("click", onClick);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, [router]);
+
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
     document.body.classList.add("has-app-shell");
     return () => document.body.classList.remove("has-app-shell");
-  }, [pathname]);
+  }, [pathname, locationTick]);
 
   useEffect(() => {
     document.body.classList.toggle(
@@ -129,7 +171,7 @@ export default function AppShell() {
 
   useEffect(() => {
     setPathSearch(window.location.search);
-  }, [pathname]);
+  }, [pathname, locationTick]);
 
   useEffect(() => {
     setNavOpen(false);
