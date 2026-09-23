@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { compoundReduction, describeStages, outputRpm, type Stage } from "../../lib/gearbox";
+import { canDeleteGearbox, compoundReduction, describeStages, outputRpm, type Stage } from "../../lib/gearbox";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildGearboxCall } from "../../lib/learning/surfaces";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
@@ -21,11 +21,12 @@ type Gearbox = {
   byName: string | null;
   reduction: number;
   outputRpm: number | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; gearboxes: Gearbox[] };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; gearboxes: Gearbox[] };
 
 type StageDraft = { driving: string; driven: string };
 const EMPTY = { name: "", subsystem: "", motorFreeRpm: "", notes: "" };
@@ -423,12 +424,30 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
                     {describeStages(g.stages)}{g.subsystem ? ` · ${g.subsystem}` : ""}{g.notes ? ` · ${g.notes}` : ""}
                   </small>
                 </div>
-                {view.context.role !== "viewer" ? (
+                {view.context.role !== "viewer" || canDeleteGearbox({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: g.createdBy,
+                }) ? (
                   <span style={{ display: "flex", gap: 8 }}>
-                    <Button type="button" size="sm" onClick={() => editGearbox(g)}>Edit</Button>
-                    <Button type="button" size="sm" variant="danger" onClick={() => void post({ action: "delete_gearbox", id: g.id }, "Gearbox removed.")}>
-                      Delete
-                    </Button>
+                    {view.context.role !== "viewer" ? (
+                      <Button type="button" size="sm" aria-label={`Edit gearbox ${g.name}`} onClick={() => editGearbox(g)}>Edit</Button>
+                    ) : null}
+                    {canDeleteGearbox({
+                      role: view.context.role,
+                      userId: view.context.userId,
+                      authorId: g.createdBy,
+                    }) ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        aria-label={`Delete gearbox ${g.name}`}
+                        onClick={() => void post({ action: "delete_gearbox", id: g.id }, "Gearbox removed.")}
+                      >
+                        Delete
+                      </Button>
+                    ) : null}
                   </span>
                 ) : null}
               </li>

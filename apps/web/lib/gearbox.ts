@@ -7,6 +7,19 @@
 
 export type Stage = { driving: number; driven: number };
 
+/** Delete matches gearboxes RLS: the author, or an owner or admin. */
+export function canDeleteGearbox(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export function validateStages(raw: unknown): { ok: true; value: Stage[] } | { ok: false; error: string } {
   if (!Array.isArray(raw) || raw.length === 0) return { ok: false, error: "Add at least one gear stage" };
   if (raw.length > 8) return { ok: false, error: "A gearbox can have at most 8 stages" };

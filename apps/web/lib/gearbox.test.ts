@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { compoundReduction, describeStages, outputRpm, parseGearboxAction, torqueMultiplier, validateGearbox, validateStages } from "./gearbox";
+import { canDeleteGearbox, compoundReduction, describeStages, outputRpm, parseGearboxAction, torqueMultiplier, validateGearbox, validateStages } from "./gearbox";
+
+describe("canDeleteGearbox", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteGearbox({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteGearbox({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteGearbox({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteGearbox({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("validateStages", () => {
   it("requires at least one stage", () => {
