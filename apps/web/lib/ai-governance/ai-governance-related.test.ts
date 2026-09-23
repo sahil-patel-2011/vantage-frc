@@ -119,6 +119,9 @@ describe("aiGovernanceNextActions", () => {
     const actions = aiGovernanceNextActions({ shell: "empty" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.detail).toMatch(/Choose your team/);
+    expect(actions[0]?.detail).not.toMatch(/pick a team first/i);
+    expect(actions[0]?.detail).not.toMatch(/per org/i);
   });
 
   it("points empty at configure + Chat/Budgets/Memory", () => {

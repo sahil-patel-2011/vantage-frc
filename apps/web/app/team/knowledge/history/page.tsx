@@ -17,7 +17,7 @@ export default async function TeamKnowledgeHistoryPage({
         <PageHeader
           breadcrumbs="Knowledge / History"
           title="Knowledge history"
-          description="Revisions belong to one team’s knowledge base — pick the team first."
+          description="Revisions belong to one team’s knowledge base. Choose your team to open them."
         />
         <EmptyState
           soft

@@ -158,7 +158,7 @@ export function aiChatNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Chat channels and memory are saved per team. Choose your team first.",
+        detail: "Chat channels and memory are saved per team. Choose your team to open them.",
         href: "/workspace",
         primary: true,
       },

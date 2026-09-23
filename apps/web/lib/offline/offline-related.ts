@@ -146,7 +146,7 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Readiness is per team. Choose your team first. Device counts stay at zero until then.",
+          "Readiness is per team. Choose your team. Device counts stay at zero until then.",
       };
     case "empty":
       return {
@@ -210,7 +210,7 @@ export function offlineShellNextActions(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Readiness and sync logs are saved per team — choose your team first.",
+        detail: "Readiness and sync logs are saved per team. Choose your team to open them.",
         href: "/workspace",
         primary: true,
       },

@@ -105,6 +105,8 @@ describe("offlineShellNextActions", () => {
   it("asks for a team when org is missing", () => {
     const actions = offlineShellNextActions({ shell: "empty" });
     expect(actions[0]?.id).toBe("workspace");
+    expect(actions[0]?.detail).toMatch(/Choose your team/);
+    expect(actions[0]?.detail).not.toMatch(/choose your team first/i);
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
   });
 

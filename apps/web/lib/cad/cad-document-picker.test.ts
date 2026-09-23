@@ -69,7 +69,7 @@ describe("bindOnshapeDocumentUrl", () => {
     vi.stubGlobal("fetch", fetchSpy);
     await expect(bindOnshapeDocumentUrl({ orgId: "", url: LIVE_URL })).resolves.toEqual({
       ok: false,
-      error: "Choose your team first.",
+      error: "Choose your team.",
     });
     expect(fetchSpy).not.toHaveBeenCalled();
   });

@@ -86,7 +86,7 @@ export async function bindOnshapeDocumentUrl(input: {
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const orgId = String(input.orgId ?? "").trim();
   const url = String(input.url ?? "").trim();
-  if (!orgId) return { ok: false, error: "Choose your team first." };
+  if (!orgId) return { ok: false, error: "Choose your team." };
   if (!url) return { ok: false, error: "Paste an Onshape document link to continue." };
   try {
     const response = await fetch("/api/cad/agent", {

@@ -235,7 +235,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Playbook",
         body: [
           "Playbook is the team wiki with page history. The Season roadmap, Bring your season importer, and the Team Library are pinned at its front.",
-          "Everything belongs to this team: pick a team first, and empty stays empty until someone writes real rows.",
+          "Playbook pages belong to one team. Choose your team, then write the pages.",
         ],
       },
     ],
@@ -1228,7 +1228,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open the Media pillar from the Vantage island, drawer, or Cmd+K — search “Media”.",
           "You can also pin Media as one of your four island apps.",
-          "Choose your team first — Media belongs to this team like the other tools.",
+          "Choose your team. Media belongs to this team like the other tools.",
         ],
       },
       {

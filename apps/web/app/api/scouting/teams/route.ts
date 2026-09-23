@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const orgId = url.searchParams.get("orgId");
-    if (!orgId) return noStore({ status: "setup_required", message: "Choose your team first." }, 200);
+    if (!orgId) return noStore({ status: "setup_required", message: "Choose your team." }, 200);
 
     const view = await withRls({ userId: session.user.id, orgId }, async (client) =>
       loadTeamProfiles(client, {

@@ -134,7 +134,7 @@ export default function AwardsClient() {
         <PageHeader
           breadcrumbs="Business / Awards"
           title="Awards"
-          description="Award submissions and essay prompts belong to one team — choose your team first."
+          description="Award submissions and essay prompts belong to one team. Choose your team to open them."
         >
           <BusinessRelated
             orgId={null}

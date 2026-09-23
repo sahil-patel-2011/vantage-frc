@@ -330,7 +330,7 @@ export default function ConnectorsClient() {
 
               <div className="connector-actions">
                 {connector.canConnect && connectorConnectEndpoint(connector.id) ? (
-                  <Button variant="primary" type="button" disabled={busy || !orgId || managedByOthers} title={ !orgId ? "Choose your team first — this link is saved per team." : managedByOthers ? "Only an owner or admin can change this team's link." : undefined } onClick={() => void connect(connector, orgId)}>
+                  <Button variant="primary" type="button" disabled={busy || !orgId || managedByOthers} title={!orgId ? "Choose your team. This link is saved per team." : managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void connect(connector, orgId)}>
                     {connector.state === "token_expired" ? "Reconnect" : "Connect"}
                   </Button>
                 ) : null}
