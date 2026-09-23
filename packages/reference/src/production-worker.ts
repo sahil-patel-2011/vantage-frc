@@ -66,6 +66,13 @@ export function createProductionReferenceJobs(config: { preferOrgIds?: string[] 
 
   return {
     /**
+     * Cross-instance single flight for page-triggered refreshes (see
+     * AdminGlobalReferenceStore.claimRefresh): true means this caller should fetch.
+     */
+    claimOnDemandRefresh(resource: string, windowMs: number): Promise<boolean> {
+      return globalReferenceAdminStore.claimRefresh(resource, windowMs);
+    },
+    /**
      * One team's public dossier (TBA + Statbotics), through the same
      * coordinated, credential-rotating TBA path as the season sync — never a
      * bare fetch. Bounded to a handful of calls; see team-dossier.ts.

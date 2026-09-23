@@ -1,7 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withRls } from "@vantage/db";
 import { eventReferenceIsFresh, isTbaEventKey } from "@vantage/reference";
-import { runTbaEventDaySync } from "./run-ingest";
+import { after } from "next/server";
+import { runOnDemandEventRefresh } from "./run-ingest";
 
 const inflight = new Map<string, Promise<void>>();
 
@@ -63,24 +64,48 @@ export async function hydrateOrgActiveEvent(input: {
       orgId: row.orgId,
       eventKey: row.eventKey,
       needsFetch: !eventReferenceIsFresh(freshness),
+      hasCachedMatches: freshness.matchCount > 0,
     };
   });
 
-  if (!peek.needsFetch || !peek.eventKey || !peek.orgId) {
+  const plan = refreshPlan(peek);
+  if (plan === "none" || !peek.eventKey || !peek.orgId) {
     return { orgId: peek.orgId, eventKey: peek.eventKey, fetched: false };
   }
 
-  await syncEventOnce(peek.eventKey, peek.orgId);
-  return { orgId: peek.orgId, eventKey: peek.eventKey, fetched: true };
+  const eventKey = peek.eventKey;
+  const orgId = peek.orgId;
+  if (plan === "background") {
+    // The page already has this event's matches, just not the last two minutes of them:
+    // answer now from the cache and refresh after the response, so nobody waits on TBA.
+    try {
+      after(() => refreshEventOnce(eventKey, orgId));
+      return { orgId, eventKey, fetched: false };
+    } catch {
+      // Outside a request (a script or test): fall through and refresh inline.
+    }
+  }
+  await refreshEventOnce(eventKey, orgId);
+  return { orgId, eventKey, fetched: true };
 }
 
-async function syncEventOnce(eventKey: string, orgId: string): Promise<void> {
+/**
+ * none: the cache is fresh. background: stale but present — serve it, refresh afterwards.
+ * blocking: nothing cached yet, so the page has nothing to show until the refresh lands.
+ */
+export function refreshPlan(input: { needsFetch: boolean; hasCachedMatches?: boolean }): "none" | "background" | "blocking" {
+  if (!input.needsFetch) return "none";
+  return input.hasCachedMatches ? "background" : "blocking";
+}
+
+/** One refresh per event per instance at a time; runOnDemandEventRefresh adds the cross-instance claim. */
+async function refreshEventOnce(eventKey: string, orgId: string): Promise<void> {
   const existing = inflight.get(eventKey);
   if (existing) {
     await existing;
     return;
   }
-  const pending = runTbaEventDaySync({ eventKeys: [eventKey] }, { preferOrgIds: [orgId] })
+  const pending = runOnDemandEventRefresh(eventKey, { preferOrgIds: [orgId] })
     .then(() => undefined)
     .catch(() => undefined)
     .finally(() => {

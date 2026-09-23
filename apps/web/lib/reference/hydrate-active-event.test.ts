@@ -54,3 +54,20 @@ describe("event reference freshness", () => {
     expect(isTbaEventKey("not-an-event")).toBe(false);
   });
 });
+
+describe("refreshPlan", () => {
+  it("does nothing when the cache is fresh", async () => {
+    const { refreshPlan } = await import("./hydrate-active-event");
+    expect(refreshPlan({ needsFetch: false, hasCachedMatches: true })).toBe("none");
+  });
+
+  it("serves stale matches at once and refreshes after the response", async () => {
+    const { refreshPlan } = await import("./hydrate-active-event");
+    expect(refreshPlan({ needsFetch: true, hasCachedMatches: true })).toBe("background");
+  });
+
+  it("waits for the first load of an event nobody has fetched yet", async () => {
+    const { refreshPlan } = await import("./hydrate-active-event");
+    expect(refreshPlan({ needsFetch: true, hasCachedMatches: false })).toBe("blocking");
+  });
+});

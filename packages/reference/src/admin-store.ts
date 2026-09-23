@@ -64,6 +64,27 @@ export class AdminGlobalReferenceStore implements GlobalReferenceStore {
       });
   }
 
+  /**
+   * Cross-instance single flight for on-demand refreshes. Atomically takes a claim on
+   * `resource` unless someone took it within `windowMs`; true means "you fetch". Every
+   * serverless instance sees the same row, so a busy event's page views cost one upstream
+   * refresh per window instead of one per instance — and a refresh that failed still holds
+   * the window, so a TBA outage is not retried on every page view.
+   */
+  async claimRefresh(resource: string, windowMs: number, now = new Date()): Promise<boolean> {
+    const cutoff = new Date(now.getTime() - windowMs);
+    const rows = await dbAdmin
+      .insert(syncCursors)
+      .values({ source: "vantage", resource, syncedAt: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [syncCursors.source, syncCursors.resource],
+        set: { syncedAt: now, updatedAt: now },
+        setWhere: sql`${syncCursors.syncedAt} IS NULL OR ${syncCursors.syncedAt} < ${cutoff}`,
+      })
+      .returning({ resource: syncCursors.resource });
+    return rows.length > 0;
+  }
+
   async listEventKeys(year: number): Promise<string[]> {
     const rows = await dbAdmin
       .select({ eventKey: eventsRef.eventKey })

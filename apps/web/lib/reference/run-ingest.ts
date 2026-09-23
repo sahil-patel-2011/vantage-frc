@@ -30,6 +30,32 @@ export async function runTbaEventDaySync(
   });
 }
 
+/** A page-triggered refresh of one event runs at most once per window, across every instance. */
+export const ON_DEMAND_REFRESH_WINDOW_MS = 60_000;
+
+/**
+ * Refresh one event because someone opened a page that needs it. Claims the event first
+ * (sync_cursors, shared by every serverless instance), so twenty people at one event cost
+ * one TBA refresh a minute rather than one per instance — and a refresh that failed still
+ * holds the claim, so a TBA outage is not retried on every page view.
+ */
+export async function runOnDemandEventRefresh(
+  eventKey: string,
+  options: ReferenceIngestOptions & { windowMs?: number } = {},
+): Promise<"refreshed" | "skipped"> {
+  const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
+  const jobs = createProductionReferenceJobs(options);
+  const windowMs = options.windowMs ?? readWindowMs();
+  if (!(await jobs.claimOnDemandRefresh(`on-demand:${eventKey}`, windowMs))) return "skipped";
+  await jobs.syncEventDay.run({ year: currentFrcSeasonYear(), eventKeys: [eventKey] });
+  return "refreshed";
+}
+
+function readWindowMs(): number {
+  const raw = Number(process.env.REFERENCE_ON_DEMAND_WINDOW_MS);
+  return Number.isFinite(raw) && raw >= 5_000 ? raw : ON_DEMAND_REFRESH_WINDOW_MS;
+}
+
 export async function runNexusEventSync(eventKeys: string[]) {
   const { syncNexusEvents } = await import("@vantage/reference/nexus-ingest");
   return syncNexusEvents(eventKeys);
