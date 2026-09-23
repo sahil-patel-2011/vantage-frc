@@ -136,7 +136,11 @@ test("Best fit ranks on more than points, and is the order that opens", async ({
   let checked = 0;
   for (const row of await page.locator(".stp-row").all()) {
     const text = await row.innerText();
-    if (!/Dead \d+%/.test(text)) continue;
+    // "Keeps dying" means a real share of matches, like the third this comment describes.
+    // One dead match in thirteen is shown too ("Dead 8%"), and a robot like that with a
+    // strong climb rightly ranks above where raw points put it.
+    const dead = Number(/Dead (\d+)%/.exec(text)?.[1] ?? "0");
+    if (dead < 25) continue;
     const team = (await row.locator(".stp-team").innerText()).trim();
     checked += 1;
     expect(
