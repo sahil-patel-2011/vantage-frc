@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { MarketingDesktopWebLink, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { DESKTOP_RELEASE_MISSING, loadPublishedDesktopRelease } from "../../lib/desktop/release";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 
@@ -56,9 +56,7 @@ export default async function DesktopPage() {
                 Download for Windows
               </a>
             ) : null}
-            <a className={`button ${windowsUrl ? "secondary" : "primary"}`} href="/signin">
-              Sign in on the web
-            </a>
+            <MarketingDesktopWebLink primary={!windowsUrl} />
           </div>
         </header>
 
@@ -70,8 +68,8 @@ export default async function DesktopPage() {
                 {windowsUrl && version
                   ? `Windows ${version} is ready to download. Windows may warn that the publisher is unknown — that is expected. `
                   : missing
-                    ? "No Windows build is published yet. Sign in on the web until one is. "
-                    : "The Windows download could not be checked just now. Sign in on the web and open this page again. "}
+                    ? "No Windows build is published yet. Use the website until one is. "
+                    : "The Windows download could not be checked just now. Use the website and open this page again. "}
                 Mentors who build from the repo can follow{" "}
                 <a href="https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/DESKTOP.md">the desktop notes</a>.
                 Signing a release is optional and not required to run.

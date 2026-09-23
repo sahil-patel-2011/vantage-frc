@@ -66,6 +66,7 @@ describe("marketing chrome", () => {
     expect(pricing).not.toMatch(/Request access/);
     expect(forTeams).not.toMatch(/\bSame org\b/);
     expect(forTeams).not.toMatch(/Start free/);
-    expect(forTeams).toMatch(/Already invited\? Sign in/);
+    expect(forTeams).toMatch(/MarketingRouteActions/);
+    expect(src("components/marketing/site-header.tsx")).toMatch(/Already invited\? Sign in/);
   });
 });

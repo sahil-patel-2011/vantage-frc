@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
@@ -29,14 +29,9 @@ export default function CodeFeaturePage() {
             Build hub Code Coach—local pattern review plus metered AI Bugbot. Human-approved diffs only. Never
             auto-deploys to a robot.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="button secondary" href="/features">
-              Product overview
-            </a>
-          </div>
+          <MarketingRouteActions
+            companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
+          />
         </header>
 
         <section className="lux-pillars" aria-labelledby="code-capabilities-title">
@@ -68,14 +63,11 @@ export default function CodeFeaturePage() {
               <a href="/pricing">What it costs</a>
             </p>
           </div>
-          <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join waitlist
-            </a>
-            <a className="button secondary" href="/pricing">
-              Pricing
-            </a>
-          </div>
+          <MarketingRouteActions
+            className="pricing-preview-actions"
+            guestLabel="Join waitlist"
+            companion={{ href: "/pricing", label: "Pricing", variant: "secondary" }}
+          />
         </section>
       </main>
       <SiteFooter />

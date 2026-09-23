@@ -4,7 +4,7 @@ import {
   hostedApiSavingsCopy,
 } from "@vantage/billing/catalog";
 import { WaitlistForm } from "../../components/marketing/waitlist-form";
-import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { MarketingInvitedNote, MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { PricingCatalog } from "./pricing-catalog";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 
@@ -36,14 +36,7 @@ export default function PricingPage() {
             <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a> if you want to talk it through
             first.
           </p>
-          <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
-            </a>
-            <a className="text-link" href="#credits">
-              How AI credits work
-            </a>
-          </div>
+          <MarketingRouteActions companion={{ href: "#credits", label: "How AI credits work" }} />
         </section>
 
         <PricingCatalog />
@@ -72,11 +65,7 @@ export default function PricingPage() {
         <section className="lux-waitlist pricing-waitlist" id="waitlist">
           <div>
             <h2>Join the waitlist.</h2>
-            <p>
-              Invite-only. We email when your team is set up. Already invited? <a href="/signin">Sign in</a>
-              {" · "}
-              Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
-            </p>
+            <MarketingInvitedNote lead="Invite-only. We email when your team is set up." className="" />
           </div>
           <WaitlistForm idPrefix="pricing" />
         </section>

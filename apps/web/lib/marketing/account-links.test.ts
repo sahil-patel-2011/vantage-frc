@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  marketingDesktopWebLink,
   marketingFooterAccountLink,
   marketingHeaderLinks,
   marketingHeroLinks,
+  marketingRoutePrimary,
 } from "./account-links";
 
 describe("marketing account links", () => {
@@ -27,6 +29,26 @@ describe("marketing account links", () => {
     expect(marketingFooterAccountLink(true)).toEqual({
       href: "/dashboard",
       label: "Open your team",
+    });
+    expect(marketingRoutePrimary(true)).toEqual({
+      href: "/dashboard",
+      label: "Open your team",
+      primary: true,
+    });
+    expect(marketingDesktopWebLink(true).href).toBe("/dashboard");
+  });
+
+  it("keeps route and desktop guests on the waitlist and sign-in", () => {
+    expect(marketingRoutePrimary(false)).toEqual({
+      href: "/#waitlist",
+      label: "Join the waitlist",
+      primary: true,
+    });
+    expect(marketingRoutePrimary(false, { label: "Join waitlist" }).label).toBe("Join waitlist");
+    expect(marketingDesktopWebLink(false)).toEqual({
+      href: "/signin",
+      label: "Sign in on the web",
+      primary: true,
     });
   });
 });

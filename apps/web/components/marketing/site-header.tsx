@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import {
+  marketingDesktopWebLink,
   marketingFooterAccountLink,
   marketingHeaderLinks,
   marketingHeroLinks,
+  marketingRoutePrimary,
 } from "../../lib/marketing/account-links";
 import "./marketing-styles";
 
@@ -52,10 +54,17 @@ export function MarketingAccountTextLink() {
   return <a href={link.href}>{link.label}</a>;
 }
 
-export function MarketingInvitedNote() {
+export function MarketingInvitedNote({
+  lead,
+  className = "lux-hero-note",
+}: {
+  lead?: string;
+  className?: string;
+}) {
   const signedIn = useSignedIn();
   return (
-    <p className="lux-hero-note">
+    <p className={className || undefined}>
+      {lead ? <>{lead} </> : null}
       {signedIn ? (
         <a href="/dashboard">Open your team</a>
       ) : (
@@ -66,6 +75,53 @@ export function MarketingInvitedNote() {
       {" · "}
       Questions? <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
     </p>
+  );
+}
+
+export function MarketingRouteActions({
+  className = "actions",
+  guestLabel = "Join the waitlist",
+  guestHref = "/#waitlist",
+  signIn = false,
+  companion,
+}: {
+  className?: string;
+  guestLabel?: string;
+  guestHref?: string;
+  /** Guest-only text link. Hidden once a session exists. */
+  signIn?: boolean;
+  companion?: { href: string; label: string; variant?: "text" | "secondary" };
+}) {
+  const signedIn = useSignedIn();
+  const primary = marketingRoutePrimary(signedIn, { href: guestHref, label: guestLabel });
+  return (
+    <div className={className}>
+      <a className="button primary" href={primary.href}>
+        {primary.label}
+      </a>
+      {signIn && !signedIn ? (
+        <a className="text-link" href="/signin">
+          Already invited? Sign in
+        </a>
+      ) : null}
+      {companion ? (
+        <a
+          className={companion.variant === "secondary" ? "button secondary" : "text-link"}
+          href={companion.href}
+        >
+          {companion.label}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+export function MarketingDesktopWebLink({ primary }: { primary: boolean }) {
+  const web = marketingDesktopWebLink(useSignedIn());
+  return (
+    <a className={`button ${primary ? "primary" : "secondary"}`} href={web.href}>
+      {web.label}
+    </a>
   );
 }
 
