@@ -8,6 +8,7 @@ import { buildPowerBudgetCall } from "../../lib/learning/surfaces";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { canDeletePowerLoad } from "../../lib/power-budget";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Load = {
@@ -20,13 +21,14 @@ type Load = {
   breakerAmps: number | null;
   notes: string;
   byName: string | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       seasonYear: number;
       loads: Load[];
       summary: {
@@ -499,11 +501,16 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
                     {l.notes ? ` · ${l.notes}` : ""}
                   </small>
                 </div>
-                {view.context.role !== "viewer" ? (
+                {canDeletePowerLoad({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: l.createdBy,
+                }) ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="danger"
+                    aria-label={`Delete load ${l.name}`}
                     onClick={() => void post({ action: "delete_load", id: l.id }, "Load removed.")}
                   >
                     Delete

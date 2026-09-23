@@ -8,6 +8,19 @@ export const MAIN_BREAKER_AMPS = 120;
 // well under the main breaker to leave headroom for peaks and avoid brownouts.
 export const SUSTAINED_DRAW_CEILING_AMPS = 100;
 
+/** Delete matches power_loads RLS: the author, or an owner or admin. */
+export function canDeletePowerLoad(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export type LoadInput = {
   name: string;
   subsystem: string;

@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parsePowerAction, summarizePower } from "../../../lib/power-budget";
+import { canDeletePowerLoad, parsePowerAction, summarizePower } from "../../../lib/power-budget";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -29,6 +29,7 @@ function fail(error: unknown) {
 type LoadRow = {
   id: string; name: string; subsystem: string; motorCount: number | null;
   typicalAmps: number | null; peakAmps: number | null; breakerAmps: number | null; notes: string; byName: string | null;
+  createdBy: string | null;
 };
 
 export async function GET(request: Request) {
@@ -52,7 +53,8 @@ export async function GET(request: Request) {
 
       const loads = await client.query<LoadRow>(
         `SELECT l.id, l.name, l.subsystem, l.motor_count AS "motorCount", l.typical_amps::float8 AS "typicalAmps",
-                l.peak_amps::float8 AS "peakAmps", l.breaker_amps::float8 AS "breakerAmps", l.notes, u.name AS "byName"
+                l.peak_amps::float8 AS "peakAmps", l.breaker_amps::float8 AS "breakerAmps", l.notes, u.name AS "byName",
+                l.created_by AS "createdBy"
          FROM power_loads l LEFT JOIN users u ON u.id = l.created_by
          WHERE l.org_id = $1 AND l.season_year = $2 ORDER BY l.subsystem, l.name`,
         [row.orgId, seasonYear],
@@ -60,7 +62,7 @@ export async function GET(request: Request) {
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         loads: loads.rows,
         summary: summarizePower(
@@ -93,6 +95,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_load") {
+        const found = await client.query<{ createdBy: string; role: string }>(
+          `SELECT l.created_by AS "createdBy", m.role
+           FROM power_loads l
+           JOIN memberships m ON m.org_id = l.org_id AND m.user_id = $3
+           WHERE l.id = $1 AND l.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Load not found");
+        if (!canDeletePowerLoad({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+          throw new HttpError(403, "You cannot delete this load");
+        }
         const deleted = await client.query(`DELETE FROM power_loads WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this load");
         return { ok: true };
