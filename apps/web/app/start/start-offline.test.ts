@@ -16,6 +16,8 @@ describe("Your path last snapshot stays on the phone", () => {
     expect(src).toMatch(/join the waitlist/i);
     expect(src).toContain('href="/workspace"');
     expect(src).toContain('title="Choose your team"');
+    expect(src).toMatch(/fetchActiveOrgId/);
+    expect(src).toMatch(/persistOrgIdInUrl/);
   });
 
   it("tells a person with no team to join the waitlist", () => {

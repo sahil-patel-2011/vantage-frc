@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { RoleOnboardingView, StartTrackView } from "../../lib/role-onboarding";
@@ -69,7 +69,10 @@ function StartRelated({ orgId }: { orgId: string | null }) {
   );
 }
 
-export default function StartClient({ orgId }: { orgId: string | null }) {
+export default function StartClient({ orgId: orgIdProp }: { orgId: string | null }) {
+  const [resolvedOrgId, setResolvedOrgId] = useState<string | null>(orgIdProp?.trim() || null);
+  const [orgReady, setOrgReady] = useState(Boolean(orgIdProp?.trim()));
+  const orgId = resolvedOrgId;
   const [view, setView] = useState<RoleOnboardingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -142,8 +145,29 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
   }, [orgId]);
 
   useEffect(() => {
+    const fromProp = orgIdProp?.trim() || null;
+    if (fromProp) {
+      setResolvedOrgId(fromProp);
+      setOrgReady(true);
+      return;
+    }
+    let cancelled = false;
+    setOrgReady(false);
+    void fetchActiveOrgId().then((fromMe) => {
+      if (cancelled) return;
+      setResolvedOrgId(fromMe);
+      if (fromMe) persistOrgIdInUrl(fromMe);
+      setOrgReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgIdProp]);
+
+  useEffect(() => {
+    if (!orgReady) return;
     void load();
-  }, [load]);
+  }, [load, orgReady]);
 
   async function mutate(body: Record<string, unknown>) {
     if (!orgId) return;
