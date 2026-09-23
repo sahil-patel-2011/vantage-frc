@@ -115,6 +115,7 @@ function ListDetail({
             Reset
           </button>
           ) : null}
+          {list.canManageMaster ? (
           <button
             type="button"
             className="pack-link danger"
@@ -127,6 +128,7 @@ function ListDetail({
           >
             Delete
           </button>
+          ) : null}
         </div>
       </header>
 

@@ -221,6 +221,14 @@ export async function POST(request: Request) {
         }
 
         case "delete_list": {
+          const list = await client.query<{ createdBy: string }>(
+            `SELECT created_by AS "createdBy" FROM packing_lists WHERE id = $1 AND org_id = $2`,
+            [action.id, action.orgId],
+          );
+          if (!list.rowCount) throw new HttpError(404, "List not found");
+          if (!canManagePackingMaster(role, list.rows[0]!.createdBy, userId)) {
+            throw new HttpError(403, "Only the packing lead can delete this list.");
+          }
           const deleted = await client.query(`DELETE FROM packing_lists WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,
