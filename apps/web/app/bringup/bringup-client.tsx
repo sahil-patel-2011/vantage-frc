@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import {
+  canDeleteBringupItem,
   BRINGUP_PHASES,
   BRINGUP_PHASE_LABEL,
   BRINGUP_RESULTS,
@@ -22,13 +23,14 @@ type Item = {
   result: BringupResult;
   note: string;
   sortOrder: number;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       seasonYear: number;
       items: Item[];
       progress: { total: number; done: number; failed: number; percent: number; ready: boolean };
@@ -386,11 +388,16 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
                               {RESULT_LABEL[r]}
                             </Button>
                           ))}
-                          {view.context.role !== "viewer" ? (
+                          {canDeleteBringupItem({
+                            role: view.context.role,
+                            userId: view.context.userId,
+                            authorId: item.createdBy,
+                          }) ? (
                             <Button
                               type="button"
                               size="sm"
                               variant="danger"
+                              aria-label={`Remove ${item.label}`}
                               onClick={() => void post({ action: "delete_item", id: item.id }, "Removed.")}
                             >
                               Remove

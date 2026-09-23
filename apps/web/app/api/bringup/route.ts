@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { BRINGUP_TEMPLATE, computeProgress, parseBringupAction, type BringupPhase, type BringupResult } from "../../../lib/bringup";
+import { BRINGUP_TEMPLATE, canDeleteBringupItem, computeProgress, parseBringupAction, type BringupPhase, type BringupResult } from "../../../lib/bringup";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -26,7 +26,15 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Bring-up request failed" }, { status });
 }
 
-type ItemRow = { id: string; phase: BringupPhase; label: string; result: BringupResult; note: string; sortOrder: number };
+type ItemRow = {
+  id: string;
+  phase: BringupPhase;
+  label: string;
+  result: BringupResult;
+  note: string;
+  sortOrder: number;
+  createdBy: string;
+};
 
 export async function GET(request: Request) {
   try {
@@ -48,14 +56,14 @@ export async function GET(request: Request) {
       if (!row) return { status: "setup_required" as const, message: "Choose your team to run bring-up." };
 
       const items = await client.query<ItemRow>(
-        `SELECT id, phase, label, result, note, sort_order AS "sortOrder"
+        `SELECT id, phase, label, result, note, sort_order AS "sortOrder", created_by AS "createdBy"
          FROM bringup_items WHERE org_id = $1 AND season_year = $2 ORDER BY sort_order, label`,
         [row.orgId, seasonYear],
       );
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         items: items.rows,
         progress: computeProgress(items.rows.map((i) => ({ result: i.result }))),
@@ -112,8 +120,19 @@ export async function POST(request: Request) {
           return { ok: true };
         }
         case "delete_item": {
+          const found = await client.query<{ createdBy: string; role: string }>(
+            `SELECT i.created_by AS "createdBy", m.role
+             FROM bringup_items i
+             JOIN memberships m ON m.org_id = i.org_id AND m.user_id = $3
+             WHERE i.id = $1 AND i.org_id = $2`,
+            [action.id, action.orgId, userId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Item not found");
+          if (!canDeleteBringupItem({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+            throw new HttpError(403, "You cannot delete this item");
+          }
           const deleted = await client.query(`DELETE FROM bringup_items WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
-          if (!deleted.rowCount) throw new HttpError(404, "Item not found");
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this item");
           return { ok: true };
         }
         default:

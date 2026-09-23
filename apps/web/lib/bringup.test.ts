@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { BRINGUP_TEMPLATE, computeProgress, parseBringupAction } from "./bringup";
+import { BRINGUP_TEMPLATE, canDeleteBringupItem, computeProgress, parseBringupAction } from "./bringup";
+
+describe("canDeleteBringupItem", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteBringupItem({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteBringupItem({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteBringupItem({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteBringupItem({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("BRINGUP_TEMPLATE", () => {
   it("covers all four phases", () => {
