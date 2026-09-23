@@ -27,6 +27,7 @@ import {
   attendanceDateFromStart,
   CALENDAR_FEED_SCOPES,
   defaultSeasonYear,
+  canDeleteCalendarEvent,
   eventsForMySubteams,
   filterEventsBySubteam,
   parseSubteamCalendarAction,
@@ -216,6 +217,7 @@ const BASE_EVENT_COLUMNS = `e.id, e.title, e.kind, e.starts_at::text AS "startsA
               ae.title AS "attendanceEventTitle",
               e.milestone_id AS "milestoneId",
               e.driver_session_id AS "driverSessionId",
+              e.created_by::text AS "createdBy",
               cb.name AS "createdByName"`;
 
 const EVENT_JOINS = `FROM subteam_calendar_events e
@@ -751,6 +753,7 @@ type MasterRow = {
   recurrenceEnd: string | null;
   seriesId: string | null;
   recurrenceTimezone: string | null;
+  createdBy: string;
 };
 
 async function loadMaster(
@@ -761,7 +764,8 @@ async function loadMaster(
   const result = await client.query<MasterRow>(
     `SELECT id, starts_at::text AS "startsAt", ends_at::text AS "endsAt", rrule,
             recurrence_end::text AS "recurrenceEnd", series_id AS "seriesId",
-            recurrence_timezone AS "recurrenceTimezone"
+            recurrence_timezone AS "recurrenceTimezone",
+            created_by::text AS "createdBy"
      FROM subteam_calendar_events
      WHERE id = $1::uuid AND org_id = $2::uuid
      LIMIT 1`,
@@ -1013,11 +1017,15 @@ async function handleOccurrenceWrite(
   userId: string,
   body: Record<string, unknown>,
   mode: "update" | "delete",
+  role: string,
 ): Promise<Record<string, unknown>> {
   const ref = parseOccurrenceRef(body.id);
   const scope: OccurrenceScope = parseOccurrenceScope(body.scope);
   const master = await loadMaster(client, orgId, ref.rowId);
   if (!master) throw new HttpError(404, "Event not found");
+  if (!canDeleteCalendarEvent({ role, userId, authorId: master.createdBy })) {
+    throw new HttpError(403, mode === "delete" ? "You cannot delete this event" : "You cannot edit this event");
+  }
 
   // A plain row with no rule is just an event — no scope choice applies.
   if (!master.rrule) {
@@ -1186,7 +1194,7 @@ export async function POST(request: Request) {
         throw new HttpError(400, "Organization is required");
       }
       const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
-        await membershipRole(client, orgId, session.user.id);
+        const role = await membershipRole(client, orgId, session.user.id);
         try {
           return await handleOccurrenceWrite(
             client,
@@ -1194,6 +1202,7 @@ export async function POST(request: Request) {
             session.user.id,
             body,
             rawAction === "delete_occurrence" ? "delete" : "update",
+            role,
           );
         } catch (error) {
           if (recurrenceUnavailable(error)) {
@@ -1476,6 +1485,16 @@ export async function POST(request: Request) {
         }
 
         case "update_event": {
+          const existing = await client.query<{ createdBy: string }>(
+            `SELECT created_by::text AS "createdBy"
+             FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          const author = existing.rows[0];
+          if (!author) throw new HttpError(404, "Event not found");
+          if (!canDeleteCalendarEvent({ role, userId, authorId: author.createdBy })) {
+            throw new HttpError(403, "You cannot edit this event");
+          }
           const values: unknown[] = [action.id, action.orgId];
           const sets: string[] = [];
           const push = (column: string, value: unknown) => {
@@ -1506,7 +1525,7 @@ export async function POST(request: Request) {
              RETURNING title, subteam_id AS "subteamId"`,
             values,
           );
-          if (!updated.rowCount) throw new HttpError(404, "Event not found");
+          if (!updated.rowCount) throw new HttpError(403, "You cannot edit this event");
           const row = updated.rows[0]!;
           await notifyCalendarEvent(client, {
             orgId: action.orgId,
@@ -1520,11 +1539,21 @@ export async function POST(request: Request) {
         }
 
         case "delete_event": {
-          const deleted = await client.query(
-            `DELETE FROM subteam_calendar_events WHERE id = $1 AND org_id = $2`,
+          const existing = await client.query<{ createdBy: string }>(
+            `SELECT created_by::text AS "createdBy"
+             FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
-          if (!deleted.rowCount) throw new HttpError(404, "Event not found");
+          const row = existing.rows[0];
+          if (!row) throw new HttpError(404, "Event not found");
+          if (!canDeleteCalendarEvent({ role, userId, authorId: row.createdBy })) {
+            throw new HttpError(403, "You cannot delete this event");
+          }
+          const deleted = await client.query(
+            `DELETE FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this event");
           return { ok: true };
         }
 

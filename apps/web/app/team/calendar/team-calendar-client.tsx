@@ -30,6 +30,7 @@ import {
   buildMonthCells,
   buildWeekCells,
   defaultQuickAddStartsAt,
+  canDeleteCalendarEvent,
   filterEventsBySubteam,
   formatAnchorLabel,
   groupEventsByDay,
@@ -479,7 +480,13 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         event={event}
         events={view.events}
         busy={busy}
-        canDelete={canManage && !isReadonlyCalendarEvent(event)}
+        canDelete={
+          canDeleteCalendarEvent({
+            role: view.context.role,
+            userId: view.context.userId,
+            authorId: event.createdBy,
+          }) && !isReadonlyCalendarEvent(event)
+        }
         scopePrompt={scopeEventId === event.id}
         onScopePick={(scope) => {
           setScopeEventId(null);
@@ -489,7 +496,13 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           );
         }}
         onCancelScope={() => setScopeEventId(null)}
-        canEdit={canManage && !isReadonlyCalendarEvent(event)}
+        canEdit={
+          canDeleteCalendarEvent({
+            role: view.context.role,
+            userId: view.context.userId,
+            authorId: event.createdBy,
+          }) && !isReadonlyCalendarEvent(event)
+        }
         editing={editEventId === event.id}
         onStartEdit={() => {
           setScopeEventId(null);

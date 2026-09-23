@@ -9,6 +9,7 @@ import {
   filterEventsBySubteam,
   githubItemsToIcsEvents,
   groupEventsByDay,
+  canDeleteCalendarEvent,
   isReadonlyCalendarEvent,
   layoutTimedEventsForDay,
   localDayKey,
@@ -22,6 +23,17 @@ import {
   upcomingEvents,
   type CalendarEvent,
 } from "./subteam-calendar";
+
+describe("canDeleteCalendarEvent", () => {
+  it("keeps someone else's event with the author or an owner or admin", () => {
+    expect(canDeleteCalendarEvent({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteCalendarEvent({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteCalendarEvent({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteCalendarEvent({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteCalendarEvent({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+    expect(canDeleteCalendarEvent({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const SUB_A = "22222222-2222-4222-8222-222222222222";

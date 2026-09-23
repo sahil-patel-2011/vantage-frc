@@ -80,6 +80,7 @@ export type CalendarEvent = {
   attendanceEventTitle: string | null;
   milestoneId: string | null;
   driverSessionId: string | null;
+  createdBy?: string | null;
   createdByName: string | null;
   /** Current user's RSVP, when the RSVP table is available. */
   myRsvp: RsvpResponse | null;
@@ -613,6 +614,23 @@ export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey:
 
 export function isReadonlyCalendarEvent(event: CalendarEvent): boolean {
   return event.source === "tba" || event.source === "duty" || event.source === "travel";
+}
+
+/**
+ * Edit and delete match the calendar row policy: the member who created the
+ * event, or an owner or admin. A missing author id fail-closes. Read-only
+ * overlays (matches, duties, travel) are a separate check.
+ */
+export function canDeleteCalendarEvent(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
 }
 
 /**
