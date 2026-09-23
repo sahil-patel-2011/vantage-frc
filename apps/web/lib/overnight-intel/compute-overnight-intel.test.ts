@@ -33,7 +33,7 @@ describe("computeOvernightIntelView", () => {
 
   it("returns setup_required when the org has no active event", async () => {
     const client = makeClient((sql) => {
-      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234 }] };
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234, role: "owner" }] };
       if (sql.includes("FROM org_active_context")) return { rows: [] };
       return { rows: [] };
     });
@@ -47,6 +47,17 @@ describe("computeOvernightIntelView", () => {
       expect(view.steps[0]?.href).toBe(`/team/data?orgId=${ORG}`);
       expect(view.steps.length).toBe(1);
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
+    }
+
+    const scout = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234, role: "scout" }] };
+      if (sql.includes("FROM org_active_context")) return { rows: [] };
+      return { rows: [] };
+    });
+    const scoutView = await computeOvernightIntelView(scout, { userId: USER, requestedOrg: ORG });
+    if (scoutView.status === "setup_required") {
+      expect(scoutView.steps[0]?.href).toContain("tab=scouting");
+      expect(scoutView.steps.some((step) => step.href.includes("/team/data"))).toBe(false);
     }
   });
 

@@ -13,6 +13,7 @@ import {
   type RawScoutingActivityRow,
 } from ".";
 import { overnightIntelSetupSteps, type OvernightIntelSetupStep } from "./overnight-intel-related";
+import { strategyCanSync } from "../strategy/strategy-related";
 import type { OvernightIntelBrief, OvernightIntelSignals } from "./types";
 
 export const OVERNIGHT_INTEL_FEATURE = "overnight_intel";
@@ -43,9 +44,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role AS "role"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -159,7 +160,10 @@ export async function computeOvernightIntelView(
     return {
       status: "setup_required",
       message: "Set your event so this overnight brief can run.",
-      steps: overnightIntelSetupSteps(org.orgId, { needsActiveEvent: true }),
+      steps: overnightIntelSetupSteps(org.orgId, {
+        needsActiveEvent: true,
+        canOpenTeamData: strategyCanSync(org.role),
+      }),
       orgId: org.orgId,
     };
   }

@@ -88,7 +88,7 @@ function dropRelatedStripDuplicates<T extends { href: string }>(
 /** One setup primary — Event Day / Strategy / Scouting live on the related strip. */
 export function overnightIntelSetupSteps(
   orgId?: string | null,
-  options?: { needsActiveEvent?: boolean },
+  options?: { needsActiveEvent?: boolean; canOpenTeamData?: boolean },
 ): OvernightIntelSetupStep[] {
   if (!orgId) {
     return [
@@ -101,12 +101,22 @@ export function overnightIntelSetupSteps(
     ];
   }
   if (options?.needsActiveEvent) {
+    if (options.canOpenTeamData === true) {
+      return [
+        {
+          id: "active-event",
+          label: "Set active event",
+          detail: "Set the event you are at so this brief can show what changed overnight.",
+          href: withOrgHref("/team/data", orgId),
+        },
+      ];
+    }
     return [
       {
         id: "active-event",
-        label: "Set active event",
-        detail: "Set the event you are at so this brief can show what changed overnight.",
-        href: withOrgHref("/team/data", orgId),
+        label: "Open Scouting",
+        detail: "An owner or admin sets the event. You can still scout.",
+        href: hubHref("/competition", "scouting", orgId),
       },
     ];
   }
@@ -218,6 +228,8 @@ export function overnightIntelNextActions(input: {
   briefCount?: number;
   signalCount?: number;
   needsActiveEvent?: boolean;
+  /** Owner/admin only. Omitted fails closed so a scout never gets Team Data. */
+  canOpenTeamData?: boolean;
 }): OvernightIntelNextAction[] {
   const orgId = input.orgId ?? null;
   const briefCount = input.briefCount ?? 0;
@@ -225,7 +237,10 @@ export function overnightIntelNextActions(input: {
 
   if (!orgId || input.shell === "setup") {
     return setupActionsFrom(
-      overnightIntelSetupSteps(orgId, { needsActiveEvent: input.needsActiveEvent }),
+      overnightIntelSetupSteps(orgId, {
+        needsActiveEvent: input.needsActiveEvent,
+        canOpenTeamData: input.canOpenTeamData === true,
+      }),
     );
   }
 

@@ -57,6 +57,7 @@ export function OvernightIntelShell({
   error,
   onRetry,
   needsActiveEvent,
+  canOpenTeamData = false,
   children,
 }: {
   description: string;
@@ -65,11 +66,12 @@ export function OvernightIntelShell({
   error?: string;
   onRetry?: () => void;
   needsActiveEvent?: boolean;
+  canOpenTeamData?: boolean;
   children?: ReactNode;
 }) {
   const copy = overnightIntelShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "overnight-intel", orgId);
-  const setup = shell === "setup" ? overnightIntelSetupSteps(orgId, { needsActiveEvent })[0] : null;
+  const setup = shell === "setup" ? overnightIntelSetupSteps(orgId, { needsActiveEvent, canOpenTeamData })[0] : null;
 
   return (
     <main className="module-page overnight-intel-page soft-gate">
