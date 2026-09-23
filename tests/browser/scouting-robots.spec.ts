@@ -77,6 +77,8 @@ test("sorts by pick order, average and team number", async ({ page }) => {
   test.skip(!(await openRobots(page)), "no scouting seeded on this box");
 
   const firstTeam = async () => (await page.locator(".stp-row .stp-team").first().innerText()).trim();
+  // The screen opens on Best fit, not pick order, so choose pick order first.
+  await page.getByRole("button", { name: "Pick order" }).click();
   const byPick = await firstTeam();
 
   await page.getByRole("button", { name: "Team number" }).click();
