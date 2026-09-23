@@ -6,7 +6,10 @@ const DIR = __dirname;
 
 describe("Power budget last snapshot stays on the phone", () => {
   it("reads and writes the power-budget IndexedDB feature cache and does not blank a painted board", () => {
-    const src = readFileSync(join(DIR, "power-budget-client.tsx"), "utf8");
+    const src = [
+      readFileSync(join(DIR, "power-budget-client.tsx"), "utf8"),
+      readFileSync(join(DIR, "../api/power-budget/route.ts"), "utf8"),
+    ].join("\n");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"power-budget"/);
@@ -20,5 +23,8 @@ describe("Power budget last snapshot stays on the phone", () => {
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
     expect(src).not.toMatch(/VANTAGE \/ POWER/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
   });
 });

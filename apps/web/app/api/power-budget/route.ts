@@ -49,7 +49,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to budget power." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to budget power."
+            : "Choose your team to budget power, or join the waitlist.",
+        };
+      }
 
       const loads = await client.query<LoadRow>(
         `SELECT l.id, l.name, l.subsystem, l.motor_count AS "motorCount", l.typical_amps::float8 AS "typicalAmps",
