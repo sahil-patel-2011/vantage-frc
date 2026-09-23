@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { computeFreeSpeedFps, motorFreeRpm, parseSubsystemAction, validateSubsystem } from "./subsystems";
+import { canDeleteSubsystem, computeFreeSpeedFps, motorFreeRpm, parseSubsystemAction, validateSubsystem } from "./subsystems";
+
+describe("canDeleteSubsystem", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteSubsystem({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteSubsystem({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteSubsystem({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteSubsystem({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
+
 
 describe("motorFreeRpm", () => {
   it("looks up known motors and returns null for unknown", () => {

@@ -7,6 +7,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
+  canDeleteSubsystem,
   MOTORS,
   SUBSYSTEM_CATEGORIES,
   computeFreeSpeedFps,
@@ -27,11 +28,12 @@ type Subsystem = {
   notes: string;
   byName: string | null;
   freeSpeedFps: number | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; subsystems: Subsystem[] };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; subsystems: Subsystem[] };
 
 const EMPTY = {
   name: "",
@@ -438,11 +440,16 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
                     {s.notes ? ` · ${s.notes}` : ""}
                   </small>
                 </div>
-                {view.context.role !== "viewer" ? (
+                {canDeleteSubsystem({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: s.createdBy,
+                }) ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="danger"
+                    aria-label={`Delete subsystem ${s.name}`}
                     onClick={() => void post({ action: "delete_subsystem", id: s.id }, "Subsystem removed.")}
                   >
                     Delete
