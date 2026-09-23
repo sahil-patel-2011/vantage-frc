@@ -30,13 +30,27 @@ function fieldOrder(a: ScheduleMatch, b: ScheduleMatch): number {
   return a.matchNumber - b.matchNumber;
 }
 
+/**
+ * A match with no posted score is still "upcoming" only if its time has not long passed:
+ * a match that ran ten minutes ago whose score TBA has not posted yet is over, and an
+ * abandoned one from yesterday is not the next thing to predict. Event Day uses the same
+ * clock (lib/command/load-command.ts).
+ */
+const STALE_AFTER_MS = 30 * 60_000;
+
 export function upcomingMatchPicks(
   matches: ScheduleMatch[],
   teamKey: string | null,
   limit = 6,
+  now: Date = new Date(),
 ): UpcomingPick[] {
+  const cutoff = now.getTime() - STALE_AFTER_MS;
   const unplayed = matches
     .filter((match) => (match.redScore == null || match.blueScore == null) && match.red.length > 0 && match.blue.length > 0)
+    .filter((match) => {
+      const at = match.scheduledTime ? Date.parse(match.scheduledTime) : Number.NaN;
+      return Number.isNaN(at) || at >= cutoff;
+    })
     .sort(fieldOrder);
   const chosen = unplayed.slice(0, Math.max(0, limit));
   if (teamKey && !chosen.some((match) => match.red.includes(teamKey) || match.blue.includes(teamKey))) {

@@ -50,6 +50,21 @@ describe("upcomingMatchPicks", () => {
     expect(b?.redWinPct).toBeNull();
   });
 
+  it("drops unscored matches whose time is long past, keeps ones just started or untimed", () => {
+    const now = new Date("2026-03-14T15:00:00Z");
+    const picks = upcomingMatchPicks(
+      [
+        match(1, { scheduledTime: "2026-03-14T13:00:00Z" }),
+        match(2, { scheduledTime: "2026-03-14T14:50:00Z" }),
+        match(3),
+      ],
+      null,
+      6,
+      now,
+    );
+    expect(picks.map((pick) => pick.label)).toEqual(["Q2", "Q3"]);
+  });
+
   it("skips matches whose alliances are not published yet", () => {
     expect(upcomingMatchPicks([match(1, { red: [], blue: [] })], null)).toEqual([]);
   });
