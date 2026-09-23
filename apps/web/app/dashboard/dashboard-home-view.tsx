@@ -290,7 +290,8 @@ export function DashboardHomeView(props: {
               actually specific to opening the page, so it takes the line, and
               the team name appears only when it says more than the number. */}
           <h1 className="dash-hero-greeting">
-            {knownName ? `${greeting()}, ${knownName}` : greeting()}
+            {/* The hour is the browser clock; the server renders in UTC. */}
+            {knownName ? `${mounted ? greeting() : "Welcome"}, ${knownName}` : mounted ? greeting() : "Welcome"}
           </h1>
           {board && !board.isDefault ? (
             <span className="dash-scope-pill" data-scope={scope}>

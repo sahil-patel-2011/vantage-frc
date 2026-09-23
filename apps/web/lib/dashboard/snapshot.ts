@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { dashboardNextActions } from "./dashboard-related";
 import { buildOnboardingChecklistSteps } from "../onboarding-workflow";
@@ -862,28 +863,24 @@ export async function loadDashboardSnapshot(
     let kickoffReady = false;
     let openedCadBrief = false;
 
-    try {
+    await withSavepoint(client, async () => {
       const sub = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM team_subteam_members
          WHERE org_id = $1 AND user_id = $2`,
         [input.orgId, input.userId],
       );
       joinedSubteam = Number(sub.rows[0]?.count ?? 0) > 0;
-    } catch {
-      // stays false
-    }
+    }, undefined);
 
-    try {
+    await withSavepoint(client, async () => {
       const knowledge = await client.query<{ chars: string }>(
         `SELECT COALESCE(length(btrim(content)), 0)::text AS chars FROM team_knowledge WHERE org_id = $1`,
         [input.orgId],
       );
       hasKnowledge = Number(knowledge.rows[0]?.chars ?? 0) > 100;
-    } catch {
-      // stays false
-    }
+    }, undefined);
 
-    try {
+    await withSavepoint(client, async () => {
       const logistics = await client.query<{ trips: string; hotels: string }>(
         `SELECT
            (SELECT count(*)::text FROM logistics_trips WHERE org_id = $1) AS trips,
@@ -892,11 +889,9 @@ export async function loadDashboardSnapshot(
       );
       hasLogistics =
         Number(logistics.rows[0]?.trips ?? 0) > 0 || Number(logistics.rows[0]?.hotels ?? 0) > 0;
-    } catch {
-      // stays false
-    }
+    }, undefined);
 
-    try {
+    await withSavepoint(client, async () => {
       const year = new Date().getFullYear();
       const kick = await client.query<{ actions: string; priorities: string }>(
         `SELECT
@@ -906,20 +901,16 @@ export async function loadDashboardSnapshot(
       );
       kickoffReady =
         Number(kick.rows[0]?.actions ?? 0) > 0 || Number(kick.rows[0]?.priorities ?? 0) > 0;
-    } catch {
-      // stays false
-    }
+    }, undefined);
 
-    try {
+    await withSavepoint(client, async () => {
       const cad = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM cad_jobs
-         WHERE org_id = $1 AND created_by = $2 AND kind = 'brief'`,
+         WHERE org_id = $1 AND created_by = $2`,
         [input.orgId, input.userId],
       );
       openedCadBrief = Number(cad.rows[0]?.count ?? 0) > 0;
-    } catch {
-      // cad_jobs schema may differ — treat as not done without inventing progress.
-    }
+    }, undefined);
 
     const knowsNextMatch = widgets.next_match?.status === "live";
     const steps = [
