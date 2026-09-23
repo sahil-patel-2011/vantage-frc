@@ -124,6 +124,8 @@ export class GoogleSheetsError extends Error {
     readonly status: number | null = null,
     readonly code: string | null = null,
     readonly retryAfterMs: number | null = null,
+    /** Plain words for the card when the kind's stock sentence would be wrong (the Apps Script bridge). */
+    readonly publicMessage: string | null = null,
   ) {
     super(message);
     this.name = "GoogleSheetsError";
@@ -139,6 +141,7 @@ export function describeGoogleError(error: unknown): string {
   if (!isGoogleSheetsError(error)) {
     return "The Google Sheets sync stopped unexpectedly. Try again; if it keeps failing, disconnect and reconnect Google.";
   }
+  if (error.publicMessage) return error.publicMessage;
   switch (error.kind) {
     case "auth_expired":
       return "Google sign-in expired or was revoked. An owner or admin needs to reconnect Google Sheets.";

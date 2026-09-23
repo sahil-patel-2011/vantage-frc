@@ -62,19 +62,23 @@ function fitRow(row: CellValue[], width: number): CellValue[] {
 
 type ValueRange = { range: string; values: CellValue[][] };
 
+/** A block of one table: rows `startRow`.. (1-based; row 1 is the header), `width` columns. */
+export type TableChunk = { sheet: string; startRow: number; width: number; values: CellValue[][] };
+
 /**
- * Header + rows for each table as A1 value ranges, grouped so no request carries more than
- * `maxCells` cells. A table bigger than that is split by rows across requests. Pure.
+ * Header + rows for each table, cut into blocks and grouped so no request carries more than
+ * `maxCells` cells. A table bigger than that is split by rows across requests. Pure; shared
+ * by the Sheets API target and the Apps Script bridge.
  */
-export function planValueWrites(
+export function planTableChunks(
   tables: Array<{ spec: TableSpec; rows: CellValue[][] }>,
   maxCells = MAX_CELLS_PER_WRITE,
-): ValueRange[][] {
-  const requests: ValueRange[][] = [];
-  let current: ValueRange[] = [];
+): TableChunk[][] {
+  const requests: TableChunk[][] = [];
+  let current: TableChunk[] = [];
   let cells = 0;
-  const push = (item: ValueRange) => {
-    const size = item.values.length * (item.values[0]?.length ?? 1);
+  const push = (item: TableChunk) => {
+    const size = item.values.length * item.width;
     if (current.length && cells + size > maxCells) {
       requests.push(current);
       current = [];
@@ -85,16 +89,27 @@ export function planValueWrites(
   };
   for (const { spec, rows } of tables) {
     const width = Math.max(spec.columns.length, 1);
-    const last = columnLetter(width);
     const all: CellValue[][] = [spec.columns, ...rows.map((row) => fitRow(row, width))];
     const rowsPerChunk = Math.max(1, Math.floor(maxCells / width));
     for (let start = 0; start < all.length; start += rowsPerChunk) {
-      const chunk = all.slice(start, start + rowsPerChunk);
-      push({ range: `${quoteSheet(spec.sheet)}!A${start + 1}:${last}${start + chunk.length}`, values: chunk });
+      push({ sheet: spec.sheet, startRow: start + 1, width, values: all.slice(start, start + rowsPerChunk) });
     }
   }
   if (current.length) requests.push(current);
   return requests;
+}
+
+/** The same blocks as A1 value ranges for values:batchUpdate. */
+export function planValueWrites(
+  tables: Array<{ spec: TableSpec; rows: CellValue[][] }>,
+  maxCells = MAX_CELLS_PER_WRITE,
+): ValueRange[][] {
+  return planTableChunks(tables, maxCells).map((request) =>
+    request.map((chunk) => ({
+      range: `${quoteSheet(chunk.sheet)}!A${chunk.startRow}:${columnLetter(chunk.width)}${chunk.startRow + chunk.values.length - 1}`,
+      values: chunk.values,
+    })),
+  );
 }
 
 export class GoogleSheetsTarget implements WorkbookTarget, WorkbookReader {
