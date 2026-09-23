@@ -223,7 +223,7 @@ function logisticsShellNextActionCandidates(input: {
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick the team you are on, and travel, packing and duties fill in here.",
+        detail: "Choose your team, and travel, packing and duties fill in here.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
       },

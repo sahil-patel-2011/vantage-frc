@@ -12,6 +12,12 @@
   padding: 34px;
   border-radius:var(--radius-lg);
   box-shadow: var(--shadow-pop);
+  animation: invite-flow-in var(--dur-press) var(--ease-settle) both;
+}
+
+@keyframes invite-flow-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
 }
 
 .invite-flow-header {

@@ -154,8 +154,8 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
         kind: "empty",
         eyebrow: "JOIN",
         title: "No team yet",
-        description: "Claim your FRC team number, or open an invite sent to your login email.",
-        badge: "Claim or invite",
+        description: "Open an invite from your email, or join the waitlist.",
+        badge: "Invite or waitlist",
       };
   }
 }
@@ -177,6 +177,12 @@ export function workspaceSetupSteps(_orgId?: string | null): WorkspaceSetupStep[
       label: "Open invite from email",
       detail: "Use the full link sent to your login address.",
       href: "/invite",
+    },
+    {
+      id: "waitlist",
+      label: "Join the waitlist",
+      detail: "Ask for a team if no invite is in your email.",
+      href: "/#waitlist",
     },
     {
       id: "claim",
