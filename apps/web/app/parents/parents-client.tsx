@@ -2,7 +2,7 @@
 
 // Mentor-side parent communications (owner/admin only). One-way by design:
 // contacts + weekly digest + read-only view links. No chat, no reply path.
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
@@ -14,7 +14,7 @@ import {
   Panel,
 } from "../../components/ui";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   PARENTS_RELATED_INCLUDE,
@@ -27,6 +27,22 @@ import {
   type ParentsShellKind,
 } from "../../lib/parents/parents-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./parents.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 import type {
   ParentContactView,
   ParentDigestLogView,
@@ -154,6 +170,7 @@ function NextActionsPanel({ actions }: { actions: ParentsNextAction[] }) {
 
 export default function ParentsClient() {
   const [view, setView] = useState<ParentsView | null>(null);
+  const [requestedOrg, setRequestedOrg] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -174,6 +191,7 @@ export default function ParentsClient() {
   const load = useCallback(async (previewNote?: string) => {
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(Boolean(orgHint));
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<ParentsView>("parents", orgHint || "_");
@@ -227,6 +245,9 @@ export default function ParentsClient() {
             : "",
         );
         return;
+      }
+      if ((data.status === "ready" || data.status === "restricted") && data.orgId) {
+        persistOrgIdInUrl(data.orgId);
       }
       setView(data);
       setFromCache(false);
@@ -325,6 +346,10 @@ export default function ParentsClient() {
   const copy = parentsShellCopy(shell);
   const actions = parentsNextActions({ orgId, shell, contactCount });
   const setup = shell === "setup" ? parentsSetupSteps(orgId)[0] : null;
+  const offerWaitlist =
+    view?.status === "setup_required" &&
+    !requestedOrg &&
+    view.message.toLowerCase().includes(WAITLIST_PHRASE);
   const header = (
     <PageHeader
       breadcrumbs={
@@ -334,7 +359,11 @@ export default function ParentsClient() {
         </>
       }
       title="Parent updates"
-      description={copy.description}
+      description={
+        offerWaitlist && view?.status === "setup_required"
+          ? withWaitlistLink(view.message)
+          : copy.description
+      }
     >
       <ParentsRelated orgId={orgId} />
     </PageHeader>
@@ -386,22 +415,32 @@ export default function ParentsClient() {
   switch (view.status) {
     case "setup_required":
       return (
-        <>
+        <div className={offerWaitlist ? "parents-setup-page" : undefined}>
           {header}
           <OfflineBanner feature="Parent updates" fromCache={fromCache} cachedAt={cachedAt} />
           <EmptyState
             title={copy.title}
             badge={copy.badge}
             badgeTone="setup"
-            description={view.message || copy.description}
+            description={
+              offerWaitlist ? withWaitlistLink(view.message) : view.message || copy.description
+            }
+            className={offerWaitlist ? "parents-setup" : undefined}
           >
-            {setup ? (
-              <Button as="a" variant="primary" href={setup.href}>
-                {setup.label}
-              </Button>
-            ) : null}
+            <div className={offerWaitlist ? "parents-setup-actions" : undefined}>
+              {setup ? (
+                <Button as="a" variant="primary" href={setup.href}>
+                  {setup.label}
+                </Button>
+              ) : null}
+              {offerWaitlist ? (
+                <a className="parents-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              ) : null}
+            </div>
           </EmptyState>
-        </>
+        </div>
       );
     case "restricted": {
       const restrictedPrimary = actions[0];

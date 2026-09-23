@@ -7,6 +7,7 @@ const DIR = __dirname;
 describe("Parent updates last snapshot stays on the phone", () => {
   it("reads and writes the parents IndexedDB feature cache and does not blank a painted board", () => {
     const src = readFileSync(join(DIR, "parents-client.tsx"), "utf8");
+    const route = readFileSync(join(DIR, "../api/parents/route.ts"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"parents"/);
@@ -25,5 +26,10 @@ describe("Parent updates last snapshot stays on the phone", () => {
     expect(src).not.toMatch(/BCP-47/);
     expect(src).toMatch(/Needs setup/);
     expect(src).toMatch(/shell === "ready"/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
+    expect(route).toContain("Choose your team to manage parent contacts, or join the waitlist.");
+    expect(route).toContain("Choose your team to manage parent contacts.");
   });
 });

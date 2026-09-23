@@ -122,7 +122,9 @@ async function computeParentsView(
     return {
       status: "setup_required",
       orgId: null,
-      message: "Choose your team to manage parent contacts.",
+      message: input.requestedOrg
+        ? "Choose your team to manage parent contacts."
+        : "Choose your team to manage parent contacts, or join the waitlist.",
     };
   }
   if (!isAdmin(org.role)) {
