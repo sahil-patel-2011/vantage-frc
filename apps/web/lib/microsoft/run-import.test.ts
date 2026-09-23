@@ -222,7 +222,7 @@ describe("applyWorkbookImport", () => {
     const notes = log.find((entry) => entry.sql.includes("UPDATE pick_list_entries") && entry.sql.includes("notes ="))!;
     expect(notes.params).toEqual([ORG, LIST, P2, null, null, true, "solid auto", USER]);
     const ranks = log.find((entry) => entry.sql.includes("unnest($2::uuid[])"))!;
-    expect(ranks.params).toEqual([LIST, [P2, P1], [1, 2], USER]);
+    expect(ranks.params).toEqual([LIST, [P2, P1], [1, 2], USER, ORG]);
     expect(log.some((entry) => entry.sql.includes("FOR UPDATE"))).toBe(true);
 
     const run = runInsert(log)!;

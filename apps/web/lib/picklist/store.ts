@@ -868,8 +868,9 @@ export async function applyImportedEntryEdits(
            updated_at = now(),
            revision = e.revision + 1
        FROM (SELECT unnest($2::uuid[]) AS id, unnest($3::int[]) AS rank) v
-       WHERE e.id = v.id AND e.pick_list_id = $1::uuid AND e.rank IS DISTINCT FROM v.rank`,
-      [input.pickListId, ids, ranks, input.userId],
+       WHERE e.id = v.id AND e.pick_list_id = $1::uuid AND e.org_id = $5::uuid
+         AND e.rank IS DISTINCT FROM v.rank`,
+      [input.pickListId, ids, ranks, input.userId, input.orgId],
     );
   }
 

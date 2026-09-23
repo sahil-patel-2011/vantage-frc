@@ -25,10 +25,12 @@ Checked with commands that day, not remembered.
 
 ### Owner must do now (each needs your account or your decision)
 
-1. **Set `CRON_SECRET` in Vercel → Production.** Every scheduled job answers 503 without it
-   (`assertCronAuthorized`): the daily TBA schedule sync, match alerts, sponsor reminders, member
-   onboarding email, team dossiers and the nightly Excel sync. Any long random string; Vercel sends
-   it with its own cron calls.
+1. **`CRON_SECRET` is deliberately unset for now (owner's decision, 2026-09-22).** While it is empty
+   every scheduled job answers 503 (`assertCronAuthorized`): the daily TBA schedule sync, match
+   alerts, sponsor reminders, member onboarding email, team dossiers and the nightly Excel sync.
+   The TBA webhook drain waits on it too. Match data still refreshes on demand: opening the schedule
+   re-syncs an event whose cached data is stale (`hydrateOrgActiveEvent`). To turn the schedule on,
+   set any long random string in Vercel → Production; Vercel sends it with its own cron calls.
 2. **Microsoft Excel:** register an Azure app and set `MICROSOFT_CLIENT_ID`,
    `MICROSOFT_CLIENT_SECRET` (and optionally `MICROSOFT_TENANT`) — `docs/MICROSOFT_EXCEL.md`. Until
    then the Connectors card says what is missing and nothing is attempted.
