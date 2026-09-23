@@ -1,14 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
 import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business-portal";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { BUSINESS_FUNDING_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
@@ -51,6 +51,20 @@ const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-clien
 
 const BUSINESS_HUB = hubById("business");
 const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function businessCacheOrg(data: BusinessPortalView, orgHint: string): string {
   if (data.status === "live" && data.orgId.trim()) return data.orgId;
@@ -154,6 +168,7 @@ export default function BusinessClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.status === "live" && data.orgId) persistOrgIdInUrl(data.orgId);
       await persistBusinessSnapshot(orgHint, seasonHint, data);
     } catch (cause) {
       if (hadCache || viewRef.current) {
@@ -340,7 +355,9 @@ export default function BusinessClient() {
         description={
           live
             ? `Money, sponsors, grants, and awards for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
-            : "Money, sponsors, grants, and outreach for this season."
+            : view?.status === "setup_required"
+              ? withWaitlistLink(view.message)
+              : "Money, sponsors, grants, and outreach for this season."
         }
       >
         {live ? (
@@ -489,11 +506,17 @@ export default function BusinessClient() {
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description="Choose your team, then come back to start this season’s money plan."
+          description={withWaitlistLink(view.message)}
+          className="biz-setup"
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          <div className="biz-setup-actions">
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            <a className="biz-setup-waitlist" href="/#waitlist">
+              Join the waitlist
+            </a>
+          </div>
         </EmptyState>
       ) : null}
 

@@ -66,7 +66,7 @@ export async function loadBusinessView(
     if (input.requestedOrg) throw new Error("Organization access denied");
     return {
       status: "setup_required",
-      message: "Choose your team to manage budgets, sponsors, grants, and team evidence.",
+      message: "Choose your team to manage budgets, sponsors, grants, and team evidence, or join the waitlist.",
       orgId: null,
       seasonYear: input.seasonYear,
     };
