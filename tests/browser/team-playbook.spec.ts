@@ -26,7 +26,11 @@ test("a team can start its own playbook, and it is about that team", async ({ pa
 
   const start = page.getByRole("button", { name: "Start season playbook" }).first();
   const existing = page.locator(".kb-document");
-  if (await start.isVisible().catch(() => false)) {
+  // Wait for the panel to answer before deciding. isVisible() is a snapshot: asked
+  // the moment the hub heading painted, it read "no button" while the pages were
+  // still loading, the click was skipped, and nothing was ever created.
+  await expect(start.or(existing.first())).toBeVisible({ timeout: 25_000 });
+  if (await start.isVisible()) {
     await start.click();
   }
   await expect(existing.first()).toBeVisible({ timeout: 25_000 });
@@ -48,7 +52,8 @@ test("a team can start its own playbook, and it is about that team", async ({ pa
 test("a page is a page on the screen, not a second screen", async ({ page }) => {
   await openPlaybook(page);
   const start = page.getByRole("button", { name: "Start season playbook" }).first();
-  if (await start.isVisible().catch(() => false)) await start.click();
+  await expect(start.or(page.locator(".kb-document").first())).toBeVisible({ timeout: 25_000 });
+  if (await start.isVisible()) await start.click();
   await expect(page.locator(".kb-document").first()).toBeVisible({ timeout: 25_000 });
 
   /*
