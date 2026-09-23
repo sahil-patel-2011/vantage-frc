@@ -24,6 +24,21 @@ import {
   type InventoryTab,
 } from "./inventory-model";
 
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
+
 export function InventoryRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = inventoryRelatedLinks(orgId, {
     include: [...INVENTORY_RELATED_INCLUDE],
@@ -77,6 +92,8 @@ export function InventoryShell({
   children?: ReactNode;
 }) {
   const copy = inventoryShellCopy(shell);
+  const offerWaitlist =
+    shell === "setup" && !orgId && description.toLowerCase().includes(WAITLIST_PHRASE);
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -106,7 +123,7 @@ export function InventoryShell({
           </>
         }
         title="Inventory & BOM"
-        description={description}
+        description={offerWaitlist ? withWaitlistLink(description) : description}
       >
         <InventoryRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -124,7 +141,14 @@ export function InventoryShell({
         }
         badgeTone="setup"
         title={failure && failure.kind !== "unknown" ? failure.title : copy.title}
-        description={failure ? failure.description : error ?? copy.description}
+        description={
+          failure
+            ? failure.description
+            : offerWaitlist
+              ? withWaitlistLink(description)
+              : error ?? copy.description
+        }
+        className={offerWaitlist ? "inventory-setup" : undefined}
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
@@ -137,7 +161,17 @@ export function InventoryShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
+        {shell === "setup" && offerWaitlist ? (
+          <div className="inventory-setup-actions">
+            <Button as="a" variant="primary" href={inventoryCardPrimaryHref(orgId)}>
+              Choose your team
+            </Button>
+            <a className="inventory-setup-waitlist" href="/#waitlist">
+              Join the waitlist
+            </a>
+          </div>
+        ) : null}
+        {shell === "setup" && !offerWaitlist ? (
           <Button as="a" variant="primary" href={inventoryCardPrimaryHref(orgId)}>
             Choose your team
           </Button>
