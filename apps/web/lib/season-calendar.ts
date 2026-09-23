@@ -42,6 +42,8 @@ export type Milestone = {
   doneAt: string | null;
   doneByName: string | null;
   createdByName: string | null;
+  /** Member who added the milestone. Absent on older cached copies. */
+  createdBy?: string | null;
   /**
    * Shared by the entries one press of the repeat control created. Null for
    * everything else, which is most entries. It records which press made the
@@ -65,7 +67,21 @@ export type CalendarContext = {
   orgName: string | null;
   teamNumber: number | null;
   role: string | null;
+  userId?: string | null;
 };
+
+/** Delete matches season-milestone RLS: the author, or an owner or admin. */
+export function canDeleteSeasonMilestone(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
 
 export type CalendarView =
   | {

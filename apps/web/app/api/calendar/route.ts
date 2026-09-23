@@ -222,14 +222,15 @@ export async function GET(request: Request) {
         return {
           status: "setup_required",
           message: "Choose your team to plan your season calendar.",
-          context: { orgId: null, orgName: null, teamNumber: null, role: null },
+          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
         } satisfies CalendarView;
       }
 
       const milestones = await client.query<Milestone>(
         `SELECT s.id, s.title, s.kind, s.starts_on::text AS "startsOn", s.ends_on::text AS "endsOn",
                 s.notes, s.meeting_url AS "meetingUrl", s.series_id AS "seriesId",
-                s.done, s.done_at::text AS "doneAt", db.name AS "doneByName", cb.name AS "createdByName"
+                s.done, s.done_at::text AS "doneAt", db.name AS "doneByName", cb.name AS "createdByName",
+                s.created_by AS "createdBy"
          FROM season_milestones s
          LEFT JOIN users db ON db.id = s.done_by
          LEFT JOIN users cb ON cb.id = s.created_by
@@ -262,6 +263,7 @@ export async function GET(request: Request) {
           orgName: row.orgName,
           teamNumber: row.teamNumber,
           role: row.role,
+          userId: session.user.id,
         },
         milestones: milestones.rows,
         linkedDeadlines,

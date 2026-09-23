@@ -24,6 +24,7 @@ import {
 } from "../../lib/offline";
 import {
   applyCalendarLocalWrite,
+  canDeleteSeasonMilestone,
   daysUntil,
   groupByMonth,
   milestonesInMonth,
@@ -167,6 +168,7 @@ function MilestoneRow({
   setEditingId,
   run,
   seriesCount,
+  canDelete,
 }: {
   milestone: Milestone;
   orgId: string;
@@ -175,6 +177,7 @@ function MilestoneRow({
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   run: (body: ActionBody, key: string) => Promise<void>;
+  canDelete: boolean;
   /** How many entries this one was created alongside; 1 when it stands alone. */
   seriesCount: number;
 }) {
@@ -247,19 +250,21 @@ function MilestoneRow({
         <button type="button" className="cal-link" disabled={busy} onClick={() => setEditingId(milestone.id)}>
           Edit
         </button>
-        <button
-          type="button"
-          className="cal-link danger"
-          aria-label="Delete milestone"
-          disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete milestone "${milestone.title}"?`)) {
-              void run({ action: "delete_milestone", orgId, id: milestone.id }, `delete:${milestone.id}`);
-            }
-          }}
-        >
-          Delete
-        </button>
+        {canDelete ? (
+          <button
+            type="button"
+            className="cal-link danger"
+            aria-label="Delete milestone"
+            disabled={busy}
+            onClick={() => {
+              if (confirm(`Delete milestone "${milestone.title}"?`)) {
+                void run({ action: "delete_milestone", orgId, id: milestone.id }, `delete:${milestone.id}`);
+              }
+            }}
+          >
+            Delete
+          </button>
+        ) : null}
         {/*
           The other half of expanding a schedule into real entries: one press
           made forty of these, and without this it takes forty to undo. Offered
@@ -270,7 +275,7 @@ function MilestoneRow({
           two words that could plausibly mean the same thing, and only one of
           them removes thirty-nine entries you are not looking at.
         */}
-        {milestone.seriesId && seriesCount > 1 ? (
+        {canDelete && milestone.seriesId && seriesCount > 1 ? (
           <button
             type="button"
             className="cal-link danger"
@@ -857,6 +862,11 @@ function ReadyCalendar({
                   setEditingId={setEditingId}
                   run={run}
                   seriesCount={milestone.seriesId ? (seriesCounts.get(milestone.seriesId) ?? 1) : 1}
+                  canDelete={canDeleteSeasonMilestone({
+                    role: view.context.role,
+                    userId: view.context.userId,
+                    authorId: milestone.createdBy,
+                  })}
                 />
               ))}
             </ul>
