@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { WaitlistForm } from "../components/marketing/waitlist-form";
-import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
+import { MarketingHeroActions, SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
 import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
@@ -38,14 +38,7 @@ export default function Home() {
                 season works. Your scouts fill in tablets and you get back which robot to pick, not a percentage of
                 rows completed.
               </p>
-              <div className="actions">
-                <a className="button primary" href="#waitlist">
-                  Join the waitlist
-                </a>
-                <a className="text-link" href="/signin">
-                  Already invited? Sign in
-                </a>
-              </div>
+              <MarketingHeroActions />
               {/* Three things a team can check rather than three adjectives.
                   Every one of them is a screen you can open. */}
               <ul className="mk-hero-proof">

@@ -1,7 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import {
+  marketingFooterAccountLink,
+  marketingHeaderLinks,
+  marketingHeroLinks,
+} from "../../lib/marketing/account-links";
 import "./marketing-styles";
 
 const links = [
@@ -21,8 +28,47 @@ export function BrandLink({ href = "/" }: { href?: string }) {
   );
 }
 
+function useSignedIn(): boolean {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession().then((session) => {
+      if (!cancelled) setSignedIn(session?.authenticated === true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return signedIn;
+}
+
+function closeMobileMenu(event: { currentTarget: Element }) {
+  (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+}
+
+export function MarketingHeroActions() {
+  const signedIn = useSignedIn();
+  return (
+    <div className="actions">
+      {marketingHeroLinks(signedIn).map((link) =>
+        link.primary ? (
+          <a className="button primary" href={link.href} key={link.label}>
+            {link.label}
+          </a>
+        ) : (
+          <a className="text-link" href={link.href} key={link.label}>
+            {link.label}
+          </a>
+        ),
+      )}
+    </div>
+  );
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
+  const signedIn = useSignedIn();
+  const account = marketingHeaderLinks(signedIn);
   const nav = (mobile = false) =>
     links.map(([href, label]) => (
       <a
@@ -33,14 +79,7 @@ export function SiteHeader() {
         }
         href={href}
         key={href}
-        onClick={
-          mobile
-            ? (event) =>
-                (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute(
-                  "open",
-                )
-            : undefined
-        }
+        onClick={mobile ? closeMobileMenu : undefined}
       >
         {label}
       </a>
@@ -51,12 +90,17 @@ export function SiteHeader() {
       <BrandLink />
       <nav aria-label="Primary navigation">{nav()}</nav>
       <div className="nav-actions">
-        <a className="sign-in-link" href="/signin">
-          Sign in
-        </a>
-        <a className="button compact waitlist-nav" href="/#waitlist">
-          Join waitlist
-        </a>
+        {account.map((link) =>
+          link.primary ? (
+            <a className="button compact waitlist-nav" href={link.href} key={link.label}>
+              {link.label}
+            </a>
+          ) : (
+            <a className="sign-in-link" href={link.href} key={link.label}>
+              {link.label}
+            </a>
+          ),
+        )}
       </div>
       <details className="mobile-menu">
         <summary aria-label="Open navigation">
@@ -66,8 +110,11 @@ export function SiteHeader() {
         </summary>
         <nav aria-label="Mobile navigation">
           {nav(true)}
-          <a href="/signin">Sign in</a>
-          <a href="/#waitlist">Join waitlist</a>
+          {account.map((link) => (
+            <a href={link.href} key={link.label} onClick={closeMobileMenu}>
+              {link.label}
+            </a>
+          ))}
         </nav>
       </details>
     </header>
@@ -75,6 +122,7 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
+  const account = marketingFooterAccountLink(useSignedIn());
   return (
     <footer className="marketing-footer">
       <div className="marketing-footer-brand">
@@ -92,7 +140,7 @@ export function SiteFooter() {
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>
           <a href="/pricing">What it costs</a>
-          <a href="/signin">Sign in</a>
+          <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
           <a href="mailto:sahiljpatel2011@gmail.com">Contact</a>
         </nav>
