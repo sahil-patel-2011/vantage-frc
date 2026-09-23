@@ -115,7 +115,9 @@ export async function computeVendorsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose your team to keep a vendor directory.",
+      message: input.requestedOrg
+        ? "Choose your team to keep a vendor directory."
+        : "Choose your team to keep a vendor directory, or join the waitlist.",
       steps: setupStepsFor(null),
       orgId: null,
     };

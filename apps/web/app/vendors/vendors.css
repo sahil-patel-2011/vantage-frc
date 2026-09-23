@@ -8,7 +8,14 @@
 .vendors-layout{display:grid;gap:16px}
 .vendors-category-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .vendors-tip{margin:0}
+.vendors-setup{animation:vendors-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes vendors-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.vendors-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.vendors-setup-waitlist,.vendors-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.vendors-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 @media(max-width:900px){
   .vendors-header-actions{justify-content:flex-start}
   .vendors-next-actions li{flex-direction:column;align-items:stretch}
+  .vendors-setup-actions{display:grid;width:100%}
+  .vendors-setup-actions .app-button{width:100%;justify-content:center}
 }

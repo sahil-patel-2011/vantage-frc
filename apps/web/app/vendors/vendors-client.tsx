@@ -19,10 +19,25 @@ import {
 } from "../../lib/vendors/vendors-related";
 import type { Vendor, VendorCategory } from "../../lib/vendors/types";
 import { hubHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./vendors.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function isVendorsView(value: unknown): value is VendorsView {
   if (!value || typeof value !== "object") return false;
@@ -120,6 +135,8 @@ function VendorsShell({
 }) {
   const actions = vendorsNextActions({ orgId, shell });
   const copy = vendorsShellCopy(shell);
+  const offerWaitlist =
+    shell === "setup" && !orgId && description.toLowerCase().includes(WAITLIST_PHRASE);
   const buildHref = withOrgHref("/build", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
 
@@ -133,7 +150,7 @@ function VendorsShell({
           </>
         }
         title="Vendor Directory"
-        description={description}
+        description={offerWaitlist ? withWaitlistLink(description) : description}
       >
         <VendorsRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -151,7 +168,10 @@ function VendorsShell({
         }
         badgeTone="setup"
         title={copy.title}
-        description={error ?? copy.description}
+        description={
+          offerWaitlist ? withWaitlistLink(description) : error ?? copy.description
+        }
+        className={offerWaitlist ? "vendors-setup" : undefined}
         aria-busy={shell === "loading"}
       >
         {shell === "error" && onRetry ? (
@@ -159,7 +179,17 @@ function VendorsShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
+        {shell === "setup" && offerWaitlist ? (
+          <div className="vendors-setup-actions">
+            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Choose your team
+            </Button>
+            <a className="vendors-setup-waitlist" href="/#waitlist">
+              Join the waitlist
+            </a>
+          </div>
+        ) : null}
+        {shell === "setup" && !offerWaitlist ? (
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
@@ -221,6 +251,7 @@ export default function VendorsClient() {
         setView(data);
         setFromCache(false);
         setCachedAt(null);
+        if (data.status === "live" && data.orgId) persistOrgIdInUrl(data.orgId);
         await persistVendorsSnapshot(urlOrg, data);
       } catch {
         if (hadCache || viewRef.current) {
