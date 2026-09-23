@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { AppsScriptBridge, AppsScriptTarget, asciiJson, bridgeSpreadsheetId, bridgeUrlOf } from "./apps-script-bridge";
 import { checkAppsScript } from "./connect-apps-script";
+import { driveFolderIdFrom, listDriveMedia, setUpDriveMedia, testDriveMedia } from "../google-drive/drive-media";
 import { APPS_SCRIPT_VERSION, appsScriptSource, isAppsScriptUrl, newAppsScriptSecret } from "./apps-script-source";
 
 const URL_OK = "https://script.google.com/macros/s/AKfycbx1234567890abcdefghijkLMNOP/exec";
@@ -59,7 +60,79 @@ function loadScript(secret: string) {
       return sheetApi(sheet);
     },
   };
+  // A small in-memory Drive: folders, files, sharing, and thumbnails for images.
+  type FolderRow = { id: string; name: string; parent: string | null; trashed: boolean; sharing: string };
+  type FileRow = { id: string; name: string; parent: string; mime: string; content: string; trashed: boolean; updated: Date };
+  let seq = 0;
+  const folders = new Map<string, FolderRow>();
+  const files = new Map<string, FileRow>();
+  const props = new Map<string, string>();
+  const iter = <T,>(items: T[]) => {
+    let i = 0;
+    return { hasNext: () => i < items.length, next: () => items[i++]! };
+  };
+  const fileApi = (row: FileRow) => ({
+    getId: () => row.id,
+    getName: () => row.name,
+    getMimeType: () => row.mime,
+    getSize: () => row.content.length,
+    getLastUpdated: () => row.updated,
+    getUrl: () => `https://drive.google.com/file/d/${row.id}/view`,
+    getThumbnail: () => (row.mime.startsWith("image/") ? { getContentType: () => "image/png", getBytes: () => [1, 2, 3] } : null),
+    getBlob: () => ({ getDataAsString: () => row.content }),
+    setTrashed: (value: boolean) => {
+      row.trashed = value;
+    },
+  });
+  const folderApi = (row: FolderRow): Record<string, unknown> => ({
+    getId: () => row.id,
+    getName: () => row.name,
+    getUrl: () => `https://drive.google.com/drive/folders/${row.id}`,
+    isTrashed: () => row.trashed,
+    getFoldersByName: (name: string) =>
+      iter([...folders.values()].filter((f) => f.parent === row.id && f.name === name && !f.trashed).map(folderApi)),
+    createFolder: (name: string) => {
+      const child = { id: `folder${++seq}abcdefghij`, name, parent: row.id, trashed: false, sharing: "PRIVATE" };
+      folders.set(child.id, child);
+      return folderApi(child);
+    },
+    getFiles: () => iter([...files.values()].filter((f) => f.parent === row.id && !f.trashed).map(fileApi)),
+    createFile: (name: string, content: string, mime: string) => {
+      const file = { id: `file${++seq}abcdefghij`, name, parent: row.id, mime, content, trashed: false, updated: new Date() };
+      files.set(file.id, file);
+      return fileApi(file);
+    },
+    setSharing: (access: string) => {
+      row.sharing = access;
+    },
+    getSharingAccess: () => row.sharing,
+  });
+  const drive = {
+    Access: { ANYONE_WITH_LINK: "ANYONE_WITH_LINK", PRIVATE: "PRIVATE" },
+    Permission: { VIEW: "VIEW", NONE: "NONE" },
+    getFolderById: (id: string) => {
+      const row = folders.get(id);
+      if (!row) throw new Error("No item with the given ID could be found.");
+      return folderApi(row);
+    },
+    createFolder: (name: string) => {
+      const row = { id: `folder${++seq}abcdefghij`, name, parent: null, trashed: false, sharing: "PRIVATE" };
+      folders.set(row.id, row);
+      return folderApi(row);
+    },
+  };
+  /** Put a file straight into a named subfolder, the way a person would in Drive. */
+  const addFile = (folderName: string, name: string, mime: string) => {
+    const folder = [...folders.values()].find((f) => f.name === folderName);
+    if (!folder) throw new Error(`no folder ${folderName}`);
+    files.set(`file${++seq}abcdefghij`, { id: `file${seq}abcdefghij`, name, parent: folder.id, mime, content: "x".repeat(2048), trashed: false, updated: new Date(Date.now() + seq) });
+  };
+
   const globals = {
+    DriveApp: drive,
+    PropertiesService: {
+      getScriptProperties: () => ({ getProperty: (key: string) => props.get(key) ?? null, setProperty: (key: string, value: string) => props.set(key, value) }),
+    },
     SpreadsheetApp: { getActiveSpreadsheet: () => book },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Utilities: {
@@ -67,6 +140,7 @@ function loadScript(secret: string) {
       computeHmacSha256Signature: (value: string, key: string) =>
         [...createHmac("sha256", key).update(value).digest()].map((b) => (b > 127 ? b - 256 : b)),
       formatDate: (date: Date) => date.toISOString().replace(/\.\d{3}Z$/, "Z"),
+      base64Encode: (bytes: number[]) => Buffer.from(bytes).toString("base64"),
     },
     ContentService: {
       MimeType: { JSON: "json" },
@@ -78,7 +152,7 @@ function loadScript(secret: string) {
     `${appsScriptSource(secret)}\nreturn { doPost, doGet };`,
   ) as (...args: unknown[]) => { doPost: (e: unknown) => { text: string }; doGet: () => { text: string } };
   const script = factory(...Object.values(globals));
-  return { script, sheets };
+  return { script, sheets, addFile, folders };
 }
 
 /** A fetch that delivers Vantage's signed request to the loaded script, like Google would. */
@@ -178,5 +252,68 @@ describe("the Apps Script bridge", () => {
     // Pasted with stray spaces and capitals, as people do.
     const ok = await checkAppsScript({ url: ` ${URL_OK} `, secret: ` ${secret.toUpperCase()} ` }, { fetchImpl });
     expect(ok).toEqual({ ok: true, url: URL_OK, secret, name: "Team 6925 copy", fileUrl: "https://docs.google.com/spreadsheets/d/abc/edit" });
+  });
+});
+
+describe("photos and videos through the same script", () => {
+  it("sets up an organized folder, tiles what people add, and passes its own test", async () => {
+    const secret = newAppsScriptSecret();
+    const loaded = loadScript(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: googleFetch(loaded.script).impl });
+
+    // Before setup: listing is empty and the test says what to do.
+    await expect(listDriveMedia(bridge)).resolves.toEqual({ root: null, shared: false, folders: [] });
+    const early = await testDriveMedia(bridge);
+    expect(early.passed).toBe(false);
+    expect(early.steps.at(-1)?.detail).toMatch(/Set up folder/);
+
+    const setup = await setUpDriveMedia(bridge, { team: "Team 6925", rootId: "", shareWithLink: true });
+    expect(setup.root.name).toBe("Vantage media - Team 6925");
+    expect(setup.folders.map((folder) => folder.name)).toEqual([
+      "Match videos",
+      "Robot photos",
+      "Pit and build",
+      "Outreach and events",
+      "CAD renders",
+      "Other",
+    ]);
+    // Running setup again reuses the same folders instead of making duplicates.
+    await setUpDriveMedia(bridge, { team: "Team 6925", rootId: "", shareWithLink: null });
+    expect([...loaded.folders.values()].filter((folder) => folder.name === "Robot photos")).toHaveLength(1);
+
+    loaded.addFile("Robot photos", "bumper.jpg", "image/jpeg");
+    loaded.addFile("Match videos", "qm12.mp4", "video/mp4");
+    const listing = await listDriveMedia(bridge);
+    expect(listing.shared).toBe(true);
+    const photos = listing.folders.find((folder) => folder.key === "robot-photos")!;
+    expect(photos.files[0]).toMatchObject({ name: "bumper.jpg", mimeType: "image/jpeg", size: 2048, thumb: "data:image/png;base64,AQID" });
+    expect(listing.folders.find((folder) => folder.key === "match-videos")!.files[0]).toMatchObject({ name: "qm12.mp4", thumb: null });
+
+    const test = await testDriveMedia(bridge);
+    expect(test.passed).toBe(true);
+    expect(test.steps.map((step) => step.step)).toContain("Read it back");
+  });
+
+  it("asks a version-1 script to be updated instead of failing with a code", async () => {
+    const secret = newAppsScriptSecret();
+    const old = loadScript(secret);
+    const oldPing = old.script.doPost;
+    // A version-1 script answers ping with version 1.
+    const script = {
+      ...old.script,
+      doPost: (e: unknown) => {
+        const out = oldPing(e);
+        return { text: out.text.replace('"version":2', '"version":1') };
+      },
+    };
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: googleFetch(script).impl });
+    await expect(listDriveMedia(bridge)).rejects.toMatchObject({ code: "old_version" });
+  });
+
+  it("reads a Drive folder link or id and rejects anything else", () => {
+    expect(driveFolderIdFrom("https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp?usp=sharing")).toBe("1AbCdEfGhIjKlMnOp");
+    expect(driveFolderIdFrom("1AbCdEfGhIjKlMnOp")).toBe("1AbCdEfGhIjKlMnOp");
+    expect(driveFolderIdFrom("")).toBe("");
+    expect(driveFolderIdFrom("not a folder!")).toBeNull();
   });
 });

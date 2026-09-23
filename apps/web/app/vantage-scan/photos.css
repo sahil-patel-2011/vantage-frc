@@ -1,0 +1,20 @@
+/* =============================================================================
+   Scan polish — photos (team): photos and videos tiled from the team's Google
+   Drive folder. One title, one primary (Add files in Drive), folder chips, a
+   tile grid. Empty stays empty.
+   ========================================================================== */
+
+.photos-page {
+  display: grid;
+  gap: var(--scan-stack, 18px);
+  min-width: 0;
+}
+
+.photos-page .app-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 18px;
+  margin: 0 0 4px;
+}

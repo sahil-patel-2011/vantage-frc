@@ -16,7 +16,11 @@
  *   read  → { sheets: [name] } → { ok, values: { [name]: rows | null } }
  */
 
-export const APPS_SCRIPT_VERSION = 1;
+export const APPS_SCRIPT_VERSION = 2;
+/** The oldest script Vantage still talks to (spreadsheet sync only). */
+export const APPS_SCRIPT_MIN_VERSION = 1;
+/** Photos and videos in Google Drive need this version of the script. */
+export const APPS_SCRIPT_DRIVE_VERSION = 2;
 
 /** Only real Apps Script web-app URLs: Vantage never sends team data anywhere else. */
 export const APPS_SCRIPT_URL = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,200}\/exec$/;
@@ -40,13 +44,14 @@ export function isAppsScriptSecret(secret: string): boolean {
 export function appsScriptSource(secret: string): string {
   if (!isAppsScriptSecret(secret)) throw new Error("Apps Script secret must be 64 hex characters");
   return `/**
- * Vantage → Google Sheets bridge (version ${APPS_SCRIPT_VERSION}).
+ * Vantage → Google Sheets and Drive bridge (version ${APPS_SCRIPT_VERSION}).
  *
  * Paste this into Extensions → Apps Script of the spreadsheet Vantage should keep up to
  * date, then Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone.
  * Vantage signs every request with the secret below; anything unsigned is refused, so the
- * web app address alone cannot read or change this spreadsheet. It only ever touches this
- * spreadsheet. Keep the secret private — it is what makes the address safe to share.
+ * web app address alone cannot read or change anything. It only touches this spreadsheet
+ * and the one "Vantage media" Drive folder it makes (or the folder you pick in Vantage).
+ * Keep the secret private — it is what makes the address safe to share.
  */
 const VANTAGE_SECRET = "${secret}";
 const VANTAGE_VERSION = ${APPS_SCRIPT_VERSION};
@@ -67,6 +72,9 @@ function doPost(e) {
     }
     if (request.action === "write") return vantageReply_(vantageWrite_(book, request.items || []));
     if (request.action === "read") return vantageReply_(vantageRead_(book, request.sheets || []));
+    if (request.action === "drive.setup") return vantageReply_(vantageDriveSetup_(request));
+    if (request.action === "drive.list") return vantageReply_(vantageDriveList_(request));
+    if (request.action === "drive.test") return vantageReply_(vantageDriveTest_());
     return vantageReply_({ ok: false, error: "unknown action" });
   } catch (err) {
     return vantageReply_({ ok: false, error: String((err && err.message) || err).slice(0, 300) });
@@ -126,6 +134,121 @@ function vantageRead_(book, names) {
       : null;
   }
   return { ok: true, values: values };
+}
+
+// ---------------------------------------------------------------- photos and videos
+// One folder in the owner's Drive holds the team's media, split into the folders below.
+// Vantage lists them (with small thumbnails) to tile them in the app; people add files
+// straight into Drive, so there is no size limit.
+const VANTAGE_DRIVE_FOLDERS = [
+  ["match-videos", "Match videos"],
+  ["robot-photos", "Robot photos"],
+  ["pit-build", "Pit and build"],
+  ["outreach", "Outreach and events"],
+  ["cad", "CAD renders"],
+  ["other", "Other"],
+];
+const VANTAGE_ROOT_KEY = "VANTAGE_DRIVE_ROOT";
+
+function vantageFolderInfo_(folder) {
+  return { id: folder.getId(), name: folder.getName(), url: folder.getUrl() };
+}
+
+function vantageDriveRoot_(create, rootId, teamName) {
+  const props = PropertiesService.getScriptProperties();
+  const id = rootId || props.getProperty(VANTAGE_ROOT_KEY);
+  if (id) {
+    try {
+      const found = DriveApp.getFolderById(id);
+      if (!found.isTrashed()) {
+        props.setProperty(VANTAGE_ROOT_KEY, found.getId());
+        return found;
+      }
+    } catch (missing) {
+      if (rootId) throw new Error("That Drive folder was not found, or this Google account cannot open it.");
+    }
+  }
+  if (!create) return null;
+  const folder = DriveApp.createFolder(teamName ? "Vantage media - " + teamName : "Vantage media");
+  props.setProperty(VANTAGE_ROOT_KEY, folder.getId());
+  return folder;
+}
+
+function vantageSubfolder_(root, name, create) {
+  const found = root.getFoldersByName(name);
+  if (found.hasNext()) return found.next();
+  return create ? root.createFolder(name) : null;
+}
+
+function vantageDriveSetup_(request) {
+  const root = vantageDriveRoot_(true, String(request.rootId || ""), String(request.team || "").slice(0, 80));
+  const folders = VANTAGE_DRIVE_FOLDERS.map((entry) => {
+    const folder = vantageSubfolder_(root, entry[1], true);
+    return { key: entry[0], name: entry[1], id: folder.getId(), url: folder.getUrl() };
+  });
+  if (request.shareWithLink === true) root.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  if (request.shareWithLink === false) root.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+  return { ok: true, root: vantageFolderInfo_(root), folders: folders };
+}
+
+function vantageDriveList_(request) {
+  const root = vantageDriveRoot_(false, "", "");
+  if (!root) return { ok: true, root: null, shared: false, folders: [] };
+  const limit = Math.min(Math.max(Number(request.limit) || 60, 1), 200);
+  let thumbnails = request.thumbnails === false ? 0 : 48;
+  const folders = VANTAGE_DRIVE_FOLDERS.map((entry) => {
+    const folder = vantageSubfolder_(root, entry[1], false);
+    if (!folder) return { key: entry[0], name: entry[1], id: null, url: null, files: [], more: false };
+    const found = [];
+    const it = folder.getFiles();
+    while (it.hasNext() && found.length < limit) found.push(it.next());
+    found.sort((a, b) => b.getLastUpdated().getTime() - a.getLastUpdated().getTime());
+    const files = found.map((file) => {
+      const mimeType = file.getMimeType();
+      let thumb = null;
+      if (thumbnails > 0 && (mimeType.indexOf("image/") === 0 || mimeType.indexOf("video/") === 0)) {
+        try {
+          const blob = file.getThumbnail();
+          if (blob) {
+            thumb = "data:" + blob.getContentType() + ";base64," + Utilities.base64Encode(blob.getBytes());
+            thumbnails -= 1;
+          }
+        } catch (noThumb) {
+          // Drive has not made one yet (a video still processing).
+        }
+      }
+      return {
+        id: file.getId(),
+        name: file.getName(),
+        mimeType: mimeType,
+        size: file.getSize(),
+        updated: file.getLastUpdated().toISOString(),
+        url: file.getUrl(),
+        thumb: thumb,
+      };
+    });
+    return { key: entry[0], name: entry[1], id: folder.getId(), url: folder.getUrl(), files: files, more: it.hasNext() };
+  });
+  const shared = root.getSharingAccess() === DriveApp.Access.ANYONE_WITH_LINK;
+  return { ok: true, root: vantageFolderInfo_(root), shared: shared, folders: folders };
+}
+
+function vantageDriveTest_() {
+  const steps = [];
+  const root = vantageDriveRoot_(false, "", "");
+  if (!root) {
+    steps.push({ step: "Find the media folder", ok: false, detail: "No media folder yet. Press Set up folder first." });
+    return { ok: true, passed: false, steps: steps };
+  }
+  steps.push({ step: "Find the media folder", ok: true, detail: root.getName() });
+  const stamp = "Vantage test " + new Date().toISOString();
+  const file = root.createFile("vantage-test.txt", stamp, "text/plain");
+  steps.push({ step: "Write a test file", ok: true, detail: file.getName() });
+  const back = file.getBlob().getDataAsString();
+  steps.push({ step: "Read it back", ok: back === stamp, detail: back === stamp ? "Matches" : "Did not match" });
+  file.setTrashed(true);
+  steps.push({ step: "Clean up", ok: true, detail: "Moved the test file to Drive's trash" });
+  return { ok: true, passed: steps.every((s) => s.ok), steps: steps };
 }
 
 function vantageSignatureOk_(body, sig) {

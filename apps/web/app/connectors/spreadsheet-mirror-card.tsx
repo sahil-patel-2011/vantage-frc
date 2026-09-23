@@ -6,6 +6,7 @@ import { relativeTime } from "../../components/ui/relative-time";
 import type { PublicPreview } from "../../lib/microsoft/run-import";
 import type { MirrorSummary } from "../../lib/mirror/mirror-status";
 import AppsScriptConnect from "./apps-script-connect";
+import { RunTestButton } from "./run-test-button";
 import "./spreadsheet-mirror-card.css";
 
 /**
@@ -303,6 +304,12 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                       </Button>
                     ) : null}
                   </div>
+                  {copy.copy === "google" && copy.connected && copy.viaAppsScript && status.canManage ? (
+                    <>
+                      <RunTestButton endpoint="/api/integrations/google/apps-script" body={{ orgId }} />
+                      <AppsScriptConnect orgId={orgId} mode="update" onConnected={() => undefined} />
+                    </>
+                  ) : null}
                   {copy.copy === "google" && !copy.connected && status.canManage ? (
                     <AppsScriptConnect
                       orgId={orgId}

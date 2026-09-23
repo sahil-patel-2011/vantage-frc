@@ -1,6 +1,7 @@
 import { withRls } from "@vantage/db";
 import { aiKeysEncryptionStatus } from "../../../../../lib/ai-keys/kms-status";
-import { checkAppsScript, saveAppsScriptConnection } from "../../../../../lib/google-sheets/connect-apps-script";
+import { checkAppsScript, saveAppsScriptConnection, testSheetsBridge } from "../../../../../lib/google-sheets/connect-apps-script";
+import { openAppsScriptBridge } from "../../../../../lib/google-sheets/run-google";
 import { mirrorFailJson } from "../../../../../lib/google-sheets/route-helpers";
 import { HttpError, isUuid, requireWorkbookManager } from "../../../../../lib/microsoft/authz";
 import { json, requireUser } from "../../../../../lib/microsoft/route-helpers";
@@ -21,9 +22,20 @@ const connectLimiter = createRateLimiter({ limit: 10, windowMs: 10 * 60_000, nam
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
-    const body = (await request.json().catch(() => ({}))) as { orgId?: unknown; url?: unknown; secret?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { orgId?: unknown; url?: unknown; secret?: unknown; action?: unknown };
     const orgId = body.orgId;
     if (!isUuid(orgId)) throw new HttpError(400, "A valid orgId is required.", "invalid_team");
+
+    // "Run a test" on a connected script: reach it, then read the spreadsheet.
+    if (body.action === "test") {
+      const opened = await withRls({ userId: user.id, orgId }, async (client) => {
+        await requireWorkbookManager(client, orgId, user.id);
+        return openAppsScriptBridge(client, orgId);
+      });
+      if (!(await connectLimiter.allow(orgId))) return rateLimitedResponse("A lot of tests just now. Wait a minute and try again.");
+      if (opened.status !== "ok") return json({ ok: true, passed: false, steps: [{ step: "Find the connection", ok: false, detail: opened.error }] });
+      return json({ ok: true, ...(await testSheetsBridge(opened.bridge)) });
+    }
 
     const encryption = aiKeysEncryptionStatus();
     if (!encryption.ok) return json({ error: encryption.message, code: "encryption_unavailable", setupRequired: true }, 503);

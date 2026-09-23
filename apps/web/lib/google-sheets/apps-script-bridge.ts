@@ -18,7 +18,7 @@ import { createHmac } from "node:crypto";
 import { IMPORT_TABLES, type WorkbookReader, type WorkbookTableRead, type WorkbookTableRef } from "../microsoft/workbook-import";
 import type { CellValue, TableSpec } from "../microsoft/workbook-schema";
 import type { WorkbookTarget } from "../microsoft/workbook-sync";
-import { APPS_SCRIPT_VERSION, isAppsScriptSecret, isAppsScriptUrl } from "./apps-script-source";
+import { APPS_SCRIPT_MIN_VERSION, isAppsScriptSecret, isAppsScriptUrl } from "./apps-script-source";
 import { GoogleSheetsError } from "./google-api";
 import { planTableChunks } from "./sheets-target";
 
@@ -147,7 +147,7 @@ export class AppsScriptBridge {
 
   async ping(): Promise<{ version: number; name: string | null; url: string | null }> {
     const data = await this.call<{ ok: boolean; version?: number; name?: string; url?: string }>("ping");
-    if (Number(data.version) !== APPS_SCRIPT_VERSION) {
+    if (!(Number(data.version) >= APPS_SCRIPT_MIN_VERSION)) {
       throw bridgeError("bad_request", "This Apps Script is an older version. Copy the script from Connectors again and redeploy.", "old_version");
     }
     return { version: Number(data.version), name: data.name ?? null, url: data.url ?? null };

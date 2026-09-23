@@ -240,6 +240,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // reason a team can stop keeping half its season in someone's personal
         // Google Drive — a tool nobody can click to might as well not exist.
         { id: "files", label: "Files", legacyHref: "/files", featured: true },
+        // Photos and videos live in the team's own Google Drive folder (app/photos).
+        { id: "photos", label: "Photos and videos", legacyHref: "/photos", featured: true },
         { id: "migrate", label: "Bring your season", legacyHref: "/migrate", featured: true },
         // Who may write the playbook. It belongs beside the pages it governs,
         // not in a settings corner — the owner grants the role from here.

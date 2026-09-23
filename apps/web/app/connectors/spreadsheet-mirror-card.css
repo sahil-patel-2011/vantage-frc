@@ -123,3 +123,82 @@
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 12px;
 }
+
+/* Run a test (run-test-button.tsx) */
+.run-test {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.run-test-result {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 10px);
+  border: 1px solid var(--line-soft, var(--line));
+  background: var(--surface-2, var(--surface));
+  font-size: 13px;
+  animation: run-test-in var(--dur-base, 0.2s) var(--ease-settle, ease) backwards;
+}
+.run-test-result.passed {
+  border-color: color-mix(in srgb, var(--good, #16a34a) 45%, transparent);
+}
+.run-test-result.failed {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, transparent);
+}
+.run-test-result ul {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.run-test-result li[data-ok="true"] > span {
+  color: var(--good, #16a34a);
+}
+.run-test-result li[data-ok="false"] > span {
+  color: var(--danger, #dc2626);
+}
+.run-test-result small {
+  color: var(--muted);
+}
+@keyframes run-test-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Photos and videos (drive-media-card.tsx) */
+.drive-media-folders {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+.drive-media-folders li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: var(--radius-sm, 10px);
+  font-size: 14px;
+}
+.drive-media-folders small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.drive-media-setup {
+  display: grid;
+  gap: 10px;
+}
+.drive-media-share {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 14px;
+  color: var(--ink);
+}

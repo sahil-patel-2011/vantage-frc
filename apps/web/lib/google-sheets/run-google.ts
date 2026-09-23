@@ -65,6 +65,30 @@ export async function connectGoogleSheets(
 }
 
 /**
+ * The team's own Apps Script (Sheets + Drive), or why it cannot be reached. Only an Apps
+ * Script connection has one; an OAuth Sheets connection has no Drive side.
+ */
+export async function openAppsScriptBridge(
+  client: PoolClient,
+  orgId: string,
+): Promise<{ status: "ok"; bridge: AppsScriptBridge } | { status: "not_connected" | "not_apps_script" | "encryption_unavailable"; error: string }> {
+  const secret = await readGoogleConnectionSecret(client, orgId);
+  if (!secret) return { status: "not_connected", error: "Connect Google Sheets with Apps Script first, under Connectors." };
+  const bridgeUrl = bridgeUrlOf(secret.spreadsheetId);
+  if (!bridgeUrl) {
+    return { status: "not_apps_script", error: "Photos and videos in Drive need the Apps Script connection. Disconnect Google Sheets and connect it with Apps Script." };
+  }
+  try {
+    return { status: "ok", bridge: new AppsScriptBridge(bridgeUrl, await decryptRefreshToken(secret.refreshToken)) };
+  } catch {
+    return {
+      status: "encryption_unavailable",
+      error: "Vantage could not read the saved Apps Script secret. Disconnect Google Sheets and connect it again.",
+    };
+  }
+}
+
+/**
  * The team's Google copy, whichever way it is connected: through its own Apps Script web app
  * (no Google Cloud project — apps-script-bridge.ts) or through the Sheets API with an OAuth
  * sign-in. Both implement the same write and read interfaces.

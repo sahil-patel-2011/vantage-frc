@@ -17,6 +17,7 @@ import {
   connectorsPageDescription,
 } from "../../lib/connectors/catalog";
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
+import DriveMediaCard from "./drive-media-card";
 import SpreadsheetMirrorCard from "./spreadsheet-mirror-card";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -287,6 +288,8 @@ export default function ConnectorsClient() {
         </p>
       ) : null}
 
+      {orgId ? <SpreadsheetMirrorCard orgId={orgId} /> : null}
+      {orgId ? <DriveMediaCard orgId={orgId} /> : null}
       <ul className="connector-list">
         {connectors.map((connector) => {
           const audience = connectorAudienceFromRole(canManage);
@@ -355,7 +358,6 @@ export default function ConnectorsClient() {
           );
         })}
       </ul>
-      {orgId ? <SpreadsheetMirrorCard orgId={orgId} /> : null}
     </main>
   );
 }

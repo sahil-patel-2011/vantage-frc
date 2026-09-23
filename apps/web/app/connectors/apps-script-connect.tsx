@@ -18,10 +18,13 @@ import {
 export default function AppsScriptConnect({
   orgId,
   open,
+  mode = "connect",
   onConnected,
 }: {
   orgId: string;
   open?: boolean;
+  /** "update": an already-connected team gets the newest script with its current secret. */
+  mode?: "connect" | "update";
   onConnected: (text: string) => void;
 }) {
   const [secret, setSecret] = useState("");
@@ -41,9 +44,10 @@ export default function AppsScriptConnect({
     } catch {
       kept = "";
     }
-    const next = isAppsScriptSecret(kept) ? kept : newAppsScriptSecret();
+    // Updating keeps the secret the script already has; only a new connection makes one.
+    const next = isAppsScriptSecret(kept) ? kept : mode === "update" ? "" : newAppsScriptSecret();
     setSecret((current) => current || next);
-  }, [storageKey]);
+  }, [storageKey, mode]);
   useEffect(() => {
     if (!isAppsScriptSecret(secret.trim().toLowerCase())) return;
     try {
@@ -89,6 +93,53 @@ export default function AppsScriptConnect({
     setBusy(false);
   }
 
+  if (mode === "update") {
+    return (
+      <details className="mirror-setup apps-script-connect" open={open}>
+        <summary>Get the latest script (adds photos and videos)</summary>
+        <ol>
+          <li>Check the secret below matches the VANTAGE_SECRET line in your script (paste it in if this box is empty).</li>
+          <li>Copy the script, open your spreadsheet&apos;s Extensions → Apps Script, replace everything and save.</li>
+          <li>
+            <strong>Deploy → Manage deployments</strong>, press the pencil, set Version to <strong>New version</strong>, then
+            Deploy. Google asks once to allow Drive. The web app address stays the same.
+          </li>
+        </ol>
+        <div className="apps-script-fields">
+          <TextField
+            label="Secret"
+            help="The 64-character value on the VANTAGE_SECRET line of your current script."
+            value={secret}
+            onChange={(event) => setSecret(event.target.value)}
+            error={secret && !secretOk ? "The secret is 64 letters and digits (0–9, a–f)." : undefined}
+            spellCheck={false}
+            autoComplete="off"
+            wide
+          />
+          <TextareaField
+            label="Script"
+            value={source}
+            readOnly
+            rows={6}
+            spellCheck={false}
+            onFocus={(event) => event.currentTarget.select()}
+            wide
+          />
+          <div className="connector-actions">
+            <Button variant="secondary" size="sm" type="button" disabled={!source} onClick={() => void copyScript()}>
+              {copied ? "Copied" : "Copy script"}
+            </Button>
+          </div>
+        </div>
+        {error ? (
+          <p className="connector-message" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </details>
+    );
+  }
+
   return (
     <details className="mirror-setup apps-script-connect" open={open}>
       <summary>Connect with Apps Script — no Google Cloud needed</summary>
@@ -106,7 +157,7 @@ export default function AppsScriptConnect({
       </ol>
       <p>
         &quot;Anyone&quot; only lets the address be called: the script refuses every request that is not signed with the
-        secret, and it can only touch this one spreadsheet.
+        secret, and it only touches this spreadsheet and your team's media folder.
       </p>
       <div className="apps-script-fields">
         <TextField

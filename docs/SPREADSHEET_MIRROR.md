@@ -117,3 +117,17 @@ Microsoft Excel setup is unchanged: `MICROSOFT_EXCEL.md`.
   `org_google_sheets_connection_status` view.
 - `last_sync_hash`, `last_read_at`, `throttled_until` on both connection tables.
 - `workbook_sync_runs.target` (`excel` | `google`) and `content_hash`.
+
+## Photos and videos in Google Drive (same Apps Script, version 2)
+
+Script version 2 adds three actions next to the spreadsheet ones (`lib/google-sheets/apps-script-source.ts`):
+`drive.setup` makes (or adopts) one "Vantage media" folder with fixed subfolders (Match videos, Robot photos, Pit and
+build, Outreach and events, CAD renders, Other) and can set link sharing; `drive.list` returns each subfolder's newest
+files with Drive's own thumbnails as data URLs; `drive.test` writes, reads back and trashes a small file. The script
+remembers the folder in Script Properties, so Vantage stores nothing about it.
+
+Vantage side: `lib/google-drive/drive-media.ts`, `GET/POST /api/integrations/google/drive` (list for any member,
+cached a minute per team; setup and test for owners/admins), the Connectors card `drive-media-card.tsx`, and the
+`/photos` page that tiles the files and opens them in Drive's player. Files are added in Drive itself, so there is
+no size limit and no media passes through Vantage. A version-1 script keeps syncing the spreadsheet; the Drive
+features ask for the new script with a plain message. Both cards have "Run a test".

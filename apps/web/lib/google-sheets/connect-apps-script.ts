@@ -10,7 +10,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { encryptRefreshToken } from "../microsoft/connection-store";
 import { type BridgeOptions, AppsScriptBridge, bridgeSpreadsheetId } from "./apps-script-bridge";
-import { isAppsScriptSecret, isAppsScriptUrl } from "./apps-script-source";
+import { APPS_SCRIPT_DRIVE_VERSION, isAppsScriptSecret, isAppsScriptUrl } from "./apps-script-source";
 import { saveGoogleConnection } from "./connection-store";
 import { GoogleSheetsError, describeGoogleError } from "./google-api";
 
@@ -67,4 +67,37 @@ export async function saveAppsScriptConnection(
       name: input.check.name ?? "Google Sheets (Apps Script)",
     },
   });
+}
+
+export type BridgeTestStep = { step: string; ok: boolean; detail?: string };
+
+/** "Run a test" on the Google Sheets card: reach the script, then read the spreadsheet. */
+export async function testSheetsBridge(bridge: AppsScriptBridge): Promise<{ passed: boolean; steps: BridgeTestStep[] }> {
+  const steps: BridgeTestStep[] = [];
+  let version: number;
+  try {
+    const ping = await bridge.ping();
+    version = ping.version;
+    steps.push({ step: "Reach your Google script", ok: true, detail: ping.name ? `Spreadsheet: ${ping.name}` : "It answered" });
+  } catch (error) {
+    steps.push({ step: "Reach your Google script", ok: false, detail: describeGoogleError(error) });
+    return { passed: false, steps };
+  }
+  try {
+    const data = await bridge.call<{ ok: boolean; values?: Record<string, unknown[][] | null> }>("read", { sheets: ["PickList"] });
+    const rows = data.values?.PickList;
+    steps.push({
+      step: "Read the spreadsheet",
+      ok: true,
+      detail: rows ? `Pick list has ${Math.max(rows.length - 1, 0)} row(s)` : "Readable. Nothing synced yet: press Sync now",
+    });
+  } catch (error) {
+    steps.push({ step: "Read the spreadsheet", ok: false, detail: describeGoogleError(error) });
+  }
+  steps.push({
+    step: "Script version",
+    ok: true,
+    detail: version >= APPS_SCRIPT_DRIVE_VERSION ? "Up to date" : "Works for the spreadsheet. Copy the new script to add photos and videos",
+  });
+  return { passed: steps.every((step) => step.ok), steps };
 }
