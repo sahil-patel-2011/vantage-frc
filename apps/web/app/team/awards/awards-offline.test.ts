@@ -12,5 +12,8 @@ describe("Awards last snapshot stays on the phone", () => {
     expect(src).toMatch(/"awards"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Awards"/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
   });
 });

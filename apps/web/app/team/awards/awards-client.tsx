@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { BusinessRelated } from "../../../components/business-related";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
@@ -42,6 +42,22 @@ type Item = {
   charLimit: number | null;
   done?: boolean;
 };
+
+const WAITLIST_PHRASE = "join the waitlist";
+const NO_TEAM_MESSAGE = "Choose your team to open award submissions, or join the waitlist.";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 function statusLabel(status: string) {
   return AWARD_STATUSES.includes(status as (typeof AWARD_STATUSES)[number])
@@ -129,12 +145,13 @@ export default function AwardsClient() {
     );
   }
   if (!orgId) {
+    const offerWaitlist = NO_TEAM_MESSAGE.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page awards-page">
         <PageHeader
           breadcrumbs="Business / Awards"
           title="Awards"
-          description="Award submissions and essay prompts belong to one team. Choose your team to open them."
+          description={offerWaitlist ? withWaitlistLink(NO_TEAM_MESSAGE) : NO_TEAM_MESSAGE}
         >
           <BusinessRelated
             orgId={null}
@@ -148,11 +165,23 @@ export default function AwardsClient() {
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description="Award essays stay with one team. Choose your team to open them."
+          description={offerWaitlist ? withWaitlistLink(NO_TEAM_MESSAGE) : NO_TEAM_MESSAGE}
+          className={offerWaitlist ? "awards-setup" : undefined}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          {offerWaitlist ? (
+            <div className="awards-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="awards-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          )}
         </EmptyState>
       </main>
     );
