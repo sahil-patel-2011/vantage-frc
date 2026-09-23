@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { parseControlMapAction, summarizeBindings, validateBinding } from "./control-map";
+import { canDeleteControlBinding, parseControlMapAction, summarizeBindings, validateBinding } from "./control-map";
+
+describe("canDeleteControlBinding", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteControlBinding({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteControlBinding({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteControlBinding({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteControlBinding({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 describe("validateBinding", () => {
   it("requires an input and a command", () => {

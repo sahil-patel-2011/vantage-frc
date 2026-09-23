@@ -15,6 +15,19 @@ export const CONTROLLER_LABEL: Record<Controller, string> = {
 export const CONTROL_MODES = ["teleop", "test", "both"] as const;
 export type ControlMode = (typeof CONTROL_MODES)[number];
 
+/** Delete matches control_bindings RLS: the author, or an owner or admin. */
+export function canDeleteControlBinding(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 /** Common gamepad inputs, offered as quick-fill suggestions. */
 export const COMMON_INPUTS = [
   "A button",

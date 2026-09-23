@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
+  canDeleteControlBinding,
   COMMON_INPUTS,
   CONTROLLER_LABEL,
   CONTROLLERS,
@@ -36,13 +37,14 @@ type Binding = {
   mode: ControlMode;
   notes: string;
   byName: string | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       seasonYear: number;
       bindings: Binding[];
       summary: { total: number; byController: Record<Controller, number> };
@@ -611,9 +613,19 @@ function BindingLists({
                         {b.byName ? <span className="app-muted">· {b.byName}</span> : null}
                       </div>
                     </div>
-                    {view.context.role !== "viewer" ? (
+                    {canDeleteControlBinding({
+                      role: view.context.role,
+                      userId: view.context.userId,
+                      authorId: b.createdBy,
+                    }) ? (
                       <div className="control-map-card-foot">
-                        <Button variant="secondary" type="button" disabled={busy} onClick={() => onDelete(b.id)}>
+                        <Button
+                          variant="secondary"
+                          type="button"
+                          disabled={busy}
+                          aria-label={`Delete binding ${b.inputLabel}`}
+                          onClick={() => onDelete(b.id)}
+                        >
                           Delete
                         </Button>
                       </div>

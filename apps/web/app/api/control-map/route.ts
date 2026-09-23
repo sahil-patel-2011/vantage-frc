@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseControlMapAction, summarizeBindings, type ControlMode, type Controller } from "../../../lib/control-map";
+import { canDeleteControlBinding, parseControlMapAction, summarizeBindings, type ControlMode, type Controller } from "../../../lib/control-map";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -26,7 +26,7 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Control map request failed" }, { status });
 }
 
-type BindingRow = { id: string; controller: Controller; inputLabel: string; command: string; mode: ControlMode; notes: string; byName: string | null };
+type BindingRow = { id: string; controller: Controller; inputLabel: string; command: string; mode: ControlMode; notes: string; byName: string | null; createdBy: string | null };
 
 export async function GET(request: Request) {
   try {
@@ -48,7 +48,8 @@ export async function GET(request: Request) {
       if (!row) return { status: "setup_required" as const, message: "Choose your team to map your controls." };
 
       const bindings = await client.query<BindingRow>(
-        `SELECT b.id, b.controller, b.input_label AS "inputLabel", b.command, b.mode, b.notes, u.name AS "byName"
+        `SELECT b.id, b.controller, b.input_label AS "inputLabel", b.command, b.mode, b.notes, u.name AS "byName",
+                b.created_by AS "createdBy"
          FROM control_bindings b LEFT JOIN users u ON u.id = b.created_by
          WHERE b.org_id = $1 AND b.season_year = $2
          ORDER BY CASE b.controller WHEN 'driver' THEN 0 WHEN 'operator' THEN 1 ELSE 2 END, b.input_label`,
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         bindings: bindings.rows,
         summary: summarizeBindings(bindings.rows.map((b) => ({ controller: b.controller }))),
@@ -80,6 +81,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_binding") {
+        const found = await client.query<{ createdBy: string; role: string }>(
+          `SELECT b.created_by AS "createdBy", m.role
+           FROM control_bindings b
+           JOIN memberships m ON m.org_id = b.org_id AND m.user_id = $3
+           WHERE b.id = $1 AND b.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Binding not found");
+        if (!canDeleteControlBinding({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+          throw new HttpError(403, "You cannot delete this binding");
+        }
         const deleted = await client.query(`DELETE FROM control_bindings WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this binding");
         return { ok: true };
