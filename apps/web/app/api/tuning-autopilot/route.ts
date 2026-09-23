@@ -144,7 +144,7 @@ export async function POST(request: Request) {
         case "delete-session": {
           const sessionId = trimmedOrNull(body.sessionId, 64);
           if (!sessionId) throw new Error("sessionId is required");
-          await deleteSession(client, { orgId, sessionId });
+          await deleteSession(client, { orgId, sessionId, userId });
           if (selectedSessionId === sessionId) selectedSessionId = null;
           break;
         }
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
         case "delete-iteration": {
           const iterationId = trimmedOrNull(body.iterationId, 64);
           if (!iterationId) throw new Error("iterationId is required");
-          await deleteIteration(client, { orgId, iterationId });
+          await deleteIteration(client, { orgId, iterationId, userId });
           break;
         }
         default:
@@ -188,6 +188,13 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "Tuning session not found" || message === "Tuning iteration not found") {
+      return Response.json({ error: message }, { status: 404 });
+    }
+    if (message === "You cannot delete this tuning session" || message === "You cannot delete this iteration") {
+      return Response.json({ error: message }, { status: 403 });
+    }
     return failMeteredAi(error, "Tuning autopilot request failed");
   }
 }

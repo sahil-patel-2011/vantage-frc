@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeTuningAutopilotView, logIteration } from "./compute-tuning-autopilot";
+import { canDeleteTuningAutopilotRow } from "./types";
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -12,6 +13,18 @@ function makeClient(handler: (sql: string, params: unknown[]) => { rows: unknown
     query: vi.fn(async (sql: string, params: unknown[] = []) => handler(sql, params)),
   } as unknown as PoolClient;
 }
+
+describe("canDeleteTuningAutopilotRow", () => {
+  it("keeps delete with the author or an owner or admin", () => {
+    expect(canDeleteTuningAutopilotRow({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteTuningAutopilotRow({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteTuningAutopilotRow({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteTuningAutopilotRow({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteTuningAutopilotRow({ role: "viewer", userId: "sam", authorId: "sam" })).toBe(true);
+    expect(canDeleteTuningAutopilotRow({ role: null, userId: null, authorId: "noah" })).toBe(false);
+    expect(canDeleteTuningAutopilotRow({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+  });
+});
 
 describe("computeTuningAutopilotView", () => {
   it("returns setup_required when the user has no org membership", async () => {
