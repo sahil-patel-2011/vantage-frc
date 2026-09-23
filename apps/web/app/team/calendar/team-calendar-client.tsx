@@ -592,7 +592,9 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             </label>
           ) : null}
 
-          <GitHubCalendarHint overlay={view.githubCalendar} orgId={orgId} />
+          {/* A setup nudge only the people who can connect GitHub can act on; every
+              student opening the calendar saw it above the grid. */}
+          {canManage ? <GitHubCalendarHint overlay={view.githubCalendar} orgId={orgId} /> : null}
 
           <div className="tc-toolbar">
             <div className="tc-mode" role="group" aria-label="Calendar view">
