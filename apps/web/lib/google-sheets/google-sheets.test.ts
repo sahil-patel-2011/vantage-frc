@@ -8,7 +8,13 @@ import {
   googleFetch,
   googleSheetsSetupStatus,
 } from "./google-api";
-import { createGoogleOAuthState, googlePkceChallenge, googlePkceVerifier, verifyGoogleOAuthState } from "./oauth-state";
+import {
+  createGoogleOAuthState,
+  googlePkceChallenge,
+  googlePkceVerifier,
+  isGoogleSheetsState,
+  verifyGoogleOAuthState,
+} from "./oauth-state";
 import { GoogleSheetsTarget, columnLetter, quoteSheet } from "./sheets-target";
 
 const env = { BETTER_AUTH_SECRET: "test-secret-that-is-long-enough", NODE_ENV: "test" } as unknown as NodeJS.ProcessEnv;
@@ -33,6 +39,24 @@ describe("Google OAuth for the mirror", () => {
     expect(status.configured).toBe(false);
     expect(status.missingEnv).toEqual(["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]);
     expect(status.callbackUrl).toBe("https://vantagefrc.vercel.app/api/integrations/google/callback");
+  });
+
+  it("on Vercel, uses the sign-in callback Google already accepts", () => {
+    const prod = { VERCEL: "1", GOOGLE_CLIENT_ID: "id.apps.googleusercontent.com", GOOGLE_CLIENT_SECRET: "s" } as unknown as NodeJS.ProcessEnv;
+    expect(googleSheetsSetupStatus(prod).callbackUrl).toBe("https://vantage-frc-web.vercel.app/api/auth/callback/google");
+    expect(
+      googleSheetsSetupStatus({ ...prod, GOOGLE_SHEETS_REDIRECT_URI: "https://x.test/api/integrations/google/callback" } as NodeJS.ProcessEnv)
+        .callbackUrl,
+    ).toBe("https://x.test/api/integrations/google/callback");
+  });
+
+  it("tells a Sheets callback from a sign-in callback by its state", () => {
+    const state = createGoogleOAuthState({ orgId: "org", userId: "user" }, env, 1_000);
+    expect(isGoogleSheetsState(state)).toBe(true);
+    expect(isGoogleSheetsState(createMicrosoftOAuthState({ orgId: "o", userId: "u" }, env, 1_000))).toBe(false);
+    // Better Auth's own states (random or encrypted) are not JSON with our purpose.
+    expect(isGoogleSheetsState("Zm9vYmFy")).toBe(false);
+    expect(isGoogleSheetsState(null)).toBe(false);
   });
 
   it("round-trips a signed state and derives a stable PKCE pair from it", () => {

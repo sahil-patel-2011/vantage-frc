@@ -86,3 +86,21 @@ export function googlePkceVerifier(nonce: string, env: NodeJS.ProcessEnv = proce
 export function googlePkceChallenge(verifier: string): string {
   return createHash("sha256").update(verifier).digest("base64url");
 }
+
+/**
+ * Routing only: does this `state` claim to be a Connect Google Sheets state? Google calls
+ * back on the one redirect URI registered for sign-in (/api/auth/callback/google), so
+ * proxy.ts uses this to hand Sheets callbacks to /api/integrations/google/callback instead
+ * of Better Auth. It proves nothing — the callback route verifies the HMAC — so a forged
+ * claim only reaches a handler that rejects it.
+ */
+export function isGoogleSheetsState(state: string | null | undefined): boolean {
+  if (!state) return false;
+  const body = state.split(".")[0];
+  if (!body || body.length > 2_000) return false;
+  try {
+    return (JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as { purpose?: unknown }).purpose === PURPOSE;
+  } catch {
+    return false;
+  }
+}

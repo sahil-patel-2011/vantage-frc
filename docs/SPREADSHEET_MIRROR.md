@@ -56,10 +56,13 @@ optimistic concurrency on `updated_at`, preview before apply) — see `MICROSOFT
 Google Sheets reuses the Google sign-in client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`).
 In the Google Cloud project that owns that client:
 
-1. **Enable the Google Sheets API.**
-2. **Add the callback** to the OAuth client's authorized redirect URIs. The exact URL is
-   shown on the Connectors card to owners/admins; it is
-   `<GOOGLE_SHEETS_REDIRECT_ORIGIN or BETTER_AUTH_URL>/api/integrations/google/callback`.
+1. **Enable the Google Sheets API.** That is the only step.
+
+No redirect URI to register: Connect returns through the sign-in callback Google already
+accepts (`<GOOGLE_OAUTH_CALLBACK_ORIGIN>/api/auth/callback/google`, see
+`packages/core` access-policy). `proxy.ts` recognises a Sheets state and hands the callback
+to `/api/integrations/google/callback`; every sign-in callback still goes to Better Auth.
+A deployment that registered its own URI can set `GOOGLE_SHEETS_REDIRECT_URI`.
 
 Scope is `drive.file`: Vantage can create a spreadsheet and edit the files it created —
 nothing else in the owner's Drive. The refresh token is envelope-encrypted with the same KMS

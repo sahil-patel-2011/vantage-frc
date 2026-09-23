@@ -6,6 +6,7 @@ import { safeAppPath } from "./lib/security/safe-navigation";
 import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/media-availability";
 import { productRedirect, requestOrigin } from "./lib/products/products";
 import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
+import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -223,6 +224,14 @@ function approvalPendingRedirect(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Connect Google Sheets reuses the one Google redirect URI already registered for
+  // sign-in. Its callbacks carry a Sheets state; send those to the Sheets handler (which
+  // verifies the state's HMAC) and leave every sign-in callback to Better Auth.
+  if (pathname === "/api/auth/callback/google" && isGoogleSheetsState(request.nextUrl.searchParams.get("state"))) {
+    const target = new URL("/api/integrations/google/callback", request.url);
+    target.search = request.nextUrl.search;
+    return NextResponse.rewrite(target);
+  }
   // Two products, one deployment: the Scouting host presents only Scouting's
   // pages and sends everything else to Vantage (lib/products/products.ts).
   const productTarget = productRedirect({

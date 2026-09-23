@@ -40,11 +40,26 @@ export function googleSheetsMissingEnv(env: NodeJS.ProcessEnv = process.env): st
   return missing;
 }
 
-/** Where Google sends the owner back. Must be listed on the OAuth client in Google Cloud. */
+/** The origin whose sign-in callback is registered on the Google client (see @vantage/core access-policy). */
+export const GOOGLE_SIGN_IN_CALLBACK_ORIGIN = "https://vantage-frc-web.vercel.app";
+
+/**
+ * Where Google sends the owner back. Google only redirects to URIs listed on the OAuth
+ * client, so on Vercel this is the one already registered for sign-in —
+ * <GOOGLE_OAUTH_CALLBACK_ORIGIN>/api/auth/callback/google — and proxy.ts hands callbacks
+ * that carry a Sheets state to /api/integrations/google/callback. No extra registration.
+ *
+ * GOOGLE_SHEETS_REDIRECT_URI overrides it (a deployment that registered its own URI);
+ * `next dev` uses its own route on localhost.
+ */
 export function googleSheetsCallbackUrl(env: NodeJS.ProcessEnv = process.env): string {
-  const base = (env.GOOGLE_SHEETS_REDIRECT_ORIGIN || env.BETTER_AUTH_URL || env.NEXT_PUBLIC_APP_URL || "http://localhost:3001")
-    .trim()
-    .replace(/\/$/, "");
+  const explicit = env.GOOGLE_SHEETS_REDIRECT_URI?.trim();
+  if (explicit) return explicit;
+  if (env.VERCEL === "1" || env.NODE_ENV === "production") {
+    const origin = (env.GOOGLE_OAUTH_CALLBACK_ORIGIN?.trim() || GOOGLE_SIGN_IN_CALLBACK_ORIGIN).replace(/\/$/, "");
+    return `${origin}/api/auth/callback/google`;
+  }
+  const base = (env.BETTER_AUTH_URL || env.NEXT_PUBLIC_APP_URL || "http://localhost:3001").trim().replace(/\/$/, "");
   return `${base}/api/integrations/google/callback`;
 }
 

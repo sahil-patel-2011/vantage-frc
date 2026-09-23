@@ -310,12 +310,11 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                   {copy.copy === "google" && !copy.connected && status.canManage && status.providers.google.callbackUrl ? (
                     <details className="mirror-setup">
                       <summary>One-time Google Cloud setup</summary>
-                      <ol>
-                        <li>Enable the Google Sheets API on the project that holds Vantage&apos;s Google sign-in client.</li>
-                        <li>
-                          Add this authorized redirect URI to that OAuth client: <code>{status.providers.google.callbackUrl}</code>
-                        </li>
-                      </ol>
+                      <p>
+                        Enable the Google Sheets API on the Google Cloud project that holds Vantage&apos;s Google sign-in
+                        client. Nothing else to register: Connect returns through the address Google already accepts for
+                        sign-in, <code>{status.providers.google.callbackUrl}</code>.
+                      </p>
                     </details>
                   ) : null}
                 </li>
