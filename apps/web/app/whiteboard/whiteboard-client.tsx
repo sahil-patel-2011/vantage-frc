@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import {
+  canDeleteWhiteboardPlay,
   defaultRobots,
   FIELD_H,
   FIELD_W,
@@ -474,9 +475,21 @@ export default function WhiteboardClient() {
                     {play.matchKey ? ` · ${play.matchKey}` : ""}
                   </small>
                 </button>
-                <button type="button" className="wb-link danger" disabled={busy} onClick={() => void deletePlay(play)}>
-                  ✕
-                </button>
+                {canDeleteWhiteboardPlay({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: play.createdBy,
+                }) ? (
+                  <button
+                    type="button"
+                    className="wb-link danger"
+                    aria-label={`Delete play ${play.title}`}
+                    disabled={busy}
+                    onClick={() => void deletePlay(play)}
+                  >
+                    ✕
+                  </button>
+                ) : null}
               </div>
             ))}
           </aside>
