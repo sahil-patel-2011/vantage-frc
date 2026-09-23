@@ -2,7 +2,7 @@
 import { Button } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   DEFAULT_AUTO_CLOSE_AFTER_HOURS,
   DEFAULT_AUTO_CLOSE_CREDIT_HOURS,
@@ -24,9 +24,24 @@ import {
   scanCodeProblemMessage,
   scanFeedbackMessage,
 } from "../../../lib/hours/scan-codes";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Banner = { tone: "in" | "out" | "queued" | "error"; message: string } | null;
 
@@ -87,6 +102,7 @@ export default function KioskClient() {
   const [panel, setPanel] = useState<"none" | "cards" | "policy">("none");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [requestedOrg, setRequestedOrg] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -132,6 +148,7 @@ export default function KioskClient() {
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(Boolean(orgHint));
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<KioskView>("hours-kiosk", orgHint || "_");
@@ -182,6 +199,7 @@ export default function KioskClient() {
         return;
       }
       setError("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -460,21 +478,31 @@ export default function KioskClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist =
+      !requestedOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
-      <main className="module-page hours-page hours-kiosk">
+      <main className={offerWaitlist ? "module-page hours-page hours-kiosk kiosk-setup-page" : "module-page hours-page hours-kiosk"}>
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Team / Build Hours / Kiosk</span>
             <h1>Scan-in Kiosk</h1>
+            {offerWaitlist ? <p>{withWaitlistLink(view.message)}</p> : null}
           </div>
         </header>
         <OfflineBanner feature="Hours kiosk" fromCache={fromCache} cachedAt={cachedAt} />
-        <div className="app-card hours-empty">
+        <div className={offerWaitlist ? "app-card hours-empty kiosk-setup" : "app-card hours-empty"}>
           <strong>Choose your team</strong>
-          <p className="app-muted">{view.message}</p>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          <p className="app-muted">{offerWaitlist ? withWaitlistLink(view.message) : view.message}</p>
+          <div className={offerWaitlist ? "kiosk-setup-actions" : undefined}>
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            {offerWaitlist ? (
+              <a className="kiosk-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            ) : null}
+          </div>
         </div>
       </main>
     );

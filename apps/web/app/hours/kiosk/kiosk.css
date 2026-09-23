@@ -102,3 +102,13 @@
   .kiosk-board li{grid-template-columns:minmax(0,1fr)}
   .kiosk-board .value{color:var(--muted)}
 }
+
+.kiosk-setup{animation:kiosk-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes kiosk-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.kiosk-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.kiosk-setup-waitlist,.kiosk-setup-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.kiosk-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+  .kiosk-setup-actions{display:grid;width:100%}
+  .kiosk-setup-actions .app-button{width:100%;justify-content:center}
+}
