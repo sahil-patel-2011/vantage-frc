@@ -45,7 +45,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to map your controls." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to map your controls."
+            : "Choose your team to map your controls, or join the waitlist.",
+        };
+      }
 
       const bindings = await client.query<BindingRow>(
         `SELECT b.id, b.controller, b.input_label AS "inputLabel", b.command, b.mode, b.notes, u.name AS "byName",

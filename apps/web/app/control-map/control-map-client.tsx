@@ -23,11 +23,26 @@ import {
   type ControlMapShellKind,
 } from "../../lib/control-map/control-map-related";
 import { hubHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./control-map.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Binding = {
   id: string;
@@ -126,14 +141,16 @@ function ControlMapShell({
   error,
   errorStatus,
   onRetry,
+  offerWaitlist = false,
   children,
 }: {
-  description: string;
+  description: ReactNode;
   orgId?: string | null;
   shell: ControlMapShellKind;
   error?: string;
   errorStatus?: number | null;
   onRetry?: () => void;
+  offerWaitlist?: boolean;
   children?: ReactNode;
 }) {
   const actions = controlMapNextActions({ orgId, shell });
@@ -190,7 +207,10 @@ function ControlMapShell({
         }
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
-        description={failure ? failure.description : (error ?? copy.description)}
+        description={
+          failure ? failure.description : offerWaitlist ? description : (error ?? copy.description)
+        }
+        className={offerWaitlist ? "control-map-setup" : undefined}
         aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
@@ -203,7 +223,17 @@ function ControlMapShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
+        {shell === "setup" && offerWaitlist ? (
+          <div className="control-map-setup-actions">
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            <a className="control-map-setup-waitlist" href="/#waitlist">
+              Join the waitlist
+            </a>
+          </div>
+        ) : null}
+        {shell === "setup" && !offerWaitlist ? (
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
       </EmptyState>
@@ -268,6 +298,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistControlMapSnapshot(urlOrg, seasonHint, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -370,13 +401,14 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
   }
 
   if (shell === "setup") {
+    const setupMessage = view?.status === "setup_required" ? view.message : shellCopy.description;
+    const offerWaitlist = !orgIdProp && setupMessage.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <ControlMapShell
-        description={
-          view?.status === "setup_required" ? view.message : shellCopy.description
-        }
+        description={offerWaitlist ? withWaitlistLink(setupMessage) : setupMessage}
         orgId={orgIdProp}
         shell="setup"
+        offerWaitlist={offerWaitlist}
       >
         <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
       </ControlMapShell>
