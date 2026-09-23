@@ -1,3 +1,5 @@
+.offline-shell-save{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.offline-shell-save p{margin:4px 0 0;max-width:64ch}
 .offline-shell-page .offline-shell-related {
   display: flex;
   flex-wrap: wrap;

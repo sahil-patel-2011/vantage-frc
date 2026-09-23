@@ -17,6 +17,7 @@ import type { OfflineShellView } from "../../lib/offline-shell/compute-offline-s
 import type { OfflineShellNetworkStatus } from "../../lib/offline-shell/types";
 import { OfflineBanner } from "../../components/offline-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { SaveEventDayPanel } from "./save-event-day-panel";
 import "./offline-shell.css";
 
 const COMPONENT_LABEL: Record<string, string> = {
@@ -190,6 +191,7 @@ export default function OfflineShellClient() {
         </EmptyState>
       ) : (
         <div className="offline-shell-stack">
+          {orgId ? <SaveEventDayPanel orgId={orgId} /> : null}
           {shell === "ready" ? (
             <NextActions orgId={orgId} shell={shell} recommendations={recommendations} />
           ) : null}
