@@ -1,14 +1,23 @@
 "use client";
 import { Button, EmptyState } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
-import { FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
+import { canDeleteConsentForm, FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
-type Form = { id: string; seasonYear: number; name: string; formType: FormType; required: boolean; documentUrl: string | null; notes: string };
+type Form = {
+  id: string;
+  seasonYear: number;
+  name: string;
+  formType: FormType;
+  required: boolean;
+  documentUrl: string | null;
+  notes: string;
+  createdBy?: string | null;
+};
 type ConsentRecord = { id: string; formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null; byName: string | null };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; forms: Form[]; records: ConsentRecord[]; summary: { requiredForms: number; totalForms: number; peopleTracked: number; fullyComplete: number; outstanding: number; perForm: { formId: string; submitted: number; verified: number }[] } };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; forms: Form[]; records: ConsentRecord[]; summary: { requiredForms: number; totalForms: number; peopleTracked: number; fullyComplete: number; outstanding: number; perForm: { formId: string; submitted: number; verified: number }[] } };
 
 const STATUS_LABEL: Record<RecordStatus, string> = { pending: "Pending", submitted: "Submitted", verified: "Verified" };
 const NEXT_STATUS: Record<RecordStatus, RecordStatus | null> = { pending: "submitted", submitted: "verified", verified: null };
@@ -181,7 +190,15 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
                 <small>{FORM_TYPE_LABEL[f.formType]} · {stat?.submitted ?? 0}/{view.summary.peopleTracked} submitted · {stat?.verified ?? 0} verified{f.documentUrl ? "" : ""}</small>
                 {f.documentUrl && <div><a href={f.documentUrl} target="_blank" rel="noreferrer">Blank form ↗</a></div>}
               </div>
-              {view.context.role !== "viewer" && <Button variant="ghost" type="button" onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>Delete</Button>}
+              {canDeleteConsentForm({
+                role: view.context.role,
+                userId: view.context.userId,
+                authorId: f.createdBy,
+              }) ? (
+                <Button variant="ghost" type="button" aria-label={`Delete form ${f.name}`} onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>
+                  Delete
+                </Button>
+              ) : null}
             </article>
           );
         })}

@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseConsentAction, summarizeConsent, type FormType, type RecordStatus } from "../../../lib/consent";
+import { canDeleteConsentForm, parseConsentAction, summarizeConsent, type FormType, type RecordStatus } from "../../../lib/consent";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -26,7 +26,16 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Consent request failed" }, { status });
 }
 
-type FormRow = { id: string; seasonYear: number; name: string; formType: FormType; required: boolean; documentUrl: string | null; notes: string };
+type FormRow = {
+  id: string;
+  seasonYear: number;
+  name: string;
+  formType: FormType;
+  required: boolean;
+  documentUrl: string | null;
+  notes: string;
+  createdBy: string;
+};
 type RecordRow = { id: string; formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null; byName: string | null };
 
 export async function GET(request: Request) {
@@ -51,7 +60,7 @@ export async function GET(request: Request) {
       const [forms, records] = await Promise.all([
         client.query<FormRow>(
           `SELECT id, season_year AS "seasonYear", name, form_type AS "formType", required,
-                  document_url AS "documentUrl", notes
+                  document_url AS "documentUrl", notes, created_by AS "createdBy"
            FROM consent_forms WHERE org_id = $1 AND season_year = $2 ORDER BY required DESC, name`,
           [row.orgId, seasonYear],
         ),
@@ -73,7 +82,7 @@ export async function GET(request: Request) {
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         forms: forms.rows,
         records: records.rows,
@@ -106,6 +115,17 @@ export async function POST(request: Request) {
           return { id: inserted.rows[0]!.id };
         }
         case "delete_form": {
+          const found = await client.query<{ createdBy: string; role: string }>(
+            `SELECT f.created_by AS "createdBy", m.role
+             FROM consent_forms f
+             JOIN memberships m ON m.org_id = f.org_id AND m.user_id = $3
+             WHERE f.id = $1 AND f.org_id = $2`,
+            [action.id, action.orgId, userId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Form not found");
+          if (!canDeleteConsentForm({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+            throw new HttpError(403, "You cannot delete this form");
+          }
           const deleted = await client.query(`DELETE FROM consent_forms WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this form");
           return { ok: true };
