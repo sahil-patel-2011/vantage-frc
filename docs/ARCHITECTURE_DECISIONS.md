@@ -51,8 +51,9 @@ transactional store would have cost correctness:
 
 **Consequences:** Nothing is lost that the proposal was reaching for. Data still lands in the team's
 own Microsoft storage, readable and editable in Excel. The sync is written against a small interface,
-so it can target another destination later. Import from Excel back into Vantage is designed as a
-follow-up rather than half-built.
+so it can target another destination later. Import from Excel back into Vantage is built as an
+explicit, previewed, allow-listed action that never overwrites a row changed since the sync
+(2026-09-22); the sync itself runs nightly as well as on Sync now.
 
 ---
 

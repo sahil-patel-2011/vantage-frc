@@ -115,8 +115,13 @@ audited separately via `@vantage/core` admin-audit helpers.
 an optional plain-text `account_number` (a team's account reference with a supplier, written via
 `apps/web/lib/vendors/compute-vendors.ts`). It is org-RLS-protected and member-readable, but it is a
 free-text field a team could paste a real bank/card number into, and it is not encrypted or pattern
-redacted. Recommend routing vendor writes through the same redaction as finance writes, or
-documenting it as "supplier reference only".
+redacted.
+
+**Fixed 2026-09-22** (`apps/web/lib/vendors/payment-guard.ts`): every vendor write refuses a
+payment card (a 13–19 digit run passing the Luhn checksum) or a labelled security code in
+`account_number` with a plain-language 400, and strips the same from `notes`. The finance redactor
+was not reused because it removes every long digit run, which is what a supplier account reference
+or a phone number is.
 
 ## 6. Encryption
 
@@ -136,7 +141,8 @@ documenting it as "supplier reference only".
   Later `0040_team_business_portal.sql` (lines 101–106) backfills worker grants for most of these
   tables, but **not `finance_audit_log`** — worker jobs cannot write audit rows. Possibly
   intentional; worth an explicit decision.
-- **F2 — `vendors.account_number`** stored in plain text (details in section 5).
+- **F2 — `vendors.account_number`** stored in plain text — **fixed 2026-09-22**: card numbers and
+  security codes are refused or stripped on write (section 5).
 - **G1 — no field-level encryption of amounts** (section 6). Acceptable under the current threat
   model (RLS + host encryption), but a platform-DB compromise exposes amounts in the clear.
 - **G2 — audit coverage is partial:** season-finance-desk writes (`finance_funding_sources`,

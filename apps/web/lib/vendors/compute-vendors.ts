@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { sortVendors, summarizeVendors } from ".";
+import { guardVendorAccountNumber, redactVendorNotes } from "./payment-guard";
 import type { Vendor, VendorCategory, VendorsSummary } from "./types";
 
 export const VENDOR_CATEGORIES: VendorCategory[] = [
@@ -142,6 +143,8 @@ export async function computeVendorsView(
 }
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
+// Both refuse a payment card in the account-number field and strip one from notes
+// (payment-guard.ts): every member of the team can read this table.
 
 export async function createVendor(
   client: PoolClient,
@@ -177,8 +180,8 @@ export async function createVendor(
       input.leadTimeDays,
       input.rating,
       input.preferred,
-      input.accountNumber,
-      input.notes,
+      guardVendorAccountNumber(input.accountNumber),
+      redactVendorNotes(input.notes),
       input.userId,
     ],
   );
@@ -236,9 +239,9 @@ export async function updateVendor(
       input.rating ?? null,
       input.preferred ?? null,
       input.accountNumber !== undefined,
-      input.accountNumber ?? null,
+      guardVendorAccountNumber(input.accountNumber) ?? null,
       input.notes !== undefined,
-      input.notes ?? null,
+      redactVendorNotes(input.notes) ?? null,
     ],
   );
 }
