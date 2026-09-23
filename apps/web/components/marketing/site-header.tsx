@@ -92,7 +92,11 @@ export function SiteHeader() {
       <div className="nav-actions">
         {account.map((link) =>
           link.primary ? (
-            <a className="button compact waitlist-nav" href={link.href} key={link.label}>
+            <a
+              className={link.href === "/#waitlist" ? "button compact waitlist-nav" : "button compact"}
+              href={link.href}
+              key={link.label}
+            >
               {link.label}
             </a>
           ) : (
