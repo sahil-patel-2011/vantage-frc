@@ -153,6 +153,11 @@
 .product-hub-panel > main.workspace-page,
 .product-hub-panel > main { display: contents; }
 .product-hub-panel .team-ops-nav { display: none; }
+/* One row of links under a page title, not two. Where the header already carries the
+   page's related tools, the Team-operations sibling strip (Practice · Attendance ·
+   Logistics · Batteries) is a second row saying "elsewhere" — Logistics showed eight
+   links above an empty page. The strip still shows on pages without a related row. */
+main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 /* Hub already has the title — keep the feature's action row (Change event, Refresh). */
 .product-hub-panel .app-page-header .breadcrumbs,
 .product-hub-panel .app-page-header h1,
