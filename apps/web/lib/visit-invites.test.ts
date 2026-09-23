@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   calendarTitleForVisit,
+  canDeleteVisitRow,
   canManageVisits,
+  canRemoveVisitRsvp,
   capacityTone,
   countHostGaps,
   demoDayNeedsStudentDemo,
@@ -48,6 +50,28 @@ describe("canManageVisits", () => {
     expect(canManageVisits({ role: "member", teamRole: "student" })).toBe(false);
     expect(canManageVisits({ role: "member", teamRole: "parent" })).toBe(false);
     expect(canManageVisits({ role: null, teamRole: null })).toBe(false);
+  });
+});
+
+describe("canDeleteVisitRow", () => {
+  it("keeps someone else's visit, host, or demo with the author or an owner or admin", () => {
+    expect(canDeleteVisitRow({ role: "member", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteVisitRow({ role: "member", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteVisitRow({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteVisitRow({ role: "admin", userId: "jamie", authorId: "noah" })).toBe(true);
+    expect(canDeleteVisitRow({ role: "scout", userId: "noah", authorId: null })).toBe(false);
+    expect(canDeleteVisitRow({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
+
+describe("canRemoveVisitRsvp", () => {
+  it("keeps a teammate RSVP with the guest, the recorder, or an owner or admin", () => {
+    expect(canRemoveVisitRsvp({ role: "member", userId: "noah", rsvpUserId: "noah", authorId: "ada" })).toBe(true);
+    expect(canRemoveVisitRsvp({ role: "member", userId: "noah", rsvpUserId: null, authorId: "noah" })).toBe(true);
+    expect(canRemoveVisitRsvp({ role: "member", userId: "noah", rsvpUserId: "ada", authorId: "ada" })).toBe(false);
+    expect(canRemoveVisitRsvp({ role: "owner", userId: "ada", rsvpUserId: "noah", authorId: "noah" })).toBe(true);
+    expect(canRemoveVisitRsvp({ role: "admin", userId: "jamie", rsvpUserId: null, authorId: "noah" })).toBe(true);
+    expect(canRemoveVisitRsvp({ role: "member", userId: "", rsvpUserId: null, authorId: "" })).toBe(false);
   });
 });
 

@@ -30,7 +30,7 @@ export type VisitHost = {
   userId: string | null;
   hostName: string;
   notes: string;
-  createdBy: string;
+  createdBy?: string | null;
 };
 
 export type VisitDemo = {
@@ -41,7 +41,7 @@ export type VisitDemo = {
   demoTitle: string;
   notes: string;
   sortOrder: number;
-  createdBy: string;
+  createdBy?: string | null;
 };
 
 export type VisitRsvp = {
@@ -53,7 +53,7 @@ export type VisitRsvp = {
   partySize: number;
   response: RsvpResponse;
   note: string;
-  createdBy: string;
+  createdBy?: string | null;
   respondedAt: string;
 };
 
@@ -68,7 +68,7 @@ export type VisitInvite = {
   capacity: number | null;
   status: VisitStatus;
   calendarEventId: string | null;
-  createdBy: string;
+  createdBy?: string | null;
   createdByName: string | null;
   hosts: VisitHost[];
   demos: VisitDemo[];
@@ -179,6 +179,42 @@ export function canManageVisits(input: {
   const teamRole = (input.teamRole ?? "").toLowerCase();
   if (role === "owner" || role === "admin") return true;
   return teamRole === "mentor" || teamRole === "coach";
+}
+
+/**
+ * Delete of a visit, host, or demo matches RLS: the member who created the row,
+ * or an owner or admin. A mentor or coach team role is not enough on its own.
+ * A missing author id fail-closes.
+ */
+export function canDeleteVisitRow(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
+/**
+ * RSVP removal matches RLS: the member the RSVP is for, the member who recorded
+ * it, or an owner or admin. Scheduling visits is a separate grant.
+ */
+export function canRemoveVisitRsvp(input: {
+  role?: string | null;
+  userId?: string | null;
+  rsvpUserId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  if (!userId) return false;
+  const rsvpUserId = input.rsvpUserId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId === rsvpUserId || userId === authorId;
 }
 
 export type RsvpCounts = {

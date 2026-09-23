@@ -29,6 +29,8 @@ import {
   VISIT_KINDS,
   VISIT_STATUS_LABELS,
   VISIT_STATUSES,
+  canDeleteVisitRow,
+  canRemoveVisitRsvp,
   capacityTone,
   demoDayNeedsStudentDemo,
   rsvpCounts,
@@ -543,6 +545,8 @@ export default function VisitInvitesClient() {
                 visit={visit}
                 orgId={orgId}
                 canManage={canManage}
+                role={view.context.role}
+                userId={view.context.userId}
                 busy={busy}
                 run={run}
                 onShareNote={setShareNote}
@@ -560,6 +564,8 @@ function VisitCard({
   visit,
   orgId,
   canManage,
+  role,
+  userId,
   busy,
   run,
   onShareNote,
@@ -567,6 +573,8 @@ function VisitCard({
   visit: VisitInvite;
   orgId: string;
   canManage: boolean;
+  role: string;
+  userId: string;
   busy: boolean;
   run: (body: ActionBody, key: string) => Promise<void>;
   onShareNote: (note: string) => void;
@@ -662,14 +670,17 @@ function VisitCard({
               {visit.hosts.map((host) => (
                 <li key={host.id}>
                   <span>{host.hostName || "Host"}</span>
-                  <button
-                    type="button"
-                    className="visit-link danger"
-                    disabled={busy}
-                    onClick={() => void run({ action: "remove_host", orgId, id: host.id }, `rh:${host.id}`)}
-                  >
-                    Remove
-                  </button>
+                  {canDeleteVisitRow({ role, userId, authorId: host.createdBy }) ? (
+                    <button
+                      type="button"
+                      className="visit-link danger"
+                      aria-label={`Remove host ${host.hostName || "Host"}`}
+                      disabled={busy}
+                      onClick={() => void run({ action: "remove_host", orgId, id: host.id }, `rh:${host.id}`)}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -710,14 +721,17 @@ function VisitCard({
                       {demo.demoTitle}
                       {demo.studentName ? ` · ${demo.studentName}` : ""}
                     </span>
-                    <button
-                      type="button"
-                      className="visit-link danger"
-                      disabled={busy}
-                      onClick={() => void run({ action: "remove_demo", orgId, id: demo.id }, `rd:${demo.id}`)}
-                    >
-                      Remove
-                    </button>
+                    {canDeleteVisitRow({ role, userId, authorId: demo.createdBy }) ? (
+                      <button
+                        type="button"
+                        className="visit-link danger"
+                        aria-label={`Remove demo ${demo.demoTitle}`}
+                        disabled={busy}
+                        onClick={() => void run({ action: "remove_demo", orgId, id: demo.id }, `rd:${demo.id}`)}
+                      >
+                        Remove
+                      </button>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -819,30 +833,41 @@ function VisitCard({
                   <span>
                     {rsvp.guestName || "Member"} · {rsvp.response}
                   </span>
-                  <button
-                    type="button"
-                    className="visit-link danger"
-                    disabled={busy}
-                    onClick={() => void run({ action: "remove_rsvp", orgId, id: rsvp.id }, `rr:${rsvp.id}`)}
-                  >
-                    Remove
-                  </button>
+                  {canRemoveVisitRsvp({
+                    role,
+                    userId,
+                    rsvpUserId: rsvp.userId,
+                    authorId: rsvp.createdBy,
+                  }) ? (
+                    <button
+                      type="button"
+                      className="visit-link danger"
+                      aria-label={`Remove RSVP ${rsvp.guestName || "Member"}`}
+                      disabled={busy}
+                      onClick={() => void run({ action: "remove_rsvp", orgId, id: rsvp.id }, `rr:${rsvp.id}`)}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
           </div>
-          <button
-            type="button"
-            className="visit-link danger"
-            disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete "${visit.title}"?`)) {
-                void run({ action: "delete_visit", orgId, id: visit.id }, `del:${visit.id}`);
-              }
-            }}
-          >
-            Delete visit
-          </button>
+          {canDeleteVisitRow({ role, userId, authorId: visit.createdBy }) ? (
+            <button
+              type="button"
+              className="visit-link danger"
+              aria-label={`Delete visit ${visit.title}`}
+              disabled={busy}
+              onClick={() => {
+                if (confirm(`Delete "${visit.title}"?`)) {
+                  void run({ action: "delete_visit", orgId, id: visit.id }, `del:${visit.id}`);
+                }
+              }}
+            >
+              Delete visit
+            </button>
+          ) : null}
         </>
       ) : (
         <ul className="visit-rows">
