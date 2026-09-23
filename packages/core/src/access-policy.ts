@@ -94,6 +94,9 @@ export function resolveSessionAuthMethod(path: string): SessionAuthMethod {
   if (value.includes("email-otp")) return "email_otp";
   if (value.includes("/sign-in/email") || value.includes("/sign-up/email")) return "password";
   if (value.includes("google") || value.includes("sign-in/social")) return "google";
+  // Google sign-in finishes here when the callback went through the registered
+  // callback host (resolveGoogleOAuthCallbackOrigin); Google is the only social provider.
+  if (value.includes("oauth-proxy-callback")) return "google";
   // Server-only mint for the desktop shell (desktop-link-plugin.ts).
   if (value.includes("desktop-link")) return "desktop_link";
   return "unknown";
@@ -141,6 +144,33 @@ function isLocalhostAuthOrigin(value: string) {
 /** True for `next dev` / vitest — not a Vercel runtime, even if `.env.local` was pulled from Vercel. */
 function isLocalAuthRuntime() {
   return process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1";
+}
+
+/**
+ * The origin whose `/api/auth/callback/google` is registered on the Google OAuth
+ * client. Google refuses any other (Error 400: redirect_uri_mismatch), and today
+ * only the old project host is listed there — it is still an alias of the same
+ * production deployment. Sign-in started on any other host sends Google this
+ * address; Better Auth's oAuthProxy then carries the result back to the host the
+ * person started on, which sets their session. Set GOOGLE_OAUTH_CALLBACK_ORIGIN
+ * after registering another address (for example https://vantagefrc.vercel.app)
+ * and the proxy steps aside for sign-ins that start there.
+ *
+ * Null locally: `next dev` signs in against its own localhost callback.
+ */
+export const GOOGLE_OAUTH_CALLBACK_ORIGIN_DEFAULT = "https://vantage-frc-web.vercel.app";
+
+export function resolveGoogleOAuthCallbackOrigin(): string | null {
+  if (isLocalAuthRuntime()) return null;
+  const configured = runtimeEnv("GOOGLE_OAUTH_CALLBACK_ORIGIN");
+  if (configured) {
+    try {
+      return new URL(configured).origin;
+    } catch {
+      // Fall through to the registered default rather than send Google garbage.
+    }
+  }
+  return GOOGLE_OAUTH_CALLBACK_ORIGIN_DEFAULT;
 }
 
 /** Resolve the public auth origin for Better Auth callbacks (never use bare VERCEL_URL alone when BETTER_AUTH_URL is set). */

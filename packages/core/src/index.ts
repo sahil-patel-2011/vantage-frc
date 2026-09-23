@@ -3,7 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { emailOTP, haveIBeenPwned } from "better-auth/plugins";
+import { emailOTP, haveIBeenPwned, oAuthProxy } from "better-auth/plugins";
 import { authDb } from "@vantage/db/auth";
 import { accounts, sessions, users, verifications } from "@vantage/db/schema";
 import {
@@ -19,6 +19,7 @@ import {
   resolveAuthBaseURL,
   resolveAuthSecret,
   resolveAuthTrustedOrigins,
+  resolveGoogleOAuthCallbackOrigin,
   resolveSessionAuthMethod,
   runtimeEnv,
 } from "./access-policy";
@@ -38,12 +39,15 @@ import { productHandoffSessions } from "./product-handoff-plugin";
  * instance, and still fails loudly in production when the secret is missing.
  */
 
-function googleSocialProvider() {
+function googleSocialProvider(callbackOrigin: string | null) {
   if (!isGoogleAuthConfigured()) return {};
   return {
     google: {
       clientId: runtimeEnv("GOOGLE_CLIENT_ID"),
       clientSecret: runtimeEnv("GOOGLE_CLIENT_SECRET"),
+      // Used for both the authorization URL and the code exchange, so the two
+      // always name the address registered on the Google client.
+      ...(callbackOrigin ? { redirectURI: `${callbackOrigin}/api/auth/callback/google` } : {}),
       prompt: "select_account",
       // New Google users are gated by databaseHooks.user.create.before
       // (platform owner / existing / pending invite only).
@@ -64,6 +68,7 @@ function buildAuth() {
   const authBaseURL = resolveAuthBaseURL();
   const authTrustedOrigins = resolveAuthTrustedOrigins(authBaseURL);
   const authSecret = resolveAuthSecret();
+  const googleCallbackOrigin = isGoogleAuthConfigured() ? resolveGoogleOAuthCallbackOrigin() : null;
   return betterAuth({
   database: drizzleAdapter(authDb, {
     provider: "pg",
@@ -154,7 +159,7 @@ function buildAuth() {
       },
     },
   },
-  socialProviders: googleSocialProvider(),
+  socialProviders: googleSocialProvider(googleCallbackOrigin),
   plugins: [
     emailOTP({
       expiresIn: OTP_POLICY.expiresInSeconds,
@@ -226,6 +231,10 @@ function buildAuth() {
     // desktop shell after a browser-approved, verifier-proven code exchange.
     desktopLinkSessions(),
     productHandoffSessions(),
+    // Google calls back on the registered host; this hands the encrypted result
+    // to the host sign-in started on (main or Scouting) and sets the session
+    // there. It skips itself when that host is the registered one.
+    ...(googleCallbackOrigin ? [oAuthProxy({ productionURL: googleCallbackOrigin })] : []),
   ],
   rateLimit: {
     enabled: true,
