@@ -965,9 +965,15 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
     linear-gradient(165deg,color-mix(in srgb,var(--accent) 6%,var(--surface)) 0%,var(--surface) 48%,var(--surface) 100%);
   box-shadow:var(--shadow);
   align-items:start;
+  animation:dash-setup-in var(--dur-press) var(--ease-settle) both;
+}
+@keyframes dash-setup-in{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:none}
 }
 .dash-setup-banner h2{margin:10px 0 8px;font-size:var(--title-1);letter-spacing:var(--tracking-tight)}
 .dash-setup-banner>div>p{margin:0;max-width:42ch;color:var(--muted);line-height:1.5;font-size:var(--text-md)}
+.dash-setup-banner>div>p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
 /* When the banner's second column is a single call to action rather than a
    step list, the grid stretched that one button across ~600px and it read as a
    slab. A button is the size of its label, and with no step list to sit beside

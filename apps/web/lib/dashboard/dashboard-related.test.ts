@@ -6,6 +6,7 @@ import {
   dashboardNextActions,
   dashboardSetupBannerLabel,
   dashboardSetupBannerPrimary,
+  dashboardSetupBlurb,
   dashboardSetupSteps,
 } from "./dashboard-related";
 
@@ -71,6 +72,10 @@ describe("dashboard Soft-UI related", () => {
     const steps = dashboardSetupSteps({ orgId: null });
     expect(steps.find((step) => step.id === "workspace")?.label).toBe("Choose your team");
     expect(steps.find((step) => step.id === "workspace")?.href).toBe("/invite");
+    expect(steps.find((step) => step.id === "workspace")?.detail).toMatch(/waitlist/i);
+    expect(dashboardSetupBlurb("no_org")).toBe(
+      "Open the invite sent to your email, or join the waitlist.",
+    );
   });
 
   it("points missing AI provider next action at AI API keys for owners", () => {

@@ -208,7 +208,7 @@ export function dashboardSetupSteps(input: {
         ? isOwnerAdmin
           ? "Team selected"
           : "You’re on a team"
-        : "Open the invite sent to your email",
+        : "Open the invite sent to your email, or join the waitlist",
       href: hasOrg ? withOrgHref("/workspace", orgId) : "/invite",
       state: stateOf("workspace", hasOrg),
     },
@@ -272,7 +272,7 @@ export function dashboardSetupTitle(shell: DashboardShellKind): string {
 export function dashboardSetupBlurb(shell: DashboardShellKind): string {
   switch (shell) {
     case "no_org":
-      return "Open the invite sent to your email.";
+      return "Open the invite sent to your email, or join the waitlist.";
     case "setup":
       return "Set the event this board should follow.";
     case "tba":
