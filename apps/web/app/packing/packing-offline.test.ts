@@ -16,5 +16,8 @@ describe("Packing last snapshot stays on the phone", () => {
     expect(src).toMatch(/if \(!view\)/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
+    expect(src).toContain('href="/#waitlist"');
+    expect(src).toMatch(/persistOrgIdInUrl/);
+    expect(src).toMatch(/join the waitlist/i);
   });
 });

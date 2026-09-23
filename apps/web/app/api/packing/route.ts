@@ -91,7 +91,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to build packing lists.",
+          message: "Choose your team to build packing lists, or join the waitlist.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
         } satisfies PackingView;
       }
