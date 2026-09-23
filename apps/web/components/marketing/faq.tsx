@@ -66,7 +66,10 @@ export function FAQ() {
       <div className="faq-list">
         {faqs.map((f) => (
           <details key={f.q} className="faq-item" id={faqAnchor(f.q)}>
-            <summary>{f.q}</summary>
+            <summary>
+              {f.q}
+              <i aria-hidden="true" />
+            </summary>
             <p>{f.a}</p>
           </details>
         ))}

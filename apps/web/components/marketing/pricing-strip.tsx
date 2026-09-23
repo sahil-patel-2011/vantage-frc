@@ -4,7 +4,7 @@
  * catalog, so this strip cannot drift from the real ladder.
  */
 
-import { pricingTeaserByokCopy, pricingTeaserLede, pricingTeaserTiers } from "./pricing-teaser";
+import { pricingTeaserByokCopy, pricingTeaserTiers } from "./pricing-teaser";
 
 export function PricingStrip({ headingId }: { headingId: string }) {
   const tiers = pricingTeaserTiers();
@@ -27,10 +27,9 @@ export function PricingStrip({ headingId }: { headingId: string }) {
           <p className="lux-eyebrow">What it costs</p>
           <h2 id={headingId}>Every feature is free, for every team.</h2>
           <p>
-            Scouting, strategy, the build, the budget, the shop — no plan unlocks a feature. The plans below only buy AI
-            that runs on our servers, and AI is optional: use your own key, a model on a shop computer, or none at
-            all, and pay nothing. {pricingTeaserLede()} A plan stops when its allowance is used — there is no
-            surprise bill on a booster club&rsquo;s card.
+            Scouting, strategy, the build, the budget and the shop are the same on every plan. Plans only buy AI that
+            runs on our servers — bring your own key, run a model on a shop computer, or skip AI and pay nothing. Each
+            plan stops at its allowance, so there is never a surprise bill on a booster club&rsquo;s card.
           </p>
         </header>
 
@@ -52,9 +51,8 @@ export function PricingStrip({ headingId }: { headingId: string }) {
 
         <div className="mk-price-foot" data-reveal>
           <p>
-            {pricingTeaserByokCopy()} The figures here are read live from the billing catalog, so this section cannot
-            drift from what a team is actually charged; the <a href="/pricing">full detail</a> covers allowances,
-            credit packs and the usage ledger.
+            {pricingTeaserByokCopy()} Prices come straight from the billing catalog; the{" "}
+            <a href="/pricing">full detail</a> covers allowances, credit packs and the usage ledger.
           </p>
           <a className="button secondary" href="/pricing">
             How the AI allowances work

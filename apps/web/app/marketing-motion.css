@@ -1,0 +1,198 @@
+/*
+ * Marketing: last layer. Three layout fixes found by looking at the page at
+ * 1440px and 390px, then the motion that makes it feel finished. Every
+ * duration comes from the shared tokens (vantage-fluid.css), which drop to 0
+ * under prefers-reduced-motion; keyframe entrances are additionally gated on
+ * no-preference so a reduced-motion reader never sees anything move.
+ */
+
+/* ── Fixes ─────────────────────────────────────────────────────────────── */
+
+/* Hero proof points: the ring was absolutely placed over 18px of padding, so
+   it touched the first letter. Let the flex gap space it instead. */
+.marketing-lux .mk-hero-proof li {
+  padding-left: 0;
+  gap: 10px;
+}
+.marketing-lux .mk-hero-proof li::before {
+  position: static;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  box-shadow: inset 0 0 0 4px #2563eb;
+  transform: none;
+}
+
+/* Feature cards: the body was pinned to the bottom (margin-top: auto), so in
+   a row of equal-height cards the descriptions started at different heights. */
+.marketing-lux .lux-feature-grid li > span:last-child {
+  margin-top: 0;
+}
+
+/* Four workspaces in a three-column grid left Business alone on its row and
+   the two helpers under it with an empty third column. Two by two reads as
+   the four places they are; the helpers take the full width below. */
+@media (min-width: 760px) {
+  .marketing-lux .mk-pillars,
+  .marketing-lux .mk-helpers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The display face was tracked to -0.055em; at 76px the s and p in
+   "spreadsheets" collided. */
+.marketing-lux .lux-hero h1 {
+  letter-spacing: -0.038em;
+}
+.marketing-lux .lux-section-head h2 {
+  letter-spacing: -0.03em;
+}
+
+/* Pricing: the line above the plan cards sat 10px from them. */
+.marketing-lux .pricing-savings-callout {
+  margin: 0 0 clamp(20px, 2.4vw, 28px);
+}
+
+/* Two short paragraphs under a section heading, not one long one. */
+.marketing-lux .lux-section-head p + p {
+  margin-top: 0.75em;
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────── */
+
+/* Buttons and links answer the pointer: a quick lift on hover, a press on
+   click. Shared with every button on the marketing pages. */
+.marketing-lux .button,
+.marketing-lux .mk-pillar-link,
+.marketing-lux header.nav nav a {
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-move) var(--ease-out),
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out);
+}
+.marketing-lux .button:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Header links underline from the centre instead of snapping on. */
+.marketing-lux header.nav nav a:not(.button) {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 50% 100%;
+  background-size: 0% 1.5px;
+  transition: background-size var(--dur-move) var(--ease-settle), color var(--dur-tint) var(--ease-out);
+}
+.marketing-lux header.nav nav a:not(.button):hover,
+.marketing-lux header.nav nav a[aria-current="page"]:not(.button) {
+  background-size: 100% 1.5px;
+}
+
+/* Cards: the lift already exists (apple-polish); give it the shared curve and
+   let the icon tile respond too. */
+.marketing-lux :where(.lux-feature-grid li, .lux-loop-steps li, .mk-pillars li, .mk-price-grid li) {
+  transition:
+    transform var(--dur-move) var(--ease-settle),
+    box-shadow var(--dur-move) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out);
+}
+.marketing-lux .lux-card-icon {
+  transition: transform var(--dur-move) var(--ease-settle), background-color var(--dur-tint) var(--ease-out);
+}
+.marketing-lux :where(.lux-feature-grid li, .mk-pillars li):hover .lux-card-icon {
+  transform: translateY(-2px) scale(1.06);
+}
+
+/* FAQ: the plus turns into a minus, and the answer eases in. */
+.marketing-lux .faq-item summary i {
+  transition: transform var(--dur-move) var(--ease-settle);
+}
+.marketing-lux .faq-item[open] summary i {
+  transform: rotate(180deg);
+}
+.marketing-lux .faq-item summary:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Form fields: focus glows rather than jumps. */
+.marketing-lux :where(input, select, textarea) {
+  transition: border-color var(--dur-tint) var(--ease-out), box-shadow var(--dur-move) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hero: the copy rises in line by line, then the product frame settles. */
+  @keyframes mk-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes mk-settle {
+    from {
+      opacity: 0;
+      transform: translateY(22px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  /* Not the h1: it is the largest paint, and holding it at opacity 0 would
+     delay LCP for an effect nobody needs on the headline. */
+  .marketing-lux .lux-hero-copy > :not(h1) {
+    animation: mk-rise 620ms var(--ease-settle) both;
+  }
+  .marketing-lux .lux-hero-copy > :nth-child(2) { animation-delay: 60ms; }
+  .marketing-lux .lux-hero-copy > :nth-child(3) { animation-delay: 120ms; }
+  .marketing-lux .lux-hero-copy > :nth-child(4) { animation-delay: 180ms; }
+  .marketing-lux .lux-hero-copy > :nth-child(n + 5) { animation-delay: 240ms; }
+  .marketing-lux .lux-hero-inner > .mk-mock {
+    animation: mk-settle 760ms var(--ease-settle) 200ms both;
+  }
+
+  /* Grids reveal their cards one after another instead of as one slab. */
+  html.reveal-armed .marketing-lux :where(.lux-feature-grid, .lux-loop-steps, .mk-pillars, .mk-price-grid, .mk-app-gallery-grid)[data-reveal] > li {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity var(--dur-page) var(--ease-out),
+      transform var(--dur-page) var(--ease-settle);
+  }
+  html.reveal-armed .marketing-lux :where(.lux-feature-grid, .lux-loop-steps, .mk-pillars, .mk-price-grid, .mk-app-gallery-grid)[data-reveal].is-in > li {
+    opacity: 1;
+    transform: none;
+  }
+  html.reveal-armed .marketing-lux [data-reveal].is-in > li:nth-child(2) { transition-delay: 70ms; }
+  html.reveal-armed .marketing-lux [data-reveal].is-in > li:nth-child(3) { transition-delay: 140ms; }
+  html.reveal-armed .marketing-lux [data-reveal].is-in > li:nth-child(4) { transition-delay: 210ms; }
+  html.reveal-armed .marketing-lux [data-reveal].is-in > li:nth-child(n + 5) { transition-delay: 260ms; }
+
+  /* The FAQ answer slides open with the details element. */
+  .marketing-lux .faq-item[open] > p {
+    animation: mk-rise 360ms var(--ease-settle) both;
+  }
+
+  /* The header gains a hairline shadow once the page moves,
+     without a scroll listener. */
+  @supports (animation-timeline: scroll()) {
+    @keyframes mk-header-lift {
+      from {
+        box-shadow: 0 0 0 rgba(15, 23, 42, 0);
+      }
+      to {
+        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06), 0 8px 24px -18px rgba(15, 23, 42, 0.35);
+      }
+    }
+    .marketing-lux header.nav {
+      animation: mk-header-lift linear both;
+      animation-timeline: scroll();
+      animation-range: 0 120px;
+    }
+  }
+}

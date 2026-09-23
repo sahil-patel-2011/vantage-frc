@@ -28,7 +28,7 @@ export function HomeShowcase() {
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">The problem</p>
             <h2 id="lux-problem-title">A team&rsquo;s season lives in ten apps that forget.</h2>
-            <p>Every mentor already knows this. Here it is said plainly.</p>
+            <p>Every mentor has lived through all three.</p>
           </header>
           <ul className="lux-feature-grid" data-reveal>
             {MARKETING_PROBLEMS.map((item) => (
@@ -73,12 +73,13 @@ export function HomeShowcase() {
             <p className="lux-eyebrow">Vantage Scouting</p>
             <h2 id="lux-app-frames">What your scouting turns into.</h2>
             <p>
-              Scouting is its own app for event days — scout, look up a team, plan a match, build the pick list —
-              on the same sign-in and the same data as the rest of Vantage. These are drawings of its real screens:
-              your event&rsquo;s numbers fill them in, and anything nobody scouted stays blank instead of guessed.
-              Add it to a phone&rsquo;s home screen and it opens straight to Scouting, your next assigned robot on
-              top; one tap before the venue
-              saves every screen for a pit with no signal.
+              Scouting is its own app for event days — scout, look up a team, plan a match, build the pick list — on
+              the same sign-in and data as the rest of Vantage. These are drawings of its real screens: your
+              event&rsquo;s numbers fill them in, and anything nobody scouted stays blank instead of guessed.
+            </p>
+            <p>
+              Add it to a phone&rsquo;s home screen and it opens on your next assigned robot. One tap before the
+              venue keeps every screen working in a pit with no signal.
             </p>
           </header>
           <ul className="mk-app-gallery-grid" data-reveal>
@@ -96,7 +97,7 @@ export function HomeShowcase() {
       <section className="lux-runs" aria-labelledby="lux-runs-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
-            <p className="lux-eyebrow">One workspace</p>
+            <p className="lux-eyebrow">Where things live</p>
             <h2 id="lux-runs-title">Four workspaces. Everything lives in one of them.</h2>
             <p>Team, Build, Competition and Business, with Home for what to do today. Search finds any tool by name.</p>
           </header>

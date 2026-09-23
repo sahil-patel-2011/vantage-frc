@@ -153,9 +153,7 @@ export function PricingCatalog() {
       <section className="pricing-plans" aria-label="Plans">
         <p className="pricing-savings-callout">
           <strong>{everyPlanValueLine()}</strong> The only thing that changes between plans is how much hosted AI
-          is included: {free.label} ${free.includedAllowanceUsd} on budget models · {pro.label} $
-          {pro.includedAllowanceUsd} · {proPlus.label} ${proPlus.includedAllowanceUsd} · {max.label} $
-          {max.includedAllowanceUsd} on frontier models.
+          is included — each card below says how much.
         </p>
         <div className="pricing-grid pricing-grid-team">
           {ladder.map((plan) =>

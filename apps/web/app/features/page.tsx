@@ -21,8 +21,8 @@ export default function FeaturesPage() {
           <p className="lux-kicker">Product</p>
           <h1>What you open after sign-in.</h1>
           <p>
-            Six hubs. Each one is the same software mentors and students use on a build night.
-            Related tools sit as tabs inside the hub.
+            Four workspaces — Team, Build, Competition and Business — the same software mentors and students
+            use on a build night. Related tools sit as tabs inside each one, and search finds any of them by name.
           </p>
           <MarketingRouteActions
             companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
@@ -39,10 +39,9 @@ export default function FeaturesPage() {
         <section className="lux-showcase" aria-labelledby="product-show-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="product-show-title">Hubs and the tools inside them.</h2>
+              <h2 id="product-show-title">The workspaces and the tools inside them.</h2>
               <p>
-                Competition, Team, Business, Build, AI, and Media. Nothing below is a live ranking — it is the real
-                feature set.
+                Every tool listed here ships today. Ask AI works across all four when a team turns it on.
               </p>
             </header>
             <ProductHubCatalog />

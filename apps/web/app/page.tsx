@@ -39,9 +39,9 @@ export default function Home() {
               <p className="lux-kicker">Free software for FRC teams</p>
               <h1 id="lux-hero-title">Your season stops living in spreadsheets.</h1>
               <p>
-                Scouting, strategy, the build, the budget and the team calendar — in one login. Scouts fill in forms on
-                any tablet, even with no Wi-Fi, and the strategy side turns those rows into who to pick and who is
-                likely to win.
+                Scouting, strategy, the build, the budget and the calendar — one login for every student and mentor.
+                Scouts keep working with no Wi-Fi, and what they record becomes your pick list and your plan for the
+                next match.
               </p>
               <MarketingHeroActions />
               {/* Three things a team can check rather than three adjectives.
@@ -66,7 +66,7 @@ export default function Home() {
             <p className="lux-eyebrow">Closed membership</p>
             <h2>Join the waitlist.</h2>
             <p>
-              Invite-only. We email when your team is set up. Joining the waitlist does not create an account.
+              We set teams up one at a time and email you when yours is ready. Joining does not create an account.
             </p>
             <MarketingInvitedNote />
           </div>

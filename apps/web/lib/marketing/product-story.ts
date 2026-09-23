@@ -17,7 +17,7 @@ export const MARKETING_STUDENT_PATH = [
   },
   {
     title: "Learn CAD",
-    copy: "Paced Onshape lessons and CAD Video Tutor on cast iron. Vantage reads mass and spin from the real document — students never type those numbers.",
+    copy: "Paced Onshape lessons and a video tutor that works on a real part. Vantage reads mass and inertia straight from the document, so nobody types them in.",
   },
   {
     title: "Talk with the team",
@@ -55,7 +55,7 @@ export const MARKETING_HUBS = [
     promise: "From a new member's first sketch to a printable build book for the finished robot.",
     modules: ["Kickoff", "CAD", "Code", "Robot"],
     tools: [
-      "Learn CAD: Onshape from the first sketch, CAD Video Tutor on cast iron, Explore Onshape progress, then a graded part",
+      "Learn CAD: Onshape from the first sketch, a video tutor, then a graded part a lead can check",
       "Team 6925 lab: a programming track and a mechanical track, paced week by week, official docs only",
       "Programming setup: Git, VS Code, WPILib and PathPlanner with real download links, plus the GitHub Student Pack walk-through",
       "CAD vault with Onshape links, change radar, and design reviews",
@@ -111,8 +111,8 @@ export const MARKETING_HELPERS = [
 export const MARKETING_PROBLEMS = [
   {
     icon: "cap" as const,
-    title: "Fifty accounts for a new student",
-    copy: "Discord, Drive, Onshape, GitHub, a scouting app, three spreadsheets and a group chat — before they have learned a single tool. Half of onboarding is remembering passwords.",
+    title: "Seven logins before day one",
+    copy: "Discord, Drive, Onshape, GitHub, a scouting app, three spreadsheets and a group chat — before a new student has learned a single tool. Half of onboarding is remembering passwords.",
   },
   {
     icon: "chat" as const,
@@ -130,7 +130,7 @@ export const MARKETING_LEARN = [
   {
     step: "1",
     title: "Learn",
-    copy: "A new member gets paced weeks, not a wiki dump — a programming track (WPILib, PathPlanner, Limelight, Git) and a mechanical track (shop safety, Onshape, gearing, drawings). Every week ends in something a lead can check.",
+    copy: "New members get paced weeks, not a wiki dump: a programming track (WPILib, PathPlanner, Limelight, Git) and a mechanical track (shop safety, Onshape, gearing, drawings). Each week ends in something a lead can check.",
   },
   {
     step: "2",
@@ -140,7 +140,7 @@ export const MARKETING_LEARN = [
   {
     step: "3",
     title: "Run the team",
-    copy: "Calendar and tasks, files, chat, hours, outreach, money — one login, one place, nothing to re-explain to the next student.",
+    copy: "Calendar and tasks, files, chat, hours, outreach and money in one place — so nothing has to be re-explained to the next student.",
   },
   {
     step: "4",
