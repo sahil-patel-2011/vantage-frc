@@ -12,7 +12,7 @@ import {
 } from "./event-day-related";
 
 describe("eventDayRelatedLinks", () => {
-  it("builds Packing / Match checklist / Tool checkout / Inspection via hubHref / withOrgHref", () => {
+  it("builds Packing / Match checklist / Tool checkout / Inspection / Save for offline via hubHref / withOrgHref", () => {
     const links = eventDayRelatedLinks("org-1", {
       include: [...EVENT_DAY_RELATED_INCLUDE],
     });
@@ -21,7 +21,9 @@ describe("eventDayRelatedLinks", () => {
       "match-checklist",
       "tool-checkout",
       "inspection",
+      "offline",
     ]);
+    expect(links.find((l) => l.id === "offline")?.href).toBe("/offline-shell?orgId=org-1");
     expect(links.find((l) => l.id === "packing")?.href).toBe("/packing?orgId=org-1");
     expect(links.find((l) => l.id === "match-checklist")?.href).toBe(
       "/competition?tab=match-checklist&orgId=org-1",

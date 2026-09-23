@@ -14,6 +14,8 @@ export const EVENT_DAY_RELATED_LINKS = [
   { id: "tool-checkout", label: "Tool checkout", kind: "path" as const, path: "/tool-checkout" },
   { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection-copilot" },
   { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+  // "Save event day" lives there: the pit's pages kept on the phone before the venue.
+  { id: "offline", label: "Save for offline", kind: "path" as const, path: "/offline-shell" },
 ] as const;
 
 export type EventDayRelatedId = (typeof EVENT_DAY_RELATED_LINKS)[number]["id"];
@@ -24,12 +26,13 @@ export type EventDayRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Packing · Match checklist · Tool checkout · Inspection. */
+/** Focused Soft-UI strip — Packing · Match checklist · Tool checkout · Inspection · Save for offline. */
 export const EVENT_DAY_RELATED_INCLUDE: EventDayRelatedId[] = [
   "packing",
   "match-checklist",
   "tool-checkout",
   "inspection",
+  "offline",
 ];
 
 /**
