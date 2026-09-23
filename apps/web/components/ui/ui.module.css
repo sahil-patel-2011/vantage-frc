@@ -552,6 +552,33 @@
 .dialogClose svg { width: 18px; height: 18px; }
 .dialogBody { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 .dialogActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+/* Dialogs arrive instead of appearing: the scrim fades, the card rises a few
+   pixels, a sheet slides up from the edge it is attached to. Durations are the
+   shared tokens (vantage-fluid.css), 0ms under reduced motion, and `both` fill
+   means a 0ms run simply lands on the resting state. */
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheetIn {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.overlay {
+  animation: overlayIn var(--dur-move, 260ms) var(--ease-out, ease-out) both;
+}
+.dialog {
+  animation: dialogIn var(--dur-sheet, 380ms) var(--ease-settle, ease-out) both;
+}
+.dialog.sheet {
+  animation-name: sheetIn;
+}
+
+
 .sheetOverlay {
   place-items: end center;
   padding: 0;

@@ -1,0 +1,27 @@
+/*
+ * Product: the few places that still appeared without arriving. Everything
+ * else already moves — page entrance (soft-ui.css motion-page-in), press
+ * feedback (.app-button), colour transitions (vantage-fluid.css), dialogs
+ * (components/ui/ui.module.css). Same tokens, so reduced motion turns all of
+ * this into 0ms and every element lands on its resting state.
+ */
+
+/* A toast slides up into its stack rather than blinking on. */
+.soft-toast-stack > .soft-toast {
+  animation: page-arrive var(--dur-move) var(--ease-settle) both;
+}
+
+/* Opening a disclosure (More, advanced options, a collapsed section) eases
+   its content in, so the eye sees where the new rows came from. Zero
+   specificity: a component that animates its own disclosure keeps its own. */
+:where(.module-page details[open] > :not(summary)) {
+  animation: page-arrive var(--dur-move) var(--ease-settle) both;
+}
+
+/* A disclosure's own chevron or marker turns with it when it has one. */
+.module-page details > summary :where(.chevron, [data-chevron]) {
+  transition: transform var(--dur-move) var(--ease-settle);
+}
+.module-page details[open] > summary :where(.chevron, [data-chevron]) {
+  transform: rotate(180deg);
+}

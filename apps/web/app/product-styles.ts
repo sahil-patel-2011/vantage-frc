@@ -15,6 +15,8 @@ import "./app-rail.css";
 // Final visual pass: calm spacing, soft depth, cobalt actions. Product half only —
 // its marketing twin lives in marketing-styles.ts so neither sheet is in two chunk groups.
 import "./apple-polish-product.css";
+// Toast and disclosure entrances, on the shared motion tokens.
+import "./product-motion.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};
