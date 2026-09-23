@@ -1,12 +1,41 @@
 # Vantage status
 
-*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-13.*
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-22.*
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
 **Branch:** `github-latest` (tracks `origin/main`).
 **Date opened:** 2026-09-13.
 **This revision:** Claude Code is the no-key Ask AI path. Home Ask AI, Writer, and API keys now send students to **Connect Claude Code**. Leftover boards that still said **Setup required** (related copy + EmptyState overrides, including Pit Command and Knowledge-gap) now badge **Needs setup**. Kickoff still paints an honest 2026 REBUILT / 2027 BIOCORE brief. Did not deploy. No season ±3 claim. Master brief is **not** done.
+
+## Current state — 2026-09-22
+
+Checked with commands that day, not remembered.
+
+- **Production** (`vantagefrc.vercel.app`, Scouting at `vantagefrc-scouting.vercel.app`): deployed from
+  `main`, Ready. Database migrated through **0677** (0676 Excel import history, 0677 finance audit
+  triggers).
+- **Checks on `main`:** unit 10,491 passed / 0 failed; typecheck and lint clean. Browser CI now runs
+  in six shards with swap (the single job was being killed by the runner running out of memory, not
+  by failing tests).
+- **Products:** Vantage (the season) and Scouting (competition day) share one deployment, database
+  and sign-in (`docs/PRODUCTS.md`). Scouting installs to a phone, works offline, names each scout's
+  next robot and pre-loads itself before the venue. The Windows desktop app now allows the Scouting
+  address; installed copies pick that up with the next desktop release.
+
+### Owner must do now (each needs your account or your decision)
+
+1. **Set `CRON_SECRET` in Vercel → Production.** Every scheduled job answers 503 without it
+   (`assertCronAuthorized`): the daily TBA schedule sync, match alerts, sponsor reminders, member
+   onboarding email, team dossiers and the nightly Excel sync. Any long random string; Vercel sends
+   it with its own cron calls.
+2. **Microsoft Excel:** register an Azure app and set `MICROSOFT_CLIENT_ID`,
+   `MICROSOFT_CLIENT_SECRET` (and optionally `MICROSOFT_TENANT`) — `docs/MICROSOFT_EXCEL.md`. Until
+   then the Connectors card says what is missing and nothing is attempted.
+3. **A custom domain** (`vantagefrc.com` / `scouting.vantagefrc.com`) removes the sign-in hop between
+   the two products — `docs/PRODUCTS.md`, `docs/CUSTOM_DOMAIN.md`.
+4. **Publish a desktop release** (`npm run desktop:dist`, then upload) so installed Windows apps get
+   the Scouting-address allowlist.
 
 ## Decisions the owner should know
 
