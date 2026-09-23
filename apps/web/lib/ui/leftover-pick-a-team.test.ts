@@ -55,6 +55,8 @@ describe("leftover student chrome says Choose your team", () => {
   it("nav chip and chat empty use Choose your team", () => {
     const nav = readFileSync(join(WEB_ROOT, "components/app-shell-nav-panel.tsx"), "utf8");
     expect(nav).toMatch(/Choose your team/);
+    expect(nav).toMatch(/join the waitlist/);
+    expect(nav).toMatch(/href="\/#waitlist"/);
     const chat = readFileSync(join(WEB_ROOT, "app/messages/page.tsx"), "utf8");
     expect(chat).toMatch(/Choose your team to open chat/);
   });

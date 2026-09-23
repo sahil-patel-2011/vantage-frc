@@ -174,7 +174,13 @@ export function AppShellNavPanel({
             {workspaceOpen ? (
               <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Your teams">
                 {memberships.length === 0 ? (
-                  <p className="soft-workspace-empty">No team yet — open an invite from email.</p>
+                  <p className="soft-workspace-empty">
+                    No team yet. Open an invite from your email, or{" "}
+                    <a href="/#waitlist" onClick={closeNav}>
+                      join the waitlist
+                    </a>
+                    .
+                  </p>
                 ) : (
                   orderedMemberships.map((row) => (
                     <a
