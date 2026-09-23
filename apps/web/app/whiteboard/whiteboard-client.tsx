@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import {
@@ -16,10 +16,25 @@ import {
   type WhiteboardPlay,
   type WhiteboardView,
 } from "../../lib/whiteboard";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -227,6 +242,7 @@ export default function WhiteboardClient() {
   const [tool, setTool] = useState<StrokeTool | "erase" | "move">("pen");
   const [color, setColor] = useState<StrokeColor>("ink");
   const [newTitle, setNewTitle] = useState("");
+  const [requestedOrg, setRequestedOrg] = useState("");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<WhiteboardView | null>(null);
@@ -235,6 +251,7 @@ export default function WhiteboardClient() {
   const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
+    setRequestedOrg(orgHint);
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<WhiteboardView>("whiteboard", orgHint || "_");
@@ -268,6 +285,7 @@ export default function WhiteboardClient() {
         return;
       }
       setError("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -373,20 +391,43 @@ export default function WhiteboardClient() {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist = !requestedOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
       <main className="module-page wb-page">
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Whiteboard</span>
             <h1>Strategy Whiteboard</h1>
-            <p>Draw plays over a field diagram and save them for match briefings.</p>
+            <p>
+              {offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Draw plays over a field diagram and save them for match briefings."}
+            </p>
           </div>
         </header>
         <OfflineBanner feature="Whiteboard" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+        <EmptyState
+          badge="Needs setup"
+          badgeTone="setup"
+          soft
+          title="Choose your team"
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "wb-setup" : undefined}
+        >
+          {offerWaitlist ? (
+            <div className="wb-setup-actions">
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+              <a className="wb-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            </div>
+          ) : (
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+          )}
         </EmptyState>
       </main>
     );

@@ -62,7 +62,9 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Choose your team to open the strategy whiteboard.",
+          message: requestedOrg
+            ? "Choose your team to open the strategy whiteboard."
+            : "Choose your team to open the strategy whiteboard, or join the waitlist.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null },
         } satisfies WhiteboardView;
       }
