@@ -89,6 +89,23 @@ export async function writeTablesToCopy(
       if (def.isFatal(error)) fatal = message;
     }
   }
+  // A batching target (Google Sheets) writes everything here, so a failure here means no
+  // table of this copy landed.
+  if (!fatal && target.flush) {
+    try {
+      await target.flush();
+    } catch (error) {
+      const message = def.describe(error);
+      const wait = def.throttle(error);
+      if (wait !== null) throttleMs = Math.max(throttleMs ?? 0, wait);
+      for (const outcome of outcomes) {
+        if (!outcome.ok) continue;
+        outcome.ok = false;
+        outcome.rows = 0;
+        outcome.error = message;
+      }
+    }
+  }
   return { outcomes, throttleMs };
 }
 

@@ -4,23 +4,38 @@
  * cannot tell them apart and both copies get byte-for-byte the same tables.
  *
  * Google Sheets has no "tables", so a Vantage table is its worksheet: row 1 is the header
- * (frozen and bold), rows 2+ are the body. Writing replaces the body wholesale — clear, then
- * write — which makes a sync idempotent and lets the next sync repair a half-written sheet.
+ * (frozen and bold), rows 2+ are the body. Every sync rewrites each Vantage sheet wholesale,
+ * which makes a sync idempotent and lets the next sync repair a half-written sheet.
  *
- * Quota: Sheets allows a limited number of requests per minute per user, so everything is
- * batched — one metadata read on open, one header check per table, and body writes in
- * chunks of ROWS_PER_WRITE rows.
+ * Quota (developers.google.com/workspace/sheets/api/limits): 60 reads and 60 writes per
+ * minute per user, 300 each per project; normal use is free, and exceeding the quota is
+ * slated to be billable. So the whole sync is batched: ensureTable/replaceRows only record
+ * what to write, and flush() sends it —
+ *
+ *   open                  1 read   (sheet ids, titles, grid sizes)
+ *   structure, if needed  1 write  (add missing sheets, grow grids too small for the data)
+ *   clear                 1 write  (every Vantage sheet, one values:batchClear)
+ *   write                 1 write  (every header and row, one values:batchUpdate; split
+ *                                   only past MAX_CELLS_PER_WRITE cells)
+ *
+ * — 1 read and 2 writes on a normal sync, 3 on the first. An import is 2 reads (open + one
+ * values:batchGet for every sheet it needs). Nowhere near either limit.
  */
 
-import type { WorkbookReader, WorkbookTableRead, WorkbookTableRef } from "../microsoft/workbook-import";
+import { IMPORT_TABLES, type WorkbookReader, type WorkbookTableRead, type WorkbookTableRef } from "../microsoft/workbook-import";
 import type { CellValue, TableSpec } from "../microsoft/workbook-schema";
 import type { WorkbookTarget } from "../microsoft/workbook-sync";
 import { GoogleSheetsClient, GoogleSheetsError, SHEETS_API_BASE } from "./google-api";
 
-const ROWS_PER_WRITE = 2_000;
+/** One values:batchUpdate carries at most this many cells, keeping requests well under Google's payload limit. */
+export const MAX_CELLS_PER_WRITE = 250_000;
 const MAX_ROWS_READ = 20_000;
+/** A new sheet has room to grow before the next sync has to resize it. */
+const GRID_HEADROOM_ROWS = 200;
 
 export type GoogleSpreadsheet = { spreadsheetId: string; url: string; name: string };
+
+type SheetMeta = { sheetId: number; rows: number; columns: number };
 
 /** A1 column letters: 1 → A, 27 → AA. */
 export function columnLetter(index: number): string {
@@ -45,9 +60,47 @@ function fitRow(row: CellValue[], width: number): CellValue[] {
   return out;
 }
 
+type ValueRange = { range: string; values: CellValue[][] };
+
+/**
+ * Header + rows for each table as A1 value ranges, grouped so no request carries more than
+ * `maxCells` cells. A table bigger than that is split by rows across requests. Pure.
+ */
+export function planValueWrites(
+  tables: Array<{ spec: TableSpec; rows: CellValue[][] }>,
+  maxCells = MAX_CELLS_PER_WRITE,
+): ValueRange[][] {
+  const requests: ValueRange[][] = [];
+  let current: ValueRange[] = [];
+  let cells = 0;
+  const push = (item: ValueRange) => {
+    const size = item.values.length * (item.values[0]?.length ?? 1);
+    if (current.length && cells + size > maxCells) {
+      requests.push(current);
+      current = [];
+      cells = 0;
+    }
+    current.push(item);
+    cells += size;
+  };
+  for (const { spec, rows } of tables) {
+    const width = Math.max(spec.columns.length, 1);
+    const last = columnLetter(width);
+    const all: CellValue[][] = [spec.columns, ...rows.map((row) => fitRow(row, width))];
+    const rowsPerChunk = Math.max(1, Math.floor(maxCells / width));
+    for (let start = 0; start < all.length; start += rowsPerChunk) {
+      const chunk = all.slice(start, start + rowsPerChunk);
+      push({ range: `${quoteSheet(spec.sheet)}!A${start + 1}:${last}${start + chunk.length}`, values: chunk });
+    }
+  }
+  if (current.length) requests.push(current);
+  return requests;
+}
+
 export class GoogleSheetsTarget implements WorkbookTarget, WorkbookReader {
-  /** Sheet title → numeric sheetId. */
-  private readonly sheets = new Map<string, number>();
+  private readonly sheets = new Map<string, SheetMeta>();
+  private readonly pending = new Map<string, { spec: TableSpec; rows: CellValue[][] }>();
+  private reads: Map<string, unknown[][]> | null = null;
 
   private constructor(
     private readonly client: GoogleSheetsClient,
@@ -60,110 +113,99 @@ export class GoogleSheetsTarget implements WorkbookTarget, WorkbookReader {
 
   static async open(client: GoogleSheetsClient, spreadsheetId: string): Promise<GoogleSheetsTarget> {
     const target = new GoogleSheetsTarget(client, spreadsheetId);
-    const meta = await client.request<{ sheets?: Array<{ properties?: { sheetId?: number; title?: string } }> }>(
-      "GET",
-      `${target.base}?fields=sheets.properties(sheetId,title)`,
-    );
+    const meta = await client.request<{
+      sheets?: Array<{
+        properties?: { sheetId?: number; title?: string; gridProperties?: { rowCount?: number; columnCount?: number } };
+      }>;
+    }>("GET", `${target.base}?fields=sheets.properties(sheetId,title,gridProperties(rowCount,columnCount))`);
     for (const sheet of meta?.sheets ?? []) {
-      const { sheetId, title } = sheet.properties ?? {};
-      if (typeof sheetId === "number" && typeof title === "string") target.sheets.set(title, sheetId);
+      const { sheetId, title, gridProperties } = sheet.properties ?? {};
+      if (typeof sheetId === "number" && typeof title === "string") {
+        target.sheets.set(title, {
+          sheetId,
+          rows: gridProperties?.rowCount ?? 1000,
+          columns: gridProperties?.columnCount ?? 26,
+        });
+      }
     }
     return target;
   }
 
-  private async addSheet(title: string, columns: number): Promise<void> {
-    const reply = await this.client.request<{
-      replies?: Array<{ addSheet?: { properties?: { sheetId?: number } } }>;
-    }>("POST", `${this.base}:batchUpdate`, {
-      requests: [
-        {
-          addSheet: {
-            properties: {
-              title,
-              gridProperties: { frozenRowCount: 1, columnCount: Math.max(columns, 1) },
-            },
-          },
-        },
-      ],
-    });
-    const sheetId = reply?.replies?.[0]?.addSheet?.properties?.sheetId;
-    if (typeof sheetId !== "number") {
-      throw new GoogleSheetsError("unavailable", "Google did not return the new sheet.", null, "no_sheet_id");
-    }
-    this.sheets.set(title, sheetId);
-  }
-
-  private async writeHeader(spec: TableSpec): Promise<void> {
-    const sheetId = this.sheets.get(spec.sheet)!;
-    const last = columnLetter(spec.columns.length);
-    await this.client.request("POST", `${this.base}/values:batchClear`, { ranges: [quoteSheet(spec.sheet)] });
-    await this.client.request(
-      "PUT",
-      `${this.base}/values/${encodeURIComponent(`${quoteSheet(spec.sheet)}!A1:${last}1`)}?valueInputOption=RAW`,
-      { values: [spec.columns] },
-    );
-    await this.client.request("POST", `${this.base}:batchUpdate`, {
-      requests: [
-        {
-          repeatCell: {
-            range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
-            cell: { userEnteredFormat: { textFormat: { bold: true } } },
-            fields: "userEnteredFormat.textFormat.bold",
-          },
-        },
-        {
-          updateSheetProperties: {
-            properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
-            fields: "gridProperties.frozenRowCount",
-          },
-        },
-      ],
-    });
-  }
-
+  /** Recorded, not sent: flush() writes every table in a handful of requests. */
   async ensureTable(spec: TableSpec): Promise<void> {
-    if (!this.sheets.has(spec.sheet)) {
-      await this.addSheet(spec.sheet, spec.columns.length);
-      await this.writeHeader(spec);
-      return;
-    }
-    const last = columnLetter(Math.max(spec.columns.length, 1) + 5);
-    const header = await this.client.request<{ values?: unknown[][] }>(
-      "GET",
-      `${this.base}/values/${encodeURIComponent(`${quoteSheet(spec.sheet)}!A1:${last}1`)}`,
-    );
-    const current = (header?.values?.[0] ?? []).map((cell) => String(cell ?? ""));
-    const same = current.length === spec.columns.length && current.every((name, i) => name === spec.columns[i]);
-    // Columns changed (a new scouting field, a schema update): the sheet is Vantage-owned,
-    // so it is rewritten rather than spliced.
-    if (!same) await this.writeHeader(spec);
+    if (!this.pending.has(spec.sheet)) this.pending.set(spec.sheet, { spec, rows: [] });
   }
 
   async replaceRows(spec: TableSpec, rows: CellValue[][]): Promise<void> {
-    const width = spec.columns.length;
-    const last = columnLetter(width);
-    // Clear every body row, including columns past the header a coach may have typed in.
-    await this.client.request("POST", `${this.base}/values:batchClear`, {
-      ranges: [`${quoteSheet(spec.sheet)}!A2:ZZZ`],
-    });
-    for (let i = 0; i < rows.length; i += ROWS_PER_WRITE) {
-      const chunk = rows.slice(i, i + ROWS_PER_WRITE).map((row) => fitRow(row, width));
-      const first = i + 2;
-      const range = `${quoteSheet(spec.sheet)}!A${first}:${last}${first + chunk.length - 1}`;
-      await this.client.request("PUT", `${this.base}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
-        values: chunk,
-      });
-    }
+    this.pending.set(spec.sheet, { spec, rows });
   }
 
+  async flush(): Promise<void> {
+    const tables = [...this.pending.values()];
+    if (!tables.length) return;
+
+    // 1. Structure: add missing sheets and grow grids the data would overflow (writing
+    //    past a sheet's grid is an error, and a new sheet starts at 1000 x 26).
+    const structure: unknown[] = [];
+    let nextId = Math.max(0, ...[...this.sheets.values()].map((sheet) => sheet.sheetId)) + 1;
+    for (const { spec, rows } of tables) {
+      const needRows = rows.length + 1;
+      const needColumns = Math.max(spec.columns.length, 1);
+      const existing = this.sheets.get(spec.sheet);
+      if (!existing) {
+        const sheetId = nextId++;
+        const grid = { rowCount: needRows + GRID_HEADROOM_ROWS, columnCount: needColumns, frozenRowCount: 1 };
+        structure.push(
+          { addSheet: { properties: { sheetId, title: spec.sheet, gridProperties: grid } } },
+          {
+            repeatCell: {
+              range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+              cell: { userEnteredFormat: { textFormat: { bold: true } } },
+              fields: "userEnteredFormat.textFormat.bold",
+            },
+          },
+        );
+        this.sheets.set(spec.sheet, { sheetId, rows: grid.rowCount, columns: grid.columnCount });
+      } else if (existing.rows < needRows || existing.columns < needColumns) {
+        const rowCount = Math.max(existing.rows, needRows + GRID_HEADROOM_ROWS);
+        const columnCount = Math.max(existing.columns, needColumns);
+        structure.push({
+          updateSheetProperties: {
+            properties: { sheetId: existing.sheetId, gridProperties: { rowCount, columnCount } },
+            fields: "gridProperties.rowCount,gridProperties.columnCount",
+          },
+        });
+        this.sheets.set(spec.sheet, { ...existing, rows: rowCount, columns: columnCount });
+      }
+    }
+    if (structure.length) await this.client.request("POST", `${this.base}:batchUpdate`, { requests: structure });
+
+    // 2. Clear every Vantage sheet in one request, then 3. write every header and row.
+    await this.client.request("POST", `${this.base}/values:batchClear`, {
+      ranges: tables.map(({ spec }) => quoteSheet(spec.sheet)),
+    });
+    for (const data of planValueWrites(tables)) {
+      await this.client.request("POST", `${this.base}/values:batchUpdate`, { valueInputOption: "RAW", data });
+    }
+    this.pending.clear();
+  }
+
+  /** One values:batchGet for every table an import reads, on the first call. */
   async readTable(ref: WorkbookTableRef): Promise<WorkbookTableRead | null> {
     if (!this.sheets.has(ref.sheet)) return null;
-    const range = `${quoteSheet(ref.sheet)}!A1:ZZ${MAX_ROWS_READ + 1}`;
-    const data = await this.client.request<{ values?: unknown[][] }>(
-      "GET",
-      `${this.base}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`,
-    );
-    const values = data?.values ?? [];
+    if (!this.reads) {
+      const wanted = [...new Set([...IMPORT_TABLES.map((table) => table.sheet), ref.sheet])].filter((sheet) =>
+        this.sheets.has(sheet),
+      );
+      const params = new URLSearchParams({ valueRenderOption: "UNFORMATTED_VALUE", dateTimeRenderOption: "FORMATTED_STRING" });
+      for (const sheet of wanted) params.append("ranges", `${quoteSheet(sheet)}!A1:ZZ${MAX_ROWS_READ + 1}`);
+      const data = await this.client.request<{ valueRanges?: Array<{ values?: unknown[][] }> }>(
+        "GET",
+        `${this.base}/values:batchGet?${params.toString()}`,
+      );
+      this.reads = new Map(wanted.map((sheet, i) => [sheet, data?.valueRanges?.[i]?.values ?? []]));
+    }
+    const values = this.reads.get(ref.sheet) ?? [];
     const headers = values[0] ?? [];
     const width = headers.length;
     // Google trims trailing empty cells; pad rows back to the header width.

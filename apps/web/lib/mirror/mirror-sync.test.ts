@@ -137,6 +137,22 @@ describe("syncMirror", () => {
     expect(rest?.params[4]).toBe(new Date(clock().getTime() + 120_000).toISOString());
   });
 
+  it("fails and rests a batching copy whose one write is throttled, and keeps the other", async () => {
+    const excel = new MemoryCopy();
+    const google = Object.assign(new MemoryCopy(), {
+      flush: async () => {
+        throw new GoogleSheetsError("throttled", "quota", 429, "RESOURCE_EXHAUSTED", 45_000);
+      },
+    });
+    const { client, log } = fakeClient();
+    const result = await syncMirror(client, ORG, { targets: [def("excel", excel), def("google", google)], now: clock });
+    if (result.status !== "done") throw new Error("expected done");
+    expect(result.copies.map((copy) => copy.status)).toEqual(["succeeded", "failed"]);
+    expect(result.copies[1]!.rowsWritten).toBe(0);
+    const rest = log.find((entry) => entry.sql.includes("throttled_until = COALESCE"));
+    expect(rest?.params[4]).toBe(new Date(clock().getTime() + 60_000).toISOString());
+  });
+
   it("skips a copy that is still resting, without opening it", async () => {
     const excel = new MemoryCopy();
     let opened = false;

@@ -35,6 +35,26 @@ the season cron (`lib/mirror/scheduled-mirror.ts`, falls back to the Excel-only 
 migration 0682 is applied). Every sync takes the same per-team advisory lock as the Excel
 sync and the import, so writers never interleave.
 
+## Cost and Google's rate limits
+
+The Sheets API is free for normal use. Its limits (developers.google.com/workspace/sheets/api/limits,
+checked 2026-09-23) are **60 reads and 60 writes per minute per user** and **300 of each per
+minute per project**; Google has said requests *over* the quota are slated to become billable
+later in 2026. Vantage is built to stay far below it:
+
+| Operation | Requests to Google |
+|---|---|
+| Sync (sheets already exist) | 1 read + 2 writes |
+| First sync (creates the sheets) | 1 read + 3 writes |
+| Pull edits | 2 reads |
+
+Everything a sync writes goes out in one `values:batchClear` and one `values:batchUpdate`
+(`sheets-target.ts`, split only past 250,000 cells). Each team uses its own owner's Google
+account, so the per-user limit is per team: with "Sync both copies" capped at 6 per 10 minutes
+and pulls at 10, a team peaks around 2 requests a minute. The nightly job syncs teams one at
+a time. A 429 is **never retried** — every retry would be an over-quota request — the Google
+copy rests instead (`throttled_until`) and the Excel copy carries the load.
+
 ## Pulling edits back (`lib/mirror/mirror-import.ts`, `mirror-merge.ts`)
 
 "Pull edits from the spreadsheets" reads **every copy that is up**, least recently read

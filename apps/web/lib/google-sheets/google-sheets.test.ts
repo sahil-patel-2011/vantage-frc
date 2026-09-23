@@ -15,7 +15,7 @@ import {
   isGoogleSheetsState,
   verifyGoogleOAuthState,
 } from "./oauth-state";
-import { GoogleSheetsTarget, columnLetter, quoteSheet } from "./sheets-target";
+import { GoogleSheetsTarget, columnLetter, planValueWrites, quoteSheet } from "./sheets-target";
 
 const env = { BETTER_AUTH_SECRET: "test-secret-that-is-long-enough", NODE_ENV: "test" } as unknown as NodeJS.ProcessEnv;
 const jsonResponse = (status: number, body: unknown, headers: Record<string, string> = {}) =>
@@ -102,14 +102,14 @@ describe("Google errors", () => {
     expect(error.kind).toBe("auth_expired");
   });
 
-  it("retries a rate limit with backoff and gives up on the wait it cannot afford", async () => {
+  it("retries a server error with backoff", async () => {
     let calls = 0;
     const slept: number[] = [];
     const response = await googleFetch(
       "https://sheets.test",
       {},
       {
-        fetchImpl: async () => (++calls < 3 ? new Response("", { status: 429 }) : new Response("ok", { status: 200 })),
+        fetchImpl: async () => (++calls < 3 ? new Response("", { status: 503 }) : new Response("ok", { status: 200 })),
         sleep: async (ms) => {
           slept.push(ms);
         },
@@ -119,13 +119,23 @@ describe("Google errors", () => {
     expect(response.status).toBe(200);
     expect(calls).toBe(3);
     expect(slept).toEqual([500, 1000]);
+  });
 
-    const long = await googleFetch(
+  it("never retries a 429: a request over quota is the one Google may bill", async () => {
+    let calls = 0;
+    const response = await googleFetch(
       "https://sheets.test",
       {},
-      { fetchImpl: async () => new Response("", { status: 429, headers: { "retry-after": "600" } }), sleep: async () => undefined },
+      {
+        fetchImpl: async () => {
+          calls += 1;
+          return new Response("", { status: 429 });
+        },
+        sleep: async () => undefined,
+      },
     );
-    expect(long.status).toBe(429);
+    expect(response.status).toBe(429);
+    expect(calls).toBe(1);
   });
 });
 
@@ -137,47 +147,127 @@ describe("GoogleSheetsTarget", () => {
     expect(quoteSheet("Pick List's")).toBe("'Pick List''s'");
   });
 
-  it("adds a missing sheet with a header, then replaces the body by clearing and writing", async () => {
-    const calls: Array<{ method: string; url: string; body: unknown }> = [];
+  type StructureRequest = {
+    addSheet?: { properties: { title: string } };
+    updateSheetProperties?: { properties: { sheetId: number; gridProperties: { rowCount: number; columnCount: number } } };
+    repeatCell?: unknown;
+  };
+  type SentBody = { ranges?: string[]; data?: Array<{ range: string; values: unknown[][] }>; requests?: StructureRequest[] };
+
+  // A fake Sheets API that records every request, answering like Google does.
+  function fakeSheets(existing: Array<{ title: string; sheetId: number; rows?: number; columns?: number }>, values: unknown[][][] = []) {
+    const calls: Array<{ method: string; url: string; body: SentBody }> = [];
     const client = {
       async request(method: string, url: string, body?: unknown) {
-        calls.push({ method, url: decodeURIComponent(url), body });
-        if (method === "GET" && url.includes("fields=sheets")) return { sheets: [{ properties: { sheetId: 0, title: "Sheet1" } }] };
-        if (url.endsWith(":batchUpdate") && JSON.stringify(body).includes("addSheet")) {
-          return { replies: [{ addSheet: { properties: { sheetId: 7 } } }] };
+        calls.push({ method, url: decodeURIComponent(url), body: (body ?? {}) as SentBody });
+        if (method === "GET" && url.includes("fields=sheets")) {
+          return {
+            sheets: existing.map((sheet) => ({
+              properties: {
+                sheetId: sheet.sheetId,
+                title: sheet.title,
+                gridProperties: { rowCount: sheet.rows ?? 1000, columnCount: sheet.columns ?? 26 },
+              },
+            })),
+          };
         }
+        if (url.includes("values:batchGet")) return { valueRanges: values.map((v) => ({ values: v })) };
         return {};
       },
     } as unknown as GoogleSheetsClient;
+    return { client, calls };
+  }
 
-    const target = await GoogleSheetsTarget.open(client, "sheet-123");
-    const spec = { entity: "Teams" as const, sheet: "Teams", table: "VantageTeams", columns: ["id", "team_number"] };
-    await target.ensureTable(spec);
-    await target.replaceRows(spec, [
-      ["frc254", 254],
-      ["frc1678", null],
+  const workbook = () => {
+    const spec = (sheet: string, columns: string[]) => ({ entity: sheet as "Teams", sheet, table: `Vantage${sheet}`, columns });
+    return [
+      { spec: spec("Teams", ["id", "team_number", "nickname"]), rows: [["frc254", 254, "Cheesy Poofs"], ["frc1678", null, "Citrus"]] },
+      { spec: spec("Matches", ["id", "red", "blue"]), rows: Array.from({ length: 120 }, (_, i) => [`qm${i}`, "a", "b"]) },
+      {
+        spec: spec("MatchScouting", Array.from({ length: 30 }, (_, i) => `c${i}`)),
+        rows: Array.from({ length: 3_000 }, (_, i) => Array.from({ length: 30 }, (_, j) => i * j)),
+      },
+      { spec: spec("PitScouting", ["id"]), rows: [] },
+      { spec: spec("PickList", ["id", "rank"]), rows: [["a", 1]] },
+      { spec: spec("SyncInfo", ["key", "value"]), rows: [["synced_at", "now"]] },
+    ];
+  };
+
+  const sync = async (target: GoogleSheetsTarget) => {
+    for (const table of workbook()) {
+      await target.ensureTable(table.spec);
+      await target.replaceRows(table.spec, table.rows);
+    }
+    await target.flush();
+  };
+
+  it("syncs a whole workbook in 1 read and 2 writes once the sheets exist", async () => {
+    const titles = ["Teams", "Matches", "MatchScouting", "PitScouting", "PickList", "SyncInfo"];
+    const { client, calls } = fakeSheets(titles.map((title, i) => ({ title, sheetId: i + 1, rows: 5_000, columns: 40 })));
+    await sync(await GoogleSheetsTarget.open(client, "sheet-123"));
+    expect(calls.map((call) => `${call.method} ${call.url.split("/").pop()!.split("?")[0]}`)).toEqual([
+      "GET sheet-123",
+      "POST values:batchClear",
+      "POST values:batchUpdate",
     ]);
-
-    const writes = calls.filter((call) => call.method === "PUT");
-    expect(writes[0]!.url).toContain("'Teams'!A1:B1");
-    expect(writes[0]!.body).toEqual({ values: [["id", "team_number"]] });
-    expect(writes[1]!.url).toContain("'Teams'!A2:B3");
-    // Blanks are written as "", never null.
-    expect(writes[1]!.body).toEqual({ values: [["frc254", 254], ["frc1678", ""]] });
-    const clears = calls.filter((call) => call.url.endsWith("values:batchClear"));
-    expect(clears.at(-1)!.body).toEqual({ ranges: ["'Teams'!A2:ZZZ"] });
+    expect(calls[1]!.body.ranges).toEqual(titles.map((title) => `'${title}'`));
+    const data = calls[2]!.body.data ?? [];
+    // Header in row 1, rows from row 2; blanks written as "", never null.
+    expect(data[0]).toEqual({
+      range: "'Teams'!A1:C3",
+      values: [["id", "team_number", "nickname"], ["frc254", 254, "Cheesy Poofs"], ["frc1678", "", "Citrus"]],
+    });
+    expect(data.find((item) => item.range.startsWith("'MatchScouting'"))!.range).toBe("'MatchScouting'!A1:AD3001");
   });
 
-  it("reads a sheet back as headers and width-padded rows", async () => {
-    const client = {
-      async request(method: string, url: string) {
-        if (url.includes("fields=sheets")) return { sheets: [{ properties: { sheetId: 3, title: "PickList" } }] };
-        return { values: [["id", "rank", "notes"], ["a", 1], ["b", 2, "fast"]] };
-      },
-    } as unknown as GoogleSheetsClient;
+  it("adds missing sheets and grows grids that are too small, in one structural write", async () => {
+    const { client, calls } = fakeSheets([
+      { title: "Sheet1", sheetId: 0 },
+      { title: "MatchScouting", sheetId: 9, rows: 1_000, columns: 26 },
+    ]);
+    await sync(await GoogleSheetsTarget.open(client, "s"));
+    expect(calls.filter((call) => call.method !== "GET")).toHaveLength(3);
+    const structure = calls[1]!.body.requests ?? [];
+    const added = structure.flatMap((request) => (request.addSheet ? [request.addSheet.properties.title] : []));
+    expect(added).toEqual(["Teams", "Matches", "PitScouting", "PickList", "SyncInfo"]);
+    // A new sheet starts at 1000 x 26 unless told otherwise; the data must fit.
+    const grow = structure.find((request) => request.updateSheetProperties)!.updateSheetProperties;
+    expect(grow.properties.sheetId).toBe(9);
+    expect(grow.properties.gridProperties.rowCount).toBeGreaterThanOrEqual(3_001);
+    expect(grow.properties.gridProperties.columnCount).toBeGreaterThanOrEqual(30);
+    expect(structure.filter((request) => request.repeatCell)).toHaveLength(5);
+  });
+
+  it("splits a write only when it would carry too many cells", () => {
+    const tables = workbook();
+    expect(planValueWrites(tables)).toHaveLength(1);
+    const small = planValueWrites(tables, 10_000);
+    expect(small.length).toBeGreaterThan(1);
+    for (const request of small) {
+      const cells = request.reduce((sum, item) => sum + item.values.length * item.values[0]!.length, 0);
+      expect(cells).toBeLessThanOrEqual(10_000);
+    }
+    // Split tables keep contiguous A1 ranges.
+    const ranges = small.flat().filter((item) => item.range.startsWith("'MatchScouting'")).map((item) => item.range);
+    expect(ranges[0]).toBe("'MatchScouting'!A1:AD333");
+    expect(ranges[1]).toBe("'MatchScouting'!A334:AD666");
+  });
+
+  it("reads every import table in one request, padded to the header width", async () => {
+    const { client, calls } = fakeSheets(
+      [
+        { title: "PickList", sheetId: 3 },
+        { title: "MatchScouting", sheetId: 4 },
+      ],
+      [[["id", "rank", "notes"], ["a", 1], ["b", 2, "fast"]], [["id"], ["m1"]]],
+    );
     const target = await GoogleSheetsTarget.open(client, "s");
-    const read = await target.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" });
-    expect(read).toEqual({ headers: ["id", "rank", "notes"], rows: [["a", 1, ""], ["b", 2, "fast"]], truncated: false });
+    const pick = await target.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" });
+    const match = await target.readTable({ entity: "MatchScouting", sheet: "MatchScouting", table: "VantageMatchScouting" });
+    expect(pick).toEqual({ headers: ["id", "rank", "notes"], rows: [["a", 1, ""], ["b", 2, "fast"]], truncated: false });
+    expect(match?.rows).toEqual([["m1"]]);
     expect(await target.readTable({ entity: "PitScouting", sheet: "PitScouting", table: "VantagePitScouting" })).toBeNull();
+    expect(calls.filter((call) => call.url.includes("values:batchGet"))).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
 });

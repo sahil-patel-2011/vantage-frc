@@ -208,12 +208,17 @@ export type GoogleRetryOptions = {
   fetchImpl?: typeof fetch;
 };
 
-const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+/**
+ * Server errors only. A 429 is never retried here: Google plans to bill requests over the
+ * Sheets quota, and every retry after a 429 would be one. The mirror rests that copy
+ * instead (throttled_until) and the Excel copy carries the load until the next sync.
+ */
+const RETRYABLE = new Set([500, 502, 503, 504]);
 
 /**
- * fetch with a timeout and retries for rate limits and server errors. Google's documented
- * guidance for Sheets quota errors is truncated exponential backoff, which is what this is.
- * A network failure or timeout is not retried: a write that timed out may have landed.
+ * fetch with a timeout and truncated exponential backoff for server errors (Google's
+ * documented retry shape). A network failure or timeout is not retried: a write that timed
+ * out may have landed.
  */
 export async function googleFetch(url: string, init: RequestInit, options: GoogleRetryOptions = {}): Promise<Response> {
   const maxAttempts = Math.max(1, options.maxAttempts ?? 5);

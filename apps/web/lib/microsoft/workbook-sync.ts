@@ -38,6 +38,12 @@ export interface WorkbookTarget {
   replaceRows(spec: TableSpec, rows: CellValue[][]): Promise<void>;
   /** Release anything held open (a workbook session). Must not throw. */
   close(): Promise<void>;
+  /**
+   * Optional: send everything ensureTable/replaceRows recorded. A target that batches its
+   * writes (Google Sheets, to stay far inside its per-minute quota) does its I/O here; one
+   * that writes as it goes (Excel) leaves it out. Throwing fails every table of the copy.
+   */
+  flush?(): Promise<void>;
 }
 
 // ------------------------------------------------------------------ reading Postgres
