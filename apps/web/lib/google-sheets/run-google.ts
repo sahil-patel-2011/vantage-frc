@@ -22,6 +22,9 @@ import {
   storeSpreadsheetLocation,
 } from "./connection-store";
 import { GoogleSheetsTarget, createSpreadsheet } from "./sheets-target";
+import { AppsScriptBridge, AppsScriptTarget, bridgeUrlOf } from "./apps-script-bridge";
+import type { WorkbookReader } from "../microsoft/workbook-import";
+import type { WorkbookTarget } from "../microsoft/workbook-sync";
 
 export type GoogleConnectFailure =
   | { status: "not_connected" }
@@ -59,6 +62,40 @@ export async function connectGoogleSheets(
     if (isGoogleSheetsError(error) && error.kind === "auth_expired") return { status: "reconnect_required", error: message };
     return { status: "google_unavailable", error: message };
   }
+}
+
+/**
+ * The team's Google copy, whichever way it is connected: through its own Apps Script web app
+ * (no Google Cloud project — apps-script-bridge.ts) or through the Sheets API with an OAuth
+ * sign-in. Both implement the same write and read interfaces.
+ */
+export async function openGoogleCopy(
+  client: PoolClient,
+  input: { orgId: string; config: GoogleSheetsConfig | null; retry?: GoogleRetryOptions; createIfMissing?: boolean },
+): Promise<(WorkbookTarget & WorkbookReader) | GoogleConnectFailure> {
+  const secret = await readGoogleConnectionSecret(client, input.orgId);
+  if (!secret) return { status: "not_connected" };
+  const bridgeUrl = bridgeUrlOf(secret.spreadsheetId);
+  if (bridgeUrl) {
+    let shared: string;
+    try {
+      shared = await decryptRefreshToken(secret.refreshToken);
+    } catch {
+      const error = "Vantage could not decrypt the saved Apps Script secret (encryption keys changed). Set the script up again from Connectors.";
+      await recordGoogleError(client, input.orgId, error);
+      return { status: "encryption_unavailable", error };
+    }
+    return new AppsScriptTarget(new AppsScriptBridge(bridgeUrl, shared));
+  }
+  if (!input.config) {
+    return { status: "google_unavailable", error: "Google Sheets sign-in is not set up on this server. Connect through Apps Script instead." };
+  }
+  if (!secret.spreadsheetId && input.createIfMissing === false) {
+    return { status: "google_unavailable", error: "The Google spreadsheet has not been created yet — sync first." };
+  }
+  const connected = await connectGoogleSheets(client, { orgId: input.orgId, config: input.config, retry: input.retry });
+  if (connected.status !== "ok") return connected;
+  return openGoogleTarget(client, input.orgId, connected.sheets, connected.secret);
 }
 
 /** Open the team's spreadsheet, creating it (and remembering it) when it is missing. */

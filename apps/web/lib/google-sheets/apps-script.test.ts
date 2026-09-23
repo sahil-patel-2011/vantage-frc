@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { AppsScriptBridge, AppsScriptTarget, bridgeSpreadsheetId, bridgeUrlOf } from "./apps-script-bridge";
+import { checkAppsScript } from "./connect-apps-script";
 import { APPS_SCRIPT_VERSION, appsScriptSource, isAppsScriptUrl, newAppsScriptSecret } from "./apps-script-source";
 
 const URL_OK = "https://script.google.com/macros/s/AKfycbx1234567890abcdefghijkLMNOP/exec";
@@ -159,5 +160,17 @@ describe("the Apps Script bridge", () => {
     const evil = (async () => new Response(null, { status: 302, headers: { location: "https://evil.example/x" } })) as typeof fetch;
     const bridge = new AppsScriptBridge(URL_OK, newAppsScriptSecret(), { fetchImpl: evil });
     await expect(bridge.ping()).rejects.toMatchObject({ code: "bad_redirect" });
+  });
+
+  it("checks pasted values before anything is saved", async () => {
+    const secret = newAppsScriptSecret();
+    const { script } = loadScript(secret);
+    const fetchImpl = googleFetch(script).impl;
+    expect(await checkAppsScript({ url: "https://example.com/x", secret }, { fetchImpl })).toMatchObject({ ok: false, code: "bad_url" });
+    expect(await checkAppsScript({ url: URL_OK, secret: "short" }, { fetchImpl })).toMatchObject({ ok: false, code: "bad_secret" });
+    expect(await checkAppsScript({ url: URL_OK, secret: newAppsScriptSecret() }, { fetchImpl })).toMatchObject({ ok: false, code: "unreachable" });
+    // Pasted with stray spaces and capitals, as people do.
+    const ok = await checkAppsScript({ url: ` ${URL_OK} `, secret: ` ${secret.toUpperCase()} ` }, { fetchImpl });
+    expect(ok).toEqual({ ok: true, url: URL_OK, secret, name: "Team 6925 copy", fileUrl: "https://docs.google.com/spreadsheets/d/abc/edit" });
   });
 });

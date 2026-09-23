@@ -10,8 +10,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { describeGoogleError, getGoogleSheetsConfig, isGoogleSheetsError } from "../google-sheets/google-api";
-import { connectGoogleSheets } from "../google-sheets/run-google";
-import { GoogleSheetsTarget } from "../google-sheets/sheets-target";
+import { openGoogleCopy } from "../google-sheets/run-google";
 import { describeGraphError, getMicrosoftConfig, isGraphError } from "../microsoft/graph";
 import {
   type ApplyResult,
@@ -62,12 +61,10 @@ async function openReader(client: PoolClient, orgId: string, copy: MirrorCopy): 
     if (!connected.secret.workbookItemId) throw new Error("The Excel workbook has not been created yet — sync first.");
     return GraphWorkbookTarget.open(connected.graph, connected.secret.workbookItemId, { persistChanges: false });
   }
-  const config = getGoogleSheetsConfig();
-  if (!config) throw new Error("Google is not configured on this server.");
-  const connected = await connectGoogleSheets(client, { orgId, config });
-  if (connected.status !== "ok") throw new Error("error" in connected ? connected.error : "Google Sheets is not connected.");
-  if (!connected.secret.spreadsheetId) throw new Error("The Google spreadsheet has not been created yet — sync first.");
-  return GoogleSheetsTarget.open(connected.sheets, connected.secret.spreadsheetId);
+  // Apps Script bridge or Sheets API sign-in; an import never creates a spreadsheet.
+  const opened = await openGoogleCopy(client, { orgId, config: getGoogleSheetsConfig(), createIfMissing: false });
+  if ("status" in opened) throw new Error("error" in opened ? opened.error : "Google Sheets is not connected.");
+  return opened;
 }
 
 function throttleOf(error: unknown): number | null {

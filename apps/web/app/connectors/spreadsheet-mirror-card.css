@@ -110,3 +110,16 @@
   gap: 4px;
   font-size: 13px;
 }
+
+.mirror-card .apps-script-connect[open] {
+  display: grid;
+  gap: 8px;
+}
+.mirror-card .apps-script-fields {
+  display: grid;
+  gap: 8px;
+}
+.mirror-card .apps-script-fields textarea {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}

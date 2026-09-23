@@ -90,6 +90,25 @@ as the Microsoft connection and AI keys. The callback verifies an HMAC-signed, 1
 state bound to the user and team plus a PKCE verifier only this server can derive, so it
 works even when Google returns the owner to a Vantage host where they have no cookie.
 
+### Or: Apps Script, with no Google Cloud project (per team)
+
+A team owner can connect the Google copy with nothing configured on the server: Connectors →
+Spreadsheet copies → **Connect with Apps Script**. The card builds a small script with a
+fresh 64-hex secret (`lib/google-sheets/apps-script-source.ts`); the owner pastes it into
+their spreadsheet (Extensions → Apps Script), deploys it as a web app (Execute as: Me, Who
+has access: Anyone) and pastes the `/exec` address back. `POST
+/api/integrations/google/apps-script` pings the script with a signed request and only then
+stores the connection: `spreadsheet_id = "apps-script:<url>"`, the secret envelope-encrypted
+in the `refresh_token_*` columns.
+
+Every request is `POST <url>?sig=<hex HMAC-SHA256(secret, body)>` with a timestamp; the
+script refuses a bad signature or a timestamp more than five minutes off, so the public
+address alone reads and writes nothing. Vantage only sends to `script.google.com/macros/s/…/exec`
+and only follows Google's redirect to `script.googleusercontent.com`
+(`lib/google-sheets/apps-script-bridge.ts`). One sync is one `write` call; one import is one
+`read` call. The script runs under the owner's account, so there is no Sheets API quota to
+spend. `openGoogleCopy` (`run-google.ts`) picks the bridge or the OAuth path per team.
+
 Microsoft Excel setup is unchanged: `MICROSOFT_EXCEL.md`.
 
 ## Data model (migration 0682)

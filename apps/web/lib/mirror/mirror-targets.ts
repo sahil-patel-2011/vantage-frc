@@ -9,7 +9,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepointOrThrow } from "@vantage/db";
 import { type GoogleSheetsConfig, describeGoogleError, getGoogleSheetsConfig, isGoogleSheetsError } from "../google-sheets/google-api";
 import { isMirrorNotMigrated } from "../google-sheets/connection-store";
-import { connectGoogleSheets, openGoogleTarget } from "../google-sheets/run-google";
+import { openGoogleCopy } from "../google-sheets/run-google";
 import { type MicrosoftConfig, describeGraphError, getMicrosoftConfig, isGraphError } from "../microsoft/graph";
 import { connectMicrosoftGraph } from "../microsoft/run-sync";
 import { readWorkbookNaming, storeWorkbookLocation } from "../microsoft/connection-store";
@@ -29,6 +29,8 @@ export type CopyState = {
   fileUrl: string | null;
   fileName: string | null;
   account: string | null;
+  /** Google only: connected through an Apps Script web app rather than a Sheets API sign-in. */
+  viaAppsScript: boolean;
 };
 
 /** What each copy looks like right now, from the member-readable status views. */
@@ -50,7 +52,8 @@ export async function readCopyStates(client: PoolClient, orgId: string): Promise
           `SELECT last_sync_at::text AS "lastSyncAt", last_sync_hash AS "lastSyncHash", last_read_at::text AS "lastReadAt",
                   throttled_until::text AS "throttledUntil", last_error AS "lastError",
                   spreadsheet_url AS "fileUrl", spreadsheet_name AS "fileName",
-                  COALESCE(account_email, account_name) AS account
+                  COALESCE(account_email, account_name) AS account,
+                  COALESCE(spreadsheet_id LIKE 'apps-script:%', false) AS "viaAppsScript"
              FROM org_google_sheets_connection_status WHERE org_id = $1::uuid LIMIT 1`,
           [orgId],
         )
@@ -67,6 +70,7 @@ export async function readCopyStates(client: PoolClient, orgId: string): Promise
       fileUrl: row?.fileUrl ?? null,
       fileName: row?.fileName ?? null,
       account: row?.account ?? null,
+      viaAppsScript: Boolean(row?.viaAppsScript),
     });
     return { migrated: true, copies: [shape("excel", excel), shape("google", google)] };
   } catch (error) {
@@ -109,7 +113,7 @@ export function excelTargetDef(
 export function googleTargetDef(
   client: PoolClient,
   orgId: string,
-  config: GoogleSheetsConfig,
+  config: GoogleSheetsConfig | null,
   throttledUntil: string | null,
 ): MirrorTargetDef {
   return {
@@ -119,9 +123,10 @@ export function googleTargetDef(
     isFatal: (error) => isGoogleSheetsError(error) && (error.kind === "auth_expired" || error.kind === "api_disabled"),
     throttle: (error) => (isGoogleSheetsError(error) && error.kind === "throttled" ? (error.retryAfterMs ?? 0) : null),
     async open(): Promise<WorkbookTarget> {
-      const connected = await connectGoogleSheets(client, { orgId, config });
-      if (connected.status !== "ok") throw new MirrorConnectError(connected.status, "error" in connected ? connected.error : null);
-      return openGoogleTarget(client, orgId, connected.sheets, connected.secret);
+      // Apps Script bridge or Sheets API sign-in, whichever this team connected.
+      const opened = await openGoogleCopy(client, { orgId, config });
+      if ("status" in opened) throw new MirrorConnectError(opened.status, "error" in opened ? opened.error : null);
+      return opened;
     },
   };
 }
@@ -145,7 +150,10 @@ export function connectedTargetDefs(client: PoolClient, orgId: string, states: C
   for (const state of states) {
     if (!state.connected) continue;
     if (state.copy === "excel" && microsoft) defs.push(excelTargetDef(client, orgId, microsoft, state.throttledUntil));
-    if (state.copy === "google" && google) defs.push(googleTargetDef(client, orgId, google, state.throttledUntil));
+    // An Apps Script copy needs no Google Cloud client on this server.
+    if (state.copy === "google" && (google || state.viaAppsScript)) {
+      defs.push(googleTargetDef(client, orgId, google, state.throttledUntil));
+    }
   }
   return defs;
 }

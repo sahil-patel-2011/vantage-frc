@@ -48,6 +48,7 @@ export async function GET(request: Request) {
         fileUrl: copy.fileUrl,
         fileName: copy.fileName,
         account: copy.account,
+        viaAppsScript: copy.viaAppsScript,
       })),
       providers: {
         google: {

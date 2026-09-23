@@ -5,6 +5,7 @@ import { Badge, Button } from "../../components/ui";
 import { relativeTime } from "../../components/ui/relative-time";
 import type { PublicPreview } from "../../lib/microsoft/run-import";
 import type { MirrorSummary } from "../../lib/mirror/mirror-status";
+import AppsScriptConnect from "./apps-script-connect";
 import "./spreadsheet-mirror-card.css";
 
 /**
@@ -28,6 +29,7 @@ type Copy = {
   fileUrl: string | null;
   fileName: string | null;
   account: string | null;
+  viaAppsScript?: boolean;
 };
 
 type Status = {
@@ -195,7 +197,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
   async function disconnectGoogle() {
     setBusy("disconnect");
     const { ok } = await post("/api/integrations/google/disconnect", { orgId }, "DELETE").catch(() => ({ ok: false }));
-    setMessage(ok ? { ok: true, text: "Google Sheets disconnected. The spreadsheet stays in your Drive." } : { ok: false, text: "Could not disconnect. Try again." });
+    setMessage(ok ? { ok: true, text: "Google Sheets disconnected. The spreadsheet stays in your Drive; you can delete its Apps Script deployment if you used one." } : { ok: false, text: "Could not disconnect. Try again." });
     setBusy(null);
     void load();
   }
@@ -260,7 +262,12 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                           <code title="Two copies with the same code hold the same data">{copy.lastSyncHash ? copy.lastSyncHash.slice(0, 8) : "—"}</code>
                         </dd>
                       </div>
-                      {copy.account ? (
+                      {copy.viaAppsScript ? (
+                        <div>
+                          <dt>Through</dt>
+                          <dd>Your Apps Script{copy.fileName ? ` in “${copy.fileName}”` : ""}</dd>
+                        </div>
+                      ) : copy.account ? (
                         <div>
                           <dt>Account</dt>
                           <dd>{copy.account}</dd>
@@ -297,7 +304,17 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                       </Button>
                     ) : null}
                   </div>
-                  {!provider.configured && status.canManage ? (
+                  {copy.copy === "google" && !copy.connected && status.canManage ? (
+                    <AppsScriptConnect
+                      orgId={orgId}
+                      open={!provider.configured}
+                      onConnected={(text) => {
+                        setMessage({ ok: true, text });
+                        void load();
+                      }}
+                    />
+                  ) : null}
+                  {!provider.configured && status.canManage && copy.copy !== "google" ? (
                     <div className="mirror-setup">
                       <p>{provider.message}</p>
                       {provider.missingEnv.length ? (
@@ -309,7 +326,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                   ) : null}
                   {copy.copy === "google" && !copy.connected && status.canManage && status.providers.google.callbackUrl ? (
                     <details className="mirror-setup">
-                      <summary>One-time Google Cloud setup</summary>
+                      <summary>Or: Google sign-in through Vantage&apos;s Google Cloud project</summary>
                       <p>
                         Enable the Google Sheets API on the Google Cloud project that holds Vantage&apos;s Google sign-in
                         client. Nothing else to register: Connect returns through the address Google already accepts for
