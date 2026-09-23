@@ -434,7 +434,7 @@ export default function DossierClient() {
             className="dossier-empty"
             badge="No facts yet"
             badgeTone="setup"
-            title={view?.status === "empty" ? view.message : emptyCopy.title}
+            title={emptyCopy.title}
             description={
               view?.status === "empty"
                 ? `${view.message} Cards stay blank until real rows exist.`
