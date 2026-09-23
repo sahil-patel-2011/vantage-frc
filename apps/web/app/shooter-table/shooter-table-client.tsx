@@ -8,7 +8,7 @@ import { buildShooterCall } from "../../lib/learning/surfaces";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { interpolateShot, SHOOTER_EXPORT_LANGUAGES, type ShooterExportLanguage } from "../../lib/shooter-table";
+import { canDeleteShooterPoint, interpolateShot, SHOOTER_EXPORT_LANGUAGES, type ShooterExportLanguage } from "../../lib/shooter-table";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Point = {
@@ -18,13 +18,14 @@ type Point = {
   rpm: number | null;
   hoodAngle: number | null;
   notes: string;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       seasonYear: number;
       points: Point[];
       summary: { count: number; minDistanceFt: number | null; maxDistanceFt: number | null };
@@ -448,11 +449,16 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
                     </small>
                   ) : null}
                 </div>
-                {view.context.role !== "viewer" ? (
+                {canDeleteShooterPoint({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: p.createdBy,
+                }) ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="danger"
+                    aria-label={`Delete point ${p.notes || `${p.distanceFt} ft`}`}
                     onClick={() => void post({ action: "delete_point", id: p.id }, "Point removed.")}
                   >
                     Delete
