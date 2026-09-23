@@ -21,7 +21,13 @@ export type DutyAssignment = {
 
 /** matches_ref stores an alliance as jsonb `{ teamKeys: [...] }`; plain arrays are accepted too. */
 type Alliance = readonly string[] | { teamKeys?: readonly string[] | null } | null | undefined;
-export type DutyMatch = { matchKey: string; redAlliance?: Alliance; blueAlliance?: Alliance };
+export type DutyMatch = {
+  matchKey: string;
+  redAlliance?: Alliance;
+  blueAlliance?: Alliance;
+  /** COALESCE(actual, predicted, scheduled): when the match ran or is expected to. */
+  matchTime?: string | null;
+};
 
 function teamKeysOf(alliance: Alliance): readonly string[] {
   if (!alliance) return [];
@@ -58,8 +64,12 @@ export function nextScoutingDuty(input: {
     .filter((assignment) => assignment.matchKey && assignment.teamKey && !isBackupRole(assignment.role))
     .filter((assignment) => !filed.has(`${assignment.matchKey}|${assignment.teamKey}`))
     .filter((assignment) => {
-      if (!assignment.startsAt) return true;
-      const at = Date.parse(assignment.startsAt);
+      // The match's own clock wins over the assignment's: a match that already ran is not
+      // "next", however the shift was planned.
+      const when =
+        input.matches?.find((row) => row.matchKey === assignment.matchKey)?.matchTime ?? assignment.startsAt;
+      if (!when) return true;
+      const at = Date.parse(when);
       return Number.isNaN(at) || at >= now - GRACE_MS;
     })
     .map((assignment) => ({ assignment, order: matchOrderKey(assignment.matchKey) }))

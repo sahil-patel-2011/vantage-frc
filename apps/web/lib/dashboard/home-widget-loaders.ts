@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { allLessonIds } from "../cad-learn/track";
+import { matchKeyLabel } from "../scouting/scout-breakdown";
 import type { DashboardWidgetType } from "./catalog";
 
 type WidgetDataStatus = "live" | "empty" | "setup_required";
@@ -115,7 +116,31 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
       LIMIT 2`,
     [ctx.orgId, ctx.userId],
   );
-  if (!matchLabel && events.length === 0 && duties.length === 0) {
+  // The person's own next scouting robot: primary duties only, not yet filed by anyone,
+  // and not long past (the same rules as Scouting home, lib/scouting/next-duty.ts).
+  let scoutDuty: { matchKey: string; teamKey: string; matchLabel: string } | null = null;
+  if (ctx.eventKey) {
+    const rows = await query<{ matchKey: string; teamKey: string }>(
+      client,
+      `SELECT /* home-widget:my_day-scout */ a.match_key AS "matchKey", a.team_key AS "teamKey"
+         FROM scout_assignments a
+         JOIN matches_ref m ON m.match_key = a.match_key
+        WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
+          AND lower(coalesce(a.role, '')) <> 'backup'
+          AND coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at, now())
+              > now() - interval '15 minutes'
+          AND NOT EXISTS (
+            SELECT 1 FROM match_scout_entries e
+             WHERE e.org_id = a.org_id AND e.match_key = a.match_key AND e.team_key = a.team_key
+          )
+        ORDER BY coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at) NULLS LAST, m.match_number
+        LIMIT 1`,
+      [ctx.orgId, ctx.userId, ctx.eventKey],
+    );
+    const row = rows[0];
+    if (row) scoutDuty = { ...row, matchLabel: matchKeyLabel(row.matchKey) };
+  }
+  if (!matchLabel && events.length === 0 && duties.length === 0 && !scoutDuty) {
     return empty("No matches on your day yet. Open My Day after match data is connected.");
   }
   return live({
@@ -125,6 +150,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     bumperCue,
     events,
     duties,
+    scoutDuty,
   });
 }
 

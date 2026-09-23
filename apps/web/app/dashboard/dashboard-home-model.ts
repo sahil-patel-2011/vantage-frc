@@ -91,6 +91,8 @@ function firstListTitle(data: Record<string, unknown> | undefined, key: string):
 export function homeNowAction(input: {
   orgId: string;
   nextMatchLabel?: string | null;
+  /** The person's own next scouting robot, from the my_day widget. */
+  scoutDuty?: { matchKey: string; teamKey: string; matchLabel: string } | null;
   dutyTitle?: string | null;
   clockedIn?: boolean;
   openTodos?: number;
@@ -112,6 +114,16 @@ export function homeNowAction(input: {
       detail: match,
       href: "/my-day",
       cta: "Open My Day",
+    };
+  }
+  const scout = input.scoutDuty;
+  if (scout?.matchKey && scout.teamKey) {
+    const number = scout.teamKey.replace(/^frc/i, "");
+    return {
+      title: "You’re scouting next",
+      detail: `${number} in ${scout.matchLabel}`,
+      href: `/scout/entry?matchKey=${encodeURIComponent(scout.matchKey)}&teamKey=${encodeURIComponent(scout.teamKey)}`,
+      cta: `Scout ${number}`,
     };
   }
   const duty = firstString(input.dutyTitle);
@@ -215,9 +227,15 @@ export function homeNowFromWidgets(input: {
     typeof todoData?.open === "number" && Number.isFinite(todoData.open) ? Number(todoData.open) : todoItems;
   const hours = byType("hours_month");
   const clockedIn = hours?.openSession === true;
+  const scoutRaw = myDay?.scoutDuty as { matchKey?: unknown; teamKey?: unknown; matchLabel?: unknown } | null | undefined;
+  const scoutDuty =
+    scoutRaw && typeof scoutRaw.matchKey === "string" && typeof scoutRaw.teamKey === "string"
+      ? { matchKey: scoutRaw.matchKey, teamKey: scoutRaw.teamKey, matchLabel: firstString(scoutRaw.matchLabel) ?? scoutRaw.matchKey }
+      : null;
   return homeNowAction({
     orgId: input.orgId,
     nextMatchLabel: matchLabel,
+    scoutDuty,
     dutyTitle,
     clockedIn,
     openTodos,

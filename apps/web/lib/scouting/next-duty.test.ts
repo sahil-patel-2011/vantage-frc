@@ -40,6 +40,21 @@ describe("nextScoutingDuty", () => {
     expect(duty?.matchKey).toBe("2026casj_qm4");
   });
 
+  it("skips a match that already ran, even with no entry and no planned start", () => {
+    const duty = nextScoutingDuty({
+      assignments: [
+        { matchKey: "2026casj_qm7", teamKey: "frc7" },
+        { matchKey: "2026casj_qm8", teamKey: "frc8" },
+      ],
+      matches: [
+        { matchKey: "2026casj_qm7", matchTime: "2026-03-14T13:00:00Z" },
+        { matchKey: "2026casj_qm8", matchTime: "2026-03-14T15:20:00Z" },
+      ],
+      now: NOW,
+    });
+    expect(duty?.matchKey).toBe("2026casj_qm8");
+  });
+
   it("does not count a pit entry as covering a match duty", () => {
     const duty = nextScoutingDuty({
       assignments: [{ matchKey: "2026casj_qm5", teamKey: "frc5" }],

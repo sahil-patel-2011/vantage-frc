@@ -87,6 +87,7 @@ describe("homeNowAction", () => {
     });
     expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 things on your list");
     expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");
+    expect(homeNowAction({ orgId: "org-1" }).quiet).toBe(true);
   });
 
   it("reads next match, duties, and todos from widget payloads without inventing counts", () => {
@@ -259,5 +260,26 @@ describe("what the calendar puts on the card", () => {
     expect(homeNowAction({ orgId: "o", nextEventToday: null }).title).toBe(
       "Nothing you have to do right now",
     );
+  });
+});
+
+describe("home now: scouting duty", () => {
+  const scoutDuty = { matchKey: "2026casj_qm34", teamKey: "frc148", matchLabel: "Q34" };
+
+  it("sends a scout straight to their robot's form, after the team's own match", () => {
+    const action = homeNowAction({ orgId: "org-1", scoutDuty, dutyTitle: "Pit crew" });
+    expect(action.title).toBe("You’re scouting next");
+    expect(action.detail).toBe("148 in Q34");
+    expect(action.href).toBe("/scout/entry?matchKey=2026casj_qm34&teamKey=frc148");
+    expect(action.quiet).toBeUndefined();
+    expect(homeNowAction({ orgId: "org-1", scoutDuty, nextMatchLabel: "qm 33" }).title).toBe("You’re up next");
+  });
+
+  it("reads the duty from the my_day widget", () => {
+    const action = homeNowFromWidgets({
+      orgId: "org-1",
+      widgets: { a: { type: "my_day", data: { scoutDuty } } },
+    });
+    expect(action.cta).toBe("Scout 148");
   });
 });

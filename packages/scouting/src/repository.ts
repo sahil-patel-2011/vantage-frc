@@ -96,7 +96,8 @@ export class ScoutingRepository {
       this.client.query(
         `SELECT match_key AS "matchKey", comp_level AS "compLevel",
           match_number AS "matchNumber", red_alliance AS "redAlliance",
-          blue_alliance AS "blueAlliance", event_time AS "eventTime"
+          blue_alliance AS "blueAlliance", event_time AS "eventTime",
+          COALESCE(actual_time, predicted_time, event_time) AS "matchTime"
          FROM matches_ref WHERE event_key = $1
          ORDER BY event_time NULLS LAST, match_number`,
         [eventKey],
