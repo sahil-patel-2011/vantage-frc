@@ -70,6 +70,20 @@ test("an event later today shows on the card, and goes when it is removed", asyn
   await clearProbes(page);
 
   /*
+    A match, a scouting duty or a shift outranks the calendar, and those come from
+    the seeded event rather than from anything this spec can clear. On a freshly
+    seeded CI database the owner's team has matches later today, so the card says
+    "You're up next" — correctly. The question this spec asks has no answer then.
+  */
+  await page.reload();
+  await expect(page.getByTestId("dash-now")).not.toContainText("Working out what is next", { timeout: 25_000 });
+  const before = (await page.getByTestId("dash-now").innerText()).trim();
+  test.skip(
+    /You.re up next|You.re scouting next|You.re on duty/i.test(before),
+    `something outranks the calendar today: ${before.split("\n")[0]}`,
+  );
+
+  /*
     Two hours out, so it is still ahead whenever this runs — and skipped when
     that crosses midnight, because "tonight" then means tomorrow and the card
     is right to ignore it. A spec that quietly redefined its own subject at

@@ -84,10 +84,12 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
-  // Four apps and nothing else. The island used to carry a fifth "All" button
-  // that opened the drawer the hamburger already opens — a duplicate sitting
-  // among Team, Compete, Scout and Build as if it were one of your apps.
-  await expect(island.getByRole("button")).toHaveCount(0);
+  // Four apps and the gear that edits them (#2321). The island used to carry a
+  // fifth "All" button that opened the drawer the hamburger already opens — a
+  // duplicate sitting among Team, Compete, Scout and Build as if it were one of
+  // your apps. The gear is not an app and says so.
+  await expect(island.getByRole("button")).toHaveCount(1);
+  await expect(island.getByRole("button", { name: "Edit these apps" })).toBeVisible();
   await page.getByRole("button", { name: "Menu and search" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
@@ -120,11 +122,11 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
   await expect(island).toBeVisible();
 
+  // At desktop width the left rail replaces the phone bar (#2321, app-rail.css):
+  // one navigation, not two.
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(island).toBeVisible();
-  await expect(island.getByRole("link")).toHaveCount(4);
-  // Four at desktop width too, and still no fifth button.
-  await expect(island.getByRole("button")).toHaveCount(0);
+  await expect(island).toBeHidden();
+  await expect(page.getByRole("navigation", { name: "Pillars" })).toBeVisible();
 });
 
 test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
@@ -135,6 +137,13 @@ test("search is one affordance at every width, inside the navigation panel", asy
   // "Menu and search" — and this spec kept looking for the old button, so it
   // had been failing on a shell that was behaving exactly as designed.
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
+  // Since #2321 the desktop rail carries Search itself and the top bar's
+  // "Menu and search" is a phone control (app-rail.css hides it ≥1024px). One
+  // opener per width, never two: the other one is not rendered visibly.
+  const openerFor = (width: number) =>
+    width >= 1024
+      ? page.locator(".vrail-search")
+      : page.getByRole("button", { name: "Menu and search" });
 
   for (const size of [
     { width: 390, height: 844 },
@@ -144,8 +153,10 @@ test("search is one affordance at every width, inside the navigation panel", asy
     await page.goto("/dashboard");
     await expect(oldButton).toHaveCount(0);
     await expect(field).toBeHidden();
+    const other = size.width >= 1024 ? page.getByRole("button", { name: "Menu and search" }) : page.locator(".vrail-search");
+    await expect(other).toBeHidden();
 
-    await page.getByRole("button", { name: "Menu and search" }).click();
+    await openerFor(size.width).click();
     await expect(field).toBeVisible();
     await expect(field).toBeFocused();
     await page.keyboard.press("Escape");
@@ -153,7 +164,7 @@ test("search is one affordance at every width, inside the navigation panel", asy
   }
 
   // And it searches: the panel's field is the only one, so this is the path.
-  await page.getByRole("button", { name: "Menu and search" }).click();
+  await openerFor(1400).click();
   await field.fill("pick list");
   await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");
   await page.keyboard.press("Enter");
