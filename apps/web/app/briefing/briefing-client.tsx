@@ -666,8 +666,7 @@ export default function BriefingClient() {
             </>
           ) : (
             <EmptyHint>
-              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>
-              {partnerSyncHref ? (
+              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>{partnerSyncHref ? (
                 <>
                   {" or sync ratings in "}
                   <a href={partnerSyncHref}>Team Data</a>
