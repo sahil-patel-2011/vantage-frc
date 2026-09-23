@@ -9,6 +9,19 @@ export type MatchResult = (typeof MATCH_RESULTS)[number];
 export const ALLIANCES = ["red", "blue", "unknown"] as const;
 export type Alliance = (typeof ALLIANCES)[number];
 
+/** Delete matches match_debriefs RLS: the person who logged it, or an owner or admin. */
+export function canDeleteMatchDebrief(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export type DebriefInput = {
   matchLabel: string;
   eventKey: string;

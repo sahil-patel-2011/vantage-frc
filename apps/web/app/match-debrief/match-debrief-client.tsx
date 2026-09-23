@@ -9,7 +9,7 @@ import {
   expandSuccessState,
   type AiExpandState,
 } from "../../lib/ai-expand";
-import { MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
+import { canDeleteMatchDebrief, MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -18,10 +18,11 @@ type Debrief = {
   id: string; seasonYear: number; eventKey: string; matchLabel: string; alliance: Alliance; result: MatchResult;
   pointsScored: number | null; cycleCount: number | null; drivetrainOk: boolean; mechanismsOk: boolean; autoOk: boolean;
   whatWorked: string; whatBroke: string; actionItems: string; byName: string | null; createdAt: string;
+  loggedBy?: string | null;
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; debriefs: Debrief[]; summary: { total: number; wins: number; losses: number; ties: number; record: string; avgPoints: number | null; openActionItems: number }; takeaways: string };
+  | { status: "ready"; context: { orgId: string; role: string; userId?: string | null }; seasonYear: number; debriefs: Debrief[]; summary: { total: number; wins: number; losses: number; ties: number; record: string; avgPoints: number | null; openActionItems: number }; takeaways: string };
 
 const RESULT_LABEL: Record<MatchResult, string> = { win: "Win", loss: "Loss", tie: "Tie", unknown: "—" };
 const EMPTY = { matchLabel: "", eventKey: "", alliance: "unknown", result: "unknown", pointsScored: "", cycleCount: "", drivetrainOk: true, mechanismsOk: true, autoOk: true, whatWorked: "", whatBroke: "", actionItems: "" };
@@ -320,7 +321,15 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
               {d.whatWorked && <small>✓ {d.whatWorked}</small>}
               {d.whatBroke && <small>✗ {d.whatBroke}</small>}
             </div>
-            {view.context.role !== "viewer" && <button onClick={() => void post({ action: "delete_debrief", id: d.id }, "Debrief deleted.")}>Delete</button>}
+            {canDeleteMatchDebrief({
+              role: view.context.role,
+              userId: view.context.userId,
+              authorId: d.loggedBy,
+            }) ? (
+              <button type="button" aria-label={`Delete debrief ${d.matchLabel}`} onClick={() => void post({ action: "delete_debrief", id: d.id }, "Debrief deleted.")}>
+                Delete
+              </button>
+            ) : null}
           </article>
         ))}
       </section>

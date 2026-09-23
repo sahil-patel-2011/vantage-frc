@@ -8,6 +8,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   buildDebriefCoachPrompt,
+  canDeleteMatchDebrief,
   debriefTakeaways,
   MATCH_DEBRIEF_AI_FEATURE,
   parseMatchDebriefAction,
@@ -56,6 +57,7 @@ type DebriefRow = {
   id: string; seasonYear: number; eventKey: string; matchLabel: string; alliance: Alliance; result: MatchResult;
   pointsScored: number | null; cycleCount: number | null; drivetrainOk: boolean; mechanismsOk: boolean; autoOk: boolean;
   whatWorked: string; whatBroke: string; actionItems: string; byName: string | null; createdAt: string;
+  loggedBy: string | null;
 };
 
 // Qualified with the `match_debriefs d` alias: the list query joins `users u`,
@@ -64,7 +66,7 @@ type DebriefRow = {
 const SELECT_COLS = `d.id, d.season_year AS "seasonYear", d.event_key AS "eventKey", d.match_label AS "matchLabel", d.alliance, d.result,
   d.points_scored AS "pointsScored", d.cycle_count AS "cycleCount", d.drivetrain_ok AS "drivetrainOk",
   d.mechanisms_ok AS "mechanismsOk", d.auto_ok AS "autoOk", d.what_worked AS "whatWorked", d.what_broke AS "whatBroke",
-  d.action_items AS "actionItems"`;
+  d.action_items AS "actionItems", d.logged_by AS "loggedBy"`;
 
 export async function GET(request: Request) {
   try {
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
       const summary = summarizeDebriefs(debriefs.rows.map((d) => ({ result: d.result, pointsScored: d.pointsScored, actionItems: d.actionItems })));
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         debriefs: debriefs.rows,
         summary,
@@ -194,6 +196,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_debrief") {
+        const found = await client.query<{ loggedBy: string; role: string }>(
+          `SELECT d.logged_by AS "loggedBy", m.role
+           FROM match_debriefs d
+           JOIN memberships m ON m.org_id = d.org_id AND m.user_id = $3
+           WHERE d.id = $1 AND d.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Debrief not found");
+        if (!canDeleteMatchDebrief({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.loggedBy })) {
+          throw new HttpError(403, "You cannot delete this debrief");
+        }
         const deleted = await client.query(`DELETE FROM match_debriefs WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this debrief");
         return { ok: true };
