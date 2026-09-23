@@ -50,6 +50,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
     [/Nothing you have to do right now/i, /Open My Day/i],
     [/You.re in the shop/i, /Open My Hours/i],
     [/You.re on duty/i, /See duties/i],
+    [/You.re scouting next/i, /Scout \d+/i],
     [/thing(s)? on your list|One thing on your list/i, /Open todos/i],
   ]);
   // Polled, because the card is allowed to change once: it says it is

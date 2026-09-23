@@ -752,12 +752,20 @@ main.content:has(> h1:only-child) > h1 {
    page that has not started yet. The same links now sit on one line: a small
    label, the first step emphasised, the rest as quiet links. Every link stays;
    only the per-link sentence goes. Scoped with :has() to the shared markup
-   (a.edc-next-action rows) so the four bespoke panels are untouched. */
+   (a.edc-next-action rows) so the four bespoke panels are untouched.
+
+   `display` is deliberately NOT set here. Hubs (product-hub.css) and some pages hide
+   these panels with `display: none !important`, and an !important display here would
+   out-rank them and put the panel back inside the hub. Whatever display the page gives
+   it, the layout below reads as label | links: grid columns if it is a grid, wrapping
+   if it is flex, and inline pieces if it is a block. */
 :is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) {
-  display: flex !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-rows: none !important;
+  flex-direction: row !important;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 16px;
+  align-items: baseline !important;
+  gap: 6px 16px !important;
   min-height: 0 !important;
   margin-block: 0 var(--space-3, 12px);
   padding: 10px 14px !important;
@@ -773,7 +781,8 @@ main.content:has(> h1:only-child) > h1 {
   display: none !important;
 }
 :is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) > header :where(h2, h3) {
-  margin: 0 !important;
+  display: inline-block !important;
+  margin: 0 16px 0 0 !important;
   color: var(--muted) !important;
   font-size: var(--text-2xs, 11px) !important;
   font-weight: 700 !important;
@@ -781,7 +790,8 @@ main.content:has(> h1:only-child) > h1 {
   text-transform: uppercase;
 }
 :is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) :where(ol, ul) {
-  display: flex !important;
+  display: inline-flex !important;
+  vertical-align: baseline;
   flex-wrap: wrap;
   gap: 6px 16px !important;
   margin: 0 !important;
