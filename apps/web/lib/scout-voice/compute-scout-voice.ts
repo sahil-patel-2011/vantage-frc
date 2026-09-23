@@ -11,12 +11,13 @@ import {
   SCOUT_VOICE_CONSENT_VERSION,
   SCOUT_VOICE_STT_FEATURE,
 } from ".";
-import type {
-  ScoutVoiceNote,
-  ScoutVoiceOrgSettings,
-  ScoutVoiceProviders,
-  ScoutVoiceSttSource,
-  ScoutVoiceUserPrefs,
+import {
+  canDeleteScoutVoiceNote,
+  type ScoutVoiceNote,
+  type ScoutVoiceOrgSettings,
+  type ScoutVoiceProviders,
+  type ScoutVoiceSttSource,
+  type ScoutVoiceUserPrefs,
 } from "./types";
 
 export type ScoutVoiceSetupStep = {
@@ -42,6 +43,8 @@ export type ScoutVoiceView =
       message: string;
       orgId: string;
       canManageOrg: boolean;
+      role?: string;
+      userId?: string;
       orgSettings: ScoutVoiceOrgSettings;
       userPrefs: ScoutVoiceUserPrefs;
       consent: typeof SCOUT_VOICE_CONSENT_COPY;
@@ -54,6 +57,8 @@ export type ScoutVoiceView =
       orgId: string;
       teamNumber: number | null;
       canManageOrg: boolean;
+      role?: string;
+      userId?: string;
       orgSettings: ScoutVoiceOrgSettings;
       userPrefs: ScoutVoiceUserPrefs;
       consent: typeof SCOUT_VOICE_CONSENT_COPY;
@@ -302,6 +307,8 @@ export async function computeScoutVoiceView(
         : "Enable voice notes for your account and accept the privacy consent before recording.",
       orgId: org.orgId,
       canManageOrg,
+      role: org.role ?? "",
+      userId: input.userId,
       orgSettings,
       userPrefs,
       consent: SCOUT_VOICE_CONSENT_COPY,
@@ -321,6 +328,8 @@ export async function computeScoutVoiceView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     canManageOrg,
+    role: org.role ?? "",
+    userId: input.userId,
     orgSettings,
     userPrefs,
     consent: SCOUT_VOICE_CONSENT_COPY,
@@ -443,12 +452,26 @@ export async function attachVoiceNote(
 
 export async function deleteVoiceNote(
   client: PoolClient,
-  input: { orgId: string; noteId: string },
+  input: { orgId: string; noteId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM scout_voice_notes WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ createdBy: string }>(
+    `SELECT created_by AS "createdBy" FROM scout_voice_notes WHERE id = $1 AND org_id = $2`,
+    [input.noteId, input.orgId],
+  );
+  const createdBy = existing.rows[0]?.createdBy;
+  if (!createdBy) throw new Error("Voice note not found");
+  if (!canDeleteScoutVoiceNote({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+    throw new Error("You cannot delete this voice note");
+  }
+  const deleted = await client.query(`DELETE FROM scout_voice_notes WHERE id = $1 AND org_id = $2`, [
     input.noteId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this voice note");
 }
 
 /**

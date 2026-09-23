@@ -184,7 +184,7 @@ export async function POST(request: Request) {
         case "delete-note": {
           const noteId = trimmedOrNull(body.noteId, 64);
           if (!noteId) throw new Error("noteId is required");
-          await deleteVoiceNote(client, { orgId, noteId });
+          await deleteVoiceNote(client, { orgId, noteId, userId });
           break;
         }
         default:
@@ -203,6 +203,8 @@ export async function POST(request: Request) {
   } catch (error) {
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
     const message = error instanceof Error ? error.message : "Scout voice request failed";
+    if (message === "Voice note not found") return Response.json({ error: message }, { status: 404 });
+    if (message === "You cannot delete this voice note") return Response.json({ error: message }, { status: 403 });
     if (message.startsWith("setup_required:")) {
       return Response.json(setupRequiredFallback(orgId, message.replace(/^setup_required:\s*/, "")), {
         status: 200,
