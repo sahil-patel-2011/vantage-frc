@@ -453,11 +453,21 @@ function SessionDetail({
         <EmptyState
           soft
           title="No attendees marked yet"
-          description="Add people who showed up — totals stay empty until you mark them."
+          description={
+            canManage
+              ? "Add people who showed up — totals stay empty until you mark them."
+              : "An owner or admin marks who showed up. Totals stay empty until they do."
+          }
         >
-          <Button as="a" variant="primary" href="#att-add-attendee">
-            Add an attendee
-          </Button>
+          {canManage ? (
+            <Button as="a" variant="primary" href="#att-add-attendee">
+              Add an attendee
+            </Button>
+          ) : (
+            <Button as="a" variant="primary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
+              Ask in Messages
+            </Button>
+          )}
         </EmptyState>
       ) : (
         <ul className="att-entries">
