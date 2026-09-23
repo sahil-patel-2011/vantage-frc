@@ -269,7 +269,16 @@ export function ScoutingHome() {
           </div>
           <div>
             <dt>Needs a look</dt>
-            <dd className={queue && queue.quarantined > 0 ? "is-warn" : undefined}>{queue ? queue.quarantined : "—"}</dd>
+            <dd className={queue && queue.quarantined > 0 ? "is-warn" : undefined}>
+              {queue && queue.quarantined > 0 ? (
+                // The entries the server set aside, with Retry and Discard, on the Scout page.
+                <a href={`${withOrg("/scout/entry")}#needs-a-look`}>{queue.quarantined}</a>
+              ) : queue ? (
+                queue.quarantined
+              ) : (
+                "—"
+              )}
+            </dd>
           </div>
           <div>
             <dt>Stored here</dt>

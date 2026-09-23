@@ -29,8 +29,9 @@ export function ScoutQuarantinePanel({
   return (
     <Panel
       as="section"
+      id="needs-a-look"
       className="scout-quarantine-panel"
-      style={{ minHeight: "auto", marginBottom: 14 }}
+      style={{ minHeight: "auto", marginBottom: 14, scrollMarginTop: 80 }}
       aria-label="Entries needing attention"
     >
       <header>

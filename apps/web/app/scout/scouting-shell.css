@@ -87,6 +87,7 @@
 .scout-home-facts dt{color:var(--muted);font-size:12px}
 .scout-home-facts dd{margin:2px 0 0;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .scout-home-facts dd.is-warn{color:var(--warn,#9a5b12)}
+.scout-home-facts dd.is-warn a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .scout-home-persist{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
 .scout-home-persist p,.scout-home-kept{margin:0;color:var(--muted);font-size:13px;max-width:60ch}
 .scout-home-gaps h2{margin:0 0 10px;font-size:16px}
