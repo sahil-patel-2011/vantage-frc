@@ -5,6 +5,7 @@ import "./scouting-shell.css";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { crossProductHref } from "../../lib/products/products";
+import { ShellOutboxStatus } from "../../components/shell-outbox-status";
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null; authenticated?: boolean };
 
@@ -94,9 +95,14 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
             </a>
           ))}
         </nav>
-        <a className="scouting-back" href={crossProductHref("vantage", "/dashboard", orgId)}>
-          Back to Vantage
-        </a>
+        <div className="scouting-bar-end">
+          {/* Queued entries go when the signal is back, from any Scouting page — not only
+              from the Scout tab. The pill shows only while something is waiting. */}
+          <ShellOutboxStatus orgId={orgId} scoutPath="/scout/entry" />
+          <a className="scouting-back" href={crossProductHref("vantage", "/dashboard", orgId)}>
+            Back to Vantage
+          </a>
+        </div>
       </header>
       <div id="scouting-main" className="scouting-main" aria-busy={resolvingTeam || undefined}>
         {resolvingTeam ? <p className="scouting-resolving">Opening your team…</p> : children}
