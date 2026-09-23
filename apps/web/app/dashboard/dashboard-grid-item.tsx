@@ -26,6 +26,7 @@ type DashboardGridItemProps = {
   payload?: WidgetPayload;
   orgId: string;
   tbaConfigured?: boolean;
+  canOpenTeamData?: boolean;
   onCardPointerDown: (event: PointerEvent<HTMLElement>, item: DashboardWidgetLayout) => void;
   onHandlePointerDown: (event: PointerEvent<HTMLButtonElement>, item: DashboardWidgetLayout) => void;
   onDragPointerMove: (event: PointerEvent<HTMLElement>) => void;
@@ -49,6 +50,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   payload,
   orgId,
   tbaConfigured,
+  canOpenTeamData = false,
   onCardPointerDown,
   onHandlePointerDown,
   onDragPointerMove,
@@ -156,7 +158,13 @@ export const DashboardGridItem = memo(function DashboardGridItem({
       ) : null}
       {!editing ? <DashboardCardActions type={item.type} label={label} /> : null}
       <div className="dash-widget-hit">
-        <DashboardWidgetView type={item.type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />
+        <DashboardWidgetView
+          type={item.type}
+          payload={payload}
+          orgId={orgId}
+          tbaConfigured={tbaConfigured}
+          canOpenTeamData={canOpenTeamData}
+        />
       </div>
     </article>
   );

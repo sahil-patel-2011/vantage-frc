@@ -30,16 +30,18 @@ export function ExtraWidgetView({
   payload,
   orgId,
   tbaConfigured,
+  canOpenTeamData = false,
 }: {
   type: string;
   payload?: WidgetPayload;
   orgId: string;
   tbaConfigured?: boolean;
+  canOpenTeamData?: boolean;
 }) {
   const data = payload?.data ?? {};
   const withOrg = (href: string) => withOrgHref(href, orgId || null);
   const hint = emptyHintFor(type);
-  const ops = renderOpsWidget({ type, payload, orgId, tbaConfigured });
+  const ops = renderOpsWidget({ type, payload, orgId, tbaConfigured, canOpenTeamData });
   if (ops) return ops;
 
   switch (type) {

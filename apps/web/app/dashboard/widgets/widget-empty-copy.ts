@@ -1,3 +1,6 @@
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
+
 export type EmptyHint = {
   title: string;
   body: string;
@@ -40,8 +43,8 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   sync_status: {
     title: "Match results not connected",
     body: "Ask a mentor to connect match results so cards can fill in.",
-    ctaHref: "/team/data",
-    ctaLabel: "Open Team Data",
+    ctaHref: "/competition?tab=scouting",
+    ctaLabel: "Open Scouting",
   },
   pit_youtube: {
     title: "No pit stream",
@@ -234,6 +237,20 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     ctaLabel: "Set active event",
   },
 };
+
+/**
+ * Sync status opens Team Data only for an owner or admin.
+ * Omitted permission stays on Scouting.
+ */
+export function syncStatusDestination(
+  orgId: string | null | undefined,
+  canOpenTeamData?: boolean,
+): { href: string; label: string } {
+  if (canOpenTeamData === true) {
+    return { href: withOrgHref("/team/data", orgId), label: "Open Team Data" };
+  }
+  return { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" };
+}
 
 export function emptyHintFor(type: string): EmptyHint {
   return (

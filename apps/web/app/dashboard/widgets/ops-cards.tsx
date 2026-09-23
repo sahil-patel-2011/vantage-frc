@@ -10,7 +10,7 @@ import { ratingSplit, ratingValue, splitWidths } from "../../../lib/dashboard/ra
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
-import { emptyHintFor, WidgetShell as Shell } from "./widget-shell";
+import { emptyHintFor, syncStatusDestination, WidgetShell as Shell } from "./widget-shell";
 import { OnboardingChecklistCard } from "./onboarding-card";
 
 function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }) {
@@ -121,11 +121,14 @@ export function renderOpsWidget({
   payload,
   orgId,
   tbaConfigured,
+  canOpenTeamData = false,
 }: {
   type: string;
   payload?: WidgetPayload;
   orgId: string;
   tbaConfigured?: boolean;
+  /** Owner or admin may open Team Data from Sync status. Omitted stays closed. */
+  canOpenTeamData?: boolean;
 }): ReactNode {
   const data = payload?.data ?? {};
   const withOrg = (href: string) => withOrgHref(href, orgId || null);
@@ -339,8 +342,10 @@ export function renderOpsWidget({
     }
     case "sync_status": {
       const sources = (data.sources as Array<{ source: string; status: string; lastSuccessAt: string | null }> | undefined) ?? [];
+      const destination = syncStatusDestination(orgId, canOpenTeamData);
+      const syncHint = { title: hint.title, body: hint.body, ctaLabel: destination.label };
       return (
-        <Shell type={type} title="Sync status" payload={payload} href={withOrg("/team/data")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Sync status" payload={payload} href={destination.href} emptyHint={syncHint} orgId={orgId}>
           {payload?.status === "live" ? (
             <ul className="dash-checklist">
               {sources.map((source) => (

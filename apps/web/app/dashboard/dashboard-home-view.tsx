@@ -632,6 +632,7 @@ export function DashboardHomeView(props: {
                         payload={widgets[item.type]}
                         orgId={orgId}
                         tbaConfigured={tbaConfigured}
+                        canOpenTeamData={canOpenTeamData}
                         onCardPointerDown={(event, target) => {
                           if (!editing) return;
                           const node = event.target as HTMLElement;
