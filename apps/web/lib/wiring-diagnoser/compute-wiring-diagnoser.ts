@@ -2,13 +2,14 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear, diagnoseWiring } from ".";
-import type {
-  DiagnosticFlag,
-  ExpectedCircuit,
-  ObservedCircuit,
-  WireGauge,
-  WiringCheck,
-  WiringMapDevice,
+import {
+  canDeleteWiringCheck,
+  type DiagnosticFlag,
+  type ExpectedCircuit,
+  type ObservedCircuit,
+  type WireGauge,
+  type WiringCheck,
+  type WiringMapDevice,
 } from "./types";
 
 export { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear };
@@ -34,6 +35,8 @@ export type WiringDiagnoserView =
       teamNumber: number | null;
       seasonYear: number;
       seasons: number[];
+      role?: string;
+      userId?: string;
       checks: WiringCheck[];
       /** Team's stored wiring/CAN map for the active season, to prefill expected circuits. */
       wiringMap: WiringMapDevice[];
@@ -106,6 +109,7 @@ type CheckRow = {
   flags: unknown;
   riskScore: string;
   summary: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -121,6 +125,7 @@ function mapCheck(row: CheckRow): WiringCheck {
     flags: Array.isArray(row.flags) ? (row.flags as DiagnosticFlag[]) : [],
     riskScore: Number(row.riskScore) || 0,
     summary: row.summary,
+    createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -130,9 +135,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -167,7 +172,7 @@ export async function computeWiringDiagnoserView(
     client.query<CheckRow>(
       `SELECT id, season_year AS "seasonYear", board_name AS "boardName", photo_url AS "photoUrl",
               expected_circuits AS "expectedCircuits", observed_circuits AS "observedCircuits",
-              flags, risk_score::text AS "riskScore", summary,
+              flags, risk_score::text AS "riskScore", summary, created_by AS "createdBy",
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM wiring_diagnoser_checks
        WHERE org_id = $1 AND season_year = $2
@@ -206,6 +211,8 @@ export async function computeWiringDiagnoserView(
     teamNumber: org.teamNumber,
     seasonYear,
     seasons,
+    role: org.role ?? "",
+    userId: input.userId,
     checks: checkResult.rows.map(mapCheck),
     wiringMap,
     computedAt: new Date().toISOString(),
@@ -272,10 +279,24 @@ export async function logCheck(
 
 export async function deleteCheck(
   client: PoolClient,
-  input: { orgId: string; checkId: string },
+  input: { orgId: string; checkId: string; userId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM wiring_diagnoser_checks WHERE id = $1 AND org_id = $2`, [
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ createdBy: string }>(
+    `SELECT created_by AS "createdBy" FROM wiring_diagnoser_checks WHERE id = $1 AND org_id = $2`,
+    [input.checkId, input.orgId],
+  );
+  const createdBy = existing.rows[0]?.createdBy;
+  if (!createdBy) throw new Error("Wiring check not found");
+  if (!canDeleteWiringCheck({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+    throw new Error("You cannot delete this wiring check");
+  }
+  const deleted = await client.query(`DELETE FROM wiring_diagnoser_checks WHERE id = $1 AND org_id = $2`, [
     input.checkId,
     input.orgId,
   ]);
+  if (!deleted.rowCount) throw new Error("You cannot delete this wiring check");
 }

@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         case "delete-check": {
           const checkId = trimmedOrNull(body.checkId, 64);
           if (!checkId) throw new Error("checkId is required");
-          await deleteCheck(client, { orgId, checkId });
+          await deleteCheck(client, { orgId, checkId, userId });
           break;
         }
         default:
@@ -116,6 +116,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "Wiring check not found") return Response.json({ error: message }, { status: 404 });
+    if (message === "You cannot delete this wiring check") return Response.json({ error: message }, { status: 403 });
     return failMeteredAi(error, "Wiring diagnoser request failed");
   }
 }
