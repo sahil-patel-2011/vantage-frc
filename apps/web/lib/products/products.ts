@@ -115,7 +115,10 @@ export function productsSplitAcrossHosts(): boolean {
 }
 
 export function isSharedPath(pathname: string): boolean {
-  return SHARED_PREFIXES.some((prefix) => pathname.startsWith(prefix)) || /\.[a-z0-9]{2,5}$/i.test(pathname);
+  // Any static file is served where it was asked for. Up to 12 characters of extension:
+  // "webmanifest" is 11, and a manifest redirected to the other host is a cross-origin
+  // manifest the browser will not install from.
+  return SHARED_PREFIXES.some((prefix) => pathname.startsWith(prefix)) || /\.[a-z0-9]{2,12}$/i.test(pathname);
 }
 
 export function isScoutingPath(pathname: string): boolean {

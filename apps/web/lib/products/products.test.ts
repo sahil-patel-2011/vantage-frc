@@ -43,7 +43,7 @@ describe("products split across two hosts", () => {
   });
 
   it("serves Scouting pages, sign-in and APIs on the Scouting host", () => {
-    for (const pathname of ["/scout", "/scout/teams", "/signin", "/api/me", "/api/handoff/accept", "/_next/static/x.js"]) {
+    for (const pathname of ["/scout", "/scout/teams", "/signin", "/api/me", "/api/handoff/accept", "/_next/static/x.js", "/scout.webmanifest", "/icon.svg"]) {
       expect(productRedirect({ host: "vantagefrc-scouting.vercel.app", pathname, search: "" }), pathname).toBeNull();
     }
   });
