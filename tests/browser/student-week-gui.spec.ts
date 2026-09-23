@@ -168,7 +168,9 @@ test.describe("student-week GUI path", () => {
     const orgId = await activeOrgId(page);
     if (orgId) {
       await openStudent(page, `/team/admin?orgId=${encodeURIComponent(orgId)}`);
-      await expect(page.getByRole("heading", { name: "Add a teammate" })).toBeVisible();
+      // 25s like its neighbours: on CI this is a cold compile of /team/admin, and the
+      // default 5s failed a page that was only still loading.
+      await expect(page.getByRole("heading", { name: "Add a teammate" })).toBeVisible({ timeout: 25_000 });
       const form = page.locator("#invite-form");
       await expect(form.getByRole("button", { name: "Send invite" })).toBeVisible();
       const probeEmail = `gui-verify-${Date.now()}@example.com`;
