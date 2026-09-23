@@ -15,7 +15,9 @@ describe("product hub student chrome", () => {
     expect(src).toContain('badge="Needs setup"');
     expect(src).not.toMatch(/Setup required/);
     expect(src).toContain('href="/workspace"');
+    expect(src).toContain('href="/#waitlist"');
     expect(src).toMatch(/Choose your team to open/);
+    expect(src).toMatch(/join the waitlist/i);
     expect(src).not.toMatch(/Team needed/);
     expect(src).not.toMatch(/needs a team selected/);
   });

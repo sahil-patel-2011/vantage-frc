@@ -359,13 +359,16 @@ export function HubOrgGate({
         badge="Needs setup"
         badgeTone="setup"
         title="Choose your team"
-        description={`Choose your team to open ${label}.`}
+        description={`Choose your team to open ${label}, or join the waitlist.`}
         className="product-hub-setup"
       >
         <div className="product-hub-setup-actions">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
+          <a className="product-hub-setup-waitlist" href="/#waitlist">
+            Join the waitlist
+          </a>
         </div>
       </EmptyState>
     );

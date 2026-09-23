@@ -192,8 +192,27 @@
 .product-hub-panel .att-empty-actions .app-button.secondary {
   display: none !important;
 }
-.product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }
+.product-hub-setup {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 20px;
+  animation: hub-setup-in var(--dur-press) var(--ease-settle) both;
+}
+@keyframes hub-setup-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
 .product-hub-setup h2 { margin: 0; font-size:var(--title-2); }
+.product-hub-setup-waitlist {
+  color: var(--accent);
+  font-weight: 650;
+  text-underline-offset: 2px;
+  align-self: center;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
 .product-hub-finance { display: grid; gap: 14px; max-width: 52rem; }
 .product-hub-finance .state-control {
   display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
