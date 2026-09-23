@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { EmptyState, Button } from "../../components/ui";
-import { PRIORITY_STATUSES, type DesignPriority, type ScoringAction } from "../../lib/kickoff";
+import { canDeleteKickoffRow, PRIORITY_STATUSES, type DesignPriority, type ScoringAction } from "../../lib/kickoff";
 import { hubHref } from "../../lib/nav/hubs";
 import type { RunFn } from "./kickoff-model";
 
@@ -11,6 +11,8 @@ export function PrioritySection({
   actions,
   orgId,
   seasonYear,
+  role,
+  userId,
   busyKey,
   run,
 }: {
@@ -18,6 +20,8 @@ export function PrioritySection({
   actions: ScoringAction[];
   orgId: string;
   seasonYear: number;
+  role?: string | null;
+  userId?: string | null;
   busyKey: string | null;
   run: RunFn;
 }) {
@@ -104,15 +108,17 @@ export function PrioritySection({
                     <option value={priority.linkedActionId}>Linked (other season)</option>
                   ) : null}
                 </select>
-                <button
-                  type="button"
-                  className="kick-link danger"
-                  aria-label={`Delete ${priority.capability}`}
-                  disabled={busy}
-                  onClick={() => void run({ action: "delete_priority", orgId, id: priority.id }, rowKey)}
-                >
-                  ✕
-                </button>
+                {canDeleteKickoffRow({ role, userId, authorId: priority.createdBy }) ? (
+                  <button
+                    type="button"
+                    className="kick-link danger"
+                    aria-label={`Delete ${priority.capability}`}
+                    disabled={busy}
+                    onClick={() => void run({ action: "delete_priority", orgId, id: priority.id }, rowKey)}
+                  >
+                    ✕
+                  </button>
+                ) : null}
               </li>
             );
           })}

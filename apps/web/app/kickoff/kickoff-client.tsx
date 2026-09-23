@@ -326,9 +326,34 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         onIntelMeta={onIntelMeta}
         onApplied={load}
       />
-      <ScoringSection actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
-      <PrioritySection priorities={priorities} actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
-      <RulesSection ruleNotes={ruleNotes} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
+      <ScoringSection
+        actions={actions}
+        orgId={orgId}
+        seasonYear={year}
+        role={view.context.role}
+        userId={view.context.userId}
+        busyKey={busyKey}
+        run={run}
+      />
+      <PrioritySection
+        priorities={priorities}
+        actions={actions}
+        orgId={orgId}
+        seasonYear={year}
+        role={view.context.role}
+        userId={view.context.userId}
+        busyKey={busyKey}
+        run={run}
+      />
+      <RulesSection
+        ruleNotes={ruleNotes}
+        orgId={orgId}
+        seasonYear={year}
+        role={view.context.role}
+        userId={view.context.userId}
+        busyKey={busyKey}
+        run={run}
+      />
       {/* Last on the page on purpose: next year matters, but not before this
           year's rules questions are answered. */}
       <NextSeasonSection

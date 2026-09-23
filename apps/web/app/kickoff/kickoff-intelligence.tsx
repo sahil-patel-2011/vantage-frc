@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { EmptyState, Button } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { canDeleteKickoffRow } from "../../lib/kickoff";
 import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
 import { hubHref } from "../../lib/nav/hubs";
 import type { ProviderSetupStep } from "./kickoff-model";
@@ -33,6 +34,8 @@ export function IntelligenceSection({
   const [transcriptText, setTranscriptText] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [records, setRecords] = useState<KickoffIntelligenceRecord[]>([]);
+  const [role, setRole] = useState("");
+  const [userId, setUserId] = useState("");
   const [intelStatus, setIntelStatus] = useState<"ready" | "empty" | "loading">("loading");
   const [emptyMessage, setEmptyMessage] = useState(
     "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
@@ -53,6 +56,8 @@ export function IntelligenceSection({
         status?: string;
         message?: string | null;
         records?: KickoffIntelligenceRecord[];
+        role?: string;
+        userId?: string;
         error?: string;
         code?: string;
         reason?: string;
@@ -68,6 +73,8 @@ export function IntelligenceSection({
       }
       const nextRecords = data.records ?? [];
       setRecords(nextRecords);
+      setRole(data.role ?? "");
+      setUserId(data.userId ?? "");
       setIntelStatus(nextRecords.length ? "ready" : "empty");
       setEmptyMessage(
         data.message ??
@@ -426,14 +433,16 @@ export function IntelligenceSection({
             <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
               Open CAD
             </Button>
-            <button
-              type="button"
-              className="kick-link danger"
-              disabled={busy}
-              onClick={() => void runIntel({ action: "delete", orgId, id: selected.id }, "intel-delete")}
-            >
-              Delete summary
-            </button>
+            {canDeleteKickoffRow({ role, userId, authorId: selected.createdBy }) ? (
+              <button
+                type="button"
+                className="kick-link danger"
+                disabled={busy}
+                onClick={() => void runIntel({ action: "delete", orgId, id: selected.id }, "intel-delete")}
+              >
+                Delete summary
+              </button>
+            ) : null}
           </div>
         </article>
       )}
