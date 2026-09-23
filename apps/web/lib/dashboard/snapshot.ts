@@ -29,6 +29,18 @@ function stamp(status: WidgetDataStatus, type: DashboardWidgetType, data?: Recor
   return { type, status, updatedAt: new Date().toISOString(), data, message };
 }
 
+/** Empty competition snapshot. Team Data only when this member can sync. */
+export function competitionSnapshotGapMessage(eventKey: string | null, canSync: boolean): string {
+  if (eventKey) {
+    return canSync
+      ? "Match data is not connected for this team yet — open Team Data."
+      : "Match data is not connected for this team yet. An owner or admin connects it.";
+  }
+  return canSync
+    ? "Set an active event or connect match data under Team Data."
+    : "Set an active event. An owner or admin connects match data.";
+}
+
 export async function loadDashboardSnapshot(
   client: PoolClient,
   input: {
@@ -406,9 +418,7 @@ export async function loadDashboardSnapshot(
       eventKey ? "empty" : "setup_required",
       "competition_snapshot",
       undefined,
-      eventKey
-        ? "Match data is not connected for this team yet — open Team Data."
-        : "Set an active event or connect match data under Team Data.",
+      competitionSnapshotGapMessage(eventKey, strategyCanSync(input.role)),
     );
   }
 
