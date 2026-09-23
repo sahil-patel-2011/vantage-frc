@@ -41,23 +41,9 @@ import {
   type VisitStatus,
   type RsvpResponse,
 } from "../../lib/visit-invites";
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
 
 function isVisitInvitesView(value: unknown): value is VisitInvitesView {
   if (!value || typeof value !== "object") return false;
@@ -353,7 +339,7 @@ export default function VisitInvitesClient() {
   if (view.status === "setup_required") {
     const copy = visitShellCopy("setup");
     const sentence = view.message || copy.description;
-    const offerWaitlist = !view.context.orgId && sentence.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = !view.context.orgId && mentionsWaitlist(sentence);
     return (
       <VisitShell
         title={copy.title}

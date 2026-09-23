@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
@@ -18,6 +18,7 @@ import {
 } from "../../lib/fundraisers";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./fundraisers.css";
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type FundraiserEvent = {
   id: string;
@@ -49,21 +50,6 @@ type View =
         completed: number;
       };
     };
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
 
 const STATUS_FLOW: Record<FundraiserStatus, FundraiserStatus | null> = {
   planned: "active",
@@ -306,7 +292,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
 
   if (view.status === "setup_required") {
     const setupOrg = view.orgId ?? orgId;
-    const offerWaitlist = !setupOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = !setupOrg && mentionsWaitlist(view.message);
     const nextActions = fundraisersNextActions({ orgId: setupOrg, eventCount: 0 });
     return (
       <main className="module-page fr-page">

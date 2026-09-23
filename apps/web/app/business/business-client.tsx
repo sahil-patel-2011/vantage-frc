@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
 import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -44,6 +44,7 @@ import {
 import { Budget, Evidence, Grants, Overview } from "./business-panels";
 import { ToneBadge } from "./business-ui";
 import "../product-hub.css";
+import { withWaitlistLink } from "../../components/waitlist-link";
 
 const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false });
 const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false });
@@ -51,21 +52,6 @@ const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-clien
 
 const BUSINESS_HUB = hubById("business");
 const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
-
 function businessCacheOrg(data: BusinessPortalView, orgHint: string): string {
   if (data.status === "live" && data.orgId.trim()) return data.orgId;
   return orgHint;

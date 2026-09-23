@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import {
@@ -20,21 +20,7 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -391,7 +377,7 @@ export default function WhiteboardClient() {
   }
 
   if (view.status === "setup_required") {
-    const offerWaitlist = !requestedOrg && view.message.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = !requestedOrg && mentionsWaitlist(view.message);
     return (
       <main className="module-page wb-page">
         <header className="app-page-header">

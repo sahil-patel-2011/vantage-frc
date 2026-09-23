@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
@@ -23,21 +23,7 @@ import {
 } from "../../lib/rankings/tba-cache";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { withWaitlistLink } from "../../components/waitlist-link";
 
 function isRankingsView(value: unknown): value is RankingsView {
   if (!value || typeof value !== "object") return false;

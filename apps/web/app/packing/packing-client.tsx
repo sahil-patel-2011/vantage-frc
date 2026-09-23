@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
@@ -26,23 +26,9 @@ import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
 
 function isPackingView(value: unknown): value is PackingView {
   if (!value || typeof value !== "object") return false;
@@ -542,7 +528,7 @@ export default function PackingClient() {
 
   if (view.status === "setup_required") {
     const offerWaitlist =
-      !view.context.orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
+      !view.context.orgId && mentionsWaitlist(view.message);
     return (
       <main className="module-page pack-page">
         <header className="app-page-header">

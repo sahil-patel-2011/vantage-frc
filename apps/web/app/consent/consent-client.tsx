@@ -1,25 +1,11 @@
 "use client";
 import { Button, EmptyState } from "../../components/ui";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { canDeleteConsentForm, FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
 import { persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./consent.css";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type Form = {
   id: string;
@@ -138,7 +124,7 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
     );
   }
   if (view.status === "setup_required") {
-    const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = !orgId && mentionsWaitlist(view.message);
     return (
       <main className="intel-app consent-page">
         <header className="intel-header">

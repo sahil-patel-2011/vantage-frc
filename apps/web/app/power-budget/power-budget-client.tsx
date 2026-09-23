@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
@@ -11,21 +11,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { canDeletePowerLoad } from "../../lib/power-budget";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./power-budget.css";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type Load = {
   id: string;
@@ -305,7 +291,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
 
   switch (view.status) {
     case "setup_required": {
-      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
+      const offerWaitlist = !orgId && mentionsWaitlist(view.message);
       return (
         <main className="module-page power-budget-page">
           <PageHeader

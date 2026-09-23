@@ -23,21 +23,7 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./vendors.css";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 function isVendorsView(value: unknown): value is VendorsView {
   if (!value || typeof value !== "object") return false;
@@ -136,7 +122,7 @@ function VendorsShell({
   const actions = vendorsNextActions({ orgId, shell });
   const copy = vendorsShellCopy(shell);
   const offerWaitlist =
-    shell === "setup" && !orgId && description.toLowerCase().includes(WAITLIST_PHRASE);
+    shell === "setup" && !orgId && mentionsWaitlist(description);
   const buildHref = withOrgHref("/build", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
 

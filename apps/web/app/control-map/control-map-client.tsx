@@ -28,21 +28,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./control-map.css";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type Binding = {
   id: string;
@@ -402,7 +388,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
 
   if (shell === "setup") {
     const setupMessage = view?.status === "setup_required" ? view.message : shellCopy.description;
-    const offerWaitlist = !orgIdProp && setupMessage.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = !orgIdProp && mentionsWaitlist(setupMessage);
     return (
       <ControlMapShell
         description={offerWaitlist ? withWaitlistLink(setupMessage) : setupMessage}

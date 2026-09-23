@@ -46,6 +46,7 @@ import {
   type ScheduleView,
 } from "../../lib/schedule-board";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withWaitlistLink } from "../../components/waitlist-link";
 
 /** The row label: Q12, SF2-1, F2. */
 function labelOf(match: ScheduleMatch): string {
@@ -58,21 +59,6 @@ function labelOf(match: ScheduleMatch): string {
  * `teamKey` is threaded through so "our alliance" / "our result" are filled in for
  * the team's own team and left blank when no team number is set.
  */
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
-
 function scheduleCsvColumns(teamKey: string | null): CsvColumn<ScheduleMatch>[] {
   const slot = (side: "red" | "blue", index: number): CsvColumn<ScheduleMatch> => ({
     key: `${side}${index + 1}`,

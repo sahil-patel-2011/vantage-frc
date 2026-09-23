@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
@@ -19,6 +19,7 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { draftsToPayload, ParticipantNames, PeoplePanel, WhoHelped, type ParticipantDraft } from "./people";
 import "./impact.css";
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 const TAG_LABEL: Record<ImpactAwardTag, string> = {
   impact: "Impact",
@@ -42,21 +43,6 @@ function tierTone(tier: ImpactTier): string {
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
-}
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
 }
 
 type LiveView = Extract<ImpactView, { status: "live" }>;
@@ -241,7 +227,7 @@ export default function ImpactClient() {
   const offerWaitlist =
     view?.status === "setup_required" &&
     !view.orgId &&
-    view.message.toLowerCase().includes(WAITLIST_PHRASE);
+    mentionsWaitlist(view.message);
 
   return (
     <main className="module-page impact-page">

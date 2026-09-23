@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { BusinessRelated } from "../../../components/business-related";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
@@ -21,6 +21,9 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/fea
 import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./awards.css";
+import { mentionsWaitlist, withWaitlistLink } from "../../../components/waitlist-link";
+
+const NO_TEAM_MESSAGE = "Choose your team to open award submissions, or join the waitlist.";
 
 type Submission = {
   id: string;
@@ -42,22 +45,6 @@ type Item = {
   charLimit: number | null;
   done?: boolean;
 };
-
-const WAITLIST_PHRASE = "join the waitlist";
-const NO_TEAM_MESSAGE = "Choose your team to open award submissions, or join the waitlist.";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
 
 function statusLabel(status: string) {
   return AWARD_STATUSES.includes(status as (typeof AWARD_STATUSES)[number])
@@ -145,7 +132,7 @@ export default function AwardsClient() {
     );
   }
   if (!orgId) {
-    const offerWaitlist = NO_TEAM_MESSAGE.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = mentionsWaitlist(NO_TEAM_MESSAGE);
     return (
       <main className="module-page awards-page">
         <PageHeader

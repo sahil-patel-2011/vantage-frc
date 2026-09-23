@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AIAttribution, Button, EmptyState, PageHeader } from "../../components/ui";
 import {
@@ -14,21 +14,7 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./match-debrief.css";
-
-const WAITLIST_PHRASE = "join the waitlist";
-
-/** The no-team sentence names the waitlist in the same words as the link. */
-function withWaitlistLink(text: string): ReactNode {
-  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
-      {text.slice(at + WAITLIST_PHRASE.length)}
-    </>
-  );
-}
+import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
 type Debrief = {
   id: string; seasonYear: number; eventKey: string; matchLabel: string; alliance: Alliance; result: MatchResult;
@@ -197,7 +183,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
     );
   }
   if (view.status === "setup_required") {
-    const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
+    const offerWaitlist = !orgId && mentionsWaitlist(view.message);
     return (
       <main className="intel-app match-debrief-page">
         {/* The app shell already says which product this is and where the page
