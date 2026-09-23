@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
+import { canDeleteSpareRobotKitChecklist } from ".";
 import { computeSpareRobotKitView, generateChecklist } from "./compute-spare-robot-kit";
+
+describe("canDeleteSpareRobotKitChecklist", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteSpareRobotKitChecklist({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteSpareRobotKitChecklist({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteSpareRobotKitChecklist({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteSpareRobotKitChecklist({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";

@@ -8,6 +8,19 @@ import type { ChecklistStatus, KitChecklistItem, KitPriority, SpareKitBin, Subsy
 
 export const CHECKLIST_STATUSES: ChecklistStatus[] = ["draft", "finalized"];
 
+/** Delete matches spare_robot_kit_checklists RLS: the author, or an owner or admin. */
+export function canDeleteSpareRobotKitChecklist(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 const round = (value: number, places = 2) => {
   const factor = 10 ** places;
   return Math.round(value * factor) / factor;
