@@ -24,6 +24,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
+    // Several guards read every source file in the repo (copy-lint, the AI metering and
+    // dismiss-panel scans, the motion lint): ~5s each on an idle machine, right at the 5s
+    // default. On a loaded machine they "failed" on time, not on anything they check.
+    testTimeout: 30_000,
     // Every pattern here has to start with `**/`. Vitest REPLACES its default
     // exclude list when you set this key, and a bare `node_modules/**` is
     // anchored at the repo root — so `apps/web/node_modules`, and every agent
