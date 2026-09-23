@@ -108,6 +108,36 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
   ]);
 }
 
+/**
+ * Primary button on an empty or setup dossier.
+ * Team Data only when canSync is explicitly true. A setup step that is not
+ * Team Data (Choose your team) stays as written.
+ */
+export function dossierPrimaryAction(input: {
+  canSync?: boolean;
+  orgId?: string | null;
+  setup?: { href: string; label: string } | null;
+}): { href: string; label: string } {
+  const scouting = {
+    href: hubHref("/competition", "scouting", input.orgId),
+    label: "Open Scouting",
+  };
+  if (input.setup) {
+    const pointsAtTeamData = input.setup.href.includes("/team/data");
+    if (!pointsAtTeamData || input.canSync === true) {
+      return { href: input.setup.href, label: input.setup.label };
+    }
+    return scouting;
+  }
+  if (input.canSync === true) {
+    return {
+      href: withOrgHref("/team/data", input.orgId),
+      label: "Sync season metrics",
+    };
+  }
+  return scouting;
+}
+
 /** Real cited-fact counts only — never invent DEMO totals. */
 export function formatDossierMetric(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";

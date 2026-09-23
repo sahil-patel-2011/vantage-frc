@@ -9,6 +9,7 @@ import {
   DOSSIER_RELATED_INCLUDE,
   classifyDossierShell,
   dossierNextActions,
+  dossierPrimaryAction,
   dossierRelatedLinks,
   dossierSetupSteps,
   dossierShellCopy,
@@ -134,7 +135,8 @@ function DossierShell({
         )
       : null;
   const setup = shell === "setup" ? dossierSetupSteps(orgId)[0] : null;
-  const teamDataHref = withOrgHref("/team/data", orgId);
+  const setupAction = setup ? dossierPrimaryAction({ canSync, orgId, setup }) : null;
+  const emptyAction = dossierPrimaryAction({ canSync, orgId });
 
   return (
     <main className="module-page dossier-page dossier-workbench soft-gate">
@@ -177,22 +179,14 @@ function DossierShell({
             Retry
           </Button>
         ) : null}
-        {!failure?.primary && setup ? (
-          <Button
-            as="a"
-            variant="primary"
-            href={canSync === false ? hubHref("/competition", "scouting", orgId) : setup.href}
-          >
-            {canSync === false ? "Open Scouting" : setup.label}
+        {!failure?.primary && setupAction ? (
+          <Button as="a" variant="primary" href={setupAction.href}>
+            {setupAction.label}
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button
-            as="a"
-            variant="primary"
-            href={canSync === false ? hubHref("/competition", "scouting", orgId) : teamDataHref}
-          >
-            {canSync === false ? "Open Scouting" : "Sync season metrics"}
+          <Button as="a" variant="primary" href={emptyAction.href}>
+            {emptyAction.label}
           </Button>
         ) : null}
       </EmptyState>
@@ -369,6 +363,10 @@ export default function DossierClient() {
     cardCount,
   });
   const emptyCopy = dossierShellCopy("empty");
+  const emptyPrimary = dossierPrimaryAction({
+    canSync: view?.status === "empty" ? view.canSync : false,
+    orgId: resolvedOrgId,
+  });
 
   return (
     <main className="module-page dossier-page dossier-workbench">
@@ -443,16 +441,8 @@ export default function DossierClient() {
                 : emptyCopy.description
             }
           >
-            <Button
-              as="a"
-              variant="primary"
-              href={
-                view?.status === "empty" && view.canSync
-                  ? withOrgHref("/team/data", resolvedOrgId)
-                  : scoutingHref
-              }
-            >
-              {view?.status === "empty" && view.canSync ? "Sync season metrics" : "Open Scouting"}
+            <Button as="a" variant="primary" href={emptyPrimary.href}>
+              {emptyPrimary.label}
             </Button>
           </EmptyState>
         </>

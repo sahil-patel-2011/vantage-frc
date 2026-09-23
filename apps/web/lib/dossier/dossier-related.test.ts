@@ -7,6 +7,7 @@ import {
   dossierMissingIdentityMessage,
   dossierMissingRatingsMessage,
   dossierNextActions,
+  dossierPrimaryAction,
   dossierRelatedLinks,
   dossierSetupSteps,
   dossierShellCopy,
@@ -49,6 +50,39 @@ describe("dossierSetupSteps", () => {
     expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+});
+
+describe("dossierPrimaryAction", () => {
+  it("keeps Choose your team when the setup step is not Team Data", () => {
+    const setup = dossierSetupSteps(null)[0];
+    expect(dossierPrimaryAction({ orgId: null, setup })).toEqual({
+      href: "/workspace",
+      label: "Choose your team",
+    });
+  });
+
+  it("sends a scout to Scouting when Team Data access is omitted or false", () => {
+    const setup = dossierSetupSteps("org-1")[0];
+    for (const canSync of [undefined, false]) {
+      const setupAction = dossierPrimaryAction({ canSync, orgId: "org-1", setup });
+      const emptyAction = dossierPrimaryAction({ canSync, orgId: "org-1" });
+      expect(setupAction.label).toBe("Open Scouting");
+      expect(setupAction.href).toBe("/competition?tab=scouting&orgId=org-1");
+      expect(emptyAction).toEqual(setupAction);
+    }
+  });
+
+  it("opens Team Data for an owner or admin", () => {
+    const setup = dossierSetupSteps("org-1")[0];
+    expect(dossierPrimaryAction({ canSync: true, orgId: "org-1", setup })).toEqual({
+      href: "/team/data?orgId=org-1",
+      label: "Sync Team Data",
+    });
+    expect(dossierPrimaryAction({ canSync: true, orgId: "org-1" })).toEqual({
+      href: "/team/data?orgId=org-1",
+      label: "Sync season metrics",
+    });
   });
 });
 
