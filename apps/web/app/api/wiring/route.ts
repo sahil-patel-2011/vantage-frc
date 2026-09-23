@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseWiringAction, summarizeWiring, type CanBus, type Device } from "../../../lib/wiring";
+import { canDeleteWiringDevice, parseWiringAction, summarizeWiring, type CanBus, type Device } from "../../../lib/wiring";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -26,7 +26,7 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Wiring request failed" }, { status });
 }
 
-type DeviceRow = Device & { breakerAmp: number | null; subsystem: string; notes: string; byName: string | null };
+type DeviceRow = Device & { breakerAmp: number | null; subsystem: string; notes: string; byName: string | null; createdBy: string | null };
 
 export async function GET(request: Request) {
   try {
@@ -49,7 +49,8 @@ export async function GET(request: Request) {
 
       const devices = await client.query<DeviceRow>(
         `SELECT d.id, d.name, d.device_type AS "deviceType", d.can_id AS "canId", d.can_bus AS "canBus",
-                d.pdh_port AS "pdhPort", d.breaker_amp AS "breakerAmp", d.subsystem, d.notes, u.name AS "byName"
+                d.pdh_port AS "pdhPort", d.breaker_amp AS "breakerAmp", d.subsystem, d.notes, u.name AS "byName",
+                d.created_by AS "createdBy"
          FROM robot_devices d LEFT JOIN users u ON u.id = d.created_by
          WHERE d.org_id = $1 AND d.season_year = $2
          ORDER BY d.subsystem, d.can_bus, d.can_id NULLS LAST, d.name`,
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
 
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         devices: devices.rows,
         summary,
@@ -93,6 +94,17 @@ export async function POST(request: Request) {
       await requireMembership(client, action.orgId, userId);
 
       if (action.action === "delete_device") {
+        const found = await client.query<{ createdBy: string; role: string }>(
+          `SELECT d.created_by AS "createdBy", m.role
+           FROM robot_devices d
+           JOIN memberships m ON m.org_id = d.org_id AND m.user_id = $3
+           WHERE d.id = $1 AND d.org_id = $2`,
+          [action.id, action.orgId, userId],
+        );
+        if (!found.rowCount) throw new HttpError(404, "Device not found");
+        if (!canDeleteWiringDevice({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+          throw new HttpError(403, "You cannot delete this device");
+        }
         const deleted = await client.query(`DELETE FROM robot_devices WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
         if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this device");
         return { ok: true };

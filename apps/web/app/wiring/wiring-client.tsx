@@ -8,6 +8,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
+  canDeleteWiringDevice,
   CAN_BUSES,
   DEVICE_TYPES,
   deviceTypeLabel,
@@ -28,13 +29,14 @@ type Device = {
   subsystem: string;
   notes: string;
   byName: string | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       seasonYear: number;
       devices: Device[];
       summary: {
@@ -522,11 +524,16 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
                     {d.notes ? ` · ${d.notes}` : ""}
                   </small>
                 </div>
-                {view.context.role !== "viewer" ? (
+                {canDeleteWiringDevice({
+                  role: view.context.role,
+                  userId: view.context.userId,
+                  authorId: d.createdBy,
+                }) ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="danger"
+                    aria-label={`Delete device ${d.name}`}
                     onClick={() => void post({ action: "delete_device", id: d.id }, "Device removed.")}
                   >
                     Delete

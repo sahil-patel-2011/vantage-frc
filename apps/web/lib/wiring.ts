@@ -40,6 +40,19 @@ export function deviceUsesCan(value: string) {
 export const CAN_BUSES = ["rio", "canivore"] as const;
 export type CanBus = (typeof CAN_BUSES)[number];
 
+/** Delete matches robot_devices RLS: the author, or an owner or admin. */
+export function canDeleteWiringDevice(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 // CTRE/REV CAN device IDs are 0-62 (63 is reserved/broadcast).
 export const CAN_ID_MIN = 0;
 export const CAN_ID_MAX = 62;
