@@ -1,12 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { RECOGNITION_STAGE_LABEL, SUGGESTED_AWARDS, type RecognitionStage } from "../../lib/recognition";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./recognition.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type RankedNomination = { id: string; nomineeName: string; reason: string; voteCount: number };
 type Award = {
@@ -112,6 +128,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
         }
         return;
       }
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -207,12 +224,17 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
   }
 
   if (view.status === "setup_required") {
+    const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
     return (
-      <main className="module-page">
+      <main className="module-page recognition-page">
         <PageHeader
           navPath="/recognition"
           title="Recognition"
-          description="Nominate teammates for your team's own end-of-season awards, then vote."
+          description={
+            offerWaitlist
+              ? withWaitlistLink(view.message)
+              : "Nominate teammates for your team's own end-of-season awards, then vote."
+          }
         />
         <OfflineBanner feature="Recognition" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
@@ -220,11 +242,19 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
           badge="Needs setup"
           badgeTone="setup"
           title="Choose your team"
-          description={view.message}
+          description={offerWaitlist ? withWaitlistLink(view.message) : view.message}
+          className={offerWaitlist ? "recognition-setup" : undefined}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
+          <div className={offerWaitlist ? "recognition-setup-actions" : undefined}>
+            <Button as="a" variant="primary" href="/workspace">
+              Choose your team
+            </Button>
+            {offerWaitlist ? (
+              <a className="recognition-setup-waitlist" href="/#waitlist">
+                Join the waitlist
+              </a>
+            ) : null}
+          </div>
         </EmptyState>
       </main>
     );
