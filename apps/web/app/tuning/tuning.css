@@ -1,0 +1,9 @@
+.tuning-setup{animation:tuning-setup-in var(--dur-press) var(--ease-settle) both}
+@keyframes tuning-setup-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.tuning-setup-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.tuning-setup-waitlist,.tuning-page .app-page-header p a{color:var(--accent);font-weight:650;text-underline-offset:2px}
+.tuning-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+  .tuning-setup-actions{display:grid;width:100%}
+  .tuning-setup-actions .app-button{width:100%;justify-content:center}
+}

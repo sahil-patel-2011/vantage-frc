@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   TUNING_CATEGORIES,
@@ -13,6 +13,22 @@ import {
   type TuningCategory,
 } from "../../lib/tuning";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./tuning.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Constant = {
   id: string;
@@ -181,6 +197,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         );
         return;
       }
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -275,9 +292,10 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page tuning-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -286,18 +304,40 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
               </>
             }
             title="Tuning log"
-            description="Offsets, gains, and zeros that a reflash should not wipe."
+            description={
+              offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Offsets, gains, and zeros that a reflash should not wipe."
+            }
           >
             <TuningRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Tuning log" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "tuning-setup" : undefined}
+          >
+            {offerWaitlist ? (
+              <div className="tuning-setup-actions">
+                <Button as="a" variant="primary" href="/workspace">
+                  Choose your team
+                </Button>
+                <a className="tuning-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              </div>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {
