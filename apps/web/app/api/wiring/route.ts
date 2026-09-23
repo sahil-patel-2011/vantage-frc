@@ -45,7 +45,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to map your wiring." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to map your wiring."
+            : "Choose your team to map your wiring, or join the waitlist.",
+        };
+      }
 
       const devices = await client.query<DeviceRow>(
         `SELECT d.id, d.name, d.device_type AS "deviceType", d.can_id AS "canId", d.can_bus AS "canBus",
