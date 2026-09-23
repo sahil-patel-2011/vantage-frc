@@ -13,6 +13,7 @@ import {
   type ShiftBalancerView,
 } from "../../../lib/shift-balancer/compute-shift-balancer";
 import { DEFAULT_STATIONS, describePublish } from "../../../lib/shift-balancer";
+import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 
 export type { ShiftBalancerView };
 
@@ -82,11 +83,12 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-        orgId,
-        userId,
-      ]);
+      const member = await client.query<{ role: string | null }>(
+        `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+        [orgId, userId],
+      );
       if (!member.rowCount) throw new Error("forbidden");
+      const canPublish = strategyCanSync(member.rows[0]?.role);
 
       let published: string | null = null;
       switch (action) {
@@ -142,6 +144,7 @@ export async function POST(request: Request) {
           break;
         }
         case "publish-plan": {
+          if (!canPublish) throw new Error("Organization administrator access required");
           const planId = trimmedOrNull(body.planId, 64);
           if (!planId) throw new Error("planId is required");
           published = describePublish(await publishPlan(client, { orgId, planId }));

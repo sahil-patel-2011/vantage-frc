@@ -113,6 +113,10 @@ export default function ShiftBalancerClient() {
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
+      if (payload.action === "publish-plan") {
+        const current = viewRef.current;
+        if (!current || current.status !== "live" || !current.canPublish) return;
+      }
       setBusy(true);
       setError("");
       try {
@@ -538,6 +542,11 @@ function PlansPanel({
         </p>
       ) : null}
       <h3 style={{ marginTop: 16 }}>All plans</h3>
+      {view.plans.length > 0 && !view.canPublish ? (
+        <p className="app-muted" style={{ margin: "8px 0 0" }}>
+          An owner or admin publishes a plan onto the schedule.
+        </p>
+      ) : null}
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
         {view.plans.map((plan) => (
           <li key={plan.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -547,15 +556,19 @@ function PlansPanel({
             <div style={{ display: "flex", gap: 6 }}>
               {/* Publishing writes the plan into scout_assignments, which the
                   schedule, the pre-match briefing, Event Day and Home already
-                  read — so the shift shows up wherever the scout is looking. */}
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => mutate({ action: "publish-plan", planId: plan.id })}
-              >
-                Publish to the schedule
-              </button>
+                  read — so the shift shows up wherever the scout is looking.
+                  That table is owner/admin write; a scout click used to surface
+                  a raw row-level security error. */}
+              {view.canPublish ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => mutate({ action: "publish-plan", planId: plan.id })}
+                >
+                  Publish to the schedule
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="text-button"
