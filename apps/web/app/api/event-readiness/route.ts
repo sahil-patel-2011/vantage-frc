@@ -176,7 +176,7 @@ export async function POST(request: Request) {
         case "delete-item": {
           const itemId = trimmedOrNull(body.itemId, 64);
           if (!itemId) throw new Error("itemId is required");
-          await deleteItem(client, { orgId, itemId });
+          await deleteItem(client, { orgId, itemId, userId });
           break;
         }
         case "refresh-rollup":
@@ -192,7 +192,12 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Event readiness request failed";
-    const status = message === "forbidden" ? 403 : 400;
+    const status =
+      message === "forbidden" || message === "You cannot delete this readiness item"
+        ? 403
+        : message === "Readiness item not found"
+          ? 404
+          : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },

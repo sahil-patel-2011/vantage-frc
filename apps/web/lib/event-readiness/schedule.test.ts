@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { canDeleteEventReadinessItem } from ".";
 import { diffDays, isIsoDate, resolveDueDates, shiftIsoDate, type ScheduleItemInput } from "./schedule";
+
+describe("canDeleteEventReadinessItem", () => {
+  it("lets the author and an owner or admin delete, and keeps other members out", () => {
+    expect(canDeleteEventReadinessItem({ role: "scout", userId: "noah", authorId: "noah" })).toBe(true);
+    expect(canDeleteEventReadinessItem({ role: "scout", userId: "noah", authorId: "ada" })).toBe(false);
+    expect(canDeleteEventReadinessItem({ role: "owner", userId: "ada", authorId: "noah" })).toBe(true);
+    expect(canDeleteEventReadinessItem({ role: null, userId: null, authorId: "noah" })).toBe(false);
+  });
+});
 import type { ReadinessStatus } from "./types";
 
 function item(

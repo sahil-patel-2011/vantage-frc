@@ -20,6 +20,7 @@ import type {
   EventReadinessView,
 } from "../../lib/event-readiness/compute-event-readiness";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { canDeleteEventReadinessItem } from "../../lib/event-readiness";
 import type { ReadinessFlag, ScheduledItem } from "../../lib/event-readiness/schedule";
 import {
   READINESS_CATEGORIES,
@@ -562,7 +563,7 @@ function LivePlan({
           </header>
           <ul className="evr-item-list">
             {group.items.map((item) => (
-              <ItemRow key={item.id} item={item} orgId={view.orgId} busy={busy} mutate={mutate} />
+              <ItemRow key={item.id} item={item} orgId={view.orgId} role={view.role} userId={view.userId} busy={busy} mutate={mutate} />
             ))}
           </ul>
         </Panel>
@@ -576,7 +577,7 @@ function LivePlan({
           </header>
           <ul className="evr-item-list">
             {countdown.undated.map((item) => (
-              <ItemRow key={item.id} item={item} orgId={view.orgId} busy={busy} mutate={mutate} />
+              <ItemRow key={item.id} item={item} orgId={view.orgId} role={view.role} userId={view.userId} busy={busy} mutate={mutate} />
             ))}
           </ul>
         </Panel>
@@ -590,11 +591,15 @@ function LivePlan({
 function ItemRow({
   item,
   orgId,
+  role,
+  userId,
   busy,
   mutate,
 }: {
   item: ScheduledReadinessItem;
   orgId: string;
+  role?: string | null;
+  userId?: string | null;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
@@ -649,18 +654,21 @@ function ItemRow({
             </option>
           ))}
         </select>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${item.title}"?`)) {
-              mutate({ action: "delete-item", itemId: item.id });
-            }
-          }}
-        >
-          Delete
-        </Button>
+        {canDeleteEventReadinessItem({ role, userId, authorId: item.createdBy }) ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Delete item ${item.title}`}
+            disabled={busy}
+            onClick={() => {
+              if (window.confirm(`Delete "${item.title}"?`)) {
+                mutate({ action: "delete-item", itemId: item.id });
+              }
+            }}
+          >
+            Delete
+          </Button>
+        ) : null}
       </div>
     </li>
   );

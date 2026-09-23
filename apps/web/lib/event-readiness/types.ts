@@ -85,6 +85,7 @@ export type ReadinessItem = {
   sourceKind: ReadinessSourceKind;
   blockedReason: string;
   completedAt: string | null;
+  createdBy?: string | null;
 };
 
 export type ReadinessPlan = {
