@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   canDeleteSubsystem,
@@ -16,6 +16,22 @@ import {
   type SubsystemCategory,
 } from "../../lib/subsystems";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./subsystems.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Subsystem = {
   id: string;
@@ -185,6 +201,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       await persistSubsystemsSnapshot(orgHint, seasonHint, data);
     } catch {
       if (hadCache || viewRef.current) {
@@ -275,9 +292,10 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page subsystems-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -286,18 +304,40 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
               </>
             }
             title="Subsystem specs"
-            description="Motors, reduction, and wheel size for each mechanism."
+            description={
+              offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Motors, reduction, and wheel size for each mechanism."
+            }
           >
             <SubsystemsRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Subsystem specs" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "subsystems-setup" : undefined}
+          >
+            {offerWaitlist ? (
+              <div className="subsystems-setup-actions">
+                <Button as="a" variant="primary" href="/workspace">
+                  Choose your team
+                </Button>
+                <a className="subsystems-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              </div>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {
