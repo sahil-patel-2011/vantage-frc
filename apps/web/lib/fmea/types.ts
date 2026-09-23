@@ -6,6 +6,19 @@ export type FmeaContext = "match" | "pit" | "practice" | "inspection" | "other";
 
 export type FmeaStatus = "open" | "fixing" | "verified" | "closed";
 
+/** Delete matches fmea_failures RLS: the member who logged the row, or an owner or admin. */
+export function canDeleteFmeaFailure(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export type FmeaLevel = "low" | "moderate" | "high" | "critical";
 
 export type FmeaFailure = {
@@ -35,6 +48,7 @@ export type FmeaFailure = {
   /** ISO timestamp. */
   occurredAt: string;
   seasonYear: number;
+  recordedBy?: string;
   recordedByName: string | null;
 };
 

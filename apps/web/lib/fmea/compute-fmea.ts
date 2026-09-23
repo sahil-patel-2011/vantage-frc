@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
 import { loadBatteryFleet } from "../load-battery-fleet";
-import { evaluateFailure, summarizeFailures } from ".";
+import { canDeleteFmeaFailure, evaluateFailure, summarizeFailures } from ".";
 import type {
   FmeaContext,
   FmeaEvaluation,
@@ -33,6 +33,8 @@ export type FmeaView =
       orgId: string;
       teamNumber: number | null;
       seasonYear: number;
+      role?: string;
+      userId?: string;
       seasons: number[];
       evaluations: FmeaEvaluation[];
       summary: FmeaSummary;
@@ -72,6 +74,7 @@ type FailureRow = {
   robotLabel: string;
   occurredAt: string;
   seasonYear: number;
+  recordedBy?: string;
   recordedByName: string | null;
 };
 
@@ -98,6 +101,7 @@ function mapFailure(row: FailureRow): FmeaFailure {
     robotLabel: row.robotLabel,
     occurredAt: row.occurredAt,
     seasonYear: row.seasonYear,
+    recordedBy: row.recordedBy,
     recordedByName: row.recordedByName,
   };
 }
@@ -106,9 +110,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -146,7 +150,7 @@ const FAILURES_SELECT_WITH_INVENTORY = `SELECT f.id, f.title, f.failure_mode AS 
               f.inventory_item_id AS "inventoryItemId", i.name AS "inventoryItemName",
               f.event_key AS "eventKey", f.match_key AS "matchKey",
               f.robot_label AS "robotLabel", f.occurred_at::text AS "occurredAt",
-              f.season_year AS "seasonYear", u.name AS "recordedByName"
+              f.season_year AS "seasonYear", f.recorded_by AS "recordedBy", u.name AS "recordedByName"
        FROM fmea_failures f
        LEFT JOIN users u ON u.id = f.recorded_by
        LEFT JOIN inventory_items i ON i.id = f.inventory_item_id AND i.org_id = f.org_id
@@ -161,7 +165,7 @@ const FAILURES_SELECT_WITHOUT_INVENTORY = `SELECT f.id, f.title, f.failure_mode 
               NULL::uuid AS "inventoryItemId", NULL::text AS "inventoryItemName",
               f.event_key AS "eventKey", f.match_key AS "matchKey",
               f.robot_label AS "robotLabel", f.occurred_at::text AS "occurredAt",
-              f.season_year AS "seasonYear", u.name AS "recordedByName"
+              f.season_year AS "seasonYear", f.recorded_by AS "recordedBy", u.name AS "recordedByName"
        FROM fmea_failures f
        LEFT JOIN users u ON u.id = f.recorded_by
        WHERE f.org_id = $1 AND f.season_year = $2
@@ -256,6 +260,8 @@ export async function computeFmeaView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     seasonYear,
+    role: org.role ?? "",
+    userId: input.userId,
     seasons,
     evaluations,
     summary,
@@ -488,11 +494,24 @@ export async function updateFailure(
 
 export async function deleteFailure(
   client: PoolClient,
-  input: { orgId: string; failureId: string },
+  input: { orgId: string; failureId: string; userId: string },
 ): Promise<void> {
+  const role = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  const existing = await client.query<{ recordedBy: string }>(
+    `SELECT recorded_by AS "recordedBy" FROM fmea_failures WHERE id = $1 AND org_id = $2`,
+    [input.failureId, input.orgId],
+  );
+  const recordedBy = existing.rows[0]?.recordedBy;
+  if (!recordedBy) throw new Error("Failure not found");
+  if (!canDeleteFmeaFailure({ role: role.rows[0]?.role, userId: input.userId, authorId: recordedBy })) {
+    throw new Error("You cannot delete this failure");
+  }
   const deleted = await client.query(`DELETE FROM fmea_failures WHERE id = $1 AND org_id = $2`, [
     input.failureId,
     input.orgId,
   ]);
-  if (!deleted.rowCount) throw new Error("Failure not found");
+  if (!deleted.rowCount) throw new Error("You cannot delete this failure");
 }
