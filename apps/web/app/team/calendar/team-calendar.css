@@ -1307,6 +1307,15 @@
  * ------------------------------------------------------------------------- */
 .tc-ai-open {
   justify-self: start;
+  align-self: start;
+}
+
+/* The side panel is as tall as the week grid beside it, and a grid with spare
+   height stretches its auto rows: "Find a time" became a 102px-tall pill (a
+   circle, at its width) and "Coming up" floated halfway down. Pack the rows at
+   the top instead. */
+.tc-layout > .tc-panel {
+  align-content: start;
 }
 
 .tc-ai {

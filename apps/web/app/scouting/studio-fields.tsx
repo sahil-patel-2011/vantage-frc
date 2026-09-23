@@ -110,7 +110,11 @@ export function CounterField({ field, value, onChange, label }: FieldProps & { l
       hint={field.helpText ?? (config.max != null ? `Max ${config.max}` : undefined)}
       headline={
         <output className="scout-studio-readout" aria-live="polite">
-          {current}
+          {/* Keyed so each tap remounts the number and it bumps; the live
+              region itself stays put, so screen readers still announce it. */}
+          <span key={current} className="scout-readout-value">
+            {current}
+          </span>
         </output>
       }
     >
@@ -190,7 +194,9 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
       hint={field.helpText ?? (config.max != null ? `Max ${config.max} each` : undefined)}
       headline={
         <output className="scout-studio-readout" aria-live="polite">
-          {touched ? multiCounterTotal(value, config) : 0}
+          <span key={touched ? multiCounterTotal(value, config) : 0} className="scout-readout-value">
+            {touched ? multiCounterTotal(value, config) : 0}
+          </span>
         </output>
       }
     >

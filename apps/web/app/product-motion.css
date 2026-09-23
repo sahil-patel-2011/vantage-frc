@@ -1,21 +1,214 @@
 /*
- * Product: the few places that still appeared without arriving. Everything
- * else already moves — page entrance (soft-ui.css motion-page-in), press
- * feedback (.app-button), colour transitions (vantage-fluid.css), dialogs
- * (components/ui/ui.module.css). Same tokens, so reduced motion turns all of
- * this into 0ms and every element lands on its resting state.
+ * Product motion — the last layer, loaded after every other product sheet.
+ *
+ * The app already had page entrance (soft-ui.css motion-page-in), press
+ * feedback (.app-button), colour transitions on every control
+ * (vantage-fluid.css) and dialog entrances (components/ui/ui.module.css).
+ * This fills in everything that still appeared or changed without moving:
+ * cards, dashboard widgets, hub tabs, the sidebar, menus and popovers,
+ * checkboxes, tab panels, toasts, disclosures.
+ *
+ * Rules of the road, so this stays subtle and safe:
+ * - Every duration is a vantage-fluid token. Those are 0ms under
+ *   prefers-reduced-motion and html[data-motion="reduced"].
+ * - Entrances use fill-mode `backwards`, never `both`: the first frame holds
+ *   through a stagger delay, and once the run ends nothing is left applied.
+ *   `both` leaves an identity transform on the element for good, which makes
+ *   every card the containing block for any position:fixed descendant.
+ * - Hover lifts use the separate `translate` property so they never fight an
+ *   entrance that is still running.
+ * - Broad selectors sit inside :where() (zero specificity), so any component
+ *   that already choreographs its own motion keeps it.
+ * - Dashboard grid items are placed with inline transforms; only the card
+ *   inside them animates.
  */
+
+@keyframes card-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes rail-pick {
+  from {
+    background-color: transparent;
+  }
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+
+/* Cards settle into place one after another instead of the page arriving as
+   one slab. Six steps of stagger, then everything else together. */
+:where(body.has-app-shell .module-page, .scouting-product main) :where(.app-card, .edc-card, .soft-empty, .soft-empty-compact) {
+  animation: card-arrive var(--dur-sheet) var(--ease-settle) backwards;
+}
+:where(body.has-app-shell .module-page, .scouting-product main) :where(.app-card, .edc-card):nth-child(2) { animation-delay: 40ms; }
+:where(body.has-app-shell .module-page, .scouting-product main) :where(.app-card, .edc-card):nth-child(3) { animation-delay: 80ms; }
+:where(body.has-app-shell .module-page, .scouting-product main) :where(.app-card, .edc-card):nth-child(4) { animation-delay: 120ms; }
+:where(body.has-app-shell .module-page, .scouting-product main) :where(.app-card, .edc-card):nth-child(5) { animation-delay: 160ms; }
+:where(body.has-app-shell .module-page, .scouting-product main) :where(.app-card, .edc-card):nth-child(n + 6) { animation-delay: 200ms; }
+
+/* Cards that are themselves links lift a pixel under the pointer. */
+:where(body.has-app-shell, .scouting-product) :where(a.app-card, a.edc-card, a.soft-panel, a.kit-row) {
+  transition:
+    translate var(--dur-move) var(--ease-settle),
+    box-shadow var(--dur-move) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    background-color var(--dur-tint) var(--ease-out);
+}
+@media (hover: hover) {
+  :where(body.has-app-shell, .scouting-product) :where(a.app-card, a.edc-card, a.soft-panel):hover {
+    translate: 0 -2px;
+    box-shadow: 0 10px 28px -18px rgba(15, 23, 42, 0.45);
+  }
+}
+
+/* ── Dashboard ─────────────────────────────────────────────────────────── */
+
+.dash-home .dash-grid-item .dash-widget {
+  animation: card-arrive var(--dur-sheet) var(--ease-settle) backwards;
+  transition:
+    translate var(--dur-move) var(--ease-settle),
+    box-shadow var(--dur-move) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out);
+}
+.dash-home .dash-grid-item:nth-child(2) .dash-widget { animation-delay: 50ms; }
+.dash-home .dash-grid-item:nth-child(3) .dash-widget { animation-delay: 100ms; }
+.dash-home .dash-grid-item:nth-child(4) .dash-widget { animation-delay: 150ms; }
+.dash-home .dash-grid-item:nth-child(5) .dash-widget { animation-delay: 200ms; }
+.dash-home .dash-grid-item:nth-child(n + 6) .dash-widget { animation-delay: 240ms; }
+@media (hover: hover) {
+  .dash-home .dash-grid-item:not(.is-editing):hover .dash-widget {
+    translate: 0 -2px;
+    box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.45);
+  }
+}
+/* The top-of-home cards (what to do now, this week, first week). */
+.dash-home > :where(.dash-now, .dash-first-week, .dash-role-strip, .dash-setup-banner) {
+  animation: card-arrive var(--dur-sheet) var(--ease-settle) backwards;
+}
+.dash-home > .dash-first-week { animation-delay: 40ms; }
+.dash-home > .dash-role-strip { animation-delay: 80ms; }
+
+/* ── Hub tabs ──────────────────────────────────────────────────────────── */
+
+/* The active tab's underline grows from its centre; the one you left shrinks
+   back. Replaces an inset box-shadow that switched on with no transition. */
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button {
+  position: relative;
+}
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transition: transform var(--dur-move) var(--ease-settle);
+  pointer-events: none;
+}
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button.active,
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button[aria-selected="true"] {
+  box-shadow: none;
+}
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button.active::after,
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button[aria-selected="true"]::after {
+  transform: none;
+}
+
+/* A tab's panel eases in when it becomes the visible one. */
+:where(body.has-app-shell, .scouting-product) :where([role="tabpanel"]:not([hidden])) {
+  animation: fade-in var(--dur-move) var(--ease-out) backwards;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+
+.vrail-nav a svg {
+  transition: transform var(--dur-move) var(--ease-settle);
+}
+@media (hover: hover) {
+  .vrail-nav a:hover svg {
+    transform: scale(1.08);
+  }
+}
+.vrail-nav a {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
+}
+.vrail-nav a:active {
+  scale: 0.98;
+}
+/* The fill of the page you just opened fades in instead of snapping — in the
+   sidebar, the phone's bottom island and the Scouting tabs alike. */
+.vrail-nav a[aria-current="page"],
+.soft-island a[aria-current="page"],
+.scouting-tabs a.is-active {
+  animation: rail-pick var(--dur-move) var(--ease-out);
+}
+.soft-island a[aria-current="page"] svg {
+  animation: check-pop var(--dur-move) var(--ease-settle);
+}
+
+/* ── Form controls ─────────────────────────────────────────────────────── */
+
+/* Ticking a box gives a small, springy acknowledgement. */
+:where(body.has-app-shell, .scouting-product) :where(input[type="checkbox"]:checked, input[type="radio"]:checked) {
+  animation: check-pop var(--dur-move) var(--ease-settle);
+}
+
+/* ── Toasts and disclosures ────────────────────────────────────────────── */
 
 /* A toast slides up into its stack rather than blinking on. */
 .soft-toast-stack > .soft-toast {
-  animation: page-arrive var(--dur-move) var(--ease-settle) both;
+  animation: page-arrive var(--dur-move) var(--ease-settle) backwards;
 }
 
 /* Opening a disclosure (More, advanced options, a collapsed section) eases
-   its content in, so the eye sees where the new rows came from. Zero
-   specificity: a component that animates its own disclosure keeps its own. */
-:where(.module-page details[open] > :not(summary)) {
-  animation: page-arrive var(--dur-move) var(--ease-settle) both;
+   its content in, so the eye sees where the new rows came from. */
+:where(body.has-app-shell details[open] > :not(summary), .scouting-product details[open] > :not(summary)) {
+  animation: page-arrive var(--dur-move) var(--ease-settle) backwards;
 }
 
 /* A disclosure's own chevron or marker turns with it when it has one. */
@@ -24,4 +217,31 @@
 }
 .module-page details[open] > summary :where(.chevron, [data-chevron]) {
   transform: rotate(180deg);
+}
+
+/* ── Menus, popovers, listboxes ────────────────────────────────────────── */
+/* Last in the file: several of these live inside a <details>, and at equal
+   (zero) specificity the later rule wins, so they pop rather than rise. */
+
+:where(body.has-app-shell, .scouting-product) :where(
+  [role="menu"],
+  [role="listbox"],
+  .dash-card-action-options,
+  .soft-workspace-picker,
+  .soft-nav-results,
+  .messages-mention-menu
+) {
+  transform-origin: top right;
+  animation: pop-in var(--dur-press) var(--ease-settle) backwards;
+}
+
+/* Any other dialog container fades rather than blinking on. Opacity only:
+   several of these are full-screen scrims, and a scrim that rises looks wrong. */
+:where(body.has-app-shell, .scouting-product) :where([role="dialog"]) {
+  animation: fade-in var(--dur-move) var(--ease-out) backwards;
+}
+
+/* The notification count pops when it appears. */
+:where(.soft-notif) :where(span, b, i, em) {
+  animation: pop-in var(--dur-move) var(--ease-settle) backwards;
 }

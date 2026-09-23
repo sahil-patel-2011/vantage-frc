@@ -554,8 +554,9 @@
 .dialogActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 /* Dialogs arrive instead of appearing: the scrim fades, the card rises a few
    pixels, a sheet slides up from the edge it is attached to. Durations are the
-   shared tokens (vantage-fluid.css), 0ms under reduced motion, and `both` fill
-   means a 0ms run simply lands on the resting state. */
+   shared tokens (vantage-fluid.css), 0ms under reduced motion. Fill is
+   `backwards` so nothing stays applied after the run: a leftover transform
+   would make the dialog the containing block for its own fixed popovers. */
 @keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -569,10 +570,10 @@
   to { transform: none; }
 }
 .overlay {
-  animation: overlayIn var(--dur-move, 260ms) var(--ease-out, ease-out) both;
+  animation: overlayIn var(--dur-move, 260ms) var(--ease-out, ease-out) backwards;
 }
 .dialog {
-  animation: dialogIn var(--dur-sheet, 380ms) var(--ease-settle, ease-out) both;
+  animation: dialogIn var(--dur-sheet, 380ms) var(--ease-settle, ease-out) backwards;
 }
 .dialog.sheet {
   animation-name: sheetIn;

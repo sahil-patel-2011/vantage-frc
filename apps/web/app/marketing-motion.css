@@ -146,14 +146,14 @@
   /* Not the h1: it is the largest paint, and holding it at opacity 0 would
      delay LCP for an effect nobody needs on the headline. */
   .marketing-lux .lux-hero-copy > :not(h1) {
-    animation: mk-rise 620ms var(--ease-settle) both;
+    animation: mk-rise 620ms var(--ease-settle) backwards;
   }
   .marketing-lux .lux-hero-copy > :nth-child(2) { animation-delay: 60ms; }
   .marketing-lux .lux-hero-copy > :nth-child(3) { animation-delay: 120ms; }
   .marketing-lux .lux-hero-copy > :nth-child(4) { animation-delay: 180ms; }
   .marketing-lux .lux-hero-copy > :nth-child(n + 5) { animation-delay: 240ms; }
   .marketing-lux .lux-hero-inner > .mk-mock {
-    animation: mk-settle 760ms var(--ease-settle) 200ms both;
+    animation: mk-settle 760ms var(--ease-settle) 200ms backwards;
   }
 
   /* Grids reveal their cards one after another instead of as one slab. */
@@ -175,7 +175,7 @@
 
   /* The FAQ answer slides open with the details element. */
   .marketing-lux .faq-item[open] > p {
-    animation: mk-rise 360ms var(--ease-settle) both;
+    animation: mk-rise 360ms var(--ease-settle) backwards;
   }
 
   /* The header gains a hairline shadow once the page moves,
@@ -190,7 +190,7 @@
       }
     }
     .marketing-lux header.nav {
-      animation: mk-header-lift linear both;
+      animation: mk-header-lift linear backwards;
       animation-timeline: scroll();
       animation-range: 0 120px;
     }
