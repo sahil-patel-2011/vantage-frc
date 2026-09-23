@@ -66,6 +66,8 @@ export function scheduleNextActions(input: {
   shell: ScheduleShellKind;
   hasActiveEvent?: boolean;
   matchCount?: number;
+  /** Owner/admin may open Team Data. Omitted or false sends scouts to Scouting. */
+  canSync?: boolean;
 }): ScheduleNextAction[] {
   const orgId = input.orgId ?? null;
   const matchCount = input.matchCount ?? 0;
@@ -174,13 +176,20 @@ export function scheduleNextActions(input: {
         detail: "Shop practices and travel stay on Team Calendar, not this match board.",
         href: hubHref("/team", "calendar", orgId),
       },
-      {
-        id: "team-data",
-        label: "Sync team data",
-        detail: "Pull the match schedule from Team Data when the event is posted.",
-        href: withOrgHref("/team/data", orgId),
-      },
-    ].slice(0, 4);
+      input.canSync === true
+        ? {
+            id: "team-data",
+            label: "Sync team data",
+            detail: "Pull the match schedule from Team Data when the event is posted.",
+            href: withOrgHref("/team/data", orgId),
+          }
+        : {
+            id: "scouting",
+            label: "Open Scouting",
+            detail: "An owner or admin syncs the schedule. You can still scout.",
+            href: hubHref("/competition", "scouting", orgId),
+          },
+    ];
   }
 
   return [

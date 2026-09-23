@@ -7,6 +7,7 @@ import { ScheduleRelated } from "../../components/schedule-related";
 import { Button, EmptyState, Panel } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SCHEDULE_RELATED_INCLUDE,
@@ -438,12 +439,15 @@ export default function ScheduleClient() {
   const visible = hidePlayed ? base.filter((entry) => !isScored(entry)) : base;
   const groups = splitByLevel(visible);
   const shell: ScheduleShellKind = view.matches.length === 0 ? "empty" : "ready";
+  const canSync = strategyCanSync(view.context.role);
   const nextActions = scheduleNextActions({
     orgId,
     shell,
     hasActiveEvent: Boolean(view.context.eventKey),
     matchCount: view.matches.length,
+    canSync,
   });
+  const emptyFollowUp = nextActions.find((action) => action.id === "team-data" || action.id === "scouting");
   const eventLabel = view.context.eventName ?? view.context.eventKey ?? "Active event";
 
   return (
@@ -514,7 +518,13 @@ export default function ScheduleClient() {
             badgeTone="setup"
             title={scheduleCacheRequiredCopy().title}
             description={scheduleCacheRequiredCopy().description}
-          />
+          >
+            {emptyFollowUp ? (
+              <Button as="a" variant="primary" href={emptyFollowUp.href}>
+                {emptyFollowUp.label}
+              </Button>
+            ) : null}
+          </EmptyState>
       ) : (
         <>
           <div className="sched-controls">
