@@ -95,9 +95,19 @@ test("an entry can be dragged onto another day", async ({ page }) => {
   // HTML5 drag-and-drop, which this grid deliberately does not use — that API
   // does not fire for touch, and a mentor rescheduling a scrimmage is usually
   // holding a phone.
+  // Both days on screen first. Mouse moves do not scroll, and on CI's 1280×720
+  // viewport the second week of the month sat below the fold, so the drop landed
+  // on nothing and the chip never moved — a red run that said nothing about the grid.
+  const target = page.locator(`.cal-grid-day[data-date="2027-05-12"]`);
+  await target.scrollIntoViewIfNeeded();
+  await chip.scrollIntoViewIfNeeded();
+  const viewport = page.viewportSize();
   const from = await chip.boundingBox();
-  const to = await page.locator(`.cal-grid-day[data-date="2027-05-12"]`).boundingBox();
+  const to = await target.boundingBox();
   expect(from && to).toBeTruthy();
+  if (viewport) {
+    expect(to!.y + to!.height / 2, "target day is below the fold").toBeLessThan(viewport.height);
+  }
   await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
   await page.mouse.down();
   await page.mouse.move(from!.x + from!.width / 2 + 20, from!.y + from!.height / 2 + 20, { steps: 5 });

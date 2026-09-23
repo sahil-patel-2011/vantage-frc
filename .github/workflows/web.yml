@@ -57,21 +57,27 @@ jobs:
         run: npm run build --workspace=@vantage/web
 
   browser:
-    name: Playwright
+    name: Playwright (${{ matrix.shard }}/3)
     # Private-repo Actions minutes: skip Chromium on draft pushes.
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    # 30 was enough while the suite tested signed-out shells against no
-    # database. Now that it signs in and pages actually load data, a full pass
-    # is around 55 minutes — the job was being killed mid-run and reporting as
-    # a failure, which is the same misleading red the cancellations used to be.
+    # Three shards, each with its own Postgres service and dev server. One job ran
+    # 55+ minutes and the runner was shut down part-way through (the dev server
+    # compiling every route for ~360 specs is heavy), which reported red for
+    # reasons unrelated to the code. Specs clear their own rows, so a shard does
+    # not depend on rows another file created. fail-fast off: one red shard
+    # should not hide the results of the other two.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    # A full signed-in pass is around 55 minutes in one job; a third of it is ~20.
     #
-    # Left at one worker deliberately: the specs share one dev server and one
-    # database, and several create rows another spec then counts. Parallelising
-    # would be the way to cut this down, and it is a change that needs the
-    # fixtures isolated first rather than a flag flipped here.
-    timeout-minutes: 75
+    # Still one worker per shard: within a shard the specs share one dev server and
+    # one database, and several create rows another spec then counts. Across
+    # shards the databases are separate, which only removes that interference.
+    timeout-minutes: 45
     # This job had no database, so Better Auth could not look a user up, every
     # sign-in failed, and the suite reported a wall of assertion failures that
     # had nothing to do with the code under test. `E2E_AUTH_FIXTURE` made it
@@ -151,12 +157,12 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - name: Run browser tests
-        run: npm run test:browser -- --reporter=line,html
+        run: npm run test:browser -- --reporter=line,html --shard=${{ matrix.shard }}/3
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
