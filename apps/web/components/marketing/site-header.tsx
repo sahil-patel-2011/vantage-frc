@@ -10,6 +10,7 @@ import {
   marketingHeaderLinks,
   marketingHeroLinks,
   marketingRoutePrimary,
+  marketingShowsAdminLink,
 } from "../../lib/marketing/account-links";
 import "./marketing-styles";
 
@@ -113,6 +114,36 @@ export function MarketingRouteActions({
         </a>
       ) : null}
     </div>
+  );
+}
+
+/** Plan-card link. Guests join the waitlist. A signed-in member opens the team. */
+export function MarketingPlanLink({ guestLabel }: { guestLabel?: string }) {
+  const link = marketingRoutePrimary(useSignedIn(), guestLabel ? { label: guestLabel } : undefined);
+  return (
+    <a className="text-link" href={link.href}>
+      {link.label}
+    </a>
+  );
+}
+
+/** Owner or admin settings link. Everyone else gets the plan link instead. */
+export function MarketingAdminLink({ href, label }: { href: string; label: string }) {
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductSession().then((session) => {
+      if (!cancelled) setAdmin(marketingShowsAdminLink(session?.role));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  if (!admin) return <MarketingPlanLink />;
+  return (
+    <a className="text-link" href={href}>
+      {label}
+    </a>
   );
 }
 

@@ -45,6 +45,12 @@ export function marketingRoutePrimary(
   };
 }
 
+/** True when this membership can open an owner or admin settings link. */
+export function marketingShowsAdminLink(role?: string | null): boolean {
+  const normalized = (role ?? "").toLowerCase();
+  return normalized === "owner" || normalized === "admin";
+}
+
 /** Desktop page web action beside an optional Windows download. */
 export function marketingDesktopWebLink(signedIn: boolean): MarketingAccountLink {
   if (signedIn) return { href: "/dashboard", label: "Open your team", primary: true };

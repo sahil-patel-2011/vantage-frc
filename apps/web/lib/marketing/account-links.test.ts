@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   marketingDesktopWebLink,
   marketingFooterAccountLink,
+  marketingShowsAdminLink,
   marketingHeaderLinks,
   marketingHeroLinks,
   marketingRoutePrimary,
@@ -50,5 +51,9 @@ describe("marketing account links", () => {
       label: "Sign in on the web",
       primary: true,
     });
+    expect(marketingShowsAdminLink("owner")).toBe(true);
+    expect(marketingShowsAdminLink("admin")).toBe(true);
+    expect(marketingShowsAdminLink("member")).toBe(false);
+    expect(marketingShowsAdminLink(null)).toBe(false);
   });
 });
