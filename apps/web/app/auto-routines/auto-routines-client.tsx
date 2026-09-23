@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import {
+  canDeleteAutoRoutine,
   AUTO_PRIORITIES,
   AUTO_STATUS_LABEL,
   AUTO_STATUSES,
@@ -27,13 +28,14 @@ type Routine = {
   description: string;
   pathNotes: string;
   byName: string | null;
+  createdBy?: string | null;
 };
 
 type View =
   | { status: "setup_required"; message: string }
   | {
       status: "ready";
-      context: { orgId: string; role: string };
+      context: { orgId: string; role: string; userId?: string | null };
       seasonYear: number;
       routines: Routine[];
       summary: {
@@ -487,11 +489,16 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
                       Mark ready
                     </Button>
                   ) : null}
-                  {view.context.role !== "viewer" ? (
+                  {canDeleteAutoRoutine({
+                    role: view.context.role,
+                    userId: view.context.userId,
+                    authorId: r.createdBy,
+                  }) ? (
                     <Button
                       type="button"
                       size="sm"
                       variant="danger"
+                      aria-label={`Delete routine ${r.name}`}
                       onClick={() => void post({ action: "delete_routine", id: r.id }, "Routine deleted.")}
                     >
                       Delete

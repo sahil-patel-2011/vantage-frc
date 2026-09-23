@@ -12,6 +12,19 @@ export type AutoStatus = (typeof AUTO_STATUSES)[number];
 export const AUTO_PRIORITIES = ["low", "normal", "high"] as const;
 export type AutoPriority = (typeof AUTO_PRIORITIES)[number];
 
+/** Delete matches auto_routines RLS: the author, or an owner or admin. */
+export function canDeleteAutoRoutine(input: {
+  role?: string | null;
+  userId?: string | null;
+  authorId?: string | null;
+}): boolean {
+  const role = (input.role ?? "").toLowerCase();
+  if (role === "owner" || role === "admin") return true;
+  const userId = input.userId ?? "";
+  const authorId = input.authorId ?? "";
+  return userId.length > 0 && userId === authorId;
+}
+
 export const AUTO_STATUS_LABEL: Record<AutoStatus, string> = {
   concept: "Concept",
   coding: "Coding",

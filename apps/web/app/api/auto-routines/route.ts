@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseAutoRoutineAction, summarizeRoutines, type AutoPriority, type AutoStatus, type StartPosition } from "../../../lib/auto-routines";
+import { canDeleteAutoRoutine, parseAutoRoutineAction, summarizeRoutines, type AutoPriority, type AutoStatus, type StartPosition } from "../../../lib/auto-routines";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -28,14 +28,15 @@ function fail(error: unknown) {
 
 type RoutineRow = {
   id: string; name: string; startPosition: StartPosition; status: AutoStatus; priority: AutoPriority;
-  estimatedPoints: number | null; description: string; pathNotes: string; byName: string | null;
+  estimatedPoints: number | null; description: string; pathNotes: string; byName: string | null; createdBy: string;
 };
 
 // Qualified with the `auto_routines r` alias: the only reader joins `users u`,
 // which also has id/name, so unqualified columns raised
 // `column reference "id" is ambiguous` and the whole route 400'd.
 const SELECT_COLS = `r.id, r.name, r.start_position AS "startPosition", r.status, r.priority,
-  r.estimated_points AS "estimatedPoints", r.description, r.path_notes AS "pathNotes"`;
+  r.estimated_points AS "estimatedPoints", r.description, r.path_notes AS "pathNotes",
+  r.created_by AS "createdBy"`;
 
 export async function GET(request: Request) {
   try {
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       const summary = summarizeRoutines(routines.rows.map((r) => ({ status: r.status, priority: r.priority, startPosition: r.startPosition, estimatedPoints: r.estimatedPoints })));
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, userId: session.user.id },
         seasonYear,
         routines: routines.rows,
         summary,
@@ -115,6 +116,17 @@ export async function POST(request: Request) {
           return { ok: true };
         }
         case "delete_routine": {
+          const found = await client.query<{ createdBy: string; role: string }>(
+            `SELECT r.created_by AS "createdBy", m.role
+             FROM auto_routines r
+             JOIN memberships m ON m.org_id = r.org_id AND m.user_id = $3
+             WHERE r.id = $1 AND r.org_id = $2`,
+            [action.id, action.orgId, userId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Routine not found");
+          if (!canDeleteAutoRoutine({ role: found.rows[0]!.role, userId, authorId: found.rows[0]!.createdBy })) {
+            throw new HttpError(403, "You cannot delete this routine");
+          }
           const deleted = await client.query(`DELETE FROM auto_routines WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this routine");
           return { ok: true };
