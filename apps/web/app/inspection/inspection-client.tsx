@@ -5,6 +5,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, Button } from "../../components/ui";
 import {
+  canDeleteAuthoredRow,
   groupByCategory,
   inspectionProgress,
   weightStatus,
@@ -48,11 +49,13 @@ function fmtWhen(iso: string): string {
 function ItemRow({
   item,
   busy,
+  canDelete,
   onStatus,
   onDelete,
 }: {
   item: InspectionItem;
   busy: boolean;
+  canDelete: boolean;
   onStatus: (status: InspectionStatus, note?: string) => void;
   onDelete: () => void;
 }) {
@@ -83,7 +86,7 @@ function ItemRow({
           <button type="button" className="insp-link" disabled={busy} onClick={() => setNoteOpen((value) => !value)}>
             Note
           </button>
-          {item.isCustom ? (
+          {item.isCustom && canDelete ? (
             <button type="button" className="insp-link danger" disabled={busy} onClick={onDelete} aria-label="Delete item">
               ✕
             </button>
@@ -399,6 +402,11 @@ export default function InspectionClient() {
                         key={item.id}
                         item={item}
                         busy={busyKey === `item:${item.id}`}
+                        canDelete={canDeleteAuthoredRow({
+                          role: view.context.role,
+                          userId: view.context.userId,
+                          authorId: item.createdBy,
+                        })}
                         onStatus={(status, note) =>
                           void run(
                             { action: "set_status", orgId, id: item.id, status, ...(note !== undefined ? { note } : {}) },
@@ -522,15 +530,21 @@ export default function InspectionClient() {
                       {weight.recordedByName ? ` · ${weight.recordedByName}` : ""}
                     </small>
                   </span>
-                  <button
-                    type="button"
-                    className="insp-link danger"
-                    aria-label="Delete weigh-in"
-                    disabled={busy}
-                    onClick={() => void run({ action: "delete_weight", orgId, id: weight.id }, `w:${weight.id}`)}
-                  >
-                    ✕
-                  </button>
+                  {canDeleteAuthoredRow({
+                    role: view.context.role,
+                    userId: view.context.userId,
+                    authorId: weight.recordedBy,
+                  }) ? (
+                    <button
+                      type="button"
+                      className="insp-link danger"
+                      aria-label="Delete weigh-in"
+                      disabled={busy}
+                      onClick={() => void run({ action: "delete_weight", orgId, id: weight.id }, `w:${weight.id}`)}
+                    >
+                      ✕
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
