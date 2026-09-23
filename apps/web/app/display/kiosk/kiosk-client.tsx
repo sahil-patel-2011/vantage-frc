@@ -15,6 +15,8 @@ import {
   rankLabel,
   recordLabel,
   formatDisplayPrediction,
+  kioskEventCommandEmptyCopy,
+  kioskNextMatchEmptyCopy,
   widgetValue,
   type DisplaySnapshot,
 } from "../../../lib/display";
@@ -177,10 +179,7 @@ export default function KioskClient({
           <section className="display-kiosk-empty">
             <span>NEXT MATCH</span>
             <h2>No upcoming team match</h2>
-            <p>
-              Set an active event and sync Team Data. This board only shows matches that include team #
-              {data.organization.teamNumber}. Queue time stays blank until those matches exist.
-            </p>
+            <p>{kioskNextMatchEmptyCopy(data.organization.teamNumber)}</p>
           </section>
         ))}
 
@@ -319,10 +318,7 @@ export default function KioskClient({
           <section className="display-kiosk-empty">
             <span>EVENT COMMAND</span>
             <h2>Waiting on synced event data</h2>
-            <p>
-              Set an active event and sync Team Data. This board stays blank until a rank, record,
-              or next match exists.
-            </p>
+            <p>{kioskEventCommandEmptyCopy()}</p>
           </section>
         ))}
 

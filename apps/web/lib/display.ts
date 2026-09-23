@@ -247,6 +247,18 @@ export function hasEventCommandSignal(
   return snapshot.scouting.openDisagreements > 0;
 }
 
+/**
+ * Pit TV has no membership role. Empty boards say what is missing.
+ * They do not tell the room to open Team Data.
+ */
+export function kioskNextMatchEmptyCopy(teamNumber: number): string {
+  return `This board only shows matches that include team #${teamNumber}. Queue time stays blank until those matches are on the schedule.`;
+}
+
+export function kioskEventCommandEmptyCopy(): string {
+  return "This board stays blank until a rank, record, or next match is saved for the active event.";
+}
+
 export function formatDisplayPrediction(prediction: DisplayPrediction | null | undefined): string {
   if (!prediction) return "No stored prediction";
   if (

@@ -18,6 +18,8 @@ import {
   recordLabel,
   stripFrc,
   formatDisplayPrediction,
+  kioskEventCommandEmptyCopy,
+  kioskNextMatchEmptyCopy,
   widgetValue,
 } from "./display";
 
@@ -70,6 +72,17 @@ describe("display helpers", () => {
     expect(past.label).toBe("QUEUE NOW");
     expect(past.queueNow).toBe(true);
     expect(queueCue(past)).toBe("QUEUE NOW");
+  });
+
+  it("keeps Team Data off the public pit board", () => {
+    expect(kioskNextMatchEmptyCopy(9999)).toBe(
+      "This board only shows matches that include team #9999. Queue time stays blank until those matches are on the schedule.",
+    );
+    expect(kioskNextMatchEmptyCopy(9999)).not.toMatch(/Team Data/);
+    expect(kioskEventCommandEmptyCopy()).toBe(
+      "This board stays blank until a rank, record, or next match is saved for the active event.",
+    );
+    expect(kioskEventCommandEmptyCopy()).not.toMatch(/Team Data/);
   });
 
   it("reads bumper color only from the real alliance lists", () => {
