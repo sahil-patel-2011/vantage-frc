@@ -64,7 +64,14 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Choose your team to open the notebook." };
+      if (!row) {
+        return {
+          status: "setup_required" as const,
+          message: requestedOrg
+            ? "Choose your team to open the notebook."
+            : "Choose your team to open the notebook, or join the waitlist.",
+        };
+      }
 
       const entries = await client.query<EntryRow>(
         `SELECT n.id, n.season_year AS "seasonYear", n.entry_date::text AS "entryDate", n.phase, n.subsystem,

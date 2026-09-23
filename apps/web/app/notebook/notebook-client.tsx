@@ -1,15 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import { BUILD_PHASE_LABEL, BUILD_PHASES, canDeleteNotebookEntry, type BuildPhase } from "../../lib/notebook";
 import type { NotebookImageAttachment } from "../../lib/notebook/attachments";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "./notebook.css";
+
+const WAITLIST_PHRASE = "join the waitlist";
+
+/** The no-team sentence names the waitlist in the same words as the link. */
+function withWaitlistLink(text: string): ReactNode {
+  const at = text.toLowerCase().indexOf(WAITLIST_PHRASE);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href="/#waitlist">{text.slice(at, at + WAITLIST_PHRASE.length)}</a>
+      {text.slice(at + WAITLIST_PHRASE.length)}
+    </>
+  );
+}
 
 type Entry = {
   id: string;
@@ -219,6 +235,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
+      if (data.status === "ready" && data.context.orgId) persistOrgIdInUrl(data.context.orgId);
       setEntryPhotos({});
       if (!subsystemFilter) await persistNotebookSnapshot(orgHint, seasonHint, data);
     } catch {
@@ -370,9 +387,10 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
   }
 
   switch (view.status) {
-    case "setup_required":
+    case "setup_required": {
+      const offerWaitlist = !orgId && view.message.toLowerCase().includes(WAITLIST_PHRASE);
       return (
-        <main className="module-page">
+        <main className="module-page notebook-page">
           <PageHeader
             breadcrumbs={
               <>
@@ -381,18 +399,40 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
               </>
             }
             title="Engineering notebook"
-            description="Dated design decisions with real photos or video."
+            description={
+              offerWaitlist
+                ? withWaitlistLink(view.message)
+                : "Dated design decisions with real photos or video."
+            }
           >
             <NotebookRelated orgId={orgId} />
           </PageHeader>
           <OfflineBanner feature="Engineering notebook" fromCache={fromCache} cachedAt={cachedAt} />
-          <EmptyState badge="Needs setup" badgeTone="setup" title={view.message}>
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
+          <EmptyState
+            badge="Needs setup"
+            badgeTone="setup"
+            title={offerWaitlist ? "Choose your team" : view.message}
+            description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
+            className={offerWaitlist ? "notebook-setup" : undefined}
+          >
+            {offerWaitlist ? (
+              <div className="notebook-setup-actions">
+                <Button as="a" variant="primary" href="/workspace">
+                  Choose your team
+                </Button>
+                <a className="notebook-setup-waitlist" href="/#waitlist">
+                  Join the waitlist
+                </a>
+              </div>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         </main>
       );
+    }
     case "ready":
       break;
     default: {
