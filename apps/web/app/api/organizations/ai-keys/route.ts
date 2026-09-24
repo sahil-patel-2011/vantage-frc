@@ -12,6 +12,7 @@ import { createKms, encryptSecret } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
+import { checkProviderKey, skipsLiveKeyCheck, type ProviderKeyCheck } from "../../../../lib/ai-keys/check-provider-key";
 import { aiKeysEncryptionStatus } from "../../../../lib/ai-keys/kms-status";
 import {
   BYOK_PROVIDER_META,
@@ -277,6 +278,17 @@ export async function POST(request: Request) {
         );
       }
 
+      // Only the team's key managers may make Vantage call a provider with a pasted key.
+      await withRls({ userId: session.user.id, orgId }, (client) =>
+        assertOrgCapability(client, orgId, "manage_api_keys"),
+      );
+      const check: ProviderKeyCheck = skipsLiveKeyCheck(apiKey)
+        ? { status: "valid" }
+        : await checkProviderKey(provider, apiKey);
+      if (check.status === "rejected") {
+        return Response.json({ error: check.message, field: "apiKey" }, { status: 422 });
+      }
+
       let encrypted;
       try {
         encrypted = await encryptSecret(apiKey, createKms());
@@ -319,7 +331,10 @@ export async function POST(request: Request) {
         );
       });
 
-      return Response.json({ ok: true, provider, configured: true }, { status: 201 });
+      return Response.json(
+        { ok: true, provider, configured: true, checked: check.status === "valid", notice: check.status === "unchecked" ? check.message : null },
+        { status: 201 },
+      );
     }
 
     if (action === "save_member_key") {
@@ -343,6 +358,14 @@ export async function POST(request: Request) {
           : null;
       const model =
         typeof body.model === "string" && body.model.trim() ? body.model.trim() : null;
+
+      // A key for a custom base URL (Groq, a shop server) belongs to that server, not the
+      // provider named on the card, so only keys for the provider itself are checked.
+      const memberCheck: ProviderKeyCheck =
+        baseUrl || skipsLiveKeyCheck(apiKey) ? { status: "valid" } : await checkProviderKey(provider, apiKey);
+      if (memberCheck.status === "rejected") {
+        return Response.json({ error: memberCheck.message, field: "apiKey" }, { status: 422 });
+      }
 
       let encrypted;
       try {
@@ -388,7 +411,10 @@ export async function POST(request: Request) {
         );
       });
 
-      return Response.json({ ok: true, provider, scope: "member" }, { status: 201 });
+      return Response.json(
+        { ok: true, provider, scope: "member", notice: memberCheck.status === "unchecked" ? memberCheck.message : null },
+        { status: 201 },
+      );
     }
 
     if (action === "remove_member_key") {

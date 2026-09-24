@@ -250,13 +250,13 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           model: mineDraft.model || undefined,
         }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; notice?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save your personal key");
         return;
       }
       setMineDraft((d) => ({ ...d, apiKey: "" }));
-      setMessage("Personal key saved - your AI calls now use it instead of the team key.");
+      setMessage(data.notice ?? "Personal key checked and saved. Your AI calls now use it instead of the team key.");
       void load();
     } finally {
       setMineBusy(false);
@@ -297,13 +297,13 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, action: "save_key", provider, apiKey }),
       });
-      const data = (await response.json()) as { error?: string; setupRequired?: boolean };
+      const data = (await response.json()) as { error?: string; setupRequired?: boolean; notice?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save key");
         return;
       }
       setDrafts((prev) => ({ ...prev, [provider]: "" }));
-      setMessage(`${BYOK_PROVIDER_META[provider].label} key encrypted and saved.`);
+      setMessage(data.notice ?? `${BYOK_PROVIDER_META[provider].label} accepted the key. It is saved and encrypted, and AI is on.`);
       await load();
     } finally {
       setBusyProvider(null);

@@ -1,3 +1,4 @@
+import { withSavepoint } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { allLessonIds } from "../cad-learn/track";
 import { matchKeyLabel } from "../scouting/scout-breakdown";
@@ -738,10 +739,24 @@ export async function loadHomeWidget(
   if (!loader) {
     return stamp("empty", type, undefined, FALLBACK_MESSAGE[type] ?? "Nothing yet.");
   }
-  try {
-    const result = await loader(client, ctx);
-    return stamp(result.status, type, result.data, result.message);
-  } catch {
-    return stamp("empty", type, undefined, FALLBACK_MESSAGE[type] ?? "Nothing yet.");
-  }
+  // Every card shares one transaction. A failed query aborts it, and without a savepoint
+  // every card loaded after the failing one came back empty too ("Hours this month" vanished
+  // when Batteries was added). withSavepoint rolls back only this loader, and queues sibling
+  // savepoints so concurrent cards on one client cannot interleave them.
+  const result = await withSavepoint<Loaded | null>(
+    client,
+    async () => {
+      try {
+        return await loader(client, ctx);
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(`[home-widget] ${type} failed:`, error instanceof Error ? error.message : error);
+        }
+        throw error;
+      }
+    },
+    null,
+  );
+  if (!result) return stamp("empty", type, undefined, FALLBACK_MESSAGE[type] ?? "Nothing yet.");
+  return stamp(result.status, type, result.data, result.message);
 }
