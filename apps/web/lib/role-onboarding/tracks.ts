@@ -22,7 +22,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     source: "role",
     checks: checks([
       ["invite", "Invite your team", "Add students and mentors by email. Ticks once someone joins.", "/team/admin"],
-      ["event", "Pick your event", "Matches, scouting and My Day all follow it.", "/command"],
+      ["event", "Pick your event", "Matches, scouting and My Day all follow it.", "/command?pickEvent=1"],
       ["scouting", "Set up your scouting form", "Start from this season's template and adjust it.", "/scouting"],
       ["calendar", "Add your first practice", "So students know when to show up.", "/team/calendar"],
     ]),

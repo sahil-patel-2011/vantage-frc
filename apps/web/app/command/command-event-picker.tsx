@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useState, type FormEvent } from "react";
 import { Button } from "../../components/ui";
 import type { CommandSnapshot } from "../../lib/command/types";
@@ -161,11 +162,13 @@ export function CommandEventPicker({
 }) {
   const [adding, setAdding] = useState(false);
   if (!open) return null;
-  return (
+  // Rendered into <body>: inside the hub panel a transformed ancestor made "position: fixed"
+  // relative to the panel, so the dim backdrop covered only part of the screen.
+  const dialog = (
     <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
       <div>
         <header>
-          <h2 id="edc-event-title">{adding ? "Add an event" : "Set active event"}</h2>
+          <h2 id="edc-event-title">{adding ? "Add an event" : "Which event are you going to?"}</h2>
           <Button variant="icon" aria-label="Close" onClick={onClose}>
             ×
           </Button>
@@ -181,8 +184,8 @@ export function CommandEventPicker({
         ) : (
           <>
             <p className="edc-muted">
-              Only owners and admins can set the event. Not seeing yours? Offseason
-              events are not in The Blue Alliance — add it below.
+              Matches, scouting and My Day all follow the event you pick. Not seeing yours? Offseason
+              events aren&rsquo;t listed, so add it below.
             </p>
             <input
               className="edc-search"
@@ -239,4 +242,5 @@ export function CommandEventPicker({
       </div>
     </div>
   );
+  return typeof document === "undefined" ? dialog : createPortal(dialog, document.body);
 }

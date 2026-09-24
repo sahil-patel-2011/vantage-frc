@@ -41,6 +41,14 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const [events, setEvents] = useState<EventOption[]>([]);
   const [eventBusy, setEventBusy] = useState(false);
   const [eventMessage, setEventMessage] = useState("");
+  // Opened from Home's "Pick your event" step: the picker opens at once, and choosing an
+  // event goes straight back to the setup list instead of leaving the owner on Event day.
+  const [fromSetup, setFromSetup] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("pickEvent") !== "1") return;
+    setFromSetup(true);
+    setEventOpen(true);
+  }, []);
   const [tick, setTick] = useState(0);
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
@@ -205,6 +213,10 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       }
       setEventOpen(false);
       setEventMessage(eventKey ? `Active event set to ${body.eventName ?? eventKey}` : "Active event cleared");
+      if (fromSetup && eventKey) {
+        window.location.assign(`/dashboard?orgId=${encodeURIComponent(orgId)}`);
+        return;
+      }
       await load(orgId);
     } finally {
       setEventBusy(false);
