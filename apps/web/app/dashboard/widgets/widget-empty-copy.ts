@@ -129,7 +129,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     ctaLabel: "Open Money",
   },
   ask_ai: {
-    title: "Ask AI",
+    title: "AI is off",
     body: "Add an AI key (a free one works) and Ask AI answers from your team's data.",
     ctaHref: "/team/ai-keys",
     ctaLabel: "Add an AI key",

@@ -264,3 +264,45 @@ export async function setMemberRole(
     metadata: { userId: input.userId, before: previousRole, after: input.role },
   });
 }
+
+/**
+ * Take someone off the team. The same guard rails as a role change: owners are never removed
+ * here, nobody removes themselves this way, and only an owner removes an admin. Their account
+ * stays theirs; the work they did stays with the team (the privacy policy says so).
+ */
+export async function removeMember(
+  client: PoolClient,
+  actorUserId: string,
+  input: { orgId: string; userId: string },
+) {
+  const actor = await client.query<{ role: OrgRole }>(
+    `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+    [input.orgId, actorUserId],
+  );
+  if (!actor.rows[0] || !["owner", "admin"].includes(actor.rows[0].role)) {
+    throw new Error("Organization administrator access required");
+  }
+  if (input.userId === actorUserId) throw new Error("You can't remove yourself from the team here");
+
+  const target = await client.query<{ role: OrgRole; email: string }>(
+    `SELECT m.role, u.email
+     FROM memberships m JOIN users u ON u.id = m.user_id
+     WHERE m.org_id = $1 AND m.user_id = $2`,
+    [input.orgId, input.userId],
+  );
+  if (!target.rows[0]) throw new Error("Member not found");
+  if (target.rows[0].role === "owner") throw new Error("An owner can't be removed from the team");
+  if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner") {
+    throw new Error("Only an owner may remove an admin");
+  }
+
+  await client.query(`DELETE FROM membership_capabilities WHERE org_id = $1 AND user_id = $2`, [input.orgId, input.userId]);
+  await client.query(`DELETE FROM memberships WHERE org_id = $1 AND user_id = $2`, [input.orgId, input.userId]);
+  await auditMembership(client, {
+    orgId: input.orgId,
+    actorUserId,
+    action: "member.removed",
+    email: target.rows[0].email,
+    metadata: { userId: input.userId, role: target.rows[0].role },
+  });
+}

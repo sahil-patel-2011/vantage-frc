@@ -67,6 +67,9 @@ async function persistTeamAdminSnapshot(orgId: string, data: TeamAdminSnapshot):
   }
 }
 
+/** Team roles in the words people use (scout/admin/viewer underneath). */
+const ROLE_WORDS: Record<string, string> = { scout: "a student", admin: "a mentor or coach", viewer: "a parent or guest" };
+
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [view, setView] = useState<TeamAdminSnapshot | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -100,6 +103,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [githubBusy, setGithubBusy] = useState(false);
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
   const [resetBusyUserId, setResetBusyUserId] = useState<string | null>(null);
+  // Who is looking, so a row never offers to change or remove yourself or an owner.
+  const [actor, setActor] = useState<{ userId: string | null; role: string | null }>({ userId: null, role: null });
+  const [memberBusyId, setMemberBusyId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
   const [githubLoading, setGithubLoading] = useState(true);
   const [githubFetchFailed, setGithubFetchFailed] = useState(false);
   const [githubErrorStatus, setGithubErrorStatus] = useState<number | null>(null);
@@ -187,6 +194,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       let nextMembers: Member[] = [];
       if (membersResponse.ok) {
         nextMembers = Array.isArray(membersData.members) ? membersData.members : [];
+        setActor({
+          userId: typeof membersData.actorUserId === "string" ? membersData.actorUserId : null,
+          role: typeof membersData.actorRole === "string" ? membersData.actorRole : null,
+        });
         setMembershipFetchFailed(false);
         setMembershipErrorStatus(null);
         setMembershipErrorMessage("");
@@ -307,10 +318,36 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setCopiedInviteId((current) => (current === id ? null : current));
       }, 2000);
     } catch {
-      setInviteNotice({
-        tone: "error",
-        message: `Could not copy automatically. Select this link: ${url}`,
+      // Copying is a convenience. The invite exists either way, and its link is in the list below.
+      setInviteNotice((current) => ({
+        tone: current?.tone === "ok" ? "ok" : "warn",
+        message: `${current?.message ? `${current.message} ` : ""}Copy its link from the list below.`,
+      }));
+    }
+  }
+
+  /** Change a member's role or take them off the team (PATCH /api/organizations/members). */
+  async function changeMember(member: Member, action: "set_role" | "remove", role?: string) {
+    if (memberBusyId) return;
+    setMemberBusyId(member.userId);
+    try {
+      const response = await fetch("/api/organizations/members", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, userId: member.userId, action, role }),
       });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const who = member.name || member.email;
+      setMessage(
+        response.ok
+          ? action === "remove"
+            ? `${who} is no longer on the team.`
+            : `${who} is now ${ROLE_WORDS[role ?? ""] ?? role}.`
+          : (data.error ?? "That didn't save. Try again."),
+      );
+      if (response.ok) await load();
+    } finally {
+      setMemberBusyId(null);
     }
   }
 
@@ -336,13 +373,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setInviteNotice({ tone: "error", message: data.error ?? "Could not create invitation." });
         return;
       }
-      setInviteNotice(
-        inviteSendResultCopy({
-          emailSent: Boolean(data.emailSent),
-          delivery: data.delivery ?? "failed",
-          emailError: data.emailError,
-        }),
-      );
+      const result = inviteSendResultCopy({
+        emailSent: Boolean(data.emailSent),
+        delivery: data.delivery ?? "failed",
+        emailError: data.emailError,
+      });
+      setInviteNotice({ tone: result.tone, message: `Invite ready for ${email.trim()}. ${result.message}` });
       if (data.id && data.inviteUrl) {
         setInviteLinks((current) => ({ ...current, [data.id!]: data.inviteUrl! }));
         await copyInviteLink(data.id, data.inviteUrl);
@@ -734,9 +770,40 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                   </small>
                 </div>
                 <div className="team-member-actions">
-                  <Button variant="secondary" type="button" disabled={resetBusyUserId === member.userId} onClick={() => setResetTarget(member)}>
-                    {resetBusyUserId === member.userId ? "Sending…" : "Send password reset"}
-                  </Button>
+                  {member.role !== "owner" &&
+                  member.userId !== actor.userId &&
+                  (member.role !== "admin" || actor.role === "owner") ? (
+                    <>
+                      <label className="team-member-role">
+                        <span className="sr-only">Role for {member.name || member.email}</span>
+                        <select
+                          value={member.role}
+                          disabled={memberBusyId === member.userId}
+                          onChange={(event) => void changeMember(member, "set_role", event.target.value)}
+                        >
+                          <option value="scout">Student</option>
+                          <option value="admin">Mentor / coach</option>
+                          <option value="viewer">Parent / guest</option>
+                        </select>
+                      </label>
+                      <Button
+                        variant="secondary"
+                        type="button"
+                        disabled={memberBusyId === member.userId}
+                        onClick={() => setRemoveTarget(member)}
+                      >
+                        Remove
+                      </Button>
+                    </>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="text-button team-member-reset"
+                    disabled={resetBusyUserId === member.userId}
+                    onClick={() => setResetTarget(member)}
+                  >
+                    {resetBusyUserId === member.userId ? "Sending…" : "Password reset"}
+                  </button>
                 </div>
               </article>
             ))}
@@ -765,6 +832,25 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         accessRequests={accessRequests}
         message={message}
         onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        opts={
+          removeTarget
+            ? {
+                title: `Remove ${removeTarget.name || removeTarget.email} from the team?`,
+                body: "They lose access to this team straight away. Their account stays theirs, and what they did stays with the team. You can invite them again later.",
+                confirmLabel: "Remove from team",
+                tone: "destructive",
+              }
+            : null
+        }
+        onResolve={(ok) => {
+          const member = removeTarget;
+          setRemoveTarget(null);
+          if (ok && member) void changeMember(member, "remove");
+        }}
       />
 
       <ConfirmDialog

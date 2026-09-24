@@ -8,6 +8,7 @@ import {
   ORG_CAPABILITIES,
   setMemberCapabilities,
   setMemberHubAccess,
+  removeMember,
   setMemberRole,
   type HubAccessHubId,
   type MemberHubAccessRow,
@@ -55,6 +56,7 @@ export async function GET(request: Request) {
         hubCatalog: HUB_ACCESS_HUB_IDS,
         hubAccessByUser,
         actorRole: actor.rows[0]?.role ?? null,
+        actorUserId: current.user.id,
         adminTenure,
       };
     });
@@ -70,7 +72,7 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       orgId?: string;
       userId?: string;
-      action?: "set_capabilities" | "set_role" | "set_hub_access";
+      action?: "set_capabilities" | "set_role" | "set_hub_access" | "remove";
       capabilities?: string[];
       role?: OrgRole;
       hubAccess?: Array<{ hubId: string; allowedTabIds?: string[] }>;
@@ -105,6 +107,10 @@ export async function PATCH(request: Request) {
           userId: body.userId!,
           role: body.role,
         });
+        return;
+      }
+      if (body.action === "remove") {
+        await removeMember(client, current.user.id, { orgId, userId: body.userId! });
         return;
       }
       if (body.action === "set_hub_access") {

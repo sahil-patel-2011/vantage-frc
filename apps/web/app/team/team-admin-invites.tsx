@@ -44,8 +44,8 @@ export function TeamAdminInvitesPanel({
         <span className="eyebrow">INVITE BY EMAIL</span>
         <h2>Add a teammate</h2>
         <p>
-          Send an invite to one email. They sign in with that address and accept the link. Team
-          numbers never grant access. People without an invite go to the waitlist.
+          They get an email with a link. When they sign in with this address they join your team,
+          with or without the link.
         </p>
         {adminTenure?.inviteHint ? (
           <p className="app-muted team-admin-tenure-hint" role="note">
@@ -73,11 +73,12 @@ export function TeamAdminInvitesPanel({
           />
         </label>
         <label>
-          Role
+          They are a
+          {/* The words people use. Underneath: scout, admin and viewer team roles. */}
           <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="scout">Scout</option>
-            <option value="admin">Admin</option>
-            <option value="viewer">Viewer</option>
+            <option value="scout">Student: scouts and uses team tools</option>
+            <option value="admin">Mentor or coach: can also manage the team</option>
+            <option value="viewer">Parent or guest: can look, can&apos;t change</option>
           </select>
         </label>
         <Button variant="primary" type="submit" disabled={inviteBusy}>

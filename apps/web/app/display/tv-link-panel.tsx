@@ -81,7 +81,7 @@ export function TvLinkPanel({ token, onCopied }: { token: string; onCopied: (mes
           <summary>Other ways to show it</summary>
           <p>
             Simpler one-screen board (no rotation):{" "}
-            <button type="button" className="app-link" onClick={() => copy(simpleBoard, "Simple board link copied.")}>
+            <button type="button" className="text-button" onClick={() => copy(simpleBoard, "Simple board link copied.")}>
               copy link
             </button>
           </p>
