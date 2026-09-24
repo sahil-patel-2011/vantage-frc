@@ -145,7 +145,7 @@ test.describe("offline phone student boards keep the last copy", () => {
       api: "**/api/fmea**",
       body: FMEA_LIVE,
       heading: "No failures logged yet",
-      keep: /Highest RPN stays blank/,
+      keep: /The riskiest item shows here once there is one/,
     });
   });
 

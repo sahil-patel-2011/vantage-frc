@@ -1503,7 +1503,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Free, with nothing held back",
         body: [
           "Every team gets every feature: scouting, strategy, pit, the build, the budget, chat and the calendar. There are no plans and no card.",
-          "It is free while we bring teams on one at a time. If that ever changes, owners hear it by email first, and nothing is charged unless an owner chooses it.",
+          "Every feature is free today and there is nothing to buy. If a paid extra is ever added, owners hear it by email first, and nothing is charged unless an owner chooses it.",
         ],
       },
       {

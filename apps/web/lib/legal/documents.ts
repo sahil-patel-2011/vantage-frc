@@ -10,6 +10,11 @@
 /**
  * Date these documents were last rewritten. Bump when the text changes.
  *
+ * Revised 2026-09-24 to match what teams are offered: Vantage is free and AI runs on the
+ * team's own key. Removed "plan", "credit balance", "pay-as-you-go", "cancel the plan" and
+ * "non-payment", and said Stripe receives nothing today. This takes obligations away and
+ * adds none, so LEGAL_DOC_VERSION stays put (no forced re-acceptance).
+ *
  * Revised 2026-09-22 to add "Team identities and team numbers"
  * (`#team-identities`): what submitting or claiming a team number represents,
  * the ban on claiming a team you do not represent, the claim statement record,
@@ -39,7 +44,7 @@
  * updated" in the future would be the first false statement in a document
  * whose whole point is that it can be checked.
  */
-export const LEGAL_LAST_UPDATED = "September 23, 2026";
+export const LEGAL_LAST_UPDATED = "September 24, 2026";
 
 /** Where a privacy question goes. */
 // The Privacy Policy and Terms name this address as the way to reach a
@@ -121,7 +126,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Vantage's AI features are grounded in two things: your own team's data, and public FRC data from The Blue Alliance and Statbotics. They do not read another team's workspace. When there is no real data behind a question, the feature says so and shows a setup or empty state — it does not invent numbers.",
         "We use your team's AI activity to train our own models. Prompts, the context sent with them, model responses, and tool traces from Vantage's AI features may be used by us to train, fine-tune, and evaluate in-house models that improve Vantage. This applies to AI-feature activity across the product. We do not sell this data or share it with advertisers, and third-party model providers still receive your requests only to answer them — the training use described here is ours. If your team brings its own API key, requests made with it are also subject to that provider's own terms, which say their own things about training — worth reading.",
         "When someone on your team uses an AI feature, the prompt and the context it needs are sent to the model provider your team has configured. Out of the box that is a major provider your team selects — Anthropic, OpenAI, or Google — or any OpenAI-compatible endpoint your team points us at. The provider processes the request and returns an answer.",
-        "AI use is metered. Every call is recorded against your team's usage ledger so that plan limits, credit balances, and spend caps can be enforced. Those records include which feature was used, the model, and token counts — not a separate copy of your content.",
+        "AI use is counted. Every call is recorded in your team's usage log so the spend caps and limits your team sets can be enforced. Those records include which feature was used, the model, and token counts — not a separate copy of your content. Vantage itself charges nothing for AI; a team that brings its own key pays its provider directly.",
         "Bring-your-own keys are encrypted. If your team supplies its own provider API key, it is stored using envelope encryption: a unique data key encrypts the secret, and that data key is itself encrypted by a key-management service. Keys are decrypted only to make a request your team asked for. They are never shown back to you in full and are never included in a data export.",
         "Prompt caching is on by default. Parts of a prompt that repeat may be cached at the provider so repeat requests cost less and run faster. Your team can turn this off in AI budget settings.",
         "There is a nightly summary job. Once a day, a background job reads your team's own activity from the previous 24 hours and writes a single short summary into your team's memory, so AI surfaces start the next day knowing what happened. If the team had no activity, nothing is written. If no AI model is available, a plain-text list of the same facts is stored instead — the job never invents prose. Every run is logged where your team can see it.",
@@ -137,7 +142,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       list: [
         "Neon (Postgres hosting) — hosts the database where your team's workspace lives. This is where essentially all of your data sits.",
         "Resend (email) — sends sign-in codes, two-factor codes, invitations, password-reset emails, and notifications. It receives the recipient's email address and the message.",
-        "Stripe (payments) — handles subscriptions and payments. Card details go directly to Stripe; we do not store card numbers.",
+        "Stripe (payments) — only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing. If it is ever used, card details go directly to Stripe; we do not store card numbers.",
         "Google (sign-in) — if you sign in with Google, Google confirms your identity and returns your name, email, and account id.",
         "Google (Sheets and Drive) — we keep a copy of each team's records in a Google spreadsheet for that team, in a VantageFRC folder of the Google account that runs Vantage. It holds the same tables your team can export. Each team's records are in their own spreadsheet, shared view-only with that team's owners and admins, and with no one else.",
         "The Blue Alliance and Statbotics (public FRC data) — we read public event, team, and match data from them. We send event and team keys, never your members' information.",
@@ -381,7 +386,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       paragraphs: [
         "AI output can be wrong. Check it before you act on it — especially for anything involving scouting conclusions, match strategy, engineering decisions, budgets, or safety. Treat it as a starting draft written by a fast assistant who was not at your event.",
         "Vantage does not invent your team's data. When a feature has no real data to work from, it shows a setup or empty state rather than a plausible-looking number. If you ever see a metric you cannot trace back to your own entries or to public FRC data, tell us.",
-        "AI use is metered against your team's plan, credit balance, or pay-as-you-go budget. There is no silent overage: when a limit is reached, the call is refused with an explanation. Teams can set daily and monthly spend caps, token caps, model allowlists, warning thresholds, and a kill switch.",
+        "AI features run on your team's own provider key (or not at all), and Vantage charges nothing for them. Each call is counted so your team's own limits work: teams can set daily and monthly spend caps, token caps, model allowlists, warning thresholds, and a kill switch. When a limit is reached, the call is refused with an explanation.",
         "If your team brings its own provider API key, your team is responsible for that provider account, its charges, and its acceptable-use terms. We use the key only for the requests your team makes, and we store it encrypted.",
       ],
     },
@@ -427,8 +432,8 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       id: "termination",
       heading: "Suspension and ending your use",
       paragraphs: [
-        "You can stop using Vantage at any time. A team owner can cancel the team's plan, export the team's data, and ask us to delete the team.",
-        "We can suspend or end access for a violation of these Terms, for a security risk, for non-payment, or where the law requires it. Where a serious safety or security issue is involved we may act immediately and explain afterwards. If we terminate a team for a reason other than an emergency, we will give the owner a reasonable chance to export the team's data first.",
+        "You can stop using Vantage at any time. A team owner can export the team's data and ask us to delete the team.",
+        "We can suspend or end access for a violation of these Terms, for a security risk, or where the law requires it. Where a serious safety or security issue is involved we may act immediately and explain afterwards. If we terminate a team for a reason other than an emergency, we will give the owner a reasonable chance to export the team's data first.",
       ],
     },
     /*

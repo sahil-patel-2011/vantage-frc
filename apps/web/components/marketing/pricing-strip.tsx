@@ -49,7 +49,7 @@ export function PricingStrip({ headingId }: { headingId: string }) {
         </ul>
 
         <div className="mk-price-foot" data-reveal>
-          <p>Vantage is free while we bring teams on one at a time.</p>
+          <p>Every feature, every team, no card.</p>
           <a className="button secondary" href="/pricing">
             How AI keys work
           </a>

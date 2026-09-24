@@ -44,7 +44,7 @@ const QUESTIONS = [
   },
   {
     q: "Will it stay free?",
-    a: "It is free while we bring teams on one at a time. If that ever changes you will hear it by email first, well before anything is charged, and nothing is ever charged without an owner choosing it.",
+    a: "Every feature is free today and there is nothing to buy. If a paid extra is ever added, owners hear it by email first, and nothing is ever charged unless an owner chooses it.",
   },
 ] as const;
 
