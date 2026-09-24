@@ -75,6 +75,8 @@ export type CommandNexus = {
 export type CommandSnapshot = {
   status: "live" | "setup_required" | "empty";
   message?: string;
+  /** Every one of our matches at this event is played. */
+  eventOver?: boolean;
   computedAt: string;
   orgId: string | null;
   role: string | null;
@@ -121,6 +123,8 @@ export type CommandSnapshot = {
     epaTotal: number | null;
     source: string | null;
     syncedAt: string | null;
+    /** Wins/losses/ties counted from this event's posted results (not the synced copy). */
+    fromResults?: boolean;
   };
   coverage: {
     matchReports: number;

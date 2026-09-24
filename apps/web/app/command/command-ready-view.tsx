@@ -10,6 +10,7 @@ import type { EventDayNextAction } from "../../lib/command/event-day-actions";
 import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
+import { hubHref } from "../../lib/nav/hubs";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import {
   CommandReadyHeader,
@@ -91,6 +92,57 @@ export function CommandReadyView({
   const batteriesHref = hrefs.batteries;
   const intelHref = hrefs.intel;
   const chemistryHref = hrefs.chemistry;
+  const rankingsHref = hubHref("/competition", "rankings", orgId || null);
+  // With no match coming up, every "next match" card below would be empty. Show what is
+  // true now (why, the record, what to do) instead of a grid of "No …" cards.
+  const quiet = !next;
+
+  const seasonPulse = (
+        <article className="edc-card">
+          <header>
+            <div className="edc-card-title">
+              <span className="edc-icon" style={{ ["--tone" as string]: "#0e5a66", ["--tone-bg" as string]: "#e2edef" }}>
+                <Icon name="stats" />
+              </span>
+              <div>
+                <h2>Season pulse</h2>
+                <p>Record, rank and rating at this event</p>
+              </div>
+            </div>
+          </header>
+          {snap?.record.status === "live" ? (
+            <div className="edc-pulse">
+              <div>
+                <strong>
+                  {snap.record.wins ?? 0}-{snap.record.losses ?? 0}-{snap.record.ties ?? 0}
+                </strong>
+                <span>W-L-T</span>
+              </div>
+              <div>
+                <strong>{snap.record.rank ?? "—"}</strong>
+                <span>Rank</span>
+              </div>
+              <div>
+                <strong>{snap.record.epaTotal != null ? Math.round(snap.record.epaTotal * 10) / 10 : "—"}</strong>
+                <span>Rating</span>
+              </div>
+              <p className="edc-muted">
+                {snap.record.fromResults ? "Record from this event's results" : "Record from the event data"}
+                {snap.record.syncedAt ? ` · rank updated ${new Date(snap.record.syncedAt).toLocaleString()}` : ""}
+              </p>
+              <p className="edc-muted">
+                Scout coverage: {snap.coverage.matchReports} match · {snap.coverage.pitReports} pit
+                {snap.coverage.openDisagreements ? ` · ${snap.coverage.openDisagreements} open disagreements` : ""}
+              </p>
+            </div>
+          ) : (
+            <div className="dash-empty calm">
+              <strong>No event metrics yet</strong>
+              <p>Record and rank appear once this event's results are posted.</p>
+            </div>
+          )}
+        </article>
+  );
 
   return (
     <main className={`edc-page${embedded ? " is-embedded" : ""}`}>
@@ -129,7 +181,7 @@ export function CommandReadyView({
 
       <EventDayNextActionsPanel actions={liveActions} />
 
-      <section className="edc-priority" aria-label="Priority panels">
+      <section className={`edc-priority${quiet ? " is-quiet" : ""}`} aria-label="Priority panels">
         <article className={`edc-card edc-next ${next ? "live" : "empty"}`}>
           <header>
             <div className="edc-card-title">
@@ -138,7 +190,7 @@ export function CommandReadyView({
               </span>
               <div>
                 <h2>Now / Next</h2>
-                <p>{next ? "Your upcoming match from the event schedule" : (snap.message ?? "No match coming up")}</p>
+                <p>{next ? "Your upcoming match from the event schedule" : "Nothing on the schedule for us right now"}</p>
               </div>
             </div>
             {next ? <span className="edc-pill">{countdown}</span> : null}
@@ -233,27 +285,47 @@ export function CommandReadyView({
             </>
           ) : (
             <div className="dash-empty">
-              <strong>No upcoming match</strong>
+              <strong>{snap.eventOver ? "Our matches here are done" : "No upcoming match"}</strong>
               <p>{snap?.message ?? "Set the event you’re at."}</p>
-              {snap?.myDay ? (
+              {snap?.myDay?.nextTravelLabel || snap?.myDay?.lodgingLabel ? (
                 <ul className="edc-myday-strip" aria-label="Hotels and travel">
-                  <li>
-                    <span>Travel</span>
-                    <b>{snap.myDay.nextTravelLabel ?? "No leave time published yet"}</b>
-                  </li>
-                  <li>
-                    <span>Room</span>
-                    <b>{snap.myDay.lodgingLabel ?? "No lodging assigned yet"}</b>
-                  </li>
+                  {snap.myDay.nextTravelLabel ? (
+                    <li>
+                      <span>Travel</span>
+                      <b>{snap.myDay.nextTravelLabel}</b>
+                    </li>
+                  ) : null}
+                  {snap.myDay.lodgingLabel ? (
+                    <li>
+                      <span>Room</span>
+                      <b>{snap.myDay.lodgingLabel}</b>
+                    </li>
+                  ) : null}
                 </ul>
               ) : null}
-              <a className="dash-empty-cta" href={matchChecklistHref}>
-                Open checklist
-              </a>
+              <div className="edc-empty-actions">
+                {snap.eventOver && snap.canSetEvent ? (
+                  <button type="button" className="dash-empty-cta" onClick={onSelectEvent}>
+                    Pick your next event
+                  </button>
+                ) : null}
+                {snap.eventOver ? (
+                  <a className="dash-empty-cta secondary" href={rankingsHref}>
+                    See the rankings
+                  </a>
+                ) : (
+                  <a className="dash-empty-cta" href={scoutingHref}>
+                    Open Scouting
+                  </a>
+                )}
+              </div>
             </div>
           )}
         </article>
 
+        {quiet ? seasonPulse : null}
+        {quiet ? null : (
+        <>
         <article className="edc-card">
           <header>
             <div className="edc-card-title">
@@ -374,8 +446,12 @@ export function CommandReadyView({
             </div>
           )}
         </article>
+        </>
+        )}
       </section>
 
+      {quiet ? null : (
+      <>
       <section className="edc-coverage-section" aria-label="Live scout coverage">
         <article className={`edc-card edc-coverage ${snap?.coverage.missingRows ? "gap" : ""}`}>
           <header>
@@ -511,51 +587,10 @@ export function CommandReadyView({
           )}
         </article>
 
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#0e5a66", ["--tone-bg" as string]: "#e2edef" }}>
-                <Icon name="stats" />
-              </span>
-              <div>
-                <h2>Season pulse</h2>
-                <p>Record & rank with source label</p>
-              </div>
-            </div>
-          </header>
-          {snap?.record.status === "live" ? (
-            <div className="edc-pulse">
-              <div>
-                <strong>
-                  {snap.record.wins ?? 0}-{snap.record.losses ?? 0}-{snap.record.ties ?? 0}
-                </strong>
-                <span>W-L-T</span>
-              </div>
-              <div>
-                <strong>{snap.record.rank ?? "—"}</strong>
-                <span>Rank</span>
-              </div>
-              <div>
-                <strong>{snap.record.epaTotal != null ? Math.round(snap.record.epaTotal * 10) / 10 : "—"}</strong>
-                <span>EPA</span>
-              </div>
-              <p className="edc-muted">
-                Source: {snap.record.source ?? "reference"}
-                {snap.record.syncedAt ? ` · synced ${new Date(snap.record.syncedAt).toLocaleString()}` : ""}
-              </p>
-              <p className="edc-muted">
-                Scout coverage: {snap.coverage.matchReports} match · {snap.coverage.pitReports} pit
-                {snap.coverage.openDisagreements ? ` · ${snap.coverage.openDisagreements} open disagreements` : ""}
-              </p>
-            </div>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No event metrics yet</strong>
-              <p>Rank and EPA appear after the event numbers sync.</p>
-            </div>
-          )}
-        </article>
+        {seasonPulse}
       </section>
+      </>
+      )}
 
       <nav className="edc-actions" aria-label="More competition tools">
         <a href={pitHref}>

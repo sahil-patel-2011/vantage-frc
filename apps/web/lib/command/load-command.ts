@@ -22,7 +22,7 @@ import type {
   DriveCoachBrief,
   PitFlag,
 } from "./types";
-import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
+import { loadOurMatchSummary, loadOurQualRecord, noNextMatchMessage } from "../matches/no-next-match";
 import { withSavepoint } from "@vantage/db";
 
 /** Nexus is setup-required by design — no key means the panel shows guidance, not blanks. */
@@ -553,16 +553,20 @@ export async function loadEventDayCommand(
   }
 
   const metric = metrics.rows[0];
-  const record: CommandSnapshot["record"] = metric
+  // The record comes from this event's posted results when there are any, so it agrees with
+  // "All 16 of our matches here are played"; the synced copy can be days behind.
+  const results = await withSavepoint(client, () => loadOurQualRecord(client, eventKey, teamKey), null);
+  const record: CommandSnapshot["record"] = metric || results
     ? {
         status: "live",
-        wins: metric.wins,
-        losses: metric.losses,
-        ties: metric.ties,
-        rank: metric.rank,
-        epaTotal: metric.epaTotal,
-        source: metric.source,
-        syncedAt: metric.syncedAt,
+        wins: results?.wins ?? metric?.wins ?? null,
+        losses: results?.losses ?? metric?.losses ?? null,
+        ties: results?.ties ?? metric?.ties ?? null,
+        rank: metric?.rank ?? null,
+        epaTotal: metric?.epaTotal ?? null,
+        source: metric?.source ?? null,
+        syncedAt: metric?.syncedAt ?? null,
+        fromResults: Boolean(results),
       }
     : emptyRecord(tbaAccess.tbaConfigured ? "empty" : "setup_required");
 
@@ -693,15 +697,16 @@ export async function loadEventDayCommand(
 
   // The same reason Home and My Day give (lib/matches/no-next-match.ts), not a guess that the
   // schedule is missing when every match is simply over.
-  const noMatchMessage =
-    matches.length === 0
-      ? noNextMatchMessage(await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null))
-      : undefined;
+  const summary =
+    matches.length === 0 ? await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null) : null;
+  const noMatchMessage = matches.length === 0 ? noNextMatchMessage(summary) : undefined;
+  const eventOver = Boolean(summary && summary.total > 0 && summary.played >= summary.total);
 
   return {
     ...base,
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
     message: noMatchMessage,
+    eventOver,
     matches,
     scoutQueue,
     briefs,

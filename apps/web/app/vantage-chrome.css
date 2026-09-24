@@ -156,7 +156,9 @@ html[data-motion="reduced"] .hub-tool-overflow { animation: none; }
 .soft-topbar-product:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 7%,transparent)}
 @media (max-width:520px){.soft-topbar-product{padding:0 10px;font-size:12.5px}}
 
-/* "Scouting app" where there is room; on a phone the team name needs the space more. */
+/* "Scouting app" where there is room; on a phone the team name needs the space more.
+   The link is a flex box, which drops the suffix's leading space, so the gap is a margin. */
+.soft-topbar-product-suffix { margin-left: .28em; }
 @media (max-width: 520px) {
   .soft-topbar-product-suffix {
     display: none;

@@ -97,3 +97,36 @@ export async function loadOurMatchSummary(client: PoolClient, eventKey: string, 
       : null,
   };
 }
+
+export type OurQualRecord = { wins: number; losses: number; ties: number };
+
+/**
+ * Our qualification record at this event, counted from the posted results in the same match
+ * table the "matches played" line reads, so the two never disagree. Null until a result is in.
+ */
+export async function loadOurQualRecord(client: PoolClient, eventKey: string, teamKey: string): Promise<OurQualRecord | null> {
+  const row = (
+    await client.query<{ wins: string; losses: string; ties: string }>(
+      `WITH ours AS (
+         SELECT (red_alliance->'teamKeys' ? $2::text) AS on_red, winning_alliance AS winner
+           FROM matches_ref
+          WHERE event_key = $1::text
+            AND comp_level = 'qm'
+            AND NOT placeholder
+            AND (red_alliance->'teamKeys' ? $2::text OR blue_alliance->'teamKeys' ? $2::text)
+            AND COALESCE((red_alliance->>'score')::numeric, -1) >= 0
+            AND COALESCE((blue_alliance->>'score')::numeric, -1) >= 0
+            AND winning_alliance IS NOT NULL
+       )
+       SELECT count(*) FILTER (WHERE winner IN ('red', 'blue') AND (winner = 'red') = on_red)::text AS wins,
+              count(*) FILTER (WHERE winner IN ('red', 'blue') AND (winner = 'red') <> on_red)::text AS losses,
+              count(*) FILTER (WHERE winner NOT IN ('red', 'blue'))::text AS ties
+         FROM ours`,
+      [eventKey, teamKey],
+    )
+  ).rows[0];
+  const wins = Number(row?.wins ?? 0);
+  const losses = Number(row?.losses ?? 0);
+  const ties = Number(row?.ties ?? 0);
+  return wins + losses + ties > 0 ? { wins, losses, ties } : null;
+}

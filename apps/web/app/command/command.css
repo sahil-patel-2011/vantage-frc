@@ -45,3 +45,15 @@
 .edc-link:hover {
   text-decoration: underline;
 }
+
+/* No match coming up: the Now/Next card and the season record, side by side, instead of a
+   grid of empty "next match" cards. */
+.edc-priority.is-quiet { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+@media (max-width: 760px) { .edc-priority.is-quiet { grid-template-columns: 1fr; } }
+.edc-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.edc-empty-actions button.dash-empty-cta {
+  min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer;
+}
+.edc-empty-actions button.dash-empty-cta:hover { text-decoration: none; filter: brightness(1.05); }
+.edc-empty-actions .dash-empty-cta.secondary { min-height: 44px; }
