@@ -462,7 +462,12 @@ export default function AppShell() {
   const title = shellTitleForPath(pathname);
   // During onboarding the person is joining a team, so "No team selected" contradicts the page.
   const orgLabel =
-    !orgId && pathname === "/onboarding" ? "Getting set up" : orgLabelFor(me, orgId);
+    !orgId && pathname === "/onboarding"
+      ? "Getting set up"
+      : !orgId && !teamsLoaded
+        ? // Until /api/me answers, "No team selected" is a guess, and usually a wrong one.
+          "Your team"
+        : orgLabelFor(me, orgId);
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
   const crumbHint = breadcrumbForPath(pathname);
   const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);

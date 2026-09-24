@@ -207,7 +207,9 @@ export function homeNowFromWidgets(input: {
   /** Fixed clock for tests; the real one otherwise. */
   now?: Date;
 }): HomeNowAction {
-  if (input.orgId && input.loaded === false) {
+  // Not loaded yet says nothing, with or without a team: "Choose your team" flashed for an
+  // owner whose team simply had not loaded.
+  if (input.loaded === false) {
     return {
       title: "Working out what is next",
       detail: "",

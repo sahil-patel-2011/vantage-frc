@@ -187,10 +187,11 @@ describe("before the widgets have arrived", () => {
     expect(card.title).toBe("Nothing you have to do right now");
   });
 
-  it("still asks for a team before anything else", () => {
-    // No org is not a loading state; it is an answer.
-    const card = homeNowFromWidgets({ orgId: "", widgets: {}, loaded: false });
-    expect(card.title).toBe("Choose your team");
+  it("does not ask for a team while the team is still loading", () => {
+    // Before /api/me answers there is no org yet for everyone; "Choose your team" flashed for
+    // owners whose team had simply not arrived. Once loaded, no org is an answer.
+    expect(homeNowFromWidgets({ orgId: "", widgets: {}, loaded: false }).title).toBe("Working out what is next");
+    expect(homeNowFromWidgets({ orgId: "", widgets: {}, loaded: true }).title).toBe("Choose your team");
   });
 });
 

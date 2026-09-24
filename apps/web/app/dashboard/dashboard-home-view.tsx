@@ -556,7 +556,7 @@ export function DashboardHomeView(props: {
         </div>
         {/* While setup is next, the setup list right below is the action; a second link
             here ("Open My Day") pointed somewhere else. */}
-        {setupIsNext ? null : now.quiet ? (
+        {setupIsNext || !widgetsLoaded ? null : now.quiet ? (
           <a className="dash-now-quiet" href={withOrgHref(now.href, orgId || null)}>
             {now.cta} →
           </a>
@@ -615,7 +615,7 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {dashShell !== "ready" && !props.teamSetupCard ? (
+      {dashShell !== "ready" && dashShell !== "loading" && !props.teamSetupCard ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 
