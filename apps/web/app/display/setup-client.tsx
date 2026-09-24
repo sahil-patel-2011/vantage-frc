@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DisplayRelated } from "../../components/display-related";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
@@ -11,7 +11,6 @@ import {
 } from "../../lib/display";
 import {
   DISPLAY_RELATED_INCLUDE,
-  displaySetupNextActions,
   displaySetupStep,
 } from "../../lib/display/display-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -242,17 +241,6 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
 
   const activeTokenCount = tokens.filter((t) => !t.revokedAt).length;
   const step = displaySetupStep(boards.length, activeTokenCount);
-  const nextActions = useMemo(
-    () =>
-      displaySetupNextActions({
-        orgId,
-        boardCount: boards.length,
-        activeTokenCount,
-        hasActiveEvent: loading ? null : Boolean(activeEventKey),
-        canSync,
-      }),
-    [orgId, boards.length, activeTokenCount, loading, activeEventKey, canSync],
-  );
 
   // Retry cannot fix an expired session, so the failure decides its own action.
   const failure = fetchFailed
@@ -312,7 +300,6 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : (
         <div className="disp-stack">
-          <NextActionsPanel actions={nextActions} />
 
           <section className="display-steps" aria-label="Display setup steps">
             <article className={step >= 1 ? "active" : undefined}>
@@ -576,28 +563,3 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   );
 }
 
-function NextActionsPanel({
-  actions,
-}: {
-  actions: ReturnType<typeof displaySetupNextActions>;
-}) {
-  if (actions.length === 0) return null;
-  return (
-    <Panel className="disp-next-actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Real Event Day and Strategy paths only — boards stay blank until TBA and scored data exist.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </Panel>
-  );
-}
