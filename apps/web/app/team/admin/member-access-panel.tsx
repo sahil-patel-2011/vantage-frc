@@ -214,27 +214,16 @@ export function MemberAccessPanel({
     });
   }
 
-  async function applyPreset() {
-    if (!preset || !member) return;
-    setBusy(true);
-    setError("");
-    try {
-      const response = await fetch("/api/organizations/role-profiles", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "apply", key: preset, userId: member.userId }),
-      });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "That preset didn't apply. Try again.");
-        return;
-      }
-      const name = presets.find((entry) => entry.key === preset)?.name ?? "The preset";
-      await onSaved(`${name} applied to ${who}.`);
-      onClose();
-    } finally {
-      setBusy(false);
-    }
+  /** The chosen preset, applied as part of Save. Returns an error message, or null. */
+  async function applyPreset(): Promise<string | null> {
+    if (!preset || !member) return null;
+    const response = await fetch("/api/organizations/role-profiles", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId, action: "apply", key: preset, userId: member.userId }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    return response.ok ? null : (data.error ?? "That preset didn't apply. Try again.");
   }
 
   async function save() {
@@ -247,6 +236,13 @@ export function MemberAccessPanel({
         const failure = await patchMember(orgId, { userId: member.userId, action: "set_role", role });
         if (failure) return setError(failure);
         changed.push(`${who} is now ${ROLE_WORDS[role] ?? role}.`);
+      }
+      // A preset is a starting point: it applies first, and anything changed by hand below
+      // it in this dialog is saved on top.
+      if (limited && preset) {
+        const failure = await applyPreset();
+        if (failure) return setError(failure);
+        changed.push(`${presets.find((entry) => entry.key === preset)?.name ?? "The preset"} applied.`);
       }
       if (limited) {
         const nextHubs = hubPayload(hubs);
@@ -331,7 +327,7 @@ export function MemberAccessPanel({
         {limited && presets.length > 0 ? (
           <div className="member-access-preset">
             <label>
-              <span>Or start from a preset</span>
+              <span>Start from a preset (applied when you save)</span>
               <select value={preset} onChange={(event) => setPreset(event.target.value)} disabled={busy}>
                 <option value="">Choose a preset…</option>
                 {presets.map((entry) => (
@@ -341,9 +337,6 @@ export function MemberAccessPanel({
                 ))}
               </select>
             </label>
-            <Button variant="secondary" type="button" disabled={!preset || busy} onClick={() => void applyPreset()}>
-              Use preset
-            </Button>
           </div>
         ) : null}
 

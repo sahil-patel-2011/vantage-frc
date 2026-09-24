@@ -31,6 +31,7 @@ import {
 } from "./team-admin-model";
 import { TeamAdminPeople } from "./team-admin-people";
 import { TeamAdminProvidersPanel } from "./team-admin-providers";
+import { formatInviteRole } from "../../lib/invite/invite-flow";
 import "./team-access-requests.css";
 import "./team-admin.css";
 
@@ -315,16 +316,23 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }
   }
 
-  async function sendInvite(event: React.FormEvent) {
-    event.preventDefault();
+  async function sendInvite(event: React.FormEvent | null, again?: { email: string; role: string }) {
+    event?.preventDefault();
     if (inviteBusy) return;
+    const inviteEmail = again?.email ?? email;
+    const inviteRole = again?.role ?? role;
+    // Inviting an address that already has an invite replaces it; say so when the role changes
+    // instead of quietly turning a mentor's invite into a student's.
+    const earlier = invites.find(
+      (invite) => invite.status === "pending" && invite.email.toLowerCase() === inviteEmail.trim().toLowerCase(),
+    );
     setInviteBusy(true);
     setInviteNotice(null);
     try {
       const response = await fetch("/api/organizations/invites", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, email, role }),
+        body: JSON.stringify({ orgId, email: inviteEmail, role: inviteRole }),
       });
       const data = (await response.json()) as {
         id?: string;
@@ -344,9 +352,21 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         emailError: data.emailError,
       });
       const link = data.id && data.inviteUrl ? { id: data.id, url: data.inviteUrl } : null;
-      setInviteNotice({ tone: result.tone, message: `Invite ready for ${email.trim()}. ${result.message}`, link });
+      const roleChange =
+        earlier && earlier.role !== inviteRole
+          ? ` They will now join as ${formatInviteRole(inviteRole) ?? inviteRole} (the earlier invite said ${formatInviteRole(earlier.role) ?? earlier.role}).`
+          : "";
+      setInviteNotice({
+        tone: result.tone,
+        message: `${again ? "Invite back for" : "Invite ready for"} ${inviteEmail.trim()}.${roleChange} ${result.message}`,
+        link,
+      });
       if (link) setInviteLinks((current) => ({ ...current, [link.id]: link.url }));
-      setEmail("");
+      if (!again) {
+        setEmail("");
+        // Back to the usual choice, so the next person isn't invited with the last one's role.
+        setRole("scout");
+      }
       await load();
     } finally {
       setInviteBusy(false);
@@ -379,7 +399,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         return;
       }
       if (action === "revoke") {
-        setInviteNotice({ tone: "ok", message: `Invite to ${target?.email ?? "that person"} revoked.` });
+        setInviteNotice({
+          tone: "ok",
+          message: `Invite to ${target?.email ?? "that person"} revoked. Their link no longer works.`,
+          undo: target ? { label: "Undo", run: () => void sendInvite(null, { email: target.email, role: target.role }) } : null,
+        });
         setInviteLinks((current) => {
           const next = { ...current };
           delete next[inviteId];
@@ -398,7 +422,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         }
         setInviteNotice({
           tone: result.tone,
-          message: `${action === "copy" ? "Fresh link for" : "Invite sent again to"} ${target?.email ?? "them"}. ${result.message}`,
+          message: `${action === "copy" || !data.emailSent ? "New link for" : "Invite emailed again to"} ${target?.email ?? "them"}. ${result.message}`,
           link,
         });
       }

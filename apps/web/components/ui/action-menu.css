@@ -83,18 +83,6 @@
   color: var(--muted);
 }
 
-.vam-count {
-  min-width: 18px;
-  padding: 1px 5px;
-  border-radius:var(--radius-pill);
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-}
-
 /* --- the menu --- */
 
 /* Portalled to <body> and positioned fixed from the trigger's rect (see anchorStyle) so a

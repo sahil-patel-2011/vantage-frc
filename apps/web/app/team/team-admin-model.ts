@@ -80,6 +80,8 @@ export type InviteNotice = {
   message: string;
   /** The link to copy, shown inside the message so the next step sits beside it. */
   link?: { id: string; url: string } | null;
+  /** Put back what was just undone (a revoked invite comes back with the same role). */
+  undo?: { label: string; run: () => void } | null;
 };
 
 /** Last IndexedDB copy of Team admin membership — never invented counts. */

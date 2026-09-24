@@ -192,10 +192,8 @@ export function ActionMenu({
             <span aria-hidden="true" className="vam-dots">
               •••
             </span>
+            {/* No item count beside it: "More 2" read as two unread alerts, not two actions. */}
             <span className="vam-trigger-text">{overflowLabel}</span>
-            <span className="vam-count" aria-hidden="true">
-              {model.overflow.length}
-            </span>
           </button>
 
           {open && typeof document !== "undefined"

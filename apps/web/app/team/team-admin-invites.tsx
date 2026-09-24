@@ -105,6 +105,11 @@ export function TeamAdminInvitesPanel({
                 {copiedInviteId === noticeLink.id ? "Copied" : "Copy link"}
               </Button>
             ) : null}
+            {inviteNotice.undo ? (
+              <Button variant="secondary" type="button" onClick={inviteNotice.undo.run}>
+                {inviteNotice.undo.label}
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </form>
