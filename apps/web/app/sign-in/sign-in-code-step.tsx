@@ -112,11 +112,15 @@ export function SignInCodeStep({
       {inviteHelp && !invalid ? (
         <div className="signin-invite-help">
           <p>
-            <strong>No code after a minute?</strong> Codes only go to emails a team has invited. Ask your team&rsquo;s
-            owner to invite this address. New team? Join the waitlist below.
+            <strong>Not invited yet?</strong> We only send codes to emails a team has invited, so none will come.
+            If your team uses Vantage, ask its owner to invite this address.
           </p>
-          <a className="signin-link" href={inviteHelp.waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
-            Join the waitlist
+          <a
+            className="signin-invite-help-cta"
+            href={inviteHelp.waitlistHref}
+            onClick={() => rememberWaitlistEmail(email)}
+          >
+            New team? Join the waitlist
           </a>
         </div>
       ) : null}

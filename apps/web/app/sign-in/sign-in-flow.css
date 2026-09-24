@@ -22,8 +22,10 @@
   text-align: left;
 }
 
+/* Wide enough that "Check your email" and "You're not on a team yet" stay on one or two
+   natural lines instead of breaking after the second word. */
 .signin-card > h1 {
-  max-width: 12ch;
+  max-width: 20ch;
 }
 
 .signin-brand {
@@ -357,6 +359,23 @@
 }
 .signin-invite-help p {
   margin: 0;
+}
+/* A real button, not fine print: for an uninvited address this is the way forward. */
+.signin-invite-help-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 4px;
+  border: 1px solid var(--line, rgba(127, 127, 127, 0.3));
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+.signin-invite-help-cta:hover {
+  border-color: #2563eb;
 }
 .signin-not-invited {
   display: grid;
