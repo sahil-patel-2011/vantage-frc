@@ -26,7 +26,7 @@ import {
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import { type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-drag";
-import { layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
+import { boardHasGap, layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
 import { ARROW_DIRECTION } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
@@ -188,6 +188,13 @@ export function useDashboardBoardOps(input: {
     setMessageKind("success");
     setMessageAction(null);
     if (!result.moved) {
+      // A gap can be left because every card after it is too wide to fit; say that, and
+      // what closes it, instead of "Nothing to tidy" next to a visible hole.
+      if (boardHasGap(displayFor(layoutRef.current), cols)) {
+        setMessage("No card fits the gap. Make the card beside it wider, or a card below it smaller.");
+        setAnnounce("No card fits the gap. Make the card beside it wider, or a card below it smaller.");
+        return;
+      }
       setMessage("Nothing to tidy.");
       setAnnounce("Nothing to tidy. Every card is already as far up and left as it fits.");
       return;

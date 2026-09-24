@@ -260,6 +260,25 @@ export function tidyBoard(input: {
   return moved ? { layout: next, moved } : { layout, moved: false };
 }
 
+/**
+ * True when the painted board has an empty cell above its last row: a gap tidy could not
+ * fill because every card after it is wider than the gap.
+ */
+export function boardHasGap(display: readonly DashboardWidgetLayout[], cols: number): boolean {
+  if (display.length === 0 || cols <= 0) return false;
+  // An empty cell with a card starting below it; space after the last cards is not a gap.
+  const lastStart = Math.max(...display.map((item) => item.y));
+  for (let row = 0; row < lastStart; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const covered = display.some(
+        (item) => col >= item.x && col < item.x + item.w && row >= item.y && row < item.y + item.h,
+      );
+      if (!covered) return true;
+    }
+  }
+  return false;
+}
+
 /** Same positions for every card in `a` that is also in `b`. */
 export function samePositions(a: readonly DashboardWidgetLayout[], b: readonly DashboardWidgetLayout[]): boolean {
   const byId = new Map(b.map((item) => [item.i, item]));

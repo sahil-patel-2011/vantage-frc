@@ -24,6 +24,7 @@ import {
   setAlwaysShow,
   suggestBoardName,
   tidyBoard,
+  boardHasGap,
   widgetMatchesSearch,
 } from "./edit-mode";
 
@@ -222,5 +223,18 @@ describe("widget search keywords", () => {
       WIDGET_CATALOG.filter((entry) => widgetMatchesSearch(entry, query)).map((entry) => entry.type);
     expect(find("pit")).toEqual(expect.arrayContaining(["batteries", "robot_readiness"]));
     expect(find("money")).toContain("budget_parts");
+  });
+});
+
+describe("boardHasGap", () => {
+  const card = (i: string, x: number, y: number, w: number, h = 2) => ({ i, type: "note", x, y, w, h });
+  it("sees a hole a wider card below could not fill", () => {
+    // Row 0: three 4-wide cards. Row 2: two, then an empty third. Row 4: an 8-wide card.
+    const board = [card("a", 0, 0, 4), card("b", 4, 0, 4), card("c", 8, 0, 4), card("d", 0, 2, 4), card("e", 4, 2, 4), card("f", 0, 4, 8)];
+    expect(boardHasGap(board, 12)).toBe(true);
+  });
+  it("does not count the space to the right of the last row", () => {
+    const board = [card("a", 0, 0, 6), card("b", 6, 0, 6), card("c", 0, 2, 4)];
+    expect(boardHasGap(board, 12)).toBe(false);
   });
 });
