@@ -12,6 +12,7 @@ import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { LiveCountdown } from "./live-countdown";
 import { emptyHintFor, syncStatusDestination, WidgetShell as Shell } from "./widget-shell";
 import { OnboardingChecklistCard } from "./onboarding-card";
+import { matchLabelFromKey } from "../../../lib/matches/no-next-match";
 
 function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }) {
   const [play, setPlay] = useState(false);
@@ -187,8 +188,12 @@ export function renderOpsWidget({
                   Us {String(data.us)} · Opp {String(data.opp)}
                 </strong>
                 <small>
-                  {String(data.matchKey)} · margin {Number(data.margin) > 0 ? "+" : ""}
-                  {String(data.margin)}
+                  {matchLabelFromKey(String(data.matchKey))}
+                  {Number(data.margin) > 0
+                    ? ` · won by ${Number(data.margin)}`
+                    : Number(data.margin) < 0
+                      ? ` · lost by ${Math.abs(Number(data.margin))}`
+                      : ""}
                 </small>
               </div>
             </div>
@@ -211,6 +216,7 @@ export function renderOpsWidget({
               <div className="dash-stat-row">
                 <strong>{win.label}</strong>
                 <span>
+                  {typeof data.matchKey === "string" ? `${matchLabelFromKey(data.matchKey)} · ` : ""}
                   {alliance ? `${alliance} alliance` : "alliance not set"}
                 </span>
               </div>
@@ -221,11 +227,10 @@ export function renderOpsWidget({
                 {factors.map((factor, index) => (
                   <li key={`${factor.name}-${index}`}>
                     <span>{factor.name ?? "Factor"}</span>
-                    <b>{factor.impact ?? ""}</b>
+                    <b>{roundedImpact(factor.impact)}</b>
                   </li>
                 ))}
               </ul>
-              <p className="app-muted">Showing the last stored result.</p>
             </>
           ) : payload?.status === "live" ? (
             <p className="app-muted">Last stored row is not a grounded prediction. Open Strategy to compute one.</p>
@@ -625,4 +630,12 @@ export function renderOpsWidget({
     default:
       return null;
   }
+}
+
+/** A factor's weight as people read it: "48.5562" -> "48.6"; words stay words. */
+function roundedImpact(impact: unknown): string {
+  if (impact == null) return "";
+  const text = String(impact);
+  const n = Number(text);
+  return Number.isFinite(n) && text.trim() !== "" ? String(Math.round(n * 10) / 10) : text;
 }

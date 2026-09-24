@@ -561,12 +561,6 @@ export function DashboardHomeView(props: {
         <DataSourceDegradedBanner health={dataSourceHealth} canOpenTeamData={canOpenTeamData} />
       ) : null}
 
-      {emptyLabels.length ? (
-        <p className="dash-empty-summary" role="status" title={`Empty right now: ${emptyLabels.join(", ")}`}>
-          More cards appear here as your team uses Vantage.
-        </p>
-      ) : null}
-
       {orgId || editing ? (
         <section
           ref={gridWrapRef}
@@ -703,6 +697,15 @@ export function DashboardHomeView(props: {
             onAlwaysShow={(id) => setAlwaysShown(id, true)}
             onRemove={removeWidget}
           />
+          {/* Under the cards, not between the hero and them: a count of what is waiting,
+              named on hover, instead of a caption that read like a stray line. */}
+          {emptyLabels.length ? (
+            <p className="dash-empty-summary" role="status" title={`Empty right now: ${emptyLabels.join(", ")}`}>
+              {emptyLabels.length === 1
+                ? `${emptyLabels[0]} shows up here once it has something in it.`
+                : `${emptyLabels.length} more cards show up here once they have something in them.`}
+            </p>
+          ) : null}
           {!editing && !previewing && updatedAt && orgId && !fromCache ? (
             <p className="dash-sync-foot">
               Synced · {new Date(updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}

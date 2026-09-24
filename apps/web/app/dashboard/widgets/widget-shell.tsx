@@ -71,11 +71,13 @@ function StatusBadge({ status }: { status: WidgetPayload["status"] | "waiting" }
 /** Widget-scoped empty slot — the shared `EmptyState` in `compact` mode, so it drops
  * into a widget that is already an `app-card` without doubling the border/shadow. */
 function WidgetEmptyState({
+  type,
   hint,
   message,
   href,
   orgId,
 }: {
+  type: string;
   hint: EmptyHint;
   message?: string;
   href?: string;
@@ -83,12 +85,21 @@ function WidgetEmptyState({
 }) {
   const withOrg = (path: string) =>
     orgId ? `${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : path;
-  const ctaHref = hint.noEmptyCta ? undefined : hint.ctaHref ? withOrg(hint.ctaHref) : href;
+  // Every match played: the next useful look is where the team finished, not a dead card.
+  const eventOver = type === "next_match" && /are played/.test(message ?? "");
+  const ctaHref = eventOver
+    ? withOrg("/rankings")
+    : hint.noEmptyCta
+      ? undefined
+      : hint.ctaHref
+        ? withOrg(hint.ctaHref)
+        : href;
+  const ctaLabel = eventOver ? "See the rankings" : hint.ctaLabel;
   return (
-    <EmptyState compact title={hint.title} description={studentWidgetDescription(message, hint)}>
-      {ctaHref && hint.ctaLabel ? (
+    <EmptyState compact title={eventOver ? "Our matches here are done" : hint.title} description={studentWidgetDescription(message, hint)}>
+      {ctaHref && ctaLabel ? (
         <a className="dash-empty-cta" href={ctaHref}>
-          {hint.ctaLabel} →
+          {ctaLabel} →
         </a>
       ) : null}
     </EmptyState>
@@ -160,7 +171,7 @@ export function WidgetShell({
       ) : useChildren ? (
         children
       ) : (
-        <WidgetEmptyState hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
+        <WidgetEmptyState type={type} hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
       )}
       {href && showLive ? (
         <a className="dash-widget-link" href={href}>

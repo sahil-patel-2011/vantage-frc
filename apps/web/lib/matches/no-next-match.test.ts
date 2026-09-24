@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchShortLabel, noNextMatchMessage } from "./no-next-match";
+import { matchLabelFromKey, matchShortLabel, noNextMatchMessage } from "./no-next-match";
 
 describe("why there is no next match", () => {
   it("says the schedule isn't out when there are no matches for us", () => {
@@ -26,5 +26,14 @@ describe("why there is no next match", () => {
     expect(matchShortLabel("qm", 31)).toBe("Qual 31");
     expect(matchShortLabel("sf", 2, 3)).toBe("Semi 3-2");
     expect(matchShortLabel("f", 1, 1)).toBe("Final 1");
+  });
+});
+
+describe("match names from match keys", () => {
+  it("reads the name people say, not the key", () => {
+    expect(matchLabelFromKey("2026gacmp_qm28")).toBe("Qual 28");
+    expect(matchLabelFromKey("2026gacmp_sf2m1")).toBe("Semi 2-1");
+    expect(matchLabelFromKey("2026gacmp_f1m2")).toBe("Final 2");
+    expect(matchLabelFromKey("not-a-match")).toBe("not-a-match");
   });
 });

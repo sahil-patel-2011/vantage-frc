@@ -490,15 +490,17 @@ export async function loadDashboardSnapshot(
            OR m.blue_alliance->'teamKeys' ? $3
          )
          AND COALESCE(p.model_version, '') !~* 'demo'
+         -- Only a match still ahead: after the last one, old odds on Home disagreed with Event
+         -- day and the pit TV, which both say nothing is coming.
+         AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now()
        ORDER BY
-         CASE WHEN COALESCE(m.actual_time, m.predicted_time, m.event_time) > now() THEN 0 ELSE 1 END,
          COALESCE(m.actual_time, m.predicted_time, m.event_time) ASC NULLS LAST,
          p.scored_at DESC
        LIMIT 1`,
       [input.orgId, eventKey, teamKey],
     );
     if (!prediction.rows[0]) {
-      widgets.prediction_summary = stamp("empty", "prediction_summary", undefined, "No stored predictions for your team at this event yet.");
+      widgets.prediction_summary = stamp("empty", "prediction_summary", undefined, "A win chance shows here before our next match.");
       return;
     }
     const row = prediction.rows[0];
