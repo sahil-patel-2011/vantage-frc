@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextFirstWeekChecks } from "./first-week-card";
+import { nextFirstWeekChecks, setupHeroFrom } from "./first-week-card";
 import type { RoleOnboardingView } from "../../lib/role-onboarding/types";
 
 const check = (key: string, done = false) => ({ key, label: key, detail: "", href: "/x", done, completedAt: null });
@@ -41,5 +41,34 @@ describe("nextFirstWeekChecks", () => {
     expect(nextFirstWeekChecks(view([track("welcome", [check("a", true)])]))).toEqual([]);
     expect(nextFirstWeekChecks(null)).toEqual([]);
     expect(nextFirstWeekChecks({ status: "setup_required", message: "" })).toEqual([]);
+  });
+});
+
+describe("setupHeroFrom", () => {
+  const setup = (done: string[]) =>
+    track(
+      "team_setup",
+      ["invite", "event", "scouting", "calendar"].map((key) => ({
+        ...check(key, done.includes(key)),
+        label: key === "invite" ? "Invite your team" : key,
+        detail: key === "invite" ? "Add students and mentors by email. Ticks once someone joins." : "",
+      })),
+    );
+
+  it("makes the next setup step the hero, with its own button and every step as progress", () => {
+    const hero = setupHeroFrom(view([setup([])]))!;
+    expect(hero.title).toBe("Invite your team");
+    expect(hero.detail).toBe("Add students and mentors by email.");
+    expect(hero.cta).toBe("Invite people");
+    expect(hero.href).toBe("/team/admin?invite=1");
+    expect(hero.steps).toHaveLength(4);
+    expect(`${hero.doneCount} of ${hero.totalCount}`).toBe("0 of 4");
+    expect(setupHeroFrom(view([setup(["invite"])]))!.cta).toBe("Pick your event");
+  });
+
+  it("steps aside once setup is done or dismissed", () => {
+    expect(setupHeroFrom(view([setup(["invite", "event", "scouting", "calendar"])]))).toBeNull();
+    expect(setupHeroFrom(view([{ ...setup([]), dismissed: true }]))).toBeNull();
+    expect(setupHeroFrom(null)).toBeNull();
   });
 });

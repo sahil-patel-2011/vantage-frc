@@ -18,8 +18,10 @@ export function DashboardEditDock({
   libraryOpen,
   canShareOrg,
   canUndo,
+  canRedo,
   onCancel,
   onUndo,
+  onRedo,
   onToggleLibrary,
   onTidy,
   onPreview,
@@ -31,8 +33,10 @@ export function DashboardEditDock({
   libraryOpen: boolean;
   canShareOrg: boolean;
   canUndo: boolean;
+  canRedo: boolean;
   onCancel: () => void;
   onUndo: () => void;
+  onRedo: () => void;
   onToggleLibrary: () => void;
   onTidy: () => void;
   onPreview: () => void;
@@ -82,6 +86,8 @@ export function DashboardEditDock({
         <DashboardEditMenu
           saving={saving}
           canShareOrg={canShareOrg}
+          canRedo={canRedo}
+          onRedo={onRedo}
           onTidy={onTidy}
           onPreview={onPreview}
           onReset={onReset}
@@ -98,6 +104,8 @@ export function DashboardEditDock({
 function DashboardEditMenu({
   saving,
   canShareOrg,
+  canRedo,
+  onRedo,
   onTidy,
   onPreview,
   onReset,
@@ -105,6 +113,8 @@ function DashboardEditMenu({
 }: {
   saving: boolean;
   canShareOrg: boolean;
+  canRedo: boolean;
+  onRedo: () => void;
   onTidy: () => void;
   onPreview: () => void;
   onReset: () => void;
@@ -120,7 +130,7 @@ function DashboardEditMenu({
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
-    rootRef.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
+    rootRef.current?.querySelector<HTMLButtonElement>("[role=menuitem]:not(:disabled)")?.focus();
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
@@ -166,9 +176,13 @@ function DashboardEditMenu({
       </button>
       {open ? (
         <div className="dash-editbar-popover" role="menu" aria-label="More edit options">
+          <button type="button" role="menuitem" data-testid="dash-redo" disabled={saving || !canRedo} onClick={pick(onRedo)}>
+            <strong>Redo</strong>
+            <span>Put back what Undo took away (Ctrl+Shift+Z)</span>
+          </button>
           <button type="button" role="menuitem" data-testid="dash-tidy" disabled={saving} onClick={pick(onTidy)}>
             <strong>Snap &amp; tidy</strong>
-            <span>Close the gaps between cards</span>
+            <span>Pack every card up and left, the way Home shows them</span>
           </button>
           <button type="button" role="menuitem" data-testid="dash-preview" onClick={pick(onPreview)}>
             <strong>Preview</strong>

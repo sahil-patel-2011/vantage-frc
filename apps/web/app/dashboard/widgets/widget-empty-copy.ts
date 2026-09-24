@@ -8,6 +8,8 @@ export type EmptyHint = {
   ctaLabel?: string;
   /** The Home hero already links here, so the empty card does not repeat it. */
   noEmptyCta?: boolean;
+  /** The link under a card that has data. Defaults to ctaLabel when that opens something. */
+  liveLabel?: string;
 };
 
 /** Empty / setup copy a new student can act on — team, not workspace; no EPA / org / TBA-sync jargon. */
@@ -24,6 +26,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     body: "Results appear after the team connects match data.",
     ctaHref: "/command",
     ctaLabel: "Set active event",
+    liveLabel: "See match results",
   },
   competition_snapshot: {
     title: "No snapshot",
@@ -133,6 +136,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     body: "Add an AI key (a free one works) and Ask AI answers from your team's data.",
     ctaHref: "/team/ai-keys",
     ctaLabel: "Add an AI key",
+    liveLabel: "Open Ask AI",
   },
   quick_actions: {
     title: "Get set up",
@@ -254,6 +258,17 @@ export function syncStatusDestination(
     return { href: withOrgHref("/team/data", orgId), label: "Open Team Data" };
   }
   return { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" };
+}
+
+/**
+ * The words on the link under a card that has data. A card with a result on it
+ * used to end in its empty state's fix-it link — "Set active event →" under a
+ * score from the active event, "Add an AI key →" under a working Ask AI box.
+ */
+export function liveLinkLabel(hint: EmptyHint): string {
+  if (hint.liveLabel) return hint.liveLabel;
+  if (hint.ctaLabel && /^(Open|See|Learn)\b/.test(hint.ctaLabel)) return hint.ctaLabel;
+  return "Open";
 }
 
 export function emptyHintFor(type: string): EmptyHint {

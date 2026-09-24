@@ -21,7 +21,7 @@ type DashboardGridItemProps = {
   editing: boolean;
   isDragging: boolean;
   isGrabbed: boolean;
-  /** Tapped or clicked in edit mode — its size controls stay out. */
+  /** Its size button was tapped — its size controls stay out. */
   selected?: boolean;
   /** Just added — flashes once so you can see where it went. */
   isNew?: boolean;
@@ -33,7 +33,8 @@ type DashboardGridItemProps = {
   orgId: string;
   tbaConfigured?: boolean;
   canOpenTeamData?: boolean;
-  onSelect?: (id: string) => void;
+  /** Open or close this card's size controls (null closes). */
+  onSelect?: (id: string | null) => void;
   onCardPointerDown: (event: PointerEvent<HTMLElement>, item: DashboardWidgetLayout) => void;
   onHandlePointerDown: (event: PointerEvent<HTMLButtonElement>, item: DashboardWidgetLayout) => void;
   onDragPointerMove: (event: PointerEvent<HTMLElement>) => void;
@@ -52,8 +53,26 @@ type DashboardGridItemProps = {
   "× Remove" button over its title, a "DRAG" pill, and a five-button size bar,
   all at once — on a 4-column card that covered the name you needed to read to
   know which card it was. Now: a neutral "−" on the corner (outside the title),
-  a grip tab on the top edge, and the sizes only on the card you are working on.
+  a grip tab on the top edge, a size button on the top-right corner, and the
+  sizes only on the card whose size button you tapped. Tapping the card's
+  content never picks it (the tap landed on its links and inputs), and the
+  mouseup that ends a drag never does either.
 */
+/*
+  After a card is removed the next one slides into its place, with its "−" right
+  under the pointer, and a double-click removed both. A second pointer click on
+  the same spot within a moment of a remove is ignored; a keyboard press or a
+  click somewhere else is not.
+*/
+let lastRemove = { at: 0, x: 0, y: 0 };
+function isRepeatRemove(detail: number, x: number, y: number): boolean {
+  if (detail === 0) return false;
+  const now = Date.now();
+  const repeat = now - lastRemove.at < 600 && Math.hypot(x - lastRemove.x, y - lastRemove.y) < 8;
+  lastRemove = { at: now, x, y };
+  return repeat;
+}
+
 export const DashboardGridItem = memo(function DashboardGridItem({
   item,
   box,
@@ -103,11 +122,6 @@ export const DashboardGridItem = memo(function DashboardGridItem({
       onPointerMove={onDragPointerMove}
       onPointerUp={onDragPointerUp}
       onPointerCancel={onDragPointerCancel}
-      onClick={(event) => {
-        if (!editing || !onSelect) return;
-        if ((event.target as HTMLElement).closest("button")) return;
-        onSelect(item.i);
-      }}
     >
       {editing ? (
         <>
@@ -121,6 +135,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              if (isRepeatRemove(event.detail, event.clientX, event.clientY)) return;
               onRemove(item.i);
             }}
           >
@@ -138,10 +153,28 @@ export const DashboardGridItem = memo(function DashboardGridItem({
             onPointerUp={onDragPointerUp}
             onPointerCancel={onDragPointerCancel}
             onKeyDown={(event) => onHandleKeyDown(event, item)}
-            onFocus={() => onSelect?.(item.i)}
             onClick={(event) => event.preventDefault()}
           >
             <span className="dash-drag-dots" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="dash-size-toggle"
+            data-testid="dash-size-toggle"
+            aria-label={`Change the size of ${label} (now ${WIDGET_SIZE_LABEL[currentSize]})`}
+            aria-expanded={selected}
+            title="Change size"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSelect?.(selected ? null : item.i);
+            }}
+          >
+            <span aria-hidden="true">{WIDGET_SIZE_LABEL[currentSize]}</span>
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           {hiddenNote ? (
             <p className="dash-hidden-note" data-testid="dash-hidden-note">
@@ -164,7 +197,6 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   title={`${WIDGET_SIZE_LABEL[size]} widget`}
                   aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
                   aria-pressed={currentSize === size}
-                  onFocus={() => onSelect?.(item.i)}
                   onClick={() => onResize(item.i, size)}
                 >
                   {WIDGET_SIZE_LABEL[size]}

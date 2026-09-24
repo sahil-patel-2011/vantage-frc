@@ -283,7 +283,7 @@ export function homeViewLayout(
   );
   // A pinned card stays visible even when empty and keeps the user's saved size — except
   // the hero. An empty "Next match" at full hero height was the biggest thing on Home for
-  // every day of the year that is not an event day; it takes its minimum three rows until it is live.
+  // every day of the year that is not an event day; it takes two rows (one line and its link) until it is live.
   const widgets = input.widgets ?? {};
   const statusOf = (item: DashboardWidgetLayout) =>
     (widgets[item.i] ?? widgets[item.type] ?? Object.values(widgets).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
@@ -294,12 +294,23 @@ export function homeViewLayout(
   const filled = visible.filter(
     (item) => HOME_ALWAYS_VISIBLE.has(item.type) || isAlwaysShown(item) || statusOf(item) !== "empty",
   );
-  const sized = filled.map((item) => {
+  return packDashboardLayout(sizeForHome(filled, widgets));
+}
+
+/**
+ * The height Home gives each card: its saved size, except an empty Next match,
+ * which takes two rows until there is a match. Edit mode uses the same sizes so
+ * the edit board, Preview and Home put every card in the same place.
+ */
+export function sizeForHome(
+  layout: DashboardWidgetLayout[],
+  widgets: Record<string, { status?: string } | undefined> = {},
+): DashboardWidgetLayout[] {
+  return layout.map((item) => {
     if (!COMPACT_WHEN_EMPTY.has(item.type)) return item;
-    const status = statusOf(item);
-    return status && status !== "live" && item.h > 3 ? { ...item, h: 3 } : item;
+    const status = (widgets[item.i] ?? widgets[item.type])?.status;
+    return status && status !== "live" && item.h > 2 ? { ...item, h: 2 } : item;
   });
-  return packDashboardLayout(sized);
 }
 
 /** Labels of the pinned cards hidden because they are empty right now, for one summary line. */

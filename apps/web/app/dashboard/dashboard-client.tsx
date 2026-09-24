@@ -1,15 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  DASHBOARD_COLUMNS,
   homeViewLayout,
-  scaleLayoutToCols,
   type DashboardWidgetLayout,
+  type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
+import { displayBoard } from "../../lib/dashboard/board-order";
 import {
   cellBox,
-  compactLayout,
   layoutBottom,
 } from "../../lib/dashboard/grid-drag";
 import {
@@ -36,6 +35,8 @@ import {
 } from "./dashboard-home-model";
 import { DashboardHomeView } from "./dashboard-home-view";
 import { DashboardActionsProvider } from "./dashboard-quick-actions";
+import { setupHeroFrom, useFirstWeek } from "./first-week-card";
+import { WidgetsLoadedContext } from "./widgets/widgets-loaded";
 import "./dashboard-dnd.css";
 import "./dash-layout.css";
 
@@ -44,10 +45,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const home = useDashboardHomeState(initialOrgId);
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(home.orgId || null);
 
-  const paletteEntries = useMemo(
-    () => dashboardPaletteRows(home.layout, home.role),
-    [home.layout, home.role],
-  );
   const { personalBoards, orgBoards, switcherBoards } = useMemo(
     () => dashboardBoardLists(home.boards, home.board),
     [home.boards, home.board],
@@ -103,8 +100,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     role: home.role,
   });
 
-  // While the owner's "Set up your team" card shows, it is Home's only setup list.
-  const [teamSetupCard, setTeamSetupCard] = useState(false);
+  // The member's onboarding steps. While the team's own setup is unfinished, its next
+  // step is Home's hero and Home's only setup list.
+  const firstWeek = useFirstWeek(home.orgId);
+  const setupHero = useMemo(() => setupHeroFrom(firstWeek.view), [firstWeek.view]);
+  const teamSetupCard = Boolean(setupHero);
+  /** Session and the team's real board are here; before that Home is one skeleton. */
+  const homeReady = home.meLoaded && (!home.orgId || home.boardLoaded);
   /*
     Cards added during this edit. They stay on the board while you edit even
     if Home would hide them for being empty, so tapping a widget always puts
@@ -135,11 +137,36 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     [dashShell, home.widgets, teamSetupCard],
   );
   const hiddenOnHomeIds = useMemo(() => hiddenFor(home.layout), [hiddenFor, home.layout]);
+  const paletteEntries = useMemo(
+    () => dashboardPaletteRows(home.layout, home.role, { hidden: hiddenOnHomeIds, widgets: home.widgets }),
+    [home.layout, home.role, hiddenOnHomeIds, home.widgets],
+  );
+  const widgetsRef = useRef(home.widgets);
+  useEffect(() => {
+    widgetsRef.current = home.widgets;
+  }, [home.widgets]);
+  const widgetStatus = useCallback((type: DashboardWidgetType) => widgetsRef.current[type]?.status, []);
 
+  /*
+    Opening the widget sheet fetches what the widgets not on the board would
+    show, so the sheet can mark "Empty right now" before you add one.
+  */
+  const { libraryOpen, orgId: homeOrgId, loadSnapshot } = home;
+  const paletteRef = useRef(paletteEntries);
+  useEffect(() => {
+    paletteRef.current = paletteEntries;
+  }, [paletteEntries]);
+  useEffect(() => {
+    if (!libraryOpen || !homeOrgId) return;
+    const missing = paletteRef.current
+      .filter((row) => row.status === "add" && !widgetsRef.current[row.entry.type])
+      .map((row) => row.entry.type);
+    if (missing.length) void loadSnapshot(homeOrgId, missing).catch(() => undefined);
+  }, [libraryOpen, homeOrgId, loadSnapshot]);
   const viewFor = useCallback(
     (layout: DashboardWidgetLayout[], editing: boolean) =>
       editing
-        ? editBoardLayout(layout, hiddenFor(layout), addedThisEdit)
+        ? editBoardLayout(layout, hiddenFor(layout), addedThisEdit, home.widgets)
         : homeViewLayout(layout, { editing: false, shell: dashShell, widgets: home.widgets, teamSetupCard }),
     [hiddenFor, addedThisEdit, dashShell, home.widgets, teamSetupCard],
   );
@@ -152,22 +179,29 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     [hiddenFor, addedThisEdit],
   );
 
-  /** What is actually painted: the saved 12-column board scaled to this screen. */
+  /*
+    What is actually painted: the 12-column board packed the way Home packs it,
+    then shown on this screen's columns in the same reading order. Edit mode,
+    Preview and Home all go through this, so they always agree.
+  */
   const displayFor = useCallback(
-    (layout: DashboardWidgetLayout[]) =>
-      compactLayout(scaleLayoutToCols(viewFor(layout, true), DASHBOARD_COLUMNS, cols), cols),
+    (layout: DashboardWidgetLayout[]) => displayBoard(viewFor(layout, true), cols),
     [viewFor, cols],
   );
-  const displayLayout = useMemo(
-    () => compactLayout(scaleLayoutToCols(viewLayout, DASHBOARD_COLUMNS, cols), cols),
-    [viewLayout, cols],
-  );
+  const displayLayout = useMemo(() => displayBoard(viewLayout, cols), [viewLayout, cols]);
 
   useEffect(() => {
     home.displayRef.current = displayLayout;
   }, [displayLayout, home.displayRef]);
 
-  const history = useDashboardEditHistory({ editing: home.editing, previewing: home.previewing, setLayout: home.setLayout });
+  const layoutRef = home.layoutRef;
+  const currentLayout = useCallback(() => layoutRef.current, [layoutRef]);
+  const history = useDashboardEditHistory({
+    editing: home.editing,
+    previewing: home.previewing,
+    setLayout: home.setLayout,
+    current: currentLayout,
+  });
   const { setMessage, setMessageAction, setMessageKind, setAnnounce } = home;
   const undo = useCallback(() => {
     if (!history.undo()) return;
@@ -175,6 +209,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setMessageAction(null);
     setMessage("Undone.");
     setAnnounce("Undid the last change.");
+  }, [history, setMessage, setMessageAction, setMessageKind, setAnnounce]);
+  const redo = useCallback(() => {
+    if (!history.redo()) return;
+    setMessageKind("success");
+    setMessageAction(null);
+    setMessage("Redone.");
+    setAnnounce("Put the change back.");
   }, [history, setMessage, setMessageAction, setMessageKind, setAnnounce]);
   const dismissMessage = useCallback(() => {
     setMessage("");
@@ -239,6 +280,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setPreviewing: home.setPreviewing,
     setLibraryOpen: home.setLibraryOpen,
     onWidgetAdded: markAdded,
+    widgetStatus,
     setBoardsOpen: home.setBoardsOpen,
     setRenameId: home.setRenameId,
     setRenameDraft: home.setRenameDraft,
@@ -276,6 +318,18 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setGrabbedId: home.setGrabbedId,
   });
 
+  // ?customize=1 opens edit mode once the real board is here, never on the placeholder.
+  const { pendingCustomize, setPendingCustomize } = home;
+  const enterEditRef = useRef(enterEditMode);
+  useEffect(() => {
+    enterEditRef.current = enterEditMode;
+  });
+  useEffect(() => {
+    if (!pendingCustomize || !homeReady) return;
+    setPendingCustomize(false);
+    enterEditRef.current();
+  }, [pendingCustomize, homeReady, setPendingCustomize]);
+
   // The ghost is positioned imperatively (transform is never in the style prop),
   // so re-renders during a drag never yank it back to the last committed point.
   useEffect(() => {
@@ -289,9 +343,12 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   return (
     <DashboardActionsProvider orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
+    <WidgetsLoadedContext.Provider value={home.widgetsLoaded}>
     <DashboardHomeView
-      teamSetupCard={teamSetupCard}
-      onTeamSetupChange={setTeamSetupCard}
+      setupHero={setupHero}
+      firstWeek={firstWeek}
+      role={home.role}
+      homeReady={homeReady}
       me={home.me}
       meLoaded={home.meLoaded}
       orgId={home.orgId}
@@ -303,9 +360,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       viewLayout={viewLayout}
       displayLayout={displayLayout}
       widgets={home.widgets}
-      // Whether the widgets have arrived, so the "what to do now" card can
-      // say it is still working it out rather than saying there is nothing.
-      widgetsLoaded={dashShell !== "loading"}
+      // Whether the widgets (and the onboarding steps) have arrived, so the "what to do
+      // now" card waits as a blank shape rather than saying there is nothing.
+      widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}
       paletteEntries={paletteEntries}
       hiddenOnHome={hiddenOnHomeIds}
       homeStripItems={homeStripItems}
@@ -325,6 +382,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       saving={home.saving}
       canShareOrg={home.canShareOrg}
       canUndo={history.canUndo}
+      canRedo={history.canRedo}
       boardsOpen={home.boardsOpen}
       renameId={home.renameId}
       renameDraft={home.renameDraft}
@@ -367,6 +425,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       cancelEditing={cancelEditing}
       hasUnsavedChanges={hasUnsavedChanges}
       undo={undo}
+      redo={redo}
       tidyLayout={tidyLayout}
       save={save}
       resetDefault={resetDefault}
@@ -388,6 +447,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       onDragPointerUp={onDragPointerUp}
       onDragPointerCancel={onDragPointerCancel}
     />
+    </WidgetsLoadedContext.Provider>
     </DashboardActionsProvider>
   );
 }

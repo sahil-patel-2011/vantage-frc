@@ -9,7 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type SetStateAction,
 } from "react";
-import { applyGridDrag } from "../../lib/dashboard/boards";
+import { applyOrder, describePlace, planDrop, readingOrder } from "../../lib/dashboard/board-order";
 import {
   DASHBOARD_COLUMNS,
   catalogEntry,
@@ -22,16 +22,14 @@ import {
   DRAG_LONG_PRESS_MS,
   DRAG_MOUSE_INTENT_DISTANCE,
   cellBox,
-  describeCellMove,
+  columnStride,
   edgeAutoScrollDelta,
   exceedsDragCancelDistance,
-  layoutOrder,
-  moveItem,
   pointToCell,
-  reorderLayout,
+  rowStride,
   type PointerPoint,
 } from "../../lib/dashboard/grid-drag";
-import { layoutsEqual, packKeepingOrder } from "../../lib/dashboard/edit-mode";
+import { layoutsEqual } from "../../lib/dashboard/edit-mode";
 import {
   type DragActivation,
   type DragSession,
@@ -150,34 +148,53 @@ export function useDashboardPointerDrag(input: {
   }
 
   /*
-    The dashed slot shows where the card will really land. The preview is
-    packed the same way the drop is, so no gap opens up behind the card and
-    nothing jumps after you let go.
+    The dashed slot shows where the card will really land. A move is a change of
+    order — onto a same-size card swaps the two, onto a different size goes
+    before or after it — and the board is packed the way Home packs it, so no
+    gap opens up behind the card and Home, Preview and the edit board agree.
+    Judged against the board as it was when the drag began, so the answer does
+    not flicker as cards slide around under the pointer.
   */
-  function previewMove(session: DragSession) {
+  function planFor(session: DragSession, rect: CanvasRect) {
     if (session.cols === 1) {
       // A phone board is one stack, so a drop is an insert: the card goes before the first
-      // card whose middle is below its own. Grid collision pushing reshuffled the stack
-      // instead (dragging the third card to the top sent the first to the bottom).
+      // card whose middle is below its own.
       const dragged = session.baseDisplay.find((item) => item.i === session.id);
       const center = session.cell.row + (dragged?.h ?? session.span.h) / 2;
-      const others = layoutOrder(session.baseDisplay).filter((id) => id !== session.id);
+      const others = readingOrder(session.baseDisplay).filter((id) => id !== session.id);
       const index = others.filter((id) => {
         const item = session.baseDisplay.find((row) => row.i === id);
         return item ? item.y + item.h / 2 < center : false;
       }).length;
-      const order = [...others.slice(0, index), session.id, ...others.slice(index)];
-      setLayout(packKeepingOrder(reorderLayout(session.baseLayout, order)));
-      return;
+      return { order: [...others.slice(0, index), session.id, ...others.slice(index)], targetId: null, mode: "gap" as const };
     }
-    const nextDisplay = moveItem(session.baseDisplay, session.id, session.cell, session.cols);
-    setLayout(
-      packKeepingOrder(
-        session.cols === 1
-          ? reorderLayout(session.baseLayout, layoutOrder(nextDisplay))
-          : applyGridDrag(session.baseLayout, nextDisplay, session.cols),
-      ),
-    );
+    const point = {
+      col: Math.max(0, Math.min(session.cols - 0.01, (session.point.x - rect.left) / columnStride(rect.width, session.cols, session.gap))),
+      row: Math.max(0, (session.point.y - rect.top) / rowStride(session.rowHeight, session.gap)),
+    };
+    return planDrop(session.baseDisplay, session.id, point, session.cols);
+  }
+
+  function previewMove(session: DragSession, rect: CanvasRect) {
+    const plan = planFor(session, rect);
+    const key = plan.order.join("|");
+    const where = describePlace(session.baseDisplay, plan.order, session.id, plan.mode, plan.targetId);
+    setSnapFeedback({ mode: "Moving", label: session.label, where });
+    session.where = where;
+    if (key === session.orderKey) return;
+    session.orderKey = key;
+    setLayout(applyOrder(session.baseLayout, plan.order));
+  }
+
+  /** "Placing Batteries · after Hours this month" — where an added card goes, in card words. */
+  function describeAdd(session: DragSession) {
+    const others = readingOrder(session.baseDisplay);
+    const index = others.filter((id) => {
+      const item = session.baseDisplay.find((row) => row.i === id);
+      return item ? item.y < session.cell.row || (item.y === session.cell.row && item.x < session.cell.col) : false;
+    }).length;
+    const order = [...others.slice(0, index), session.id, ...others.slice(index)];
+    return describePlace(session.baseDisplay, order, session.id);
   }
 
   function refreshDragCell() {
@@ -190,17 +207,16 @@ export function useDashboardPointerDrag(input: {
       y: session.point.y - session.grab.y + 6,
     };
     const cell = pointToCell(anchor, rect, session.cols, session.rowHeight, session.gap);
-    if (cell.col === session.cell.col && cell.row === session.cell.row) return;
+    const cellChanged = cell.col !== session.cell.col || cell.row !== session.cell.row;
     session.cell = cell;
-    if (session.kind === "move") previewMove(session);
+    if (session.kind === "move") {
+      previewMove(session, rect);
+      return;
+    }
+    if (!cellChanged && session.where) return;
+    session.where = describeAdd(session);
     setDrag((current) => (current ? { ...current, cell } : current));
-    setSnapFeedback({
-      mode: session.kind === "move" ? "Moving" : "Placing",
-      x: cell.col,
-      y: cell.row,
-      w: session.span.w,
-      h: session.span.h,
-    });
+    setSnapFeedback({ mode: "Placing", label: session.label, where: session.where });
   }
 
   function startAutoScroll() {
@@ -272,13 +288,7 @@ export function useDashboardPointerDrag(input: {
       span: session.span,
       size: session.size,
     });
-    setSnapFeedback({
-      mode: session.kind === "move" ? "Moving" : "Placing",
-      x: session.cell.col,
-      y: session.cell.row,
-      w: session.span.w,
-      h: session.span.h,
-    });
+    setSnapFeedback({ mode: session.kind === "move" ? "Moving" : "Placing", label: session.label, where: "" });
     startAutoScroll();
     window.requestAnimationFrame(() => {
       paintProxy();
@@ -433,7 +443,7 @@ export function useDashboardPointerDrag(input: {
       return;
     }
 
-    setAnnounce(`${describeCellMove(settled.label, settled.cell)}.`);
+    setAnnounce(settled.where ? `${settled.label} moved ${settled.where}.` : `${settled.label} stayed where it was.`);
     endDrag(false);
     if (!layoutsEqual(settled.baseLayout, layoutRef.current)) record(settled.baseLayout);
   }

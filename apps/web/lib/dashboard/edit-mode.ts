@@ -9,6 +9,7 @@ import {
   homeViewLayout,
   isAlwaysShown,
   packDashboardLayout,
+  sizeForHome,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
   type WidgetCatalogEntry,
@@ -175,16 +176,19 @@ export function packInColumns(layout: DashboardWidgetLayout[], cols: number): Da
  * has nothing in it yet). Cards Home leaves out are listed under the board
  * instead of taking up full-size places on it.
  *
- * Not re-packed here: the drag maths works in column bands with vertical
- * gravity, and packing under it made a dragged card snap back. The draft is
- * laid out like Home once, on the way in (layoutForEditing).
+ * Packed exactly the way Home packs (first free spot, in reading order), so the
+ * edit board never shows a hole that Home would close on its own. A drag is a
+ * change of order (lib/dashboard/board-order), which this packing keeps.
  */
 export function editBoardLayout(
   layout: DashboardWidgetLayout[],
   hidden: ReadonlyMap<string, unknown>,
   keep: ReadonlySet<string> = new Set(),
+  widgets?: Record<string, { status?: string } | undefined>,
 ): DashboardWidgetLayout[] {
-  return layout.filter((item) => !hidden.has(item.i) || keep.has(item.i));
+  // Array order kept (positions from the pack): React moving the dragged card's node mid-drag
+  // drops the pointer capture the drag runs on.
+  return packKeepingOrder(sizeForHome(layout.filter((item) => !hidden.has(item.i) || keep.has(item.i)), widgets));
 }
 
 /**
@@ -292,11 +296,20 @@ export function popHistory(stack: readonly DashboardWidgetLayout[][]): {
   return { layout: stack[stack.length - 1] ?? null, stack: stack.slice(0, -1) };
 }
 
-export type HiddenOnHomeReason = "empty" | "setup_done";
+export type HiddenOnHomeReason = "empty" | "setup_done" | "setup_top";
 
 export const HIDDEN_ON_HOME_COPY: Record<HiddenOnHomeReason, string> = {
   empty: "Hidden until there's something to show",
   setup_done: "Hidden now that your team is set up",
+  // The owner's setup steps are the card at the top of Home while setup is unfinished.
+  setup_top: "Shown at the top while setup is unfinished",
+};
+
+/** The library's word for a card on the board that Home is not showing right now. */
+export const HIDDEN_ON_HOME_SHORT: Record<HiddenOnHomeReason, string> = {
+  empty: "Hidden (empty)",
+  setup_done: "Hidden (set up)",
+  setup_top: "At the top",
 };
 
 /**
@@ -327,7 +340,10 @@ export function hiddenOnHome(
   for (const item of layout) {
     if (shown.has(item.i) || !possible.has(item.i)) continue;
     const status = (rows[item.i] ?? rows[item.type])?.status;
-    hidden.set(item.i, status === "empty" ? "empty" : "setup_done");
+    const setupCard = item.type === "onboarding_checklist" || item.type === "quick_actions";
+    // While the owner's setup steps are the hero at the top, the setup card is not "done":
+    // it is hidden because the same steps are already on screen.
+    hidden.set(item.i, setupCard && input.teamSetupCard ? "setup_top" : status === "empty" ? "empty" : "setup_done");
   }
   return hidden;
 }

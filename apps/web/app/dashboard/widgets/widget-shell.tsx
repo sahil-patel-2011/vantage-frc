@@ -1,13 +1,17 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
 import { Badge, EmptyState } from "../../../components/ui";
-import { type EmptyHint, studentWidgetDescription } from "./widget-empty-copy";
+import { type EmptyHint, liveLinkLabel, studentWidgetDescription } from "./widget-empty-copy";
+import { WidgetsLoadedContext } from "./widgets-loaded";
 
 export type { EmptyHint } from "./widget-empty-copy";
-export { emptyHintFor, syncStatusDestination } from "./widget-empty-copy";
+export { emptyHintFor, liveLinkLabel, syncStatusDestination } from "./widget-empty-copy";
+
+/** Cards that are a tool, not a feed: a "Live" badge on them says nothing. */
+const NO_LIVE_BADGE = new Set(["ask_ai"]);
 
 /**
  * Widget accents are HUES, named from the tone ramp (soft-ui.css). They used to
@@ -110,8 +114,12 @@ export function WidgetShell({
   orgId: string;
   preferChildren?: boolean;
 }) {
+  const widgetsLoaded = useContext(WidgetsLoadedContext);
   const status = payload?.status ?? "setup_required";
   const showLive = status === "live";
+  // Not loaded yet is not "empty": the card waits quietly instead of claiming
+  // there is nothing (or that AI is off) and changing its mind a second later.
+  const loading = !payload && !widgetsLoaded;
   // A widget that renders its own body only when live used to leave a titled, blank card
   // behind otherwise (Team todos, Notifications). No rendered child means the empty state.
   const hasChildren = Array.isArray(children)
@@ -142,16 +150,21 @@ export function WidgetShell({
             ) : null}
           </div>
         </div>
-        {showLive ? <StatusBadge status={payload?.status ?? "live"} /> : null}
+        {showLive && !NO_LIVE_BADGE.has(type) ? <StatusBadge status={payload?.status ?? "live"} /> : null}
       </header>
-      {useChildren ? (
+      {loading ? (
+        <div className="dash-widget-wait" aria-busy="true" aria-label={`Loading ${title}`}>
+          <i />
+          <i />
+        </div>
+      ) : useChildren ? (
         children
       ) : (
         <WidgetEmptyState hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
       )}
       {href && showLive ? (
         <a className="dash-widget-link" href={href}>
-          {emptyHint.ctaLabel ?? "Open"} →
+          {liveLinkLabel(emptyHint)} →
         </a>
       ) : null}
     </article>

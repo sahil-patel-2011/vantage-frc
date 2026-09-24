@@ -45,15 +45,15 @@ export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHO
   return out;
 }
 
-export function FirstWeekCard({
-  orgId,
-  onTeamSetupChange,
-}: {
-  orgId: string;
-  /** Tells Home when this card is the team's setup list, so Home can drop its other setup cards. */
-  onTeamSetupChange?: (showing: boolean) => void;
-}) {
+/**
+ * The member's onboarding steps, loaded once for Home. Home needs them in two
+ * places — the "what to do now" hero shows the team's next setup step, and the
+ * first-week card lists a student's steps — and has to know when they have
+ * arrived, so neither says "nothing to do" first and changes its mind.
+ */
+export function useFirstWeek(orgId: string) {
   const [view, setView] = useState<RoleOnboardingView | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,10 +61,12 @@ export function FirstWeekCard({
     let cancelled = false;
     void fetch(`/api/role-onboarding?orgId=${encodeURIComponent(orgId)}`)
       .then((response) => (response.ok ? (response.json() as Promise<RoleOnboardingView>) : null))
+      .catch(() => null)
       .then((next) => {
-        if (!cancelled) setView(next);
-      })
-      .catch(() => undefined);
+        if (cancelled) return;
+        setView(next);
+        setLoadedFor(orgId);
+      });
     return () => {
       cancelled = true;
     };
@@ -87,33 +89,104 @@ export function FirstWeekCard({
     [orgId],
   );
 
-  const setupTrack = view?.status === "live" ? view.tracks.find((track) => track.key === "team_setup" && !track.dismissed) : undefined;
-  const teamSetupShowing = Boolean(setupTrack && setupTrack.doneCount < setupTrack.totalCount);
-  useEffect(() => {
-    onTeamSetupChange?.(teamSetupShowing);
-  }, [teamSetupShowing, onTeamSetupChange]);
+  return { view, loaded: !orgId || loadedFor === orgId, busy, post };
+}
 
-  if (!view || view.status !== "live" || view.totalCount === 0) return null;
-  const left = view.totalCount - view.doneCount;
+export type SetupHero = {
+  title: string;
+  detail: string;
+  href: string;
+  cta: string;
+  doneCount: number;
+  totalCount: number;
+  steps: { key: string; label: string; done: boolean }[];
+};
+
+/*
+  The button each setup step puts on the hero. The step's own label is the
+  heading ("Invite your team"); the button says what tapping it does.
+*/
+const SETUP_STEP_ACTION: Record<string, { cta: string; href?: string }> = {
+  invite: { cta: "Invite people", href: "/team/admin?invite=1" },
+  event: { cta: "Pick your event" },
+  scouting: { cta: "Set up scouting form" },
+  calendar: { cta: "Add practice" },
+};
+
+/**
+ * The team's next setup step as Home's hero, with the whole list as progress.
+ * It used to be two cards side by side saying the same thing: a hero reading
+ * "Your next step is in the list just below" with no button, and the list,
+ * whose next step was a small text link.
+ */
+export function setupHeroFrom(view: RoleOnboardingView | null): SetupHero | null {
+  if (!view || view.status !== "live") return null;
   const setup = view.tracks.find((track) => track.key === "team_setup" && !track.dismissed);
-  const settingUp = Boolean(setup && setup.doneCount < setup.totalCount);
-  // While the team itself isn't set up, that is the whole card: an owner's own
-  // "first week" steps can wait until there is a team for them to happen in.
-  const next =
-    settingUp && setup
-      ? setup.checks.filter((check) => !check.done).slice(0, SHOWN).map((check) => ({ track: setup, check }))
-      : nextFirstWeekChecks(view);
+  if (!setup || setup.doneCount >= setup.totalCount) return null;
+  const next = setup.checks.find((check) => !check.done);
+  if (!next) return null;
+  const action = SETUP_STEP_ACTION[next.key];
+  return {
+    title: next.label,
+    // The step's detail, without the bookkeeping sentence about when it ticks.
+    detail: next.detail.replace(/\s*Ticks once[^.]*\.\s*$/i, "").trim(),
+    href: action?.href ?? next.href ?? "/start",
+    cta: action?.cta ?? next.label,
+    doneCount: setup.doneCount,
+    totalCount: setup.totalCount,
+    steps: setup.checks.map((check) => ({ key: check.key, label: check.label, done: check.done })),
+  };
+}
+
+/** The setup steps as a small progress list inside the hero: ticks, not links. */
+export function SetupProgress({ hero }: { hero: SetupHero }) {
+  return (
+    <div className="dash-setup-progress">
+      <span>
+        {hero.doneCount} of {hero.totalCount} done
+      </span>
+      <ol>
+        {hero.steps.map((step) => (
+          <li key={step.key} data-done={step.done ? "true" : "false"}>
+            <i aria-hidden="true">{step.done ? "✓" : ""}</i>
+            <span>
+              {step.label}
+              {step.done ? <span className="dash-live-region"> (done)</span> : null}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/**
+ * A member's first-week steps. While the team itself is still being set up,
+ * the hero carries those steps, so this card steps aside rather than repeat
+ * them beside it.
+ */
+export function FirstWeekCard({
+  orgId,
+  view,
+  busy,
+  post,
+}: {
+  orgId: string;
+  view: RoleOnboardingView | null;
+  busy: string | null;
+  post: (payload: Record<string, unknown>, key: string) => Promise<void>;
+}) {
+  if (!view || view.status !== "live" || view.totalCount === 0) return null;
+  if (setupHeroFrom(view)) return null;
+  const left = view.totalCount - view.doneCount;
+  const next = nextFirstWeekChecks(view);
   if (next.length === 0) return null;
 
   return (
-    <section className="dash-first-week" aria-label={settingUp ? "Set up your team" : "Your first week"}>
+    <section className="dash-first-week" aria-label="Your first week">
       <header>
-        <strong>{settingUp ? "Set up your team" : "Your first week"}</strong>
-        <span>
-          {settingUp && setup
-            ? `${setup.doneCount} of ${setup.totalCount} done`
-            : `${view.doneCount} of ${view.totalCount} done · ${left} to go`}
-        </span>
+        <strong>Your first week</strong>
+        <span>{`${view.doneCount} of ${view.totalCount} done · ${left} to go`}</span>
       </header>
       <ol>
         {next.map(({ track, check }) => {

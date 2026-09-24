@@ -55,6 +55,17 @@ export function useDashboardHomeState(initialOrgId = "") {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
+  /*
+    The team's real board (mode=home, or the copy saved on this device) has
+    arrived. Until then Home is one neutral skeleton: it used to paint the
+    built-in "My Home" board and its copy first, and Edit worked on that
+    placeholder, so a captain could arrange a board that was not theirs.
+  */
+  const [boardLoaded, setBoardLoaded] = useState(false);
+  /** The first widget data has arrived (or failed), so cards can say what they know. */
+  const [widgetsLoaded, setWidgetsLoaded] = useState(false);
+  /** ?customize=1 asked for edit mode; it waits for the real board. */
+  const [pendingCustomize, setPendingCustomize] = useState(false);
   const [announce, setAnnounce] = useState("");
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
   const [boards, setBoards] = useState<BoardMeta[]>([]);
@@ -86,6 +97,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     setLayout(next.layout);
     setWidgets(next.widgets);
     setContext(next.context);
+    setBoardLoaded(true);
+    if (Object.keys(next.widgets).length > 0) setWidgetsLoaded(true);
   }, []);
 
   const loadSnapshot = useCallback(async (
@@ -108,6 +121,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     contextRef.current = nextContext;
     setWidgets(nextWidgets);
     setContext(nextContext);
+    setWidgetsLoaded(true);
     setUpdatedAt(new Date().toISOString());
     const prev = lastCacheRef.current;
     if (prev) {
@@ -145,6 +159,7 @@ export function useDashboardHomeState(initialOrgId = "") {
             ? (typeof err.error === "string" ? err.error : "Could not refresh Home. Showing the last copy on this device.")
             : (typeof err.error === "string" ? err.error : "Could not load Home."),
         );
+        setBoardLoaded(true);
         return;
       }
       const data = await response.json();
@@ -169,6 +184,7 @@ export function useDashboardHomeState(initialOrgId = "") {
         setMessageKind("error");
         setMessage("Could not load Home.");
       }
+      setBoardLoaded(true);
     }
   }, [applyHomeCache, userId]);
 
@@ -199,22 +215,35 @@ export function useDashboardHomeState(initialOrgId = "") {
   }, [initialOrgId]);
 
   useEffect(() => {
-    if (!orgId) {
-      const fallback = defaultDashboardLayoutForAudience(homeAudienceFromTeamRole(me.teamRole));
-      setLayout(fallback);
-      setBoard({
-        id: null,
-        name: "Default home",
-        scope: "personal",
-        layout: fallback,
-        isDefault: true,
-      });
-      return;
-    }
+    // Not "no team" until the session says so: before it arrives the org is simply unknown,
+    // and painting the built-in board then is what flashed "My Home" at every signed-in member.
+    if (orgId || !meLoaded) return;
+    const fallback = defaultDashboardLayoutForAudience(homeAudienceFromTeamRole(me.teamRole));
+    setLayout(fallback);
+    setBoard({
+      id: null,
+      name: "Default home",
+      scope: "personal",
+      layout: fallback,
+      isDefault: true,
+    });
+    setBoardLoaded(true);
+    setWidgetsLoaded(true);
+  }, [orgId, meLoaded, me.teamRole]);
+
+  const loadedOrgRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!orgId) return;
     let cancelled = false;
     let timer: number | null = null;
     let inFlight: AbortController | null = null;
     let lastFull = Date.now();
+    // A different team: its board and data are not here yet.
+    if (loadedOrgRef.current !== null && loadedOrgRef.current !== orgId) {
+      setBoardLoaded(false);
+      setWidgetsLoaded(false);
+    }
+    loadedOrgRef.current = orgId;
 
     const poll = async () => {
       if (cancelled || document.visibilityState === "hidden" || inFlight) return;
@@ -229,8 +258,11 @@ export function useDashboardHomeState(initialOrgId = "") {
           error instanceof DOMException &&
           (error.name === "AbortError" || error.name === "TimeoutError")
         ) {
+          if (error.name === "TimeoutError") setWidgetsLoaded(true);
           return;
         }
+        // A failed first load still ends the wait: cards show their own states.
+        setWidgetsLoaded(true);
       } finally {
         if (inFlight === controller) inFlight = null;
       }
@@ -278,7 +310,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       inFlight?.abort();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [orgId, loadHome, loadSnapshot, me.teamRole]);
+  }, [orgId, loadHome, loadSnapshot]);
 
   useEffect(() => {
     document.body.classList.toggle("dash-editing", editing || previewing);
@@ -301,8 +333,9 @@ export function useDashboardHomeState(initialOrgId = "") {
     const params = new URLSearchParams(window.location.search);
     if (params.get("customize") === "1") {
       // Straight into edit mode with the widget sheet closed: the board is
-      // what you came to arrange, and "+ Add widget" is one tap away.
-      setEditing(true);
+      // what you came to arrange, and "+ Add widget" is one tap away. Only
+      // once the real board is here (the client enters edit mode then).
+      setPendingCustomize(true);
       params.delete("customize");
       const next = params.toString();
       const cleaned = `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`;
@@ -332,6 +365,10 @@ export function useDashboardHomeState(initialOrgId = "") {
     fromCache,
     cachedAt,
     meLoaded,
+    boardLoaded,
+    widgetsLoaded,
+    pendingCustomize,
+    setPendingCustomize,
     announce,
     grabbedId,
     boards,

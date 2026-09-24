@@ -9,11 +9,11 @@ import {
   type SetStateAction,
 } from "react";
 import {
-  applyGridDrag,
   dropWidgetOntoLayout,
   duplicateBoardName,
   writeStoredBoardId,
 } from "../../lib/dashboard/boards";
+import { applyOrder, describePlace, nudgeOrder, readingOrder } from "../../lib/dashboard/board-order";
 import {
   DASHBOARD_COLUMNS,
   WIDGET_SIZE_LABEL,
@@ -25,14 +25,7 @@ import {
   type DashboardWidgetType,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
-import {
-  describeCellMove,
-  layoutOrder,
-  nudgeItem,
-  reorderLayout,
-  type GridCell,
-  type NudgeDirection,
-} from "../../lib/dashboard/grid-drag";
+import { type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-drag";
 import { layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
 import { ARROW_DIRECTION } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
@@ -92,6 +85,8 @@ export function useDashboardBoardOps(input: {
   setLibraryOpen: Dispatch<SetStateAction<boolean>>;
   /** A card was added in this edit, so it stays on the board while editing. */
   onWidgetAdded?: (id: string) => void;
+  /** What the loaded data says about a widget type right now ("live", "empty", …). */
+  widgetStatus?: (type: DashboardWidgetType) => string | undefined;
   setBoardsOpen: Dispatch<SetStateAction<boolean>>;
   setRenameId: Dispatch<SetStateAction<string | null>>;
   setRenameDraft: Dispatch<SetStateAction<string>>;
@@ -132,6 +127,7 @@ export function useDashboardBoardOps(input: {
     setPreviewing,
     setLibraryOpen,
     onWidgetAdded,
+    widgetStatus,
     setBoardsOpen,
     setRenameId,
     setRenameDraft,
@@ -150,18 +146,35 @@ export function useDashboardBoardOps(input: {
     }
     const entry = catalogEntry(type);
     const added = result.layout[result.layout.length - 1];
+    /*
+      A card with nothing in it yet is added with "Always show" on. Home hides
+      empty cards, so a freshly added Batteries card vanished the moment you
+      tapped Done and looked like a bug. Only a card already known to have data
+      is left to hide itself when it empties.
+    */
+    const keepWhenEmpty = Boolean(added) && widgetStatus?.(type) !== "live";
+    const nextLayout = keepWhenEmpty && added ? setAlwaysShow(result.layout, added.i, true) : result.layout;
     record(layoutRef.current);
     // Packed, not just pulled up: a card dropped beside a hole slides into it,
     // so the board never needs a separate tidy after an add.
-    setLayout(settle(result.layout));
+    setLayout(settle(nextLayout));
     if (added) {
       onWidgetAdded?.(added.i);
       setHighlightId(added.i);
     }
+    const label = entry?.label ?? type;
     setMessageKind("success");
-    setMessageAction(null);
-    setMessage(`${entry?.label ?? type} added to the board.`);
-    setAnnounce(`${entry?.label ?? type} added to the board.`);
+    setMessageAction(keepWhenEmpty ? "undo" : null);
+    setMessage(
+      keepWhenEmpty
+        ? `${label} added to the board. It shows on Home even while it is empty (Always show).`
+        : `${label} added to the board.`,
+    );
+    setAnnounce(
+      keepWhenEmpty
+        ? `${label} added to the board, set to always show on Home even while it is empty.`
+        : `${label} added to the board.`,
+    );
     setLibraryOpen(false);
     if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type)).catch(() => {
       setMessageKind("error");
@@ -243,6 +256,8 @@ export function useDashboardBoardOps(input: {
     setAnnounce(`${label} reset to its default size.`);
   }
 
+  // The double-click guard (the next card's "−" sliding under the pointer) is on the button
+  // itself, in dashboard-grid-item.tsx, where the pointer position is known.
   function removeWidget(id: string) {
     const removed = layoutRef.current.find((item) => item.i === id);
     record(layoutRef.current);
@@ -573,7 +588,7 @@ export function useDashboardBoardOps(input: {
       setMessage("Ask a team admin to delete a shared Home.");
       return;
     }
-    if (!window.confirm(`Delete “${target.name}”? This cannot be undone.`)) return;
+    // The view asks first, in the app's own confirm dialog.
     setSaving(true);
     try {
       const response = await fetch("/api/dashboards", {
@@ -686,18 +701,13 @@ export function useDashboardBoardOps(input: {
 
   function commitNudge(item: DashboardWidgetLayout, direction: NudgeDirection) {
     const label = catalogEntry(item.type)?.label ?? item.type;
-    const nextDisplay = nudgeItem(displayLayout, item.i, direction, cols);
-    const moved = nextDisplay.find((entry) => entry.i === item.i);
-    if (!moved || (moved.x === item.x && moved.y === item.y)) {
-      setAnnounce(`${label} is already at the ${direction === "left" || direction === "right" ? "edge" : direction === "up" ? "top" : "bottom"} of the board.`);
+    const order = nudgeOrder(displayLayout, item.i, direction);
+    if (!order || order.join("|") === readingOrder(displayLayout).join("|")) {
+      setAnnounce(`${label} is already ${direction === "up" || direction === "left" ? "first" : "last"} that way.`);
       return;
     }
-    setLayout(
-      cols === 1
-        ? reorderLayout(layoutRef.current, layoutOrder(nextDisplay))
-        : applyGridDrag(layoutRef.current, nextDisplay, cols),
-    );
-    setAnnounce(`${describeCellMove(label, { col: moved.x, row: moved.y })}.`);
+    setLayout(applyOrder(layoutRef.current, order));
+    setAnnounce(`${label} moved ${describePlace(displayLayout, order, item.i)}.`);
   }
 
   function onHandleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, item: DashboardWidgetLayout) {
@@ -711,13 +721,11 @@ export function useDashboardBoardOps(input: {
         if (base && !layoutsEqual(base, layoutRef.current)) record(base);
         setGrabbedId(null);
         grabBaseRef.current = null;
-        setAnnounce(`${label} dropped at row ${item.y + 1}, column ${item.x + 1}.`);
+        setAnnounce(`${label} dropped.`);
       } else {
         setGrabbedId(item.i);
         grabBaseRef.current = layoutRef.current;
-        setAnnounce(
-          `${label} picked up at row ${item.y + 1}, column ${item.x + 1}. Arrow keys move it, space drops it, escape cancels.`,
-        );
+        setAnnounce(`${label} picked up. Arrow keys move it, space drops it, escape cancels.`);
       }
       return;
     }

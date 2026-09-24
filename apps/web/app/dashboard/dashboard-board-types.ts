@@ -35,12 +35,11 @@ export type BoardState = {
   isDefault?: boolean;
 };
 
+/** The pill over the board during a drag, in card words: "Moving Hours this month · after Next match". */
 export type SnapFeedback = {
   mode: "Moving" | "Placing";
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+  label: string;
+  where: string;
 };
 
 export type DragKind = "move" | "add";
@@ -69,6 +68,10 @@ export type DragSession = {
   baseDisplay: DashboardWidgetLayout[];
   /** The picked-up card's content, copied into the ghost that follows the pointer. */
   sourceNode: HTMLElement | null;
+  /** The order the preview last showed, so an unchanged plan is not re-applied. */
+  orderKey?: string;
+  /** Where the card goes, in card words ("after Next match"). */
+  where?: string;
 };
 
 export type DragView = {
@@ -87,4 +90,8 @@ export type PaletteRow = {
   entry: WidgetCatalogEntry;
   status: PaletteStatus;
   reason: string | null;
+  /** For a card on the board: "On Home", or why Home is not showing it. */
+  placedLabel?: string;
+  /** Its data is empty right now, so it is added with Always show on. */
+  emptyNow?: boolean;
 };

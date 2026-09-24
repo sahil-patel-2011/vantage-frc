@@ -12,7 +12,6 @@ import {
   type Ref,
 } from "react";
 import dynamic from "next/dynamic";
-import { orgNameAddsDetail } from "../../components/app-shell-model";
 import {
   catalogEntry,
   emptyHomeWidgets,
@@ -34,11 +33,12 @@ import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
+import type { RoleOnboardingView } from "../../lib/role-onboarding/types";
 import { DashboardGridItem } from "./dashboard-grid-item";
 import { LiveCountdown } from "./widgets";
 import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
-import { Button, ConfirmDialog } from "../../components/ui";
+import { Button } from "../../components/ui";
 import type {
   BoardMeta,
   BoardState,
@@ -47,20 +47,18 @@ import type {
   PaletteRow,
   SnapFeedback,
 } from "./dashboard-board-types";
-import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
-import { CopyShareLink } from "../../components/copy-share-link";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { homeHeaderDetail, homeNowFromWidgets } from "./dashboard-home-model";
-import { FirstWeekCard } from "./first-week-card";
+import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
+import { DashboardHomeHeader } from "./dashboard-home-header";
+import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
+import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
 import "./dashboard-edit.css";
+import "./dashboard-home.css";
 
-const DashboardBoardsModal = dynamic(
-  () => import("./dashboard-boards-modal").then((mod) => mod.DashboardBoardsModal),
-  { ssr: false },
-);
 const DashboardEditDock = dynamic(
   () => import("./dashboard-edit-dock").then((mod) => mod.DashboardEditDock),
   { ssr: false },
@@ -83,18 +81,14 @@ type GridSpec = {
   rowHeight: number;
 };
 
-/** "a, b and c" */
-function listWords(words: string[]): string {
-  if (words.length <= 1) return words[0] ?? "";
-  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
-}
-
 /** Height of the fixed top bar; the board is brought in just under it. */
 const TOPBAR_PX = 56;
 
 export function DashboardHomeView(props: {
   me: Me;
   meLoaded: boolean;
+  /** Session and the real board have both arrived; until then Home is a skeleton. */
+  homeReady: boolean;
   orgId: string;
   board: BoardState | null;
   switcherBoards: BoardMeta[];
@@ -104,6 +98,7 @@ export function DashboardHomeView(props: {
   viewLayout: DashboardWidgetLayout[];
   displayLayout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
+  /** Widget data and onboarding steps have arrived, so the hero can say what is next. */
   widgetsLoaded?: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
@@ -113,9 +108,14 @@ export function DashboardHomeView(props: {
   dashShell: DashboardShellKind;
   nextActions: DashboardNextAction[];
   setupSteps: DashboardSetupStep[];
-  /** The owner's "Set up your team" card is on screen; other setup prompts step aside. */
-  teamSetupCard?: boolean;
-  onTeamSetupChange?: (showing: boolean) => void;
+  /** The team's next setup step, while setup is unfinished. */
+  setupHero: SetupHero | null;
+  firstWeek: {
+    view: RoleOnboardingView | null;
+    busy: string | null;
+    post: (payload: Record<string, unknown>, key: string) => Promise<void>;
+  };
+  role: string | null;
   dataSourceHealth: DataSourceHealthView | null;
   canOpenTeamData?: boolean;
   tbaConfigured: boolean | undefined;
@@ -127,6 +127,7 @@ export function DashboardHomeView(props: {
   saving: boolean;
   canShareOrg: boolean;
   canUndo: boolean;
+  canRedo: boolean;
   boardsOpen: boolean;
   renameId: string | null;
   renameDraft: string;
@@ -169,6 +170,7 @@ export function DashboardHomeView(props: {
   cancelEditing: () => void;
   hasUnsavedChanges: () => boolean;
   undo: () => void;
+  redo: () => void;
   tidyLayout: () => void;
   save: (scope?: "personal" | "org") => Promise<void> | void;
   resetDefault: () => Promise<void> | void;
@@ -197,6 +199,7 @@ export function DashboardHomeView(props: {
   const {
     me,
     meLoaded,
+    homeReady,
     orgId,
     board,
     switcherBoards,
@@ -215,6 +218,9 @@ export function DashboardHomeView(props: {
     dashShell,
     nextActions,
     setupSteps,
+    setupHero,
+    firstWeek,
+    role,
     dataSourceHealth,
     canOpenTeamData = false,
     tbaConfigured,
@@ -226,6 +232,7 @@ export function DashboardHomeView(props: {
     saving,
     canShareOrg,
     canUndo,
+    canRedo,
     boardsOpen,
     renameId,
     renameDraft,
@@ -268,6 +275,7 @@ export function DashboardHomeView(props: {
     cancelEditing,
     hasUnsavedChanges,
     undo,
+    redo,
     tidyLayout,
     save,
     resetDefault,
@@ -291,15 +299,16 @@ export function DashboardHomeView(props: {
   } = props;
 
   const knownName = meLoaded ? (me.firstName || me.name || "").trim().split(/\s+/)[0] : "";
+  const hello = mounted ? greeting() : "Welcome";
+  const greetingText = knownName ? `${hello}, ${knownName}` : hello;
   const boardIsEmpty = layout.length === 0;
-  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded });
+  const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded, role });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [confirmKind, setConfirmKind] = useState<"discard" | "reset" | "team" | null>(null);
+  const [confirm, setConfirm] = useState<HomeConfirm | null>(null);
   /** The team board just shared, while the toast about it is up, so it can offer to open it. */
   const [sharedBoard, setSharedBoard] = useState<{ id: string; name: string; message: string } | null>(null);
-  const [boardsCreate, setBoardsCreate] = useState<"personal" | null>(null);
-  const moreRef = useRef<HTMLDetailsElement | null>(null);
+  const [newBoardOpen, setNewBoardOpen] = useState(false);
   const gridWrapRef = useRef<HTMLElement | null>(null);
   /** Where the board sat on screen just before edit mode, so it can stay there. */
   const anchorTopRef = useRef<number | null>(null);
@@ -318,7 +327,6 @@ export function DashboardHomeView(props: {
 
   const startEditing = () => {
     anchorTopRef.current = boardTop();
-    moreRef.current?.removeAttribute("open");
     enterEditMode();
   };
 
@@ -359,32 +367,59 @@ export function DashboardHomeView(props: {
     return () => window.clearTimeout(timer);
   }, [highlightId, width, setHighlightId]);
 
-  // "More" is a <details>: it stays open until something closes it, so
-  // clicking outside it or pressing Escape does.
+  /*
+    A card's size bar opens under its size button. When that is low on the
+    screen the floating toolbar covered it (only "S" showed), so the page
+    scrolls just enough to bring the whole bar above the toolbar.
+  */
   useEffect(() => {
+    if (!selectedId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const bar = document.querySelector<HTMLElement>(`[data-widget-id="${CSS.escape(selectedId)}"] .dash-item-sizes`);
+      const dock = document.querySelector<HTMLElement>("[data-testid='dash-edit-toolbar']");
+      if (!bar) return;
+      const barBox = bar.getBoundingClientRect();
+      const limit = (dock?.getBoundingClientRect().top ?? window.innerHeight) - 12;
+      if (barBox.bottom > limit) window.scrollBy({ top: barBox.bottom - limit, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedId]);
+
+  // A tap anywhere that is not a card's size controls closes them.
+  useEffect(() => {
+    if (!selectedId) return;
     const onPointerDown = (event: PointerEvent) => {
-      const details = moreRef.current;
-      if (details?.open && !details.contains(event.target as Node)) details.removeAttribute("open");
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(".dash-item-sizes, .dash-size-toggle")) return;
+      setSelectedId(null);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, []);
+  }, [selectedId]);
 
   const requestCancel = useCallback(() => {
-    if (hasUnsavedChanges()) setConfirmKind("discard");
+    if (hasUnsavedChanges()) setConfirm({ kind: "discard" });
     else cancelEditing();
   }, [hasUnsavedChanges, cancelEditing]);
 
-  // Escape is Cancel (asking first if there is anything to lose), and
-  // Ctrl/Cmd+Z steps back one change. Anything that handles Escape itself —
-  // a drag, a picked-up card, the widget sheet, the ••• menu — goes first.
+  // Escape is Cancel (asking first if there is anything to lose); Ctrl/Cmd+Z steps
+  // back one change and Ctrl/Cmd+Shift+Z or Ctrl+Y steps forward again. Anything that
+  // handles Escape itself — a drag, a picked-up card, the widget sheet, the ••• menu — goes first.
   useEffect(() => {
     if (!editing) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || confirmKind || boardsOpen) return;
+      if (event.defaultPrevented || confirm || boardsOpen) return;
       const target = event.target as HTMLElement | null;
       const typing = Boolean(target?.closest("input, textarea, select, [contenteditable='true']"));
-      if ((event.key === "z" || event.key === "Z") && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+      const mod = (event.ctrlKey || event.metaKey) && !event.altKey;
+      const key = event.key.toLowerCase();
+      if (mod && ((key === "z" && event.shiftKey) || (key === "y" && !event.shiftKey))) {
+        if (typing) return;
+        event.preventDefault();
+        redo();
+        return;
+      }
+      if (mod && key === "z" && !event.shiftKey) {
         if (typing) return;
         event.preventDefault();
         undo();
@@ -392,6 +427,10 @@ export function DashboardHomeView(props: {
       }
       if (event.key !== "Escape" || dragging || grabbedId) return;
       event.preventDefault();
+      if (selectedId) {
+        setSelectedId(null);
+        return;
+      }
       if (libraryOpen) {
         setLibraryOpen(false);
         return;
@@ -400,178 +439,64 @@ export function DashboardHomeView(props: {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, confirmKind, boardsOpen, dragging, grabbedId, libraryOpen, setLibraryOpen, undo, requestCancel]);
+  }, [editing, confirm, boardsOpen, dragging, grabbedId, libraryOpen, selectedId, setLibraryOpen, undo, redo, requestCancel]);
 
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
+
+  if (!homeReady) return <DashboardHomeSkeleton greetingText={greetingText} />;
+
   // Cards Home is leaving out right now, listed under the board while editing.
   const hiddenRows = editing
     ? layout.filter((item) => hiddenOnHome.has(item.i) && !displayLayout.some((shown) => shown.i === item.i))
     : [];
-  const openBoards = (create: "personal" | null) => {
-    setBoardsCreate(create);
-    setBoardsOpen(true);
-    setRenameId(null);
-  };
   const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
-  // "Nothing you have to do right now" sat above a four-step setup list for a new owner.
-  // While that list shows, the quiet state says what is actually next. The mentor strip
-  // (duties, rooms, checklists) steps aside too: "all clear" on a team with no data is noise.
-  const setupIsNext = Boolean(props.teamSetupCard && now.quiet);
-  const nowView =
-    setupIsNext
-      ? {
-          ...now,
-          title: "Finish setting up your team",
-          detail: "Your next step is in the setup list. Matches, duties and tasks show up here once there are some.",
-        }
-      : now;
+  const teamSetupCard = Boolean(setupHero);
+  const showRoleStrip = Boolean(orgId && homeStripItems.length > 0 && !teamSetupCard);
+  const showsFirstWeek = Boolean(firstWeek.view && !teamSetupCard && firstWeek.view.status === "live");
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
 
   return (
-    <main className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
+    <main
+      className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}`}
+      data-grid={grid.label}
+      data-cols={cols}
+      data-now-wide={showRoleStrip || showsFirstWeek ? "false" : "true"}
+    >
       <p className="dash-live-region" role="status" aria-live="polite">
         {announce}
       </p>
 
-      <header className="dash-home-header">
-        <div {...dim}>
-          {/* The team number is the thing you are looking at; the greeting is
-              a courtesy above it. It used to be the other way round — the
-              number sat in small grey breadcrumb text while "Good morning"
-              took the headline, which is the wrong way up for a page you open
-              at an event. */}
-          {/* The team number is not repeated here.
-              It is in the top bar on every page, including this one, and it
-              was the largest thing on the screen — "Team 6925" two rows above
-              a 56px "6925", telling you a fact you had just read and that
-              never changes while you are signed in. The greeting is what is
-              actually specific to opening the page, so it takes the line, and
-              the team name appears only when it says more than the number. */}
-          <h1 className="dash-hero-greeting">
-            {/* The hour is the browser clock; the server renders in UTC. */}
-            {knownName ? `${mounted ? greeting() : "Welcome"}, ${knownName}` : mounted ? greeting() : "Welcome"}
-          </h1>
-          {orgId && meLoaded ? (
-            <DashboardBoardSwitcher
-              boards={switcherBoards}
-              board={board}
-              saving={saving}
-              disabled={editing || previewing}
-              onSwitch={(id) => void switchBoard(id)}
-              onNew={() => openBoards("personal")}
-              onManage={() => openBoards(null)}
-            />
-          ) : null}
-          {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? (
-            <p className="dash-hero-org">{me.orgName}</p>
-          ) : null}
-          {(() => {
-            const detail = homeHeaderDetail({
-              meLoaded,
-              orgId,
-              tbaConfigured,
-              setupRequired,
-              eventName,
-            });
-            return detail ? <p>{detail}</p> : null;
-          })()}
-          {/* The event you are at, as its own row you can tap — it is the
-              single most looked-up fact on this page during a competition.
-              Absent until an event is actually set; there is no placeholder. */}
-          {typeof eventName === "string" && eventName.trim() ? (
-            <a className="dash-hero-event" data-tour="event" href={withOrgHref("/command", orgId || null)}>
-              <Icon name="pin" />
-              <span>{eventName}</span>
-              <Icon name="chevron" />
-            </a>
-          ) : null}
-        </div>
-        {!editing && !previewing ? (
-          <div className="dash-home-actions">
-            {nextMatchData && !viewLayout.some((item) => item.type === "next_match") ? (
-              <a className="dash-next-glance" href={withOrgHref("/my-day", orgId || null)}>
-                <span>Next</span>
-                <strong>
-                  {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
-                </strong>
-                <b>
-                  <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
-                </b>
-              </a>
-            ) : null}
-            {/* A quiet "Edit" beside the greeting, the way iOS does it. It
-                spent a while folded inside "More" as plain text among buttons,
-                where testers could not find it at all. It is still quiet —
-                arranging Home is occasional — but it is where you look. */}
-            <button
-              type="button"
-              className="dash-edit-button"
-              data-testid="dash-customize"
-              data-tour="customise"
-              aria-label="Edit Home — rearrange, add, or remove widgets"
-              onClick={startEditing}
-            >
-              Edit
-            </button>
-            <details className="dash-home-more" ref={moreRef}>
-              <summary aria-label="More home tools">More</summary>
-              <div
-                onClick={(event) => {
-                  const item = (event.target as HTMLElement).closest("button, a");
-                  if (!item) return;
-                  // Copy link says "Link copied" in place, so it gets a moment
-                  // to be read; everything else closes the menu at once.
-                  const delay = item.closest("[data-more-delay]") ? 1200 : 0;
-                  window.setTimeout(() => moreRef.current?.removeAttribute("open"), delay);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Escape") return;
-                  moreRef.current?.removeAttribute("open");
-                  moreRef.current?.querySelector("summary")?.focus();
-                }}
-              >
-                <span data-more-delay="">
-                  <CopyShareLink orgId={orgId || null} />
-                </span>
-                {updatedAt && orgId && !fromCache ? (
-                  <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
-                ) : null}
-              </div>
-            </details>
-          </div>
-        ) : null}
-      </header>
-      <section className="dash-now" aria-label="What to do now" data-testid="dash-now" {...dim}>
-        {/* This card used to carry an eyebrow reading "What to do now", a
-            heading, a sentence, and a button — four ways of saying one
-            thing, stacked. The heading says it, the button does it, and the
-            section keeps its aria-label so nothing is lost to a screen
-            reader. The sentence stays only when it adds a fact the other
-            two do not. */}
-        <div>
-          <strong>{nowView.title}</strong>
-          {nowView.detail ? <p>{nowView.detail}</p> : null}
-        </div>
-        {/* While setup is next, the setup list right below is the action; a second link
-            here ("Open My Day") pointed somewhere else. */}
-        {setupIsNext || !widgetsLoaded ? null : now.quiet ? (
-          <a className="dash-now-quiet" href={withOrgHref(now.href, orgId || null)}>
-            {now.cta} →
-          </a>
-        ) : (
-          <Button as="a" variant="primary" href={withOrgHref(now.href, orgId || null)}>
-            {now.cta}
-          </Button>
-        )}
-      </section>
+      <DashboardHomeHeader
+        me={me}
+        meLoaded={meLoaded}
+        orgId={orgId}
+        greetingText={greetingText}
+        board={board}
+        switcherBoards={switcherBoards}
+        saving={saving}
+        editing={editing}
+        previewing={previewing}
+        detail={homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
+        eventName={eventName}
+        nextMatchData={nextMatchData}
+        showNextGlance={!viewLayout.some((item) => item.type === "next_match")}
+        onSwitch={(id) => void switchBoard(id)}
+        onNewBoard={() => setNewBoardOpen(true)}
+        onManageBoards={() => {
+          setRenameId(null);
+          setBoardsOpen(true);
+        }}
+        onEdit={startEditing}
+      />
+      <DashboardNowCard now={now} setupHero={setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} onTeamSetupChange={props.onTeamSetupChange} /> : null}
+      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {orgId && homeStripItems.length > 0 && !props.teamSetupCard ? (
+      {showRoleStrip ? (
         <section
           className="dash-role-strip"
           data-audience={homeAudience ?? "student"}
@@ -615,11 +540,11 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {dashShell !== "ready" && dashShell !== "loading" && !props.teamSetupCard ? (
+      {dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !props.teamSetupCard ? (
+      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard ? (
         <p className="dash-ready-cue" role="status" {...dim}>
           <span>{nextActions[0]?.detail ?? nextActions[0]?.label}</span>
           {nextActions[0]?.href ? (
@@ -637,8 +562,8 @@ export function DashboardHomeView(props: {
       ) : null}
 
       {emptyLabels.length ? (
-        <p className="dash-empty-summary" role="status">
-          Nothing yet in {listWords(emptyLabels)}. Those cards come back as soon as they have something.
+        <p className="dash-empty-summary" role="status" title={`Empty right now: ${emptyLabels.join(", ")}`}>
+          More cards appear here as your team uses Vantage.
         </p>
       ) : null}
 
@@ -654,18 +579,16 @@ export function DashboardHomeView(props: {
         >
           {editing ? (
             <p className="dash-edit-hint" data-testid="dash-edit-hint">
-              Drag cards to move them. Tap a card to change its size, or − to remove it.
+              Drag a card to move it. Use its size button (top right) to resize it, or − to remove it.
             </p>
           ) : null}
           {snapFeedback ? (
             <output className="dash-snap-hud" aria-hidden="true">
               <strong>{snapFeedback.mode}</strong>
               <span>
-                {cols === 1
-                  ? `position ${snapFeedback.y + 1}`
-                  : `columns ${snapFeedback.x + 1}–${snapFeedback.x + snapFeedback.w}`}
+                {snapFeedback.label}
+                {snapFeedback.where ? ` · ${snapFeedback.where}` : ""}
               </span>
-              <span>row {snapFeedback.y + 1}</span>
             </output>
           ) : null}
 
@@ -697,10 +620,6 @@ export function DashboardHomeView(props: {
               data-editing={editing ? "true" : "false"}
               data-testid="dash-place-canvas"
               data-measured={measured && width > 0 ? "true" : "false"}
-              onClick={(event) => {
-                if (!editing) return;
-                if (!(event.target as HTMLElement).closest(".dash-grid-item")) setSelectedId(null);
-              }}
               style={
                 {
                   height: `${Math.max(width > 0 ? gridHeight : 240, grid.rowHeight)}px`,
@@ -761,6 +680,7 @@ export function DashboardHomeView(props: {
                         }}
                         onHandlePointerDown={(event, target) => {
                           event.stopPropagation();
+                          setSelectedId(null);
                           beginCardDrag(event, target, "immediate");
                         }}
                         onDragPointerMove={onDragPointerMove}
@@ -783,6 +703,11 @@ export function DashboardHomeView(props: {
             onAlwaysShow={(id) => setAlwaysShown(id, true)}
             onRemove={removeWidget}
           />
+          {!editing && !previewing && updatedAt && orgId && !fromCache ? (
+            <p className="dash-sync-foot">
+              Synced · {new Date(updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -819,8 +744,10 @@ export function DashboardHomeView(props: {
           libraryOpen={libraryOpen}
           canShareOrg={canShareOrg}
           canUndo={canUndo}
+          canRedo={canRedo}
           onCancel={requestCancel}
           onUndo={undo}
+          onRedo={redo}
           onToggleLibrary={() => setLibraryOpen((open) => !open)}
           onTidy={tidyLayout}
           onPreview={() => {
@@ -828,8 +755,8 @@ export function DashboardHomeView(props: {
             setPreviewing(true);
             setLibraryOpen(false);
           }}
-          onReset={() => setConfirmKind("reset")}
-          onSaveOrg={() => setConfirmKind("team")}
+          onReset={() => setConfirm({ kind: "reset" })}
+          onSaveOrg={() => setConfirm({ kind: "team" })}
           onDone={() => void save("personal")}
         />
       ) : null}
@@ -883,54 +810,26 @@ export function DashboardHomeView(props: {
               return;
             }
             // Same on every screen: the card goes on the board at once, the
-            // sheet closes, and the board scrolls to it and flashes it. Phones
-            // used to switch to "tap a slot on the board", with no slots
-            // shown and no way to tell a slot from empty space.
+            // sheet closes, and the board scrolls to it and flashes it.
             addWidget(entry.type);
           }}
         />
       ) : null}
 
-      <ConfirmDialog
-        open={confirmKind !== null}
-        opts={
-          confirmKind === "reset"
-            ? {
-                title: "Reset this board?",
-                body: "Your cards go back to the standard set for your role. Nothing is saved until you tap Done, and Undo brings your layout back.",
-                confirmLabel: "Reset board",
-                cancelLabel: "Keep my layout",
-              }
-            : confirmKind === "team"
-              ? board?.scope === "org" && board.id
-                ? {
-                    title: `Update ${board.name} for the team?`,
-                    body: "Everyone who uses this team board will see this layout.",
-                    confirmLabel: "Save for team",
-                    cancelLabel: "Keep editing",
-                  }
-                : {
-                    title: "Share this layout as a team board?",
-                    body: "Everyone on the team can switch to it from their boards. Your own Home stays as it is, and you stay on it.",
-                    confirmLabel: "Share with team",
-                    cancelLabel: "Keep editing",
-                  }
-            : confirmKind === "discard"
-              ? {
-                  title: "Discard changes?",
-                  body: "The changes you made to this board since tapping Edit will be lost.",
-                  confirmLabel: "Discard changes",
-                  cancelLabel: "Keep editing",
-                }
-              : null
-        }
-        onResolve={(ok) => {
-          const kind = confirmKind;
-          setConfirmKind(null);
+      <DashboardHomeDialogs
+        confirm={confirm}
+        onConfirm={(asked, ok) => {
+          setConfirm(null);
+          if (asked.kind === "delete") {
+            if (ok) void deleteBoard(asked.id);
+            // Back to the manager the question came from.
+            setBoardsOpen(true);
+            return;
+          }
           if (!ok) return;
-          if (kind === "reset") void resetDefault();
-          if (kind === "discard") cancelEditing();
-          if (kind === "team") {
+          if (asked.kind === "reset") void resetDefault();
+          if (asked.kind === "discard") cancelEditing();
+          if (asked.kind === "team") {
             const onTeamBoard = board?.scope === "org" && Boolean(board.id);
             void shareWithTeam().then((shared) => {
               if (!shared || onTeamBoard) return;
@@ -938,39 +837,39 @@ export function DashboardHomeView(props: {
             });
           }
         }}
+        board={board}
+        boardsOpen={boardsOpen}
+        newBoardOpen={newBoardOpen}
+        personalBoards={personalBoards}
+        orgBoards={orgBoards}
+        saving={saving}
+        editing={editing}
+        canShareOrg={canShareOrg}
+        renameId={renameId}
+        renameDraft={renameDraft}
+        onCloseBoards={() => {
+          setBoardsOpen(false);
+          setRenameId(null);
+        }}
+        onCloseNewBoard={() => setNewBoardOpen(false)}
+        onRenameDraft={setRenameDraft}
+        onSwitch={(id) => void switchBoard(id)}
+        onRename={(id, name) => void renameBoard(id, name)}
+        onDuplicate={(id) => void duplicateBoard(id)}
+        onRequestDelete={(id) => {
+          const target = [...personalBoards, ...orgBoards].find((item) => item.id === id);
+          if (!target) return;
+          setBoardsOpen(false);
+          setConfirm({ kind: "delete", id, name: target.name });
+        }}
+        onStartRename={(id, name) => {
+          setRenameId(id);
+          setRenameDraft(name);
+        }}
+        onCancelRename={() => setRenameId(null)}
+        onCreatePersonal={(name) => void createBoard("personal", name)}
+        onCreateOrg={(name) => void createBoard("org", name)}
       />
-
-      {boardsOpen ? (
-        <DashboardBoardsModal
-          open
-          onClose={() => {
-            setBoardsOpen(false);
-            setBoardsCreate(null);
-            setRenameId(null);
-          }}
-          board={board}
-          personalBoards={personalBoards}
-          orgBoards={orgBoards}
-          saving={saving}
-          editing={editing}
-          canShareOrg={canShareOrg}
-          renameId={renameId}
-          renameDraft={renameDraft}
-          initialCreate={boardsCreate}
-          onRenameDraft={setRenameDraft}
-          onSwitch={(id) => void switchBoard(id)}
-          onRename={(id, name) => void renameBoard(id, name)}
-          onDuplicate={(id) => void duplicateBoard(id)}
-          onDelete={(id) => void deleteBoard(id)}
-          onStartRename={(id, name) => {
-            setRenameId(id);
-            setRenameDraft(name);
-          }}
-          onCancelRename={() => setRenameId(null)}
-          onCreatePersonal={(name) => void createBoard("personal", name)}
-          onCreateOrg={(name) => void createBoard("org", name)}
-        />
-      ) : null}
     </main>
   );
 }

@@ -84,8 +84,9 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
     case "ask_ai": {
       const href = typeof data.href === "string" && data.href ? data.href : "/ai?tab=chat";
       const askHref = withOrg(href);
-      // AI not turned on for this team: no box that would drop the question on an off page.
-      if (data.aiOff) {
+      // One state: a question box only when Ask AI answers. AI off (or not known yet) shows
+      // no box and no "Live" — the box and "AI is off" used to appear on the same card.
+      if (data.aiOff || payload?.status !== "live") {
         return (
           <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={hint} orgId={orgId} />
         );

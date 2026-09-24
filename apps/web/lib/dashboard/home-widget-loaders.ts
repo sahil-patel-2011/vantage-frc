@@ -120,11 +120,17 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
   );
   // The person's own next scouting robot: primary duties only, not yet filed by anyone,
   // and not long past (the same rules as Scouting home, lib/scouting/next-duty.ts).
-  let scoutDuty: { matchKey: string; teamKey: string; matchLabel: string } | null = null;
+  let scoutDuty: { matchKey: string; teamKey: string; matchLabel: string; station: string | null } | null = null;
   if (ctx.eventKey) {
-    const rows = await query<{ matchKey: string; teamKey: string }>(
+    const rows = await query<{
+      matchKey: string;
+      teamKey: string;
+      redAlliance: { teamKeys?: string[] } | null;
+      blueAlliance: { teamKeys?: string[] } | null;
+    }>(
       client,
-      `SELECT /* home-widget:my_day-scout */ a.match_key AS "matchKey", a.team_key AS "teamKey"
+      `SELECT /* home-widget:my_day-scout */ a.match_key AS "matchKey", a.team_key AS "teamKey",
+              m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
          FROM scout_assignments a
          JOIN matches_ref m ON m.match_key = a.match_key
         WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
@@ -140,7 +146,14 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
       [ctx.orgId, ctx.userId, ctx.eventKey],
     );
     const row = rows[0];
-    if (row) scoutDuty = { ...row, matchLabel: matchKeyLabel(row.matchKey) };
+    if (row) {
+      scoutDuty = {
+        matchKey: row.matchKey,
+        teamKey: row.teamKey,
+        matchLabel: scoutMatchLabel(row.matchKey),
+        station: allianceStation(row.teamKey, row.redAlliance?.teamKeys, row.blueAlliance?.teamKeys),
+      };
+    }
   }
   if (!matchLabel && events.length === 0 && duties.length === 0 && !scoutDuty) {
     return empty(await myDayEmptyReason(client, ctx.eventKey, teamKey));
@@ -154,6 +167,25 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     duties,
     scoutDuty,
   });
+}
+
+/** "Qual 22" for a qualification match; the scouting short form ("SF1-2") otherwise. */
+export function scoutMatchLabel(matchKey: string): string {
+  const qual = /_qm(\d+)$/i.exec(matchKey);
+  return qual ? `Qual ${qual[1]}` : matchKeyLabel(matchKey);
+}
+
+/** "Red 2" — where the robot stands, from the match's own alliance lists; null when it is not in them. */
+export function allianceStation(
+  teamKey: string,
+  red: readonly string[] | undefined,
+  blue: readonly string[] | undefined,
+): string | null {
+  const redAt = (red ?? []).indexOf(teamKey);
+  if (redAt >= 0) return `Red ${redAt + 1}`;
+  const blueAt = (blue ?? []).indexOf(teamKey);
+  if (blueAt >= 0) return `Blue ${blueAt + 1}`;
+  return null;
 }
 
 /**

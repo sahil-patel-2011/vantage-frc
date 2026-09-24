@@ -125,7 +125,7 @@ export function DashboardWidgetLibrary({
             <section key={group.group} aria-label={group.label}>
               <h3>{group.label}</h3>
               <ul>
-                {group.rows.map(({ entry, status, reason }) => {
+                {group.rows.map(({ entry, status, reason, placedLabel, emptyNow }) => {
                   const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
                   const addable = status === "add";
                   return (
@@ -150,8 +150,13 @@ export function DashboardWidgetLibrary({
                         <span>
                           <strong>{entry.label}</strong>
                           <small>{status === "locked" && reason ? reason : entry.description}</small>
+                          {addable && emptyNow ? (
+                            <small className="dash-sheet-empty-note" data-testid="dash-library-empty-note">
+                              Empty right now. It will stay on Home anyway (Always show).
+                            </small>
+                          ) : null}
                         </span>
-                        <em>{status === "placed" ? "On Home" : status === "locked" ? "Locked" : "Add"}</em>
+                        <em>{status === "placed" ? placedLabel ?? "On Home" : status === "locked" ? "Locked" : "Add"}</em>
                       </button>
                     </li>
                   );

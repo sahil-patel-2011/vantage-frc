@@ -17,7 +17,11 @@ describe("Home first-paint JS split", () => {
   });
 
   it("loads Edit Home chrome and partner strip only through next/dynamic", () => {
-    const src = readFileSync(join(DIR, "dashboard-home-view.tsx"), "utf8");
+    // The board dialogs live beside the view and are loaded the same way.
+    const src = [
+      readFileSync(join(DIR, "dashboard-home-view.tsx"), "utf8"),
+      readFileSync(join(DIR, "dashboard-home-dialogs.tsx"), "utf8"),
+    ].join("\n");
     expect(src).not.toMatch(/from ["']\.\/dashboard-boards-modal["']/);
     expect(src).not.toMatch(/from ["']\.\/dashboard-edit-dock["']/);
     expect(src).not.toMatch(/from ["']\.\/dashboard-widget-library["']/);

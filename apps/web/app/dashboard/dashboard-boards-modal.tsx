@@ -93,11 +93,11 @@ export function DashboardBoardsModal({
           />
         </label>
         <div className="dash-boards-actions">
-          <button type="submit" disabled={saving || !newName.trim()}>
-            Create board
-          </button>
           <button type="button" onClick={() => setCreating(null)}>
             Cancel
+          </button>
+          <button type="submit" className="is-primary" disabled={saving || !newName.trim()}>
+            Create
           </button>
         </div>
       </form>
@@ -110,7 +110,7 @@ export function DashboardBoardsModal({
       onClose={onClose}
       title="Your boards"
       description="Each board is its own arrangement of Home. Yours are private; team boards are shared with everyone, and owners and admins edit them."
-      variant="sheet"
+      className="dash-boards-dialog"
     >
       <section className="dash-boards-group">
         <p>Yours</p>
@@ -169,7 +169,13 @@ export function DashboardBoardsModal({
                       >
                         Duplicate
                       </button>
-                      <button type="button" className="danger" disabled={saving} onClick={() => onDelete(item.id)}>
+                      <button
+                        type="button"
+                        className="danger"
+                        disabled={saving}
+                        aria-label={`Delete ${item.name}`}
+                        onClick={() => onDelete(item.id)}
+                      >
                         Delete
                       </button>
                     </>
@@ -250,7 +256,13 @@ export function DashboardBoardsModal({
                         >
                           Copy to mine
                         </button>
-                        <button type="button" className="danger" disabled={saving} onClick={() => onDelete(item.id)}>
+                        <button
+                          type="button"
+                          className="danger"
+                          disabled={saving}
+                          aria-label={`Delete ${item.name}`}
+                          onClick={() => onDelete(item.id)}
+                        >
                           Delete
                         </button>
                       </>

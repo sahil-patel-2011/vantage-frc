@@ -4,22 +4,35 @@ import {
   canAccessWidget,
   type DashboardWidgetLayout,
 } from "../../lib/dashboard/catalog";
+import { HIDDEN_ON_HOME_SHORT, type HiddenOnHomeReason } from "../../lib/dashboard/edit-mode";
 import { widgetLockReason } from "./dashboard-canvas";
 import type { BoardMeta, BoardState, PaletteRow } from "./dashboard-board-types";
 
-/** Every catalog entry with a reason it cannot be added, so nothing fails silently. */
+/**
+ * Every catalog entry with a reason it cannot be added, so nothing fails
+ * silently. A card already on the board that Home is not showing right now says
+ * so ("Hidden (empty)") instead of "On Home", and a card whose data is empty
+ * right now is marked before you add it.
+ */
 export function dashboardPaletteRows(
   layout: DashboardWidgetLayout[],
   role: string | null,
+  opts: {
+    hidden?: ReadonlyMap<string, HiddenOnHomeReason>;
+    widgets?: Record<string, { status?: string } | undefined>;
+  } = {},
 ): PaletteRow[] {
   return WIDGET_CATALOG.filter((entry) => MEDIA_ENABLED || entry.type !== "pit_youtube").map((entry) => {
-    if (layout.some((item) => item.type === entry.type)) {
-      return { entry, status: "placed" as const, reason: null };
+    const placed = layout.find((item) => item.type === entry.type);
+    if (placed) {
+      const reason = opts.hidden?.get(placed.i);
+      return { entry, status: "placed" as const, reason: null, placedLabel: reason ? HIDDEN_ON_HOME_SHORT[reason] : "On Home" };
     }
     if (!canAccessWidget(entry.type, role)) {
       return { entry, status: "locked" as const, reason: widgetLockReason(entry) };
     }
-    return { entry, status: "add" as const, reason: null };
+    const status = opts.widgets?.[entry.type]?.status;
+    return { entry, status: "add" as const, reason: null, emptyNow: status === "empty" || status === "setup_required" };
   });
 }
 
@@ -90,12 +103,33 @@ function firstListTitle(data: Record<string, unknown> | undefined, key: string):
   return firstString((first as { title?: unknown }).title);
 }
 
+export type ScoutDuty = { matchKey: string; teamKey: string; matchLabel: string; station?: string | null };
+
+/**
+ * "Scout Qual 22 · Red 2 · 254", with one button that opens the match form with
+ * that robot already picked. Only from a real assignment (my_day's scoutDuty):
+ * no assignment, no card.
+ */
+export function scoutDutyAction(scout: ScoutDuty | null | undefined): HomeNowAction | null {
+  if (!scout?.matchKey || !scout.teamKey) return null;
+  const number = scout.teamKey.replace(/^frc/i, "");
+  const station = firstString(scout.station ?? null);
+  return {
+    title: `Scout ${scout.matchLabel}${station ? ` · ${station}` : ""} · ${number}`,
+    detail: "Your next scouting assignment. The form opens with this robot picked.",
+    href: `/competition?tab=scouting&scoutTab=match&matchKey=${encodeURIComponent(scout.matchKey)}&teamKey=${encodeURIComponent(scout.teamKey)}`,
+    cta: "Open scouting form",
+  };
+}
+
 /** One next step a student can take — never a wall of launchpads, never invented counts. */
 export function homeNowAction(input: {
   orgId: string;
   nextMatchLabel?: string | null;
   /** The person's own next scouting robot, from the my_day widget. */
-  scoutDuty?: { matchKey: string; teamKey: string; matchLabel: string } | null;
+  scoutDuty?: ScoutDuty | null;
+  /** Team role; a scout's next robot comes before everything else. */
+  role?: string | null;
   dutyTitle?: string | null;
   clockedIn?: boolean;
   openTodos?: number;
@@ -110,6 +144,11 @@ export function homeNowAction(input: {
       cta: "Choose your team",
     };
   }
+  const scoutAction = scoutDutyAction(input.scoutDuty);
+  // At an event a scout's job is the next robot on their list. Home said "Nothing you have
+  // to do right now" (all of the team's own matches were played) while Scouting had them
+  // up next, and Home had no way into the form at all.
+  if (scoutAction && (input.role ?? "").toLowerCase() === "scout") return scoutAction;
   const match = firstString(input.nextMatchLabel);
   if (match) {
     return {
@@ -119,16 +158,7 @@ export function homeNowAction(input: {
       cta: "Open My Day",
     };
   }
-  const scout = input.scoutDuty;
-  if (scout?.matchKey && scout.teamKey) {
-    const number = scout.teamKey.replace(/^frc/i, "");
-    return {
-      title: "You’re scouting next",
-      detail: `${number} in ${scout.matchLabel}`,
-      href: `/scout/entry?matchKey=${encodeURIComponent(scout.matchKey)}&teamKey=${encodeURIComponent(scout.teamKey)}`,
-      cta: `Scout ${number}`,
-    };
-  }
+  if (scoutAction) return scoutAction;
   const duty = firstString(input.dutyTitle);
   if (duty) {
     return {
@@ -206,6 +236,7 @@ export function homeNowFromWidgets(input: {
   loaded?: boolean;
   /** Fixed clock for tests; the real one otherwise. */
   now?: Date;
+  role?: string | null;
 }): HomeNowAction {
   // Not loaded yet says nothing, with or without a team: "Choose your team" flashed for an
   // owner whose team simply had not loaded.
@@ -232,15 +263,24 @@ export function homeNowFromWidgets(input: {
     typeof todoData?.open === "number" && Number.isFinite(todoData.open) ? Number(todoData.open) : todoItems;
   const hours = byType("hours_month");
   const clockedIn = hours?.openSession === true;
-  const scoutRaw = myDay?.scoutDuty as { matchKey?: unknown; teamKey?: unknown; matchLabel?: unknown } | null | undefined;
+  const scoutRaw = myDay?.scoutDuty as
+    | { matchKey?: unknown; teamKey?: unknown; matchLabel?: unknown; station?: unknown }
+    | null
+    | undefined;
   const scoutDuty =
     scoutRaw && typeof scoutRaw.matchKey === "string" && typeof scoutRaw.teamKey === "string"
-      ? { matchKey: scoutRaw.matchKey, teamKey: scoutRaw.teamKey, matchLabel: firstString(scoutRaw.matchLabel) ?? scoutRaw.matchKey }
+      ? {
+          matchKey: scoutRaw.matchKey,
+          teamKey: scoutRaw.teamKey,
+          matchLabel: firstString(scoutRaw.matchLabel) ?? scoutRaw.matchKey,
+          station: firstString(scoutRaw.station),
+        }
       : null;
   return homeNowAction({
     orgId: input.orgId,
     nextMatchLabel: matchLabel,
     scoutDuty,
+    role: input.role,
     dutyTitle,
     clockedIn,
     openTodos,

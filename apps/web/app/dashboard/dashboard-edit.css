@@ -179,17 +179,16 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 }
 .dash-grid-wrap.dragging .dash-card-grip{cursor:grabbing}
 
-/* Size chips: only on the card you are working on. */
+/* Size chips: only on the card whose size button you tapped (or that has
+   keyboard focus). Not on hover — the card under the pointer when a drag ended
+   used to light up with a size bar nobody asked for. */
 .dash-home .dash-grid-item.is-editing .dash-item-sizes{
   opacity:0;visibility:hidden;
   transition:opacity var(--dur-tint,.16s) var(--ease-out,ease),visibility 0s linear var(--dur-tint,.16s);
 }
 .dash-home .dash-grid-item.is-editing.is-selected:not(.is-dragging) .dash-item-sizes,
-.dash-home .dash-grid-item.is-editing:focus-within:not(.is-dragging) .dash-item-sizes{
+.dash-home .dash-grid-item.is-editing:has(:focus-visible):not(.is-dragging) .dash-item-sizes{
   opacity:1;visibility:visible;transition-delay:0s;
-}
-@media (hover:hover){
-  .dash-home .dash-grid-item.is-editing:hover:not(.is-dragging) .dash-item-sizes{opacity:1;visibility:visible;transition-delay:0s}
 }
 .dash-home .dash-pgrid>.dash-grid-item.is-editing.is-selected{
   outline:2px solid var(--accent);outline-offset:0;
@@ -204,10 +203,7 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
   background:var(--surface);color:var(--muted);font:600 12px/1.3 var(--font-source-sans),system-ui;
 }
 .dash-home .dash-grid-item.is-selected .dash-hidden-note,
-.dash-home .dash-grid-item:focus-within .dash-hidden-note{visibility:hidden}
-@media (hover:hover){
-  .dash-home .dash-grid-item.is-editing:hover .dash-hidden-note{visibility:hidden}
-}
+.dash-home .dash-grid-item:has(:focus-visible) .dash-hidden-note{visibility:hidden}
 
 /* ---- "Hidden right now (5)": one row under the board ---- */
 .dash-hidden-row{

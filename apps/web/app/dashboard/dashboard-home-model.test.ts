@@ -272,22 +272,35 @@ describe("what the calendar puts on the card", () => {
 });
 
 describe("home now: scouting duty", () => {
-  const scoutDuty = { matchKey: "2026casj_qm34", teamKey: "frc148", matchLabel: "Q34" };
+  const scoutDuty = { matchKey: "2026casj_qm34", teamKey: "frc148", matchLabel: "Qual 34", station: "Red 2" };
 
   it("sends a scout straight to their robot's form, after the team's own match", () => {
     const action = homeNowAction({ orgId: "org-1", scoutDuty, dutyTitle: "Pit crew" });
-    expect(action.title).toBe("You’re scouting next");
-    expect(action.detail).toBe("148 in Q34");
-    expect(action.href).toBe("/scout/entry?matchKey=2026casj_qm34&teamKey=frc148");
+    expect(action.title).toBe("Scout Qual 34 · Red 2 · 148");
+    expect(action.cta).toBe("Open scouting form");
+    // The in-app scouting form, with the match and the robot already picked.
+    expect(action.href).toBe("/competition?tab=scouting&scoutTab=match&matchKey=2026casj_qm34&teamKey=frc148");
     expect(action.quiet).toBeUndefined();
     expect(homeNowAction({ orgId: "org-1", scoutDuty, nextMatchLabel: "qm 33" }).title).toBe("You’re up next");
+  });
+
+  it("puts a scout's next robot first, even before the team's own match", () => {
+    const action = homeNowAction({ orgId: "org-1", scoutDuty, nextMatchLabel: "qm 33", role: "scout" });
+    expect(action.title).toBe("Scout Qual 34 · Red 2 · 148");
+  });
+
+  it("leaves the station out when the match does not list the robot, and never invents one", () => {
+    const action = homeNowAction({ orgId: "org-1", scoutDuty: { ...scoutDuty, station: null } });
+    expect(action.title).toBe("Scout Qual 34 · 148");
+    expect(homeNowAction({ orgId: "org-1", scoutDuty: null, role: "scout" }).title).toBe("Nothing you have to do right now");
   });
 
   it("reads the duty from the my_day widget", () => {
     const action = homeNowFromWidgets({
       orgId: "org-1",
       widgets: { a: { type: "my_day", data: { scoutDuty } } },
+      role: "scout",
     });
-    expect(action.cta).toBe("Scout 148");
+    expect(action.title).toBe("Scout Qual 34 · Red 2 · 148");
   });
 });
