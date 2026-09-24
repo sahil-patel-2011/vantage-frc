@@ -22,6 +22,11 @@ import {
 import "./orders.css";
 
 type DirectoryVendor = { id: string; name: string; preferred: boolean };
+
+/** The select value for "New vendor…"; never a real vendor id (those are uuids). */
+const NEW_VENDOR = "__new__";
+
+class VendorError extends Error {}
 type CatalogItem = { id: string; name: string };
 
 const CATALOG_ITEM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -497,7 +502,11 @@ function SubmitForm({
   const [vendors, setVendors] = useState<DirectoryVendor[]>([]);
   const [vendorsReady, setVendorsReady] = useState(false);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  // "New vendor" in the select: a name typed here goes into the directory on submit. The form
+  // used to refuse every purchase until someone had filled in the directory on another page.
+  const [vendorChoice, setVendorChoice] = useState("");
   const directoryHref = hubHref("/business", "vendors", orgId);
+  const addingVendor = vendorsReady && (vendors.length === 0 || vendorChoice === NEW_VENDOR);
 
   useEffect(() => {
     let cancelled = false;
@@ -554,27 +563,35 @@ function SubmitForm({
       setError(sheet.error);
       return;
     }
+    const newVendorName = typeof data.newVendor === "string" ? data.newVendor.trim() : "";
+    if (addingVendor && !newVendorName) {
+      setError("Type the vendor's name, for example AndyMark.");
+      return;
+    }
     setBusy(true);
     setError("");
     const catalogId =
       typeof data.inventoryItemId === "string"
         ? catalogItems.find((item) => item.id === data.inventoryItemId)?.id
         : undefined;
-    void fetch("/api/finance/purchase-requests", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        seasonYear,
-        title: sheet.value.title,
-        justification: sheet.value.justification,
-        estimateUsd: sheet.value.costUsd,
-        vendorId: data.vendorId,
-        itemUrl: data.itemUrl,
-        neededBy: sheet.value.neededBy ?? undefined,
-        ...(catalogId ? { inventoryItemId: catalogId } : {}),
-      }),
-    })
+    void resolveVendorId(addingVendor ? newVendorName : null, String(data.vendorId ?? ""))
+      .then((vendorId) =>
+        fetch("/api/finance/purchase-requests", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            orgId,
+            seasonYear,
+            title: sheet.value.title,
+            justification: sheet.value.justification,
+            estimateUsd: sheet.value.costUsd,
+            vendorId,
+            itemUrl: data.itemUrl,
+            neededBy: sheet.value.neededBy ?? undefined,
+            ...(catalogId ? { inventoryItemId: catalogId } : {}),
+          }),
+        }),
+      )
       .then(async (response) => {
         const payload = (await response.json()) as { error?: string; request?: unknown };
         if (!response.ok || !payload.request) {
@@ -582,11 +599,31 @@ function SubmitForm({
           return;
         }
         form.reset();
+        setVendorChoice("");
         onCreated();
       })
-      .catch(() => setError("Network error — please try again."))
+      .catch((error: unknown) =>
+        setError(error instanceof VendorError ? error.message : "Network error — please try again."),
+      )
       .finally(() => setBusy(false));
   };
+
+  /** The chosen vendor's id, or the id of the one just added to the directory by name. */
+  async function resolveVendorId(newName: string | null, chosen: string): Promise<string> {
+    if (!newName) return chosen;
+    const existing = vendors.find((vendor) => vendor.name.toLowerCase() === newName.toLowerCase());
+    if (existing) return existing.id;
+    const response = await fetch("/api/vendors", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId, action: "create-vendor", name: newName }),
+    });
+    const view = (await response.json()) as { error?: string; vendors?: DirectoryVendor[] };
+    const made = view.vendors?.find((vendor) => vendor.name.toLowerCase() === newName.toLowerCase());
+    if (!response.ok || !made) throw new VendorError(view.error ?? "Could not add that vendor.");
+    setVendors((current) => [...current, { id: made.id, name: made.name, preferred: Boolean(made.preferred) }]);
+    return made.id;
+  }
 
   return (
     <section className="soft-panel">
@@ -596,13 +633,6 @@ function SubmitForm({
         What, why, when you need it, and the cost. Mentors approve; pay on the vendor site — never paste card or bank
         numbers.
       </p>
-      {vendorsReady && vendors.length === 0 ? (
-        <p className="orders-warn" role="status">
-          Add a vendor in the{" "}
-          <a href={directoryHref}>vendor directory</a> before logging a line — free-text supplier names are not
-          accepted.
-        </p>
-      ) : null}
       <form className="orders-form" onSubmit={onSubmit}>
         <label>
           What
@@ -626,19 +656,34 @@ function SubmitForm({
             Cost ($)
             <input name="estimateUsd" type="number" min={0} step="0.01" required placeholder="42.00" />
           </label>
-          <label>
-            Vendor
-            <select name="vendorId" required disabled={!vendorsReady || vendors.length === 0} defaultValue="">
-              <option value="" disabled>
-                {vendorsReady ? "Choose from the vendor directory" : "Loading vendors…"}
-              </option>
-              {vendors.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
-                  {vendor.preferred ? `${vendor.name} (preferred)` : vendor.name}
+          {vendors.length > 0 ? (
+            <label>
+              Vendor
+              <select
+                name="vendorId"
+                required
+                disabled={!vendorsReady}
+                value={vendorChoice}
+                onChange={(event) => setVendorChoice(event.target.value)}
+              >
+                <option value="" disabled>
+                  {vendorsReady ? "Choose a vendor" : "Loading vendors…"}
                 </option>
-              ))}
-            </select>
-          </label>
+                {vendors.map((vendor) => (
+                  <option key={vendor.id} value={vendor.id}>
+                    {vendor.preferred ? `${vendor.name} (preferred)` : vendor.name}
+                  </option>
+                ))}
+                <option value={NEW_VENDOR}>New vendor…</option>
+              </select>
+            </label>
+          ) : null}
+          {addingVendor ? (
+            <label>
+              {vendors.length ? "New vendor" : "Vendor"} <small>added to your <a href={directoryHref}>vendor list</a></small>
+              <input name="newVendor" required maxLength={200} placeholder="e.g. AndyMark" autoComplete="off" />
+            </label>
+          ) : null}
           <label>
             Buy link <small>optional product URL</small>
             <input name="itemUrl" type="url" placeholder="https://…" />
@@ -657,7 +702,7 @@ function SubmitForm({
             </label>
           ) : null}
         </div>
-        <button type="submit" className="orders-submit" disabled={busy || vendors.length === 0}>
+        <button type="submit" className="orders-submit" disabled={busy || !vendorsReady}>
           Add to buy sheet
         </button>
       </form>
