@@ -83,8 +83,8 @@ export function LogisticsTripsPanel({
           <input name="eventKey" placeholder="TBA event key (optional)" />
           <input name="venueName" placeholder="Venue name" />
           <input name="venueAddress" placeholder="Venue address" />
-          <input name="startsOn" type="date" />
-          <input name="endsOn" type="date" />
+          <input name="startsOn" type="date" aria-label="Trip starts" />
+          <input name="endsOn" type="date" aria-label="Trip ends" />
           <textarea name="travelNotes" placeholder="Travel notes" rows={2} />
           <textarea name="transportNotes" placeholder="Transport notes" rows={2} />
           <button type="submit" disabled={!act || busy}>

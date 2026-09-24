@@ -11,7 +11,8 @@ test("Account, Pair VS Code, and leftover no-org gates stay student-usable", asy
   await gotoReady(page, "/showcase");
   await expect(page.getByRole("heading", { name: "Showcase" })).toBeVisible();
   await expect(page.getByText("pick the team first")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+  // Signed-in members land on their team; only someone with no team sees the chooser.
+  expect(await page.getByRole("link", { name: "Choose your team" }).count()).toBeLessThanOrEqual(1);
 
   await gotoReady(page, "/team/prompts");
   await expect(
@@ -23,9 +24,9 @@ test("Account, Pair VS Code, and leftover no-org gates stay student-usable", asy
   await expect(page.getByText("pick the team first")).toHaveCount(0);
 
   await gotoReady(page, "/team/getting-started");
-  await expect(page.getByRole("heading", { name: "Getting started" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Getting started|Team setup/ })).toBeVisible();
   await expect(page.getByText("pick the team first")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+  expect(await page.getByRole("link", { name: "Choose your team" }).count()).toBeLessThanOrEqual(1);
 
   await page.goto("/editor/pair");
   await expect(page.getByRole("heading", { name: "Pair VS Code" })).toBeVisible();

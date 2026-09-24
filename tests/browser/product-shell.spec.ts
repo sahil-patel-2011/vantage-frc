@@ -122,11 +122,12 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
   await expect(island).toBeVisible();
 
-  // At desktop width the left rail replaces the phone bar (#2321, app-rail.css):
-  // one navigation, not two.
+  // At desktop width the phone bar steps aside and the same three-line menu is the one
+  // navigation (the always-open left rail was retired): one menu, every width.
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeHidden();
-  await expect(page.getByRole("navigation", { name: "Pillars" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Pillars" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Menu and search" })).toBeVisible();
 });
 
 test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
@@ -137,13 +138,9 @@ test("search is one affordance at every width, inside the navigation panel", asy
   // "Menu and search" — and this spec kept looking for the old button, so it
   // had been failing on a shell that was behaving exactly as designed.
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
-  // Since #2321 the desktop rail carries Search itself and the top bar's
-  // "Menu and search" is a phone control (app-rail.css hides it ≥1024px). One
-  // opener per width, never two: the other one is not rendered visibly.
-  const openerFor = (width: number) =>
-    width >= 1024
-      ? page.locator(".vrail-search")
-      : page.getByRole("button", { name: "Menu and search" });
+  // The three-line "Menu and search" button is the one opener at every width; the old
+  // desktop rail (and its own search box) is retired.
+  const openerFor = (_width: number) => page.getByRole("button", { name: "Menu and search" });
 
   for (const size of [
     { width: 390, height: 844 },
@@ -153,8 +150,7 @@ test("search is one affordance at every width, inside the navigation panel", asy
     await page.goto("/dashboard");
     await expect(oldButton).toHaveCount(0);
     await expect(field).toBeHidden();
-    const other = size.width >= 1024 ? page.getByRole("button", { name: "Menu and search" }) : page.locator(".vrail-search");
-    await expect(other).toBeHidden();
+    await expect(page.locator(".vrail-search")).toBeHidden();
 
     await openerFor(size.width).click();
     await expect(field).toBeVisible();
@@ -239,8 +235,10 @@ test("account keeps every setting reachable from one place", async ({ page, cont
     // place but do not carry tab semantics.
     await expect(page.getByRole("button", { name: tab, exact: true })).toBeVisible();
   }
-  for (const link of ["Security", "AI usage", "Billing", "Connectors"]) {
-    await expect(page.getByRole("link", { name: link, exact: true }).first()).toBeVisible();
+  // Rows carry a subtitle, so match on the start of the name. "Billing" is "AI spending":
+  // it only ever held Ask AI limits and credits.
+  for (const link of [/^Security/, /^AI usage/, /^AI spending/, /^Connectors/]) {
+    await expect(page.getByRole("link", { name: link }).first()).toBeVisible();
   }
 
   await page.getByRole("button", { name: "Appearance", exact: true }).click();

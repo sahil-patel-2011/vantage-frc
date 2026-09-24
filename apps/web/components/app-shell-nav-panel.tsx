@@ -132,7 +132,6 @@ export function AppShellNavPanel({
             <span className="mark">v</span>
             <div>
               <strong>Vantage</strong>
-              <small>Navigation</small>
             </div>
           </div>
           <button
@@ -428,7 +427,7 @@ export function AppShellNavPanel({
         </div>
         <footer className="soft-drawer-foot">
           <button type="button" onClick={openIslandEditor}>
-            Customize island
+            Edit shortcuts
           </button>
           <button type="button" disabled={signingOut} onClick={onSignOut}>
             {signingOut ? "Signing out…" : "Sign out"}

@@ -95,8 +95,6 @@ export default function AppShell() {
   const focusSearchOnOpen = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
-  /** Wide screens: the left menu is hidden until the three-line button opens it (remembered per browser). */
-  const [railOpen, setRailOpen] = useState(false);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -113,34 +111,21 @@ export default function AppShell() {
     setWorkspaceOpen(false);
   }, []);
 
-  useEffect(() => {
-    try {
-      setRailOpen(window.localStorage.getItem("vantage.rail") === "open");
-    } catch {
-      // storage blocked: start closed
-    }
-  }, []);
-
-  useEffect(() => {
-    document.body.classList.toggle("rail-open", railOpen);
-    try {
-      window.localStorage.setItem("vantage.rail", railOpen ? "open" : "closed");
-    } catch {
-      // storage blocked: the choice lasts until reload
-    }
-    return () => document.body.classList.remove("rail-open");
-  }, [railOpen]);
-
-  /** The three-line button: the left menu on wide screens, the menu sheet on phones. */
+  /**
+   * The three-line button opens the one menu (search, your team, every section, settings)
+   * at every width. There used to be two: an always-open rail on wide screens and this
+   * drawer, each listing the same places differently. On touch screens the search box is
+   * not focused on open, so the keyboard does not cover the menu.
+   */
   const toggleMenu = useCallback(() => {
-    if (window.matchMedia("(min-width: 1024px)").matches) setRailOpen((open) => !open);
-    else openNav({ focusSearch: true });
+    openNav({ focusSearch: !window.matchMedia("(pointer: coarse)").matches });
   }, [openNav]);
 
   // Plain in-app links navigate without reloading the app (lib/nav/soft-navigation.ts).
   // On document, bubble phase: runs after React's handlers, so next/link clicks it
   // already handled arrive with defaultPrevented and are skipped.
   useEffect(() => {
+    let routerReady = false;
     const onClick = (event: MouseEvent) => {
       const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!anchor) return;
@@ -155,10 +140,17 @@ export default function AppShell() {
         },
         new URL(window.location.href),
       );
-      if (!path) return;
+      // In the first moments after load the router may not be ready yet ("Router action
+      // dispatched before initialization"); let those early clicks load normally.
+      if (!path || !routerReady) return;
       event.preventDefault();
       const before = window.location.href;
-      router.push(path);
+      try {
+        router.push(path);
+      } catch {
+        window.location.assign(path);
+        return;
+      }
       // The router updates the address asynchronously; follow it for up to ~3s.
       let tries = 0;
       const follow = () => {
@@ -170,7 +162,11 @@ export default function AppShell() {
     const onPop = () => setLocationTick((tick) => tick + 1);
     document.addEventListener("click", onClick);
     window.addEventListener("popstate", onPop);
+    const readyTimer = window.setTimeout(() => {
+      routerReady = true;
+    }, 300);
     return () => {
+      window.clearTimeout(readyTimer);
       document.removeEventListener("click", onClick);
       window.removeEventListener("popstate", onPop);
     };
@@ -601,7 +597,7 @@ export default function AppShell() {
         crumbHint={crumbHint}
         orgId={orgId}
         navOpen={navOpen}
-        menuOpen={railOpen}
+        menuOpen={navOpen}
         onOpenNav={toggleMenu}
         // Pressing the team name opens the drawer already showing the team
         // picker, so switching, leaving and joining are one tap from every

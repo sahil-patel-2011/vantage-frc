@@ -108,7 +108,7 @@ export function AppShellTopbar({
             className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
             data-tour="menu"
             type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label="Menu and search"
             aria-expanded={menuOpen || navOpen}
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onOpenNav}

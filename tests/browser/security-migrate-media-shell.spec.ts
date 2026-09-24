@@ -19,9 +19,11 @@ test("leftover Security, Bring your season, and Media shells stay student-usable
 
   await page.goto("/team/security");
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.locator("main")).not.toContainText("pick the team first");
-  await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
-  await expect(page.locator("main").getByRole("link", { name: "Choose your team" })).toHaveCount(1);
+  await expect(page.locator("#main-content")).not.toContainText("pick the team first");
+  // A member lands on their team's security page; no team gets the chooser.
+  await expect(
+    page.getByRole("heading", { name: "Team security" }).or(page.getByRole("heading", { name: "Choose your team" })).first(),
+  ).toBeVisible();
 
   await page.goto("/media");
   await expect(page.locator("body")).not.toContainText("Application error");

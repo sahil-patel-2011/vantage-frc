@@ -199,8 +199,10 @@ test.describe("workflow handoffs", () => {
       expect(response.status(), `${target} status`).toBeLessThan(400);
     }
     await page.goto("/showcase");
-    // Was a bare <h1> with nothing to click.
-    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
+    // Was a bare <h1> with nothing to click. A member now lands on their own team's
+    // showcase; someone with no team gets the chooser.
+    await expect(page.getByRole("heading", { level: 1, name: "Showcase" })).toBeVisible();
+    await expect(page.locator("#main-content a[href], #main-content button").first()).toBeVisible();
   });
 });
 

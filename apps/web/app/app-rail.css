@@ -167,37 +167,20 @@
   }
 }
 
-/* The left menu is hidden until the three-line button opens it (body.rail-open, set by
-   app-shell.tsx and remembered per browser). It slides in and pushes the page over. */
+/* One menu: the three-line button opens the drawer at every width (app-shell.tsx), so the
+   always-open left rail is retired and pages use the full width. */
 @media (min-width: 1024px) {
   body.has-app-shell .vrail {
-    transform: translateX(-100%);
-    visibility: hidden;
-    transition: transform var(--dur-base, .22s) var(--ease-settle, ease), visibility 0s linear var(--dur-base, .22s);
+    display: none !important;
   }
-  body.has-app-shell.rail-open .vrail {
-    transform: none;
-    visibility: visible;
-    transition: transform var(--dur-base, .22s) var(--ease-settle, ease), visibility 0s;
-  }
-  body.has-app-shell,
-  body.has-app-shell:not(.rail-open) {
+  body.has-app-shell {
     padding-left: 0 !important;
-    transition: padding-left var(--dur-base, .22s) var(--ease-settle, ease);
   }
-  body.has-app-shell.rail-open {
-    padding-left: 244px !important;
+  body.has-app-shell .soft-topbar {
+    left: 0 !important;
   }
-  body.has-app-shell .soft-topbar,
-  body.has-app-shell:not(.rail-open) .soft-topbar {
-    left: 0;
-    transition: left var(--dur-base, .22s) var(--ease-settle, ease);
-  }
-  body.has-app-shell.rail-open .soft-topbar {
-    left: 244px;
-  }
-  /* The button is the only way in, so it shows on every width. */
-  body.has-app-shell .soft-menu-btn {
+  body.has-app-shell .soft-menu-btn,
+  body.has-app-shell .soft-ask-ai {
     display: inline-flex;
   }
 }
