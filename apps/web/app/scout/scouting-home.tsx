@@ -281,7 +281,7 @@ export function ScoutingHome() {
             {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Start scouting"}
           </Button>
           <Button as="a" variant="secondary" href={withOrg("/scout/teams")}>
-            Look up a team
+            See all teams
           </Button>
         </div>
       </section>
@@ -314,15 +314,24 @@ export function ScoutingHome() {
               )}
             </dd>
           </div>
-          <div>
-            <dt>Stored here</dt>
-            <dd>{storage?.usage != null ? formatBytes(storage.usage) : "—"}</dd>
-          </div>
-          <div>
-            <dt>Room left</dt>
-            <dd>{storage?.available != null ? formatBytes(storage.available) : "—"}</dd>
-          </div>
         </dl>
+        {storage?.usage != null || storage?.available != null ? (
+          <details className="scout-home-storage">
+            <summary>
+              Phone storage <span aria-hidden="true">▾</span>
+            </summary>
+            <dl className="scout-home-facts">
+              <div>
+                <dt>Stored here</dt>
+                <dd>{storage?.usage != null ? formatBytes(storage.usage) : "—"}</dd>
+              </div>
+              <div>
+                <dt>Room left</dt>
+                <dd>{storage?.available != null ? formatBytes(storage.available) : "—"}</dd>
+              </div>
+            </dl>
+          </details>
+        ) : null}
         <div className="scout-home-persist">
           <p role="status">
             {readyNote ??

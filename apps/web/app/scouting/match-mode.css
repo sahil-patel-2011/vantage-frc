@@ -40,7 +40,11 @@
   cursor: default;
 }
 .next-match-jump {
-  padding: 0;
+  /* Inline in a 12px line, but still a thumb-sized target. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
   border: 0;
   background: none;
   color: var(--accent, #2563eb);
@@ -186,7 +190,7 @@
   color: #14532d;
 }
 .match-timer button {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid var(--line-soft, var(--line));
   border-radius: 10px;

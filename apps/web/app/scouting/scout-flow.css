@@ -47,7 +47,7 @@
 }
 .scout-segmented button,
 .scout-views-more {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   border: 0;
   border-radius: 9px;
@@ -242,7 +242,10 @@
   backdrop-filter: none;
 }
 .scout-context-bar .match-timer button {
-  min-height: 36px;
+  min-height: 44px;
+}
+.scout-context-change {
+  min-height: 44px;
 }
 
 /* ---- "What are you watching?" as one control ----------------------------- */
@@ -264,12 +267,124 @@
 }
 .scout-template-select select {
   flex: 1 1 160px;
-  min-height: 40px;
+  min-height: 44px;
+}
+/* Closed, the focus picker is one small link under the robot bar. */
+.scout-template-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px 0 6px;
+}
+.scout-template-link {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: 700 13px/1.2 var(--font-source-sans), ui-sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.scout-template-picker.is-compact .scout-template-link {
+  justify-self: end;
+}
+
+/* ---- Who is scouting, as one line under the form title ------------------- */
+
+.scout-identity-line {
+  margin: 0;
+  color: var(--muted);
+  font: 600 13px/1.3 var(--font-source-sans), ui-sans-serif;
+}
+.scout-identity-line strong {
+  color: var(--ink);
+}
+
+/* ---- A few short answers as buttons (Endgame, Broke down, How sure) ------ */
+
+.scout-choice-row {
+  display: grid;
+  gap: 6px;
+}
+.scout-choice {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+}
+.scout-choice button {
+  min-height: 48px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 15px/1.1 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+  overflow-wrap: anywhere;
+}
+.scout-choice button.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+}
+.scout-choice button:focus-visible,
+.scout-template-link:focus-visible,
+.scout-lead-tools > summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- Saved entries and lead tools, one closed row on a phone ------------- */
+
+.scout-lead-tools {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.scout-lead-tools > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-height: 48px;
+  padding: 14px 16px;
+  color: var(--ink);
+  font: 700 15px/1.3 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.scout-lead-tools > summary small {
+  color: var(--muted);
+  font: 600 13px/1.3 var(--font-source-sans), ui-sans-serif;
+}
+.scout-lead-tools[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.scout-lead-tools-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+.scout-lead-tools-body > .soft-panel,
+.scout-lead-tools-body > * {
+  box-shadow: none;
+}
+.scout-lead-tools :is(.vex-btn, .vex-info, .text-button) {
+  min-height: 44px;
+  min-width: 44px;
+}
+.scout-by-hand-toggle .app-button {
+  min-height: 44px;
 }
 
 /* ---- Save ------------------------------------------------------------------ */
 
-.scout-save-button:disabled {
+/* Specific enough to beat the primary button's own colours: a disabled Save
+   drawn in full blue looked tappable and did nothing. */
+.scout-form-panel .app-button.scout-save-button:disabled {
   opacity: 1;
   background: var(--surface-2, var(--bg));
   border-color: var(--line);

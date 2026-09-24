@@ -6,6 +6,7 @@ import {
   type ScheduleMatch,
   type ScoutedEntry,
   matchCard,
+  matchLabel,
   nextMatchIndex,
   orderedSchedule,
 } from "../../lib/scouting/next-match";
@@ -50,7 +51,10 @@ export function NextMatchCard({
   if (!card) return null;
 
   const step = (delta: number) => setIndex((current) => Math.min(Math.max(current + delta, 0), schedule.length - 1));
+  const startLabel = start >= 0 && schedule[start] ? matchLabel(schedule[start]) : null;
 
+  // "Up next" read as the team's own next match, which Home and My Day already
+  // use for something else. This card is about the next match to *watch*.
   return (
     <section className="next-match" aria-label="Pick the robot to scout">
       <header className="next-match-head">
@@ -60,12 +64,12 @@ export function NextMatchCard({
         <div>
           <strong>{card.label}</strong>
           <small>
-            {index === start ? "Up next" : `${index + 1} of ${card.total}`}
-            {index !== start ? (
+            {index === start ? "Next to scout" : `Match ${index + 1} of ${card.total}`}
+            {index !== start && startLabel ? (
               <>
                 {" · "}
                 <button type="button" className="next-match-jump" onClick={() => setIndex(start)}>
-                  Back to next
+                  Go to {startLabel}
                 </button>
               </>
             ) : null}

@@ -11,6 +11,7 @@ import { useOnline } from "../../lib/offline/use-online";
 import { getQueuedMediaBlob } from "../../lib/scout-offline";
 import { resolveScoutMediaPreview } from "../../lib/scouting/scout-media-preview";
 import { StudioField, isStudioField } from "./studio-fields";
+import { ScoutChoice, ScoutChoiceRow, segmentedOptions } from "./scout-choice";
 import type { OfficialFlag } from "./scouting-model";
 
 /**
@@ -123,11 +124,18 @@ export function Field({
       return <StudioField field={field} value={value} onChange={onChange} label={label} />;
     }
     if (field.type === "boolean" || field.widget === "yesno") {
+      // Yes / No as two buttons: a checkbox left "no" and "not answered" looking the same.
       return (
-        <label className="soft-form-row check-field">
-          <span className="app-muted">{label}</span>
-          <input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} />
-        </label>
+        <ScoutChoice
+          label={label}
+          hint={field.helpText}
+          options={[
+            { value: "yes", label: "Yes" },
+            { value: "no", label: "No" },
+          ]}
+          value={value === true ? "yes" : value === false ? "no" : ""}
+          onChange={(next) => onChange(next === undefined ? undefined : next === "yes")}
+        />
       );
     }
     if (field.type === "drivetrain_type" || field.widget === "drivetrain") {
@@ -233,6 +241,18 @@ export function Field({
       field.type === "dropdown" ||
       field.type === "multiple_choice"
     ) {
+      const segmented = segmentedOptions(field.options);
+      if (segmented) {
+        return (
+          <ScoutChoice
+            label={label}
+            hint={field.helpText}
+            options={segmented}
+            value={String(value ?? "")}
+            onChange={onChange}
+          />
+        );
+      }
       return (
         <FormRow label={label} hint={field.helpText}>
           <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
@@ -248,11 +268,11 @@ export function Field({
     }
     if (field.widget === "free" || field.type === "long_text") {
       return (
-        <FormRow label={label} hint={field.helpText ?? "Long-form notes"}>
+        <FormRow label={label} hint={field.helpText}>
           <textarea
             value={String(value ?? "")}
             required={field.required}
-            placeholder="Notes…"
+            placeholder="Anything the numbers miss"
             onChange={(event) => onChange(event.target.value)}
           />
         </FormRow>
@@ -260,12 +280,11 @@ export function Field({
     }
     if (field.widget === "short" || field.type === "short_answer" || field.type === "text") {
       return (
-        <FormRow label={label} hint={field.helpText ?? "Short answer"}>
+        <FormRow label={label} hint={field.helpText}>
           <input
             type="text"
             value={String(value ?? "")}
             required={field.required}
-            placeholder="Short answer"
             onChange={(event) => onChange(event.target.value)}
           />
         </FormRow>
@@ -273,11 +292,15 @@ export function Field({
     }
     // Counted things (points, cycles, fouls, pieces) get big − / + buttons: a scout taps
     // while watching instead of opening the phone keyboard mid-match. Times, weights and
-    // rates stay a typed box, because they are measured, not counted.
-    if (field.type === "number" && !/time|sec|\(s\)|weight|rate|avg|average|percent|%|speed/i.test(`${field.key} ${field.label}`)) {
+    // rates stay a typed box, because they are measured, not counted. So do totals: a
+    // robot's 60-point match is sixty taps on a + button, and the scout reads it off the
+    // scoreboard anyway.
+    if (field.type === "number" && !/time|sec|\(s\)|weight|rate|avg|average|percent|%|speed|total/i.test(`${field.key} ${field.label}`)) {
       const count = typeof value === "number" && Number.isFinite(value) ? value : 0;
+      // A div, not FormRow's <label>: a tap on the field's name went to the − button.
       return (
-        <FormRow label={label} hint={field.helpText}>
+        <ScoutChoiceRow label={label} hint={field.helpText}>
+          {() => (
           <div className="tap-counter">
             <button type="button" aria-label={`${field.label}: one less`} disabled={count <= 0} onClick={() => onChange(Math.max(0, count - 1))}>
               −
@@ -296,17 +319,26 @@ export function Field({
               +
             </button>
           </div>
-        </FormRow>
+          )}
+        </ScoutChoiceRow>
       );
     }
     return (
       <FormRow label={label} hint={field.helpText}>
         <input
           type={field.type === "number" ? "number" : "text"}
+          inputMode={field.type === "number" ? "numeric" : undefined}
+          min={field.type === "number" ? 0 : undefined}
           value={String(value ?? "")}
           required={field.required}
           onChange={(event) =>
-            onChange(field.type === "number" ? event.target.valueAsNumber : event.target.value)
+            onChange(
+              field.type === "number"
+                ? Number.isFinite(event.target.valueAsNumber)
+                  ? event.target.valueAsNumber
+                  : undefined
+                : event.target.value,
+            )
           }
         />
       </FormRow>

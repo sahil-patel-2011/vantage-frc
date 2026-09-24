@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
-import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { ScoutingTeamProfiles } from "./scouting-team-profiles";
-import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
 import { PitTeamField, ScoutTargetChoices } from "./scout-target-by-hand";
@@ -19,13 +18,13 @@ import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
   formatScoutingMetric,
   scoutEventLabel,
-  shouldShowScoutingRecentEntries,
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
 import { ScoutingRelatedStrip } from "./scouting-chrome";
 import { Field } from "./scouting-field";
+import { ScoutChoice } from "./scout-choice";
+import { ScoutingLeadTools } from "./scouting-lead-tools";
 import {
-  SCOUT_ENTRY_CSV_COLUMNS,
   type Bootstrap,
   type ConflictCandidate,
   type OfficialFlag,
@@ -33,7 +32,6 @@ import {
   type ScoutTab,
 } from "./scouting-model";
 import { ScoutQuarantinePanel } from "./scouting-quarantine";
-import { ScoutReportViewer } from "./scout-report-viewer";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
@@ -44,6 +42,12 @@ import { ScoutSaveConfirmation } from "./scout-save-confirmation";
 import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
 import "./scout-flow.css";
+
+const CONFIDENCE_OPTIONS = [
+  { value: "high", label: "Sure" },
+  { value: "normal", label: "OK" },
+  { value: "low", label: "Guessing" },
+];
 
 /** Smooth unless the phone asks for less motion. */
 function smoothOrInstant(): ScrollBehavior {
@@ -78,6 +82,8 @@ export type ScoutingReadyViewProps = {
   matchKey: string;
   teamKey: string;
   payload: Record<string, unknown>;
+  /** Robots saved on this phone since the page opened, before the server list catches up. */
+  savedHere: Array<{ matchKey: string; teamKey: string }>;
   confidence: "high" | "normal" | "low";
   entryClientId: string;
   draftSavedAt: string | null;
@@ -150,6 +156,7 @@ export function ScoutingReadyView({
   matchKey,
   teamKey,
   payload,
+  savedHere,
   confidence,
   entryClientId,
   draftSavedAt,
@@ -195,6 +202,11 @@ export function ScoutingReadyView({
   const context =
     type === "match" ? scoutContext({ matches: data?.matches ?? [], matchKey, teamKey }) : null;
   const canSave = Boolean(schema) && (type === "match" ? Boolean(matchKey && teamKey) : Boolean(teamKey));
+  // What the card counts as scouted. The server list only refreshes on reload,
+  // so after Save the card still thought the match just saved was next, and
+  // showed "Back to next" on the match Save had moved to.
+  const recentEntries = data?.recentEntries;
+  const scouted = useMemo(() => [...(recentEntries ?? []), ...savedHere], [recentEntries, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const scrollToFormPending = useRef(false);
 
@@ -279,11 +291,15 @@ return (
       ) : null}
       <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
         {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
-        {embedded ? null : <> · {formatScoutingMetric(counts.media, true)} media</>}
+        {embedded || counts.media === 0 ? null : <> · {formatScoutingMetric(counts.media, true)} files</>}
       </span>
-      <Button variant="secondary" type="button" onClick={() => void sync()}>
-        Sync now
-      </Button>
+      {/* Saving already sends an entry when there is signal. The button is for
+          the moment something is actually waiting to go. */}
+      {counts.entries + counts.media > 0 || syncState === "degraded" ? (
+        <Button variant="secondary" type="button" onClick={() => void sync()}>
+          Sync now
+        </Button>
+      ) : null}
       {syncNote ? (
         <span className="scout-sync-note" role="status">
           {syncNote}
@@ -485,6 +501,15 @@ return (
           <header className="scout-form-heading">
             <div>
               <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
+              {/* Whose name goes on the entry, as one quiet line. It was a
+                  boxed "SCOUTING AS" card between the title and the robots. */}
+              <p
+                className="scout-identity-line"
+                title={`${SCOUT_IDENTITY_LOCK_COPY.title}. ${SCOUT_IDENTITY_LOCK_COPY.detail}`}
+              >
+                {SCOUT_IDENTITY_LOCK_COPY.eyebrow}{" "}
+                <strong>{data?.scoutIdentity?.displayName ?? "you"}</strong>
+              </p>
               {/* "Primary action: fill the form, then save." used to sit here.
                   It told someone looking at a form that the thing to do was
                   fill in the form, in the vocabulary of a design review, and
@@ -500,23 +525,10 @@ return (
                   {draftDirty ? "Unsaved changes" : formatDraftSavedAgo(draftSavedAt)}
                 </span>
               ) : null}
-              <span className="app-badge">v{schema?.version ?? "—"}</span>
+              {/* The form's version number ("V1") meant nothing to a scout; the
+                  form builder and the entry viewer still show it. */}
             </div>
           </header>
-
-          {/* One line, not three. On a 390px phone this block sat above the
-              first field and helped push it off the bottom of the screen, on
-              the page a scout opens between matches. The name is the part
-              that matters every time; the reassurance about how it is enforced
-              is on hover for whoever wants it. */}
-          <div
-            className="scout-identity-lock"
-            role="status"
-            title={`${SCOUT_IDENTITY_LOCK_COPY.title}. ${SCOUT_IDENTITY_LOCK_COPY.detail}`}
-          >
-            <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
-            <strong>{data?.scoutIdentity?.displayName ?? "Signed-in member"}</strong>
-          </div>
 
           {schemaBudget && schemaBudget.status !== "healthy" ? (
             <p className={`scout-budget-banner ${schemaBudget.status}`} role="status">
@@ -536,7 +548,7 @@ return (
               {data?.matches?.length ? (
                 <NextMatchCard
                   matches={data.matches}
-                  scouted={data.recentEntries ?? []}
+                  scouted={scouted}
                   assignments={data.assignments ?? []}
                   matchKey={matchKey}
                   teamKey={teamKey}
@@ -647,16 +659,17 @@ return (
             />
           ))}
 
-          <FormRow label="Scout confidence">
-            <select
-              value={confidence}
-              onChange={(event) => setConfidence(event.target.value as typeof confidence)}
-            >
-              <option value="high">High</option>
-              <option value="normal">Normal</option>
-              <option value="low">Low — downweighted</option>
-            </select>
-          </FormRow>
+          {/* Stored as high / normal / low; a "Guessing" entry counts for less
+              when the team's numbers are added up. */}
+          <ScoutChoice
+            label="How sure are you?"
+            options={CONFIDENCE_OPTIONS}
+            value={confidence}
+            allowClear={false}
+            onChange={(next) => {
+              if (next === "high" || next === "normal" || next === "low") setConfidence(next);
+            }}
+          />
 
           {MEDIA_ENABLED ? <ScoutVoiceNotesPanel
             orgId={orgId}
@@ -726,112 +739,20 @@ return (
           ) : null}
         </Panel>
 
-        <aside className="scout-side">
-          <Panel className="scout-activity" style={{ minHeight: "auto" }}>
-            <h2 style={{ marginTop: 0 }}>Accuracy leaderboard</h2>
-            <p className="app-muted">
-              Ranked by official-score checks, not form volume. Full board lives under Trust &amp; coverage.
-            </p>
-            {trust?.leaderboard?.length ? (
-              <ol className="scout-accuracy-mini">
-                {trust.leaderboard.slice(0, 5).map((scout, index) => (
-                  <li key={scout.userId}>
-                    <span className="scout-accuracy-rank">{index + 1}</span>
-                    <div>
-                      <strong>{scout.name}</strong>
-                      <small className="app-muted">
-                        {scout.checks} official checks · {scout.entries} entries
-                      </small>
-                    </div>
-                    <b>{scout.accuracy == null ? "—" : `${Math.round(scout.accuracy * 100)}%`}</b>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="app-muted">Accuracy ranks appear after official score breakdowns validate entries.</p>
-            )}
-          </Panel>
-
-          <Panel id="recent-entries" className="scout-activity" style={{ minHeight: "auto" }}>
-            <h2 style={{ marginTop: 0 }}>Recent entries</h2>
-            <p className="app-muted">
-              Open a report to see the stored stats and any timed actions. Team leads can delete a report.
-            </p>
-            {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
-              <>
-                <ExportButton
-                  rows={data.recentEntries}
-                  columns={SCOUT_ENTRY_CSV_COLUMNS}
-                  feature="Scouting entries"
-                  orgLabel={scoutEventLabel({ eventName: data.eventName, eventKey: data.eventKey })}
-                  orgId={orgId}
-                  size="sm"
-                  provenance={`${
-                    scoutEventLabel({ eventName: data.eventName, eventKey: data.eventKey }) ?? "Active event"
-                  } — the 30 most recent synced entries only. Anything still queued offline, and the rest of the event, is in the full export.`}
-                />
-                <ScoutReportViewer
-                  entries={data.recentEntries}
-                  orgId={orgId}
-                  canDelete={Boolean(data.canManageSchemas)}
-                  onDeleted={() => void sync()}
-                />
-              </>
-            ) : (
-              <p className="app-muted">No entries yet for this event.</p>
-            )}
-          </Panel>
-
-          <Panel style={{ minHeight: "auto" }}>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => setShowFormula((open) => !open)}
-            >
-              {showFormula ? "Hide coach formula" : "Coach value formula"}
-            </button>
-            {showFormula ? (
-              <div className="scout-formula">
-                <p className="app-muted">Optional weighted score from numeric fields. Coach role required to save.</p>
-                <FormRow label="Formula name">
-                  <input
-                    aria-label="Formula name"
-                    placeholder="e.g. Pick value"
-                    value={formulaName}
-                    onChange={(event) => setFormulaName(event.target.value)}
-                  />
-                </FormRow>
-                {schema?.definition.fields
-                  .filter(
-                    (field) =>
-                      // Counters, ratings, and sliders store plain numbers too —
-                      // a tap-tallied cycle count is exactly what a pick formula wants.
-                      field.type === "number" ||
-                      field.type === "counter" ||
-                      field.type === "rating" ||
-                      field.type === "slider",
-                  )
-                  .map((field) => (
-                    <FormRow key={field.key} label={`${field.label} weight`}>
-                      <input
-                        type="number"
-                        value={formulaWeights[field.key] ?? 0}
-                        onChange={(event) =>
-                          setFormulaWeights((current) => ({
-                            ...current,
-                            [field.key]: event.target.valueAsNumber,
-                          }))
-                        }
-                      />
-                    </FormRow>
-                  ))}
-                <Button variant="secondary" type="button" onClick={() => void saveFormula()}>
-                  Save formula
-                </Button>
-              </div>
-            ) : null}
-          </Panel>
-        </aside>
+        <ScoutingLeadTools
+          orgId={orgId}
+          data={data}
+          schema={schema}
+          trust={trust}
+          showFormula={showFormula}
+          formulaName={formulaName}
+          formulaWeights={formulaWeights}
+          setShowFormula={setShowFormula}
+          setFormulaName={setFormulaName}
+          setFormulaWeights={setFormulaWeights}
+          saveFormula={saveFormula}
+          sync={sync}
+        />
       </div>
     )}
   </main>

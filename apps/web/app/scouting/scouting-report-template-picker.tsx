@@ -18,6 +18,9 @@ const STORAGE_KEY = "vantage-scout-report-template";
 
 export function ScoutingReportTemplatePicker({ fields }: { fields: readonly FieldDefinition[] }) {
   const [templateId, setTemplateId] = useState("");
+  // Closed by default: the form is complete without a focus, and a ten-option
+  // menu above the first counter was one more decision before a 2:30 match.
+  const [open, setOpen] = useState(false);
   const template = SCOUTING_REPORT_TEMPLATES.find((candidate) => candidate.id === templateId);
   const matchedFields = useMemo(
     () => (template ? fieldsForReportTemplate(fields, template) : []),
@@ -36,6 +39,7 @@ export function ScoutingReportTemplatePicker({ fields }: { fields: readonly Fiel
       const saved = sessionStorage.getItem(STORAGE_KEY) ?? "";
       if (SCOUTING_REPORT_TEMPLATES.some((candidate) => candidate.id === saved)) {
         setTemplateId(saved);
+        setOpen(true);
       }
     } catch {
       // Private mode can throw. The picker still works without a remembered choice.
@@ -63,6 +67,16 @@ export function ScoutingReportTemplatePicker({ fields }: { fields: readonly Fiel
   // a phone it was most of a screen of scrolling before any counting could
   // start. It is optional — the form is complete without it — so it now takes
   // one row, and choosing a focus still lists the matching fields to jump to.
+  if (!open) {
+    return (
+      <div className="scout-template-toggle">
+        <button type="button" className="scout-template-link" aria-expanded={false} onClick={() => setOpen(true)}>
+          Watching one part? Pick a focus
+        </button>
+      </div>
+    );
+  }
+
   return (
     <section className="scout-template-picker is-compact" aria-label="What are you watching?">
       <label className="scout-template-select">
@@ -83,6 +97,17 @@ export function ScoutingReportTemplatePicker({ fields }: { fields: readonly Fiel
           ))}
         </select>
       </label>
+      <button
+        type="button"
+        className="scout-template-link"
+        aria-expanded
+        onClick={() => {
+          choose("");
+          setOpen(false);
+        }}
+      >
+        Hide
+      </button>
       {template ? (
         <div className="scout-template-result" role="status">
           <p>{template.description}</p>

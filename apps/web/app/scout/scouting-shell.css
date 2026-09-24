@@ -148,3 +148,13 @@
 .scout-home-duty span{color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .scout-home-duty strong{font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .scout-home-duty small{color:var(--muted);font-size:13px}
+
+/* Thumb-sized: team chips, Back to Vantage. They were about 36px tall. */
+.scouting-back{display:inline-flex;align-items:center;min-height:44px}
+.scouting-brand{min-height:44px}
+.scout-home-gaps a,.scout-home-pit a{min-height:44px;align-items:center}
+
+/* Phone storage figures are for whoever is troubleshooting, not the scout. */
+.scout-home-storage{color:var(--muted);font-size:13px}
+.scout-home-storage > summary{display:inline-flex;align-items:center;min-height:44px;cursor:pointer;font-weight:600}
+.scout-home-storage .scout-home-facts{margin-top:6px}

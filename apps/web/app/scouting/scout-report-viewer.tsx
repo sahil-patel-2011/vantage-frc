@@ -40,7 +40,9 @@ export function ScoutReportViewer({
               </strong>
               <span>{scoutEntryByline({ scoutName: entry.scoutName, source: entry.source })}</span>
               <small className="app-muted">
-                {entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}
+                {/* The same words the scout picked from: Sure / OK / Guessing. */}
+                {entry.confidence === "high" ? "Sure" : entry.confidence === "low" ? "Guessing" : "OK"} ·{" "}
+                {new Date(entry.updatedAt).toLocaleTimeString()}
               </small>
             </button>
             {open && report ? (

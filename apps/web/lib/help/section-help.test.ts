@@ -136,7 +136,11 @@ describe("section help lookups", () => {
     expect(sectionHelpFor("competition", "not-a-tab")).toBeUndefined();
     expect(sectionHelpFor(null, "command")).toBeUndefined();
     expect(sectionHelpFor("competition", null)).toBeUndefined();
-    expect(sectionHelpFor("competition", "scouting")?.what).toMatch(/assigned quals/i);
+    expect(sectionHelpFor("competition", "scouting")?.how).toEqual([
+      "Tap the robot you're watching.",
+      "Tap Start with the field and count as they score.",
+      "Tap Save — the next match loads by itself.",
+    ]);
     expect(sectionHelpFor("competition", "scouting")?.related.map((link) => link.href)).toEqual([
       "/help/saturday-scouting",
       "/scouting/lineup",

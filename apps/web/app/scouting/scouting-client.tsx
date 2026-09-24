@@ -82,6 +82,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
+  const [savedHere, setSavedHere] = useState<Array<{ matchKey: string; teamKey: string }>>([]);
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">("normal");
   const [source, setSource] = useState<"manual" | "voice">("manual");
   const [entryClientId, setEntryClientId] = useState(() => stableClientId());
@@ -390,6 +391,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       updatedAt: new Date().toISOString(),
     };
     await queueEntry(entry);
+    if (type === "match") setSavedHere((current) => [...current, { matchKey, teamKey: storedTeam }]);
     clearScoutDraft(draftKey);
     // formResetBehavior: keep the constants a scout would only retype (station,
     // alliance), step the ones that count up, and drop everything else. The
@@ -730,6 +732,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       matchKey={matchKey}
       teamKey={teamKey}
       payload={payload}
+      savedHere={savedHere}
       confidence={confidence}
       entryClientId={entryClientId}
       draftSavedAt={draftSavedAt}
