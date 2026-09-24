@@ -15,6 +15,7 @@ const DashboardNewBoardDialog = dynamic(
 
 export type HomeConfirm =
   | { kind: "discard" }
+  | { kind: "leave"; href: string }
   | { kind: "reset" }
   | { kind: "team" }
   | { kind: "delete"; id: string; name: string };
@@ -36,13 +37,22 @@ function confirmOpts(confirm: HomeConfirm | null, board: BoardState | null): Con
             body: "Everyone who uses this team board will see this layout.",
             confirmLabel: "Save for team",
             cancelLabel: "Keep editing",
+            tone: "neutral",
           }
         : {
             title: "Share this layout as a team board?",
             body: "Everyone on the team can switch to it from their boards. Your own Home stays as it is, and you stay on it.",
             confirmLabel: "Share with team",
             cancelLabel: "Keep editing",
+            tone: "neutral",
           };
+    case "leave":
+      return {
+        title: "Leave without saving?",
+        body: "You changed this board since tapping Edit. Leaving now drops those changes; Done saves them.",
+        confirmLabel: "Leave without saving",
+        cancelLabel: "Keep editing",
+      };
     case "discard":
       return {
         title: "Discard changes?",

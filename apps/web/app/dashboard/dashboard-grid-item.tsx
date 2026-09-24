@@ -197,7 +197,12 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   title={`${WIDGET_SIZE_LABEL[size]} widget`}
                   aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
                   aria-pressed={currentSize === size}
-                  onClick={() => onResize(item.i, size)}
+                  onClick={() => {
+                    onResize(item.i, size);
+                    // Close once a size is picked: left open, the chips sat over the card's title
+                    // and hid the change they had just made.
+                    onSelect?.(null);
+                  }}
                 >
                   {WIDGET_SIZE_LABEL[size]}
                 </button>
@@ -209,7 +214,10 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                 disabled={atDefault}
                 title={atDefault ? `${label} is already at its default size` : `Back to the default size`}
                 aria-label={`Reset ${label} to its default size`}
-                onClick={() => onResetSize(item.i)}
+                onClick={() => {
+                  onResetSize(item.i);
+                  onSelect?.(null);
+                }}
               >
                 Default
               </button>

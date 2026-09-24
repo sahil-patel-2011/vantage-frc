@@ -20,8 +20,11 @@ export type ConfirmOpts = {
   /** Action-specific: "Delete battery", "Disconnect GitHub" — never "OK". */
   confirmLabel: string;
   cancelLabel?: string;
-  /** critical = type-to-confirm; reserved for org-wide / irreversible. */
-  tone?: "destructive" | "critical";
+  /**
+   * critical = type-to-confirm; reserved for org-wide / irreversible. neutral = a yes that
+   * loses nothing (sharing, publishing), so its button is not painted like a delete.
+   */
+  tone?: "destructive" | "critical" | "neutral";
   /** For critical: the resource name or literal "DELETE" the user must type. */
   confirmPhrase?: string;
 };
@@ -83,7 +86,12 @@ export function ConfirmDialog({
         >
           {opts.cancelLabel ?? "Cancel"}
         </button>
-        <Button variant="danger" size="sm" disabled={confirmDisabled} onClick={() => onResolve(true)}>
+        <Button
+          variant={opts?.tone === "neutral" ? "primary" : "danger"}
+          size="sm"
+          disabled={confirmDisabled}
+          onClick={() => onResolve(true)}
+        >
           {opts.confirmLabel}
         </Button>
       </div>

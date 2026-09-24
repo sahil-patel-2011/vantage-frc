@@ -402,6 +402,35 @@ export function DashboardHomeView(props: {
     else cancelEditing();
   }, [hasUnsavedChanges, cancelEditing]);
 
+  // Leaving Home mid-edit (the bell, a card link, the menu) used to drop the changes without a
+  // word, while Cancel asked first. Links out now ask the same question; closing the tab gets
+  // the browser's own warning.
+  useEffect(() => {
+    if (!editing) return;
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+      const anchor = (event.target as HTMLElement | null)?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      if (!hasUnsavedChanges()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setConfirm({ kind: "leave", href: `${url.pathname}${url.search}${url.hash}` });
+    };
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [editing, hasUnsavedChanges]);
+
   // Escape is Cancel (asking first if there is anything to lose); Ctrl/Cmd+Z steps
   // back one change and Ctrl/Cmd+Shift+Z or Ctrl+Y steps forward again. Anything that
   // handles Escape itself — a drag, a picked-up card, the widget sheet, the ••• menu — goes first.
@@ -832,6 +861,10 @@ export function DashboardHomeView(props: {
           if (!ok) return;
           if (asked.kind === "reset") void resetDefault();
           if (asked.kind === "discard") cancelEditing();
+          if (asked.kind === "leave") {
+            cancelEditing();
+            window.location.assign(asked.href);
+          }
           if (asked.kind === "team") {
             const onTeamBoard = board?.scope === "org" && Boolean(board.id);
             void shareWithTeam().then((shared) => {
