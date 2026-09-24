@@ -26,7 +26,8 @@ describe("Home first-paint JS split", () => {
     expect(src).toMatch(/import\(["']\.\/dashboard-boards-modal["']\)/);
     expect(src).toMatch(/import\(["']\.\/dashboard-edit-dock["']\)/);
     expect(src).toMatch(/import\(["']\.\/dashboard-widget-library["']\)/);
-    expect(src).toMatch(/import\(["']\.\/dashboard-widget-palette["']\)/);
+    // The inline palette is gone: the widget sheet is the one list of widgets.
+    expect(src).not.toMatch(/dashboard-widget-palette/);
     expect(src).toMatch(/import\(["']\.\.\/\.\.\/components\/partner-placement["']\)/);
   });
 

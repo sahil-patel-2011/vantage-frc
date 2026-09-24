@@ -31,6 +31,7 @@ import {
   reorderLayout,
   type PointerPoint,
 } from "../../lib/dashboard/grid-drag";
+import { layoutsEqual, packKeepingOrder } from "../../lib/dashboard/edit-mode";
 import {
   type DragActivation,
   type DragSession,
@@ -56,6 +57,8 @@ export function useDashboardPointerDrag(input: {
   displayRef: MutableRefObject<DashboardWidgetLayout[]>;
   grabBaseRef: MutableRefObject<DashboardWidgetLayout[] | null>;
   setLayout: Dispatch<SetStateAction<DashboardWidgetLayout[]>>;
+  /** Remember the layout a finished drag replaced, for Undo. */
+  record: (snapshot: DashboardWidgetLayout[]) => void;
   addWidget: (type: DashboardWidgetType, drop?: { col: number; row: number }, displayCols?: number) => void;
   setMessage: (message: string) => void;
   setMessageKind: Dispatch<SetStateAction<"success" | "error">>;
@@ -74,6 +77,7 @@ export function useDashboardPointerDrag(input: {
     displayRef,
     grabBaseRef,
     setLayout,
+    record,
     addWidget,
     setMessage,
     setMessageKind,
@@ -128,18 +132,36 @@ export function useDashboardPointerDrag(input: {
     const session = dragRef.current;
     const node = proxyRef.current;
     if (!session || !node) return;
+    /*
+      A moving card is followed by a copy of itself, not a name badge. The
+      card's own slot turns into the dashed drop target, so without the copy
+      the thing you picked up simply vanished from under your finger. The copy
+      is cloned DOM in an element React renders empty and never touches.
+    */
+    const host = node.querySelector<HTMLElement>("[data-proxy-copy]");
+    if (host && host.childElementCount === 0 && session.sourceNode) {
+      host.appendChild(session.sourceNode.cloneNode(true));
+    }
     const x = session.point.x - session.grab.x;
     const y = session.point.y - session.grab.y;
-    node.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
-    node.style.opacity = "1";
+    const lift = session.kind === "move" ? " rotate(1.2deg) scale(1.02)" : "";
+    node.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)${lift}`;
+    node.style.opacity = session.kind === "move" ? "0.88" : "1";
   }
 
+  /*
+    The dashed slot shows where the card will really land. The preview is
+    packed the same way the drop is, so no gap opens up behind the card and
+    nothing jumps after you let go.
+  */
   function previewMove(session: DragSession) {
     const nextDisplay = moveItem(session.baseDisplay, session.id, session.cell, session.cols);
     setLayout(
-      session.cols === 1
-        ? reorderLayout(session.baseLayout, layoutOrder(nextDisplay))
-        : applyGridDrag(session.baseLayout, nextDisplay, session.cols),
+      packKeepingOrder(
+        session.cols === 1
+          ? reorderLayout(session.baseLayout, layoutOrder(nextDisplay))
+          : applyGridDrag(session.baseLayout, nextDisplay, session.cols),
+      ),
     );
   }
 
@@ -253,8 +275,8 @@ export function useDashboardPointerDrag(input: {
     event: ReactPointerEvent<HTMLElement>,
     session: Omit<
       DragSession,
-      "pointerId" | "captureTarget" | "active" | "origin" | "point" | "baseLayout" | "baseDisplay"
-    >,
+      "pointerId" | "captureTarget" | "active" | "origin" | "point" | "baseLayout" | "baseDisplay" | "sourceNode"
+    > & { sourceNode?: HTMLElement | null },
   ) {
     if (dragRef.current) endDrag(true);
     const point = { x: event.clientX, y: event.clientY };
@@ -266,6 +288,7 @@ export function useDashboardPointerDrag(input: {
     }
     dragRef.current = {
       ...session,
+      sourceNode: session.sourceNode ?? null,
       pointerId: event.pointerId,
       captureTarget: target,
       active: false,
@@ -297,6 +320,7 @@ export function useDashboardPointerDrag(input: {
     grabBaseRef.current = null;
     beginSession(event, {
       kind: "move",
+      sourceNode: card.querySelector<HTMLElement>(".dash-widget-hit"),
       id: item.i,
       type: item.type,
       label: catalogEntry(item.type)?.label ?? item.type,
@@ -396,6 +420,7 @@ export function useDashboardPointerDrag(input: {
 
     setAnnounce(`${describeCellMove(settled.label, settled.cell)}.`);
     endDrag(false);
+    if (!layoutsEqual(settled.baseLayout, layoutRef.current)) record(settled.baseLayout);
   }
 
   function onDragPointerCancel(event: ReactPointerEvent<HTMLElement>) {

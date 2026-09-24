@@ -40,29 +40,12 @@ test.describe("Home tap-to-place", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/dashboard");
     await page.waitForLoadState("domcontentloaded");
-    /*
-      Edit Home lives inside the "More" disclosure now, not beside the
-      greeting. Arranging widgets is something you do once and then leave
-      alone for a season, and it was one of only two controls on the page — so
-      the quietest screen in the app opened with a button most people will
-      never press again.
-
-      Opening the disclosure is what a person does, so the spec does it too
-      rather than reaching past the UI for the button.
-    */
-    const more = page.locator("details.dash-home-more");
-    await expect(more).toBeAttached({ timeout: 20_000 });
-    // Open the disclosure the way pressing its summary would, rather than
-    // reaching past it to a button the page is deliberately keeping folded
-    // away. This spec also emulates a coarse pointer, and a synthesized click
-    // on a summary under that emulation is its own thing to debug.
-    await more.evaluate((node) => {
-      (node as HTMLDetailsElement).open = true;
-    });
-
+    // Edit is a quiet button beside the greeting.
     const edit = page.getByRole("button", { name: /edit home/i });
-    await expect(edit.first()).toBeVisible({ timeout: 15_000 });
+    await expect(edit.first()).toBeVisible({ timeout: 20_000 });
     await edit.first().click();
+    // On a phone the app's tab bar steps aside for the edit toolbar.
+    await expect(page.locator(".soft-island")).toBeHidden();
     await page.getByTestId("dash-open-library").click();
     const firstAdd = page.locator("[data-testid^='dash-library-']").first();
     await expect(firstAdd).toBeVisible();

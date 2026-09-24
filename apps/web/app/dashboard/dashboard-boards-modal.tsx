@@ -1,7 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { Modal } from "../../components/ui";
+import { suggestBoardName } from "../../lib/dashboard/edit-mode";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
+
+/*
+  "Board" everywhere. This dialog was titled "Home Screens", opened from a
+  "Manage boards" button, and created boards called "My dashboard" — three
+  names for one thing. A board is one arrangement of Home; you can have a few
+  (say, one for match day) and switch between them.
+*/
 
 export function DashboardBoardsModal({
   open,
@@ -23,6 +32,7 @@ export function DashboardBoardsModal({
   onCancelRename,
   onCreatePersonal,
   onCreateOrg,
+  initialCreate = null,
 }: {
   open: boolean;
   onClose: () => void;
@@ -41,21 +51,71 @@ export function DashboardBoardsModal({
   onDelete: (id: string) => void;
   onStartRename: (id: string, name: string) => void;
   onCancelRename: () => void;
-  onCreatePersonal: () => void;
-  onCreateOrg: () => void;
+  onCreatePersonal: (name: string) => void;
+  onCreateOrg: (name: string) => void;
+  /** Open straight into "name your new board" (the + beside the board tabs). */
+  initialCreate?: "personal" | "org" | null;
 }) {
+  const allNames = [...personalBoards, ...orgBoards].map((item) => item.name);
+  const [creating, setCreating] = useState<"personal" | "org" | null>(initialCreate);
+  const [newName, setNewName] = useState(() => suggestBoardName(allNames));
+
+  function startCreate(scope: "personal" | "org") {
+    setCreating(scope);
+    setNewName(suggestBoardName(allNames));
+  }
+
+  function createForm(scope: "personal" | "org") {
+    if (creating !== scope) return null;
+    return (
+      <form
+        className="dash-boards-new"
+        data-testid="dash-new-board-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const name = newName.trim();
+          if (!name) return;
+          setCreating(null);
+          if (scope === "org") onCreateOrg(name);
+          else onCreatePersonal(name);
+        }}
+      >
+        <label>
+          <span>Name your new {scope === "org" ? "team " : ""}board</span>
+          <input
+            value={newName}
+            onChange={(event) => setNewName(event.target.value)}
+            maxLength={80}
+            autoFocus
+            onFocus={(event) => event.currentTarget.select()}
+            aria-label="Board name"
+            data-testid="dash-new-board-name"
+          />
+        </label>
+        <div className="dash-boards-actions">
+          <button type="submit" disabled={saving || !newName.trim()}>
+            Create board
+          </button>
+          <button type="button" onClick={() => setCreating(null)}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Home Screens"
-      description="Personal boards are yours. Team boards are shared — owner/admin can create and edit them."
+      title="Your boards"
+      description="Each board is its own arrangement of Home. Yours are private; team boards are shared with everyone, and owners and admins edit them."
       variant="sheet"
     >
       <section className="dash-boards-group">
-        <p>Personal</p>
+        <p>Yours</p>
         {personalBoards.length === 0 ? (
-          <p className="dash-library-empty">No saved personal boards yet — create one to keep a custom layout.</p>
+          <p className="dash-library-empty">No boards of your own yet. Make one for match day, build season, or anything else.</p>
         ) : (
           <ul className="dash-boards-list">
             {personalBoards.map((item) => (
@@ -83,7 +143,7 @@ export function DashboardBoardsModal({
                     onClick={() => onSwitch(item.id)}
                   >
                     <strong>{item.name}</strong>
-                    <span>{board?.id === item.id ? "Current" : "Personal"} · tap to open</span>
+                    <span>{board?.id === item.id ? "Showing now" : "Tap to open"}</span>
                   </button>
                 )}
                 <div className="dash-boards-actions">
@@ -119,11 +179,13 @@ export function DashboardBoardsModal({
             ))}
           </ul>
         )}
-        <div className="dash-boards-create">
-          <button type="button" disabled={saving || editing} onClick={onCreatePersonal}>
-            + New personal board
-          </button>
-        </div>
+        {createForm("personal") ?? (
+          <div className="dash-boards-create">
+            <button type="button" data-testid="dash-new-board" disabled={saving || editing} onClick={() => startCreate("personal")}>
+              + New board
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="dash-boards-group">
@@ -131,7 +193,7 @@ export function DashboardBoardsModal({
         {orgBoards.length === 0 ? (
           <p className="dash-library-empty">
             {canShareOrg
-              ? "No team boards yet — create a shared Home Screen for the whole team."
+              ? "No team boards yet. A team board is a Home everyone on the team can open."
               : "No team boards published yet."}
           </p>
         ) : (
@@ -161,7 +223,7 @@ export function DashboardBoardsModal({
                     onClick={() => onSwitch(item.id)}
                   >
                     <strong>{item.name}</strong>
-                    <span>{board?.id === item.id ? "Current" : "Shared"} · tap to open</span>
+                    <span>{board?.id === item.id ? "Showing now" : "Shared · tap to open"}</span>
                   </button>
                 )}
                 <div className="dash-boards-actions">
@@ -213,13 +275,15 @@ export function DashboardBoardsModal({
             ))}
           </ul>
         )}
-        {canShareOrg ? (
-          <div className="dash-boards-create">
-            <button type="button" disabled={saving || editing} onClick={onCreateOrg}>
-              + New team board
-            </button>
-          </div>
-        ) : null}
+        {canShareOrg
+          ? createForm("org") ?? (
+              <div className="dash-boards-create">
+                <button type="button" disabled={saving || editing} onClick={() => startCreate("org")}>
+                  + New team board
+                </button>
+              </div>
+            )
+          : null}
       </section>
     </Modal>
   );

@@ -50,6 +50,10 @@
 .dash-boards-group>p{
   margin:0 0 8px;color:var(--muted);font:700 11px/1 ui-sans-serif, system-ui, "Segoe UI", sans-serif;letter-spacing:.06em;text-transform:uppercase;
 }
+/* The empty-state sentence under a group heading is a sentence, not a heading. */
+.dash-boards-group>p.dash-library-empty{
+  margin:0 0 8px;color:var(--muted);font:400 13px/1.4 var(--font-source-sans),system-ui;letter-spacing:0;text-transform:none;
+}
 .dash-boards-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .dash-boards-list li{
   display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
@@ -84,44 +88,7 @@
   font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
 }
 
-/* ---- Palette + snap HUD (edit mode) ---- */
-.dash-palette-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 0 4px}
-.dash-palette-heading span{color:var(--muted);font:700 10px/1 ui-sans-serif, system-ui, "Segoe UI", sans-serif;letter-spacing:.07em;text-transform:uppercase}
-.dash-palette-heading small{color:var(--muted);font-size:11px}
-.dash-widget-palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-.dash-widget-palette>p{grid-column:1/-1;margin:0;color:var(--muted);font-size:13px}
-.dash-widget-palette button{
-  display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;width:100%;
-  padding:10px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--surface);
-  min-height:56px;color:inherit;text-align:left;cursor:grab;user-select:none;
-  /* Long-press starts the drag, so the palette itself must still scroll. */
-  touch-action:manipulation;
-  transition:border-color .15s ease,transform .12s ease,box-shadow .15s ease;
-}
-.dash-widget-palette button:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 40%,var(--line));transform:translateY(-1px);box-shadow:var(--shadow)}
-.dash-widget-palette button.dragging{opacity:.7;cursor:grabbing;border-color:var(--accent)}
-.dash-widget-palette button.is-unavailable{
-  cursor:default;opacity:.62;background:color-mix(in srgb,var(--bg) 70%,var(--surface));
-  border-style:dashed;
-}
-.dash-widget-palette button[data-status="placed"] em{
-  color:var(--accent);background:var(--accent-soft);padding:3px 7px;border-radius:var(--radius-pill);
-}
-.dash-widget-palette button[data-status="locked"] em{
-  color:var(--muted);border:1px solid var(--line);padding:3px 7px;border-radius:var(--radius-pill);
-}
-.dash-widget-palette button[data-status="placed"] i{background:var(--bg);color:var(--muted)}
-.dash-widget-palette i{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--radius-sm);background:var(--accent-soft);color:var(--accent)}
-.dash-widget-palette span{display:grid;gap:2px;min-width:0}
-.dash-widget-palette strong{font-size:13px;letter-spacing:-.01em}
-.dash-widget-palette small{color:var(--muted);font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.dash-widget-palette em{font-style:normal;color:var(--muted);font:700 10px ui-sans-serif, system-ui, "Segoe UI", sans-serif;white-space:nowrap}
-
-.dash-grid-guide{
-  display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px;padding:0 2px;
-  color:var(--muted);font-size:11px;
-}
-.dash-grid-guide span{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+/* ---- Snap HUD (edit mode) ---- */
 .dash-snap-hud{
   position:absolute;z-index:4;top:12px;left:50%;transform:translateX(-50%);
   display:inline-flex;align-items:center;gap:10px;min-height:32px;padding:6px 12px;border-radius:var(--radius-pill);
@@ -131,7 +98,6 @@
 .dash-snap-hud strong{font-size:11px}
 .dash-snap-hud b{font:700 11px ui-monospace,monospace;color:var(--accent)}
 .dash-grid-wrap.receiving-widget{outline:2px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:4px}
-.dash-dock-tidy span{margin-right:4px;opacity:.8}
 /* Device presets stay a step softer than the card, but track the radius token
    so compact density and any future radius change carry through. */
 .dash-home[data-grid="phone"] .dash-grid-item,.dash-home[data-grid="tablet"] .dash-grid-item{
@@ -214,10 +180,9 @@
   outline-offset:0;border-radius:var(--radius);
   touch-action:pan-y;cursor:grab;
 }
-/* Content is inert in edit mode so the card body can be the long-press
-   surface; the reserved strip keeps the size chips off the content. */
+/* Content is inert in edit mode so the card body can be the drag surface. */
 .dash-home .dash-pgrid>.dash-grid-item.is-editing .dash-widget-hit{
-  pointer-events:none;box-sizing:border-box;padding-bottom:52px;
+  pointer-events:none;box-sizing:border-box;
 }
 .dash-home .dash-pgrid>.dash-grid-item.is-editing .dash-widget,
 .dash-home .dash-pgrid>.dash-grid-item.is-editing .app-card{overflow:hidden}
@@ -264,57 +229,9 @@
 .dash-drag-proxy span{color:var(--muted);font:600 12px ui-monospace,monospace}
 .dash-drag-proxy small{color:var(--accent);font:700 11px var(--font-source-sans),ui-sans-serif}
 
-/* ---- Edit-mode toolbar strip ---- */
-.dash-edit-strip{
-  position:sticky;z-index:6;top:calc(56px + 8px);
-  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
-  margin:-4px -4px 2px;padding:8px 12px;border-radius:var(--radius-sm);
-  background:color-mix(in srgb,var(--surface) 94%,var(--accent-soft));
-  border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));
-  box-shadow:var(--shadow);
-}
-.dash-edit-flag{
-  display:inline-flex;align-items:center;gap:8px;
-  color:var(--accent);font:800 12px var(--font-source-sans),ui-sans-serif;
-  letter-spacing:.04em;text-transform:uppercase;
-}
-.dash-edit-flag i{width:9px;height:9px;border-radius:var(--radius-pill);background:var(--accent)}
-.dash-edit-meta{color:var(--muted);font-size:12px}
-.dash-edit-strip-actions{display:inline-flex;flex-wrap:wrap;gap:8px;margin-left:auto}
-.dash-edit-strip-actions button{
-  min-height:44px;padding:0 14px;border-radius:var(--radius-sm);cursor:pointer;
-  border:1px solid var(--line);background:var(--surface);color:var(--ink);
-  font:700 12px var(--font-source-sans),ui-sans-serif;
-}
-.dash-edit-strip-actions button:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
-.dash-edit-strip-actions button[aria-pressed="true"]{
-  border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
-}
-.dash-edit-strip-actions button.is-primary{
-  background:var(--accent);border-color:var(--accent);color:#fff;
-}
-
-/* ---- 44px controls on every card ---- */
-.dash-home .dash-item-tools{top:10px;left:10px;right:10px}
-.dash-home .dash-remove-btn{
-  min-width:44px;min-height:44px;height:44px;padding:0 12px;border-radius:var(--radius-sm);
-}
-.dash-home .dash-remove-btn svg{width:16px;height:16px}
-.dash-home .dash-drag-handle{
-  min-width:44px;min-height:44px;height:44px;padding:0 12px;border:0;border-radius:var(--radius-sm);cursor:grab;
-  /* The ONE surface that owns the gesture outright. */
-  touch-action:none;
-}
-.dash-home .dash-drag-handle:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
-.dash-home .dash-drag-handle[aria-pressed="true"]{background:var(--accent);color:#fff}
-.dash-home .dash-drag-handle[aria-pressed="true"] .dash-drag-dots{
-  background:
-    radial-gradient(circle,#fff 1.2px,transparent 1.3px) 0 0 / 6px 5px,
-    radial-gradient(circle,#fff 1.2px,transparent 1.3px) 3px 5px / 6px 5px;
-}
-
+/* ---- Size chips, shown on the selected card only (dashboard-edit.css) ---- */
 .dash-item-sizes{
-  position:absolute;z-index:3;right:10px;bottom:10px;left:10px;
+  position:absolute;z-index:5;right:10px;bottom:10px;left:10px;
   display:flex;align-items:center;justify-content:flex-end;gap:8px;pointer-events:none;
 }
 .dash-item-sizes>span{
@@ -328,7 +245,7 @@
   box-shadow:var(--shadow);backdrop-filter:blur(8px);
 }
 .dash-size-btn{
-  min-height:44px;min-width:44px;padding:0 8px;border:0;border-radius:var(--radius-sm);cursor:pointer;
+  min-height:36px;min-width:36px;padding:0 8px;border:0;border-radius:var(--radius-sm);cursor:pointer;
   background:transparent;color:var(--muted);
   font:700 12px var(--font-source-sans),ui-sans-serif;letter-spacing:.02em;
 }
@@ -337,9 +254,10 @@
   background:var(--accent);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 34%,transparent);
 }
 
-/* Narrow boards cannot hold four 44px chips plus a label — drop the label. */
-.dash-home[data-cols="1"] .dash-item-sizes>span,
-.dash-home[data-cols="4"] .dash-item-sizes>span{display:none}
+/* A finger needs the full 44px. */
+@media (pointer:coarse){
+  .dash-size-btn{min-height:44px;min-width:44px}
+}
 
 /* ---- Reflow motion, opt-in only ---- */
 @media (prefers-reduced-motion:no-preference){
@@ -355,21 +273,8 @@
   .dash-home .dash-pgrid>.dash-grid-item,.dash-drop-slot{transition:none}
 }
 
-@media (max-width:720px){
-  .dash-editor-bar .dash-palette-heading,
-  .dash-editor-bar .dash-widget-palette{display:none}
-  .dash-edit-dock{
-    position:sticky;left:auto;bottom:calc(12px + var(--safe-bottom));transform:none;
-    width:100%;max-width:none;margin:16px 0 0;
-  }
-}
 @media (max-width:640px){
   .dash-board-switcher{max-width:100%;overflow-x:auto}
-  .dash-item-tools{gap:8px}
-  .dash-grid-guide{flex-wrap:wrap}
-  .dash-edit-strip{top:calc(56px + 4px);gap:8px}
-  .dash-edit-strip-actions{width:100%;margin-left:0}
-  .dash-edit-strip-actions button{flex:1 1 auto}
   .dash-drag-proxy{max-width:calc(100vw - 24px)}
 }
 

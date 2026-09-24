@@ -8,10 +8,11 @@ test.beforeEach(async ({ context }) => {
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // Decluttered means Edit Home is inside "More", not beside the greeting.
-  await expect(page.getByTestId("dash-customize")).not.toBeVisible();
-  await page.locator(".dash-home-more > summary").click();
-  await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
+  // One quiet "Edit" beside the greeting — not folded inside "More", where
+  // testers could not find it, and not a row of editing controls either.
+  await expect(page.getByTestId("dash-customize")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Edit Home/ })).toHaveText("Edit");
+  await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible({ timeout: 20_000 });
 });
@@ -20,12 +21,21 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await page.goto("/dashboard");
   // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByText("Edit mode", { exact: true }).first()).toBeVisible();
-  await expect(page.locator(".dash-editor-bar")).toBeVisible();
+  const toolbar = page.getByTestId("dash-edit-toolbar");
+  await expect(toolbar).toBeVisible();
+  await expect(page.getByTestId("dash-edit-hint")).toBeVisible();
+  // The widget list starts closed; the board is what you came to arrange.
+  await expect(page.getByTestId("dash-widget-sheet")).toHaveCount(0);
+  await page.getByTestId("dash-open-library").click();
+  await expect(page.getByTestId("dash-widget-sheet")).toBeVisible();
   await expect(page.getByTestId("dash-catalog-inline").locator("button").first()).toBeVisible();
-  await expect(page.getByTestId("dash-preview")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeVisible();
-  await expect(page.getByTestId("dash-open-library")).toBeVisible();
+  await page.getByTestId("dash-open-library").click();
+  await expect(page.getByTestId("dash-widget-sheet")).toHaveCount(0);
+  // Occasional actions live behind one "•••" menu; Reset is not beside Cancel.
+  await expect(toolbar.getByRole("button", { name: "Reset", exact: true })).toHaveCount(0);
+  await page.getByTestId("dash-edit-more").click();
+  await expect(page.getByTestId("dash-reset-board")).toBeVisible();
+  await expect(page.getByTestId("dash-tidy")).toBeVisible();
   await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByTestId("dash-preview-back")).toBeVisible();
   await expect(page.getByTestId("dash-preview-save")).toBeVisible();
@@ -36,12 +46,9 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/dashboard");
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByText("Customize Home")).toBeVisible();
+  await expect(page.getByTestId("dash-edit-hint")).toBeVisible();
   await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
   await expect(page.locator(".dash-grid")).toBeVisible();
-  // The palette uses Pointer Events (so it works on touch), not HTML5 draggable —
-  // assert it is a real enabled control rather than a legacy drag attribute.
-  await expect(page.locator(".dash-widget-palette button").first()).toBeEnabled();
 
   // next_match is a full-width hero (w=12) so a horizontal drag cannot
   // change its cell. Student Home's second card is a 4-column tile.
@@ -56,23 +63,28 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await page.mouse.down();
   await page.mouse.move(box!.x + 280, box!.y + 90, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
+  // A lifted copy of the card follows the pointer while its slot shows the target.
+  await expect(page.locator(".dash-drag-proxy.is-card .dash-widget-hit")).toHaveCount(1);
   await page.mouse.up();
   await expect
     .poll(async () => `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`)
     .not.toBe(before);
 
+  // The widget sheet uses Pointer Events (so it works on touch), not HTML5
+  // draggable. Playwright's dragTo() drives HTML5 drag-and-drop, which this
+  // grid no longer uses; driving the mouse exercises the same pointer path a
+  // touch user gets.
   const beforeCount = await page.getByTestId("dash-grid-item").count();
-  const palette = page.locator(".dash-widget-palette button").first();
-  await palette.scrollIntoViewIfNeeded();
-  const paletteBox = await palette.boundingBox();
+  await page.getByTestId("dash-open-library").click();
+  const item = page.locator("[data-testid^='dash-library-']").first();
+  await expect(item).toBeEnabled();
+  const itemBox = await item.boundingBox();
   const gridBox = await page.locator(".dash-grid").boundingBox();
-  expect(paletteBox).toBeTruthy();
+  expect(itemBox).toBeTruthy();
   expect(gridBox).toBeTruthy();
-  // Playwright's dragTo() drives HTML5 drag-and-drop, which this grid no longer
-  // uses. Driving the mouse exercises the same pointer path a touch user gets.
-  await page.mouse.move(paletteBox!.x + paletteBox!.width / 2, paletteBox!.y + paletteBox!.height / 2);
+  await page.mouse.move(itemBox!.x + itemBox!.width / 2, itemBox!.y + itemBox!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(gridBox!.x + 40, gridBox!.y + 40, { steps: 15 });
+  await page.mouse.move(gridBox!.x + 40, Math.max(gridBox!.y + 40, 120), { steps: 15 });
   await page.mouse.up();
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });

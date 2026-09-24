@@ -21,14 +21,12 @@ import {
   catalogEntry,
   defaultDashboardLayoutForAudience,
   layoutOrAudienceDefault,
-  packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
   type WidgetCatalogEntry,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import {
-  compactLayout,
   describeCellMove,
   layoutOrder,
   nudgeItem,
@@ -37,6 +35,7 @@ import {
   type GridCell,
   type NudgeDirection,
 } from "../../lib/dashboard/grid-drag";
+import { layoutsEqual, packKeepingOrder } from "../../lib/dashboard/edit-mode";
 import { ARROW_DIRECTION, resolveGrid } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
@@ -70,6 +69,8 @@ export function useDashboardBoardOps(input: {
   resetAudience: "mentor" | "student";
   loadHome: (id: string, preferredBoardId?: string | null) => Promise<void>;
   loadSnapshot: LoadSnapshot;
+  /** Remember the layout a change is about to replace, for Undo. */
+  record: (snapshot: DashboardWidgetLayout[]) => void;
   grabBaseRef: MutableRefObject<DashboardWidgetLayout[] | null>;
   setLayout: Dispatch<SetStateAction<DashboardWidgetLayout[]>>;
   setBoard: Dispatch<SetStateAction<BoardState | null>>;
@@ -78,6 +79,8 @@ export function useDashboardBoardOps(input: {
   setSaving: Dispatch<SetStateAction<boolean>>;
   setMessage: Dispatch<SetStateAction<string>>;
   setMessageKind: Dispatch<SetStateAction<"success" | "error">>;
+  setMessageAction: Dispatch<SetStateAction<"undo" | null>>;
+  setHighlightId: Dispatch<SetStateAction<string | null>>;
   setAnnounce: Dispatch<SetStateAction<string>>;
   setGrabbedId: Dispatch<SetStateAction<string | null>>;
   setEditing: Dispatch<SetStateAction<boolean>>;
@@ -107,6 +110,7 @@ export function useDashboardBoardOps(input: {
     resetAudience,
     loadHome,
     loadSnapshot,
+    record,
     grabBaseRef,
     setLayout,
     setBoard,
@@ -115,6 +119,8 @@ export function useDashboardBoardOps(input: {
     setSaving,
     setMessage,
     setMessageKind,
+    setMessageAction,
+    setHighlightId,
     setAnnounce,
     setGrabbedId,
     setEditing,
@@ -135,6 +141,7 @@ export function useDashboardBoardOps(input: {
       setPendingPlaceType(entry.type);
       if (closeLibrary) setLibraryOpen(false);
       setMessageKind("success");
+      setMessageAction(null);
       setMessage(`Tap a slot on the board to place ${entry.label}.`);
       setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
       return;
@@ -154,8 +161,14 @@ export function useDashboardBoardOps(input: {
       return;
     }
     const entry = catalogEntry(type);
-    setLayout(compactLayout(result.layout, DASHBOARD_COLUMNS));
+    const added = result.layout[result.layout.length - 1];
+    record(layoutRef.current);
+    // Packed, not just pulled up: a card dropped beside a hole slides into it,
+    // so the board never needs a separate tidy after an add.
+    setLayout(packKeepingOrder(result.layout));
+    if (added) setHighlightId(added.i);
     setMessageKind("success");
+    setMessageAction(null);
     setMessage(`${entry?.label ?? type} added to the board.`);
     setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
@@ -185,19 +198,22 @@ export function useDashboardBoardOps(input: {
   }
 
   function tidyLayout() {
-    setLayout((current) => packDashboardLayout(current));
+    record(layoutRef.current);
+    setLayout((current) => packKeepingOrder(current));
     setMessageKind("success");
-    setMessage("Widgets snapped upward into a clean, collision-free layout.");
-    setAnnounce("Board tidied. Widgets snapped upward with no gaps.");
+    setMessageAction(null);
+    setMessage("Cards moved up to fill the gaps.");
+    setAnnounce("Board tidied. Cards moved up to fill the gaps.");
   }
 
   function setWidgetSize(id: string, size: WidgetSizeKey) {
+    record(layoutRef.current);
     setLayout((current) => {
       const resized = current.map((item) => {
         if (item.i !== id) return item;
         return applyWidgetSize(item, size, catalogEntry(item.type));
       });
-      return compactLayout(resized, DASHBOARD_COLUMNS);
+      return packKeepingOrder(resized);
     });
     const target = layoutRef.current.find((item) => item.i === id);
     const label = target ? catalogEntry(target.type)?.label ?? target.type : "Widget";
@@ -209,6 +225,7 @@ export function useDashboardBoardOps(input: {
     const target = layoutRef.current.find((item) => item.i === id);
     const entry = target ? catalogEntry(target.type) : undefined;
     if (!target || !entry) return;
+    record(layoutRef.current);
     setLayout((current) => {
       const resized = current.map((item) =>
         item.i === id
@@ -222,7 +239,7 @@ export function useDashboardBoardOps(input: {
             }
           : item,
       );
-      return compactLayout(resized, DASHBOARD_COLUMNS);
+      return packKeepingOrder(resized);
     });
     const label = entry.label ?? target.type;
     setAnnounce(`${label} reset to its default size.`);
@@ -230,10 +247,13 @@ export function useDashboardBoardOps(input: {
 
   function removeWidget(id: string) {
     const removed = layoutRef.current.find((item) => item.i === id);
-    setLayout((current) => compactLayout(current.filter((item) => item.i !== id), DASHBOARD_COLUMNS));
+    record(layoutRef.current);
+    // Packed so the hole it leaves closes straight away.
+    setLayout((current) => packKeepingOrder(current.filter((item) => item.i !== id)));
     const label = removed ? catalogEntry(removed.type)?.label ?? removed.type : "Widget";
     setMessageKind("success");
-    setMessage(`${label} removed. Tap Done to save, or add another from the palette.`);
+    setMessageAction("undo");
+    setMessage(`${label} removed.`);
     setAnnounce(`${label} removed from the board.`);
     if (grabbedId === id) setGrabbedId(null);
   }
@@ -257,8 +277,8 @@ export function useDashboardBoardOps(input: {
         keepId && board?.name
           ? board.name
           : activateScope === "org"
-            ? "Team dashboard"
-            : "My dashboard";
+            ? "Team board"
+            : "My board";
       const response = await fetch("/api/dashboards", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -290,10 +310,12 @@ export function useDashboardBoardOps(input: {
       setEditing(false);
       setLibraryOpen(false);
       setGrabbedId(null);
-      setMessageKind("success");
-      setMessage(data.scope === "org" ? "Saved as team Home Screen." : "Personal Home Screen saved.");
       setPreviewing(false);
+      // After the reload: loadHome clears the message when it succeeds.
       await loadHome(orgId, data.id);
+      setMessageKind("success");
+      setMessageAction(null);
+      setMessage(data.scope === "org" ? "Saved as the team board." : "Home saved.");
     } catch {
       setMessageKind("error");
       setMessage("Could not save your layout. Your changes are still here; please try again.");
@@ -328,15 +350,15 @@ export function useDashboardBoardOps(input: {
       setScope(data.scope);
       setLayout(layoutOrAudienceDefault(data.layout, resetAudience));
       setBoardsOpen(false);
+      await loadHome(orgId, data.id);
       setMessageKind("success");
       setMessage(`Switched to ${data.name}`);
-      await loadHome(orgId, data.id);
     } finally {
       setSaving(false);
     }
   }
 
-  async function createBoard(createScope: "personal" | "org") {
+  async function createBoard(createScope: "personal" | "org", requestedName?: string) {
     if (!orgId) return;
     if (createScope === "org" && !canShareOrg) {
       setMessageKind("error");
@@ -346,7 +368,8 @@ export function useDashboardBoardOps(input: {
     const personalCount = boards.filter((item) => item.scope === "personal").length;
     const orgCount = boards.filter((item) => item.scope === "org").length;
     const label =
-      createScope === "org" ? `Team board ${orgCount + 1}` : `Board ${personalCount + 1}`;
+      requestedName?.trim().slice(0, 80) ||
+      (createScope === "org" ? `Team board ${orgCount + 1}` : `Board ${personalCount + 1}`);
     setSaving(true);
     setMessage("");
     try {
@@ -370,9 +393,10 @@ export function useDashboardBoardOps(input: {
       writeStoredBoardId(orgId, userId, data.id);
       setEditing(true);
       setBoardsOpen(false);
-      setMessageKind("success");
-      setMessage(`Created ${data.name}. Arrange widgets, then Done.`);
       await loadHome(orgId, data.id);
+      setMessageKind("success");
+      setMessageAction(null);
+      setMessage(`Created ${data.name}. Arrange it, then tap Done.`);
     } finally {
       setSaving(false);
     }
@@ -415,9 +439,9 @@ export function useDashboardBoardOps(input: {
       writeStoredBoardId(orgId, userId, data.id);
       setRenameId(null);
       setBoardsOpen(false);
+      await loadHome(orgId, data.id);
       setMessageKind("success");
       setMessage(`Duplicated to ${data.name}. It is yours to edit.`);
-      await loadHome(orgId, data.id);
     } finally {
       setSaving(false);
     }
@@ -480,74 +504,86 @@ export function useDashboardBoardOps(input: {
       }
       if (board?.id === targetId) writeStoredBoardId(orgId, userId, data.activatedId ?? null);
       setRenameId(null);
+      await loadHome(orgId, data.activatedId ?? null);
       setMessageKind("success");
       setMessage(`Deleted ${target.name}`);
-      await loadHome(orgId, data.activatedId ?? null);
     } finally {
       setSaving(false);
     }
   }
 
+  /** The layout Done would replace — what Cancel goes back to. */
+  function savedLayout() {
+    return layoutOrAudienceDefault(board?.layout, resetAudience);
+  }
+
+  function hasUnsavedChanges() {
+    return !layoutsEqual(layoutRef.current, savedLayout());
+  }
+
   function cancelEditing() {
-    setLayout(layoutOrAudienceDefault(board?.layout, resetAudience));
+    setLayout(savedLayout());
     setEditing(false);
     setPreviewing(false);
     setLibraryOpen(false);
+    setPendingPlaceType(null);
     setGrabbedId(null);
+    setHighlightId(null);
+    setMessageAction(null);
     setMessage("");
   }
 
+  /*
+    No message on the way in. It used to post a paragraph of instructions at
+    the top of the page — above the fold, while the board you were editing sat
+    below it — so the one line above the board is the only instruction now.
+  */
   function enterEditMode() {
     setEditing(true);
     setPreviewing(false);
     setLibraryOpen(false);
-    setMessageKind("success");
-    setMessage(
-      "Edit mode — press and hold a card (or use its grip) to move it, arrow keys reorder from the keyboard, and Remove clears a card.",
-    );
+    setMessageAction(null);
+    setMessage("");
   }
 
+  /*
+    Reset changes the draft, nothing else. It used to save the default layout
+    to the server and leave edit mode in one tap, with no confirmation and no
+    way back — people lost widgets they had spent a while arranging. Now it
+    behaves like every other edit: Undo steps back over it, Cancel throws it
+    away, and only Done saves it. The caller confirms first.
+
+    The server's reset without a board id returns the member's default layout
+    and writes nothing, so the draft gets the same default a real reset would.
+  */
   async function resetDefault() {
-    if (!orgId) {
-      setLayout(defaultDashboardLayoutForAudience(resetAudience));
-      setEditing(false);
-      setLibraryOpen(false);
-      setMessageKind("success");
-      setMessage("Restored default home layout.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const response = await fetch("/api/dashboards", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          orgId,
-          id: board?.id,
-          action: "reset",
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setMessageKind("error");
-        setMessage(data.error ?? "Reset failed");
-        return;
+    let nextLayout = defaultDashboardLayoutForAudience(resetAudience);
+    if (orgId) {
+      setSaving(true);
+      try {
+        const response = await fetch("/api/dashboards", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, action: "reset" }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          nextLayout = layoutOrAudienceDefault(Array.isArray(data.layout) ? data.layout : null, resetAudience);
+        }
+      } catch {
+        // Offline: the built-in default for your role is still a real default.
+      } finally {
+        setSaving(false);
       }
-      const nextLayout = layoutOrAudienceDefault(
-        Array.isArray(data.layout) ? data.layout : null,
-        resetAudience,
-      );
-      setLayout(nextLayout);
-      setBoard((current) => (current ? { ...current, layout: nextLayout } : current));
-      setMessageKind("success");
-      setMessage("Reset to default home widgets.");
-      setEditing(false);
-      setPreviewing(false);
-      setLibraryOpen(false);
-      if (orgId) await loadSnapshot(orgId, nextLayout.map((item) => item.type), { fullContext: true });
-    } finally {
-      setSaving(false);
     }
+    record(layoutRef.current);
+    setLayout(nextLayout);
+    setGrabbedId(null);
+    setMessageKind("success");
+    setMessageAction("undo");
+    setMessage("Board reset to the default widgets. Tap Done to keep it.");
+    setAnnounce("Board reset to the default widgets. Nothing is saved until you tap Done.");
+    if (orgId) void loadSnapshot(orgId, nextLayout.map((item) => item.type)).catch(() => undefined);
   }
 
   function commitNudge(item: DashboardWidgetLayout, direction: NudgeDirection) {
@@ -573,6 +609,8 @@ export function useDashboardBoardOps(input: {
     if (event.key === " " || event.key === "Spacebar" || event.key === "Enter") {
       event.preventDefault();
       if (grabbedId === item.i) {
+        const base = grabBaseRef.current;
+        if (base && !layoutsEqual(base, layoutRef.current)) record(base);
         setGrabbedId(null);
         grabBaseRef.current = null;
         setAnnounce(`${label} dropped at row ${item.y + 1}, column ${item.x + 1}.`);
@@ -618,6 +656,7 @@ export function useDashboardBoardOps(input: {
     deleteBoard,
     cancelEditing,
     enterEditMode,
+    hasUnsavedChanges,
     resetDefault,
     onHandleKeyDown,
   };

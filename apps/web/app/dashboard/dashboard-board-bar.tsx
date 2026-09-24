@@ -23,7 +23,7 @@ export function DashboardBoardBar({
 }) {
   if (boards.length <= 1) return null;
   return (
-    <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
+    <div className="dash-board-bar" role="navigation" aria-label="Your boards">
       <div className="dash-board-switcher" data-testid="dash-board-switcher">
         {boards.map((item) => (
           <button
@@ -32,7 +32,7 @@ export function DashboardBoardBar({
             aria-pressed={activeId === item.id}
             disabled={saving || editing}
             onClick={() => onSwitch(item.id)}
-            title={item.scope === "org" ? "Team board" : "Personal board"}
+            title={item.scope === "org" ? "Team board" : "Your board"}
           >
             {item.name}
           </button>
@@ -41,8 +41,8 @@ export function DashboardBoardBar({
           type="button"
           className="dash-board-add"
           disabled={saving || editing}
-          aria-label="Create personal board"
-          title="New personal board"
+          aria-label="New board"
+          title="New board"
           onClick={onCreatePersonal}
         >
           +
@@ -56,7 +56,7 @@ export function DashboardBoardBar({
         aria-expanded={managing}
         onClick={onManage}
       >
-        Manage boards
+        Your boards
       </button>
     </div>
   );

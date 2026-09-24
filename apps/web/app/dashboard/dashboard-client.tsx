@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   DASHBOARD_COLUMNS,
   homeViewLayout,
@@ -16,6 +16,7 @@ import {
   dashboardNextActions,
   dashboardSetupSteps,
 } from "../../lib/dashboard/dashboard-related";
+import { hiddenOnHome } from "../../lib/dashboard/edit-mode";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import {
@@ -27,6 +28,7 @@ import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { useDashboardPointerDrag } from "./use-dashboard-pointer-drag";
 import { useDashboardBoardOps } from "./use-dashboard-board-ops";
 import { useDashboardHomeState } from "./use-dashboard-home-state";
+import { useDashboardEditHistory } from "./use-dashboard-edit-history";
 import {
   dashboardBoardLists,
   dashboardPaletteRows,
@@ -44,10 +46,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const paletteEntries = useMemo(
     () => dashboardPaletteRows(home.layout, home.role),
     [home.layout, home.role],
-  );
-  const addableEntries = useMemo(
-    () => paletteEntries.filter((row) => row.status === "add"),
-    [paletteEntries],
   );
   const { personalBoards, orgBoards, switcherBoards } = useMemo(
     () => dashboardBoardLists(home.boards, home.board),
@@ -123,6 +121,26 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     home.displayRef.current = displayLayout;
   }, [displayLayout, home.displayRef]);
 
+  // Cards the normal Home leaves out right now; edit mode labels them.
+  const hiddenOnHomeIds = useMemo(
+    () => hiddenOnHome(home.layout, { shell: dashShell, widgets: home.widgets }),
+    [home.layout, dashShell, home.widgets],
+  );
+
+  const history = useDashboardEditHistory({ editing: home.editing, setLayout: home.setLayout });
+  const { setMessage, setMessageAction, setMessageKind, setAnnounce } = home;
+  const undo = useCallback(() => {
+    if (!history.undo()) return;
+    setMessageKind("success");
+    setMessageAction(null);
+    setMessage("Undone.");
+    setAnnounce("Undid the last change.");
+  }, [history, setMessage, setMessageAction, setMessageKind, setAnnounce]);
+  const dismissMessage = useCallback(() => {
+    setMessage("");
+    setMessageAction(null);
+  }, [setMessage, setMessageAction]);
+
   const gridRows = Math.max(layoutBottom(displayLayout), home.editing ? 4 : 1);
   const gridHeight = gridRows * grid.rowHeight + Math.max(0, gridRows - 1) * gap;
 
@@ -142,6 +160,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     deleteBoard,
     cancelEditing,
     enterEditMode,
+    hasUnsavedChanges,
     resetDefault,
     onHandleKeyDown,
   } = useDashboardBoardOps({
@@ -163,6 +182,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     resetAudience: homeAudience === "mentor" ? "mentor" : "student",
     loadHome: home.loadHome,
     loadSnapshot: home.loadSnapshot,
+    record: history.record,
     grabBaseRef: home.grabBaseRef,
     setLayout: home.setLayout,
     setBoard: home.setBoard,
@@ -171,6 +191,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setSaving: home.setSaving,
     setMessage: home.setMessage,
     setMessageKind: home.setMessageKind,
+    setMessageAction: home.setMessageAction,
+    setHighlightId: home.setHighlightId,
     setAnnounce: home.setAnnounce,
     setGrabbedId: home.setGrabbedId,
     setEditing: home.setEditing,
@@ -206,6 +228,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     displayRef: home.displayRef,
     grabBaseRef: home.grabBaseRef,
     setLayout: home.setLayout,
+    record: history.record,
     addWidget,
     setMessage: home.setMessage,
     setMessageKind: home.setMessageKind,
@@ -243,7 +266,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       // say it is still working it out rather than saying there is nothing.
       widgetsLoaded={dashShell !== "loading"}
       paletteEntries={paletteEntries}
-      addableEntries={addableEntries}
+      hiddenOnHome={hiddenOnHomeIds}
       homeStripItems={homeStripItems}
       homeAudience={homeAudience}
       nextMatchData={nextMatchData}
@@ -261,12 +284,15 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       pendingPlaceType={home.pendingPlaceType}
       saving={home.saving}
       canShareOrg={home.canShareOrg}
+      canUndo={history.canUndo}
       boardsOpen={home.boardsOpen}
       renameId={home.renameId}
       renameDraft={home.renameDraft}
       grabbedId={home.grabbedId}
+      highlightId={home.highlightId}
       message={home.message}
       messageKind={home.messageKind}
+      messageAction={home.messageAction}
       announce={home.announce}
       updatedAt={home.updatedAt}
       fromCache={home.fromCache}
@@ -295,8 +321,12 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       setEditing={home.setEditing}
       setPreviewing={home.setPreviewing}
       setLibraryOpen={home.setLibraryOpen}
+      setHighlightId={home.setHighlightId}
+      dismissMessage={dismissMessage}
       enterEditMode={enterEditMode}
       cancelEditing={cancelEditing}
+      hasUnsavedChanges={hasUnsavedChanges}
+      undo={undo}
       tidyLayout={tidyLayout}
       save={save}
       resetDefault={resetDefault}

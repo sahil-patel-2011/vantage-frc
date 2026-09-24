@@ -8,7 +8,6 @@ import {
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
-import { Icon } from "../../components/icon";
 import { DashboardWidgetView } from "./widgets";
 import { DashboardCardActions } from "./dashboard-quick-actions";
 
@@ -21,12 +20,19 @@ type DashboardGridItemProps = {
   editing: boolean;
   isDragging: boolean;
   isGrabbed: boolean;
+  /** Tapped or clicked in edit mode — its size controls stay out. */
+  selected?: boolean;
+  /** Just added — flashes once so you can see where it went. */
+  isNew?: boolean;
+  /** Why the normal Home leaves this card out, when it does. */
+  hiddenNote?: string | null;
   currentSize: WidgetSizeKey;
   atDefault: boolean;
   payload?: WidgetPayload;
   orgId: string;
   tbaConfigured?: boolean;
   canOpenTeamData?: boolean;
+  onSelect?: (id: string) => void;
   onCardPointerDown: (event: PointerEvent<HTMLElement>, item: DashboardWidgetLayout) => void;
   onHandlePointerDown: (event: PointerEvent<HTMLButtonElement>, item: DashboardWidgetLayout) => void;
   onDragPointerMove: (event: PointerEvent<HTMLElement>) => void;
@@ -38,6 +44,13 @@ type DashboardGridItemProps = {
   onResetSize: (id: string) => void;
 };
 
+/*
+  Edit-mode chrome is deliberately small. Each card used to carry a dark-red
+  "× Remove" button over its title, a "DRAG" pill, and a five-button size bar,
+  all at once — on a 4-column card that covered the name you needed to read to
+  know which card it was. Now: a neutral "−" on the corner (outside the title),
+  a grip tab on the top edge, and the sizes only on the card you are working on.
+*/
 export const DashboardGridItem = memo(function DashboardGridItem({
   item,
   box,
@@ -45,12 +58,16 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   editing,
   isDragging,
   isGrabbed,
+  selected = false,
+  isNew = false,
+  hiddenNote = null,
   currentSize,
   atDefault,
   payload,
   orgId,
   tbaConfigured,
   canOpenTeamData = false,
+  onSelect,
   onCardPointerDown,
   onHandlePointerDown,
   onDragPointerMove,
@@ -65,8 +82,9 @@ export const DashboardGridItem = memo(function DashboardGridItem({
     <article
       className={`dash-grid-item${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}${
         isGrabbed ? " is-grabbed" : ""
-      }`}
+      }${selected ? " is-selected" : ""}${isNew ? " is-new" : ""}${hiddenNote ? " is-hidden-on-home" : ""}`}
       data-testid="dash-grid-item"
+      data-widget-id={item.i}
       data-widget-type={item.type}
       data-widget-x={item.x}
       data-widget-y={item.y}
@@ -81,51 +99,57 @@ export const DashboardGridItem = memo(function DashboardGridItem({
       onPointerMove={onDragPointerMove}
       onPointerUp={onDragPointerUp}
       onPointerCancel={onDragPointerCancel}
+      onClick={(event) => {
+        if (!editing || !onSelect) return;
+        if ((event.target as HTMLElement).closest("button")) return;
+        onSelect(item.i);
+      }}
     >
       {editing ? (
         <>
-          <div className="dash-item-tools">
-            <button
-              type="button"
-              className="dash-remove-btn"
-              data-testid="dash-remove-widget"
-              title="Remove widget"
-              aria-label={`Remove ${label}`}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onRemove(item.i);
-              }}
-            >
-              <Icon name="x" />
-              <span>Remove</span>
-            </button>
-            <button
-              type="button"
-              className="dash-drag-handle dash-drag-surface"
-              data-testid="dash-drag-handle"
-              aria-label={`Move ${label}. Press space to pick up, then use the arrow keys.`}
-              aria-pressed={isGrabbed}
-              title="Drag to rearrange, or press space and use arrow keys"
-              onPointerDown={(event) => onHandlePointerDown(event, item)}
-              onPointerMove={onDragPointerMove}
-              onPointerUp={onDragPointerUp}
-              onPointerCancel={onDragPointerCancel}
-              onKeyDown={(event) => onHandleKeyDown(event, item)}
-              onClick={(event) => event.preventDefault()}
-            >
-              <span className="dash-drag-dots" aria-hidden="true" />
-              <span className="dash-drag-label">{isGrabbed ? "Moving" : "Drag"}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="dash-remove-badge"
+            data-testid="dash-remove-widget"
+            title={`Remove ${label}`}
+            aria-label={`Remove ${label}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRemove(item.i);
+            }}
+          >
+            <span aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="dash-card-grip dash-drag-surface"
+            data-testid="dash-drag-handle"
+            aria-label={`Move ${label}. Press space to pick up, then use the arrow keys.`}
+            aria-pressed={isGrabbed}
+            title="Drag to move, or press space and use the arrow keys"
+            onPointerDown={(event) => onHandlePointerDown(event, item)}
+            onPointerMove={onDragPointerMove}
+            onPointerUp={onDragPointerUp}
+            onPointerCancel={onDragPointerCancel}
+            onKeyDown={(event) => onHandleKeyDown(event, item)}
+            onFocus={() => onSelect?.(item.i)}
+            onClick={(event) => event.preventDefault()}
+          >
+            <span className="dash-drag-dots" aria-hidden="true" />
+          </button>
+          {hiddenNote ? (
+            <p className="dash-hidden-note" data-testid="dash-hidden-note">
+              {hiddenNote}
+            </p>
+          ) : null}
           <div
             className="dash-item-sizes"
             role="group"
             aria-label={`Resize ${label}`}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <span aria-hidden="true">Size</span>
             <div className="dash-size-chips">
               {WIDGET_SIZE_KEYS.map((size) => (
                 <button
@@ -136,6 +160,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   title={`${WIDGET_SIZE_LABEL[size]} widget`}
                   aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
                   aria-pressed={currentSize === size}
+                  onFocus={() => onSelect?.(item.i)}
                   onClick={() => onResize(item.i, size)}
                 >
                   {WIDGET_SIZE_LABEL[size]}
@@ -146,11 +171,11 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                 className="dash-size-btn dash-size-reset"
                 data-testid="dash-reset-widget-size"
                 disabled={atDefault}
-                title={atDefault ? `${label} is already at its default size` : `Reset ${label} to its default size`}
+                title={atDefault ? `${label} is already at its default size` : `Back to the default size`}
                 aria-label={`Reset ${label} to its default size`}
                 onClick={() => onResetSize(item.i)}
               >
-                Reset
+                Default
               </button>
             </div>
           </div>

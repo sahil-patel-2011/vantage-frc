@@ -44,7 +44,7 @@ export type SnapFeedback = {
 };
 
 export type DragKind = "move" | "add";
-/** immediate = dedicated handle; longpress = card body / touch; intent = mouse on the palette. */
+/** immediate = the grip; longpress = a finger on a card or sheet row; intent = a mouse, which drags once it moves. */
 export type DragActivation = "immediate" | "longpress" | "intent";
 
 export type DragSession = {
@@ -67,6 +67,8 @@ export type DragSession = {
   gap: number;
   baseLayout: DashboardWidgetLayout[];
   baseDisplay: DashboardWidgetLayout[];
+  /** The picked-up card's content, copied into the ghost that follows the pointer. */
+  sourceNode: HTMLElement | null;
 };
 
 export type DragView = {

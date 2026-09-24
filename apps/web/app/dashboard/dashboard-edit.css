@@ -1,0 +1,308 @@
+/* Home edit mode: the one toolbar, the widget sheet, the toast, and the small
+   per-card controls. Base board styles live in dashboard-dnd.css and soft-ui.css. */
+
+/* The page's arrival animation ends on `transform: none`, and holding that
+   end state ("both") still counts as a transform — which turns .dash-home into
+   the box every position:fixed child is placed in. The toolbar, the toast and
+   the widget sheet then sat at the bottom of the whole page, two screens down,
+   instead of the bottom of the window. Holding only the start state keeps the
+   same entrance and lets go of the transform once it has played. */
+main.dash-home{animation-fill-mode:backwards}
+
+/* ---- The page around the board, while editing ----
+   Still there, so the board does not move, but clearly not what you are editing. */
+.dash-home [data-edit-dim="true"]{
+  opacity:.38;filter:saturate(.5);pointer-events:none;user-select:none;
+  transition:opacity var(--dur-tint,.16s) var(--ease-out,ease);
+}
+
+/* The app's bottom tab bar and the edit toolbar both sat at the bottom of a
+   phone, both translucent, with Done drawn over Matches. While editing, the
+   toolbar is the only thing down there. */
+body.has-app-shell.dash-editing .soft-island{display:none !important}
+
+/* Room under the board so its last row can scroll out from under the toolbar. */
+@media (max-width:720px){
+  .dash-home .dash-grid-wrap.editing{padding-bottom:96px}
+}
+
+/* ---- "Edit", beside the greeting ---- */
+.dash-edit-button{
+  min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:var(--radius-pill);
+  background:var(--surface);color:var(--ink);cursor:pointer;
+  font:600 13px/1 var(--font-source-sans),system-ui;
+  transition:border-color var(--dur-tint,.16s) var(--ease-out,ease),color var(--dur-tint,.16s) var(--ease-out,ease);
+}
+.dash-edit-button:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));color:var(--accent)}
+.dash-edit-button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+@media (pointer:coarse){.dash-edit-button{min-height:44px}}
+
+/* ---- One line of instruction above the board ---- */
+.dash-edit-hint{margin:0 0 10px;padding:0 2px;color:var(--muted);font-size:13px;line-height:1.4}
+
+/* ---- The toolbar ---- */
+.dash-editbar{
+  position:fixed;z-index:90;left:50%;bottom:calc(20px + var(--safe-bottom,0px));transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:min(560px,calc(100vw - 32px));box-sizing:border-box;padding:8px;
+  border-radius:var(--radius-lg);background:var(--surface);color:var(--ink);
+  border:1px solid var(--line);box-shadow:var(--shadow-pop);
+  animation:dash-editbar-in .2s var(--ease-out,ease) both;
+}
+@keyframes dash-editbar-in{from{opacity:0}to{opacity:1}}
+.dash-editbar-side{display:flex;align-items:center;gap:6px}
+.dash-editbar-btn,.dash-editbar-add,.dash-editbar-done{
+  min-height:44px;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;
+  font:650 14px/1 var(--font-source-sans),system-ui;
+}
+.dash-editbar-btn{padding:0 14px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+.dash-editbar-btn:hover:not(:disabled){background:var(--bg)}
+.dash-editbar-icon{display:grid;place-items:center;width:44px;padding:0}
+.dash-editbar-icon svg{width:20px;height:20px}
+.dash-editbar-icon>span{font-size:13px;letter-spacing:1px;line-height:1}
+.dash-editbar-add{
+  display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);
+  border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);font-weight:700;
+}
+.dash-editbar-add>span{font-size:18px;line-height:1}
+.dash-editbar-add[aria-expanded="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.dash-editbar-done{padding:0 20px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700}
+.dash-editbar button:disabled{opacity:.42;cursor:default}
+.dash-editbar button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+.dash-editbar-menu{position:relative}
+.dash-editbar-popover{
+  position:absolute;z-index:5;right:0;bottom:calc(100% + 12px);
+  display:grid;gap:2px;width:272px;padding:6px;
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-pop);
+}
+.dash-editbar-popover button{
+  display:grid;gap:2px;width:100%;min-height:48px;padding:8px 10px;border:0;border-radius:var(--radius-sm);
+  background:transparent;color:var(--ink);text-align:left;cursor:pointer;
+}
+.dash-editbar-popover button:hover:not(:disabled),.dash-editbar-popover button:focus-visible{background:var(--accent-soft);outline:none}
+.dash-editbar-popover strong{font:650 14px/1.2 var(--font-source-sans),system-ui}
+.dash-editbar-popover span{color:var(--muted);font-size:12px;line-height:1.3}
+.dash-editbar-popover .is-danger strong{color:var(--critical)}
+
+.dash-previewbar-note{color:var(--muted);font:600 13px var(--font-source-sans),system-ui;text-align:center}
+
+/* A phone gets a solid bar across the bottom, where the tab bar was. */
+@media (max-width:720px){
+  .dash-editbar{
+    left:0;right:0;bottom:0;transform:none;width:100%;gap:6px;
+    padding:8px 12px calc(8px + var(--safe-bottom,0px));
+    border-width:1px 0 0;border-radius:0;box-shadow:0 -6px 20px rgba(12,17,24,.1);
+  }
+  .dash-editbar-btn{padding:0 12px}
+  .dash-editbar-add{padding:0 14px}
+  .dash-editbar-done{padding:0 16px}
+}
+@media (max-width:360px){
+  .dash-editbar-add{padding:0 10px}
+}
+
+/* ---- Toast ---- */
+.dash-toast{
+  /* Under the toolbar (90) so its ••• menu opens over the toast, not behind it. */
+  position:fixed;z-index:89;left:50%;bottom:calc(96px + var(--safe-bottom,0px));transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;max-width:min(520px,calc(100vw - 32px));box-sizing:border-box;
+  padding:6px 6px 6px 16px;border-radius:var(--radius);
+  background:var(--ink);color:var(--bg);box-shadow:var(--shadow-pop);
+  font:600 14px/1.35 var(--font-source-sans),system-ui;
+  animation:dash-toast-in .2s var(--ease-out,ease) both;
+}
+.dash-toast.is-editing{bottom:calc(92px + var(--safe-bottom,0px))}
+.dash-toast[data-kind="error"]{background:var(--critical-fill,#b91c1c);color:#fff}
+.dash-toast>span{padding:6px 0}
+.dash-toast button{
+  min-height:36px;padding:0 12px;border:0;border-radius:var(--radius-sm);cursor:pointer;
+  background:transparent;color:inherit;font:700 14px var(--font-source-sans),system-ui;
+}
+.dash-toast [data-testid="dash-toast-undo"]{color:color-mix(in srgb,var(--accent) 55%,#fff)}
+.dash-toast button:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.dash-toast .dash-toast-close{min-width:36px;padding:0;font-size:18px;opacity:.7}
+@keyframes dash-toast-in{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%)}}
+@media (max-width:720px){
+  .dash-toast.is-editing{bottom:calc(72px + var(--safe-bottom,0px))}
+}
+
+/* ---- Cards in edit mode ---- */
+/* "−" on the corner, outside the title. The visible dot is 26px; the ::before
+   takes the tap target to 44px. */
+.dash-home .dash-remove-badge{
+  min-height:0;min-width:0;
+  position:absolute;z-index:6;top:-9px;left:-9px;display:grid;place-items:center;
+  width:26px;height:26px;padding:0;border:1px solid var(--line);border-radius:50%;
+  background:var(--surface);color:var(--ink);cursor:pointer;
+  box-shadow:0 2px 6px rgba(12,17,24,.16);
+}
+.dash-remove-badge::before{content:"";position:absolute;inset:-9px}
+.dash-remove-badge>span{width:10px;height:2px;border-radius:1px;background:currentColor}
+.dash-remove-badge:hover{background:var(--critical-fill,#b91c1c);border-color:transparent;color:#fff}
+.dash-remove-badge:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+/* The grip: a tab on the top edge, never over the card's content. */
+.dash-home .dash-card-grip{
+  min-height:0;min-width:0;
+  position:absolute;z-index:6;top:-11px;left:50%;transform:translateX(-50%);
+  display:grid;place-items:center;width:44px;height:22px;padding:0;
+  border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface);
+  box-shadow:0 2px 6px rgba(12,17,24,.14);touch-action:none;cursor:grab;
+}
+.dash-card-grip::before{content:"";position:absolute;inset:-11px 0}
+.dash-card-grip:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.dash-card-grip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.dash-card-grip[aria-pressed="true"] .dash-drag-dots{
+  background:
+    radial-gradient(circle,#fff 1.2px,transparent 1.3px) 0 0 / 6px 5px,
+    radial-gradient(circle,#fff 1.2px,transparent 1.3px) 3px 5px / 6px 5px;
+}
+.dash-grid-wrap.dragging .dash-card-grip{cursor:grabbing}
+
+/* Size chips: only on the card you are working on. */
+.dash-home .dash-grid-item.is-editing .dash-item-sizes{
+  opacity:0;visibility:hidden;
+  transition:opacity var(--dur-tint,.16s) var(--ease-out,ease),visibility 0s linear var(--dur-tint,.16s);
+}
+.dash-home .dash-grid-item.is-editing.is-selected:not(.is-dragging) .dash-item-sizes,
+.dash-home .dash-grid-item.is-editing:focus-within:not(.is-dragging) .dash-item-sizes{
+  opacity:1;visibility:visible;transition-delay:0s;
+}
+@media (hover:hover){
+  .dash-home .dash-grid-item.is-editing:hover:not(.is-dragging) .dash-item-sizes{opacity:1;visibility:visible;transition-delay:0s}
+}
+.dash-home .dash-pgrid>.dash-grid-item.is-editing.is-selected{
+  outline:2px solid var(--accent);outline-offset:0;
+}
+
+/* Cards the normal Home leaves out right now: shown, dimmed, and labelled,
+   so edit mode never looks like it has more on it than Home does for no reason. */
+.dash-home .dash-grid-item.is-hidden-on-home .dash-widget-hit{opacity:.45;filter:saturate(.4)}
+.dash-hidden-note{
+  position:absolute;z-index:4;left:10px;bottom:10px;max-width:calc(100% - 20px);box-sizing:border-box;margin:0;
+  padding:4px 10px;border:1px dashed color-mix(in srgb,var(--muted) 50%,var(--line));border-radius:var(--radius-pill);
+  background:var(--surface);color:var(--muted);font:600 12px/1.3 var(--font-source-sans),system-ui;
+}
+.dash-home .dash-grid-item.is-selected .dash-hidden-note,
+.dash-home .dash-grid-item:focus-within .dash-hidden-note{visibility:hidden}
+@media (hover:hover){
+  .dash-home .dash-grid-item.is-editing:hover .dash-hidden-note{visibility:hidden}
+}
+
+/* A card that was just added flashes once. */
+.dash-home .dash-pgrid>.dash-grid-item.is-new{outline:3px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){
+  .dash-home .dash-pgrid>.dash-grid-item.is-new{animation:dash-new-card 1.6s var(--ease-out,ease) both}
+}
+@keyframes dash-new-card{
+  0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}
+  60%{box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 0%,transparent)}
+  100%{box-shadow:var(--shadow-lift)}
+}
+
+/* ---- The card under your pointer while dragging: a lifted copy ---- */
+.dash-drag-proxy.is-card{
+  display:block;padding:0;border:0;background:transparent;box-shadow:none;overflow:visible;
+  transform-origin:center;
+}
+.dash-drag-proxy-copy{
+  width:100%;height:100%;overflow:hidden;border-radius:var(--radius);
+  box-shadow:0 26px 52px rgba(12,17,24,.28),0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent);
+}
+.dash-drag-proxy-copy>.dash-widget-hit{height:100%;display:flex;flex-direction:column;pointer-events:none}
+.dash-drag-proxy-copy .dash-widget,.dash-drag-proxy-copy .app-card{height:100%;margin:0;overflow:hidden}
+
+/* ---- The widget sheet ---- */
+.dash-widget-sheet{
+  position:fixed;z-index:92;top:calc(56px + 12px);right:12px;bottom:calc(96px + var(--safe-bottom,0px));
+  display:flex;flex-direction:column;width:min(380px,calc(100vw - 24px));box-sizing:border-box;
+  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);color:var(--ink);
+  box-shadow:var(--shadow-pop);overflow:hidden;outline:none;
+  animation:dash-sheet-in .2s var(--ease-out,ease) both;
+  transition:opacity .12s ease;
+}
+@keyframes dash-sheet-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+/* A widget being dragged out: get out of the way of the board. */
+.dash-widget-sheet[data-drag-out="true"],.dash-sheet-scrim[data-drag-out="true"]{opacity:0}
+.dash-sheet-scrim{display:none}
+.dash-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 16px 10px}
+.dash-sheet-head h2{margin:0;font-size:18px;letter-spacing:-.01em}
+.dash-sheet-head p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.4}
+.dash-sheet-hint-coarse{display:none}
+@media (pointer:coarse){
+  .dash-sheet-hint-fine{display:none}
+  .dash-sheet-hint-coarse{display:inline}
+}
+.dash-sheet-close{
+  display:grid;place-items:center;flex:none;width:36px;height:36px;padding:0;border:0;border-radius:var(--radius-sm);
+  background:transparent;color:var(--muted);cursor:pointer;
+}
+.dash-sheet-close:hover{background:var(--bg);color:var(--ink)}
+.dash-sheet-close svg{width:18px;height:18px}
+.dash-sheet-search{
+  display:flex;align-items:center;gap:8px;margin:0 16px 6px;padding:0 12px;min-height:42px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--muted);
+}
+.dash-sheet-search:focus-within{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));box-shadow:0 0 0 3px var(--accent-soft)}
+.dash-sheet-search svg{width:16px;height:16px;flex:none}
+.dash-home .dash-sheet-search input[type="search"]{
+  /* The app shell styles every input with !important borders and fills; the
+     search box's frame is the label around it, so the input itself is bare. */
+  flex:1;min-width:0;min-height:40px;margin:0;padding:0;border:0 !important;border-radius:0 !important;
+  background:transparent !important;box-shadow:none !important;outline:none;color:var(--ink);appearance:none;
+  font:500 14px var(--font-source-sans),system-ui;
+}
+.dash-sheet-list{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 12px 16px}
+.dash-sheet-list section>h3{
+  margin:14px 4px 6px;color:var(--muted);
+  font:700 11px/1 var(--font-source-sans),system-ui;letter-spacing:.06em;text-transform:uppercase;
+}
+.dash-sheet-list ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.dash-sheet-item{
+  display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;
+  padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);
+  color:inherit;text-align:left;cursor:pointer;user-select:none;
+  /* A long press starts the drag, so the list itself must still scroll. */
+  touch-action:manipulation;
+  transition:border-color .15s ease,background-color .15s ease;
+}
+@media (pointer:fine){.dash-sheet-item:not(:disabled){cursor:grab}}
+.dash-sheet-item:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface))}
+.dash-sheet-item:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.dash-sheet-item i{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--radius-sm);background:var(--accent-soft);color:var(--accent)}
+.dash-sheet-item span{display:grid;gap:2px;min-width:0}
+.dash-sheet-item strong{font:650 14px/1.25 var(--font-source-sans),system-ui}
+.dash-sheet-item small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.dash-sheet-item em{
+  padding:4px 9px;border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);
+  font:700 11px/1 var(--font-source-sans),system-ui;font-style:normal;white-space:nowrap;
+}
+.dash-sheet-item:disabled{cursor:default;background:color-mix(in srgb,var(--bg) 60%,var(--surface))}
+.dash-sheet-item:disabled i{background:var(--bg);color:var(--muted)}
+.dash-sheet-item:disabled strong{color:var(--muted)}
+.dash-sheet-item:disabled em{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.dash-sheet-empty{margin:12px 4px;color:var(--muted);font-size:14px}
+
+@media (max-width:720px){
+  .dash-sheet-scrim{display:block;position:fixed;z-index:91;inset:0;background:rgba(12,17,24,.42);transition:opacity .12s ease}
+  .dash-widget-sheet{
+    top:auto;left:0;right:0;bottom:0;width:100%;max-height:82vh;height:82vh;
+    border-width:1px 0 0;border-radius:20px 20px 0 0;padding-bottom:var(--safe-bottom,0px);
+    animation-name:dash-edit-sheet-up;
+  }
+}
+@keyframes dash-edit-sheet-up{from{opacity:.4;transform:translateY(24px)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  .dash-editbar,.dash-toast,.dash-widget-sheet{animation:none}
+}
+
+/* ---- Your boards: naming a new one ---- */
+.dash-boards-new{display:grid;gap:8px;margin-top:4px;padding:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.dash-boards-new label{display:grid;gap:6px}
+.dash-boards-new label>span{color:var(--muted);font:600 12px var(--font-source-sans),system-ui}
+.dash-boards-new input{
+  min-height:40px;padding:0 10px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:var(--radius-xs);
+  background:var(--surface);color:inherit;font:600 14px var(--font-source-sans),system-ui;
+}

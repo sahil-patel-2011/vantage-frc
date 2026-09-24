@@ -47,6 +47,10 @@ export function useDashboardHomeState(initialOrgId = "") {
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
+  /** A one-tap follow-up offered with the message — "Undo" after a remove. */
+  const [messageAction, setMessageAction] = useState<"undo" | null>(null);
+  /** The card just added, so the board can scroll to it and flash it once. */
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -297,15 +301,14 @@ export function useDashboardHomeState(initialOrgId = "") {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("customize") === "1") {
+      // Straight into edit mode with the widget sheet closed: the board is
+      // what you came to arrange, and "+ Add widget" is one tap away.
       setEditing(true);
-      setLibraryOpen(true);
       params.delete("customize");
       const next = params.toString();
       const cleaned = `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`;
+      // The view brings the board into sight whenever edit mode starts.
       window.history.replaceState({}, "", cleaned);
-      window.requestAnimationFrame(() => {
-        document.querySelector(".dash-grid-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
     }
   }, []);
 
@@ -324,6 +327,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     role,
     message,
     messageKind,
+    messageAction,
+    highlightId,
     saving,
     updatedAt,
     fromCache,
@@ -350,6 +355,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     setSaving,
     setMessage,
     setMessageKind,
+    setMessageAction,
+    setHighlightId,
     setAnnounce,
     setGrabbedId,
     setEditing,

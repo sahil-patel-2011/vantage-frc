@@ -32,7 +32,7 @@ describe("leftover Writer / Home Ask AI / API keys chrome", () => {
     }
   });
 
-  it("setup copy is Needs setup and Home Ask AI opens Claude Code", () => {
+  it("setup copy is Needs setup and Home Ask AI points at adding an AI key", () => {
     expect(writerShellCopy("setup").badge).toBe("Needs setup");
     expect(writerShellCopy("provider_setup").badge).toBe("Needs setup");
     expect(writerShellCopy("provider_setup").title).toBe("Connect Claude Code");
@@ -40,9 +40,10 @@ describe("leftover Writer / Home Ask AI / API keys chrome", () => {
     expectPlainCopy(writerShellCopy("provider_setup").description);
 
     const ask = emptyHintFor("ask_ai");
-    expect(ask.ctaHref).toBe("/team/ai-bridge");
-    expect(ask.ctaLabel).toBe("Connect Claude Code");
-    expect(ask.body).toMatch(/Claude Code/);
+    // Vantage is free with your own AI key, so the way to turn Ask AI on is a key (a free one works).
+    expect(ask.ctaHref).toBe("/team/ai-keys");
+    expect(ask.ctaLabel).toBe("Add an AI key");
+    expect(ask.body).toMatch(/AI key/);
 
     expect(aiKeysShellCopy("setup").badge).toBe("Needs setup");
     expect(AI_KEYS_RELATED_INCLUDE).toEqual(["chat", "claude-code"]);
