@@ -30,6 +30,7 @@ import {
   type DisplayStagePayload,
   type DisplayStageScreen,
 } from "../../../lib/display";
+import { type DisplayMatchIntel, toDisplayMatchIntel } from "../../../lib/display/match-intel";
 
 const SCALE_STORAGE_KEY = "vantage.display.stage.scale";
 
@@ -71,8 +72,44 @@ export default function StageClient({
   const [tick, setTick] = useState(0);
   const [scale, setScale] = useState(1);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [intel, setIntel] = useState<DisplayMatchIntel | null>(null);
 
   useEffect(() => setScale(readStoredScale()), []);
+
+  // What the team already knows about the next match: stored prediction and the opponent
+  // tendencies saved with its plan. Fetched when the next match changes, not every refresh.
+  const nextMatch = data?.schedule?.[0] ?? null;
+  const nextMatchKey = nextMatch?.matchKey ?? null;
+  const ownKey = data?.organization?.teamNumber ? `frc${data.organization.teamNumber}` : null;
+  useEffect(() => {
+    if (!nextMatchKey || !nextMatch) {
+      setIntel(null);
+      return;
+    }
+    let active = true;
+    const access = params.token
+      ? `token=${encodeURIComponent(params.token)}`
+      : params.orgId
+        ? `orgId=${encodeURIComponent(params.orgId)}`
+        : "";
+    if (!access) return;
+    void fetch(`/api/display/intel?matchKey=${encodeURIComponent(nextMatchKey)}&${access}`, { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { intel?: unknown } | null) => {
+        if (!active) return;
+        setIntel(
+          toDisplayMatchIntel((body?.intel ?? null) as Parameters<typeof toDisplayMatchIntel>[0], ownKey, {
+            red: nextMatch.redAlliance?.teamKeys ?? [],
+            blue: nextMatch.blueAlliance?.teamKeys ?? [],
+          }),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+    // nextMatch is read through nextMatchKey; refetching on every 30s snapshot would be noise.
+  }, [nextMatchKey, ownKey, params.token, params.orgId]);
 
   const refresh = useCallback(async () => {
     if (!params.token && !(params.orgId && params.boardId)) {
@@ -210,7 +247,7 @@ export default function StageClient({
       {screen ? (
         <section className="stage-screen" aria-live="polite">
           <h1 className="stage-screen-title">{SCREEN_TITLES[screen]}</h1>
-          {renderScreen(screen, data, now)}
+          {renderScreen(screen, data, now, intel)}
         </section>
       ) : (
         <section className="stage-screen stage-empty">
@@ -244,12 +281,12 @@ export default function StageClient({
   );
 }
 
-function renderScreen(screen: DisplayStageScreen, data: DisplayStagePayload, now: number) {
+function renderScreen(screen: DisplayStageScreen, data: DisplayStagePayload, now: number, intel: DisplayMatchIntel | null) {
   switch (screen) {
     case "queue":
       return <QueueScreen data={data} now={now} />;
     case "next_match":
-      return <NextMatchScreen data={data} />;
+      return <NextMatchScreen data={data} now={now} intel={intel} />;
     case "schedule":
       return <ScheduleScreen data={data} />;
     case "rankings":
@@ -324,15 +361,80 @@ function QueueScreen({ data, now }: { data: DisplayStagePayload; now: number }) 
   );
 }
 
-function NextMatchScreen({ data }: { data: DisplayStagePayload }) {
+/** "in 14 min", "in 1 h 5 min", "now" — the pit's one question about the clock. */
+function countdownLabel(scheduled: string | null, now: number): string | null {
+  if (!scheduled) return null;
+  const at = new Date(scheduled).getTime();
+  if (!Number.isFinite(at)) return null;
+  const minutes = Math.round((at - now) / 60_000);
+  if (minutes <= 0) return "now";
+  if (minutes < 60) return `in ${minutes} min`;
+  return `in ${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}
+
+function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now: number; intel: DisplayMatchIntel | null }) {
   const match = data.schedule?.[0];
   if (!match) return <p className="stage-note">No upcoming match for your team on the synced schedule.</p>;
+  const ownKey = `frc${data.organization.teamNumber}`;
+  const red = match.redAlliance?.teamKeys ?? [];
+  const blue = match.blueAlliance?.teamKeys ?? [];
+  const ourColor: "red" | "blue" | null = red.includes(ownKey) ? "red" : blue.includes(ownKey) ? "blue" : null;
+  const partners = ourColor === "red" ? red : ourColor === "blue" ? blue : [];
+  const opponents = ourColor === "red" ? blue : ourColor === "blue" ? red : [];
+  const tagsFor = (teamKey: string) => intel?.teams.find((row) => row.teamKey === teamKey)?.tags ?? [];
+  const countdown = countdownLabel(match.scheduledTime, now);
+
+  const teamList = (keys: string[], color: "red" | "blue") => (
+    <ul className={`stage-lineup is-${color}`}>
+      {keys.map((key) => (
+        <li key={key} className={key === ownKey ? "is-ours" : undefined}>
+          <strong>{key.replace(/^frc/i, "")}</strong>
+          {key === ownKey ? <span className="stage-us">Us</span> : null}
+          {tagsFor(key).length ? <em>{tagsFor(key).join(" · ")}</em> : null}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <div className="stage-next">
-      <strong className="stage-clock">{matchLabel(match.compLevel, match.matchNumber)}</strong>
-      <span className="stage-kicker">{clockLabel(match.scheduledTime) ?? "No scheduled time posted"}</span>
-      <p className="stage-alliance is-red">RED {formatAlliance(match.redAlliance?.teamKeys)}</p>
-      <p className="stage-alliance is-blue">BLUE {formatAlliance(match.blueAlliance?.teamKeys)}</p>
+      <div className="stage-next-head">
+        <strong className="stage-clock">{matchLabel(match.compLevel, match.matchNumber)}</strong>
+        <span className="stage-kicker">
+          {countdown ? `${countdown} · ` : ""}
+          {clockLabel(match.scheduledTime) ?? "No scheduled time posted"}
+        </span>
+      </div>
+
+      {ourColor ? (
+        <p className={`stage-bumpers is-${ourColor}`}>
+          WE ARE {ourColor.toUpperCase()} <small>{ourColor === "red" ? "Red" : "Blue"} bumpers on</small>
+        </p>
+      ) : null}
+
+      {ourColor ? (
+        <div className="stage-sides">
+          <section>
+            <h2>With us</h2>
+            {teamList(partners, ourColor)}
+          </section>
+          <section>
+            <h2>Against us</h2>
+            {teamList(opponents, ourColor === "red" ? "blue" : "red")}
+          </section>
+        </div>
+      ) : (
+        <>
+          <p className="stage-alliance is-red">RED {formatAlliance(red)}</p>
+          <p className="stage-alliance is-blue">BLUE {formatAlliance(blue)}</p>
+        </>
+      )}
+
+      {intel?.ourWinPct != null ? (
+        <p className="stage-win">
+          {intel.ourWinPct}% chance to win <small>from the team&rsquo;s saved prediction</small>
+        </p>
+      ) : null}
     </div>
   );
 }

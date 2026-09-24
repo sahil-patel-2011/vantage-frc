@@ -530,3 +530,100 @@
     opacity: 1;
   }
 }
+
+/* Next match, readable from across the pit: bumper colour, who is with and against us, and
+   what each of them tends to do (from the team's saved match plan). */
+.stage-next-head {
+  display: grid;
+  gap: calc(0.25rem * var(--stage-scale));
+}
+
+.stage-bumpers {
+  margin: 0;
+  padding: calc(0.6rem * var(--stage-scale)) calc(1.2rem * var(--stage-scale));
+  border-radius: 18px;
+  font-weight: 900;
+  font-size: calc(clamp(2rem, 6vw, 5rem) * var(--stage-scale));
+  letter-spacing: 0.04em;
+  color: #fff;
+  line-height: 1.05;
+}
+.stage-bumpers small {
+  display: block;
+  font-size: 0.38em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.stage-bumpers.is-red { background: var(--stage-red); }
+.stage-bumpers.is-blue { background: var(--stage-blue); }
+
+.stage-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(1rem * var(--stage-scale));
+}
+.stage-sides h2 {
+  margin: 0 0 0.3rem;
+  font-size: calc(clamp(1rem, 2vw, 1.8rem) * var(--stage-scale));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+.stage-lineup {
+  display: grid;
+  gap: calc(0.4rem * var(--stage-scale));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stage-lineup li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 0.2rem 0.8rem;
+  padding: calc(0.45rem * var(--stage-scale)) calc(0.8rem * var(--stage-scale));
+  border-left: 8px solid var(--stage-line);
+  background: var(--stage-panel);
+  border-radius: 10px;
+}
+.stage-lineup.is-red li { border-left-color: var(--stage-red); }
+.stage-lineup.is-blue li { border-left-color: var(--stage-blue); }
+.stage-lineup strong {
+  font-size: calc(clamp(1.8rem, 4.6vw, 4rem) * var(--stage-scale));
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stage-lineup em {
+  grid-column: 1 / -1;
+  font-style: normal;
+  font-size: calc(clamp(0.95rem, 1.6vw, 1.5rem) * var(--stage-scale));
+  color: var(--stage-muted);
+}
+.stage-lineup li.is-ours { outline: 2px solid var(--stage-accent); }
+.stage-us {
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--stage-accent);
+  color: #111;
+  font-weight: 800;
+  font-size: calc(clamp(0.8rem, 1.2vw, 1.1rem) * var(--stage-scale));
+  text-transform: uppercase;
+}
+
+.stage-win {
+  margin: 0;
+  font-weight: 800;
+  font-size: calc(clamp(1.3rem, 3vw, 2.6rem) * var(--stage-scale));
+}
+.stage-win small {
+  font-weight: 500;
+  font-size: 0.5em;
+  color: var(--stage-muted);
+}
+
+@media (max-width: 760px) {
+  .stage-sides { grid-template-columns: 1fr; }
+}
