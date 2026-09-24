@@ -35,11 +35,14 @@ export function ScoutViewSwitcher({
   onChange,
   orgId,
   embedded,
+  lead = false,
 }: {
   tab: ScoutTab;
   onChange: (id: ScoutTab) => void;
   orgId: string;
   embedded: boolean;
+  /** Can run scouting (edit forms, settle conflicts). A student's More holds only their own tools. */
+  lead?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -48,7 +51,7 @@ export function ScoutViewSwitcher({
 
   // The same list the hub's tool row offers, so nothing it had is lost here.
   const hubTools = useMemo(() => {
-    if (!embedded) return [];
+    if (!embedded || !lead) return [];
     const hub = hubById("competition");
     return hubStripTabs(hub, "scouting")
       .filter((entry) => entry.group === "scouting")
@@ -57,9 +60,11 @@ export function ScoutViewSwitcher({
         label: entry.label,
         href: entry.id === "forms" ? hubHref("/competition", "forms", orgId) : hubLegacyHref(entry, orgId),
       }));
-  }, [embedded, orgId]);
+  }, [embedded, orgId, lead]);
 
-  const activeSecondary = SECONDARY.find((entry) => entry.id === tab);
+  // Conflicts and scout accuracy are a lead's jobs; a student had them in their menu.
+  const secondary = lead ? SECONDARY : SECONDARY.filter((entry) => entry.id === "handoff");
+  const activeSecondary = secondary.find((entry) => entry.id === tab);
 
   return (
     <div className="scout-views" ref={ref}>
@@ -98,7 +103,7 @@ export function ScoutViewSwitcher({
       {open ? (
         <div className="scout-views-menu" id={menuId}>
           <ul aria-label="More scouting views">
-            {SECONDARY.map((entry) => (
+            {secondary.map((entry) => (
               <li key={entry.id}>
                 <button
                   type="button"

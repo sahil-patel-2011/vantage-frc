@@ -9,6 +9,7 @@ import {
   matchLabel,
   nextMatchIndex,
   orderedSchedule,
+  scheduleIsOver,
 } from "../../lib/scouting/next-match";
 
 /**
@@ -52,6 +53,8 @@ export function NextMatchCard({
 
   const step = (delta: number) => setIndex((current) => Math.min(Math.max(current + delta, 0), schedule.length - 1));
   const startLabel = start >= 0 && schedule[start] ? matchLabel(schedule[start]) : null;
+  // After the last match there is no "next": the card is for catching up from notes or video.
+  const over = scheduleIsOver(schedule);
 
   // "Up next" read as the team's own next match, which Home and My Day already
   // use for something else. This card is about the next match to *watch*.
@@ -64,7 +67,11 @@ export function NextMatchCard({
         <div>
           <strong>{card.label}</strong>
           <small>
-            {index === start ? "Next to scout" : `Match ${index + 1} of ${card.total}`}
+            {index === start
+              ? over
+                ? "Every match here is played · catch up from video"
+                : "Next to scout"
+              : `Match ${index + 1} of ${card.total}`}
             {index !== start && startLabel ? (
               <>
                 {" · "}

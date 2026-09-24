@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchCard, matchLabel, nextMatchIndex, orderedSchedule, type ScheduleMatch } from "./next-match";
+import { matchCard, matchLabel, nextMatchIndex, orderedSchedule, scheduleIsOver, type ScheduleMatch } from "./next-match";
 
 const qual = (n: number, red: number[], blue: number[]): ScheduleMatch => ({
   matchKey: `2027test_qm${n}`,
@@ -43,5 +43,17 @@ describe("next match for a scout", () => {
     expect(card.robots.find((r) => r.teamNumber === "2")?.assignedToYou).toBe(true);
     expect(card.robots.find((r) => r.teamNumber === "4")?.scouted).toBe(true);
     expect(matchCard(schedule, 99, [], [])).toBeNull();
+  });
+});
+
+describe("a finished schedule", () => {
+  const hour = 60 * 60 * 1000;
+  const now = Date.parse("2026-09-24T18:00:00Z");
+  const at = (offset: number) => new Date(now + offset).toISOString();
+  it("is over only when every match is well past", () => {
+    expect(scheduleIsOver([{ matchKey: "a", matchNumber: 1, matchTime: at(-5 * hour) }], now)).toBe(true);
+    expect(scheduleIsOver([{ matchKey: "a", matchNumber: 1, matchTime: at(-5 * hour) }, { matchKey: "b", matchNumber: 2, matchTime: at(-hour) }], now)).toBe(false);
+    expect(scheduleIsOver([{ matchKey: "a", matchNumber: 1 }], now)).toBe(false);
+    expect(scheduleIsOver([], now)).toBe(false);
   });
 });

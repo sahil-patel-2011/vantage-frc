@@ -29,6 +29,8 @@ export type Bootstrap = {
     compLevel?: string;
     redAlliance?: { teamKeys?: string[] };
     blueAlliance?: { teamKeys?: string[] };
+    /** When the match ran or will run; the bootstrap sends it. */
+    matchTime?: string | null;
   }>;
   recentEntries: Array<{
     id: string;

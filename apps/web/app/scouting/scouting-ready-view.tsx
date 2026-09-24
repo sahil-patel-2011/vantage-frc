@@ -351,7 +351,13 @@ return (
       </>
     ) : null}
 
-    <ScoutViewSwitcher tab={tab} onChange={onTabChange} orgId={orgId} embedded={embedded} />
+    <ScoutViewSwitcher
+      tab={tab}
+      onChange={onTabChange}
+      orgId={orgId}
+      embedded={embedded}
+      lead={Boolean(data?.canManageSchemas)}
+    />
 
     {tab === "teams" ? (
       /* The one screen that answers what the scouting was *for*. Everything

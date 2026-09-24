@@ -13,7 +13,21 @@ export type ScheduleMatch = {
   compLevel?: string | null;
   redAlliance?: { teamKeys?: string[] | null } | null;
   blueAlliance?: { teamKeys?: string[] | null } | null;
+  /** When it ran or will run (actual, else predicted, else scheduled). */
+  matchTime?: string | null;
 };
+
+/**
+ * True when every match on the schedule is over (more than three hours past its time, the same
+ * rule Home and Event day use), so the card should not call anything "next".
+ */
+export function scheduleIsOver(schedule: ScheduleMatch[], now = Date.now()): boolean {
+  if (!schedule.length) return false;
+  return schedule.every((match) => {
+    const time = match.matchTime ? Date.parse(match.matchTime) : NaN;
+    return Number.isFinite(time) && time < now - 3 * 60 * 60 * 1000;
+  });
+}
 
 export type ScoutedEntry = { matchKey: string | null; teamKey: string };
 export type Assignment = { matchKey: string; teamKey: string };
