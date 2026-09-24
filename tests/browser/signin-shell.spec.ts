@@ -32,5 +32,6 @@ test("the site says Vantage is free and never shows a pricing tab", async ({ pag
   const nav = page.getByRole("banner").or(page.locator("header")).first();
   // Free, with your own AI key: there are no plans to shop for, so no pricing tab either.
   await expect(nav.getByRole("link", { name: "Pricing", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: /Free for every team/i }).first()).toBeVisible();
+  // Said in the hero (the separate cost section left the home page; the Cost page has it).
+  await expect(page.getByText(/Free for every team/i).first()).toBeVisible();
 });
