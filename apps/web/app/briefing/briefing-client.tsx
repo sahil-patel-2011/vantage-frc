@@ -543,7 +543,8 @@ export default function BriefingClient() {
       ) : null}
 
       {view.prediction && (view.prediction.keyFactors.length > 0 || view.prediction.caveats.length > 0) ? (
-        <section className="app-card brief-why">
+        <details className="app-card brief-why">
+          <summary>How we got this</summary>
           {view.prediction.keyFactors.length > 0 ? (
             <ul className="brief-factors">
               {view.prediction.keyFactors.slice(0, 3).map((factor, index) => (
@@ -557,7 +558,7 @@ export default function BriefingClient() {
           {view.prediction.caveats.length > 0 ? (
             <p className="brief-caveats">Caveats: {view.prediction.caveats.map(plainStrategyText).join(" · ")}</p>
           ) : null}
-        </section>
+        </details>
       ) : null}
 
       <ChecklistCard rows={checklist} orgId={orgId} />

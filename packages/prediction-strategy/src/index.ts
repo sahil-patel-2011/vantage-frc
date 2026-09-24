@@ -274,7 +274,7 @@ function buildReasoningSteps(input: {
       title: "Blend org scout trust",
       detail:
         input.scoutSample > 0
-          ? `${input.scoutSample} org scout observations quality-weighted into ratings (MODEL adjustments, not TBA facts).`
+          ? `${Math.round(input.scoutSample)} org scout observations quality-weighted into ratings (MODEL adjustments, not TBA facts).`
           : "No org scout sample on this matchup; ratings use reference metrics only.",
     },
     {
@@ -401,7 +401,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "scout reliability",
       alliance: "neutral",
       impact: round(Math.min(5, scoutSample / 8)),
-      evidence: `MODEL: ${scoutSample} org scout observations blended into ratings (max ${Math.round(policy.maxScoutBlend * 100)}% scout weight per team; quality-weighted).${scoutProvenanceBit}`,
+      evidence: `MODEL: ${Math.round(scoutSample)} org scout observations blended into ratings (max ${Math.round(policy.maxScoutBlend * 100)}% scout weight per team; quality-weighted).${scoutProvenanceBit}`,
       kind: "model",
       scoutEntryIds: allScoutEntryIds.length ? allScoutEntryIds.slice(0, 24) : undefined,
     });
@@ -497,7 +497,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
         : []),
       scoutSample === 0
         ? "No org scout sample on this matchup; ratings use TBA/Statbotics event metrics only."
-        : `Includes ${scoutSample} org scout observations as operational adjustments.`,
+        : `Includes ${Math.round(scoutSample)} org scout observations as operational adjustments.`,
       breakdown.citations.length
         ? `${breakdown.citations.length} FACT TBA match result(s) cited for alliance context.`
         : "No completed TBA match results cited for these alliances yet.",

@@ -185,15 +185,15 @@ export type BriefingChecklistRow = { label: string; ok: boolean; hint: string };
 /** Readiness rows with honest do-this-next hints for whatever is missing. */
 export function briefingChecklist(input: BriefingChecklistInput): BriefingChecklistRow[] {
   return [
-    { label: "Prediction", ok: input.hasPrediction, hint: "Run /strategy" },
-    { label: "Strategy plan", ok: input.hasPlan, hint: "Save a playbook in /strategy" },
-    { label: "Match card", ok: Boolean(input.hasCard), hint: "Write one in /match-strategy-cards" },
-    { label: "Counter-book", ok: Boolean(input.hasCounterBooks), hint: "Log how we beat them in /counter-book" },
-    { label: "Watchlist", ok: Boolean(input.hasWatchNotes), hint: "Add a threat in /opponent-watchlist" },
-    { label: "Defense plan", ok: Boolean(input.hasDefensePlans), hint: "Plan in /defense-planner" },
-    { label: "Whiteboard play", ok: input.hasPlay, hint: "Draw one in /whiteboard and link the match" },
-    { label: "Practice data", ok: input.practiceReps > 0, hint: "Log reps in /practice" },
-    { label: "Opponent video", ok: input.intelCount > 0, hint: "Tag opponent reviews in /video" },
+    { label: "Prediction", ok: input.hasPrediction, hint: "Run a prediction" },
+    { label: "Strategy plan", ok: input.hasPlan, hint: "Save a game plan" },
+    { label: "Match card", ok: Boolean(input.hasCard), hint: "Write a match card" },
+    { label: "Counter-book", ok: Boolean(input.hasCounterBooks), hint: "Note how to beat them" },
+    { label: "Watchlist", ok: Boolean(input.hasWatchNotes), hint: "Add a team to watch" },
+    { label: "Defense plan", ok: Boolean(input.hasDefensePlans), hint: "Plan defense" },
+    { label: "Whiteboard play", ok: input.hasPlay, hint: "Draw a play" },
+    { label: "Practice data", ok: input.practiceReps > 0, hint: "Log practice runs" },
+    { label: "Opponent video", ok: input.intelCount > 0, hint: "Tag opponent video" },
   ];
 }
 

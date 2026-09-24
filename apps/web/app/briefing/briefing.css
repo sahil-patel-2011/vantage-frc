@@ -107,3 +107,4 @@
   .brief-controls,.brief-section-caret{display:none}
   .brief-section{break-inside:avoid}
 }
+.brief-why > summary { cursor: pointer; font-weight: 600; }

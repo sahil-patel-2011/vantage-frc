@@ -30,3 +30,11 @@ describe("engine evidence with bare entry ids", () => {
     );
   });
 });
+
+describe("numbers people read", () => {
+  it("rounds floating-point noise", () => {
+    expect(plainStrategyText("Includes 61.099999999999994 org scout observations")).toBe("Includes 61.1 org scout observations");
+    expect(plainStrategyText("Rating 12.000000001")).toBe("Rating 12");
+    expect(plainStrategyText("fouls 0.9/match")).toBe("fouls 0.9/match");
+  });
+});

@@ -27,6 +27,7 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bfrc(\d{1,5})\b/gi, "Team $1")
       .replace(/\bMITIGATE\b:?\s*/g, "Watch out: ")
       .replace(/\bleave-one-out\b/gi, "without that match")
+      .replace(/\b\d+\.\d{4,}\b/g, (whole) => String(Math.round(Number(whole) * 10) / 10))
       .replace(/\s{2,}/g, " ")
       .trim()
   );

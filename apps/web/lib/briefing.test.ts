@@ -238,15 +238,15 @@ describe("briefingChecklist", () => {
     });
     expect(rows.every((row) => !row.ok)).toBe(true);
     expect(rows.map((row) => row.hint)).toEqual([
-      "Run /strategy",
-      "Save a playbook in /strategy",
-      "Write one in /match-strategy-cards",
-      "Log how we beat them in /counter-book",
-      "Add a threat in /opponent-watchlist",
-      "Plan in /defense-planner",
-      "Draw one in /whiteboard and link the match",
-      "Log reps in /practice",
-      "Tag opponent reviews in /video",
+      "Run a prediction",
+      "Save a game plan",
+      "Write a match card",
+      "Note how to beat them",
+      "Add a team to watch",
+      "Plan defense",
+      "Draw a play",
+      "Log practice runs",
+      "Tag opponent video",
     ]);
   });
 });
