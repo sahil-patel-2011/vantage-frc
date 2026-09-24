@@ -9,7 +9,6 @@ import { FAQ } from "../components/marketing/faq";
 import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
 import { ScrollReveal } from "../components/marketing/scroll-reveal";
-import { PricingStrip } from "../components/marketing/pricing-strip";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 import "./marketing-showcase.css";
 
@@ -50,14 +49,17 @@ export default function Home() {
                 <li>Match predictions that say how sure they are</li>
                 <li>Free for every team: AI runs on your own key, or not at all</li>
               </ul>
-              <p className="lux-hero-note">Free for every FRC team. We bring teams on one at a time.</p>
+              <p className="lux-hero-note">
+                We bring teams on one at a time. <a href="/pricing">What it costs</a>
+              </p>
             </div>
             <HeroProductPanel />
           </div>
         </section>
 
         <HomeShowcase />
-        <PricingStrip headingId="lux-price-title" />
+        {/* No separate cost section here: "free, AI on your own key" is in the hero and the
+            FAQ, and the Cost page has the detail. It was said four times on this page. */}
         <FAQ />
 
         <WaitlistSection />
