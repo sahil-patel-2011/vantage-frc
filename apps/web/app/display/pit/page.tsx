@@ -2,8 +2,8 @@ import KioskClient from "../kiosk/kiosk-client";
 import "../display.css";
 
 export const metadata = {
-  title: "Pit display",
-  description: "Fullscreen 16:9 pit TV for a Raspberry Pi or kiosk stick — live snapshots only.",
+  title: "Pit TV",
+  description: "Fullscreen pit TV board: next match, countdown, bumper colour and the panels your team picked.",
 };
 
 export default async function PitDisplayPage({

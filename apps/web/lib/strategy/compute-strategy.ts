@@ -551,6 +551,20 @@ export async function computeStrategyView(
     const message = !access.tbaConfigured
       ? EMPTY_PREDICTION_NO_SCHEDULE_SETUP_COPY
       : EMPTY_PREDICTION_NO_SCHEDULE_COPY;
+    // Nothing ahead: name the last match we played so the tab can offer to review it.
+    const last = input.matchKey
+      ? null
+      : (
+          await client.query<{ matchKey: string; compLevel: string; matchNumber: number }>(
+            `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber"
+             FROM matches_ref m
+             WHERE m.event_key = $1
+               AND (m.red_alliance->'teamKeys' ? $2 OR m.blue_alliance->'teamKeys' ? $2)
+             ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time) DESC NULLS LAST, m.match_number DESC
+             LIMIT 1`,
+            [row.eventKey, teamKey],
+          )
+        ).rows[0] ?? null;
     return setupPayload(access, {
       status: access.tbaConfigured ? "empty" : "setup_required",
       message,
@@ -564,6 +578,7 @@ export async function computeStrategyView(
       eventName: row.eventName,
       teamNumber: row.teamNumber,
       actorRole: row.role,
+      lastMatch: last,
       engine,
       productVersion: VANTAGE_PRODUCT_VERSION,
     }, gameRules);

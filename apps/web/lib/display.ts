@@ -100,12 +100,12 @@ export const PRESET_WIDGETS: Record<string, DisplayWidgetType[]> = {
 };
 
 export const PRESET_META: Array<{ id: DisplayPreset; title: string; copy: string }> = [
-  { id: "next_match", title: "Next Match", copy: "Countdown, alliances, scheduled time, and leave-now status from official scores" },
-  { id: "win_prediction", title: "Win Prediction", copy: "Stored Strategy model odds - empty until you score a match prediction" },
-  { id: "robot_readiness", title: "Robot Readiness", copy: "Battery fleet, open failures, and maintenance from Pit ops - never assumed green" },
-  { id: "event_command", title: "Event Command", copy: "Next team match plus TBA rank/record when metrics are synced" },
-  { id: "scouting_coverage", title: "Scouting Coverage", copy: "Assignments, reports, and open disagreements at the active event" },
-  { id: "custom", title: "Custom grid", copy: "Pick authorized competition-readable widgets only" },
+  { id: "next_match", title: "Next match", copy: "Countdown to queue, bumper colour, and who we play with and against" },
+  { id: "win_prediction", title: "Win chance", copy: "Win chance for our next match and the plan headline" },
+  { id: "robot_readiness", title: "Robot readiness", copy: "Batteries and open repairs" },
+  { id: "event_command", title: "Event status", copy: "Next match, rank and record" },
+  { id: "scouting_coverage", title: "Scouting", copy: "Scouting reports and disagreements to review at this event" },
+  { id: "custom", title: "Blank board", copy: "Start empty and pick your own panels" },
 ];
 
 const LEVEL_LABELS: Record<string, string> = { qm: "Qual", qf: "QF", sf: "SF", f: "Final" };
@@ -328,10 +328,12 @@ export function widgetValue(
       return `${snapshot.scouting.reports} reports · ${snapshot.scouting.assignments} assignments`;
     case "alerts":
       return snapshot.scouting.openDisagreements > 0
-        ? `${snapshot.scouting.openDisagreements} open scout disagreements`
+        ? `${snapshot.scouting.openDisagreements} scout ${snapshot.scouting.openDisagreements === 1 ? "disagreement" : "disagreements"} to review at this event`
         : "No open scout disagreements";
     case "team_intel":
-      return snapshot.eventStatus?.source ? `Metrics via ${snapshot.eventStatus.source}` : "Awaiting event metrics";
+      // The panel itself reads the opponents' scouted tendencies (lib/display/kiosk-view.ts).
+      // Where the ratings came from is not information a pit crew can act on.
+      return snapshot.nextMatch ? "No scouting notes on the next opponents yet" : "No match ahead";
     default:
       return "Unauthorized or unknown widget";
   }

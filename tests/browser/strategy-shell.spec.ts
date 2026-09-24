@@ -13,7 +13,7 @@ test("Strategy hub still loads after the panel split", async ({ page }) => {
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const live = page.getByRole("heading", { name: "Coach notes" });
-  const empty = page.getByRole("heading", { name: "Waiting on a real matchup" });
+  const empty = page.getByRole("heading", { name: "No match ahead" });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team|Choose your team and event/i });
   const unavailable = page.getByRole("heading", { name: /Could not load strategy/i });
   // GHA has no Postgres: HubOrgGate paints Choose your team and never mounts StrategyClient.

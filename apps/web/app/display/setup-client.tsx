@@ -1,23 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DisplayRelated } from "../../components/display-related";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
   type DisplayWidget,
   type DisplayWidgetType,
 } from "../../lib/display";
-import {
-  DISPLAY_RELATED_INCLUDE,
-  displaySetupStep,
-} from "../../lib/display/display-related";
+import { displaySetupStep } from "../../lib/display/display-related";
 import { hubHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { DisplayWidgetEditor } from "./display-widget-editor";
+import { EventBoardCard } from "./event-board-card";
+import { TvLinkPanel } from "./tv-link-panel";
+import {
+  WIDGET_LABEL,
+  fromGridLayout,
+  isWidgetType,
+  layoutProblem,
+  matchesPreset,
+  normalizeWidgets,
+  toGridLayout,
+} from "../../lib/display/widget-layout";
 
 type Board = {
   id: string;
@@ -40,38 +47,38 @@ type MintedToken = {
   id: string;
   token: string;
   boardId: string;
-  label: string;
+  mode: "pit" | "stage";
 };
 
-import { DisplayWidgetEditor } from "./display-widget-editor";
-import { TvLinkPanel } from "./tv-link-panel";
-import {
-  WIDGET_LABEL,
-  fromGridLayout,
-  layoutProblem,
-  matchesPreset,
-  normalizeWidgets,
-  toGridLayout,
-} from "../../lib/display/widget-layout";
+/** The board the event board is shown through. It ignores the board's panels. */
+const EVENT_BOARD_NAME = "Event board";
+/** Pair TV choice: "stage:<id>" is the event board, "pit:<id>" a board the team built. */
+type PairChoice = string;
+
+function boardSummary(board: Board): string {
+  if (board.name === EVENT_BOARD_NAME) return "Opens the event board";
+  const panels = fromGridLayout(board.widgets).map((type) => WIDGET_LABEL[type]);
+  return panels.length ? panels.join(" · ") : "No panels";
+}
 
 export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [boards, setBoards] = useState<Board[]>([]);
   const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [activeEventKey, setActiveEventKey] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [preset, setPreset] = useState("next_match");
-  const [widgets, setWidgets] = useState<DisplayWidgetType[]>(
-    PRESET_WIDGETS.next_match ?? [],
-  );
+  const [widgets, setWidgets] = useState<DisplayWidgetType[]>(PRESET_WIDGETS.next_match ?? []);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [minted, setMinted] = useState<MintedToken | null>(null);
-  const [pairBoardId, setPairBoardId] = useState("");
+  const [pairChoice, setPairChoice] = useState<PairChoice>("");
   const [canSync, setCanSync] = useState(false);
 
   useEffect(() => {
@@ -100,7 +107,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         error?: string;
       };
       if (!r.ok) {
-        setMessage(d.error ?? "Failed to load display boards");
+        setMessage(d.error ?? "Couldn't load the Pit TV boards.");
         setMessageOk(false);
         setFetchFailed(true);
         setErrorStatus(r.status);
@@ -110,11 +117,10 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       setBoards(d.boards ?? []);
       setTokens(d.tokens ?? []);
       setActiveEventKey(d.activeEventKey ?? null);
-      setPairBoardId((prev) => prev || d.boards?.[0]?.id || "");
     } catch {
       setFetchFailed(true);
-      setMessage("Network error — could not load display boards.");
-      setLoadError("Network error — could not load display boards.");
+      setMessage("Network error: couldn't load the Pit TV boards.");
+      setLoadError("Network error: couldn't load the Pit TV boards.");
       setMessageOk(false);
     } finally {
       setLoading(false);
@@ -125,102 +131,145 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     void load();
   }, [load]);
 
+  const say = (text: string, ok: boolean) => {
+    setMessage(text);
+    setMessageOk(ok);
+  };
+
+  // The event board is shown through the board named "Event board", or any saved board: it
+  // ignores the panels, so no special board type is needed.
+  const eventCarrier = boards.find((board) => board.name === EVENT_BOARD_NAME) ?? boards[0] ?? null;
+  const pairValue = pairChoice || (eventCarrier ? `stage:${eventCarrier.id}` : "");
+
   function choosePreset(value: string) {
     setPreset(value);
     setWidgets(normalizeWidgets(PRESET_WIDGETS[value] ?? []));
   }
 
-  function resetToPreset() {
-    setWidgets(normalizeWidgets(PRESET_WIDGETS[preset] ?? []));
+  function startNewBoard() {
+    setEditingId(null);
+    setName("");
+    choosePreset("next_match");
   }
 
-  async function saveBoard(editId?: string) {
+  function editBoard(board: Board) {
+    setEditingId(board.id);
+    setName(board.name);
+    setPreset(board.preset);
+    setWidgets(fromGridLayout(board.widgets));
+    document.getElementById("display-new-board")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function postBoard(body: Record<string, unknown>): Promise<{ id?: string; error?: string; ok: boolean }> {
+    const r = await fetch("/api/display/boards", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId, ...body }),
+    });
+    const d = (await r.json().catch(() => ({}))) as { id?: string; error?: string };
+    return { ...d, ok: r.ok };
+  }
+
+  async function saveBoard() {
     if (!canSync) return;
     const boardName = name.trim();
     if (!boardName) {
-      setMessage("Board name is required");
-      setMessageOk(false);
+      say("Give the board a name first.", false);
       return;
     }
     const problem = layoutProblem(widgets);
     if (problem) {
-      setMessage(problem);
-      setMessageOk(false);
+      say(problem, false);
       return;
     }
-    const layout: DisplayWidget[] = toGridLayout(widgets);
-    // A preset draws its own fixed screen on the TV; only "custom" draws the panels. So a
-    // preset whose panels were changed is saved as custom, or the TV ignored the edit.
-    const body: Record<string, unknown> = {
-      orgId,
+    // A preset whose panels were changed is saved as custom so the TV draws exactly these panels.
+    const result = await postBoard({
+      id: editingId ?? undefined,
       name: boardName,
       preset: preset !== "custom" && !matchesPreset(widgets, preset) ? "custom" : preset,
-      widgets: layout,
-    };
-    if (editId) body.id = editId;
-
-    const r = await fetch("/api/display/boards", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      widgets: toGridLayout(widgets),
     });
-    const d = await r.json();
-    if (r.ok) {
-      setMessage(editId ? "Display board updated." : "Display board saved.");
-      setMessageOk(true);
-      setName("");
-      await load();
-    } else {
-      setMessage(d.error ?? "Save failed");
-      setMessageOk(false);
+    if (!result.ok) {
+      say(result.error ?? "Couldn't save the board. Try again.", false);
+      return;
     }
+    // Stay on the saved board so it is clear what is being edited.
+    if (result.id) setEditingId(result.id);
+    say(editingId ? `Saved changes to "${boardName}".` : `Saved "${boardName}".`, true);
+    await load();
+  }
+
+  async function turnOnEventBoard() {
+    if (!canSync) return;
+    setBusy(true);
+    const result = await postBoard({
+      name: EVENT_BOARD_NAME,
+      preset: "event_command",
+      widgets: toGridLayout(PRESET_WIDGETS.event_command ?? []),
+    });
+    setBusy(false);
+    if (!result.ok) {
+      say(result.error ?? "Couldn't turn on the event board. Try again.", false);
+      return;
+    }
+    say("Event board is on. Open it fullscreen, or get a TV link for the pit TV.", true);
+    await load();
   }
 
   async function duplicateBoard(board: Board) {
     if (!canSync) return;
-    setName(`${board.name} copy`);
-    setPreset(board.preset);
-    setWidgets(fromGridLayout(board.widgets));
-    const layout: DisplayWidget[] = board.widgets.map((w, index) => ({
-      type: w.type,
-      x: w.x ?? (index % 2) * 6,
-      y: w.y ?? Math.floor(index / 2) * 4,
-      w: w.w ?? 6,
-      h: w.h ?? 4,
-    }));
+    const copyName = `${board.name} copy`;
+    const result = await postBoard({ name: copyName, preset: board.preset, widgets: toGridLayout(fromGridLayout(board.widgets)) });
+    if (!result.ok) {
+      say(result.error ?? "Couldn't copy the board.", false);
+      return;
+    }
+    say(`Made "${copyName}".`, true);
+    await load();
+    editBoard({ ...board, id: result.id ?? board.id, name: copyName });
+  }
+
+  async function deleteBoard(board: Board) {
+    if (!canSync) return;
+    const r = await fetch("/api/display/boards", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId, boardId: board.id }),
+    });
+    const d = (await r.json().catch(() => ({}))) as { error?: string };
+    if (!r.ok) {
+      say(d.error ?? "Couldn't delete the board.", false);
+      return;
+    }
+    if (editingId === board.id) startNewBoard();
+    if (minted?.boardId === board.id) setMinted(null);
+    say(`Deleted "${board.name}". Any TV showing it stops updating.`, true);
+    await load();
+  }
+
+  async function mintToken(choice: PairChoice) {
+    if (!canSync || !choice) return;
+    const [mode, boardId] = choice.split(":") as ["pit" | "stage", string];
+    const board = boards.find((entry) => entry.id === boardId);
+    const label = mode === "stage" ? EVENT_BOARD_NAME : board?.name ?? "Pit TV";
     const r = await fetch("/api/display/boards", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, name: `${board.name} copy`, preset: board.preset, widgets: layout }),
+      body: JSON.stringify({ action: "token", orgId, boardId, label }),
     });
-    const d = await r.json();
-    if (r.ok) {
-      setMessage("Duplicate board created.");
-      setMessageOk(true);
+    const d = (await r.json().catch(() => ({}))) as { id?: string; token?: string; error?: string };
+    if (r.ok && d.token) {
+      setMinted({ id: d.id ?? "", token: d.token, boardId, mode });
+      say("TV link ready. Copy it now: it is shown only once.", true);
       await load();
     } else {
-      setMessage(d.error ?? "Duplicate failed");
-      setMessageOk(false);
+      say(d.error ?? "Couldn't make a TV link. Try again.", false);
     }
   }
 
-  async function mintToken(boardId: string) {
-    if (!canSync) return;
-    const r = await fetch("/api/display/boards", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "token", orgId, boardId, label: "Pit TV" }),
-    });
-    const d = await r.json();
-    if (r.ok) {
-      setMinted({ id: d.id, token: d.token, boardId, label: "Pit TV" });
-      setMessage("TV link ready. Copy it now: it is shown only once.");
-      setMessageOk(true);
-      await load();
-    } else {
-      setMessage(d.error ?? "Couldn't make a TV link. Try again.");
-      setMessageOk(false);
-    }
+  function getEventTvLink(boardId: string) {
+    setPairChoice(`stage:${boardId}`);
+    document.getElementById("display-pair")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function revokeToken(tokenId: string) {
@@ -230,19 +279,20 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, tokenId }),
     });
-    const d = await r.json();
+    const d = (await r.json().catch(() => ({}))) as { error?: string };
     if (r.ok) {
-      setMessage("TV link turned off. Any TV using it stops updating.");
-      setMessageOk(true);
+      say("TV link turned off. Any TV using it stops updating.", true);
       await load();
     } else {
-      setMessage(d.error ?? "Revoke failed");
-      setMessageOk(false);
+      say(d.error ?? "Couldn't turn that link off.", false);
     }
   }
 
-  const activeTokenCount = tokens.filter((t) => !t.revokedAt).length;
+  const activeTokens = tokens.filter((t) => !t.revokedAt);
+  const activeTokenCount = activeTokens.length;
   const step = displaySetupStep(boards.length, activeTokenCount);
+  const boardName = (id: string) => boards.find((board) => board.id === id)?.name ?? null;
+  const editingBoard = editingId ? boards.find((board) => board.id === editingId) ?? null : null;
 
   // Retry cannot fix an expired session, so the failure decides its own action.
   const failure = fetchFailed
@@ -253,13 +303,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           online: typeof navigator === "undefined" ? true : navigator.onLine,
         }),
         {
-          nextPath:
-            typeof window === "undefined"
-              ? null
-              : `${window.location.pathname}${window.location.search}`,
-          message:
-            loadError ||
-            "A network or server issue prevented loading. Try again.",
+          nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+          message: loadError || "A network or server issue prevented loading. Try again.",
         },
       )
     : null;
@@ -269,17 +314,15 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs={
           <>
-            <a href={withOrgHref("/workspace", orgId)}>Your team</a>
-            {" / Displays"}
+            <a href={hubHref("/competition", "command", orgId)}>Competition</a>
+            {" / "}
+            <a href={hubHref("/competition", "match-checklist", orgId)}>Pit</a>
+            {" / Pit TV"}
           </>
         }
-        title="Pit TV boards"
-        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data."
+        title="Pit TV"
+        description="Pick what the pit TV shows, save it, then open the TV link on the TV."
       />
-
-      <div className="disp-related">
-        <DisplayRelated orgId={orgId} include={[...DISPLAY_RELATED_INCLUDE]} />
-      </div>
 
       {message ? (
         <p className={`display-status${messageOk ? " ok" : ""}`} role="status">
@@ -302,260 +345,252 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : (
         <div className="disp-stack">
-
-          <section className="display-steps" aria-label="Display setup steps">
-            <article className={step >= 1 ? "active" : undefined}>
-              <span>Step 1</span>
-              <strong>Pick preset</strong>
-              <p>Choose a competition layout or custom widgets.</p>
-            </article>
-            <article className={step >= 2 ? "active" : undefined}>
-              <span>Step 2</span>
-              <strong>Save board</strong>
-              <p>Name and persist the layout for your team.</p>
-            </article>
-            <article className={step >= 3 ? "active" : undefined}>
-              <span>Step 3</span>
-              <strong>Pair TV</strong>
-              <p>Make a TV link and open it full screen on the pit TV.</p>
-            </article>
-          </section>
+          <ol className="disp-progress" aria-label="Pit TV setup steps">
+            <li className={step >= 1 ? "is-done" : undefined}>Pick a board</li>
+            <li className={step >= 2 ? "is-done" : undefined}>Save it</li>
+            <li className={step >= 3 ? "is-done" : undefined}>Open the TV link on the TV</li>
+          </ol>
 
           {!loading && !activeEventKey ? (
             <EmptyState
               soft
-              title="No active event yet"
-              description="Set an Event Day event so next-match and coverage can read official scores. Boards stay blank until then."
+              title="No event set yet"
+              description="Pick the event you are at on Event day. The pit TV fills in once its schedule is in."
             >
-              <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
-                Open Event Day
+              <Button as="a" variant="secondary" href={hubHref("/competition", "command", orgId)}>
+                Open Event day
               </Button>
             </EmptyState>
           ) : null}
 
-          {!loading && !boards.length ? (
-            <EmptyState
-              soft
-              title="Create your first display board"
-              description={
-                canSync
-                  ? "Choose a preset below and save. Countdowns, ranks, and predictions stay blank until this board has an event."
-                  : "An owner or admin saves a board and mints a pit TV token. Fullscreen stays available."
-              }
-            >
-              {canSync ? (
-              <Button as="a" variant="primary" href="#display-new-board">
-                Name this board
-              </Button>
-              ) : null}
-            </EmptyState>
-          ) : null}
+          {loading && !boards.length ? (
+            <p className="display-empty">Loading boards…</p>
+          ) : (
+            <EventBoardCard
+              orgId={orgId}
+              boardId={eventCarrier?.id ?? null}
+              canSync={canSync}
+              busy={busy}
+              onCreate={() => void turnOnEventBoard()}
+              onGetTvLink={getEventTvLink}
+            />
+          )}
 
-          <section className="preset-picker" aria-label="Display presets">
-            {PRESET_META.map(({ id, title, copy }) => (
-              <button
-                key={id}
-                type="button"
-                className={preset === id ? "active" : ""}
-                onClick={() => choosePreset(id)}
-              >
-                <strong>{title}</strong>
-                <span>{copy}</span>
-              </button>
-            ))}
-          </section>
-
-          <section className="display-editor">
-            <form
-              id="display-new-board"
-              className="display-form soft-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void saveBoard();
-              }}
-            >
-              <label>
-                Board name
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Pit TV"
-                  required
-                />
-              </label>
-
-              {/* Shown for every preset, not only "custom". A preset is where a
-                  team starts, not what they are stuck with, and hiding this
-                  behind one option meant four of the five layouts could not be
-                  touched at all. */}
-              <DisplayWidgetEditor widgets={widgets} onChange={setWidgets} />
-              {preset !== "custom" && !matchesPreset(widgets, preset) ? (
-                <p className="app-muted dwe-customised">
-                  Customised from the {preset.replaceAll("_", " ")} preset, so the TV will show exactly these
-                  panels. Reset to preset puts the preset&rsquo;s screen back.
-                </p>
-              ) : null}
-
-              <div className="display-actions">
-                {canSync ? (
-                <Button variant="primary" type="submit">
-                  Save board
-                </Button>
-                ) : (
-                <p className="app-muted">An owner or admin saves a board and mints a pit TV token. You can still open a saved board fullscreen.</p>
-                )}
-                <Button variant="secondary" type="button" onClick={resetToPreset}>
-                  Reset to preset
-                </Button>
-              </div>
-            </form>
-
-            <section className="display-preview" aria-label="Board preview">
-              <span>16:9 PREVIEW · ONE LAYOUT</span>
-              <h2>{name.trim() || "Untitled board"}</h2>
-              <div className="display-preview-grid">
-                {widgets.length ? (
-                  widgets.map((item, index) => (
-                    <article key={item}>
-                      <strong>{WIDGET_LABEL[item] ?? item.replaceAll("_", " ")}</strong>
-                      {/* Only the first panel gets a caption. "Authorized module
-                          data only" was on every one of them: internal policy
-                          language, repeated, telling a mentor nothing about the
-                          board they are arranging. */}
-                      {index === 0 ? <small>Top left — read first</small> : null}
-                    </article>
-                  ))
-                ) : (
-                  <article>
-                    <strong>No widgets</strong>
-                    <small>Choose a preset or add widgets</small>
-                  </article>
-                )}
-              </div>
-            </section>
-          </section>
-
-          <section className="saved-boards">
+          <section className="disp-build" aria-labelledby="disp-build-title">
             <header className="disp-section-head">
-              <span className="eyebrow">Saved boards</span>
-              <p>Fullscreen and tokens only work for boards you saved — nothing is pre-populated.</p>
+              <h2 id="disp-build-title">Build your own</h2>
+              <p>Choose the panels yourself. Panel 1 is shown large; the rest stack beside it.</p>
             </header>
-            {loading ? <p className="display-empty">Loading boards…</p> : null}
-            {!loading && !boards.length ? null : (
-              boards.map((board) => (
-                <article className="saved-board" key={board.id}>
-                  <div>
-                    <strong>{board.name}</strong>
-                    <small>{board.preset.replaceAll("_", " ")}</small>
-                  </div>
-                  <div className="saved-board-actions">
-                    <a
-                      href={`/display/pit?orgId=${encodeURIComponent(orgId)}&boardId=${board.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open fullscreen
-                    </a>
-                    {canSync ? (
+
+            <div className="preset-picker" role="group" aria-label="Start from">
+              {PRESET_META.map(({ id, title, copy }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={preset === id ? "active" : ""}
+                  aria-pressed={preset === id}
+                  onClick={() => choosePreset(id)}
+                >
+                  <strong>{title}</strong>
+                  <span>{copy}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="display-editor">
+              <form
+                id="display-new-board"
+                className="display-form soft-panel"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void saveBoard();
+                }}
+              >
+                {editingBoard ? (
+                  <p className="disp-editing">
+                    Editing: <strong>{editingBoard.name}</strong>{" "}
+                    <button type="button" className="text-button" onClick={startNewBoard}>
+                      Start a new board
+                    </button>
+                  </p>
+                ) : null}
+                <label>
+                  Board name
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Coach TV"
+                    required
+                  />
+                </label>
+
+                <DisplayWidgetEditor widgets={widgets} onChange={setWidgets} />
+
+                <div className="display-actions">
+                  {canSync ? (
+                    <Button variant="primary" type="submit">
+                      {editingBoard ? "Save changes" : "Save board"}
+                    </Button>
+                  ) : (
+                    <p className="app-muted">An owner or admin saves boards. You can still open a saved board fullscreen.</p>
+                  )}
+                  {preset !== "custom" && !matchesPreset(widgets, preset) ? (
+                    <Button variant="secondary" type="button" onClick={() => choosePreset(preset)}>
+                      Undo my panel changes
+                    </Button>
+                  ) : null}
+                </div>
+              </form>
+
+              <section className="display-preview" aria-label="How the TV will look">
+                <span>HOW THE TV WILL LOOK</span>
+                <h2>{name.trim() || "New board"}</h2>
+                <div className={`display-preview-grid${widgets.length > 1 ? "" : " is-single"}`}>
+                  {widgets.length ? (
                     <>
-                    <button type="button" onClick={() => void duplicateBoard(board)}>
-                      Duplicate
-                    </button>
-                    <button type="button" onClick={() => void mintToken(board.id)}>
-                      Make TV link
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setName(board.name);
-                        setPreset(board.preset);
-                        setWidgets(fromGridLayout(board.widgets));
-                        void saveBoard(board.id);
-                      }}
-                    >
-                      Update
-                    </button>
+                      <article className="is-hero">
+                        <strong>{WIDGET_LABEL[widgets[0]!]}</strong>
+                        <small>
+                          {widgets[0] === "next_match"
+                            ? "Match, countdown, bumper colour, with us / against us"
+                            : "Shown large"}
+                        </small>
+                      </article>
+                      {widgets.length > 1 ? (
+                        <div className="display-preview-stack">
+                          {widgets.slice(1).map((item) => (
+                            <article key={item}>
+                              <strong>{isWidgetType(item) ? WIDGET_LABEL[item] : item}</strong>
+                            </article>
+                          ))}
+                        </div>
+                      ) : null}
                     </>
-                    ) : null}
-                  </div>
-                </article>
-              ))
-            )}
+                  ) : (
+                    <article>
+                      <strong>No panels</strong>
+                      <small>Add a panel on the left</small>
+                    </article>
+                  )}
+                </div>
+              </section>
+            </div>
           </section>
 
-          <section className="token-panel soft-panel" aria-label="Pair TV">
+          {boards.length ? (
+            <section className="saved-boards" aria-labelledby="disp-saved-title">
+              <header className="disp-section-head">
+                <h2 id="disp-saved-title">Saved boards</h2>
+              </header>
+              {boards.map((board) => {
+                const eventBoard = board.name === EVENT_BOARD_NAME;
+                const href = `/display/pit?orgId=${encodeURIComponent(orgId)}&boardId=${board.id}`;
+                // The board named "Event board" opens as the event board, not as its panels.
+                const openHref = eventBoard ? href.replace("/display/pit", "/display/stage") : href;
+                return (
+                  <article className={`disp-board-row${editingId === board.id ? " is-editing" : ""}`} key={board.id}>
+                    <div className="disp-board-text">
+                      <strong>{board.name}</strong>
+                      <small>{boardSummary(board)}</small>
+                    </div>
+                    <ActionMenu
+                      label={`${board.name} actions`}
+                      tone="row"
+                      maxSecondary={0}
+                      triggerTestId={`board-menu-${board.id}`}
+                      actions={[
+                        { id: "open", label: "Open fullscreen", href: openHref, intent: "primary" },
+                        ...(canSync
+                          ? [
+                              ...(eventBoard ? [] : [{ id: "edit", label: "Edit", onClick: () => editBoard(board) }]),
+                              { id: "duplicate", label: "Duplicate", onClick: () => void duplicateBoard(board) },
+                              {
+                                id: "delete",
+                                label: "Delete",
+                                hint: "Its TV links stop working",
+                                intent: "destructive" as const,
+                                onClick: () => void deleteBoard(board),
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  </article>
+                );
+              })}
+            </section>
+          ) : null}
+
+          <section id="display-pair" className="token-panel soft-panel" aria-labelledby="disp-pair-title">
             <header className="disp-section-head">
-              <span className="eyebrow">Pair TV</span>
+              <h2 id="disp-pair-title">Put it on the TV</h2>
               <p>
-                A TV link shows a saved board on a TV that isn't signed in. It can only show the board, and
-                you can turn it off here at any time.
+                A TV link shows one board on a TV that isn&rsquo;t signed in. It can only show that board, and you can turn it
+                off here at any time.
               </p>
             </header>
 
-            {minted ? (
-              <TvLinkPanel
-                token={minted.token}
-                onCopied={(text) => {
-                  setMessage(text);
-                  setMessageOk(!/couldn/i.test(text));
-                }}
-              />
-            ) : null}
-
             {canSync && boards.length ? (
-              <div className="display-actions" style={{ marginBottom: "1rem" }}>
+              <div className="display-actions disp-pair-row">
                 <label>
-                  Board to show
-                  <select
-                    value={pairBoardId}
-                    onChange={(e) => setPairBoardId(e.target.value)}
-                    style={{ marginLeft: "0.5rem" }}
-                  >
-                    {boards.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
+                  Show
+                  <select value={pairValue} onChange={(e) => setPairChoice(e.target.value)}>
+                    {eventCarrier ? <option value={`stage:${eventCarrier.id}`}>Event board (recommended)</option> : null}
+                    {boards
+                      .filter((board) => board.name !== EVENT_BOARD_NAME)
+                      .map((board) => (
+                        <option key={board.id} value={`pit:${board.id}`}>
+                          {board.name}
+                        </option>
+                      ))}
                   </select>
                 </label>
-                <Button variant="primary" type="button" onClick={() => pairBoardId && void mintToken(pairBoardId)}>
+                <Button variant="primary" type="button" onClick={() => void mintToken(pairValue)}>
                   Make TV link
                 </Button>
               </div>
             ) : null}
 
-            {tokens.length ? (
-              <div>
-                {tokens.map((token) => (
-                  <div className={`token-row${token.revokedAt ? " revoked" : ""}`} key={token.id}>
-                    <div>
-                      <strong>{token.label}</strong>
-                      <small>
-                        {token.revokedAt
-                          ? `Revoked ${new Date(token.revokedAt).toLocaleString()}`
-                          : token.lastUsedAt
-                            ? `Last used ${new Date(token.lastUsedAt).toLocaleString()}`
-                            : "Never used"}
-                      </small>
+            {minted ? (
+              <TvLinkPanel
+                token={minted.token}
+                mode={minted.mode}
+                boardName={boardName(minted.boardId) ?? undefined}
+                onCopied={(text) => say(text, !/couldn/i.test(text))}
+              />
+            ) : null}
+
+            {activeTokens.length ? (
+              <div className="token-list">
+                {activeTokens.map((token) => {
+                  const shows = boardName(token.boardId);
+                  const title = token.label && token.label !== "Pit TV" ? token.label : shows ?? "Pit TV";
+                  return (
+                    <div className={`token-row${token.revokedAt ? " revoked" : ""}`} key={token.id}>
+                      <div>
+                        <strong>{title}</strong>
+                        <small>
+                          {shows && shows !== title ? `Shows "${shows}" · ` : ""}
+                          {token.lastUsedAt ? `Last used ${new Date(token.lastUsedAt).toLocaleString()}` : "Never used"}
+                        </small>
+                      </div>
+                      {canSync ? (
+                        <button type="button" onClick={() => void revokeToken(token.id)}>
+                          Turn off
+                        </button>
+                      ) : (
+                        <span>On</span>
+                      )}
                     </div>
-                    {!token.revokedAt && canSync ? (
-                      <button type="button" onClick={() => void revokeToken(token.id)}>
-                        Turn off
-                      </button>
-                    ) : token.revokedAt ? (
-                      <span>Revoked</span>
-                    ) : (
-                      <span>Active</span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="display-empty">
                 {canSync
-                  ? "No kiosk tokens yet. Mint one after saving a board."
-                  : "No kiosk tokens yet. An owner or admin mints one after saving a board."}
+                  ? "No TV links on yet. Make one above once a board is saved."
+                  : "No TV links on yet. An owner or admin makes one."}
               </p>
             )}
           </section>
@@ -564,4 +599,3 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     </main>
   );
 }
-

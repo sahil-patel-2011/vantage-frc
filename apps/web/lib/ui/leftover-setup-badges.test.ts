@@ -24,8 +24,7 @@ describe("leftover Setup badges become Needs setup or drop the setup tone", () =
     expect(display).not.toMatch(/badge="Setup"/);
     expect(display).not.toMatch(/The Blue Alliance/);
     expect(display).toMatch(/id="display-new-board"/);
-    expect(display).toMatch(/#display-new-board/);
-    expect(display).toMatch(/official scores/);
+    expect(display).toMatch(/getElementById\("display-new-board"\)/);
   });
 
   it("Todos load-failure only uses Needs setup for the setup kind", () => {

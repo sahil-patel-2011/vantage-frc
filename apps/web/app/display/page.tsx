@@ -3,9 +3,8 @@ import DisplaySetup from "./setup-client";
 import "./display.css";
 
 export const metadata = {
-  title: "Display Mode",
-  description:
-    "Build a single pit-TV board from the official schedule and Strategy predictions. No demo filler.",
+  title: "Pit TV",
+  description: "Pick what the pit TV shows, save it, then open the TV link on the TV.",
 };
 
 export default async function DisplayPage({
@@ -17,17 +16,17 @@ export default async function DisplayPage({
   if (!orgId) {
     return (
       <main className="module-page display-setup display-gate">
-        <span className="eyebrow">VANTAGE / DISPLAY</span>
+        <span className="eyebrow">COMPETITION / PIT / PIT TV</span>
         <h1>Choose your team</h1>
         <p>
-          Pit TV boards are saved per team. Choose your team before creating a display layout.
+          Pit TV boards are saved per team. Choose your team first.
         </p>
         <div className="disp-gate-actions">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
           <Button as="a" variant="secondary" href="/competition?tab=command">
-            Event Day
+            Event day
           </Button>
           <Button as="a" variant="secondary" href="/competition?tab=strategy">
             Strategy

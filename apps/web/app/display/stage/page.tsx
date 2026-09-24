@@ -3,9 +3,8 @@ import "../display.css";
 import "./stage.css";
 
 export const metadata = {
-  title: "Event display",
-  description:
-    "Phase-aware pit TV: schedule, queue countdown, rankings, bracket, and sponsor thanks — synced rows only.",
+  title: "Pit TV · Event board",
+  description: "Follows the event on its own: next match, queue, rankings, alliance selection and the bracket.",
 };
 
 export default async function StageDisplayPage({

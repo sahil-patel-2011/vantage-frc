@@ -6,6 +6,7 @@ import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "./ui";
 import { sectionHelpFor } from "../lib/help/section-help";
+import { STRATEGY_TOOL_GROUPS, strategyToolBlurb } from "../lib/strategy/strategy-tools";
 import {
   clientCanAccessHub,
   filterTabsByHubAccess,
@@ -300,7 +301,13 @@ export function ProductHubShell({
             aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
             value={tab}
             onChange={selectTab}
-            describe={(id) => sectionHelpFor(hub.id, id)?.what}
+            describe={(id) =>
+              (hub.id === "competition" && workbenchId === "strategy" ? strategyToolBlurb(id) : undefined) ??
+              sectionHelpFor(hub.id, id)?.what
+            }
+            groups={hub.id === "competition" && workbenchId === "strategy" ? STRATEGY_TOOL_GROUPS : undefined}
+            // Pit has four tools; a "More tools (1)" holding Charge plan hid it for nothing.
+            visibleCount={hub.id === "competition" && workbenchId === "match-checklist" ? 4 : undefined}
             items={toolTabs.map((entry) => ({
               id: entry.id,
               label: entry.label,

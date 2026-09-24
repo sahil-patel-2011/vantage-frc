@@ -161,3 +161,29 @@ export async function PATCH(request: Request) {
     return fail(error);
   }
 }
+
+/** Delete a board. Its TV links go with it (display_tokens.board_id ON DELETE CASCADE). */
+export async function DELETE(request: Request) {
+  try {
+    const session = await current();
+    const body = (await request.json()) as { orgId?: string; boardId?: string };
+    if (!body.orgId || !body.boardId) throw new Error("orgId and boardId are required");
+    const deleted = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
+      const admin = await client.query(
+        `SELECT 1 FROM memberships
+         WHERE org_id = $1::uuid AND user_id = $2 AND role IN ('owner', 'admin')`,
+        [body.orgId, session.user.id],
+      );
+      if (!admin.rowCount) throw new Error("Organization administrator access required");
+      const result = await client.query(
+        `DELETE FROM display_boards WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [body.boardId, body.orgId],
+      );
+      return result.rowCount ?? 0;
+    });
+    if (!deleted) return Response.json({ error: "Display board not found" }, { status: 404 });
+    return Response.json({ success: true });
+  } catch (error) {
+    return fail(error);
+  }
+}

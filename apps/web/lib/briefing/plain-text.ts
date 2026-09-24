@@ -27,8 +27,27 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bfrc(\d{1,5})\b/gi, "Team $1")
       .replace(/\bMITIGATE\b:?\s*/g, "Watch out: ")
       .replace(/\bleave-one-out\b/gi, "without that match")
+      // "Team 254 (#254)" says the number twice; "EPA" is a statistics word, "rating" is not.
+      .replace(/\bTeam (\d{1,5}) \(#\1\)/g, "Team $1")
+      .replace(/\bHighest-EPA\b/g, "Highest-rated")
+      .replace(/\bhighest-EPA\b/g, "highest-rated")
+      .replace(/\bEPA\b/g, "rating")
       .replace(/\b\d+\.\d{4,}\b/g, (whole) => String(Math.round(Number(whole) * 10) / 10))
       .replace(/\s{2,}/g, " ")
       .trim()
   );
+}
+
+const ENGINE_MATCH_CHIP = new RegExp("^match (Qual|Eighth|Quarter|Semi|Final) [0-9]", "i");
+
+/**
+ * Game-plan chips that only make sense to the engine ("match Qual 30", "red without that
+ * match 67") are dropped from the briefing; the rest are kept in plain words.
+ */
+export function readablePlanChip(text: string | null | undefined): string | null {
+  const plain = plainStrategyText(text);
+  if (!plain) return null;
+  if (/without that match/i.test(plain)) return null;
+  if (ENGINE_MATCH_CHIP.test(plain)) return null;
+  return plain;
 }

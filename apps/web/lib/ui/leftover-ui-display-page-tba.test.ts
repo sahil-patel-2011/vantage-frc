@@ -8,6 +8,7 @@ describe("leftover Display page student copy", () => {
   it("uses student chrome", () => {
     const src = readFileSync(join(WEB, "app/display/page.tsx"), "utf8");
     expect(src).not.toContain("from TBA schedule and Strategy predictions");
-    expect(src).toContain("from the official schedule and Strategy predictions");
+    expect(src).not.toContain("TBA");
+    expect(src).toContain("Pick what the pit TV shows, save it, then open the TV link on the TV.");
   });
 });

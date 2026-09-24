@@ -26,7 +26,6 @@ import {
   classifyPitShell,
   formatPitBatteryReady,
   formatPitMetric,
-  pitEmptyBoardDescription,
   pitNextActions,
   pitRelatedLinks,
   pitShellCopy,
@@ -232,7 +231,7 @@ function PitShell({
         description={description}
       >
         <Button as="a" variant="secondary" href={withOrgHref("/display", orgId || null)}>
-          Show on the pit TV
+          Show on the Pit TV
         </Button>
         <PitRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -434,7 +433,6 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
     readyBatteries: data?.summary.readyBatteries ?? 0,
     activeBatteries: data?.summary.activeBatteries ?? 0,
   });
-  const relatedLinks = pitRelatedLinks(orgId, { include: [...PIT_RELATED_INCLUDE] });
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
@@ -494,11 +492,15 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         title="Robot release board"
         description={
           shell === "empty"
-            ? pitEmptyBoardDescription(data.context)
-            : `${data.context.eventName ?? "No active event"} · counts come from logs and issues your team entered`
+            ? data.context.eventName ?? "No event set yet"
+            : `${data.context.eventName ?? "No event set yet"} · counts come from logs and issues your team entered`
         }
       >
-        <PitRelatedStrip orgId={orgId} />
+        {/* The same button as while loading: it used to vanish once the board loaded. */}
+        <Button as="a" variant="secondary" href={withOrgHref("/display", orgId || null)}>
+          Show on the Pit TV
+        </Button>
+        {/* Batteries / Match checklist / Event day are linked once, in Next actions below. */}
         <div className="pit-next">
           <span>NEXT MATCH</span>
           <strong>{matchLabel(data.nextMatch)}</strong>
@@ -525,7 +527,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             badge="No pit evidence yet"
             badgeTone="setup"
             title={shellCopy.title}
-            description={pitEmptyBoardDescription(data.context)}
+            description={shellCopy.description}
           >
             <Button as="a" variant="primary" href="#pit-actions">
               Log first evidence
@@ -535,14 +537,14 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         </>
       ) : null}
 
+      {/* No evidence yet: the empty state above says what to log; an empty gate says nothing. */}
+      {shell === "empty" ? null : (
       <section className={`pit-gate ${data.gate.state}`}>
         <div className="pit-gate-state">
           <span>RELEASE GATE</span>
-          <strong>{data.gate.state === "empty" ? "—" : data.gate.state.toUpperCase()}</strong>
+          <strong>{data.gate.state.toUpperCase()}</strong>
           <small>
-            {data.gate.state === "empty"
-              ? "Empty until repairs, batteries, or queue rows"
-              : data.gate.state === "go"
+            {data.gate.state === "go"
                 ? "Evidence clear"
                 : data.gate.state === "hold"
                   ? "Do not release"
@@ -552,6 +554,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <div className="pit-reasons">
           <span>WHY</span>
           <ul>
+            {data.gate.reasons.length ? null : <li>No reasons logged</li>}
             {data.gate.reasons.map((r) => (
               <li key={r}>{r}</li>
             ))}
@@ -595,6 +598,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
           </dl>
         )}
       </section>
+      )}
 
       {data.repeatAlerts?.length ? (
         <section className="pit-repeat" aria-label="Repeat failure patterns">
@@ -899,22 +903,14 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               ))}
             </ul>
           )}
-          <footer>
-            <strong>READY RANGE</strong>
+          <details className="pit-rule">
+            <summary>What counts as ready? ⓘ</summary>
             <span>{data.rules.battery}</span>
-          </footer>
+          </details>
         </article>
       </section>
 
       <PitNextActionsPanel actions={nextActions} />
-
-      {relatedLinks.length ? (
-        <nav className="product-hub-related pit-related pit-related-footer" aria-label="More pit tools">
-          {relatedLinks.map((link) => (
-            <a key={link.id} href={link.href}>{link.label}</a>
-          ))}
-        </nav>
-      ) : null}
 
       <PartnerPlacement orgId={orgId} surface="pit_footer" title="Pit command partners" />
       <footer className="pit-foot">

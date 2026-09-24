@@ -29,6 +29,11 @@ export type HubTabDef = {
    * Defaults to true.
    */
   inStrip?: boolean;
+  /**
+   * False keeps a second chip for the same destination (Pit TV on Event day and on the Pit
+   * tab) out of Cmd+K, so search lists it once. Defaults to true.
+   */
+  inSearch?: boolean;
 };
 
 export type ProductHubDef = {
@@ -70,6 +75,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "drive-team-signals", label: "Drive-team board", legacyHref: "/drive-team-signals" },
         // THE one pre-match surface (absorbed Match Copilot — see legacy-redirects).
         { id: "briefing", label: "Pre-match briefing", legacyHref: "/briefing", featured: true },
+        // The pit TV, one tap from Event day as well as from the Pit tab (a separate id and
+        // href because a hub may not list one route twice). Featured so it stays a chip.
+        { id: "event-pit-tv", label: "Pit TV", legacyHref: "/display?from=event-day", featured: true, inSearch: false },
         // Labelled "Schedule", not "Match schedule": seven palette entries already
         // start with "Matc" and the top-5 prefix ranking can only surface five.
         { id: "schedule", label: "Schedule", legacyHref: "/schedule" },
@@ -102,6 +110,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ]),
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
+        // The briefing is the drive coach's main screen, so it leads Strategy's chips too.
+        // Its own href keeps the hub's one-route-per-tab rule; search lists it once (Event day).
+        { id: "match-briefing", label: "Pre-match briefing", legacyHref: "/briefing?from=strategy", featured: true, inSearch: false },
         { id: "alliance-selection-desk", label: "Alliance desk", legacyHref: "/alliance-selection-desk", featured: true },
         { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", featured: true },
         { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
@@ -132,6 +143,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ]),
       { id: "match-checklist", label: "Pit", legacyHref: "/match-checklist" },
       ...nest("match-checklist", [
+        // The screen the pit crew points at the TV. It was only reachable by typing "TV" into search.
+        { id: "pit-tv", label: "Pit TV", legacyHref: "/display", featured: true },
         { id: "pit", label: "Pit command", legacyHref: "/pit" },
         { id: "pit-repair-triage", label: "Repair triage", legacyHref: "/pit-repair-triage" },
         { id: "battery-rotation", label: "Charge plan", legacyHref: "/battery-rotation" },
@@ -274,12 +287,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "overview", label: "Overview" },
       { id: "finance", label: "Money" },
       ...nest("finance", [
-        { id: "budget", label: "Budget", featured: true },
-        // The mentor-only season budget (0621 put season_budgets behind the
-        // manage_budget capability in RLS). Distinct from the per-category
-        // budget-vs-actual panel on the "Budget" tab above, which any member
-        // can open.
-        { id: "season-budget", label: "Season budget", legacyHref: "/budget" },
+        // The one season budget (0621 put season_budgets behind the
+        // manage_budget capability in RLS). It is set only on /budget; every
+        // other money screen reads it from there.
+        { id: "season-budget", label: "Season budget", legacyHref: "/budget", featured: true },
+        // Categories and purchase requests measured against that budget.
+        { id: "budget", label: "Spending plan" },
         // Where a student asks for a part without needing budget access.
         { id: "part-requests", label: "Part requests", legacyHref: "/part-requests" },
         // The COTS reference — what teams buy and the spec to pick between

@@ -3,8 +3,8 @@
  * Every size is derived from --stage-scale (the on-screen text-size toggle)
  * multiplied into a clamp(), so the whole board grows together instead of one
  * heading escaping its row. Colors are local tokens with a dark default (a pit
- * TV lives in a dark hall) and an explicit light set so the signed-in preview
- * on a laptop is readable too. Controls are 48px targets — competition day is
+ * TV lives in a dark hall), used everywhere including the signed-in preview.
+ * Controls are 48px targets — competition day is
  * gloves-and-hurry.
  */
 
@@ -34,33 +34,8 @@
   overflow-x: hidden;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .display-stage {
-    --stage-bg: #f7f8fa;
-    --stage-ink: #0d1117;
-    --stage-muted: rgba(13, 17, 23, 0.62);
-    --stage-line: rgba(13, 17, 23, 0.14);
-    --stage-panel: rgba(13, 17, 23, 0.04);
-    --stage-red: #c62b3c;
-    --stage-blue: #1c62c9;
-    --stage-urgent: #c81e14;
-    --stage-ok: #12794a;
-    --stage-accent: #8a5a00;
-  }
-}
-
-:root[data-theme="light"] .display-stage {
-  --stage-bg: #f7f8fa;
-  --stage-ink: #0d1117;
-  --stage-muted: rgba(13, 17, 23, 0.62);
-  --stage-line: rgba(13, 17, 23, 0.14);
-  --stage-panel: rgba(13, 17, 23, 0.04);
-  --stage-red: #c62b3c;
-  --stage-blue: #1c62c9;
-  --stage-urgent: #c81e14;
-  --stage-ok: #12794a;
-  --stage-accent: #8a5a00;
-}
+/* One dark theme for every pit board. The event board used to follow the laptop's light
+   theme and glared white in a dim pit next to the dark pit board. */
 
 .display-stage.loading,
 .display-stage.error {

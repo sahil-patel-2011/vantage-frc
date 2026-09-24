@@ -18,6 +18,7 @@ import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "..
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
 import {
+  StrategyBriefingCard,
   StrategyNextActionsPanel,
   StrategyRelatedStrip,
   StrategyShell,
@@ -200,7 +201,18 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
 
   if (tab !== "picks" && shell !== "ready") {
     return (
-      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded} fromCache={fromCache} cachedAt={cachedAt} eventName={eventName} canSync={canSync}>
+      <StrategyShell
+        orgId={orgId}
+        shell={shell}
+        error={error || undefined}
+        onRetry={loadStrategy}
+        embedded={embedded}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+        eventName={eventName}
+        canSync={canSync}
+        lastMatch={view && view.status !== "live" ? view.lastMatch ?? null : null}
+      >
         {/* The switcher has to survive this state. Without it, clicking Matchup
             before there is a matchup to show replaced the whole panel — tabs
             included — and the only way back to the pick list was to edit the
@@ -293,6 +305,12 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         <PickListWorkbench orgId={orgId} embedded />
       ) : view?.status === "live" ? (
         <>
+          <StrategyBriefingCard
+            orgId={view.orgId}
+            matchKey={view.matchKey}
+            compLevel={view.compLevel}
+            matchNumber={view.matchNumber}
+          />
           <LivePanel view={view} />
           {embedded ? null : <StrategyNextActionsPanel actions={nextActions} />}
         </>

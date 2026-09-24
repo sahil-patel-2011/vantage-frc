@@ -5,8 +5,10 @@ import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { matchLabel } from "../../lib/display";
 import {
   STRATEGY_RELATED_INCLUDE,
+  strategyBriefingHref,
   strategyRelatedLinks,
   strategyCanSync,
   strategyShellCopy,
@@ -89,6 +91,7 @@ export function StrategyShell({
   cachedAt = null,
   eventName = null,
   canSync = false,
+  lastMatch = null,
   children,
 }: {
   orgId?: string | null;
@@ -100,10 +103,17 @@ export function StrategyShell({
   cachedAt?: string | null;
   eventName?: string | null;
   canSync?: boolean;
+  /** Our last match here when none is ahead: the empty state offers to review it. */
+  lastMatch?: { matchKey: string; compLevel: string; matchNumber: number } | null;
   children?: ReactNode;
 }) {
   const copy = strategyShellCopy(shell);
-  const description = shell === "empty" ? strategyWaitingCopy(eventName) : copy.description;
+  const description =
+    shell === "empty"
+      ? lastMatch
+        ? `Nothing on the schedule for us${eventName?.trim() ? ` at ${eventName.trim()}` : ""} right now. Review how ${matchLabel(lastMatch.compLevel, lastMatch.matchNumber)} went, or check back when the next match is posted.`
+        : strategyWaitingCopy(eventName)
+      : copy.description;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
@@ -150,12 +160,61 @@ export function StrategyShell({
         {shell === "setup" ? (
           <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
+        {/* Never a dead end: with nothing ahead, the useful screens are the last match's
+            briefing and, later, a fresh schedule. */}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={canSync ? teamDataHref : hubHref("/competition", "scouting", orgId)}>
-            {canSync ? "Sync Team Data" : "Open Scouting"}
-          </Button>
+          <>
+            {lastMatch ? (
+              <Button as="a" variant="primary" href={strategyBriefingHref(orgId, lastMatch.matchKey)}>
+                Review last match ({matchLabel(lastMatch.compLevel, lastMatch.matchNumber)})
+              </Button>
+            ) : (
+              <Button as="a" variant="primary" href={strategyBriefingHref(orgId)}>
+                Open pre-match briefing
+              </Button>
+            )}
+            {canSync ? (
+              <Button as="a" variant="secondary" href={teamDataHref}>
+                Check for new schedule
+              </Button>
+            ) : (
+              <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
+                Open Scouting
+              </Button>
+            )}
+          </>
         ) : null}
       </EmptyState>
     </Root>
+  );
+}
+
+/**
+ * The pre-match briefing, first on the Strategy tab. It is the one screen that answers a drive
+ * coach's questions (who we play, their likely plan, our chance), so the matchup numbers
+ * below it are the detail, not the destination.
+ */
+export function StrategyBriefingCard({
+  orgId,
+  matchKey,
+  compLevel,
+  matchNumber,
+}: {
+  orgId: string | null;
+  matchKey: string;
+  compLevel: string;
+  matchNumber: number;
+}) {
+  return (
+    <section className="strategy-briefing-card" aria-labelledby="strategy-briefing-title">
+      <div>
+        <span className="strategy-briefing-kicker">Before {matchLabel(compLevel, matchNumber)}</span>
+        <h2 id="strategy-briefing-title">Pre-match briefing</h2>
+        <p>Who we play with and against, what each opponent is likely to do, our game plan and win chance, on one screen.</p>
+      </div>
+      <Button as="a" variant="primary" href={strategyBriefingHref(orgId, matchKey)}>
+        Open the briefing
+      </Button>
+    </section>
   );
 }

@@ -584,3 +584,13 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     border-left: 0;
   }
 }
+
+/* "More tools" grouped by job (Strategy: Before a match / Alliance selection / Research). */
+.hub-tool-group + .hub-tool-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.hub-tool-group-head {
+  margin: 0 0 4px;
+  padding: 0 10px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}

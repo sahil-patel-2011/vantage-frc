@@ -3,24 +3,23 @@
 import "../../product-styles";
 import { useCallback, useEffect, useState } from "react";
 import {
-  bumperBanner,
+  PRESET_WIDGETS,
   countdownState,
-  formatAlliance,
   hasEventCommandSignal,
   hasReadinessSignal,
   hasScoutingCoverageSignal,
   matchLabel,
-  ourBumperColor,
-  queueCue,
   rankLabel,
   recordLabel,
   formatDisplayPrediction,
   kioskEventCommandEmptyCopy,
-  kioskNextMatchEmptyCopy,
-  widgetValue,
   type DisplaySnapshot,
+  type DisplayWidget,
 } from "../../../lib/display";
+import { kioskBrandLine, kioskHeroSplit } from "../../../lib/display/kiosk-view";
+import { type DisplayMatchIntel, toDisplayMatchIntel } from "../../../lib/display/match-intel";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
+import { KioskPanel } from "./kiosk-panels";
 
 export default function KioskClient({
   params,
@@ -34,10 +33,46 @@ export default function KioskClient({
   const [online, setOnline] = useState(true);
   const [now, setNow] = useState(() => Date.now());
   const [chromeVisible, setChromeVisible] = useState(mode !== "pit");
+  const [intel, setIntel] = useState<DisplayMatchIntel | null>(null);
+
+  // What the team already knows about the next match (opponent tendencies from scouting),
+  // for the lineup and the Team intel panel. Fetched when the next match changes.
+  const nextMatch = data?.nextMatch ?? null;
+  const nextMatchKey = nextMatch?.matchKey ?? null;
+  const ownKey = data?.organization?.teamNumber ? `frc${data.organization.teamNumber}` : null;
+  useEffect(() => {
+    if (!nextMatchKey || !nextMatch) {
+      setIntel(null);
+      return;
+    }
+    const access = params.token
+      ? `token=${encodeURIComponent(params.token)}`
+      : params.orgId
+        ? `orgId=${encodeURIComponent(params.orgId)}`
+        : "";
+    if (!access) return;
+    let active = true;
+    void fetch(`/api/display/intel?matchKey=${encodeURIComponent(nextMatchKey)}&${access}`, { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { intel?: unknown } | null) => {
+        if (!active) return;
+        setIntel(
+          toDisplayMatchIntel((body?.intel ?? null) as Parameters<typeof toDisplayMatchIntel>[0], ownKey, {
+            red: nextMatch.redAlliance?.teamKeys ?? [],
+            blue: nextMatch.blueAlliance?.teamKeys ?? [],
+          }),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+    // nextMatch is read through nextMatchKey; refetching on every 30s snapshot would be noise.
+  }, [nextMatchKey, ownKey, params.token, params.orgId]);
 
   const refresh = useCallback(async () => {
     if (!params.token && !(params.orgId && params.boardId)) {
-      setError("This screen's link is incomplete. Open Displays on a signed-in computer and use the link it gives you for this board.");
+      setError("This screen's link is incomplete. Open Pit TV on a signed-in computer and use the link it gives you for this board.");
       return;
     }
     const query = params.token
@@ -87,9 +122,9 @@ export default function KioskClient({
         <p>
           {params.token
             ? mode === "pit"
-              ? "Pit display token. If this fails, the token may be revoked or expired."
-              : "Using read-only TV token. If this fails, the token may be revoked or expired."
-            : "Signed-in kiosk needs a saved board id for this team."}
+              ? "If this keeps failing, the TV link was turned off. Make a new one on the Pit TV page."
+              : "If this keeps failing, the TV link was turned off. Make a new one on the Pit TV page."
+            : "Open a saved board from the Pit TV page."}
         </p>
         <button type="button" onClick={() => void refresh()}>
           Retry
@@ -103,23 +138,27 @@ export default function KioskClient({
   const prediction =
     data.prediction && data.nextMatch && data.prediction.matchKey === data.nextMatch.matchKey ? data.prediction : null;
   const clock = countdownState(match?.scheduledTime, now);
-  const bumper = ourBumperColor(match, data.organization.teamNumber);
-  const eventName = data.activeEvent?.name ?? "NO ACTIVE EVENT";
+  const eventName = data.activeEvent?.name ?? null;
   const readiness = data.readiness;
+  // A team-built board and the "Next match" preset share one layout: panel 1 large on the
+  // left, the rest stacked beside it, so adding a panel never shrinks the countdown.
+  const heroBoard = data.board.preset === "custom" || data.board.preset === "next_match";
+  const boardWidgets: DisplayWidget[] = data.board.widgets?.length
+    ? data.board.widgets
+    : (PRESET_WIDGETS[data.board.preset] ?? []).map((type) => ({ type }));
+  const { hero, rest } = kioskHeroSplit(boardWidgets);
 
   return (
     <main
-      className={`display-kiosk preset-${data.board.preset}${mode === "pit" ? " display-kiosk-pit" : ""}${mode === "pit" && chromeVisible ? " is-chrome" : ""}`}
+      className={`display-kiosk preset-${data.board.preset}${heroBoard ? " has-hero" : ""}${mode === "pit" ? " display-kiosk-pit" : ""}${mode === "pit" && chromeVisible ? " is-chrome" : ""}`}
       onPointerDown={() => {
         if (mode === "pit") setChromeVisible(true);
       }}
     >
       <header>
         <div className="kiosk-brand">
-          <span>{mode === "pit" ? "VANTAGE PIT DISPLAY" : "VANTAGE DISPLAY"}</span>
-          <strong>
-            {data.organization.name} · #{data.organization.teamNumber}
-          </strong>
+          <span>PIT TV</span>
+          <strong>{kioskBrandLine(data.organization, eventName)}</strong>
         </div>
         <div className={`kiosk-status ${online ? "online" : "offline"}`}>
           {online ? "CONNECTED" : "OFFLINE · LAST DATA"}
@@ -136,54 +175,24 @@ export default function KioskClient({
 
       <section className="display-kiosk-title">
         <div>
-          <span>{eventName}</span>
+          <span>{eventName ?? "No event set yet"}</span>
           <h1>{data.board.name}</h1>
         </div>
         <time dateTime={data.updatedAt}>Updated {new Date(data.updatedAt).toLocaleTimeString()}</time>
       </section>
 
-      {data.board.preset === "next_match" &&
-        (match ? (
-          <section className="display-kiosk-panel">
-            <article>
-              <span>NEXT MATCH</span>
-              <strong>{matchLabel(match.compLevel, match.matchNumber)}</strong>
-              <small>
-                {match.scheduledTime
-                  ? new Date(match.scheduledTime).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
-                  : "Schedule time unavailable"}
-              </small>
-            </article>
-            <article>
-              <span>COUNTDOWN</span>
-              <strong className={clock.queueSoon ? "queue-soon" : undefined}>{clock.label}</strong>
-              <em className={clock.queueNow ? "queue-now" : clock.queueSoon ? "queue-soon" : clock.leavePit ? "leave" : undefined}>
-                {queueCue(clock)}
-              </em>
-            </article>
-            <article>
-              <span>BUMPERS</span>
-              <strong className={bumper === "red" ? "alliance-red" : bumper === "blue" ? "alliance-blue" : undefined}>
-                {bumperBanner(bumper)}
-              </strong>
-              <small>{match.scheduledTime ? "From alliance lists" : "No posted time; bumper still from alliance lists"}</small>
-            </article>
-            <article>
-              <span>ALLIANCES</span>
-              <p className="alliance-red">RED {formatAlliance(match.redAlliance?.teamKeys)}</p>
-              <p className="alliance-blue">BLUE {formatAlliance(match.blueAlliance?.teamKeys)}</p>
-            </article>
-          </section>
-        ) : (
-          <section className="display-kiosk-empty">
-            <span>NEXT MATCH</span>
-            <h2>No upcoming team match</h2>
-            <p>{kioskNextMatchEmptyCopy(data.organization.teamNumber)}</p>
-          </section>
-        ))}
+      {heroBoard ? (
+        <section className={`display-kiosk-hero${rest.length ? "" : " is-single"}`} aria-label="Board panels">
+          {hero ? <KioskPanel type={String(hero.type)} data={data} now={now} intel={intel} hero /> : null}
+          {rest.length ? (
+            <div className="display-kiosk-stack" data-count={rest.length}>
+              {rest.map((widget, index) => (
+                <KioskPanel key={`${widget.type}-${index}`} type={String(widget.type)} data={data} now={now} intel={intel} hero={false} />
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {data.board.preset === "win_prediction" &&
         (prediction && formatDisplayPrediction(prediction) !== "No grounded prediction" ? (
@@ -354,26 +363,11 @@ export default function KioskClient({
           </section>
         ))}
 
-      {data.board.preset === "custom" && (
-        <section className="display-kiosk-custom">
-          {(data.board.widgets?.length ? data.board.widgets : [{ type: "-" }]).map((widget, index) => (
-            <article key={`${widget.type}-${index}`}>
-              <span>{String(widget.type).replaceAll("_", " ")}</span>
-              <strong>
-                {widget.type === "-"
-                  ? "No widgets on this board"
-                  : widgetValue(String(widget.type), data)}
-              </strong>
-            </article>
-          ))}
-        </section>
-      )}
-
       <footer>
         <span>
           {mode === "pit"
-            ? "Pit TV · tap to show controls · live snapshots only"
-            : "Layout is fixed until changed in Display Mode setup."}
+            ? "Pit TV · tap the screen to show the controls"
+            : "Change what this board shows on the Pit TV page."}
         </span>
         {error ? <strong className="kiosk-error">{error}</strong> : <span>Live refresh every 30s</span>}
       </footer>

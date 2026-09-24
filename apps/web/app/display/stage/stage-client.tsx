@@ -30,6 +30,7 @@ import {
   type DisplayStagePayload,
   type DisplayStageScreen,
 } from "../../../lib/display";
+import { kioskBrandLine } from "../../../lib/display/kiosk-view";
 import { type DisplayMatchIntel, toDisplayMatchIntel } from "../../../lib/display/match-intel";
 
 const SCALE_STORAGE_KEY = "vantage.display.stage.scale";
@@ -113,7 +114,7 @@ export default function StageClient({
 
   const refresh = useCallback(async () => {
     if (!params.token && !(params.orgId && params.boardId)) {
-      setError("This screen's link is incomplete. Open Displays on a signed-in computer and use the link it gives you for this board.");
+      setError("This screen's link is incomplete. Open Pit TV on a signed-in computer and use the link it gives you for this board.");
       return;
     }
     const query = params.token
@@ -198,8 +199,8 @@ export default function StageClient({
         <h1>{error || "Loading display…"}</h1>
         <p>
           {params.token
-            ? "Read-only TV token. If this fails, the token may be revoked or expired."
-            : "Signed-in preview needs a saved board id for this team."}
+            ? "If this keeps failing, the TV link was turned off. Make a new one on the Pit TV page."
+            : "Open the event board from the Pit TV page."}
         </p>
         <button type="button" className="stage-btn" onClick={() => void refresh()}>
           Retry
@@ -208,7 +209,7 @@ export default function StageClient({
     );
   }
 
-  const eventName = data.activeEvent?.name ?? data.activeEvent?.eventKey ?? "NO ACTIVE EVENT";
+  const eventName = data.activeEvent?.name ?? data.activeEvent?.eventKey ?? null;
 
   return (
     <main
@@ -218,10 +219,8 @@ export default function StageClient({
     >
       <header className="stage-head">
         <div className="stage-brand">
-          <span>{eventName}</span>
-          <strong>
-            {data.organization.name} · #{data.organization.teamNumber}
-          </strong>
+          <span>Pit TV · Event board</span>
+          <strong>{kioskBrandLine(data.organization, eventName)}</strong>
         </div>
         <div className="stage-phase">
           <span className={online ? "is-online" : "is-offline"}>

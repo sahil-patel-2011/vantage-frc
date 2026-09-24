@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { plainMatchKey, plainStrategyText } from "./plain-text";
+import { plainMatchKey, plainStrategyText, readablePlanChip } from "./plain-text";
 
 describe("strategy text in a drive coach's words", () => {
   it("names matches the way people say them", () => {
@@ -36,5 +36,21 @@ describe("numbers people read", () => {
     expect(plainStrategyText("Includes 61.099999999999994 org scout observations")).toBe("Includes 61.1 org scout observations");
     expect(plainStrategyText("Rating 12.000000001")).toBe("Rating 12");
     expect(plainStrategyText("fouls 0.9/match")).toBe("fouls 0.9/match");
+  });
+});
+
+describe("rating words, not statistics words", () => {
+  it("drops the repeated team number and says rating", () => {
+    expect(
+      plainStrategyText("Plan around Team 254 (#254) — Highest-EPA opponent at 59.2 (-6.6 vs our 65.8)"),
+    ).toBe("Plan around Team 254 — Highest-rated opponent at 59.2 (-6.6 vs our 65.8)");
+    expect(plainStrategyText("our EPA share")).toBe("our rating share");
+  });
+
+  it("keeps readable plan chips and drops engine ones", () => {
+    expect(readablePlanChip("foul exposure")).toBe("foul exposure");
+    expect(readablePlanChip("match 2026gacmp_qm30")).toBeNull();
+    expect(readablePlanChip("red leave-one-out 67")).toBeNull();
+    expect(readablePlanChip("")).toBeNull();
   });
 });

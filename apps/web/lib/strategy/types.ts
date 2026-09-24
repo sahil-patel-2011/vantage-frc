@@ -103,6 +103,11 @@ export type StrategyView =
       teamNumber: number | null;
       /** Membership role, so an empty board does not send a scout to Team Data. */
       actorRole?: string | null;
+      /**
+       * Our most recent match at this event when none is ahead, so an empty Strategy tab can
+       * offer "Review last match (Qual 36)" instead of a dead end. Absent when no match exists.
+       */
+      lastMatch?: { matchKey: string; compLevel: string; matchNumber: number } | null;
       tbaConfigured: boolean;
       tbaAccess?: TbaAccessInfo;
       referenceAccess?: ReferenceAccessInfo;

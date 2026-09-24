@@ -1,17 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { plainStrategyText } from "../../lib/briefing/plain-text";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { plainStrategyText, readablePlanChip } from "../../lib/briefing/plain-text";
 import { ourSideRange } from "../../lib/strategy/our-side-range";
-import { intelTags } from "../../lib/display/match-intel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
-import {
-  briefingChecklist,
-  matchLabel,
-  type BriefingChecklistRow,
-  type BriefingPrediction,
-} from "../../lib/briefing";
+import { briefingChecklist, matchLabel, type BriefingPrediction } from "../../lib/briefing";
+import { buildOpponentCards } from "../../lib/briefing/opponent-cards";
 import { capabilityLabel } from "../../lib/briefing/plan-sections";
 import { briefingPartnerSyncHref, briefingSetupAction } from "../../lib/briefing/setup-action";
 import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
@@ -28,6 +23,7 @@ import {
 } from "../../lib/strategy/prediction-display";
 import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { AddMoreLine, EmptyHint, OpponentCards, Section, withOrg } from "./briefing-parts";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -53,23 +49,6 @@ async function persistBriefingSnapshot(
   } catch {
     // Live briefing already painted; IndexedDB is best-effort.
   }
-}
-
-/** Where each checklist row sends the coach to fix the gap. */
-const CHECKLIST_HREFS: Record<string, string> = {
-  Prediction: "/strategy",
-  "Strategy plan": "/strategy",
-  "Match card": "/match-strategy-cards",
-  "Counter-book": "/counter-book",
-  Watchlist: "/opponent-watchlist",
-  "Defense plan": "/defense-planner",
-  "Whiteboard play": "/whiteboard",
-  "Practice data": "/practice",
-  "Opponent video": "/video",
-};
-
-function withOrg(href: string, orgId: string | null): string {
-  return orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href;
 }
 
 function pct(value: number): string {
@@ -101,82 +80,6 @@ function fmtRate(value: number | null): string {
 
 function fmtEpa(value: number | null): string {
   return value == null ? "—" : value.toFixed(1);
-}
-
-/** Inline "not available — do X" hint reused by the checklist and each empty section. */
-function MissingHint({ row, orgId }: { row: BriefingChecklistRow | undefined; orgId: string | null }) {
-  if (!row) return null;
-  const href = CHECKLIST_HREFS[row.label] ?? "/workspace";
-  return (
-    <p className="brief-missing">
-      <span className="brief-mark no" aria-hidden="true">
-        ✗
-      </span>
-      Not available — <a href={withOrg(href, orgId)}>{row.hint}</a>
-    </p>
-  );
-}
-
-/** Honest empty state for a consolidated section, with the exact setup step. */
-function EmptyHint({ children }: { children: ReactNode }) {
-  return (
-    <p className="brief-missing">
-      <span className="brief-mark no" aria-hidden="true">
-        ✗
-      </span>
-      {children}
-    </p>
-  );
-}
-
-/** Collapsible section — one scrollable card the coach reads top-to-bottom.
- * Everything defaults open; collapsing is for skipping past on a phone. */
-function Section({
-  title,
-  badge,
-  children,
-}: {
-  title: string;
-  badge?: string | null;
-  children: ReactNode;
-}) {
-  return (
-    <details className="app-card brief-section" open>
-      <summary>
-        <h2>{title}</h2>
-        {badge ? <span className="brief-chip">{badge}</span> : null}
-        <span className="brief-section-caret" aria-hidden="true">
-          ▾
-        </span>
-      </summary>
-      <div className="brief-section-body">{children}</div>
-    </details>
-  );
-}
-
-function ChecklistCard({ rows, orgId }: { rows: BriefingChecklistRow[]; orgId: string | null }) {
-  const ready = rows.filter((row) => row.ok).length;
-  return (
-    <section className="app-card brief-checklist">
-      <h2>
-        Briefing readiness
-        <span className="brief-checklist-count">
-          {ready}/{rows.length} ready
-        </span>
-      </h2>
-      <ul>
-        {rows.map((row) => (
-          <li key={row.label} className={row.ok ? "ok" : "no"}>
-            <span className={row.ok ? "brief-mark ok" : "brief-mark no"} aria-hidden="true">
-              {row.ok ? "✓" : "✗"}
-            </span>
-            <b>{row.label}</b>
-            {row.ok ? null : <a href={withOrg(CHECKLIST_HREFS[row.label] ?? "/workspace", orgId)}>{row.hint}</a>}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
 }
 
 /** One scouted-capability row: "254 · 7 entries · auto strong · endgame developing". */
@@ -220,7 +123,9 @@ function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
       {withData.map((team) => (
         <li key={team.teamKey}>
           <b>{team.teamNumber || stripFrc(team.teamKey)}</b>
-          {team.nickname ? <span className="brief-epa-nick">{team.nickname}</span> : null}
+          {team.nickname && team.nickname !== `Team ${team.teamNumber || stripFrc(team.teamKey)}` ? (
+            <span className="brief-epa-nick">{team.nickname}</span>
+          ) : null}
           <span className="brief-chip">Rating {fmtEpa(team.epaTotal)}</span>
           {team.rank != null ? <span className="brief-chip">rank {team.rank}</span> : null}
         </li>
@@ -429,7 +334,6 @@ export default function BriefingClient() {
     hasWatchNotes: stored.included.includes("watchNotes"),
     hasDefensePlans: stored.included.includes("defensePlans"),
   });
-  const rowFor = (label: string) => checklist.find((row) => row.label === label);
   const showCard = stored.included.includes("card");
   const showWatchNotes = stored.included.includes("watchNotes");
   const showCounterBooks = stored.included.includes("counterBooks");
@@ -437,47 +341,65 @@ export default function BriefingClient() {
 
   const batteryCritical = view.batteries.filter((battery) => battery.flag === "critical");
   const batteryWatch = view.batteries.filter((battery) => battery.flag === "watch");
-  const hasTbaOpponentMetrics = view.opponentTeams.some((team) => team.epaTotal != null || team.rank != null);
-  const hasOpponentNotes =
-    view.opponentsScouted.length > 0 ||
-    view.tendencies.length > 0 ||
-    showCounterBooks ||
-    showWatchNotes ||
-    showDefensePlans ||
-    hasTbaOpponentMetrics;
+  const opponentCards = buildOpponentCards({
+    opponentKeys: oppKeys,
+    opponentTeams: view.opponentTeams,
+    scouted: view.opponentsScouted,
+    tendencies: view.tendencies,
+    watchNotes: showWatchNotes ? view.watchNotes : [],
+    counterBooks: showCounterBooks ? view.counterBooks : [],
+    defensePlans: showDefensePlans ? view.defensePlans : [],
+  });
+  // Chips like "match Qual 30" or "red without that match 67" are engine notes, not advice.
+  const readable = (list: string[]) => list.map(readablePlanChip).filter((entry): entry is string => Boolean(entry));
+  const planChips = {
+    strengths: readable(view.plan?.strengths ?? []),
+    risks: readable(view.plan?.risks ?? []),
+    checkpoints: readable(view.plan?.checkpoints ?? []),
+  };
+  const opponentEvidence = opponentCards.flatMap((card) => card.evidence);
+  const factors = view.prediction?.keyFactors.slice(0, 3) ?? [];
+  const caveats = view.prediction?.caveats ?? [];
   const hasRobotHealth = view.pitReports.length > 0 || view.openRisks.length > 0 || view.batteries.length > 0;
 
   return (
     <main className="module-page brief-page">
-      <header className="app-page-header">
+      {/* Title and match picker on one line; Refresh / Recompute / Print behind one menu (the
+          page refreshes itself every minute), so the match starts at the top of the screen. */}
+      <header className="app-page-header brief-head">
         <div>
           <span className="breadcrumbs">Competition / Briefing</span>
-          <h1>Pre-match briefing</h1>
+          <div className="brief-title-row">
+            <h1>Pre-match briefing</h1>
+            <label className="brief-picker">
+              <span className="visually-hidden">Match</span>
+              <select aria-label="Match" value={view.match.matchKey} onChange={(event) => void load(event.target.value)}>
+                {view.ourMatches.map((entry) => (
+                  <option key={entry.matchKey} value={entry.matchKey}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <details className="brief-more">
+              <summary aria-label="More briefing actions">⋯</summary>
+              <div className="brief-more-menu">
+                <button type="button" onClick={() => void load(selectedRef.current)}>
+                  Refresh now
+                </button>
+                <button type="button" onClick={() => void load(selectedRef.current, { refresh: true })}>
+                  Recompute prediction
+                </button>
+                <button type="button" onClick={() => window.print()}>
+                  Print
+                </button>
+              </div>
+            </details>
+          </div>
           <p>
             {scoutEventLabel({ eventName: view.context.eventName, eventKey: view.context.eventKey })}
             {view.context.teamNumber != null ? ` — Team ${view.context.teamNumber}` : ""}
           </p>
-        </div>
-        <div className="brief-controls">
-          <label className="brief-picker">
-            <span>Match</span>
-            <select value={view.match.matchKey} onChange={(event) => void load(event.target.value)}>
-              {view.ourMatches.map((entry) => (
-                <option key={entry.matchKey} value={entry.matchKey}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current)}>
-            Refresh
-          </Button>
-          <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current, { refresh: true })}>
-            Recompute prediction
-          </Button>
-          <Button variant="secondary" type="button" onClick={() => window.print()}>
-            Print
-          </Button>
         </div>
       </header>
       <OfflineBanner feature="Pre-match briefing" fromCache={fromCache} cachedAt={cachedAt} />
@@ -510,7 +432,7 @@ export default function BriefingClient() {
         {winDisplay && view.prediction ? (
           <div className="brief-prob">
             <span className="brief-prob-num">{winPct ?? ""}</span>
-            <span className="brief-prob-label">win probability</span>
+            <span className="brief-prob-label">chance to win</span>
             {ourRange ? (
               <span className="brief-prob-range">
                 typical range {pct(ourRange.low)}–{pct(ourRange.high)}
@@ -542,12 +464,21 @@ export default function BriefingClient() {
         </section>
       ) : null}
 
-      {view.prediction && (view.prediction.keyFactors.length > 0 || view.prediction.caveats.length > 0) ? (
+      <section className="app-card brief-opponents" aria-labelledby="brief-opp-title">
+        <h2 id="brief-opp-title">Opponents{opponents.length ? `: ${opponents.join(" · ")}` : ""}</h2>
+        {opponentCards.length ? (
+          <OpponentCards cards={opponentCards} orgId={orgId} />
+        ) : (
+          <EmptyHint>We don&rsquo;t know our colour for this match yet, so opponents aren&rsquo;t listed.</EmptyHint>
+        )}
+      </section>
+
+      {factors.length > 0 || caveats.length > 0 || opponentEvidence.length > 0 ? (
         <details className="app-card brief-why">
           <summary>How we got this</summary>
-          {view.prediction.keyFactors.length > 0 ? (
+          {factors.length > 0 ? (
             <ul className="brief-factors">
-              {view.prediction.keyFactors.slice(0, 3).map((factor, index) => (
+              {factors.map((factor, index) => (
                 <li key={`${factor.name}-${index}`}>
                   <b>{plainStrategyText(factor.name)}</b>
                   {factor.evidence ? <span> — {plainStrategyText(factor.evidence)}</span> : null}
@@ -555,15 +486,24 @@ export default function BriefingClient() {
               ))}
             </ul>
           ) : null}
-          {view.prediction.caveats.length > 0 ? (
-            <p className="brief-caveats">Caveats: {view.prediction.caveats.map(plainStrategyText).join(" · ")}</p>
+          {caveats.length > 0 ? (
+            <p className="brief-caveats">Caveats: {caveats.map(plainStrategyText).join(" · ")}</p>
+          ) : null}
+          {opponentEvidence.length > 0 ? (
+            <>
+              <h3 className="brief-why-head">Opponent scouting behind the cards</h3>
+              <ul className="brief-factors">
+                {opponentEvidence.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </>
           ) : null}
         </details>
       ) : null}
 
-      <ChecklistCard rows={checklist} orgId={orgId} />
-
       <div className="brief-grid">
+        {showCard && view.card ? (
         <Section title="Match card" badge={showCard && view.card?.updatedAt ? "saved" : null}>
           {showCard && view.card ? (
             <>
@@ -607,12 +547,9 @@ export default function BriefingClient() {
               ) : null}
               <a href={withOrg("/match-strategy-cards", orgId)}>Edit in Match cards</a>
             </>
-          ) : (
-            <EmptyHint>
-              No card for this match — <a href={withOrg("/match-strategy-cards", orgId)}>write one in Match cards</a>
-            </EmptyHint>
-          )}
+          ) : null}
         </Section>
+        ) : null}
 
         <Section title="Game plan">
           {view.plan ? (
@@ -625,39 +562,41 @@ export default function BriefingClient() {
                   ))}
                 </ol>
               ) : null}
-              {view.plan.strengths.length > 0 ? (
+              {planChips.strengths.length > 0 ? (
                 <div className="brief-chip-row">
                   <span className="brief-chip-label">Protect</span>
-                  {view.plan.strengths.map((entry, index) => (
+                  {planChips.strengths.map((entry, index) => (
                     <span key={`${index}-${entry}`} className="brief-chip positive">
-                      {plainStrategyText(entry)}
+                      {entry}
                     </span>
                   ))}
                 </div>
               ) : null}
-              {view.plan.risks.length > 0 ? (
+              {planChips.risks.length > 0 ? (
                 <div className="brief-chip-row">
                   <span className="brief-chip-label">Watch out</span>
-                  {view.plan.risks.map((entry, index) => (
+                  {planChips.risks.map((entry, index) => (
                     <span key={`${index}-${entry}`} className="brief-chip critical">
-                      {plainStrategyText(entry)}
+                      {entry}
                     </span>
                   ))}
                 </div>
               ) : null}
-              {view.plan.checkpoints.length > 0 ? (
+              {planChips.checkpoints.length > 0 ? (
                 <div className="brief-chip-row">
                   <span className="brief-chip-label">Checkpoints</span>
-                  {view.plan.checkpoints.map((entry, index) => (
+                  {planChips.checkpoints.map((entry, index) => (
                     <span key={`${index}-${entry}`} className="brief-chip">
-                      {plainStrategyText(entry)}
+                      {entry}
                     </span>
                   ))}
                 </div>
               ) : null}
             </>
           ) : (
-            <MissingHint row={rowFor("Strategy plan")} orgId={orgId} />
+            <EmptyHint>
+              No game plan for this match yet. <a href={withOrg("/strategy", orgId)}>Open Strategy</a> to make one.
+            </EmptyHint>
           )}
         </Section>
 
@@ -695,135 +634,7 @@ export default function BriefingClient() {
           )}
         </Section>
 
-        <Section title="Opponents" badge={opponents.length ? opponents.join(" · ") : null}>
-          {hasOpponentNotes ? (
-            <>
-              <EpaList teams={view.opponentTeams} />
-              {view.opponentsScouted.length > 0 ? (
-                <ul className="brief-reviews">
-                  {view.opponentsScouted.map((row) => (
-                    <ScoutedRow key={row.teamKey} row={row} />
-                  ))}
-                </ul>
-              ) : null}
-              {view.tendencies.length > 0 ? (
-                <ul className="brief-tendencies">
-                  {view.tendencies.map((tendency) => (
-                    <li key={tendency.teamKey}>
-                      <p className="brief-review-head">
-                        <b>{stripFrc(tendency.teamKey)}</b>
-                        {tendency.labels.map((label) => (
-                          <span key={label} className="brief-chip">
-                            {intelTags([label])[0] ?? label.replace(/-/g, " ")}
-                          </span>
-                        ))}
-                      </p>
-                      {tendency.evidence.length > 0 ? (
-                        <p className="app-muted brief-no-notes">{tendency.evidence.map(plainStrategyText).join(" ")}</p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {showWatchNotes ? (
-                <div className="brief-subblock">
-                  <h3>Watchlist notes</h3>
-                  <ul className="brief-notes">
-                    {view.watchNotes.map((note, index) => (
-                      <li key={`${note.teamKey}-${index}`}>
-                        <i className="brief-tag">{note.teamNumber ?? stripFrc(note.teamKey)}</i>
-                        <span className="brief-note-body">{note.note}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <EmptyHint>
-                  No watchlist notes for these opponents —{" "}
-                  <a href={withOrg("/opponent-watchlist", orgId)}>add one on Watchlist</a>
-                </EmptyHint>
-              )}
-              {showCounterBooks ? (
-                <div className="brief-subblock">
-                  <h3>Counter-books</h3>
-                  <ul className="brief-notes">
-                    {view.counterBooks.map((book) => (
-                      <li key={book.id}>
-                        <i className="brief-tag">{book.teamNumber ?? stripFrc(book.teamKey)}</i>
-                        <span className="brief-note-body">
-                          <b>{book.counterPlan || book.summary}</b>
-                          {book.tendencies.length > 0 ? (
-                            <span className="brief-chip-row">
-                              {book.tendencies.map((tendency) => (
-                                <span key={tendency.field} className="brief-chip">
-                                  {tendency.field} ~{Math.round(tendency.average * 10) / 10} (n=
-                                  {tendency.sampleSize})
-                                </span>
-                              ))}
-                            </span>
-                          ) : null}
-                          {book.failureTriggers.length > 0 ? (
-                            <span className="app-muted brief-no-notes">
-                              Breaks down: {book.failureTriggers.map((t) => t.detail).join("; ")}
-                            </span>
-                          ) : null}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  {view.counterBookGaps.length > 0 ? (
-                    <p className="app-muted brief-no-notes">
-                      No counter-book yet for {view.counterBookGaps.map(stripFrc).join(", ")} —{" "}
-                      <a href={withOrg("/counter-book", orgId)}>generate one</a>
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
-                <EmptyHint>
-                  No counter-book yet
-                  {oppKeys.length ? ` for ${opponents.join(", ")}` : ""} —{" "}
-                  <a href={withOrg("/counter-book", orgId)}>generate one</a>
-                </EmptyHint>
-              )}
-              {showDefensePlans ? (
-                <div className="brief-subblock">
-                  <h3>Defense plan</h3>
-                  <ul className="brief-notes">
-                    {view.defensePlans.map((plan) => (
-                      <li key={plan.opponentTeamNumber}>
-                        <i className="brief-tag">{plan.opponentTeamNumber}</i>
-                        <span className="brief-note-body">
-                          <b>
-                            {plan.recommendation === "play_defense"
-                              ? "Play defense"
-                              : plan.recommendation === "stay_offense"
-                                ? "Stay offense"
-                                : "Situational"}
-                          </b>
-                          {plan.assignedDefender === "us" ? " (we defend)" : ""}
-                          {plan.rationale ? ` — ${plan.rationale}` : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <EmptyHint>
-                  No defense plan for these opponents —{" "}
-                  <a href={withOrg("/defense-planner", orgId)}>plan in Defense</a>
-                </EmptyHint>
-              )}
-            </>
-          ) : (
-            <EmptyHint>
-              Nothing on these opponents yet — <a href={withOrg("/scouting", orgId)}>scout them</a>, add{" "}
-              <a href={withOrg("/opponent-watchlist", orgId)}>watchlist notes</a>, generate a{" "}
-              <a href={withOrg("/counter-book", orgId)}>counter-book</a>, or plan defense in{" "}
-              <a href={withOrg("/defense-planner", orgId)}>Defense</a>
-            </EmptyHint>
-          )}
-        </Section>
-
+        {view.play ? (
         <Section title="Linked whiteboard play">
           {view.play ? (
             <>
@@ -836,11 +647,11 @@ export default function BriefingClient() {
                 <a href={withOrg("/whiteboard", orgId)}>Open in Whiteboard</a>
               </p>
             </>
-          ) : (
-            <MissingHint row={rowFor("Whiteboard play")} orgId={orgId} />
-          )}
+          ) : null}
         </Section>
+        ) : null}
 
+        {view.practice.reps > 0 ? (
         <Section title="Drive-team readiness">
           {view.practice.reps > 0 ? (
             <>
@@ -885,11 +696,11 @@ export default function BriefingClient() {
                 </table>
               ) : null}
             </>
-          ) : (
-            <MissingHint row={rowFor("Practice data")} orgId={orgId} />
-          )}
+          ) : null}
         </Section>
+        ) : null}
 
+        {view.opponentIntel.length > 0 ? (
         <Section title="Opponent film">
           {view.opponentIntel.length > 0 ? (
             <ul className="brief-reviews">
@@ -915,11 +726,10 @@ export default function BriefingClient() {
                 </li>
               ))}
             </ul>
-          ) : (
-            <MissingHint row={rowFor("Opponent video")} orgId={orgId} />
-          )}
+          ) : null}
           {view.opponentIntel.length > 0 ? <a href={withOrg("/video", orgId)}>Open Video Review</a> : null}
         </Section>
+        ) : null}
 
         <Section
           title="Our robot"
@@ -952,18 +762,18 @@ export default function BriefingClient() {
               ) : null}
               {view.openRisks.length > 0 ? (
                 <div className="brief-subblock">
-                  <h3>Open FMEA risks</h3>
+                  <h3>Open robot risks</h3>
                   <ul className="brief-notes">
                     {view.openRisks.slice(0, 4).map((risk) => (
                       <li key={risk.id}>
-                        <i className="brief-tag">RPN {risk.rpn}</i>
+                        <i className="brief-tag">risk {risk.rpn}</i>
                         <span className="brief-note-body">
                           <b>{risk.subsystemName}</b> — {risk.title}
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <a href={withOrg("/fmea", orgId)}>Open FMEA</a>
+                  <a href={withOrg("/fmea", orgId)}>Open robot risks</a>
                 </div>
               ) : null}
               {view.batteries.length > 0 ? (
@@ -986,14 +796,14 @@ export default function BriefingClient() {
             </>
           ) : (
             <EmptyHint>
-              No robot-health data yet — log repairs in{" "}
-              <a href={withOrg("/pit-repair-triage", orgId)}>Repair triage</a>, risks in{" "}
-              <a href={withOrg("/fmea", orgId)}>FMEA</a>, or batteries in{" "}
-              <a href={withOrg("/batteries", orgId)}>Batteries</a>
+              No robot problems logged. <a href={withOrg("/pit-repair-triage", orgId)}>Log a repair</a>, note{" "}
+              <a href={withOrg("/fmea", orgId)}>robot risks</a>, or check <a href={withOrg("/batteries", orgId)}>batteries</a>.
             </EmptyHint>
           )}
         </Section>
       </div>
+
+      <AddMoreLine rows={checklist} orgId={orgId} />
     </main>
   );
 }

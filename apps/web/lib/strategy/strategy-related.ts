@@ -177,7 +177,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
       return {
         kind,
         badge: "No prediction yet",
-        title: "Waiting on a real matchup",
+        title: "No match ahead",
         description: strategyWaitingCopy(undefined),
       };
     default:
@@ -395,4 +395,16 @@ export function strategyNextActions(input: {
       href: withOrgHref("/strategy/draft", orgId),
     },
   ];
+}
+
+/**
+ * Where the Strategy tab sends a drive coach: the pre-match briefing, for the given match
+ * (the last one played when nothing is ahead) or for whatever is next when no key is given.
+ */
+export function strategyBriefingHref(orgId: string | null | undefined, matchKey?: string | null): string {
+  const params = new URLSearchParams();
+  if (orgId) params.set("orgId", orgId);
+  if (matchKey) params.set("matchKey", matchKey);
+  const query = params.toString();
+  return query ? `/briefing?${query}` : "/briefing";
 }

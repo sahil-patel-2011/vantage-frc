@@ -210,3 +210,21 @@
     grid-column: 1;
   }
 }
+
+/* The pre-match briefing leads the Strategy tab. */
+.strategy-briefing-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin: 0 0 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+.strategy-briefing-card > div { display: grid; gap: 4px; flex: 1 1 320px; min-width: 0; }
+.strategy-briefing-card h2 { margin: 0; font-size: 1.2rem; }
+.strategy-briefing-card p { margin: 0; color: var(--muted); line-height: 1.4; }
+.strategy-briefing-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }

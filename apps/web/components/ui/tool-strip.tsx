@@ -23,6 +23,11 @@ type ToolStripProps = {
   visibleCount?: number;
   /** One line on what a tool is for, shown in the "More tools" list. */
   describe?: (id: string) => string | undefined;
+  /**
+   * Optional headings for the "More tools" list, in order, each listing tool ids most-used
+   * first. Tools in no group follow under "More". Without it the list is one flat run.
+   */
+  groups?: ReadonlyArray<{ label: string; ids: readonly string[] }>;
 };
 
 /**
@@ -71,6 +76,25 @@ function usePhoneLayout(): boolean {
   return phone;
 }
 
+/** Hidden tools under their headings, in the order each group lists them; the rest last. */
+function groupHidden(
+  hidden: ToolStripItem[],
+  groups: ReadonlyArray<{ label: string; ids: readonly string[] }>,
+): Array<{ label: string; items: ToolStripItem[] }> {
+  const placed = new Set<string>();
+  const out: Array<{ label: string; items: ToolStripItem[] }> = [];
+  for (const group of groups) {
+    const items = group.ids
+      .map((id) => hidden.find((item) => item.id === id))
+      .filter((item): item is ToolStripItem => Boolean(item) && !placed.has(item!.id));
+    for (const item of items) placed.add(item.id);
+    if (items.length) out.push({ label: group.label, items });
+  }
+  const rest = hidden.filter((item) => !placed.has(item.id));
+  if (rest.length) out.push({ label: "More", items: rest });
+  return out;
+}
+
 /**
  * Horizontal tool switcher for a hub workbench.
  *
@@ -89,6 +113,7 @@ export function ToolStrip({
   "aria-label": ariaLabel,
   visibleCount = DESKTOP_VISIBLE_COUNT,
   describe,
+  groups,
 }: ToolStripProps) {
   const [expanded, setExpanded] = useState(false);
   const overflowId = useId();
@@ -192,9 +217,20 @@ export function ToolStrip({
       {collapsible && expanded ? (
         <div className="hub-tool-overflow" id={overflowId}>
           <p className="hub-tool-overflow-head">{ariaLabel}</p>
-          <ul className="hub-tool-list" aria-label={`More ${ariaLabel.toLowerCase()}`}>
-            {hidden.map(renderRow)}
-          </ul>
+          {groups?.length ? (
+            groupHidden(hidden, groups).map((group) => (
+              <section key={group.label} className="hub-tool-group">
+                <h3 className="hub-tool-group-head">{group.label}</h3>
+                <ul className="hub-tool-list" aria-label={group.label}>
+                  {group.items.map(renderRow)}
+                </ul>
+              </section>
+            ))
+          ) : (
+            <ul className="hub-tool-list" aria-label={`More ${ariaLabel.toLowerCase()}`}>
+              {hidden.map(renderRow)}
+            </ul>
+          )}
         </div>
       ) : null}
     </div>

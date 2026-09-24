@@ -309,6 +309,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:dossier": ["dossier", "team profile", "who are they", "opponent report"],
   "competition:video": ["video", "film", "match footage", "review film", "rewatch"],
   "competition:pit": ["pit", "pit command", "pit crew", "turnaround"],
+  "competition:pit-tv": ["pit tv", "tv", "display", "kiosk", "screen", "monitor", "pit display", "board", "event board"],
   "team:goals": ["goals", "objectives", "targets", "season goals"],
   "team:safety": ["safety", "incident", "injury", "hazard", "report incident"],
   "team:notebook": ["notebook", "engineering notebook", "log", "journal", "documentation"],
@@ -392,7 +393,6 @@ const STANDALONE: CommandEntry[] = [
   { id: "logistics", label: "Logistics", context: "Vantage", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
   { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
   { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
-  { id: "pit-tv", label: "Pit TV", context: "Competition", href: "/display", kind: "destination", keywords: ["pit tv", "tv", "display", "kiosk", "screen", "monitor", "pit display", "board"] },
   // Four complete features — API, offline support, browser specs — that no
   // menu pointed at. They were reachable only by typing the URL, which the
   // route-coverage rule was supposed to catch and did not: it counted a route
@@ -472,6 +472,7 @@ export function commandCatalog(): CommandEntry[] {
 
   for (const hub of PRODUCT_HUBS) {
     for (const tab of hub.tabs) {
+      if (tab.inSearch === false) continue;
       add({
         id: `${hub.id}:${tab.id}`,
         label: tab.label,
