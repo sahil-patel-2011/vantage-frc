@@ -126,10 +126,17 @@ function AdminClientInner() {
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
+    // The web address sits folded under Advanced, where the browser cannot point at it, so
+    // it is filled in and checked here rather than with required/pattern on the input.
+    const slug = form.slug.trim() || (form.teamNumber ? `team-${form.teamNumber}` : "");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      setMessage("The web address (under Advanced) can only use lowercase letters, numbers and dashes.");
+      return;
+    }
     const response = await fetch("/api/admin/organizations", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...form, teamNumber: Number(form.teamNumber) }),
+      body: JSON.stringify({ ...form, slug, teamNumber: Number(form.teamNumber) }),
     });
     const data = (await response.json()) as ProvisionConfirmation & { error?: string };
     if (!response.ok) {
@@ -297,8 +304,6 @@ function AdminClientInner() {
             <label>
               Web address
               <input
-                required
-                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 value={form.slug}
                 onChange={(event) => setForm({ ...form, slug: event.target.value })}
               />
