@@ -82,6 +82,14 @@ export function TeamAdminInvitesPanel({
               <option value="admin">Mentor or coach</option>
               <option value="viewer">Parent or guest</option>
             </select>
+            {/* The dropdown did not say what each choice can do, and "Mentor" is an admin. */}
+            <small className="app-muted">
+              {role === "admin"
+                ? "Scouts and uses team tools. Can also invite and remove people, change team settings and add AI keys."
+                : role === "viewer"
+                  ? "Can look, can't change."
+                  : "Scouts and uses team tools."}
+            </small>
           </label>
           <Button variant="primary" type="submit" disabled={inviteBusy}>
             {inviteBusy ? "Sending…" : "Send invite"}
