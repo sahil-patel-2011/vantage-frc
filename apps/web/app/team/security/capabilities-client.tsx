@@ -306,7 +306,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
             </EmptyState>
           ) : null}
           {editable.map((member) => (
-            <details className="admin-org member-access-row" key={member.userId}>
+            <details className="member-access-row" key={member.userId}>
               <summary>
                 <span className="member-access-who">
                   <strong>{member.name}</strong>

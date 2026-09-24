@@ -97,6 +97,8 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
   const [rosterReady, setRosterReady] = useState(false);
   const [denied, setDenied] = useState(false);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  // Tab-level limits stay folded away until someone asks for them, per member and hub.
+  const [tabsOpen, setTabsOpen] = useState<Record<string, boolean>>({});
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const membersRef = useRef<Member[]>([]);
@@ -225,16 +227,17 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
     });
   }
 
+  /** Back to "sees every hub", saved straight away: a reset that waited for Save was lost on reload. */
   function clearAll(userId: string) {
-    setDrafts((prev) => ({
-      ...prev,
-      [userId]: rowsToDraft([]),
-    }));
+    const cleared = rowsToDraft([]);
+    setDrafts((prev) => ({ ...prev, [userId]: cleared }));
+    setTabsOpen((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`${userId}:`))));
+    void saveHubAccess(userId, cleared);
   }
 
-  async function saveHubAccess(userId: string) {
+  async function saveHubAccess(userId: string, override?: Record<ClientHubId, string[] | null>) {
     setSavingUserId(userId);
-    const draft = drafts[userId] ?? rowsToDraft(hubAccessByUser[userId]);
+    const draft = override ?? drafts[userId] ?? rowsToDraft(hubAccessByUser[userId]);
     const response = await fetch("/api/organizations/members", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -246,11 +249,15 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
       }),
     });
     const data = await response.json();
+    // Say what changed in the words of the switches, so nobody has to re-open the row to check.
+    const who = members.find((member) => member.userId === userId)?.name ?? "This member";
+    const open = CLIENT_HUB_IDS.filter((id) => draft[id] !== null).map((id) => HUB_LABELS[id]);
+    const hidden = CLIENT_HUB_IDS.filter((id) => draft[id] === null).map((id) => HUB_LABELS[id]);
     setMessage(
       response.ok
-        ? draftToPayload(draft).length
-          ? "Hub access updated and audited."
-          : "Hub access cleared — member is unrestricted."
+        ? open.length === 0 || hidden.length === 0
+          ? `${who} can open every hub.`
+          : `${who} can now open ${open.join(", ")}. Hidden: ${hidden.join(", ")}.`
         : (data.error ?? "Could not save hub access."),
     );
     setSavingUserId(null);
@@ -319,7 +326,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
             return (
               // One line per member until you open it: the six hub checkboxes for every
               // scout made this page ~5,500px for three people.
-              <details className="admin-org member-access-row" key={member.userId}>
+              <details className="member-access-row" key={member.userId}>
                 <summary>
                   <span className="member-access-who">
                     <strong>{member.name}</strong>
@@ -358,7 +365,27 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                             </small>
                           </span>
                         </label>
-                        {!unrestricted && enabled && tabs.length ? (
+                        {enabled && tabs.length && !(tabsOpen[`${member.userId}:${hubId}`] || selectedTabs.length) ? (
+                          <button
+                            type="button"
+                            className="text-button hub-limit-tabs"
+                            onClick={() => {
+                              // From "every hub", limiting one hub's tabs first makes every hub an
+                              // explicit, fully-open allow; nothing a member sees changes.
+                              if (unrestricted) {
+                                setDrafts((prev) => {
+                                  const next = rowsToDraft([]);
+                                  for (const id of CLIENT_HUB_IDS) next[id] = [];
+                                  return { ...prev, [member.userId]: next };
+                                });
+                              }
+                              setTabsOpen((prev) => ({ ...prev, [`${member.userId}:${hubId}`]: true }));
+                            }}
+                          >
+                            Limit to some tabs…
+                          </button>
+                        ) : null}
+                        {!unrestricted && enabled && tabs.length && (tabsOpen[`${member.userId}:${hubId}`] || selectedTabs.length) ? (
                           <div
                             style={{
                               display: "flex",
@@ -396,7 +423,11 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                   >
                     {savingUserId === member.userId ? "Saving…" : "Save hub access"}
                   </button>
-                  <button type="button" onClick={() => clearAll(member.userId)}>
+                  <button
+                    type="button"
+                    disabled={savingUserId === member.userId}
+                    onClick={() => clearAll(member.userId)}
+                  >
                     Show every hub
                   </button>
                 </div>

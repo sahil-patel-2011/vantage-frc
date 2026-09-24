@@ -54,6 +54,13 @@ export function Modal({
   const autoId = useId();
   const titleId = labelledById ?? `modal-title-${autoId}`;
   const [mounted, setMounted] = useState(false);
+  // The latest onClose, read by the key handler. Callers pass a new function every render;
+  // with onClose in the effect's deps the trap re-ran on each keystroke and pulled focus back
+  // to the Close button, so typing in a field inside the dialog lost every key after the first.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => setMounted(true), []);
 
@@ -61,9 +68,16 @@ export function Modal({
     if (!open) return;
     restoreRef.current = (document.activeElement as HTMLElement) ?? null;
     const node = dialogRef.current;
-    // Focus the first focusable element (or the dialog itself).
-    const first = node?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? node)?.focus();
+    // Focus what the dialog asks for (autoFocus / data-autofocus), else the first control in its
+    // body, else the first control at all, else the dialog itself. Never steal focus that is
+    // already inside it.
+    if (!node?.contains(document.activeElement)) {
+      const wanted =
+        node?.querySelector<HTMLElement>("[autofocus], [data-autofocus]") ??
+        Array.from(node?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find((el) => el.getAttribute("aria-label") !== "Close dialog") ??
+        node?.querySelector<HTMLElement>(FOCUSABLE);
+      (wanted ?? node)?.focus();
+    }
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -71,7 +85,7 @@ export function Modal({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !node) return;
@@ -101,14 +115,14 @@ export function Modal({
       document.body.style.overflow = prevOverflow;
       restoreRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open || !mounted) return null;
 
   return createPortal(
     <div
       className={[styles.overlay, variant === "sheet" ? styles.sheetOverlay : ""].filter(Boolean).join(" ")}
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onMouseDown={(e) => e.target === e.currentTarget && onCloseRef.current()}
     >
       <div
         ref={dialogRef}

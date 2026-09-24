@@ -52,3 +52,9 @@
 }
 /* The open editor is one column at every width, under the member's name. */
 .member-access-row .auth-policy-form { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.member-access-row .state-control { display: flex; align-items: flex-start; gap: 10px; width: 100%; }
+.member-access-row .state-control > span { display: grid; flex: 1; min-width: 0; }
+.hub-limit-tabs { margin: 0 0 0 1.9rem; font-size: 0.9em; }
+@media (max-width: 600px) {
+  .member-access-row > :not(summary) { margin-left: 0.6rem; margin-right: 0.6rem; }
+}

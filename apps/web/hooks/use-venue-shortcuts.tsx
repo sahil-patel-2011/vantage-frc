@@ -36,7 +36,11 @@ export function useVenueShortcuts(orgId: string | null | undefined) {
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target instanceof HTMLSelectElement ||
-        (target instanceof HTMLElement && target.isContentEditable)
+        (target instanceof HTMLElement && target.isContentEditable) ||
+        // Inside any open dialog, letters belong to the dialog: "m" in a rename box once
+        // navigated away to My Day and lost the name.
+        (target instanceof HTMLElement && target.closest('[role="dialog"], [aria-modal="true"]')) ||
+        document.querySelector('[aria-modal="true"]')
       ) {
         return;
       }
