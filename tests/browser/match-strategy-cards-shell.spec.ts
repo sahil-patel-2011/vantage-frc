@@ -11,7 +11,7 @@ test("Match strategy cards still loads after the Saturday shell pass", async ({ 
   await page.goto("/match-strategy-cards");
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const board = page.getByRole("heading", { name: /Match strategy cards|Printable per-match game plans/i });
+  const board = page.getByRole("heading", { name: /Match cards|Match strategy cards|Printable per-match game plans/i });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Waiting on a synced match schedule/i });
   const unavailable = loadFailureHeading(page);

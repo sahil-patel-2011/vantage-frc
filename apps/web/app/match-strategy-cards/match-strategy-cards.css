@@ -40,4 +40,12 @@
 /* Played matches fold under one line. */
 .msc-earlier{display:grid;gap:8px}
 .msc-earlier > summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--muted);font-weight:600}
+.msc-earlier > summary{list-style:none;gap:10px}
+.msc-earlier > summary::-webkit-details-marker{display:none}
+.msc-earlier > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
+.msc-earlier[open] > summary::before{transform:rotate(45deg)}
+.msc-earlier > summary{list-style:none;gap:10px}
+.msc-earlier > summary::-webkit-details-marker{display:none}
+.msc-earlier > summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg);transition:transform .15s ease}
+.msc-earlier[open] > summary::before{transform:rotate(45deg)}
 .msc-earlier[open] > summary{color:var(--ink)}

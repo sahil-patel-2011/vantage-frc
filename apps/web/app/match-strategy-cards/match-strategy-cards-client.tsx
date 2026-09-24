@@ -118,10 +118,10 @@ function CardsShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match strategy cards"}
+            {" / Match cards"}
           </>
         }
-        title="Match strategy cards"
+        title="Match cards"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -213,7 +213,7 @@ export default function MatchStrategyCardsClient() {
         if (!response.ok || !isMatchStrategyCardsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match strategy cards. Showing the last copy on this device.");
+            setError("Could not refresh Match cards. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -227,7 +227,7 @@ export default function MatchStrategyCardsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match strategy cards. Showing the last copy on this device.");
+          setError("Could not refresh Match cards. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -433,10 +433,10 @@ export default function MatchStrategyCardsClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Match strategy cards"}
+            {" / Match cards"}
           </>
         }
-        title="Match strategy cards"
+        title="Match cards"
         description="A printable game plan for each of our matches: roles, auto, defense and the robots to watch."
       >
         <div className="msc-header-actions">
@@ -459,7 +459,8 @@ export default function MatchStrategyCardsClient() {
       {/* Tips about the next plan only make sense while a match is coming. */}
       {view.nextMatchKey ? <NextActionsPanel actions={nextActions} /> : null}
 
-      {showTiles ? (
+      {/* Counts of scheduled matches only mean something while one is still coming. */}
+      {showTiles && view.nextMatchKey ? (
         <section className="msc-stats" aria-label="Match strategy cards counts">
           <StatTile label="Scheduled" value={formatMatchStrategyCardsMetric(cardCount, true)} />
           <StatTile label="Saved plans" value={formatMatchStrategyCardsMetric(savedCount, true)} />
