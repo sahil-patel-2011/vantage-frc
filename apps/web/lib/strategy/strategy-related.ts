@@ -83,7 +83,7 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     {
       id: "command",
       label: "Set active event",
-      detail: "Event Day Command picks the event Strategy and picks use.",
+      detail: "Event day picks the event Strategy and picks use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -238,7 +238,7 @@ export function strategyNextActions(input: {
         {
           id: "command",
           label: "Set active event",
-          detail: "Event Day Command picks the event Strategy and picks use.",
+          detail: "Event day picks the event Strategy and picks use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },

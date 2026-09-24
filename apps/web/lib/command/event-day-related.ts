@@ -111,7 +111,7 @@ export function eventDaySetupSteps(
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Choose your team to open Event Day Command.",
+        detail: "Choose your team to open Event day.",
         href: "/workspace",
       },
     ];
@@ -194,7 +194,7 @@ export function commandSetupMessage(input: {
 }): string {
   if (!input.eventKey) {
     return input.canSetEvent
-      ? "Set your active event to turn Event Day Command into your field-side OS."
+      ? "Pick the event you are at, and Event day shows your matches, partners and what to scout."
       : "An owner or admin sets the event this team is attending. Match times stay empty until then.";
   }
   return "Set your team's number so we can filter your match queue.";

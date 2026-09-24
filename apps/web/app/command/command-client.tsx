@@ -94,7 +94,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           return;
         }
         const body = await response.json().catch(() => ({}));
-        setError(body.error ?? "Could not load Event Day Command");
+        setError(body.error ?? "Could not load Event day");
         setFetchFailed(true);
         setLoading(false);
         return;
@@ -118,7 +118,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
         setLoading(false);
         return;
       }
-      setError("Could not load Event Day Command");
+      setError("Could not load Event day");
       setFetchFailed(true);
       setLoading(false);
     }

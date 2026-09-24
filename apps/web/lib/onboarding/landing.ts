@@ -87,11 +87,11 @@ const ROLE_HEADLINE: Record<OnboardingRole, string> = {
 };
 
 const ROLE_SUMMARY: Record<OnboardingRole, string> = {
-  student: "These five are the first five minutes — pulled from your role and crew, not a generic tour.",
-  mentor: "These five are the first five minutes — team setup, invites, and the checks that unblock students.",
-  coach: "These five are the first five minutes — calendar, logistics, and the budget guardrails.",
-  parent: "These five are the first five minutes — announcements, logistics, and how student time is tracked.",
-  other: "These five are the first five minutes — pulled from your role and focus.",
+  student: "Your first steps: pulled from your role and crew, not a generic tour.",
+  mentor: "Your first steps: team setup, invites, and the checks that unblock students.",
+  coach: "Your first steps: calendar, logistics, and the budget guardrails.",
+  parent: "Your first steps: announcements, logistics, and how student time is tracked.",
+  other: "Your first steps: pulled from your role and focus.",
 };
 
 export function buildOnboardingLanding(input: {

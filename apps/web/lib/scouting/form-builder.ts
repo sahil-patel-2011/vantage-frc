@@ -959,7 +959,7 @@ export function formBuilderSetupSteps(orgId?: string | null): FormBuilderSetupSt
     {
       id: "command",
       label: "Set active event",
-      detail: "Event Day Command sets the season year match and pit forms publish under.",
+      detail: "Event day sets the season year match and pit forms publish under.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -1080,7 +1080,7 @@ export function formBuilderNextActions(input: {
         {
           id: "command",
           label: "Open Event Day",
-          detail: "Active event context lives on Event Day Command.",
+          detail: "Active event context lives on Event day.",
           href: hubHref("/competition", "command", null),
         },
       ];
@@ -1089,7 +1089,7 @@ export function formBuilderNextActions(input: {
       {
         id: "command",
         label: "Set active event",
-        detail: "Event Day Command sets the season year match and pit forms publish under.",
+        detail: "Event day sets the season year match and pit forms publish under.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },

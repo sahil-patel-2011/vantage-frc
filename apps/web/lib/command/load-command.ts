@@ -135,7 +135,7 @@ export async function loadEventDayCommand(
   if (!row) {
     return emptySnapshot({
       computedAt,
-      message: "Join a team to open Event Day Command.",
+      message: "Join a team to open Event day.",
       setupSteps: [
         {
           id: "workspace",

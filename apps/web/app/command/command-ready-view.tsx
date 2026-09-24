@@ -149,7 +149,7 @@ export function CommandReadyView({
       <CommandReadyHeader
         embedded={embedded}
         orgId={orgId || null}
-        title={snap.eventName ?? "Event Day Command"}
+        title={snap.eventName ?? "Event day"}
         orgName={snap.orgName ?? me.orgName ?? null}
         teamNumber={snap.teamNumber ?? me.teamNumber ?? null}
         eventKey={snap.eventKey ?? null}

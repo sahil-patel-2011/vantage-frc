@@ -51,8 +51,8 @@ describe("Business funding GUI student chrome", () => {
     expect(hub).toMatch(/hadCache \|\| viewRef\.current/);
     expect(hub).toMatch(/response\.status === 401 \|\| response\.status === 403/);
     expect(hub).toMatch(/Choose your team/);
-    expect(hub).toMatch(/BUSINESS_FUNDING_RELATED_INCLUDE/);
-    expect(hub).toMatch(/className="business-funding-related"/);
+    // The hub's own tabs are its navigation; no related-links row repeats them.
+    expect(hub).not.toMatch(/BUSINESS_FUNDING_RELATED_INCLUDE/);
     expect(hub).toMatch(/AbortSignal\.timeout\(FEATURE_API_TIMEOUT_MS\)/);
     expect(hub).toMatch(/badge="Needs setup"/);
     expect(hub).toMatch(/if \(!viewRef\.current && cached\?\.data/);

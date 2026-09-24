@@ -169,7 +169,7 @@ describe("eventDayShellNextActions", () => {
 
   it("tells a scout that an admin sets the event", () => {
     expect(commandSetupMessage({ eventKey: null, canSetEvent: false })).toMatch(/owner or admin/);
-    expect(commandSetupMessage({ eventKey: null, canSetEvent: true })).toMatch(/Set your active event/);
+    expect(commandSetupMessage({ eventKey: null, canSetEvent: true })).toMatch(/Pick the event you are at/);
     expect(commandSetupMessage({ eventKey: "2026casj", canSetEvent: false })).toMatch(/team's number/);
   });
 

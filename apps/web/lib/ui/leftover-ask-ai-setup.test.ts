@@ -70,7 +70,7 @@ describe("leftover Ask AI setup says Choose your team", () => {
   it("Chat limits chrome does not say API keys or Organization hard limits", () => {
     const src = readFileSync(join(WEB_ROOT, "app/team/budgets/budget-client.tsx"), "utf8");
     expect(src).not.toMatch(/>API keys</);
-    expect(src).toMatch(/Team spend limits/);
+    expect(src).toMatch(/Team AI limits/);
     expect(src).not.toMatch(/Organization hard limits/);
   });
 });

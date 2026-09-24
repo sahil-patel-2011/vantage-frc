@@ -91,7 +91,7 @@ export function EventDayShell({
           </PageHeader>
         )}
         {children}
-        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event Day Command">
+        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event day">
           <StatRowSkeleton count={3} />
           <CardGridSkeleton cols={3} rows={1} />
         </div>

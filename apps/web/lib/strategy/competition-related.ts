@@ -95,7 +95,7 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     actions.push({
       id: "event",
       label: "Set active event",
-      detail: "Event Day Command picks the event schedule Strategy and picks use.",
+      detail: "Event day picks the event schedule Strategy and picks use.",
       href: withOrg("/command", orgId),
       primary: true,
     });

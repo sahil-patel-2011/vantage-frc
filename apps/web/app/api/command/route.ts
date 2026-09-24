@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   } catch (error) {
     return Response.json(
       {
-        error: publicErrorMessage(error, "Could not load Event Day Command"),
+        error: publicErrorMessage(error, "Could not load Event day"),
       },
       { status: 400 },
     );
