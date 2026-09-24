@@ -176,9 +176,11 @@ export function AppShellTopbar({
         <a
           className="soft-topbar-product"
           href={crossProductHref("scouting", "/scout", orgId || null)}
-          title="Open Scouting — fast match entry, team lookup, predictions and the pick list"
+          title="Open the Scouting app — fast match entry, team lookup, predictions and the pick list"
+          aria-label="Open the Scouting app"
         >
-          Scouting
+          {/* Named as its own app so it is not mistaken for the Scout tab in the bottom bar. */}
+          Scouting<span className="soft-topbar-product-suffix"> app</span>
         </a>
         <a
           className="soft-icon-btn soft-ask-ai"

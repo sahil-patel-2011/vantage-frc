@@ -203,7 +203,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     }
     await downloadBlob(response, `${selected[0]}.csv`);
     setOk(true);
-    setMessage(`CSV downloaded · ${response.headers.get("x-vantage-provenance") ?? "audited"}`);
+    setMessage("CSV downloaded.");
     setBusy(false);
   }
 
@@ -263,8 +263,8 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">Team / Export Center</span>
           <h1>Exports</h1>
           <p>
-            Download this team&apos;s data — including AI chats and memory — as audited CSV or ZIP. Each workspace is
-            isolated; credentials and other teams&apos; rows are never included.
+            Download your team&apos;s data, including AI chats, as spreadsheets (CSV) or one ZIP. Only your
+            team&apos;s rows are included, and never passwords or keys.
           </p>
         </div>
         <div className="export-header-actions">
@@ -349,8 +349,8 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             <label className="export-check">
               <input type="checkbox" checked={excelBom} onChange={(event) => setExcelBom(event.target.checked)} />
               <span>
-                <strong>Excel UTF-8 marker</strong>
-                <small>Keep non-ASCII team data readable in Excel</small>
+                <strong>Open cleanly in Excel</strong>
+                <small>Keeps accents and symbols in names readable when Excel opens the file</small>
               </span>
             </label>
           </div>
@@ -374,7 +374,6 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                   <span>
                     <strong>{domain.fileName}</strong>
                     <small>{domain.description}</small>
-                    <span className="prov">{domain.provenance}</span>
                   </span>
                   <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => { setSelected([domain.id]); void (async () => { setBusy(true); const response = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "csv", orgId, scope: exportScope, domain: domain.id, domains: [domain.id], filters: { eventKey: eventKey || undefined, excelBom }, }), }); if (!response.ok) { const data = await response.json(); setOk(false); setMessage(data.error ?? "CSV export failed"); } else { await downloadBlob(response, domain.fileName); setOk(true); setMessage(`Downloaded ${domain.fileName}`); } setBusy(false); })(); }}>
                     CSV

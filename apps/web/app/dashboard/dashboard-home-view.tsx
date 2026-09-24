@@ -422,7 +422,7 @@ export function DashboardHomeView(props: {
       ? {
           ...now,
           title: "Finish setting up your team",
-          detail: "Your next step is in the list just below. Matches, duties and tasks show up here once there are some.",
+          detail: "Your next step is in the setup list. Matches, duties and tasks show up here once there are some.",
         }
       : now;
   // Errors outside edit mode stay at the top, where the thing that failed is.
