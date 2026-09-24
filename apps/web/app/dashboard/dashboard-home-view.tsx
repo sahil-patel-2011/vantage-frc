@@ -416,12 +416,13 @@ export function DashboardHomeView(props: {
   // "Nothing you have to do right now" sat above a four-step setup list for a new owner.
   // While that list shows, the quiet state says what is actually next. The mentor strip
   // (duties, rooms, checklists) steps aside too: "all clear" on a team with no data is noise.
+  const setupIsNext = Boolean(props.teamSetupCard && now.quiet);
   const nowView =
-    props.teamSetupCard && now.quiet
+    setupIsNext
       ? {
           ...now,
           title: "Finish setting up your team",
-          detail: "The steps below get everyone else going. Matches, duties and tasks show up here once there are some.",
+          detail: "Your next step is in the list just below. Matches, duties and tasks show up here once there are some.",
         }
       : now;
   // Errors outside edit mode stay at the top, where the thing that failed is.
@@ -553,7 +554,9 @@ export function DashboardHomeView(props: {
           <strong>{nowView.title}</strong>
           {nowView.detail ? <p>{nowView.detail}</p> : null}
         </div>
-        {now.quiet ? (
+        {/* While setup is next, the setup list right below is the action; a second link
+            here ("Open My Day") pointed somewhere else. */}
+        {setupIsNext ? null : now.quiet ? (
           <a className="dash-now-quiet" href={withOrgHref(now.href, orgId || null)}>
             {now.cta} →
           </a>
