@@ -4,8 +4,11 @@
  * normal view hides. DOM-free so it runs under vitest in node.
  */
 
+import { applyGridDrag } from "./boards";
 import {
+  findDashboardSlot,
   homeViewLayout,
+  isAlwaysShown,
   packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
@@ -92,7 +95,7 @@ export function groupWidgetRows<T extends { entry: WidgetCatalogEntry }>(
 
 function layoutKey(layout: readonly DashboardWidgetLayout[]): string {
   return [...layout]
-    .map((item) => `${item.i}|${item.type}|${item.x}|${item.y}|${item.w}|${item.h}`)
+    .map((item) => `${item.i}|${item.type}|${item.x}|${item.y}|${item.w}|${item.h}|${isAlwaysShown(item) ? "always" : ""}`)
     .sort()
     .join(";");
 }
@@ -117,6 +120,123 @@ export function layoutsEqual(
 export function packKeepingOrder(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
   const packed = new Map(packDashboardLayout(layout).map((item) => [item.i, item]));
   return layout.map((item) => packed.get(item.i) ?? item);
+}
+
+/**
+ * Packs a board of any column count the way Home packs the saved one: each
+ * card, in reading order, takes the first free spot from the top-left. That
+ * closes gaps across as well as up. Array order is kept, like packKeepingOrder.
+ */
+export function packInColumns(layout: DashboardWidgetLayout[], cols: number): DashboardWidgetLayout[] {
+  const columns = Math.max(1, Math.floor(cols) || 1);
+  const ordered = [...layout].sort((a, b) => a.y - b.y || a.x - b.x || a.i.localeCompare(b.i));
+  const placed: DashboardWidgetLayout[] = [];
+  for (const item of ordered) {
+    const w = Math.max(1, Math.min(columns, Math.floor(item.w)));
+    const h = Math.max(1, Math.floor(item.h));
+    placed.push({ ...item, ...findDashboardSlot(placed, w, h, columns), w, h });
+  }
+  const byId = new Map(placed.map((item) => [item.i, item]));
+  return layout.map((item) => byId.get(item.i) ?? item);
+}
+
+/**
+ * The cards edit mode puts on the board: what Home shows, plus anything added
+ * in this edit session (so a card you just added is there to see even if it
+ * has nothing in it yet). Cards Home leaves out are listed under the board
+ * instead of taking up full-size places on it.
+ *
+ * Not re-packed here: the drag maths works in column bands with vertical
+ * gravity, and packing under it made a dragged card snap back. The draft is
+ * laid out like Home once, on the way in (layoutForEditing).
+ */
+export function editBoardLayout(
+  layout: DashboardWidgetLayout[],
+  hidden: ReadonlyMap<string, unknown>,
+  keep: ReadonlySet<string> = new Set(),
+): DashboardWidgetLayout[] {
+  return layout.filter((item) => !hidden.has(item.i) || keep.has(item.i));
+}
+
+/**
+ * The draft edit mode starts from: the cards Home shows, where Home shows
+ * them, and the cards it is hiding moved below them. Home packs around hidden
+ * cards; left in their saved spots they would be holes on the edit board —
+ * a row with a gap where "My day" sits empty. Hidden cards come back at the
+ * end of the board, which is also where the "Hidden right now" row lists them.
+ */
+export function layoutForEditing(
+  layout: DashboardWidgetLayout[],
+  hidden: ReadonlyMap<string, unknown>,
+): DashboardWidgetLayout[] {
+  const shown = packDashboardLayout(layout.filter((item) => !hidden.has(item.i)));
+  const bottom = shown.reduce((max, item) => Math.max(max, item.y + item.h), 0);
+  const tucked = packDashboardLayout(layout.filter((item) => hidden.has(item.i))).map((item) => ({
+    ...item,
+    y: item.y + bottom,
+  }));
+  const byId = new Map([...shown, ...tucked].map((item) => [item.i, item]));
+  return layout.map((item) => byId.get(item.i) ?? item);
+}
+
+/** The same board with this card marked "Always show" (or not). */
+export function setAlwaysShow(
+  layout: DashboardWidgetLayout[],
+  id: string,
+  always: boolean,
+): DashboardWidgetLayout[] {
+  return layout.map((item) => {
+    if (item.i !== id) return item;
+    const rest: Record<string, unknown> = { ...(item.config ?? {}) };
+    delete rest.alwaysShow;
+    const config = always ? { ...rest, alwaysShow: true } : rest;
+    return { ...item, config: Object.keys(config).length ? config : undefined };
+  });
+}
+
+/**
+ * "Snap & tidy". Reflows the cards on screen in reading order so every gap a
+ * card can fill is filled — across as well as up — and says whether anything
+ * on screen actually moved, so the toast never claims a move that did not
+ * happen.
+ *
+ * On the full 12-column board and on a phone the saved board is packed. On a
+ * tablet the saved board is scaled down, and the rounding leaves holes (three
+ * 4-wide cards land in columns 1, 2 and 4 of 4), so the board is packed at the
+ * tablet's width and written back through applyGridDrag — the same path a
+ * drag on a tablet takes.
+ */
+export function tidyBoard(input: {
+  layout: DashboardWidgetLayout[];
+  /** Cards painted on the board right now (Home's hidden ones are not). */
+  visibleIds: ReadonlySet<string>;
+  cols: number;
+  /** The board as painted for a given saved layout. */
+  displayFor: (layout: DashboardWidgetLayout[]) => DashboardWidgetLayout[];
+}): { layout: DashboardWidgetLayout[]; moved: boolean } {
+  const { layout, visibleIds, cols, displayFor } = input;
+  const before = displayFor(layout);
+  let next: DashboardWidgetLayout[];
+  if (cols > 1 && cols < 12) {
+    next = applyGridDrag(layout, packInColumns(before, cols), cols);
+  } else {
+    const packed = new Map(
+      packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))).map((item) => [item.i, item]),
+    );
+    next = layout.map((item) => packed.get(item.i) ?? item);
+  }
+  // Judged on screen: a saved-board change nobody can see is not "moved".
+  const moved = !samePositions(before, displayFor(next));
+  return moved ? { layout: next, moved } : { layout, moved: false };
+}
+
+/** Same positions for every card in `a` that is also in `b`. */
+export function samePositions(a: readonly DashboardWidgetLayout[], b: readonly DashboardWidgetLayout[]): boolean {
+  const byId = new Map(b.map((item) => [item.i, item]));
+  return a.every((item) => {
+    const other = byId.get(item.i);
+    return other ? other.x === item.x && other.y === item.y && other.w === item.w && other.h === item.h : true;
+  });
 }
 
 /** How many steps Undo remembers. A season of fiddling does not need more. */
@@ -171,10 +291,15 @@ export function hiddenOnHome(
       (item) => item.i,
     ),
   );
+  // Cards no build of Home can show (the pit stream with media off) are not
+  // "hidden right now" — nothing the member does would bring them back.
+  const possible = new Set(
+    homeViewLayout(layout, { editing: true, shell: input.shell }).map((item) => item.i),
+  );
   const rows = input.widgets ?? {};
   const hidden = new Map<string, HiddenOnHomeReason>();
   for (const item of layout) {
-    if (shown.has(item.i)) continue;
+    if (shown.has(item.i) || !possible.has(item.i)) continue;
     const status = (rows[item.i] ?? rows[item.type])?.status;
     hidden.set(item.i, status === "empty" ? "empty" : "setup_done");
   }

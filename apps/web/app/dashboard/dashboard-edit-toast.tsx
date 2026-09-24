@@ -14,25 +14,27 @@ export function DashboardEditToast({
   kind,
   action,
   editing,
-  sticky,
   onUndo,
   onDismiss,
+  secondary = null,
 }: {
+  /** A follow-up other than Undo, e.g. "Open team board" after sharing. */
+  secondary?: { label: string; testId: string; onClick: () => void } | null;
   message: string;
   kind: "success" | "error";
   action: "undo" | null;
   /** Sits above the edit toolbar rather than the app's tab bar. */
   editing: boolean;
-  /** Stays until the step it describes is done (e.g. "Tap a slot…"). */
-  sticky: boolean;
   onUndo: () => void;
   onDismiss: () => void;
 }) {
+  const hasSecondary = Boolean(secondary);
   useEffect(() => {
-    if (!message || sticky) return;
-    const timer = window.setTimeout(onDismiss, kind === "error" ? 9000 : action ? 7000 : 4500);
+    if (!message) return;
+    const timer = window.setTimeout(onDismiss, kind === "error" ? 9000 : action || hasSecondary ? 7000 : 4500);
     return () => window.clearTimeout(timer);
-  }, [message, kind, action, sticky, onDismiss]);
+    // A boolean, not the object: the parent builds a new one every render.
+  }, [message, kind, action, hasSecondary, onDismiss]);
 
   if (!message) return null;
   return (
@@ -46,6 +48,11 @@ export function DashboardEditToast({
       {action === "undo" ? (
         <button type="button" data-testid="dash-toast-undo" onClick={onUndo}>
           Undo
+        </button>
+      ) : null}
+      {secondary ? (
+        <button type="button" className="dash-toast-action" data-testid={secondary.testId} onClick={secondary.onClick}>
+          {secondary.label}
         </button>
       ) : null}
       <button type="button" className="dash-toast-close" aria-label="Dismiss" onClick={onDismiss}>

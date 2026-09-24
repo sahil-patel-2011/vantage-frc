@@ -61,7 +61,10 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   expect(box).toBeTruthy();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box!.x + 280, box!.y + 90, { steps: 20 });
+  // Measured from where the drag started (the grip's centre), not the grip's
+  // corner: the grip's hit area is finger-sized now, so its corner is further
+  // from its centre than it was.
+  await page.mouse.move(box!.x + box!.width / 2 + 280, box!.y + box!.height / 2 + 90, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
   // A lifted copy of the card follows the pointer while its slot shows the target.
   await expect(page.locator(".dash-drag-proxy.is-card .dash-widget-hit")).toHaveCount(1);

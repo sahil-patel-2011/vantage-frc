@@ -106,15 +106,19 @@ export function applyGridDrag(
   nextLayout: readonly GridDragItem[],
   displayCols: number,
 ): DashboardWidgetLayout[] {
-  return scaleLayoutToCols(
-    current.map((item) => {
-      const match = nextLayout.find((row) => row.i === item.i);
-      if (!match) return item;
-      return { ...item, x: match.x, y: match.y, w: match.w, h: match.h };
-    }),
-    displayCols,
-    DASHBOARD_COLUMNS,
-  );
+  // Only the cards that were on the displayed grid are scaled back up. Edit
+  // mode leaves cards Home is hiding off the grid, and scaling those as if
+  // they were in display columns would stretch them across the saved board.
+  return current.map((item) => {
+    const match = nextLayout.find((row) => row.i === item.i);
+    if (!match) return item;
+    const [scaled] = scaleLayoutToCols(
+      [{ ...item, x: match.x, y: match.y, w: match.w, h: match.h }],
+      displayCols,
+      DASHBOARD_COLUMNS,
+    );
+    return scaled ?? item;
+  });
 }
 
 /** Places a palette widget onto the board without overlapping when no drop cell is given. */

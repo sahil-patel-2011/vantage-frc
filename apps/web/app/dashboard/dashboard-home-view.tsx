@@ -8,19 +8,16 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type Ref,
 } from "react";
 import dynamic from "next/dynamic";
 import { orgNameAddsDetail } from "../../components/app-shell-model";
-import { prefersTapToPlace } from "../../lib/dashboard/tap-to-place";
 import {
   catalogEntry,
   emptyHomeWidgets,
   inferWidgetSize,
   type DashboardWidgetLayout,
-  type DashboardWidgetType,
   type WidgetCatalogEntry,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
@@ -50,13 +47,14 @@ import type {
   PaletteRow,
   SnapFeedback,
 } from "./dashboard-board-types";
-import { DashboardBoardBar } from "./dashboard-board-bar";
+import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { homeHeaderDetail, homeNowFromWidgets } from "./dashboard-home-model";
 import { FirstWeekCard } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
+import { DashboardHiddenRow } from "./dashboard-hidden-row";
 import "./dashboard-edit.css";
 
 const DashboardBoardsModal = dynamic(
@@ -99,7 +97,6 @@ export function DashboardHomeView(props: {
   meLoaded: boolean;
   orgId: string;
   board: BoardState | null;
-  scope: "personal" | "org";
   switcherBoards: BoardMeta[];
   personalBoards: BoardMeta[];
   orgBoards: BoardMeta[];
@@ -127,7 +124,6 @@ export function DashboardHomeView(props: {
   editing: boolean;
   previewing: boolean;
   libraryOpen: boolean;
-  pendingPlaceType: DashboardWidgetType | null;
   saving: boolean;
   canShareOrg: boolean;
   canUndo: boolean;
@@ -176,14 +172,14 @@ export function DashboardHomeView(props: {
   tidyLayout: () => void;
   save: (scope?: "personal" | "org") => Promise<void> | void;
   resetDefault: () => Promise<void> | void;
-  switchBoard: (id: string) => Promise<void> | void;
+  switchBoard: (id: string, opts?: { leaveEditing?: boolean }) => Promise<void> | void;
   createBoard: (scope: "personal" | "org", name?: string) => Promise<void> | void;
   duplicateBoard: (id: string) => Promise<void> | void;
   renameBoard: (id: string, name: string) => Promise<void> | void;
   deleteBoard: (id: string) => Promise<void> | void;
-  addWidget: (type: DashboardWidgetType) => void;
-  requestPlaceWidget: (entry: WidgetCatalogEntry, tapToPlace: boolean, closeLibrary?: boolean) => void;
-  placePendingAtPoint: (event: ReactPointerEvent<HTMLElement> | ReactMouseEvent<HTMLElement>) => void;
+  addWidget: (type: DashboardWidgetLayout["type"]) => void;
+  setAlwaysShown: (id: string, always: boolean) => void;
+  shareWithTeam: () => Promise<{ id: string; name: string } | null>;
   removeWidget: (id: string) => void;
   setWidgetSize: (id: string, size: WidgetSizeKey) => void;
   resetWidgetSize: (id: string) => void;
@@ -203,7 +199,6 @@ export function DashboardHomeView(props: {
     meLoaded,
     orgId,
     board,
-    scope,
     switcherBoards,
     personalBoards,
     orgBoards,
@@ -228,7 +223,6 @@ export function DashboardHomeView(props: {
     editing,
     previewing,
     libraryOpen,
-    pendingPlaceType,
     saving,
     canShareOrg,
     canUndo,
@@ -283,8 +277,8 @@ export function DashboardHomeView(props: {
     renameBoard,
     deleteBoard,
     addWidget,
-    requestPlaceWidget,
-    placePendingAtPoint,
+    setAlwaysShown,
+    shareWithTeam,
     removeWidget,
     setWidgetSize,
     resetWidgetSize,
@@ -301,7 +295,9 @@ export function DashboardHomeView(props: {
   const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [confirmKind, setConfirmKind] = useState<"discard" | "reset" | null>(null);
+  const [confirmKind, setConfirmKind] = useState<"discard" | "reset" | "team" | null>(null);
+  /** The team board just shared, while the toast about it is up, so it can offer to open it. */
+  const [sharedBoard, setSharedBoard] = useState<{ id: string; name: string; message: string } | null>(null);
   const [boardsCreate, setBoardsCreate] = useState<"personal" | null>(null);
   const moreRef = useRef<HTMLDetailsElement | null>(null);
   const gridWrapRef = useRef<HTMLElement | null>(null);
@@ -407,7 +403,15 @@ export function DashboardHomeView(props: {
   }, [editing, confirmKind, boardsOpen, dragging, grabbedId, libraryOpen, setLibraryOpen, undo, requestCancel]);
 
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
-  const pendingLabel = pendingPlaceType ? catalogEntry(pendingPlaceType)?.label ?? pendingPlaceType : "";
+  // Cards Home is leaving out right now, listed under the board while editing.
+  const hiddenRows = editing
+    ? layout.filter((item) => hiddenOnHome.has(item.i) && !displayLayout.some((shown) => shown.i === item.i))
+    : [];
+  const openBoards = (create: "personal" | null) => {
+    setBoardsCreate(create);
+    setBoardsOpen(true);
+    setRenameId(null);
+  };
   const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
   // "Nothing you have to do right now" sat above a four-step setup list for a new owner.
   // While that list shows, the quiet state says what is actually next. The mentor strip
@@ -448,18 +452,19 @@ export function DashboardHomeView(props: {
             {/* The hour is the browser clock; the server renders in UTC. */}
             {knownName ? `${mounted ? greeting() : "Welcome"}, ${knownName}` : mounted ? greeting() : "Welcome"}
           </h1>
-          {board && !board.isDefault ? (
-            <span className="dash-scope-pill" data-scope={scope}>
-              {scope === "org" ? "Team board" : "Your board"}
-            </span>
+          {orgId && meLoaded ? (
+            <DashboardBoardSwitcher
+              boards={switcherBoards}
+              board={board}
+              saving={saving}
+              disabled={editing || previewing}
+              onSwitch={(id) => void switchBoard(id)}
+              onNew={() => openBoards("personal")}
+              onManage={() => openBoards(null)}
+            />
           ) : null}
           {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? (
             <p className="dash-hero-org">{me.orgName}</p>
-          ) : null}
-          {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
-            <p className="dash-board-current">
-              <strong>{board.name}</strong>
-            </p>
           ) : null}
           {(() => {
             const detail = homeHeaderDetail({
@@ -529,22 +534,6 @@ export function DashboardHomeView(props: {
                 <span data-more-delay="">
                   <CopyShareLink orgId={orgId || null} />
                 </span>
-                {orgId && meLoaded ? (
-                  <button
-                    type="button"
-                    className="dash-board-manage"
-                    data-testid="dash-manage-boards"
-                    disabled={saving}
-                    aria-expanded={boardsOpen}
-                    onClick={() => {
-                      setBoardsCreate(null);
-                      setBoardsOpen(true);
-                      setRenameId(null);
-                    }}
-                  >
-                    Your boards
-                  </button>
-                ) : null}
                 {updatedAt && orgId && !fromCache ? (
                   <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
                 ) : null}
@@ -623,29 +612,6 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {orgId && meLoaded && switcherBoards.length > 1 ? (
-        <div className="dash-board-bar-slot" {...dim}>
-          <DashboardBoardBar
-            boards={switcherBoards}
-            activeId={board?.id}
-            saving={saving}
-            editing={editing}
-            managing={boardsOpen}
-            onSwitch={(id) => void switchBoard(id)}
-            onCreatePersonal={() => {
-              setBoardsCreate("personal");
-              setBoardsOpen(true);
-              setRenameId(null);
-            }}
-            onManage={() => {
-              setBoardsCreate(null);
-              setBoardsOpen(true);
-              setRenameId(null);
-            }}
-          />
-        </div>
-      ) : null}
-
       {dashShell !== "ready" && !props.teamSetupCard ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
@@ -685,9 +651,7 @@ export function DashboardHomeView(props: {
         >
           {editing ? (
             <p className="dash-edit-hint" data-testid="dash-edit-hint">
-              {pendingPlaceType
-                ? `Tap a spot on the board to place ${pendingLabel}.`
-                : "Drag cards to move them. Tap a card to change its size, or − to remove it."}
+              Drag cards to move them. Tap a card to change its size, or − to remove it.
             </p>
           ) : null}
           {snapFeedback ? (
@@ -707,13 +671,7 @@ export function DashboardHomeView(props: {
               type="button"
               className="dash-empty-board"
               data-testid="dash-empty-board"
-              onClick={() => {
-                if (pendingPlaceType) {
-                  addWidget(pendingPlaceType);
-                  return;
-                }
-                setLibraryOpen(true);
-              }}
+              onClick={() => setLibraryOpen(true)}
             >
               <span className="dash-empty-board-plus" aria-hidden="true">
                 +
@@ -734,15 +692,10 @@ export function DashboardHomeView(props: {
               ref={setCanvasNode}
               className="dash-grid dash-pgrid"
               data-editing={editing ? "true" : "false"}
-              data-pending-place={pendingPlaceType ?? ""}
               data-testid="dash-place-canvas"
               data-measured={measured && width > 0 ? "true" : "false"}
               onClick={(event) => {
                 if (!editing) return;
-                if (pendingPlaceType) {
-                  placePendingAtPoint(event);
-                  return;
-                }
                 if (!(event.target as HTMLElement).closest(".dash-grid-item")) setSelectedId(null);
               }}
               style={
@@ -820,6 +773,12 @@ export function DashboardHomeView(props: {
                 : null}
             </div>
           )}
+          <DashboardHiddenRow
+            rows={hiddenRows}
+            reasons={hiddenOnHome}
+            onAlwaysShow={(id) => setAlwaysShown(id, true)}
+            onRemove={removeWidget}
+          />
         </section>
       ) : null}
 
@@ -866,7 +825,7 @@ export function DashboardHomeView(props: {
             setLibraryOpen(false);
           }}
           onReset={() => setConfirmKind("reset")}
-          onSaveOrg={() => void save("org")}
+          onSaveOrg={() => setConfirmKind("team")}
           onDone={() => void save("personal")}
         />
       ) : null}
@@ -884,8 +843,20 @@ export function DashboardHomeView(props: {
         kind={messageKind}
         action={editing ? messageAction : null}
         editing={editing || previewing}
-        sticky={Boolean(pendingPlaceType)}
         onUndo={undo}
+        secondary={
+          sharedBoard && sharedBoard.message === message && editing
+            ? {
+                label: "Open team board",
+                testId: "dash-toast-open-board",
+                onClick: () => {
+                  const target = sharedBoard;
+                  setSharedBoard(null);
+                  void switchBoard(target.id, { leaveEditing: true });
+                },
+              }
+            : null
+        }
         onDismiss={dismissMessage}
       />
 
@@ -901,20 +872,17 @@ export function DashboardHomeView(props: {
           onDragPointerMove={onDragPointerMove}
           onDragPointerUp={onDragPointerUp}
           onDragPointerCancel={onDragPointerCancel}
-          onPick={(entry, pointerType) => {
+          onPick={(entry) => {
             // A drag out of the sheet ends in a click on the same button.
             if (suppressClickRef.current) {
               suppressClickRef.current = false;
               return;
             }
-            requestPlaceWidget(
-              entry,
-              prefersTapToPlace({
-                pointerType,
-                coarse: window.matchMedia("(pointer: coarse)").matches,
-              }),
-              true,
-            );
+            // Same on every screen: the card goes on the board at once, the
+            // sheet closes, and the board scrolls to it and flashes it. Phones
+            // used to switch to "tap a slot on the board", with no slots
+            // shown and no way to tell a slot from empty space.
+            addWidget(entry.type);
           }}
         />
       ) : null}
@@ -929,6 +897,20 @@ export function DashboardHomeView(props: {
                 confirmLabel: "Reset board",
                 cancelLabel: "Keep my layout",
               }
+            : confirmKind === "team"
+              ? board?.scope === "org" && board.id
+                ? {
+                    title: `Update ${board.name} for the team?`,
+                    body: "Everyone who uses this team board will see this layout.",
+                    confirmLabel: "Save for team",
+                    cancelLabel: "Keep editing",
+                  }
+                : {
+                    title: "Share this layout as a team board?",
+                    body: "Everyone on the team can switch to it from their boards. Your own Home stays as it is, and you stay on it.",
+                    confirmLabel: "Share with team",
+                    cancelLabel: "Keep editing",
+                  }
             : confirmKind === "discard"
               ? {
                   title: "Discard changes?",
@@ -944,6 +926,13 @@ export function DashboardHomeView(props: {
           if (!ok) return;
           if (kind === "reset") void resetDefault();
           if (kind === "discard") cancelEditing();
+          if (kind === "team") {
+            const onTeamBoard = board?.scope === "org" && Boolean(board.id);
+            void shareWithTeam().then((shared) => {
+              if (!shared || onTeamBoard) return;
+              setSharedBoard({ ...shared, message: `Shared as “${shared.name}”. You're still on your own board.` });
+            });
+          }
         }}
       />
 

@@ -57,6 +57,15 @@ export type DashboardWidgetLayout = {
   config?: Record<string, unknown>;
 };
 
+/**
+ * The member chose "Always show" for this card in edit mode, so Home keeps it
+ * even when it is empty or is a setup card on a team that is set up. Stored
+ * in the card's config, which the layout validator already passes through.
+ */
+export function isAlwaysShown(item: Pick<DashboardWidgetLayout, "config">): boolean {
+  return item.config?.alwaysShow === true;
+}
+
 export type HomeAudienceKind = "student" | "mentor";
 
 export type WidgetCatalogEntry = {
@@ -269,7 +278,9 @@ export function homeViewLayout(
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
   const setupElsewhere = ready || input.teamSetupCard === true;
-  const visible = layout.filter((item) => !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type)));
+  const visible = layout.filter(
+    (item) => isAlwaysShown(item) || !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type)),
+  );
   // A pinned card stays visible even when empty and keeps the user's saved size — except
   // the hero. An empty "Next match" at full hero height was the biggest thing on Home for
   // every day of the year that is not an event day; it takes its minimum three rows until it is live.
@@ -280,7 +291,9 @@ export function homeViewLayout(
   // cards, eight saying "nothing yet". They come back the moment they have something, and
   // the page names them in one line (emptyHomeWidgets). Edit mode still shows every card.
   // Next match is the exception: it is the top of Home and says when the next match is.
-  const filled = visible.filter((item) => HOME_ALWAYS_VISIBLE.has(item.type) || statusOf(item) !== "empty");
+  const filled = visible.filter(
+    (item) => HOME_ALWAYS_VISIBLE.has(item.type) || isAlwaysShown(item) || statusOf(item) !== "empty",
+  );
   const sized = filled.map((item) => {
     if (!COMPACT_WHEN_EMPTY.has(item.type)) return item;
     const status = statusOf(item);
@@ -296,7 +309,10 @@ export function emptyHomeWidgets(
 ): string[] {
   const rows = widgets ?? {};
   return layout
-    .filter((item) => !HOME_ALWAYS_VISIBLE.has(item.type) && (rows[item.i] ?? rows[item.type])?.status === "empty")
+    .filter(
+      (item) =>
+        !HOME_ALWAYS_VISIBLE.has(item.type) && !isAlwaysShown(item) && (rows[item.i] ?? rows[item.type])?.status === "empty",
+    )
     .map((item) => catalogEntry(item.type)?.label ?? item.type);
 }
 

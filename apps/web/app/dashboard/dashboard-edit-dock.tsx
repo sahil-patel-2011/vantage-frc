@@ -168,7 +168,7 @@ function DashboardEditMenu({
         <div className="dash-editbar-popover" role="menu" aria-label="More edit options">
           <button type="button" role="menuitem" data-testid="dash-tidy" disabled={saving} onClick={pick(onTidy)}>
             <strong>Snap &amp; tidy</strong>
-            <span>Move cards up to fill any gaps</span>
+            <span>Close the gaps between cards</span>
           </button>
           <button type="button" role="menuitem" data-testid="dash-preview" onClick={pick(onPreview)}>
             <strong>Preview</strong>

@@ -106,6 +106,17 @@ describe("dashboard drag and drop", () => {
     expect(dragged.find((item) => item.type === "next_match")?.w).toBe(6);
   });
 
+  it("leaves cards that were not on the displayed grid exactly as saved", () => {
+    // Edit mode keeps cards Home is hiding off the grid; a tablet drag must
+    // not scale them up as if they were in tablet columns.
+    const nextMatch = DEFAULT_DASHBOARD_LAYOUT.find((item) => item.type === "next_match")!;
+    const dragged = applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, [{ i: nextMatch.i, x: 2, y: 4, w: 2, h: 4 }], 4);
+    for (const item of DEFAULT_DASHBOARD_LAYOUT) {
+      if (item.i === nextMatch.i) continue;
+      expect(dragged.find((row) => row.i === item.i)).toEqual(item);
+    }
+  });
+
   it("drops a new widget into a free slot without overlapping existing cards", () => {
     const result = dropWidgetOntoLayout(DEFAULT_DASHBOARD_LAYOUT, "notifications", { now: 42 });
     expect(result.ok).toBe(true);

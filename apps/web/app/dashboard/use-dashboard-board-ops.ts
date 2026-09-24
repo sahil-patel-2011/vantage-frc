@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  useEffect,
+  useRef,
   type Dispatch,
   type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent,
   type MutableRefObject,
-  type PointerEvent as ReactPointerEvent,
   type SetStateAction,
 } from "react";
 import {
@@ -23,20 +23,18 @@ import {
   layoutOrAudienceDefault,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
-  type WidgetCatalogEntry,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import {
   describeCellMove,
   layoutOrder,
   nudgeItem,
-  pointToCell,
   reorderLayout,
   type GridCell,
   type NudgeDirection,
 } from "../../lib/dashboard/grid-drag";
-import { layoutsEqual, packKeepingOrder } from "../../lib/dashboard/edit-mode";
-import { ARROW_DIRECTION, resolveGrid } from "./dashboard-canvas";
+import { layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
+import { ARROW_DIRECTION } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
 type LoadSnapshot = (
@@ -63,9 +61,15 @@ export function useDashboardBoardOps(input: {
   saving: boolean;
   editing: boolean;
   grabbedId: string | null;
-  pendingPlaceType: DashboardWidgetType | null;
-  canvasNode: HTMLElement | null;
-  width: number;
+  /** The board as painted for a given saved layout — what Snap & tidy judges. */
+  displayFor: (layout: DashboardWidgetLayout[]) => DashboardWidgetLayout[];
+  /**
+   * The draft laid out like Home: shown cards packed, hidden ones below them.
+   * Every add, resize and remove settles through it, so a card Home is hiding
+   * never sits in a hole on the edit board.
+   */
+  settle: (layout: DashboardWidgetLayout[]) => DashboardWidgetLayout[];
+  previewing: boolean;
   resetAudience: "mentor" | "student";
   loadHome: (id: string, preferredBoardId?: string | null) => Promise<void>;
   loadSnapshot: LoadSnapshot;
@@ -86,7 +90,8 @@ export function useDashboardBoardOps(input: {
   setEditing: Dispatch<SetStateAction<boolean>>;
   setPreviewing: Dispatch<SetStateAction<boolean>>;
   setLibraryOpen: Dispatch<SetStateAction<boolean>>;
-  setPendingPlaceType: Dispatch<SetStateAction<DashboardWidgetType | null>>;
+  /** A card was added in this edit, so it stays on the board while editing. */
+  onWidgetAdded?: (id: string) => void;
   setBoardsOpen: Dispatch<SetStateAction<boolean>>;
   setRenameId: Dispatch<SetStateAction<string | null>>;
   setRenameDraft: Dispatch<SetStateAction<string>>;
@@ -104,9 +109,9 @@ export function useDashboardBoardOps(input: {
     saving,
     editing,
     grabbedId,
-    pendingPlaceType,
-    canvasNode,
-    width,
+    displayFor,
+    settle,
+    previewing,
     resetAudience,
     loadHome,
     loadSnapshot,
@@ -126,28 +131,11 @@ export function useDashboardBoardOps(input: {
     setEditing,
     setPreviewing,
     setLibraryOpen,
-    setPendingPlaceType,
+    onWidgetAdded,
     setBoardsOpen,
     setRenameId,
     setRenameDraft,
   } = input;
-
-  function requestPlaceWidget(
-    entry: WidgetCatalogEntry,
-    tapToPlace: boolean,
-    closeLibrary = false,
-  ) {
-    if (tapToPlace) {
-      setPendingPlaceType(entry.type);
-      if (closeLibrary) setLibraryOpen(false);
-      setMessageKind("success");
-      setMessageAction(null);
-      setMessage(`Tap a slot on the board to place ${entry.label}.`);
-      setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
-      return;
-    }
-    addWidget(entry.type);
-  }
 
   function addWidget(type: DashboardWidgetType, drop?: GridCell, displayCols?: number) {
     const result = dropWidgetOntoLayout(layoutRef.current, type, {
@@ -165,45 +153,55 @@ export function useDashboardBoardOps(input: {
     record(layoutRef.current);
     // Packed, not just pulled up: a card dropped beside a hole slides into it,
     // so the board never needs a separate tidy after an add.
-    setLayout(packKeepingOrder(result.layout));
-    if (added) setHighlightId(added.i);
+    setLayout(settle(result.layout));
+    if (added) {
+      onWidgetAdded?.(added.i);
+      setHighlightId(added.i);
+    }
     setMessageKind("success");
     setMessageAction(null);
     setMessage(`${entry?.label ?? type} added to the board.`);
     setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
-    setPendingPlaceType(null);
     if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type)).catch(() => {
       setMessageKind("error");
       setMessage("Widget added, but its data could not refresh. Try Refresh card data.");
     });
   }
 
-  function placePendingAtPoint(event: ReactPointerEvent<HTMLElement> | ReactMouseEvent<HTMLElement>) {
-    if (!pendingPlaceType || !canvasNode) return;
-    const target = event.target as HTMLElement | null;
-    if (target?.closest("a, input, select, textarea, .dash-widget-card, [data-dash-widget]")) return;
-    const spec = resolveGrid(width);
-    const localCols = spec.cols;
-    const localGap = spec.margin[0];
-    const rect = canvasNode.getBoundingClientRect();
-    const cell = pointToCell(
-      { x: event.clientX, y: event.clientY },
-      rect,
-      localCols,
-      spec.rowHeight,
-      localGap,
-    );
-    addWidget(pendingPlaceType, { col: cell.col, row: cell.row }, localCols);
-  }
-
   function tidyLayout() {
-    record(layoutRef.current);
-    setLayout((current) => packKeepingOrder(current));
+    const visibleIds = new Set(displayFor(layoutRef.current).map((item) => item.i));
+    const result = tidyBoard({ layout: layoutRef.current, visibleIds, cols, displayFor });
     setMessageKind("success");
     setMessageAction(null);
-    setMessage("Cards moved up to fill the gaps.");
-    setAnnounce("Board tidied. Cards moved up to fill the gaps.");
+    if (!result.moved) {
+      setMessage("Nothing to tidy.");
+      setAnnounce("Nothing to tidy. Every card is already as far up and left as it fits.");
+      return;
+    }
+    record(layoutRef.current);
+    setLayout(result.layout);
+    setMessageAction("undo");
+    setMessage("Board tidied. Cards moved to fill the gaps.");
+    setAnnounce("Board tidied. Cards moved to fill the gaps.");
+  }
+
+  /**
+   * "Always show" from the hidden row under the board. The card goes back on
+   * Home even while it is empty (or, for setup cards, after setup is done).
+   * Part of the draft like any other edit: Undo reverts it, Done saves it.
+   */
+  function setAlwaysShown(id: string, always: boolean) {
+    const target = layoutRef.current.find((item) => item.i === id);
+    if (!target) return;
+    const label = catalogEntry(target.type)?.label ?? target.type;
+    record(layoutRef.current);
+    setLayout(setAlwaysShow(layoutRef.current, id, always));
+    if (always) setHighlightId(id);
+    setMessageKind("success");
+    setMessageAction("undo");
+    setMessage(always ? `${label} will always show on Home.` : `${label} hides again when it has nothing to show.`);
+    setAnnounce(always ? `${label} will always show on Home.` : `${label} hides again when it has nothing to show.`);
   }
 
   function setWidgetSize(id: string, size: WidgetSizeKey) {
@@ -213,7 +211,7 @@ export function useDashboardBoardOps(input: {
         if (item.i !== id) return item;
         return applyWidgetSize(item, size, catalogEntry(item.type));
       });
-      return packKeepingOrder(resized);
+      return settle(resized);
     });
     const target = layoutRef.current.find((item) => item.i === id);
     const label = target ? catalogEntry(target.type)?.label ?? target.type : "Widget";
@@ -239,7 +237,7 @@ export function useDashboardBoardOps(input: {
             }
           : item,
       );
-      return packKeepingOrder(resized);
+      return settle(resized);
     });
     const label = entry.label ?? target.type;
     setAnnounce(`${label} reset to its default size.`);
@@ -249,7 +247,7 @@ export function useDashboardBoardOps(input: {
     const removed = layoutRef.current.find((item) => item.i === id);
     record(layoutRef.current);
     // Packed so the hole it leaves closes straight away.
-    setLayout((current) => packKeepingOrder(current.filter((item) => item.i !== id)));
+    setLayout((current) => settle(current.filter((item) => item.i !== id)));
     const label = removed ? catalogEntry(removed.type)?.label ?? removed.type : "Widget";
     setMessageKind("success");
     setMessageAction("undo");
@@ -324,8 +322,90 @@ export function useDashboardBoardOps(input: {
     }
   }
 
-  async function switchBoard(targetId: string) {
-    if (!orgId || !targetId || targetId === board?.id || saving || editing) return;
+  /**
+   * "Save for team", after the member has confirmed. Shares the draft as a
+   * team board and leaves them where they were: on their own board, still
+   * editing, with nothing of theirs saved or switched. It used to save and
+   * switch Home to the team board in one tap. Returns the team board so the
+   * toast can offer to open it.
+   */
+  async function shareWithTeam(): Promise<{ id: string; name: string } | null> {
+    if (!orgId) return null;
+    if (!canShareOrg) {
+      setMessageKind("error");
+      setMessage("Ask a team admin to share a layout with the team.");
+      return null;
+    }
+    const onTeamBoard = board?.scope === "org" && Boolean(board.id);
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dashboards", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          id: onTeamBoard ? board?.id : null,
+          name: onTeamBoard ? board?.name : "Team board",
+          scope: "org",
+          layout: layoutRef.current,
+          // Only a team board you are already on stays active; sharing from
+          // your own board must not switch your Home away from it.
+          activate: onTeamBoard,
+          action: "save",
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessageKind("error");
+        setMessage(data.error ?? "Could not share this layout with the team.");
+        return null;
+      }
+      setBoards((current) =>
+        current.some((item) => item.id === data.id)
+          ? current.map((item) => (item.id === data.id ? { ...item, name: data.name } : item))
+          : [...current, { id: data.id, name: data.name, scope: "org", isActive: Boolean(data.isActive) }],
+      );
+      if (onTeamBoard) {
+        // You are editing the team board itself, so this is its save.
+        setBoard((current) => (current ? { ...current, layout: data.layout } : current));
+        setLayout(data.layout);
+        setEditing(false);
+        setLibraryOpen(false);
+        setGrabbedId(null);
+        setPreviewing(false);
+      }
+      setMessageKind("success");
+      setMessageAction(null);
+      setMessage(
+        onTeamBoard
+          ? `Saved ${data.name} for the team.`
+          : `Shared as “${data.name}”. You're still on your own board.`,
+      );
+      setAnnounce(onTeamBoard ? `Saved ${data.name} for the team.` : `Shared with the team as ${data.name}.`);
+      return { id: data.id, name: data.name };
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not share this layout with the team. Please try again.");
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * `leaveEditing` is for "Open team board" on the toast after sharing: the
+   * team board already holds the draft, so edit mode ends and Home switches.
+   */
+  async function switchBoard(targetId: string, opts?: { leaveEditing?: boolean }) {
+    if (!orgId || !targetId || targetId === board?.id || saving) return;
+    if (editing && !opts?.leaveEditing) return;
+    if (editing) {
+      setEditing(false);
+      setPreviewing(false);
+      setLibraryOpen(false);
+      setGrabbedId(null);
+    }
     setSaving(true);
     setMessage("");
     try {
@@ -517,8 +597,18 @@ export function useDashboardBoardOps(input: {
     return layoutOrAudienceDefault(board?.layout, resetAudience);
   }
 
+  /*
+    The draft as it stood when edit mode opened. Opening it lays the board out
+    like Home (layoutForEditing), which can move cards Home is hiding; that is
+    not a change you made, so it does not count as one.
+  */
+  const editBaselineRef = useRef<DashboardWidgetLayout[] | null>(null);
+  useEffect(() => {
+    if (!editing && !previewing) editBaselineRef.current = null;
+  }, [editing, previewing]);
+
   function hasUnsavedChanges() {
-    return !layoutsEqual(layoutRef.current, savedLayout());
+    return !layoutsEqual(layoutRef.current, editBaselineRef.current ?? savedLayout());
   }
 
   function cancelEditing() {
@@ -526,7 +616,6 @@ export function useDashboardBoardOps(input: {
     setEditing(false);
     setPreviewing(false);
     setLibraryOpen(false);
-    setPendingPlaceType(null);
     setGrabbedId(null);
     setHighlightId(null);
     setMessageAction(null);
@@ -539,6 +628,10 @@ export function useDashboardBoardOps(input: {
     below it — so the one line above the board is the only instruction now.
   */
   function enterEditMode() {
+    const start = settle(layoutRef.current);
+    // Back from Preview keeps the baseline from when editing began.
+    if (!editBaselineRef.current) editBaselineRef.current = start;
+    setLayout(start);
     setEditing(true);
     setPreviewing(false);
     setLibraryOpen(false);
@@ -577,7 +670,7 @@ export function useDashboardBoardOps(input: {
       }
     }
     record(layoutRef.current);
-    setLayout(nextLayout);
+    setLayout(settle(nextLayout));
     setGrabbedId(null);
     setMessageKind("success");
     setMessageAction("undo");
@@ -642,9 +735,9 @@ export function useDashboardBoardOps(input: {
 
   return {
     addWidget,
-    requestPlaceWidget,
-    placePendingAtPoint,
     tidyLayout,
+    setAlwaysShown,
+    shareWithTeam,
     setWidgetSize,
     resetWidgetSize,
     removeWidget,

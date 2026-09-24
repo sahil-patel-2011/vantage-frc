@@ -34,7 +34,7 @@ export function DashboardWidgetLibrary({
   rows: PaletteRow[];
   /** A widget is being dragged out of the sheet — get out of the way of the board. */
   dragOut: boolean;
-  onPick: (entry: WidgetCatalogEntry, pointerType: string) => void;
+  onPick: (entry: WidgetCatalogEntry) => void;
   onBeginDrag: (event: ReactPointerEvent<HTMLElement>, entry: WidgetCatalogEntry) => void;
   onDragPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
   onDragPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
@@ -97,7 +97,7 @@ export function DashboardWidgetLibrary({
             <h2 id={titleId}>Add a widget</h2>
             <p>
               <span className="dash-sheet-hint-fine">Click one to add it, or drag it onto the board.</span>
-              <span className="dash-sheet-hint-coarse">Tap one, then tap where it should go.</span>
+              <span className="dash-sheet-hint-coarse">Tap one to add it to your board.</span>
             </p>
           </div>
           <button type="button" className="dash-sheet-close" aria-label="Close" onClick={onClose}>
@@ -142,12 +142,7 @@ export function DashboardWidgetLibrary({
                         onPointerMove={onDragPointerMove}
                         onPointerUp={onDragPointerUp}
                         onPointerCancel={onDragPointerCancel}
-                        onClick={(event) => {
-                          const native = event.nativeEvent;
-                          const pointerType =
-                            "pointerType" in native ? String((native as PointerEvent).pointerType) : "";
-                          onPick(entry, pointerType);
-                        }}
+                        onClick={() => onPick(entry)}
                       >
                         <i aria-hidden="true">
                           <Icon name={icon} />

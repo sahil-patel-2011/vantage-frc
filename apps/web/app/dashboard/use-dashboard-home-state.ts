@@ -41,7 +41,6 @@ export function useDashboardHomeState(initialOrgId = "") {
   const [editing, setEditing] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [pendingPlaceType, setPendingPlaceType] = useState<DashboardWidgetType | null>(null);
   const [scope, setScope] = useState<"personal" | "org">("personal");
   const [canShareOrg, setCanShareOrg] = useState(false);
   const [role, setRole] = useState<string | null>(null);
@@ -321,7 +320,6 @@ export function useDashboardHomeState(initialOrgId = "") {
     editing,
     previewing,
     libraryOpen,
-    pendingPlaceType,
     scope,
     canShareOrg,
     role,
@@ -362,7 +360,6 @@ export function useDashboardHomeState(initialOrgId = "") {
     setEditing,
     setPreviewing,
     setLibraryOpen,
-    setPendingPlaceType,
     setBoardsOpen,
     setRenameId,
     setRenameDraft,

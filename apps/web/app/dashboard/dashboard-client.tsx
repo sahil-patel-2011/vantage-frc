@@ -5,6 +5,7 @@ import {
   DASHBOARD_COLUMNS,
   homeViewLayout,
   scaleLayoutToCols,
+  type DashboardWidgetLayout,
 } from "../../lib/dashboard/catalog";
 import {
   cellBox,
@@ -16,7 +17,7 @@ import {
   dashboardNextActions,
   dashboardSetupSteps,
 } from "../../lib/dashboard/dashboard-related";
-import { hiddenOnHome } from "../../lib/dashboard/edit-mode";
+import { editBoardLayout, hiddenOnHome, layoutForEditing } from "../../lib/dashboard/edit-mode";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import {
@@ -104,16 +105,57 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   // While the owner's "Set up your team" card shows, it is Home's only setup list.
   const [teamSetupCard, setTeamSetupCard] = useState(false);
-  const viewLayout = useMemo(
-    () => homeViewLayout(home.layout, { editing: home.editing, shell: dashShell, widgets: home.widgets, teamSetupCard }),
-    [home.layout, home.editing, dashShell, home.widgets, teamSetupCard],
-  );
+  /*
+    Cards added during this edit. They stay on the board while you edit even
+    if Home would hide them for being empty, so tapping a widget always puts
+    something you can see on the board.
+  */
+  const [addedThisEdit, setAddedThisEdit] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    if (!home.editing) setAddedThisEdit(new Set());
+  }, [home.editing]);
+  const markAdded = useCallback((id: string) => {
+    setAddedThisEdit((current) => new Set(current).add(id));
+  }, []);
+
   const grid = resolveGrid(width);
   const gap = grid.margin[0];
   const cols = grid.cols;
   const canvasWidth = width;
 
+  /*
+    Cards the normal Home leaves out right now. Edit mode lists them in one
+    row under the board rather than painting them as full-size dimmed cards —
+    those pushed the real board a screen down.
+  */
+  const hiddenFor = useCallback(
+    (layout: DashboardWidgetLayout[]) => hiddenOnHome(layout, { shell: dashShell, widgets: home.widgets, teamSetupCard }),
+    [dashShell, home.widgets, teamSetupCard],
+  );
+  const hiddenOnHomeIds = useMemo(() => hiddenFor(home.layout), [hiddenFor, home.layout]);
+
+  const viewFor = useCallback(
+    (layout: DashboardWidgetLayout[], editing: boolean) =>
+      editing
+        ? editBoardLayout(layout, hiddenFor(layout), addedThisEdit)
+        : homeViewLayout(layout, { editing: false, shell: dashShell, widgets: home.widgets, teamSetupCard }),
+    [hiddenFor, addedThisEdit, dashShell, home.widgets, teamSetupCard],
+  );
+  const viewLayout = useMemo(() => viewFor(home.layout, home.editing), [viewFor, home.layout, home.editing]);
+  const settle = useCallback(
+    (layout: DashboardWidgetLayout[]) => {
+      const hidden = new Map([...hiddenFor(layout)].filter(([id]) => !addedThisEdit.has(id)));
+      return layoutForEditing(layout, hidden);
+    },
+    [hiddenFor, addedThisEdit],
+  );
+
   /** What is actually painted: the saved 12-column board scaled to this screen. */
+  const displayFor = useCallback(
+    (layout: DashboardWidgetLayout[]) =>
+      compactLayout(scaleLayoutToCols(viewFor(layout, true), DASHBOARD_COLUMNS, cols), cols),
+    [viewFor, cols],
+  );
   const displayLayout = useMemo(
     () => compactLayout(scaleLayoutToCols(viewLayout, DASHBOARD_COLUMNS, cols), cols),
     [viewLayout, cols],
@@ -122,12 +164,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   useEffect(() => {
     home.displayRef.current = displayLayout;
   }, [displayLayout, home.displayRef]);
-
-  // Cards the normal Home leaves out right now; edit mode labels them.
-  const hiddenOnHomeIds = useMemo(
-    () => hiddenOnHome(home.layout, { shell: dashShell, widgets: home.widgets, teamSetupCard }),
-    [home.layout, dashShell, home.widgets, teamSetupCard],
-  );
 
   const history = useDashboardEditHistory({ editing: home.editing, previewing: home.previewing, setLayout: home.setLayout });
   const { setMessage, setMessageAction, setMessageKind, setAnnounce } = home;
@@ -148,9 +184,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   const {
     addWidget,
-    requestPlaceWidget,
-    placePendingAtPoint,
     tidyLayout,
+    setAlwaysShown,
+    shareWithTeam,
     setWidgetSize,
     resetWidgetSize,
     removeWidget,
@@ -178,9 +214,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     saving: home.saving,
     editing: home.editing,
     grabbedId: home.grabbedId,
-    pendingPlaceType: home.pendingPlaceType,
-    canvasNode,
-    width,
+    displayFor,
+    settle,
+    previewing: home.previewing,
     resetAudience: homeAudience === "mentor" ? "mentor" : "student",
     loadHome: home.loadHome,
     loadSnapshot: home.loadSnapshot,
@@ -200,7 +236,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setEditing: home.setEditing,
     setPreviewing: home.setPreviewing,
     setLibraryOpen: home.setLibraryOpen,
-    setPendingPlaceType: home.setPendingPlaceType,
+    onWidgetAdded: markAdded,
     setBoardsOpen: home.setBoardsOpen,
     setRenameId: home.setRenameId,
     setRenameDraft: home.setRenameDraft,
@@ -258,7 +294,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       meLoaded={home.meLoaded}
       orgId={home.orgId}
       board={home.board}
-      scope={home.scope}
       switcherBoards={switcherBoards}
       personalBoards={personalBoards}
       orgBoards={orgBoards}
@@ -285,7 +320,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       editing={home.editing}
       previewing={home.previewing}
       libraryOpen={home.libraryOpen}
-      pendingPlaceType={home.pendingPlaceType}
       saving={home.saving}
       canShareOrg={home.canShareOrg}
       canUndo={history.canUndo}
@@ -340,8 +374,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       renameBoard={renameBoard}
       deleteBoard={deleteBoard}
       addWidget={addWidget}
-      requestPlaceWidget={requestPlaceWidget}
-      placePendingAtPoint={placePendingAtPoint}
+      setAlwaysShown={setAlwaysShown}
+      shareWithTeam={shareWithTeam}
       removeWidget={removeWidget}
       setWidgetSize={setWidgetSize}
       resetWidgetSize={resetWidgetSize}

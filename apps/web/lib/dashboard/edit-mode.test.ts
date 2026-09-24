@@ -1,15 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { DASHBOARD_WIDGET_TYPES, WIDGET_CATALOG, type DashboardWidgetLayout } from "./catalog";
+import {
+  DASHBOARD_WIDGET_TYPES,
+  WIDGET_CATALOG,
+  emptyHomeWidgets,
+  homeViewLayout,
+  packDashboardLayout,
+  scaleLayoutToCols,
+  type DashboardWidgetLayout,
+} from "./catalog";
+import { compactLayout } from "./grid-drag";
 import {
   EDIT_HISTORY_LIMIT,
   WIDGET_GROUP,
+  editBoardLayout,
   groupWidgetRows,
   hiddenOnHome,
+  layoutForEditing,
   layoutsEqual,
+  packInColumns,
   packKeepingOrder,
   popHistory,
   pushHistory,
+  setAlwaysShow,
   suggestBoardName,
+  tidyBoard,
   widgetMatchesSearch,
 } from "./edit-mode";
 
@@ -104,6 +118,96 @@ describe("hiddenOnHome", () => {
   it("hides nothing that has data", () => {
     const layout = [card("h", "hours_month")];
     expect(hiddenOnHome(layout, { shell: "ready", widgets: { hours_month: { status: "live" } } }).size).toBe(0);
+  });
+});
+
+describe("Always show", () => {
+  const widgets = { hours_month: { status: "empty" }, onboarding_checklist: { status: "live" } };
+  const layout = [card("h", "hours_month", 0, 0), card("c", "onboarding_checklist", 4, 0, 6, 3)];
+
+  it("keeps an empty card and a finished setup card on Home", () => {
+    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(2);
+    const always = setAlwaysShow(setAlwaysShow(layout, "h", true), "c", true);
+    expect(hiddenOnHome(always, { shell: "ready", widgets }).size).toBe(0);
+    expect(homeViewLayout(always, { editing: false, shell: "ready", widgets }).map((item) => item.i).sort()).toEqual(["c", "h"]);
+    expect(emptyHomeWidgets(always, widgets)).toEqual([]);
+  });
+
+  it("counts as a change, and turning it off drops the flag", () => {
+    const always = setAlwaysShow(layout, "h", true);
+    expect(layoutsEqual(layout, always)).toBe(false);
+    const off = setAlwaysShow(always, "h", false);
+    expect(off[0]?.config).toBeUndefined();
+    expect(layoutsEqual(layout, off)).toBe(true);
+  });
+
+  it("keeps other config on the card", () => {
+    const withConfig = [{ ...card("p", "pit_youtube"), config: { url: "x" } }];
+    expect(setAlwaysShow(withConfig, "p", true)[0]?.config).toEqual({ url: "x", alwaysShow: true });
+    expect(setAlwaysShow(setAlwaysShow(withConfig, "p", true), "p", false)[0]?.config).toEqual({ url: "x" });
+  });
+});
+
+describe("editBoardLayout and layoutForEditing", () => {
+  const layout = [card("s", "onboarding_checklist", 0, 0, 12, 4), card("a", "my_day", 0, 4), card("b", "hours_month", 4, 4)];
+  const hidden = new Map([
+    ["s", "setup_done"],
+    ["a", "empty"],
+  ]);
+
+  it("leaves hidden cards off the board", () => {
+    expect(editBoardLayout(layout, hidden).map((item) => item.i)).toEqual(["b"]);
+  });
+
+  it("starts the draft where Home shows the cards, with hidden ones below", () => {
+    const start = layoutForEditing(layout, hidden);
+    expect(start.find((item) => item.i === "b")).toMatchObject({ x: 0, y: 0 });
+    // Below everything Home shows, in their own reading order.
+    expect(start.find((item) => item.i === "s")).toMatchObject({ x: 0, y: 3 });
+    expect(start.find((item) => item.i === "a")).toMatchObject({ x: 0, y: 7 });
+    expect(start.map((item) => item.i)).toEqual(["s", "a", "b"]);
+  });
+
+  it("keeps a card added in this edit even if it is empty", () => {
+    const layout = [card("a", "my_day", 0, 0)];
+    expect(editBoardLayout(layout, new Map([["a", "empty"]]), new Set(["a"])).map((item) => item.i)).toEqual(["a"]);
+  });
+});
+
+describe("packInColumns", () => {
+  it("closes gaps across as well as up, in reading order", () => {
+    const packed = packInColumns([card("a", "my_day", 0, 0, 1, 3), card("b", "hours_month", 1, 0, 1, 3), card("c", "team_todos", 3, 0, 1, 3)], 4);
+    expect(packed.map((item) => item.x)).toEqual([0, 1, 2]);
+  });
+});
+
+describe("tidyBoard", () => {
+  const displayAt = (cols: number) => (layout: DashboardWidgetLayout[]) =>
+    compactLayout(scaleLayoutToCols(packDashboardLayout(layout), 12, cols), cols);
+
+  it("closes the hole tablet scaling leaves, and says it moved something", () => {
+    // Three 4-wide cards scale to columns 1, 2 and 4 of a 4-column tablet.
+    const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 4, 0), card("c", "team_todos", 8, 0)];
+    expect(displayAt(4)(layout).map((item) => item.x)).toEqual([0, 1, 3]);
+    const result = tidyBoard({ layout, visibleIds: new Set(["a", "b", "c"]), cols: 4, displayFor: displayAt(4) });
+    expect(result.moved).toBe(true);
+    expect(displayAt(4)(result.layout).map((item) => item.x)).toEqual([0, 1, 2]);
+    // A second tidy has nothing left to do.
+    expect(tidyBoard({ layout: result.layout, visibleIds: new Set(["a", "b", "c"]), cols: 4, displayFor: displayAt(4) }).moved).toBe(false);
+  });
+
+  it("does not claim a move when the board is already tidy", () => {
+    const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 4, 0)];
+    const result = tidyBoard({ layout, visibleIds: new Set(["a", "b"]), cols: 12, displayFor: displayAt(12) });
+    expect(result).toEqual({ layout, moved: false });
+  });
+
+  it("closes a gap left by a dragged card on the full board", () => {
+    const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 8, 0)];
+    const display = (next: DashboardWidgetLayout[]) => compactLayout(next, 12);
+    const result = tidyBoard({ layout, visibleIds: new Set(["a", "b"]), cols: 12, displayFor: display });
+    expect(result.moved).toBe(true);
+    expect(result.layout.find((item) => item.i === "b")).toMatchObject({ x: 4, y: 0 });
   });
 });
 

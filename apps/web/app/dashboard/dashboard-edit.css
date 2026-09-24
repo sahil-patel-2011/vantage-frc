@@ -119,7 +119,7 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
   min-height:36px;padding:0 12px;border:0;border-radius:var(--radius-sm);cursor:pointer;
   background:transparent;color:inherit;font:700 14px var(--font-source-sans),system-ui;
 }
-.dash-toast [data-testid="dash-toast-undo"]{color:color-mix(in srgb,var(--accent) 55%,#fff)}
+.dash-toast [data-testid="dash-toast-undo"],.dash-toast .dash-toast-action{color:color-mix(in srgb,var(--accent) 55%,#fff)}
 .dash-toast button:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
 .dash-toast .dash-toast-close{min-width:36px;padding:0;font-size:18px;opacity:.7}
 @keyframes dash-toast-in{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%)}}
@@ -128,31 +128,50 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 }
 
 /* ---- Cards in edit mode ---- */
-/* "−" on the corner, outside the title. The visible dot is 26px; the ::before
-   takes the tap target to 44px. */
+/* "−" on the corner, outside the title. The button itself is the 44px tap
+   target (a ::before extension did not count as the button's size for
+   testers measuring it, and was easy to lose to overflow); the 24px dot is
+   drawn inside it, sitting over the card's corner. The target reaches only
+   16px into the card, short of the title. */
 .dash-home .dash-remove-badge{
   min-height:0;min-width:0;
-  position:absolute;z-index:6;top:-9px;left:-9px;display:grid;place-items:center;
-  width:26px;height:26px;padding:0;border:1px solid var(--line);border-radius:50%;
-  background:var(--surface);color:var(--ink);cursor:pointer;
+  position:absolute;z-index:6;top:-28px;left:-28px;
+  width:44px;height:44px;padding:0;border:0;border-radius:50%;
+  background:transparent;color:var(--ink);cursor:pointer;
+}
+.dash-remove-badge::before{
+  content:"";position:absolute;right:8px;bottom:8px;width:24px;height:24px;box-sizing:border-box;
+  border:1px solid var(--line);border-radius:50%;background:var(--surface);
   box-shadow:0 2px 6px rgba(12,17,24,.16);
 }
-.dash-remove-badge::before{content:"";position:absolute;inset:-9px}
-.dash-remove-badge>span{width:10px;height:2px;border-radius:1px;background:currentColor}
-.dash-remove-badge:hover{background:var(--critical-fill,#b91c1c);border-color:transparent;color:#fff}
-.dash-remove-badge:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.dash-remove-badge>span{
+  position:absolute;right:15px;bottom:19px;width:10px;height:2px;border-radius:1px;background:currentColor;
+}
+/* The board sits 23px from a phone's edge; keep the whole target on screen. */
+@media (max-width:720px){.dash-home .dash-remove-badge{left:-22px}}
+.dash-remove-badge:hover{color:#fff}
+.dash-remove-badge:hover::before{background:var(--critical-fill,#b91c1c);border-color:transparent}
+.dash-remove-badge:focus-visible{outline:none}
+.dash-remove-badge:focus-visible::before{outline:2px solid var(--ring);outline-offset:2px}
 
-/* The grip: a tab on the top edge, never over the card's content. */
+/* The grip: a small tab on the top edge, never over the card's content. The
+   button is 48×44 for a finger; the visible pill is 40×20 inside it, centred
+   on the card's top edge, and the target reaches only 18px into the card. */
 .dash-home .dash-card-grip{
   min-height:0;min-width:0;
-  position:absolute;z-index:6;top:-11px;left:50%;transform:translateX(-50%);
-  display:grid;place-items:center;width:44px;height:22px;padding:0;
-  border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface);
-  box-shadow:0 2px 6px rgba(12,17,24,.14);touch-action:none;cursor:grab;
+  position:absolute;z-index:6;top:-26px;left:50%;transform:translateX(-50%);
+  display:grid;place-items:center;width:48px;height:44px;padding:0;
+  border:0;background:transparent;touch-action:none;cursor:grab;
 }
-.dash-card-grip::before{content:"";position:absolute;inset:-11px 0}
-.dash-card-grip:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
-.dash-card-grip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.dash-card-grip::before{
+  content:"";position:absolute;left:4px;top:16px;width:40px;height:20px;box-sizing:border-box;
+  border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface);
+  box-shadow:0 2px 6px rgba(12,17,24,.14);
+}
+.dash-card-grip>.dash-drag-dots{position:relative;top:4px}
+.dash-card-grip:focus-visible{outline:none}
+.dash-card-grip:focus-visible::before{outline:2px solid var(--ring);outline-offset:2px}
+.dash-card-grip[aria-pressed="true"]::before{background:var(--accent);border-color:var(--accent)}
 .dash-card-grip[aria-pressed="true"] .dash-drag-dots{
   background:
     radial-gradient(circle,#fff 1.2px,transparent 1.3px) 0 0 / 6px 5px,
@@ -189,6 +208,73 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 @media (hover:hover){
   .dash-home .dash-grid-item.is-editing:hover .dash-hidden-note{visibility:hidden}
 }
+
+/* ---- "Hidden right now (5)": one row under the board ---- */
+.dash-hidden-row{
+  margin:12px 0 0;border:1px dashed color-mix(in srgb,var(--muted) 40%,var(--line));border-radius:var(--radius);
+  background:color-mix(in srgb,var(--surface) 70%,transparent);
+}
+.dash-hidden-row>summary{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-height:44px;box-sizing:border-box;padding:12px 14px;
+  list-style:none;cursor:pointer;color:var(--ink);font:650 14px/1.3 var(--font-source-sans),system-ui;
+}
+.dash-hidden-row>summary::-webkit-details-marker{display:none}
+.dash-hidden-row>summary::after{content:"▾";margin-left:auto;color:var(--muted);font-size:12px}
+.dash-hidden-row[open]>summary::after{content:"▴"}
+.dash-hidden-row>summary small{color:var(--muted);font-weight:500;font-size:13px}
+.dash-hidden-row>summary:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius)}
+.dash-hidden-row>p{margin:0 14px 8px;color:var(--muted);font-size:13px;line-height:1.4}
+.dash-hidden-row ul{display:grid;gap:6px;margin:0;padding:0 10px 10px;list-style:none}
+.dash-hidden-row li{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 8px 8px 12px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);
+}
+.dash-hidden-row li>span{display:grid;gap:2px;flex:1 1 180px;min-width:0}
+.dash-hidden-row li strong{font:650 14px/1.25 var(--font-source-sans),system-ui}
+.dash-hidden-row li small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.dash-hidden-row li button{
+  min-height:44px;padding:0 14px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));
+  border-radius:var(--radius-sm);background:var(--accent-soft);color:var(--accent);cursor:pointer;
+  font:650 13px/1 var(--font-source-sans),system-ui;
+}
+.dash-hidden-row li button.is-quiet{border-color:var(--line);background:transparent;color:var(--ink)}
+.dash-hidden-row li button:hover{border-color:var(--accent)}
+.dash-hidden-row li button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+/* ---- The board chip beside the greeting ---- */
+.dash-board-chip-wrap{position:relative;display:inline-flex;vertical-align:middle;margin:0 0 6px}
+.dash-board-chip{
+  display:inline-flex;align-items:center;gap:6px;min-height:36px;max-width:min(320px,70vw);padding:0 10px 0 12px;
+  border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface);color:var(--ink);cursor:pointer;
+  font:650 13px/1 var(--font-source-sans),system-ui;
+}
+.dash-board-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-board-chip svg{flex:none;width:12px;height:12px;color:var(--muted)}
+.dash-board-chip em,.dash-board-menu em{
+  padding:3px 7px;border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);
+  font:700 10px/1 var(--font-source-sans),system-ui;font-style:normal;letter-spacing:.04em;text-transform:uppercase;
+}
+.dash-board-chip:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.dash-board-chip:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.dash-board-chip[aria-expanded="true"]{border-color:var(--accent)}
+.dash-board-chip:disabled{cursor:default}
+@media (pointer:coarse){.dash-board-chip{min-height:44px}}
+.dash-board-menu{
+  position:absolute;z-index:40;top:calc(100% + 6px);left:0;display:grid;gap:2px;
+  width:max-content;min-width:220px;max-width:min(320px,calc(100vw - 32px));padding:6px;
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-pop);
+}
+.dash-board-menu button{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:0 10px;
+  border:0;border-radius:var(--radius-sm);background:transparent;color:var(--ink);text-align:left;cursor:pointer;
+  font:600 14px/1.2 var(--font-source-sans),system-ui;
+}
+.dash-board-menu button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-board-menu button[aria-checked="true"]{font-weight:700;color:var(--accent)}
+.dash-board-menu button[aria-checked="true"]>span::before{content:"✓ "}
+.dash-board-menu button:hover:not(:disabled),.dash-board-menu button:focus-visible{background:var(--accent-soft);outline:none}
+.dash-board-menu button:disabled{opacity:.5;cursor:default}
+.dash-board-menu hr{width:100%;margin:4px 0;border:0;border-top:1px solid var(--line)}
 
 /* A card that was just added flashes once. */
 .dash-home .dash-pgrid>.dash-grid-item.is-new{outline:3px solid var(--accent);outline-offset:2px}
