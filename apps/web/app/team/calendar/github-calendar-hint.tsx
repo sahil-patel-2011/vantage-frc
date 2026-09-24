@@ -14,20 +14,10 @@ export function GitHubCalendarHint({
 }) {
   const href = githubConnectionHref(orgId);
   if (!overlay) return null;
-  if (!overlay.connected) {
-    if (!canManage) {
-      return (
-        <p className="tc-github-hint">
-          An owner or admin connects GitHub before milestone due dates show up here.
-        </p>
-      );
-    }
-    return (
-      <p className="tc-github-hint">
-        <a href={href}>Connect GitHub</a> to show milestone due dates.
-      </p>
-    );
-  }
+  // A team that never connected GitHub was asked to, above the calendar of a brand-new team,
+  // before it had added a single practice. The prompt lives with Connectors; here it only
+  // helps a team that has GitHub and still needs a repo picked.
+  if (!overlay.connected) return null;
   if (!overlay.repo) {
     if (!canManage) {
       return (

@@ -397,7 +397,7 @@ export function AppShellNavPanel({
                 <i>
                   <Icon name="grid" />
                 </i>
-                <span>Team manager</span>
+                <span>Platform admin</span>
               </a>
             ) : null}
           </nav>
