@@ -688,7 +688,7 @@ export function MessagesReadyView({
                       ),
                     )
                   )}
-                  <div ref={bottomRef} />
+                  <div ref={bottomRef} className="messages-bottom-anchor" />
                 </div>
 
                 <form className="chat-composer" onSubmit={send}>

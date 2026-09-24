@@ -52,7 +52,10 @@ function errorText(data: Record<string, unknown>, fallback: string): string {
 export function ConnectToolsThenLanding({ state, draft }: { state: OnboardingState; draft: OnboardingDraft }) {
   const [dismissed, setDismissed] = useState(false);
   const orgId = state.workspaceOrgId;
-  if (!orgId || dismissed) return <LandingPanel state={state} draft={draft} />;
+  // Keys are a team leader's job. A student or parent who just joined goes straight to Home;
+  // a personal key is still one tap away under AI keys.
+  const leader = draft.teamRole !== "student" && draft.teamRole !== "parent";
+  if (!orgId || dismissed || !leader) return <LandingPanel state={state} draft={draft} />;
   return <ConnectToolsPanel orgId={orgId} state={state} draft={draft} onContinue={() => setDismissed(true)} />;
 }
 

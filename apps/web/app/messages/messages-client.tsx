@@ -425,7 +425,17 @@ export default function MessagesClient({
     return () => controller.abort();
   }, [activeId, loadThread]);
 
+  // The conversation whose newest message we last jumped to. Opening a different one lands
+  // at its newest message at once; a smooth scroll raced the layout and stopped part way.
+  const landedOnRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (activeId && landedOnRef.current !== activeId && messages.length) {
+      landedOnRef.current = activeId;
+      stickToBottomRef.current = true;
+      bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      return;
+    }
     const anchor = scrollAnchorRef.current;
     if (anchor) {
       // An older page was just prepended: keep the previously-visible
@@ -436,7 +446,7 @@ export default function MessagesClient({
       return;
     }
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, scrollToBottom, activeId]);
 
   const loadEarlier = useCallback(async () => {
     if (!activeId || loadingEarlier) return;

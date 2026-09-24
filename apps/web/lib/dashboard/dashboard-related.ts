@@ -144,7 +144,8 @@ export function dashboardNextActions(input: {
   }
 
   if (shell === "ready") {
-    if (input.hasScoutingSchemas === false) {
+    // Making the forms is a leader's job; a student was sent into the question editor.
+    if (input.hasScoutingSchemas === false && isOwnerAdmin) {
       actions.push({
         id: "scouting-forms",
         label: "Create scouting forms",

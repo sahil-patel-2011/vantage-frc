@@ -524,3 +524,8 @@
     display: none;
   }
 }
+
+/* The newest message stops above the floating composer and tab bar, not behind them. */
+.chat-page.messages-page .messages-bottom-anchor {
+  scroll-margin-bottom: calc(var(--island-clearance, 88px) + 110px + var(--safe-bottom, 0px));
+}
