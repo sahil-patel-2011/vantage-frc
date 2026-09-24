@@ -1,4 +1,6 @@
+import { getSessionCookie } from "better-auth/cookies";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { EmptyState, Button } from "../components/ui";
 
 export const metadata: Metadata = {
@@ -15,7 +17,9 @@ export const metadata: Metadata = {
  * type, colour or chrome and offers no way back. The route still 404s; it just
  * looks like part of the app now.
  */
-export default function NotFound() {
+export default async function NotFound() {
+  // A visitor who isn't signed in followed a bad link to the website, not into the app.
+  const signedIn = Boolean(getSessionCookie(await headers()));
   return (
     <main className="module-page">
       <EmptyState
@@ -24,15 +28,32 @@ export default function NotFound() {
         badge="Not found"
         badgeTone="setup"
         title="This page is not here"
-        description="The link may be out of date, or the page may need access your account does not have. Everything else is still where you left it."
+        description={
+          signedIn
+            ? "The link may be out of date, or the page may need access your account does not have. Everything else is still where you left it."
+            : "The link may be out of date or mistyped."
+        }
       >
         <div>
-          <Button as="a" variant="primary" href="/dashboard">
-            Go to Home
-          </Button>
-          <Button as="a" variant="secondary" href="/docs">
-            App manual
-          </Button>
+          {signedIn ? (
+            <>
+              <Button as="a" variant="primary" href="/dashboard">
+                Go to Home
+              </Button>
+              <Button as="a" variant="secondary" href="/docs">
+                App manual
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button as="a" variant="primary" href="/">
+                Go to the Vantage home page
+              </Button>
+              <Button as="a" variant="secondary" href="/signin">
+                Sign in
+              </Button>
+            </>
+          )}
         </div>
       </EmptyState>
     </main>

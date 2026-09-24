@@ -7,6 +7,7 @@ import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/m
 import { productRedirect, requestOrigin } from "./lib/products/products";
 import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
 import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
+import { isKnownAppPath } from "./lib/nav/app-route-roots";
 import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
 
 const PUBLIC_PAGES = new Set([
@@ -318,6 +319,8 @@ export async function proxy(request: NextRequest) {
 
   if (!authenticated || !session) {
     if (pathname === "/signin" || pathname === "/sign-in") return NextResponse.next();
+    // An address that is no page at all gets the 404, not a sign-in form that leads nowhere.
+    if (!isKnownAppPath(pathname)) return NextResponse.next();
     return signInRedirect(request);
   }
 

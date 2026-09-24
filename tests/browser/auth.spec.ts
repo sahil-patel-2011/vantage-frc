@@ -26,3 +26,11 @@ test("protected routes preserve their requested destination", async ({ page }) =
     /\/signin\?next=%2Fcompetition%3ForgId%3Dfixture-team%26tab%3Dscouting$/,
   );
 });
+
+test("an address that is no page shows the 404, not a sign-in form", async ({ page }) => {
+  const response = await page.goto("/this-page-does-not-exist");
+  expect(response?.status()).toBe(404);
+  await expect(page).toHaveURL(/\/this-page-does-not-exist$/);
+  await expect(page.getByRole("heading", { name: "This page is not here" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Go to the Vantage home page" })).toHaveAttribute("href", "/");
+});
