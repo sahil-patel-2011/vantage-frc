@@ -99,7 +99,7 @@ export function HomeShowcase() {
       <section className="lux-phone-summary" aria-label="Everything else">
         <p>
           Four workspaces (Competition, Team, Build and Business), team chat, a pit TV and your own data, offline
-          when the Wi-Fi is not. <a href="/features">See everything Vantage does →</a>
+          when the Wi-Fi is not. <a href="/features">See all features →</a>
         </p>
       </section>
 
@@ -137,13 +137,13 @@ export function HomeShowcase() {
             ))}
           </ul>
           <p className="mk-related-links" data-reveal>
-            Deep dives: <a href="/features">Every tool</a>
+            Deep dives: <a href="/features">Features</a>
             {" · "}
             <a href="/for-teams">Day one and the season</a>
             {" · "}
             <a href="/workflow">How it works</a>
             {" · "}
-            <a href="/pricing">Free, with your own AI key</a>
+            <a href="/pricing">Cost</a>
             {" · "}
             <MarketingAccountTextLink />
           </p>

@@ -37,7 +37,7 @@ export default function CadFeaturePage() {
             Vantage desktop app. Nothing changes in your CAD until a person on your team approves the step.
           </p>
           <MarketingRouteActions
-            companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
+            companion={{ href: "/features", label: "All features", variant: "secondary" }}
           />
         </header>
 
@@ -68,7 +68,7 @@ export default function CadFeaturePage() {
             <h2>Related.</h2>
             <p>
               <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/code">Code Coach</a> ·{" "}
-              <a href="/pricing">Free, with your own AI key</a>
+              <a href="/pricing">Cost</a>
             </p>
           </div>
           <MarketingRouteActions

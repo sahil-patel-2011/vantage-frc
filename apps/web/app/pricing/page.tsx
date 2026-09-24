@@ -4,7 +4,7 @@ import { MarketingInvitedNote, MarketingRouteActions, SiteFooter, SiteHeader } f
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Free — Vantage",
+  title: "Cost — Vantage",
   description:
     "Vantage is free for every FRC team, with every feature included. AI runs on your team's own key, a free key, or a model on a shop computer. Access is invite-only while we bring teams on.",
   path: "/pricing",

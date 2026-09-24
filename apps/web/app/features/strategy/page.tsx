@@ -91,7 +91,7 @@ export default function StrategyFeaturePage() {
           <MarketingRouteActions
             className="pricing-preview-actions"
             guestLabel="Join the waitlist"
-            companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
+            companion={{ href: "/features", label: "All features", variant: "secondary" }}
           />
         </section>
       </main>

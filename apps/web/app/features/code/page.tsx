@@ -30,7 +30,7 @@ export default function CodeFeaturePage() {
             Nothing changes without your approval, and it never deploys to a robot.
           </p>
           <MarketingRouteActions
-            companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
+            companion={{ href: "/features", label: "All features", variant: "secondary" }}
           />
         </header>
 
@@ -59,7 +59,7 @@ export default function CodeFeaturePage() {
             <h2>Related.</h2>
             <p>
               <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/cad">CAD agent</a> ·{" "}
-              <a href="/pricing">Free, with your own AI key</a>
+              <a href="/pricing">Cost</a>
             </p>
           </div>
           <MarketingRouteActions

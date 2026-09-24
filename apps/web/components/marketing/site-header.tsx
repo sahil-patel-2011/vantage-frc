@@ -15,12 +15,12 @@ import {
 import "./marketing-styles";
 
 const links = [
-  ["/features", "Product"],
+  ["/features", "Features"],
   ["/workflow", "How it works"],
   ["/for-teams", "For teams"],
   // Named "Free", not "Pricing": a "Pricing" tab tells a mentor the opposite of the answer,
   // but the cost question still needs a place in the nav (it was only in the footer).
-  ["/pricing", "Free"],
+  ["/pricing", "Cost"],
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {
@@ -247,10 +247,10 @@ export function SiteFooter() {
         <nav className="marketing-footer-col" aria-label="Product">
           <b>Product</b>
           {/* The same names as the top menu: "Product", "How it works", "For teams", "Free". */}
-          <a href="/features">Workspaces and tools</a>
+          <a href="/features">Features</a>
           <a href="/workflow">How it works</a>
           <a href="/for-teams">For teams</a>
-          <a href="/pricing">Free, with your own AI key</a>
+          <a href="/pricing">Cost</a>
         </nav>
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>

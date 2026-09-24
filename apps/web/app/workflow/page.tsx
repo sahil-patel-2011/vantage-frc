@@ -63,7 +63,7 @@ export default function WorkflowPage() {
             pile of extra logins.
           </p>
           <MarketingRouteActions
-            companion={{ href: "/features", label: "See the product", variant: "secondary" }}
+            companion={{ href: "/features", label: "All features", variant: "secondary" }}
           />
         </header>
 

@@ -6,7 +6,7 @@ import { MARKETING_HUBS, MARKETING_MENU } from "../../lib/marketing/product-stor
 import "../marketing-showcase.css";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Product — Vantage",
+  title: "Features — Vantage",
   description:
     "What FRC teams open after sign-in: Team, Build, Competition, and Business — every tool inside one of four workspaces, with Ask AI on every page.",
   path: "/features",
