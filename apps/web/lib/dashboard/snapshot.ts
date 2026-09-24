@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { readOrgAllowance } from "@vantage/billing";
 import { probeChatModel } from "../ai/capabilities";
+import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
 import { withSavepoint } from "@vantage/db";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { dashboardNextActions } from "./dashboard-related";
@@ -182,7 +183,9 @@ export async function loadDashboardSnapshot(
       [eventKey, teamKey],
     );
     if (!match.rows[0]) {
-      widgets.next_match = stamp("empty", "next_match", undefined, "No upcoming match found for your team at this event.");
+      // Say why: schedule not out, every match played (with the last result), or no time yet.
+      const summary = await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null);
+      widgets.next_match = stamp("empty", "next_match", undefined, noNextMatchMessage(summary));
       return;
     }
     const row = match.rows[0];

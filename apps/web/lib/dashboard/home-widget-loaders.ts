@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { allLessonIds } from "../cad-learn/track";
 import { matchKeyLabel } from "../scouting/scout-breakdown";
+import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
 import type { DashboardWidgetType } from "./catalog";
 
 type WidgetDataStatus = "live" | "empty" | "setup_required";
@@ -161,17 +162,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
  */
 async function myDayEmptyReason(client: PoolClient, eventKey: string | null, teamKey: string | null): Promise<string> {
   if (!eventKey || !teamKey) return "Pick your team's event to see your matches here.";
-  const rows = await query<{ n: string }>(
-    client,
-    `SELECT /* home-widget:my_day-any */ count(*)::text AS n
-       FROM matches_ref
-      WHERE event_key = $1
-        AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)`,
-    [eventKey, teamKey],
-  );
-  return Number(rows[0]?.n ?? 0) > 0
-    ? "No more matches for you today."
-    : "The match schedule for your event isn't out yet.";
+  return noNextMatchMessage(await loadOurMatchSummary(client, eventKey, teamKey));
 }
 
 async function learnProgress(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
