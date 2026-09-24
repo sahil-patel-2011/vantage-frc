@@ -34,7 +34,9 @@ async function currentSession() {
 
 export async function GET() {
   const session = await currentSession();
-  if (!session) return privateJson({ authenticated: false }, { status: 401 });
+  // Signed out is an ordinary answer for this read-only probe, not an error: /signin asks on
+  // every visit, and a 401 there logged a red console error before anyone typed anything.
+  if (!session) return privateJson({ authenticated: false });
   const enforced = isEmail2faEnforced();
   const verified = sessionHasEmail2fa(session.session as { email2faVerifiedAt?: Date | string | null });
   return privateJson({

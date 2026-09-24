@@ -30,11 +30,12 @@
   color: var(--muted, #5a6578);
 }
 
+/* The same blue as the marketing site's primary buttons: one product, one primary colour. */
 .signin-submit,
 .signin-page .signin-submit {
-  background: var(--scan-navy, #0d3560);
+  background: #2563eb;
   color: #fff;
-  border-color: var(--scan-navy, #0d3560);
+  border-color: #2563eb;
 }
 
 .signin-submit:disabled,

@@ -113,7 +113,7 @@ export function SignInCodeStep({
         <div className="signin-invite-help">
           <p>
             <strong>No code after a minute?</strong> Codes only go to emails a team has invited. Ask your team&rsquo;s
-            owner to invite this address, or get your team set up.
+            owner to invite this address. New team? Join the waitlist below.
           </p>
           <a className="signin-link" href={inviteHelp.waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
             Join the waitlist

@@ -88,6 +88,7 @@ export default function SignInClient({
   const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
   const invitedPrefilled = useRef(false);
   const [resolvedNext, setResolvedNext] = useState(() => safeAppPath(nextPath, "/dashboard"));
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [passwordPanel, setPasswordPanel] = useState<PasswordPanel>(() =>
     shouldStartOnPassword(initialStatus) ? "password" : "closed",
   );
@@ -492,7 +493,8 @@ export default function SignInClient({
       }
       setPasswordMessage(
         status.passwordSignInAvailable
-          ? SIGN_IN_FAILED_MESSAGE
+          ? // "Check your email" read as "look in your inbox"; say which thing did not match.
+            "That email and password don’t match. Try again, or use an email code instead."
           : publicPasswordUnavailableCopy(status.passwordReason),
       );
     } catch {
@@ -590,18 +592,22 @@ export default function SignInClient({
       titleId="signin-title"
       title={notInvited ? "You’re not on a team yet" : stepCopy.title}
       subtitle={
-        passwordPanel === "password"
+        recoveryOpen
+          ? undefined
+          : passwordPanel === "password"
           ? "Use the email and password for your team account."
           : passwordPanel === "reset"
             ? "We’ll email a link so you can choose a new password."
             : notInvited
-              ? "Vantage is invite-only."
+              ? undefined
               : stepCopy.sub
       }
     >
       <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
       {unavailable ? <SetupShell copy={unavailable} /> : null}
 
+      {recoveryOpen ? null : (
+      <>
       <div className="signin-step">
         {flow.step === "identity" ? (
           <SignInIdentityStep
@@ -676,8 +682,11 @@ export default function SignInClient({
         oauthMessage={oauthMessage}
         inviteHint={hint}
       />
+      </>
+      )}
 
       <div className="signin-footer">
+        {recoveryOpen ? null : (
         <SignInPasswordFooter
           passwordSignInAvailable={status.passwordSignInAvailable}
           emailAvailable={emailAvailable}
@@ -699,10 +708,12 @@ export default function SignInClient({
             setPasswordPanel("reset");
           }}
         />
+        )}
         {emailAvailable && flow.step === "identity" && passwordPanel === "closed" ? (
-          <SignInRecovery nextPath={resolvedNext} />
+          <SignInRecovery nextPath={resolvedNext} open={recoveryOpen} onOpenChange={setRecoveryOpen} />
         ) : null}
-        <AccessFooter />
+        {/* The not-on-a-team step already leads with Join the waitlist. */}
+        {notInvited ? null : <AccessFooter />}
       </div>
     </SignInCard>
   );

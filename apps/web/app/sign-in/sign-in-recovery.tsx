@@ -9,8 +9,17 @@ import { CodeInput, MailIcon } from "./sign-in-chrome";
  * Account (POST /api/recovery). A code goes to that address; typing it back signs in.
  * The answer to "send" is the same whether or not the address is anyone's recovery email.
  */
-export function SignInRecovery({ nextPath }: { nextPath: string }) {
-  const [open, setOpen] = useState(false);
+export function SignInRecovery({
+  nextPath,
+  open,
+  onOpenChange,
+}: {
+  nextPath: string;
+  /** Open, it is the whole step: the main email form steps aside instead of sitting above it. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const setOpen = onOpenChange;
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -77,6 +86,10 @@ export function SignInRecovery({ nextPath }: { nextPath: string }) {
 
   return (
     <div className="signin-recovery">
+      <h2 className="signin-recovery-title">Use your recovery email</h2>
+      <p className="signin-recovery-sub">
+        We&rsquo;ll send a code to the recovery email you added to your account.
+      </p>
       {!sent ? (
         <form className="signin-form" onSubmit={(event) => void send(event)}>
           <label>
@@ -86,6 +99,7 @@ export function SignInRecovery({ nextPath }: { nextPath: string }) {
               <input
                 type="email"
                 required
+                autoFocus
                 autoComplete="email"
                 autoCapitalize="none"
                 spellCheck={false}

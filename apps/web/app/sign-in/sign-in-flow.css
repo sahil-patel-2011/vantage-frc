@@ -62,12 +62,10 @@
   text-decoration: underline;
 }
 
-/* One container height for identity + code, so the card never jumps. */
 .signin-step {
   display: grid;
   gap: 12px;
   align-content: start;
-  min-height: 236px;
 }
 
 .signin-last-used {
@@ -364,4 +362,14 @@
   display: grid;
   place-items: center;
   text-decoration: none;
+}
+
+/* Recovery is its own step: one heading, one field, one button, a way back. */
+.signin-recovery-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.signin-recovery-sub {
+  margin: 4px 0 12px;
+  color: var(--muted);
 }
