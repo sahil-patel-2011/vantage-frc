@@ -90,11 +90,11 @@ describe("Business funding GUI student chrome", () => {
     expectPlainCopy(sponsorWallShellCopy("setup").description);
   });
 
-  it("Overview does not invent a $0 working-funds total", () => {
+  it("Overview does not invent a $0 total, and never calls a budget money in hand", () => {
     const panels = read("app/business/business-panels.tsx");
-    expect(panels).toMatch(/hasRecordedWorkingFunds/);
     expect(panels).toMatch(/moneyWhenRecorded/);
-    expect(panels).toMatch(/fundsOnRecord \? money\(available\) : "—"/);
-    expect(panels).not.toMatch(/Kpi label="Working funds" value=\{money\(available\)\}/);
+    expect(panels).toMatch(/receivedCents > 0 \? money\(receivedCents\) : "—"/);
+    expect(panels).toMatch(/"Season budget" : "Money received"/);
+    expect(panels).not.toMatch(/Working funds/);
   });
 });

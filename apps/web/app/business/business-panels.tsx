@@ -14,7 +14,7 @@ import {
 } from "../../lib/business-portal";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { FundraisingGlance } from "./fundraising-glance";
-import { dollars, hasRecordedWorkingFunds, money, moneyWhenRecorded, percent, recordedWorkingFundsCents, statusLabel, type Tab } from "./business-helpers";
+import { dollars, money, moneyWhenRecorded, percent, statusLabel, type Tab } from "./business-helpers";
 import { Field, ToneBadge } from "./business-ui";
 
 /** True while this season has nothing recorded at all, so Overview shows one first step instead of a wall of dashes. */
@@ -63,9 +63,10 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
       </div>
     );
   }
-  const available = recordedWorkingFundsCents(view.budget);
-  const fundsOnRecord = hasRecordedWorkingFunds(view.budget);
-  const utilization = fundsOnRecord ? percent(view.budget.committedCents, available) : null;
+  const planCents = view.budget.seasonBudgetCents ?? view.budget.totalBudgetCents;
+  const receivedCents = view.budget.sponsorIncomeCents + view.budget.grantIncomeCents;
+  const base = planCents > 0 ? planCents : receivedCents;
+  const utilization = base > 0 ? percent(view.budget.committedCents, base) : null;
   const submitted = view.purchases.filter((purchase) => purchase.status === "submitted");
   const followUps = sponsorsAllowed
     ? view.sponsors.filter((sponsor) => sponsorHealth(sponsor) !== "healthy")
@@ -91,16 +92,18 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           before it reads how much of this season's budget is committed. */}
       <SustainabilityPanel orgId={view.orgId} seasonYear={view.seasonYear} />
       <section className="biz-kpis" aria-label="Season funding summary">
+        {/* A budget is a plan, not money in hand: the old first tile added a $5,000 budget
+            to cash received as if both were money. They are named apart. */}
         <Kpi
-          label="Working funds"
-          value={fundsOnRecord ? money(available) : "—"}
+          label={planCents > 0 ? "Season budget" : "Money received"}
+          value={planCents > 0 ? money(planCents) : receivedCents > 0 ? money(receivedCents) : "—"}
           detail={
-            (view.budget.seasonBudgetCents ?? view.budget.totalBudgetCents) > 0
-              ? `${money(view.budget.seasonBudgetCents ?? view.budget.totalBudgetCents)} season budget`
-              : view.budget.totalBudgetCents > 0
-                ? `${money(view.budget.totalBudgetCents)} in category plans`
-              : fundsOnRecord
-                ? "Sponsor and grant cash — no season budget set"
+            receivedCents > 0
+              ? planCents > 0
+                ? `${money(receivedCents)} received from sponsors and grants`
+                : "From sponsors and grants · no season budget set"
+              : planCents > 0
+                ? "Nothing received from sponsors or grants yet"
                 : "Set a season budget"
           }
           href={view.budget.totalBudgetCents > 0 ? undefined : budgetHref}
@@ -109,7 +112,11 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
         <Kpi
           label="Committed"
           value={moneyWhenRecorded(view.budget.committedCents)}
-          detail={utilization == null ? "Nothing approved or ordered yet" : `${utilization}% of working funds`}
+          detail={
+            utilization == null
+              ? "Nothing approved or ordered yet"
+              : `${utilization}% of ${planCents > 0 ? "the season budget" : "money received"}`
+          }
           tone={utilization != null && utilization > 90 ? "danger" : "neutral"}
         />
         {progress.goalCents > 0 || progress.actualCents > 0 ? (
