@@ -18,8 +18,13 @@ describe("pit TV match intel", () => {
   it("turns engine labels into short words and drops the ones a crew can't use", () => {
     expect(intelTags(["autonomous-leaning", "scout-auto-capable", "pit-noted", "foul-prone", "reliability-risk"])).toEqual([
       "Strong auto",
-      "Scores in auto",
       "Draws fouls",
+      "Breaks down sometimes",
+    ]);
+    // The common "can do it" tags only when nothing sets the robot apart, and never teleop.
+    expect(intelTags(["scout-auto-capable", "scout-teleop-capable", "scout-endgame-capable"])).toEqual([
+      "Scores in auto",
+      "Does the endgame",
     ]);
     const intel = toDisplayMatchIntel(
       {

@@ -31,13 +31,25 @@ const TAG_WORDS: Record<string, string> = {
   "reliability-risk": "Breaks down sometimes",
 };
 
+/** True of most robots, so on their own they read the same under every team. */
+const COMMON_LABELS = new Set(["scout-auto-capable", "scout-teleop-capable", "scout-endgame-capable"]);
+
+/**
+ * What sets this robot apart first ("Strong auto", "Plays defense", "Breaks down sometimes");
+ * the common "can do it" tags only when nothing else is known, and never "Scores in teleop",
+ * which is every robot. Opponents all read "Scores in auto · Scores in teleop · Does the
+ * endgame" before.
+ */
 export function intelTags(labels: readonly string[]): string[] {
-  const out: string[] = [];
+  const distinctive: string[] = [];
+  const common: string[] = [];
   for (const label of labels) {
     const words = TAG_WORDS[label];
-    if (words && !out.includes(words)) out.push(words);
+    if (!words || label === "scout-teleop-capable") continue;
+    const into = COMMON_LABELS.has(label) ? common : distinctive;
+    if (!into.includes(words)) into.push(words);
   }
-  return out.slice(0, 3);
+  return (distinctive.length ? distinctive : common).slice(0, 3);
 }
 
 type RawIntel = {

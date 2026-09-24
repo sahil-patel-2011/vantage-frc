@@ -252,7 +252,7 @@ export function hasEventCommandSignal(
  * They do not tell the room to open Team Data.
  */
 export function kioskNextMatchEmptyCopy(teamNumber: number): string {
-  return `This board only shows matches that include team #${teamNumber}. Queue time stays blank until those matches are on the schedule.`;
+  return `Team ${teamNumber}'s next match shows here, with its queue time, as soon as it is on the schedule.`;
 }
 
 export function kioskEventCommandEmptyCopy(): string {

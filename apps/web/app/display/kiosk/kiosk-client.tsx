@@ -148,7 +148,17 @@ export default function KioskClient({
   const boardWidgets: DisplayWidget[] = data.board.widgets?.length
     ? data.board.widgets
     : (PRESET_WIDGETS[data.board.preset] ?? []).map((type) => ({ type }));
-  const { hero, rest } = kioskHeroSplit(boardWidgets);
+  const split = kioskHeroSplit(boardWidgets);
+  const hero = split.hero;
+  // With no match ahead, the panels about that match could only repeat "No match ahead"
+  // (three times on a typical board), and a strategy panel with no headline said so in
+  // giant type. They step aside until there is something to show.
+  const rest = split.rest.filter((widget) => {
+    const type = String(widget.type);
+    if (!data.nextMatch && (type === "next_match" || type === "prediction" || type === "team_intel")) return false;
+    if (type === "strategy" && !data.strategyHeadline?.trim()) return false;
+    return true;
+  });
 
   return (
     <main

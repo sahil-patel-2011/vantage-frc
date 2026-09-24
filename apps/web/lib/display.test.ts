@@ -77,7 +77,7 @@ describe("display helpers", () => {
 
   it("keeps Team Data off the public pit board", () => {
     expect(kioskNextMatchEmptyCopy(9999)).toBe(
-      "This board only shows matches that include team #9999. Queue time stays blank until those matches are on the schedule.",
+      "Team 9999's next match shows here, with its queue time, as soon as it is on the schedule.",
     );
     expect(kioskNextMatchEmptyCopy(9999)).not.toMatch(/Team Data/);
     expect(kioskEventCommandEmptyCopy()).toBe(
