@@ -66,13 +66,4 @@ export function notificationNextActions(input: {
   ];
 }
 
-/** Read-state label — blank-safe. */
-export function notificationReadLabel(readAt: string | null | undefined): "Unread" | "Read" {
-  return readAt ? "Read" : "Unread";
-}
 
-/** Badge tone for read state. */
-export function notificationReadTone(readAt: string | null | undefined): "setup" | "good" | "" {
-  if (!readAt) return "setup";
-  return "good";
-}

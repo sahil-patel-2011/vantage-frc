@@ -8,8 +8,6 @@ export {
   NOTIFICATION_RELATED_INCLUDE,
   NOTIFICATION_RELATED_LINKS,
   notificationNextActions,
-  notificationReadLabel,
-  notificationReadTone,
   notificationRelatedLinks,
   type NotificationNextAction,
   type NotificationRelatedId,

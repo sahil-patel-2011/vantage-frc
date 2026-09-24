@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   NOTIFICATION_RELATED_INCLUDE,
   notificationNextActions,
-  notificationReadLabel,
-  notificationReadTone,
   notificationRelatedLinks,
 } from "./notifications-related";
 import { expectPlainCopy } from "../ui/copy-assertions";
@@ -42,12 +40,5 @@ describe("notifications Soft-UI helpers", () => {
     expect(actions[0]?.label).toMatch(/Mark 2 as read/);
     expect(actions[0]?.primary).toBe(true);
     expectPlainCopy(actions[0]?.detail);
-  });
-
-  it("maps read labels and tones without DEMO", () => {
-    expect(notificationReadLabel(null)).toBe("Unread");
-    expect(notificationReadLabel("2026-07-18T12:00:00.000Z")).toBe("Read");
-    expect(notificationReadTone(null)).toBe("setup");
-    expect(notificationReadTone("2026-07-18T12:00:00.000Z")).toBe("good");
   });
 });

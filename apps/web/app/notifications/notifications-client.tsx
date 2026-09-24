@@ -12,8 +12,6 @@ import {
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   NOTIFICATION_RELATED_INCLUDE,
-  notificationReadLabel,
-  notificationReadTone,
   notificationRelatedLinks,
   notificationTypeLabel,
 } from "../../lib/notifications";
@@ -324,49 +322,34 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         </EmptyState>
       ) : (
         <ul className="notif-list" id="notif-inbox-list" aria-label="Inbox">
-          {items.map((item) => {
+          {/* Compact rows, and repeats folded: the same card arriving minutes apart used to fill a
+              phone screen two at a time (Open + Mark as read on every ~165px card). */}
+          {groupRepeats(items).map(({ item, repeats }) => {
             const unread = !item.readAt;
-            const readTone = notificationReadTone(item.readAt);
+            const title = item.href ? <a href={item.href}>{item.title}</a> : item.title;
             return (
               <li key={item.id} className={unread ? "unread" : undefined}>
-                <header>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <small>
-                      {notificationTypeLabel(item.type)} · {new Date(item.createdAt).toLocaleString()}
-                    </small>
-                  </div>
-                  <span className={`app-badge${readTone ? ` ${readTone}` : ""}`}>
-                    {notificationReadLabel(item.readAt)}
-                  </span>
-                </header>
-                {item.body ? <p>{item.body}</p> : null}
-                <footer>
-                  {item.href ? (
-                    <Button as="a" variant="primary" href={item.href}>
-                      Open
-                    </Button>
-                  ) : null}
-                  {unread ? (
-                    <Button
-                      variant="secondary"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void patch("read", item.id)}
-                    >
-                      Mark as read
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void patch("unread", item.id)}
-                    >
-                      Mark as unread
-                    </Button>
-                  )}
-                </footer>
+                <div className="notif-row-main">
+                  <strong>{title}</strong>
+                  {item.body ? <p>{item.body}</p> : null}
+                  <small>
+                    {notificationTypeLabel(item.type)} · {new Date(item.createdAt).toLocaleString()}
+                    {repeats.length ? ` · ${repeats.length} more like this` : ""}
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className="notif-row-toggle"
+                  disabled={busy}
+                  aria-label={unread ? `Mark "${item.title}" as read` : `Mark "${item.title}" as unread`}
+                  onClick={() =>
+                    void (async () => {
+                      for (const one of [item, ...repeats]) await patch(unread ? "read" : "unread", one.id);
+                    })()
+                  }
+                >
+                  {unread ? "Mark read" : "Mark unread"}
+                </button>
               </li>
             );
           })}
@@ -374,4 +357,20 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       )}
     </main>
   );
+}
+
+/** Consecutive notifications with the same kind and title fold into the first one. */
+function groupRepeats<T extends { type: string; title: string; readAt: string | null }>(
+  items: T[],
+): Array<{ item: T; repeats: T[] }> {
+  const groups: Array<{ item: T; repeats: T[] }> = [];
+  for (const item of items) {
+    const last = groups[groups.length - 1];
+    if (last && last.item.type === item.type && last.item.title === item.title && Boolean(last.item.readAt) === Boolean(item.readAt)) {
+      last.repeats.push(item);
+    } else {
+      groups.push({ item, repeats: [] });
+    }
+  }
+  return groups;
 }
