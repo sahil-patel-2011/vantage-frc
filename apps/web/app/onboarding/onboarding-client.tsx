@@ -368,7 +368,7 @@ export default function OnboardingClient() {
       if (data.accessStatus === "approved") {
         setMessage("Approved. Your team access email is on its way — use its sign-in link to enter the team.");
       } else if (data.accessStatus === "invited") {
-        setMessage("Your team sent an invitation. Open the invitation email to finish joining.");
+        setMessage("Your team invited you. Tap Join to finish.");
       } else if (data.accessStatus === "declined") {
         setMessage("This request was not approved. You can update the team number and request access again.");
       } else {

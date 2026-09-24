@@ -8,7 +8,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { getDisplayPool } from "@vantage/db/display";
 import { headers } from "next/headers";
-import { loadDisplayMatchIntel } from "../../../../lib/display/match-intel";
+import { loadDisplayMatchIntel, publicMatchIntel } from "../../../../lib/display/match-intel";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const MATCH_KEY = /^[0-9]{4}[a-z0-9]{1,16}_[a-z]{1,3}[0-9]{1,3}(m[0-9]{1,3})?$/;
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     if (token) {
       try {
         const result = await getDisplayPool().query<{ intel: unknown }>("SELECT get_display_match_intel($1, $2) AS intel", [token, matchKey]);
-        return Response.json({ intel: result.rows[0]?.intel ?? null });
+        return Response.json({ intel: publicMatchIntel(result.rows[0]?.intel ?? null) });
       } catch (error) {
         if (isMissingFunction(error)) return Response.json({ intel: null });
         throw error;
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       return Response.json({ error: "Sign in and choose a team first." }, { status: 401 });
     }
     const intel = await withRls({ userId: session.user.id, orgId }, (client) => loadDisplayMatchIntel(client, orgId, matchKey));
-    return Response.json({ intel });
+    return Response.json({ intel: publicMatchIntel(intel) });
   } catch (error) {
     return Response.json({ error: publicErrorMessage(error, "Match notes unavailable") }, { status: 400 });
   }

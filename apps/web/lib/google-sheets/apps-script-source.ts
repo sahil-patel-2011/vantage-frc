@@ -219,6 +219,11 @@ function vantageTeamBook_(team, create) {
   const book = SpreadsheetApp.create(title);
   DriveApp.getFileById(book.getId()).moveTo(vantageHubFolder_());
   props.setProperty("VANTAGE_BOOK_" + key, book.getId());
+  // A new file holds none of the old data: forget what was written to the old one, so the
+  // next sync fills it instead of calling it unchanged. Its sharing starts over too.
+  props.deleteProperty("VANTAGE_HASH_" + key);
+  props.deleteProperty("VANTAGE_AT_" + key);
+  props.deleteProperty("VANTAGE_SHARED_" + key);
   return { book: book, created: true };
 }
 
@@ -246,23 +251,38 @@ function vantageAbout_(book, team, lastSyncAt) {
   if (blank && book.getSheets().length > 1 && blank.getLastRow() === 0) book.deleteSheet(blank);
 }
 
+// View access follows the team's current owners and admins: someone removed or demoted
+// in Vantage loses the sheet on the next sync. Only addresses this script shared are ever
+// removed, so people the Drive owner shared by hand are left alone.
 function vantageShare_(book, team) {
-  const viewers = (team.viewers || []).map((email) => String(email).trim().toLowerCase()).filter((email) => /^[^@\\s]+@[^@\\s]+$/.test(email)).slice(0, 20);
-  if (!viewers.length) return;
+  if (!Array.isArray(team.viewers)) return;
+  const viewers = team.viewers.map((email) => String(email).trim().toLowerCase()).filter((email) => /^[^@\\s]+@[^@\\s]+$/.test(email)).slice(0, 20);
   const props = PropertiesService.getScriptProperties();
   const doneKey = "VANTAGE_SHARED_" + vantageTeamKey_(team);
   const done = (props.getProperty(doneKey) || "").split(",").filter(Boolean);
   const file = DriveApp.getFileById(book.getId());
+  const kept = [];
+  for (const email of done) {
+    if (viewers.indexOf(email) >= 0) {
+      kept.push(email);
+      continue;
+    }
+    try {
+      file.removeViewer(email);
+    } catch (removeError) {
+      // Already gone.
+    }
+  }
   for (const email of viewers) {
-    if (done.indexOf(email) >= 0) continue;
+    if (kept.indexOf(email) >= 0) continue;
     try {
       file.addViewer(email);
-      done.push(email);
+      kept.push(email);
     } catch (shareError) {
       // An address Google cannot share with; the others still get access.
     }
   }
-  props.setProperty(doneKey, done.slice(-50).join(","));
+  props.setProperty(doneKey, kept.slice(-50).join(","));
 }
 
 function vantageTeamEnsure_(team) {

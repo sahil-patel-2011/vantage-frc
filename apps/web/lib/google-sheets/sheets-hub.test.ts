@@ -107,11 +107,18 @@ function loadHub(secret: string) {
           addViewer: (email: string) => {
             book.viewers.push(email);
           },
+          removeViewer: (email: string) => {
+            book.viewers = book.viewers.filter((viewer) => viewer !== email);
+          },
         };
       },
     },
     PropertiesService: {
-      getScriptProperties: () => ({ getProperty: (key: string) => props.get(key) ?? null, setProperty: (key: string, value: string) => props.set(key, value) }),
+      getScriptProperties: () => ({
+        getProperty: (key: string) => props.get(key) ?? null,
+        setProperty: (key: string, value: string) => props.set(key, value),
+        deleteProperty: (key: string) => props.delete(key),
+      }),
     },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Utilities: {
@@ -196,6 +203,28 @@ describe("team sheets in the VantageFRC folder", () => {
     expect(theirs.name).toBe("FRC 254 · The Cheesy Poofs");
     expect(theirs.lastHash).toBeNull();
     expect(hub.books.get(theirs.id)!.sheets.some((sheet) => sheet.name === "Teams")).toBe(false);
+  });
+
+  it("takes the sheet away from someone who is no longer an owner or admin", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+    const first = await bridge.ensureTeamBook({ ...TEAM, viewers: ["owner@example.test", "old-admin@example.test"] });
+    expect(hub.books.get(first.id)!.viewers.sort()).toEqual(["old-admin@example.test", "owner@example.test"]);
+    await bridge.ensureTeamBook({ ...TEAM, viewers: ["owner@example.test"] });
+    expect(hub.books.get(first.id)!.viewers).toEqual(["owner@example.test"]);
+  });
+
+  it("fills a replacement sheet even when the team's data hasn't changed", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+    const first = await bridge.ensureTeamBook(TEAM);
+    await bridge.stampTeamBook(TEAM, "abc123");
+    hub.books.get(first.id)!.trashed = true;
+    const replacement = await bridge.ensureTeamBook(TEAM);
+    expect(replacement).toMatchObject({ created: true, lastHash: null });
+    expect(replacement.id).not.toBe(first.id);
   });
 
   it("follows a team rename", async () => {

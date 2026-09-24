@@ -21,8 +21,10 @@ const autoLimiter = createRateLimiter({ limit: 1, windowMs: 2 * 60_000, namespac
 
 /**
  * The person the sync runs as: the caller when they are an owner or admin, otherwise the
- * team's longest-standing owner (then admin). The spreadsheet holds what an owner could
- * export; a scout's ping only decides *when* it refreshes, and gets nothing back.
+ * team's longest-standing owner (then admin). A deliberate, narrow exception to "withRls runs
+ * as the session user", matching the nightly scheduled mirror: the spreadsheet holds what an
+ * owner could export, the caller gets nothing back, and the run is recorded as automatic.
+ * A scout's ping only decides *when* it refreshes.
  */
 async function syncRunner(orgId: string, userId: string): Promise<string> {
   return withRls({ userId, orgId }, async (client) => {
@@ -43,7 +45,7 @@ async function syncRunner(orgId: string, userId: string): Promise<string> {
   });
 }
 
-async function runAutoSync(orgId: string, runnerId: string): Promise<void> {
+async function runAutoSync(orgId: string, runnerId: string, callerIsRunner: boolean): Promise<void> {
   // The team's own connected copies (Google Apps Script / Sheets API, Excel).
   await withRls({ userId: runnerId, orgId }, async (client) => {
     await requireWorkbookManager(client, orgId, runnerId);
@@ -52,7 +54,8 @@ async function runAutoSync(orgId: string, runnerId: string): Promise<void> {
     const targets = connectedTargetDefs(client, orgId, states.copies);
     if (!targets.length) return;
     const lastHashes = Object.fromEntries(states.copies.map((copy) => [copy.copy, copy.lastSyncHash]));
-    await syncMirror(client, orgId, { targets, userId: runnerId, lastHashes });
+    // started_by names a person only when that person asked; a member's open tab is "automatic".
+    await syncMirror(client, orgId, { targets, userId: callerIsRunner ? runnerId : null, lastHashes });
   }).catch(() => undefined);
 
   // The team's sheet in the platform's VantageFRC folder, when the hub is configured.
@@ -72,7 +75,7 @@ export async function POST(request: Request) {
     if (!isUuid(orgId)) throw new HttpError(400, "A valid orgId is required.", "invalid_team");
     const runnerId = await syncRunner(orgId, user.id);
     if (!(await autoLimiter.allow(orgId))) return json({ queued: false, reason: "recent" }, 202);
-    after(() => runAutoSync(orgId, runnerId));
+    after(() => runAutoSync(orgId, runnerId, runnerId === user.id));
     return json({ queued: true }, 202);
   } catch (error) {
     return failJson(error);

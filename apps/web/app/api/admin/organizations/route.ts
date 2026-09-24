@@ -174,7 +174,7 @@ export async function POST(request: Request) {
         key: created.orgId,
         number: input.teamNumber ?? null,
         name: input.name,
-        viewers: [input.ownerEmail],
+        viewers: [],
       }).then(() => undefined),
     );
     return Response.json(confirmation, { status: 201 });

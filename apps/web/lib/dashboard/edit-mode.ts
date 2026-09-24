@@ -163,10 +163,13 @@ export function hiddenOnHome(
   input: {
     shell: "loading" | "no_org" | "setup" | "tba" | "ready";
     widgets?: Record<string, { status?: string } | undefined>;
+    teamSetupCard?: boolean;
   },
 ): Map<string, HiddenOnHomeReason> {
   const shown = new Set(
-    homeViewLayout(layout, { editing: false, shell: input.shell, widgets: input.widgets }).map((item) => item.i),
+    homeViewLayout(layout, { editing: false, shell: input.shell, widgets: input.widgets, teamSetupCard: input.teamSetupCard }).map(
+      (item) => item.i,
+    ),
   );
   const rows = input.widgets ?? {};
   const hidden = new Map<string, HiddenOnHomeReason>();

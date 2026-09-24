@@ -111,7 +111,7 @@ export async function syncTeamToHub(
   } catch (error) {
     return { status: "failed", book: null, rowsWritten: 0, error: describeGoogleError(error) };
   }
-  if (!options.force && book.lastHash === hash) return { status: "unchanged", book };
+  if (!options.force && !book.created && book.lastHash === hash) return { status: "unchanged", book };
 
   const target = new AppsScriptTarget(bridge, team);
   const { outcomes } = await writeTablesToCopy(target, withMirrorInfo(built, hash, ["google"]), {

@@ -125,11 +125,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   // Cards the normal Home leaves out right now; edit mode labels them.
   const hiddenOnHomeIds = useMemo(
-    () => hiddenOnHome(home.layout, { shell: dashShell, widgets: home.widgets }),
-    [home.layout, dashShell, home.widgets],
+    () => hiddenOnHome(home.layout, { shell: dashShell, widgets: home.widgets, teamSetupCard }),
+    [home.layout, dashShell, home.widgets, teamSetupCard],
   );
 
-  const history = useDashboardEditHistory({ editing: home.editing, setLayout: home.setLayout });
+  const history = useDashboardEditHistory({ editing: home.editing, previewing: home.previewing, setLayout: home.setLayout });
   const { setMessage, setMessageAction, setMessageKind, setAnnounce } = home;
   const undo = useCallback(() => {
     if (!history.undo()) return;

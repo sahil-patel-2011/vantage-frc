@@ -18,6 +18,10 @@ describe("why there is no next match", () => {
     expect(noNextMatchMessage({ total: 12, played: 9, last: null })).toMatch(/doesn't have a time posted yet/);
   });
 
+  it("says the event is running late rather than calling it over", () => {
+    expect(noNextMatchMessage({ total: 12, played: 9, behind: 1, last: null })).toBe("Our next match is running behind schedule.");
+  });
+
   it("labels matches the way people say them", () => {
     expect(matchShortLabel("qm", 31)).toBe("Qual 31");
     expect(matchShortLabel("sf", 2, 3)).toBe("Semi 3-2");

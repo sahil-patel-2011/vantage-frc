@@ -336,6 +336,18 @@ export async function acceptOrganizationInvite(
   return orgId;
 }
 
+/**
+ * Join the team that invited the signed-in person's verified email, without the invite link
+ * (migration 0686). Same audit trail as the link: an invite.accepted event, marked as
+ * accepted by verified email so the two ways in can be told apart.
+ */
+export async function acceptMyOrganizationInvite(client: PoolClient, actorUserId: string, orgId: string) {
+  const result = await client.query<{ orgId: string }>(`SELECT accept_my_org_invite($1::uuid) AS "orgId"`, [orgId]);
+  const joined = result.rows[0]!.orgId;
+  await audit(client, { orgId: joined, actorUserId, action: "invite.accepted", metadata: { via: "verified_email" } });
+  return joined;
+}
+
 export async function listOrganizationInvites(client: PoolClient, orgId: string) {
   await client.query("SELECT expire_org_invites()");
   const result = await client.query(

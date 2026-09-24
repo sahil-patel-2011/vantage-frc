@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepointOrThrow } from "@vantage/db/savepoint";
 import { assertLegalAccepted, recordLegalAcceptance } from "./legal";
+import { acceptMyOrganizationInvite } from "./membership";
 
 export const GENDER_OPTIONS = [
   "female",
@@ -636,10 +637,14 @@ export async function completeOnboarding(
   // old path (the invite email's link); the savepoint keeps the profile save either way.
   if (state.accessStatus === "invited" && state.lockedOrgId) {
     try {
-      await withSavepointOrThrow(client, () => client.query(`SELECT accept_my_org_invite($1::uuid)`, [state.lockedOrgId]));
+      const orgId = state.lockedOrgId;
+      await withSavepointOrThrow(client, () => acceptMyOrganizationInvite(client, userId, orgId));
     } catch (error) {
+      // Not joining here is never fatal to saving the profile: an older deployment without
+      // 0686, an invite that was used or expired meanwhile, or an email not verified yet
+      // (password sign-in) all fall back to the pending screen and the invite link.
       const code = (error as { code?: string } | null)?.code;
-      if (code !== "42883" && !/invalid or already used|has expired/i.test(String((error as Error)?.message ?? ""))) {
+      if (code !== "42883" && !/invalid or already used|has expired|verified email is required/i.test(String((error as Error)?.message ?? ""))) {
         throw error;
       }
     }

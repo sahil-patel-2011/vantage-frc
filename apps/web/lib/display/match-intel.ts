@@ -61,6 +61,36 @@ export function toDisplayMatchIntel(raw: RawIntel, ownTeamKey: string | null, sc
   return { matchKey: raw.matchKey, ourWinPct, ourColor, teams };
 }
 
+/**
+ * Only what the TV draws: win chances and, per team, the engine's labels. Evidence text, entry
+ * ids and timestamps stay on the server, because a TV link sits in a browser that anyone at
+ * the pit can pick up.
+ */
+export function publicMatchIntel(raw: unknown): RawIntel {
+  const value = raw as RawIntel;
+  if (!value?.matchKey) return null;
+  const p = value.prediction;
+  const tendencies = Array.isArray(value.plan?.tendencies) ? (value.plan!.tendencies as unknown[]) : [];
+  return {
+    matchKey: value.matchKey,
+    prediction:
+      p && typeof p.pRed === "number" && typeof p.pBlue === "number" ? { pRed: p.pRed, pBlue: p.pBlue } : null,
+    plan: value.plan
+      ? {
+          alliance: value.plan.alliance === "red" || value.plan.alliance === "blue" ? value.plan.alliance : null,
+          tendencies: tendencies
+            .map((row) => row as { teamKey?: unknown; labels?: unknown })
+            .filter((row) => typeof row?.teamKey === "string")
+            .map((row) => ({
+              teamKey: row.teamKey as string,
+              labels: Array.isArray(row.labels) ? row.labels.filter((label): label is string => typeof label === "string").slice(0, 6) : [],
+              evidence: [],
+            })),
+        }
+      : null,
+  };
+}
+
 /** Signed-in path (a pit laptop logged in as a member): the same read under RLS. */
 export async function loadDisplayMatchIntel(client: PoolClient, orgId: string, matchKey: string): Promise<RawIntel> {
   const row = (

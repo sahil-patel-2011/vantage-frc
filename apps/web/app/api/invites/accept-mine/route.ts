@@ -1,4 +1,4 @@
-import { auth } from "@vantage/core";
+import { acceptMyOrganizationInvite, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -24,14 +24,26 @@ export async function POST(request: Request) {
     }
     const body = await parseSecureJson(request, schema);
     const orgId = await withRls({ userId: session.user.id }, async (client) => {
-      const result = await client.query<{ orgId: string }>(`SELECT accept_my_org_invite($1::uuid) AS "orgId"`, [body.orgId]);
-      return result.rows[0]?.orgId ?? null;
+      // Joining needs both agreements on record, as it does through the invite link.
+      const consent = await client.query<{ terms: string | null; privacy: string | null }>(
+        `SELECT terms_accepted_at::text AS terms, privacy_accepted_at::text AS privacy FROM profiles WHERE user_id = $1::uuid`,
+        [session.user.id],
+      );
+      if (!consent.rows[0]?.terms || !consent.rows[0]?.privacy) {
+        const error = new Error("Finish your profile first: it asks you to agree to the Terms and Privacy Policy.");
+        (error as Error & { status?: number }).status = 409;
+        throw error;
+      }
+      return acceptMyOrganizationInvite(client, session.user.id, body.orgId);
     });
     const response = Response.json({ orgId });
     response.headers.set("cache-control", "private, no-store, max-age=0");
     return response;
   } catch (error) {
     const message = String((error as Error | null)?.message ?? "");
+    if ((error as Error & { status?: number }).status === 409) {
+      return Response.json({ error: message }, { status: 409 });
+    }
     if (/invalid or already used/i.test(message)) {
       return Response.json({ error: "That invite was already used or withdrawn. Ask your team to invite you again." }, { status: 409 });
     }

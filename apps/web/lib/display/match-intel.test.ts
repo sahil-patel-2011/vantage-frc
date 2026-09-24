@@ -44,3 +44,24 @@ describe("pit TV match intel", () => {
     expect(toDisplayMatchIntel(null, "frc6925", schedule)).toBeNull();
   });
 });
+
+describe("what a TV link can read", () => {
+  it("keeps only win chances and labels, never evidence, entry ids or timestamps", async () => {
+    const { publicMatchIntel } = await import("./match-intel");
+    const out = publicMatchIntel({
+      matchKey: "2026abc_qm12",
+      prediction: { pRed: 0.6, pBlue: 0.4, scoredAt: "2026-09-20T10:00:00Z" },
+      plan: {
+        alliance: "red",
+        updatedAt: "2026-09-20T10:00:00Z",
+        tendencies: [{ teamKey: "frc118", labels: ["defense-capable"], evidence: ["entries ba297aa2"], scoutEntryIds: ["ba297aa2"] }],
+      },
+    });
+    expect(out).toEqual({
+      matchKey: "2026abc_qm12",
+      prediction: { pRed: 0.6, pBlue: 0.4 },
+      plan: { alliance: "red", tendencies: [{ teamKey: "frc118", labels: ["defense-capable"], evidence: [] }] },
+    });
+    expect(JSON.stringify(out)).not.toMatch(/ba297aa2|scoredAt|updatedAt/);
+  });
+});

@@ -13,6 +13,7 @@ import { popHistory, pushHistory } from "../../lib/dashboard/edit-mode";
  */
 export function useDashboardEditHistory(input: {
   editing: boolean;
+  previewing?: boolean;
   setLayout: Dispatch<SetStateAction<DashboardWidgetLayout[]>>;
 }) {
   const { editing, setLayout } = input;
@@ -33,10 +34,14 @@ export function useDashboardEditHistory(input: {
     return true;
   }, [setLayout]);
 
+  // Preview turns editing off and Back turns it on again with the draft intact, so the
+  // history resets only when the whole session (editing or previewing) is over.
+  const inSession = editing || Boolean(input.previewing);
   useEffect(() => {
+    if (inSession) return;
     stackRef.current = [];
     setDepth(0);
-  }, [editing]);
+  }, [inSession]);
 
   return { canUndo: depth > 0, record, undo };
 }

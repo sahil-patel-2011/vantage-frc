@@ -11,8 +11,14 @@ import type { PoolClient } from "@neondatabase/serverless";
 export type OurMatchSummary = {
   /** Our matches on the synced schedule (placeholders excluded). */
   total: number;
-  /** Of those, how many are over: a posted result, or a start time already past. */
+  /**
+   * Of those, how many are over: a posted result, a recorded start, or a scheduled time more than
+   * three hours ago (a synced schedule whose results never arrived). A match only just past its
+   * time with none of those is running late, not over.
+   */
   played: number;
+  /** Past their scheduled time by under three hours, with no result: the event is behind. */
+  behind?: number;
   last: { label: string; ours: number | null; theirs: number | null; won: boolean | null } | null;
 };
 
@@ -35,16 +41,21 @@ export function noNextMatchMessage(summary: OurMatchSummary | null): string {
         : "";
     return `All ${summary.total} of our matches here are played. Last: ${last.label}${score}.`;
   }
+  if ((summary.behind ?? 0) > 0) return "Our next match is running behind schedule.";
   return "Our next match doesn't have a time posted yet.";
 }
+
+/** SQL for "this match is over" (see OurMatchSummary.played). A constant, never user input. */
+const OVER = `(winning_alliance IS NOT NULL OR post_result_time IS NOT NULL OR actual_time IS NOT NULL
+               OR COALESCE(predicted_time, event_time) <= now() - interval '3 hours')`;
 
 /** One read for the summary above, from the shared reference tables. */
 export async function loadOurMatchSummary(client: PoolClient, eventKey: string, teamKey: string): Promise<OurMatchSummary> {
   const counts = (
-    await client.query<{ total: string; played: string }>(
+    await client.query<{ total: string; played: string; behind: string }>(
       `SELECT count(*)::text AS total,
-              count(*) FILTER (WHERE winning_alliance IS NOT NULL OR post_result_time IS NOT NULL
-                                OR COALESCE(actual_time, predicted_time, event_time) <= now())::text AS played
+              count(*) FILTER (WHERE ${OVER})::text AS played,
+              count(*) FILTER (WHERE NOT (${OVER}) AND COALESCE(predicted_time, event_time) <= now())::text AS behind
          FROM matches_ref
         WHERE event_key = $1::text
           AND NOT placeholder
@@ -61,8 +72,7 @@ export async function loadOurMatchSummary(client: PoolClient, eventKey: string, 
         WHERE event_key = $1::text
           AND NOT placeholder
           AND (red_alliance->'teamKeys' ? $2::text OR blue_alliance->'teamKeys' ? $2::text)
-          AND (winning_alliance IS NOT NULL OR post_result_time IS NOT NULL
-               OR COALESCE(actual_time, predicted_time, event_time) <= now())
+          AND ${OVER}
         ORDER BY COALESCE(actual_time, predicted_time, event_time) DESC NULLS LAST, match_number DESC
         LIMIT 1`,
       [eventKey, teamKey],
@@ -75,6 +85,7 @@ export async function loadOurMatchSummary(client: PoolClient, eventKey: string, 
   return {
     total: Number(counts?.total ?? 0),
     played: Number(counts?.played ?? 0),
+    behind: Number(counts?.behind ?? 0),
     last: last
       ? {
           label: matchShortLabel(last.compLevel, last.matchNumber, last.setNumber),
