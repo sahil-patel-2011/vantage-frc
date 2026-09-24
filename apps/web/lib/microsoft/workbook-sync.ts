@@ -26,8 +26,8 @@ import {
   type TeamSourceRow,
   type WorkbookEntity,
   type WorkbookSource,
-  buildWorkbookTables,
 } from "./workbook-schema";
+import { buildAllTables, loadOpsTables } from "./team-ops-tables";
 
 // ------------------------------------------------------------------ the target interface
 
@@ -250,6 +250,9 @@ export async function loadWorkbookSource(client: PoolClient, orgId: string): Pro
     matchScouting,
     pitScouting,
     pickList,
+    // The team's own records (roster, hours, calendar, tasks, money, sponsors, failures,
+    // batteries), each read in its own savepoint so a missing table is just empty.
+    ops: await loadOpsTables(client, orgId),
   };
 }
 
@@ -371,7 +374,7 @@ export async function syncOrgWorkbook(client: PoolClient, orgId: string, options
   // A failure reading Postgres propagates: the transaction is aborted and withRls rolls the
   // run row back with it. Everything Microsoft-side is caught and recorded below.
   const source = await loadWorkbookSource(client, orgId);
-  const tables = buildWorkbookTables(source, now());
+  const tables = buildAllTables(source, now());
   let outcomes: TableOutcome[];
   let target: WorkbookTarget | null = null;
   try {

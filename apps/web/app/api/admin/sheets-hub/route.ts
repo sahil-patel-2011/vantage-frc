@@ -1,7 +1,7 @@
 import { assertPlatformAdmin, auth, platformAdminDeniedResponse } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { APPS_SCRIPT_HUB_VERSION, appsScriptSource, isAppsScriptSecret, isAppsScriptUrl } from "../../../../lib/google-sheets/apps-script-source";
+import { APPS_SCRIPT_HUB_VERSION, APPS_SCRIPT_VERSION, appsScriptSource, isAppsScriptSecret, isAppsScriptUrl } from "../../../../lib/google-sheets/apps-script-source";
 import { describeGoogleError } from "../../../../lib/google-sheets/google-api";
 import { sheetsHubBridge, sheetsHubConfig } from "../../../../lib/google-sheets/sheets-hub";
 
@@ -22,19 +22,28 @@ export async function GET() {
     const rawSecret = process.env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "";
     const urlSet = isAppsScriptUrl(rawUrl);
     const secretSet = isAppsScriptSecret(rawSecret);
-    let check: { ok: boolean; version: number | null; hub: boolean; folderUrl: string | null; error: string | null } | null = null;
+    let check: {
+      ok: boolean;
+      version: number | null;
+      hub: boolean;
+      folderUrl: string | null;
+      error: string | null;
+      /** Working, but an older script: the new one lays each team spreadsheet out as a database. */
+      updateAvailable: boolean;
+    } | null = null;
 
     const config = sheetsHubConfig();
     const bridge = sheetsHubBridge(config);
     if (bridge) {
       try {
-        const ping = await bridge.ping();
+        const ping = await bridge.ping({ hub: true });
         const tooOld = ping.version < APPS_SCRIPT_HUB_VERSION;
         check = {
           ok: ping.hub && !tooOld,
           version: ping.version,
           hub: ping.hub,
           folderUrl: ping.hub ? ping.url : null,
+          updateAvailable: ping.version < APPS_SCRIPT_VERSION,
           error: tooOld
             ? "The script is an older version. Paste the script below over it and deploy a new version."
             : !ping.hub
@@ -42,7 +51,7 @@ export async function GET() {
               : null,
         };
       } catch (error) {
-        check = { ok: false, version: null, hub: false, folderUrl: null, error: describeGoogleError(error) };
+        check = { ok: false, version: null, hub: false, folderUrl: null, updateAvailable: false, error: describeGoogleError(error) };
       }
     }
 

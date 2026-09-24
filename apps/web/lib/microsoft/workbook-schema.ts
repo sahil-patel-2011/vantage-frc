@@ -16,7 +16,23 @@
 
 export type CellValue = string | number | boolean | null;
 
-export type WorkbookEntity = "Teams" | "Matches" | "MatchScouting" | "PitScouting" | "PickList" | "SyncInfo";
+export type WorkbookEntity =
+  | "Teams"
+  | "Matches"
+  | "MatchScouting"
+  | "PitScouting"
+  | "PickList"
+  // The team's own records (lib/microsoft/team-ops-tables) and the catalog of every table.
+  | "Members"
+  | "Hours"
+  | "Calendar"
+  | "Tasks"
+  | "Finance"
+  | "Sponsors"
+  | "RobotFailures"
+  | "Batteries"
+  | "Tables"
+  | "SyncInfo";
 
 export type TableSpec = {
   entity: WorkbookEntity;
@@ -134,6 +150,8 @@ export type WorkbookSource = {
   matchScouting: ScoutSourceRow[];
   pitScouting: ScoutSourceRow[];
   pickList: PickListSourceRow[];
+  /** The team's own records by table (lib/microsoft/team-ops-tables), when loaded. */
+  ops?: Partial<Record<string, Record<string, unknown>[]>>;
 };
 
 // ------------------------------------------------------------------ cell hygiene

@@ -7,7 +7,14 @@ type HubStatus = {
   urlSet: boolean;
   secretSet: boolean;
   configured: boolean;
-  check: { ok: boolean; version: number | null; hub: boolean; folderUrl: string | null; error: string | null } | null;
+  check: {
+    ok: boolean;
+    version: number | null;
+    hub: boolean;
+    folderUrl: string | null;
+    error: string | null;
+    updateAvailable?: boolean;
+  } | null;
   script: string | null;
 };
 
@@ -61,8 +68,10 @@ export function SheetsHubCard() {
       <h2 id="sheets-hub-title">Team sheets in your Google Drive</h2>
       <p className="app-muted">
         Every team gets its own spreadsheet in a <strong>VantageFRC</strong> folder of your Google account, named like
-        &ldquo;FRC 6925 · Team Name&rdquo;, with a tab per kind of record. It is created when the team is, updates by
-        itself while people use Vantage, and is shared view-only with the team&rsquo;s owners.
+        &ldquo;6925 - Team Name - VantageFRC&rdquo;, laid out like a database: one tab per table, an id column
+        first, and a Tables tab listing them all. A &ldquo;VantageFRC - Team index&rdquo; spreadsheet links every
+        team. It is created when the team is and updates by itself while people use Vantage. It stays private to this
+        Google account; teams are never told where their data is copied.
       </p>
 
       {error ? <p role="alert">{error}</p> : null}
@@ -90,7 +99,15 @@ export function SheetsHubCard() {
             ) : null}
           </p>
 
-          {!working && status.script ? (
+          {working && status.check?.updateAvailable ? (
+            <p className="app-muted">
+              A newer script is ready: it lays each team&rsquo;s spreadsheet out as a database and keeps the team index.
+              Paste it over the old one and deploy a new version (Deploy → Manage deployments → Edit → New version), so
+              the address stays the same.
+            </p>
+          ) : null}
+
+          {(!working || status.check?.updateAvailable) && status.script ? (
             <ol className="sheets-hub-steps">
               <li>
                 Go to <a href="https://script.google.com/home/projects/create" target="_blank" rel="noreferrer">script.google.com</a>{" "}
@@ -113,7 +130,15 @@ export function SheetsHubCard() {
             </ol>
           ) : null}
 
-          {!working && status.script ? (
+          {working && status.check?.updateAvailable ? (
+            <p className="app-muted">
+              A newer script is ready: it lays each team&rsquo;s spreadsheet out as a database and keeps the team index.
+              Paste it over the old one and deploy a new version (Deploy → Manage deployments → Edit → New version), so
+              the address stays the same.
+            </p>
+          ) : null}
+
+          {(!working || status.check?.updateAvailable) && status.script ? (
             <details className="sheets-hub-script">
               <summary>Show the script</summary>
               <textarea readOnly value={status.script} rows={10} aria-label="Hub script" />

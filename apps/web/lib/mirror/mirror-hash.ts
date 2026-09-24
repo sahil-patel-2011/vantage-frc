@@ -6,8 +6,8 @@
  * copy's SyncInfo sheet — so "both copies say the same thing" is a comparison of two short
  * strings, checkable by a person looking at the two sheets as well as by Vantage.
  *
- * SyncInfo itself is left out of the hash: it carries the sync time, which changes on
- * every run even when nothing else does.
+ * SyncInfo and the Tables catalog are left out of the hash: they carry the sync time, which
+ * changes on every run even when nothing else does, and only describe the other tables.
  */
 
 import { createHash } from "node:crypto";
@@ -24,7 +24,8 @@ export function mirrorCopyLabel(copy: MirrorCopy): string {
 export function contentHash(tables: BuiltTable[]): string {
   const hash = createHash("sha256");
   for (const table of tables) {
-    if (table.spec.entity === "SyncInfo") continue;
+    // SyncInfo and the Tables catalog carry the sync time and are derived from the rest.
+    if (table.spec.entity === "SyncInfo" || table.spec.entity === "Tables") continue;
     hash.update(JSON.stringify([table.spec.entity, table.spec.columns]));
     for (const row of table.rows) hash.update(JSON.stringify(row));
     hash.update("\u0000");

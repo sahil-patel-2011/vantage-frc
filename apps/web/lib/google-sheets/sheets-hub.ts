@@ -3,7 +3,7 @@
  *
  * One Apps Script, deployed once by the platform owner as a standalone web app, keeps a
  * spreadsheet for every team in a "VantageFRC" folder of that Google account, each named the
- * same way ("FRC 6925 · Team Name") and opening on an About tab. Vantage writes the same
+ * same way ("6925 - Team Name - VantageFRC") and opening on an About tab. Vantage writes the same
  * tables the team's own Google/Excel copy gets (lib/microsoft/workbook-schema), then stamps
  * the content hash in the script, so a sync with nothing new costs one small request.
  *
@@ -17,7 +17,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
-import { buildWorkbookTables } from "../microsoft/workbook-schema";
+import { buildAllTables } from "../microsoft/team-ops-tables";
 import { loadWorkbookSource, summarizeOutcomes } from "../microsoft/workbook-sync";
 import { contentHash, withMirrorInfo } from "../mirror/mirror-hash";
 import { writeTablesToCopy } from "../mirror/mirror-sync";
@@ -41,9 +41,18 @@ export function sheetsHubBridge(config: SheetsHubConfig | null = sheetsHubConfig
 /** The standard name every team's spreadsheet gets. Mirrors vantageTeamTitle_ in the script. */
 export function teamSheetTitle(teamNumber: number | null, name: string): string {
   const clean = name.replace(/\s+/g, " ").trim().slice(0, 80);
-  if (teamNumber && clean) return `FRC ${teamNumber} · ${clean}`;
-  if (teamNumber) return `FRC ${teamNumber}`;
-  return clean || "Vantage team";
+  if (teamNumber && clean) return `${teamNumber} - ${clean} - VantageFRC`;
+  if (teamNumber) return `${teamNumber} - VantageFRC`;
+  return `${clean || "Team"} - VantageFRC`;
+}
+
+/**
+ * Whether team owners and admins get view access to their hub spreadsheet. Off unless the
+ * platform turns it on: the hub is the platform's own copy of team data, not a team feature.
+ * With it off, the script also takes back any access it granted earlier.
+ */
+export function sheetsHubSharesWithTeams(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.VANTAGE_SHEETS_HUB_SHARE?.trim() === "1";
 }
 
 /** The team as the script sees it: id, number, name, and the owners/admins who may view it. */
@@ -66,7 +75,13 @@ export async function readHubTeam(client: PoolClient, orgId: string): Promise<Hu
       [orgId],
     )
   ).rows.map((row) => row.email);
-  return { key: orgId, number: org.teamNumber ?? null, name: org.name, viewers };
+  return {
+    key: orgId,
+    number: org.teamNumber ?? null,
+    name: org.name,
+    title: teamSheetTitle(org.teamNumber ?? null, org.name),
+    viewers: sheetsHubSharesWithTeams() ? viewers : [],
+  };
 }
 
 export type HubSyncResult =
@@ -102,7 +117,7 @@ export async function syncTeamToHub(
   if (!team) return { status: "no_team" };
 
   const source = await loadWorkbookSource(client, orgId);
-  const built = buildWorkbookTables(source, now());
+  const built = buildAllTables(source, now());
   const hash = contentHash(built);
 
   let book: HubTeamBook;
@@ -122,7 +137,7 @@ export async function syncTeamToHub(
   const summary = summarizeOutcomes(outcomes);
   if (summary.status === "succeeded") {
     try {
-      await bridge.stampTeamBook(team, hash);
+      await bridge.stampTeamBook(team, hash, built.map((table) => table.spec.sheet));
       book = { ...book, lastHash: hash, lastSyncAt: now().toISOString() };
     } catch {
       // The data landed; without the stamp the next sync just writes it again.

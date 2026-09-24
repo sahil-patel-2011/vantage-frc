@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { AppsScriptBridge, AppsScriptTarget } from "./apps-script-bridge";
-import { APPS_SCRIPT_HUB_VERSION, appsScriptSource, newAppsScriptSecret } from "./apps-script-source";
+import { APPS_SCRIPT_VERSION, appsScriptSource, newAppsScriptSecret } from "./apps-script-source";
 import { sheetsHubConfig, teamSheetTitle } from "./sheets-hub";
 
 const URL_OK = "https://script.google.com/macros/s/AKfycbxHUB1234567890abcdefghijk/exec";
@@ -21,32 +21,54 @@ function loadHub(secret: string) {
     let i = 0;
     return { hasNext: () => i < items.length, next: () => items[i++]! };
   };
-  const range = (sheet: Sheet, row: number, rows: number) => ({
-    setValues(values: unknown[][]) {
-      values.forEach((r, i) => {
-        sheet.cells[row - 1 + i] = [...r];
-      });
-    },
-    setNumberFormats() {},
-    setFontWeight() {},
-    setBackground() {},
-    rows,
-  });
-  const sheetApi = (sheet: Sheet) => ({
-    clearContents() {
-      sheet.cells = [];
-    },
-    getMaxRows: () => 5000,
-    getMaxColumns: () => 50,
-    insertRowsAfter() {},
-    insertColumnsAfter() {},
-    setFrozenRows() {},
-    autoResizeColumns() {},
-    setColumnWidth() {},
-    getLastRow: () => sheet.cells.length,
-    getRange: (row: number, _col: number, rows: number) => range(sheet, row, rows),
-    getDataRange: () => ({ getValues: () => sheet.cells.map((r) => [...r]) }),
-  });
+  // Anything the fake does not model (styling, filters, banding, protection) is a chainable
+  // no-op: the script's layout pass runs for real, and only its data effects are checked.
+  const lenient = <T extends object>(target: T): T =>
+    new Proxy(target, {
+      get(obj, key) {
+        if (key in obj) return (obj as Record<PropertyKey, unknown>)[key];
+        if (key === "then") return undefined;
+        const noop = (): unknown => lenient({});
+        return noop;
+      },
+    });
+  const range = (sheet: Sheet, row: number, col = 1, rows = 1, cols?: number) =>
+    lenient({
+      setValues(values: unknown[][]) {
+        values.forEach((r, i) => {
+          const at = row - 1 + i;
+          const next = [...(sheet.cells[at] ?? [])];
+          r.forEach((cell, j) => {
+            next[col - 1 + j] = cell;
+          });
+          sheet.cells[at] = next;
+        });
+      },
+      getValues: () =>
+        Array.from({ length: rows }, (_, i) => {
+          const r = sheet.cells[row - 1 + i] ?? [];
+          return r.slice(col - 1, cols ? col - 1 + cols : undefined);
+        }),
+      getDisplayValue: () => String(sheet.cells[row - 1]?.[col - 1] ?? ""),
+      rows,
+    });
+  const sheetApi = (sheet: Sheet) =>
+    lenient({
+      clearContents() {
+        sheet.cells = [];
+      },
+      getName: () => sheet.name,
+      getMaxRows: () => 5000,
+      getMaxColumns: () => 50,
+      getLastRow: () => sheet.cells.length,
+      getLastColumn: () => sheet.cells.reduce((max, r) => Math.max(max, r.length), 0),
+      getColumnWidth: () => 100,
+      getBandings: () => [],
+      getFilter: () => null,
+      getProtections: () => [],
+      getRange: (row: number, col?: number, rows?: number, cols?: number) => range(sheet, row, col ?? 1, rows ?? 1, cols),
+      getDataRange: () => ({ getValues: () => sheet.cells.map((r) => [...r]) }),
+    });
   const bookApi = (book: Book): Record<string, unknown> => ({
     getId: () => book.id,
     getName: () => book.name,
@@ -65,12 +87,26 @@ function loadHub(secret: string) {
       else book.sheets.push(sheet);
       return sheetApi(sheet);
     },
-    deleteSheet: (api: { getLastRow: () => number }) => {
-      book.sheets = book.sheets.filter((s) => sheetApi(s).getLastRow() !== api.getLastRow() || s.name !== "Sheet1");
+    deleteSheet: (api: { getName: () => string }) => {
+      book.sheets = book.sheets.filter((s) => s.name !== api.getName());
     },
+    setActiveSheet: (api: { getName: () => string }) => {
+      active = api.getName();
+    },
+    moveActiveSheet: (position: number) => {
+      const index = book.sheets.findIndex((s) => s.name === active);
+      if (index < 0) return;
+      const [moved] = book.sheets.splice(index, 1);
+      book.sheets.splice(position - 1, 0, moved!);
+    },
+    setNamedRange: () => {},
   });
+  let active = "";
   const globals = {
     SpreadsheetApp: {
+      BandingTheme: { LIGHT_GREY: "LIGHT_GREY" },
+      WrapStrategy: { CLIP: "CLIP" },
+      ProtectionType: { SHEET: "SHEET" },
       getActiveSpreadsheet: () => null,
       create: (name: string) => {
         const book: Book = { id: `book${++seq}`, name, sheets: [{ name: "Sheet1", cells: [] }], parent: null, trashed: false, viewers: [] };
@@ -155,10 +191,10 @@ describe("team sheets in the VantageFRC folder", () => {
     const hub = loadHub(secret);
     const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
 
-    await expect(bridge.ping()).resolves.toMatchObject({ version: APPS_SCRIPT_HUB_VERSION, hub: true, name: "VantageFRC" });
+    await expect(bridge.ping({ hub: true })).resolves.toMatchObject({ version: APPS_SCRIPT_VERSION, hub: true, name: "VantageFRC" });
 
     const first = await bridge.ensureTeamBook(TEAM);
-    expect(first).toMatchObject({ created: true, name: "FRC 6925 · Ctrl Alt Elite", lastHash: null });
+    expect(first).toMatchObject({ created: true, name: "6925 - Ctrl Alt Elite - VantageFRC", lastHash: null });
     expect(first.url).toMatch(/^https:\/\/docs\.google\.com\/spreadsheets\//);
 
     const book = hub.books.get(first.id)!;
@@ -167,14 +203,15 @@ describe("team sheets in the VantageFRC folder", () => {
     // Opens on an About tab that says what the file is; the empty default sheet is gone.
     expect(book.sheets[0]?.name).toBe("About");
     expect(book.sheets.some((sheet) => sheet.name === "Sheet1")).toBe(false);
-    expect(book.sheets[0]?.cells[0]).toEqual(["Team", "FRC 6925 · Ctrl Alt Elite"]);
+    expect(book.sheets[0]?.cells[0]).toEqual(["Team", "6925 - Ctrl Alt Elite - VantageFRC"]);
     // Owners get view access, once.
     expect(book.viewers).toEqual(["owner@example.test"]);
 
     const again = await bridge.ensureTeamBook(TEAM);
     expect(again).toMatchObject({ id: first.id, created: false });
     expect(book.viewers).toEqual(["owner@example.test"]);
-    expect(hub.books.size).toBe(1);
+    // One team spreadsheet, plus the team index beside it.
+    expect([...hub.books.values()].filter((b) => b.name !== "VantageFRC - Team index")).toHaveLength(1);
   });
 
   it("writes to the team's own spreadsheet and remembers what it wrote", async () => {
@@ -200,7 +237,7 @@ describe("team sheets in the VantageFRC folder", () => {
     // Another team gets its own file and none of this team's rows.
     const theirs = await bridge.ensureTeamBook(other);
     expect(theirs.id).not.toBe(mine.id);
-    expect(theirs.name).toBe("FRC 254 · The Cheesy Poofs");
+    expect(theirs.name).toBe("254 - The Cheesy Poofs - VantageFRC");
     expect(theirs.lastHash).toBeNull();
     expect(hub.books.get(theirs.id)!.sheets.some((sheet) => sheet.name === "Teams")).toBe(false);
   });
@@ -234,7 +271,36 @@ describe("team sheets in the VantageFRC folder", () => {
     const first = await bridge.ensureTeamBook(TEAM);
     const renamed = await bridge.ensureTeamBook({ ...TEAM, name: "Ctrl Alt Elite Robotics" });
     expect(renamed.id).toBe(first.id);
-    expect(renamed.name).toBe("FRC 6925 · Ctrl Alt Elite Robotics");
+    expect(renamed.name).toBe("6925 - Ctrl Alt Elite Robotics - VantageFRC");
+  });
+
+  it("uses the title Vantage sends, puts tabs in table order, and lists the team in the index", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+    const team = { ...TEAM, title: "6925 - Ctrl Alt Elite - VantageFRC" };
+    const target = new AppsScriptTarget(bridge, team);
+    const spec = (sheet: string) => ({ entity: sheet as "Teams", sheet, table: "Vantage" + sheet, columns: ["id", "value"] });
+    for (const sheet of ["Members", "Teams", "Tables"]) {
+      await target.ensureTable(spec(sheet));
+      await target.replaceRows(spec(sheet), [["a", 1]]);
+    }
+    await target.flush();
+    await bridge.stampTeamBook(team, "hash1", ["Teams", "Members", "Tables"]);
+
+    const mine = await bridge.ensureTeamBook(team);
+    const book = hub.books.get(mine.id)!;
+    expect(book.name).toBe("6925 - Ctrl Alt Elite - VantageFRC");
+    expect(book.sheets.map((sheet) => sheet.name)).toEqual(["About", "Teams", "Members", "Tables"]);
+
+    const index = [...hub.books.values()].find((b) => b.name === "VantageFRC - Team index")!;
+    expect(index.parent).toBe(book.parent);
+    const rows = index.sheets.find((sheet) => sheet.name === "Teams")!.cells;
+    expect(rows[0]).toEqual(["team_number", "team_name", "spreadsheet", "last_updated", "spreadsheet_id", "key"]);
+    expect(rows).toHaveLength(2);
+    expect(rows[1]?.[0]).toBe(6925);
+    expect(String(rows[1]?.[2])).toContain(book.id);
+    expect(rows[1]?.[5]).toBe(TEAM.key);
   });
 });
 
@@ -248,8 +314,8 @@ describe("hub configuration", () => {
   });
 
   it("names every team's sheet the same way", () => {
-    expect(teamSheetTitle(6925, "  Ctrl   Alt Elite ")).toBe("FRC 6925 · Ctrl Alt Elite");
-    expect(teamSheetTitle(null, "Rookie Team")).toBe("Rookie Team");
-    expect(teamSheetTitle(254, "")).toBe("FRC 254");
+    expect(teamSheetTitle(6925, "  Ctrl   Alt Elite ")).toBe("6925 - Ctrl Alt Elite - VantageFRC");
+    expect(teamSheetTitle(null, "Rookie Team")).toBe("Rookie Team - VantageFRC");
+    expect(teamSheetTitle(254, "")).toBe("254 - VantageFRC");
   });
 });

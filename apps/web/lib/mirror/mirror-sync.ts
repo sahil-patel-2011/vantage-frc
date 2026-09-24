@@ -19,7 +19,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import type { BuiltTable } from "../microsoft/workbook-schema";
-import { buildWorkbookTables } from "../microsoft/workbook-schema";
+import { buildAllTables } from "../microsoft/team-ops-tables";
 import { type TableOutcome, type WorkbookTarget, loadWorkbookSource, summarizeOutcomes } from "../microsoft/workbook-sync";
 import { type MirrorCopy, contentHash, withMirrorInfo } from "./mirror-hash";
 
@@ -143,7 +143,7 @@ export async function syncMirror(
 
   // One read, one build: both copies get exactly these tables.
   const source = await loadWorkbookSource(client, orgId);
-  const built = buildWorkbookTables(source, now());
+  const built = buildAllTables(source, now());
   const hash = contentHash(built);
   const tables = withMirrorInfo(
     built,

@@ -10,6 +10,9 @@
 /**
  * Date these documents were last rewritten. Bump when the text changes.
  *
+ * Revised 2026-09-24 (second pass): the team backup copy is private to the operator and
+ * shared with no one (it had said owners and admins could view it). Still named: Google Drive.
+ *
  * Revised 2026-09-24 to match what teams are offered: Vantage is free and AI runs on the
  * team's own key. Removed "plan", "credit balance", "pay-as-you-go", "cancel the plan" and
  * "non-payment", and said Stripe receives nothing today. This takes obligations away and
@@ -144,7 +147,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Resend (email) — sends sign-in codes, two-factor codes, invitations, password-reset emails, and notifications. It receives the recipient's email address and the message.",
         "Stripe (payments) — only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing. If it is ever used, card details go directly to Stripe; we do not store card numbers.",
         "Google (sign-in) — if you sign in with Google, Google confirms your identity and returns your name, email, and account id.",
-        "Google (Sheets and Drive) — we keep a copy of each team's records in a Google spreadsheet for that team, in a VantageFRC folder of the Google account that runs Vantage. It holds the same tables your team can export. Each team's records are in their own spreadsheet, shared view-only with that team's owners and admins, and with no one else.",
+        "Google (Drive) — stores a private backup copy of each team's records in the operator's own account. It holds the same tables your team can export, each team's records are kept separately, and it is shared with no one.",
         "The Blue Alliance and Statbotics (public FRC data) — we read public event, team, and match data from them. We send event and team keys, never your members' information.",
         "Onshape and Fusion (CAD, opt-in) — only if your team connects a CAD account. They receive the document and session requests your team makes.",
         "GitHub (opt-in) — only if your team connects a repository for robot-code review. It receives requests for the code your team pointed us at.",
@@ -158,7 +161,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "Where data lives, how long we keep it, and how to get it out",
       paragraphs: [
         "Your team's data lives in our Postgres database, hosted by Neon. We do not currently offer a choice of hosting region — if that matters for your organization, ask us before you sign up.",
-        "A copy of each team's records is also kept in that team's own Google spreadsheet in the operator's Google Drive (see the list of companies above). It is updated automatically while your team uses Vantage and deleted when the team is deleted. If your team connects its own Google Sheet or Excel workbook, a copy goes there too, into your team's own account.",
+        "A backup copy of each team's records is also kept in the operator's private Google Drive storage (see the list of companies above). It is updated automatically while your team uses Vantage, shared with no one, and deleted when the team is deleted. If your team connects its own Google Sheet or Excel workbook, a copy goes there too, into your team's own account.",
         "We keep a team's data for as long as the team is active, and afterwards only as long as we need it for security, legal, billing, or dispute reasons. Chat messages specifically have no automatic deletion, as noted above.",
         "Your team can export its own data at any time from the Exports area — individual areas as CSV, or the whole workspace as a ZIP archive. API keys and encryption material are never included in an export.",
         "When a member leaves a team, their membership is removed and they immediately lose access to that workspace. The work they created — scouting entries, hours, tasks, messages in team channels — stays with the team, because it is the team's operating record rather than personal property. Their Vantage account and their own profile stay with them.",
@@ -258,7 +261,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Vercel — hosting for the web app. Sees requests and standard server logs.",
         "Resend — sends our email: sign-in codes, invitations, reminders, and digests. Sees the recipient address and the message.",
         "Stripe — payments, only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing.",
-        "Google — if you sign in with Google, which tells us your name and email; and Google Sheets and Drive, which hold each team's spreadsheet copy in the VantageFRC folder described above.",
+        "Google — if you sign in with Google, which tells us your name and email; and Google Drive, which holds the private backup copy of each team's records described above.",
         "AI providers (Anthropic, OpenAI, Groq, OpenRouter) — process the text of an AI request when a team uses an AI feature. A team may supply its own provider key instead, in which case the request goes to that team's own account.",
         "Onshape — only if your team connects CAD. Sees the CAD documents you authorise.",
         "Discord and Slack — only if your team connects a chat bridge, which forwards the messages your team chooses to forward.",

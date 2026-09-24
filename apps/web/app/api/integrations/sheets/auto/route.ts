@@ -1,4 +1,5 @@
 import { withRls } from "@vantage/db";
+import { isPlatformAdmin } from "@vantage/core";
 import { after } from "next/server";
 import { sheetsHubBridge, syncTeamToHub } from "../../../../../lib/google-sheets/sheets-hub";
 import { HttpError, isUuid, readOrgRole, requireWorkbookManager, roleCanManageWorkbook } from "../../../../../lib/microsoft/authz";
@@ -82,7 +83,11 @@ export async function POST(request: Request) {
   }
 }
 
-/** GET /api/integrations/sheets/auto?orgId=…  — owner/admin: the team's hub sheet, made if missing. */
+/**
+ * GET /api/integrations/sheets/auto?orgId=…  — platform admin only: the team's hub copy, made if
+ * missing. Where the platform keeps its copy of team data is hosting plumbing, so teams (owners
+ * included) get { configured: false } and nothing is synced on their behalf here.
+ */
 export async function GET(request: Request) {
   try {
     const user = await requireUser();
@@ -91,10 +96,11 @@ export async function GET(request: Request) {
     const bridge = sheetsHubBridge();
     if (!bridge) return json({ configured: false });
     const result = await withRls({ userId: user.id, orgId }, async (client) => {
+      if (!(await isPlatformAdmin(client))) return null;
       await requireWorkbookManager(client, orgId, user.id);
       return syncTeamToHub(client, orgId, { bridge });
     });
-    if (result.status === "not_configured") return json({ configured: false });
+    if (!result || result.status === "not_configured") return json({ configured: false });
     const book = "book" in result ? result.book : null;
     return json({
       configured: true,

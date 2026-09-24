@@ -43,7 +43,6 @@ Start with the section that matches you. Each document says who it is for in its
 | [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md) | What to verify before real users sign in |
 | [CUSTOM_DOMAIN.md](CUSTOM_DOMAIN.md) | Putting the app on your own domain |
 | [SUPABASE_CUTOVER.md](SUPABASE_CUTOVER.md) | Running on a Supabase Postgres host instead of Neon |
-| [TEAM_SHEETS_HUB.md](TEAM_SHEETS_HUB.md) | One Google Sheet per team in the platform's VantageFRC Drive folder: turning it on, how auto-sync works |
 | [RELEASING.md](RELEASING.md) | Cutting releases, including desktop builds |
 | [../SECURITY_OPERATIONS.md](../SECURITY_OPERATIONS.md) | The security model, admin access, secrets and how to report a problem |
 | [PRICING.md](PRICING.md) | Today: free for every team, bring your own AI key. Also the dormant plan and credit model |

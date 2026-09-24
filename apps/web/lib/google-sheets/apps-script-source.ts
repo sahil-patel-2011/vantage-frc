@@ -22,9 +22,17 @@
  *   team.ensure → { ok, id, url, name, created, lastHash, lastSyncAt }
  *   team.stamp  → { team, hash } → { ok }   (after a full write; the next sync skips if unchanged)
  *   write/read  → as above, on the team's spreadsheet
+ *
+ * Version 4 lays each team's spreadsheet out like a database. team.stamp takes `order` (the
+ * tables in write order) and then formats every table tab (header row, frozen id column,
+ * filter, banding, column formats, a named range, a warning-only protection) and puts the
+ * tabs in order. Each spreadsheet is named "6925 - Team Name - VantageFRC" (or `team.title`),
+ * and a "VantageFRC - Team index" spreadsheet in the same folder lists every team with a link.
+ * `ping { hub: true }` answers as a hub even when the script sits inside a spreadsheet, which
+ * then becomes that index.
  */
 
-export const APPS_SCRIPT_VERSION = 3;
+export const APPS_SCRIPT_VERSION = 4;
 /** Hub mode (one spreadsheet per team in a VantageFRC folder) needs this version. */
 export const APPS_SCRIPT_HUB_VERSION = 3;
 /** The oldest script Vantage still talks to (spreadsheet sync only). */
@@ -79,12 +87,17 @@ function doPost(e) {
     }
     if (request.action === "ping") {
       const active = SpreadsheetApp.getActiveSpreadsheet();
-      if (active) return vantageReply_({ ok: true, version: VANTAGE_VERSION, name: active.getName(), url: active.getUrl() });
+      if (active && request.hub !== true) {
+        return vantageReply_({ ok: true, version: VANTAGE_VERSION, name: active.getName(), url: active.getUrl() });
+      }
       const hub = vantageHubFolder_();
-      return vantageReply_({ ok: true, version: VANTAGE_VERSION, hub: true, name: hub.getName(), url: hub.getUrl() });
+      const index = vantageIndexBook_();
+      return vantageReply_({ ok: true, version: VANTAGE_VERSION, hub: true, name: hub.getName(), url: hub.getUrl(), indexUrl: index.getUrl() });
     }
     if (request.action === "team.ensure") return vantageReply_(vantageTeamEnsure_(request.team || {}));
-    if (request.action === "team.stamp") return vantageReply_(vantageTeamStamp_(request.team || {}, String(request.hash || "")));
+    if (request.action === "team.stamp") {
+      return vantageReply_(vantageTeamStamp_(request.team || {}, String(request.hash || ""), request.order || []));
+    }
     if (request.action === "write") return vantageReply_(vantageWrite_(vantageBook_(request), request.items || []));
     if (request.action === "read") return vantageReply_(vantageRead_(vantageBook_(request), request.sheets || []));
     if (request.action === "drive.setup") return vantageReply_(vantageDriveSetup_(request));
@@ -162,8 +175,8 @@ function vantageRead_(book, names) {
 
 // ---------------------------------------------------------------- hub: one spreadsheet per team
 // Deployed on its own, this script keeps every team's spreadsheet in one "VantageFRC" folder,
-// named the same way for every team: "FRC 6925 · Team Name". Each spreadsheet opens on an
-// About tab that says what it is and when it last changed.
+// named the same way for every team: "6925 - Team Name - VantageFRC". Each spreadsheet opens
+// on an About tab that says what it is and when it last changed.
 const VANTAGE_HUB_FOLDER = "VantageFRC";
 const VANTAGE_HUB_KEY = "VANTAGE_HUB_FOLDER";
 
@@ -191,11 +204,13 @@ function vantageTeamKey_(team) {
 }
 
 function vantageTeamTitle_(team) {
+  const given = String(team.title || "").replace(/[\\u0000-\\u001f]/g, "").replace(/\\s+/g, " ").trim().slice(0, 120);
+  if (given) return given;
   const name = String(team.name || "").replace(/\\s+/g, " ").trim().slice(0, 80);
   const number = String(team.number || "").replace(/[^0-9]/g, "").slice(0, 6);
-  if (number && name) return "FRC " + number + " · " + name;
-  if (number) return "FRC " + number;
-  return name || "Vantage team";
+  if (number && name) return number + " - " + name + " - VantageFRC";
+  if (number) return number + " - VantageFRC";
+  return (name || "Team") + " - VantageFRC";
 }
 
 function vantageTeamBook_(team, create) {
@@ -238,7 +253,8 @@ function vantageAbout_(book, team, lastSyncAt) {
   const sheet = book.getSheetByName("About") || book.insertSheet("About", 0);
   const rows = [
     ["Team", vantageTeamTitle_(team)],
-    ["What this is", "Your team's data from Vantage, one tab per kind of record. Vantage keeps it up to date on its own."],
+    ["What this is", "This team's records, one tab per table. The Tables tab lists every table, what it holds and how many rows it has."],
+    ["Keys", "Every table starts with an id column. It never changes, so rows in different tabs can be matched on it."],
     ["Editing", "Change things in Vantage. Edits made here are replaced on the next update."],
     ["Last updated", lastSyncAt || "Not yet"],
   ];
@@ -294,6 +310,11 @@ function vantageTeamEnsure_(team) {
     const key = vantageTeamKey_(team);
     if (found.created) vantageAbout_(found.book, team, "");
     vantageShare_(found.book, team);
+    try {
+      vantageIndexUpdate_(team, found.book, props.getProperty("VANTAGE_AT_" + key) || "");
+    } catch (indexError) {
+      // The index is a convenience; the team's spreadsheet is what matters.
+    }
     return {
       ok: true,
       id: found.book.getId(),
@@ -308,7 +329,7 @@ function vantageTeamEnsure_(team) {
   }
 }
 
-function vantageTeamStamp_(team, hash) {
+function vantageTeamStamp_(team, hash, order) {
   const key = vantageTeamKey_(team);
   const found = vantageTeamBook_(team, false);
   if (!found) return { ok: false, error: "No spreadsheet for this team yet." };
@@ -317,7 +338,181 @@ function vantageTeamStamp_(team, hash) {
   props.setProperty("VANTAGE_HASH_" + key, hash.slice(0, 64));
   props.setProperty("VANTAGE_AT_" + key, at);
   vantageAbout_(found.book, team, at);
+  vantageFormatBook_(found.book, order);
+  try {
+    vantageIndexUpdate_(team, found.book, at);
+  } catch (indexError) {
+    // The index is a convenience; the team's spreadsheet is what matters.
+  }
   return { ok: true, at: at };
+}
+
+// ---------------------------------------------------------------- database layout
+// After a full write, every table tab is laid out the same way: a dark header row that stays
+// put, the id column frozen, a filter on every column, light banding, columns formatted by
+// what they hold, a named range (tbl_<Tab>) for formulas, and a warning if someone types over
+// data that the next update replaces. Tabs sit in a fixed order behind About.
+const VANTAGE_EVENT_TABS = ["Teams", "Matches", "MatchScouting", "PitScouting", "PickList"];
+const VANTAGE_INFO_TABS = ["Tables", "SyncInfo"];
+
+function vantageFormatBook_(book, order) {
+  const names = (Array.isArray(order) ? order : []).map(String).filter((name) => name && name !== "About").slice(0, 60);
+  for (const name of names) {
+    const sheet = book.getSheetByName(name);
+    if (!sheet) continue;
+    try {
+      vantageFormatTable_(book, sheet);
+    } catch (formatError) {
+      // The data is in; the layout is a nicety.
+    }
+  }
+  const about = book.getSheetByName("About");
+  const ordered = (about ? ["About"] : []).concat(names);
+  let position = 1;
+  for (const name of ordered) {
+    const sheet = book.getSheetByName(name);
+    if (!sheet) continue;
+    book.setActiveSheet(sheet);
+    book.moveActiveSheet(position);
+    position += 1;
+  }
+  if (about) book.setActiveSheet(about);
+  const blank = book.getSheetByName("Sheet1");
+  if (blank && book.getSheets().length > 1 && blank.getLastRow() === 0) book.deleteSheet(blank);
+}
+
+function vantageColumnFormat_(column, range) {
+  const name = String(column).toLowerCase();
+  // Keys and times stay text: ISO times sort correctly as text and never shift time zone.
+  if (name === "id" || /_id$|_key$/.test(name)) return "@";
+  if (/_at$|_on$|_time$|^clock_(in|out)$/.test(name)) return "@";
+  if (/_usd$/.test(name)) return "$#,##0.00";
+  const values = range.getValues().map((row) => row[0]).filter((value) => value !== "" && value !== null);
+  if (values.length && values.every((value) => typeof value === "number")) {
+    return values.every((value) => Math.round(value) === value) ? "0" : "#,##0.##";
+  }
+  return "General";
+}
+
+function vantageFormatTable_(book, sheet) {
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < 1) return;
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  const name = sheet.getName();
+  const header = sheet.getRange(1, 1, 1, lastCol);
+  const headers = header.getValues()[0].map(String);
+  const table = sheet.getRange(1, 1, lastRow, lastCol);
+
+  // Rebuilt each time over exactly the rows that are there now.
+  sheet.getBandings().forEach((band) => band.remove());
+  const oldFilter = sheet.getFilter();
+  if (oldFilter) oldFilter.remove();
+
+  const band = table.applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
+  band.setHeaderRowColor("#1F3A5F");
+  header.setFontColor("#FFFFFF").setFontWeight("bold").setVerticalAlignment("middle");
+  sheet.setRowHeight(1, 30);
+  sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(headers[0] === "id" ? 1 : 0);
+  table.createFilter();
+  table.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+
+  if (lastRow > 1) {
+    headers.forEach((column, index) => {
+      const range = sheet.getRange(2, index + 1, lastRow - 1, 1);
+      range.setNumberFormat(vantageColumnFormat_(column, range));
+    });
+  }
+
+  // Exactly as big as the table, plus one empty row, so it reads as a table and not a grid.
+  const maxRows = sheet.getMaxRows();
+  if (maxRows > lastRow + 1) sheet.deleteRows(lastRow + 2, maxRows - lastRow - 1);
+  const maxCols = sheet.getMaxColumns();
+  if (maxCols > lastCol) sheet.deleteColumns(lastCol + 1, maxCols - lastCol);
+
+  sheet.autoResizeColumns(1, lastCol);
+  for (let col = 1; col <= lastCol; col++) {
+    const width = sheet.getColumnWidth(col);
+    if (width > 320) sheet.setColumnWidth(col, 320);
+    else if (width < 72) sheet.setColumnWidth(col, 72);
+  }
+
+  book.setNamedRange("tbl_" + name.replace(/[^A-Za-z0-9_]/g, "_"), table);
+  sheet.setTabColor(
+    VANTAGE_EVENT_TABS.indexOf(name) >= 0 ? "#1F4FD6" : VANTAGE_INFO_TABS.indexOf(name) >= 0 ? "#6B7280" : "#0F8A5F",
+  );
+  if (!sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).length) {
+    sheet.protect().setDescription("Kept up to date by Vantage. Edits here are replaced on the next update.").setWarningOnly(true);
+  }
+}
+
+// ---------------------------------------------------------------- team index
+// One "VantageFRC - Team index" spreadsheet in the same folder lists every team: number, name,
+// a link to its spreadsheet and when it last changed. When this script sits inside a
+// spreadsheet, that spreadsheet becomes the index (so it is never left "Untitled").
+const VANTAGE_INDEX_KEY = "VANTAGE_INDEX_BOOK";
+const VANTAGE_INDEX_NAME = "VantageFRC - Team index";
+const VANTAGE_INDEX_HEADERS = ["team_number", "team_name", "spreadsheet", "last_updated", "spreadsheet_id", "key"];
+
+function vantageIndexBook_() {
+  const props = PropertiesService.getScriptProperties();
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) {
+    if (props.getProperty(VANTAGE_INDEX_KEY) !== active.getId()) {
+      if (active.getName() !== VANTAGE_INDEX_NAME) active.rename(VANTAGE_INDEX_NAME);
+      try {
+        DriveApp.getFileById(active.getId()).moveTo(vantageHubFolder_());
+      } catch (moveError) {
+        // It stays where it is; the index still works.
+      }
+      props.setProperty(VANTAGE_INDEX_KEY, active.getId());
+    }
+    return active;
+  }
+  const id = props.getProperty(VANTAGE_INDEX_KEY);
+  if (id) {
+    try {
+      if (!DriveApp.getFileById(id).isTrashed()) return SpreadsheetApp.openById(id);
+    } catch (missing) {
+      // Deleted: make a new one below.
+    }
+  }
+  const book = SpreadsheetApp.create(VANTAGE_INDEX_NAME);
+  DriveApp.getFileById(book.getId()).moveTo(vantageHubFolder_());
+  props.setProperty(VANTAGE_INDEX_KEY, book.getId());
+  return book;
+}
+
+function vantageIndexUpdate_(team, book, lastSyncAt) {
+  const index = vantageIndexBook_();
+  const sheet = index.getSheetByName("Teams") || index.insertSheet("Teams", 0);
+  const width = VANTAGE_INDEX_HEADERS.length;
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, width).setValues([VANTAGE_INDEX_HEADERS]);
+    sheet.getRange(1, 1, 1, width).setFontWeight("bold").setFontColor("#FFFFFF").setBackground("#1F3A5F");
+    sheet.setFrozenRows(1);
+  }
+  const key = vantageTeamKey_(team);
+  const last = sheet.getLastRow();
+  const keys = last > 1 ? sheet.getRange(2, width, last - 1, 1).getValues().map((row) => String(row[0])) : [];
+  const found = keys.indexOf(key);
+  const row = found >= 0 ? found + 2 : last + 1;
+  const kept = found >= 0 ? sheet.getRange(row, 4).getDisplayValue() : "";
+  const number = String(team.number || "").replace(/[^0-9]/g, "").slice(0, 6);
+  // Text first, so Sheets keeps the ISO time as written instead of turning it into a date.
+  sheet.getRange(row, 4).setNumberFormat("@");
+  sheet.getRange(row, 1, 1, width).setValues([[
+    number ? Number(number) : "",
+    String(team.name || "").replace(/\\s+/g, " ").trim().slice(0, 80),
+    '=HYPERLINK("' + book.getUrl() + '","' + vantageTeamTitle_(team).replace(/"/g, "'") + '")',
+    lastSyncAt || kept || "",
+    book.getId(),
+    key,
+  ]]);
+  if (sheet.getLastRow() > 2) sheet.getRange(2, 1, sheet.getLastRow() - 1, width).sort({ column: 1, ascending: true });
+  sheet.autoResizeColumns(1, width);
+  const blank = index.getSheetByName("Sheet1");
+  if (blank && index.getSheets().length > 1 && blank.getLastRow() === 0) index.deleteSheet(blank);
 }
 
 // ---------------------------------------------------------------- photos and videos

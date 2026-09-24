@@ -13,7 +13,7 @@ import {
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { after } from "next/server";
-import { ensureHubSheetForNewTeam } from "../../../../lib/google-sheets/sheets-hub";
+import { ensureHubSheetForNewTeam, teamSheetTitle } from "../../../../lib/google-sheets/sheets-hub";
 import {
   OWNER_INVITE_HOURS,
   ownerProvisionMode,
@@ -174,6 +174,7 @@ export async function POST(request: Request) {
         key: created.orgId,
         number: input.teamNumber ?? null,
         name: input.name,
+        title: teamSheetTitle(input.teamNumber ?? null, input.name),
         viewers: [],
       }).then(() => undefined),
     );

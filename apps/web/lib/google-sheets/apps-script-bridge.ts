@@ -145,8 +145,12 @@ export class AppsScriptBridge {
     }
   }
 
-  async ping(): Promise<{ version: number; name: string | null; url: string | null; hub: boolean }> {
-    const data = await this.call<{ ok: boolean; version?: number; name?: string; url?: string; hub?: boolean }>("ping");
+  /** `hub` asks the script to answer as the team-sheets hub even when it sits inside a spreadsheet. */
+  async ping(options: { hub?: boolean } = {}): Promise<{ version: number; name: string | null; url: string | null; hub: boolean }> {
+    const data = await this.call<{ ok: boolean; version?: number; name?: string; url?: string; hub?: boolean }>(
+      "ping",
+      options.hub ? { hub: true } : undefined,
+    );
     if (!(Number(data.version) >= APPS_SCRIPT_MIN_VERSION)) {
       throw bridgeError("bad_request", "This Apps Script is an older version. Copy the script from Connectors again and redeploy.", "old_version");
     }
@@ -175,14 +179,17 @@ export class AppsScriptBridge {
     };
   }
 
-  /** Hub mode: remember what was written, so the next sync can skip an unchanged team. */
-  async stampTeamBook(team: HubTeam, hash: string): Promise<void> {
-    await this.call("team.stamp", { team, hash });
+  /**
+   * Hub mode: remember what was written, so the next sync can skip an unchanged team. `order`
+   * is the tables in write order; version 4 scripts then lay every tab out as a table.
+   */
+  async stampTeamBook(team: HubTeam, hash: string, order: string[] = []): Promise<void> {
+    await this.call("team.stamp", { team, hash, order });
   }
 }
 
 /** One team's spreadsheet in hub mode. `key` is the team's id; viewers get read access. */
-export type HubTeam = { key: string; number: number | null; name: string; viewers?: string[] };
+export type HubTeam = { key: string; number: number | null; name: string; title?: string; viewers?: string[] };
 
 export type HubTeamBook = {
   id: string;
