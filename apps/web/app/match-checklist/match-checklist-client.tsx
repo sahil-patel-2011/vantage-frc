@@ -331,112 +331,103 @@ function StartRunForm({
   activeEventKey: string | null;
   activeEventName: string | null;
 }) {
-  const empty = useMemo(() => ({ matchLabel: "", eventKey: "", teamNumber: "" }), []);
+  const empty = useMemo(() => ({ matchLabel: "", teamNumber: "" }), []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
   const next = upcomingMatches[0] ?? null;
+  const later = upcomingMatches.slice(1);
   const lockedEvent = activeEventKey?.trim() ?? "";
   const lockedLabel = lockedEvent
     ? scoutEventLabel({ eventName: activeEventName, eventKey: lockedEvent })
     : null;
+  const startFor = (match: LiveView["upcomingMatches"][number]) =>
+    mutate({ action: "start-run", matchLabel: match.label, eventKey: match.eventKey, teamNumber: teamNumber ?? undefined });
 
-  return (
-    <Panel
-      as="form"
-      className="mcl-start"
+  // Typing a match by hand: the only way when no schedule is in, and tucked away when it is.
+  const manual = (
+    <form
+      className="mcl-start-manual"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.matchLabel.trim()) return;
         mutate({
           action: "start-run",
           matchLabel: form.matchLabel,
-          eventKey: lockedEvent || form.eventKey || undefined,
+          eventKey: lockedEvent || undefined,
           teamNumber: form.teamNumber ? Number(form.teamNumber) : teamNumber ?? undefined,
         });
         setForm(empty);
       }}
     >
+      <FormGrid min={160}>
+        <FormRow label="Match">
+          <input value={form.matchLabel} onChange={set("matchLabel")} placeholder="Qual 12" required />
+        </FormRow>
+        <FormRow label="Robot (team #)">
+          <input
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={form.teamNumber}
+            onChange={set("teamNumber")}
+            placeholder={teamNumber != null ? `${teamNumber} (ours)` : ""}
+          />
+        </FormRow>
+      </FormGrid>
+      <div className="mcl-start-actions">
+        <Button variant={next ? "secondary" : "primary"} type="submit" disabled={busy || !form.matchLabel.trim()}>
+          {busy ? "Working…" : "Start checklist"}
+        </Button>
+      </div>
+    </form>
+  );
+
+  return (
+    <Panel className="mcl-start">
       <div>
-        <h2>Start checklist</h2>
-        <p className="mcl-start-hint">
-          Labels start empty — item progress and elapsed time appear only after you tap real pit checks.
-        </p>
+        <h2>{next ? `Check the robot for ${next.label}` : "Start a pre-match checklist"}</h2>
         {next ? (
           <p className={`mcl-bumper-cue ${next.bumperColor}`} role="status">
-            Next match: hang <strong>{next.bumperColor.toUpperCase()} bumpers</strong> for {next.label}. Color stays
-            blank until the alliance lists are in.
+            Hang <strong>{next.bumperColor.toUpperCase()} bumpers</strong>.
           </p>
         ) : (
           <p className="mcl-start-hint">
-            Bumper color stays unknown until the active event schedule is synced — never guessed.
+            {lockedLabel ? `No match of ours is scheduled at ${lockedLabel} right now. ` : ""}Type the match you're checking for.
           </p>
         )}
       </div>
-      {upcomingMatches.length > 0 ? (
-        <div className="mcl-upcoming" aria-label="Upcoming matches">
-          {upcomingMatches.map((match) => (
+      {next ? (
+        <div className="mcl-start-actions">
+          <Button variant="primary" type="button" disabled={busy} onClick={() => startFor(next)}>
+            {busy ? "Working…" : `Start checklist for ${next.label}`}
+          </Button>
+        </div>
+      ) : null}
+      {later.length > 0 ? (
+        <div className="mcl-upcoming" aria-label="Later matches">
+          <span className="mcl-start-hint">Or a later match:</span>
+          {later.map((match) => (
             <button
               key={match.matchKey}
               type="button"
               className={`mcl-upcoming-chip ${match.bumperColor}`}
               disabled={busy}
-              onClick={() =>
-                setForm({
-                  matchLabel: match.label,
-                  eventKey: match.eventKey,
-                  teamNumber: teamNumber != null ? String(teamNumber) : "",
-                })
-              }
+              onClick={() => startFor(match)}
             >
-              {match.label} · {match.bumperColor.toUpperCase()}
+              {match.label}
             </button>
           ))}
         </div>
       ) : null}
-      <FormGrid min={160}>
-        <FormRow label="Match">
-          <input
-            value={form.matchLabel}
-            onChange={set("matchLabel")}
-            placeholder={next?.label ?? "Qualification 12"}
-            required
-            list="mcl-upcoming-labels"
-          />
-          <datalist id="mcl-upcoming-labels">
-            {upcomingMatches.map((match) => (
-              <option key={match.matchKey} value={match.label} />
-            ))}
-          </datalist>
-        </FormRow>
-        {lockedLabel ? (
-          <FormRow label="Event">
-            <input readOnly aria-label="Event" value={lockedLabel} />
-          </FormRow>
-        ) : (
-          <FormRow label="Event (optional)">
-            <input
-              value={form.eventKey}
-              onChange={set("eventKey")}
-              placeholder="2026miket"
-            />
-          </FormRow>
-        )}
-        <FormRow label="Team # (optional)">
-          <input
-            type="number"
-            min={1}
-            value={form.teamNumber}
-            onChange={set("teamNumber")}
-            placeholder={teamNumber != null ? String(teamNumber) : ""}
-          />
-        </FormRow>
-      </FormGrid>
-      <div className="mcl-start-actions">
-        <Button variant="primary" type="submit" disabled={busy || !form.matchLabel.trim()}>
-          {busy ? "Working…" : "Start checklist"}
-        </Button>
-      </div>
+      {next ? (
+        <details className="mcl-start-other">
+          <summary>Different match or robot</summary>
+          {manual}
+        </details>
+      ) : (
+        manual
+      )}
     </Panel>
   );
 }
@@ -457,8 +448,8 @@ function RunList({
           soft
           badge="No checklists yet"
           badgeTone="setup"
-          title="Start your first pre-match checklist"
-          description="Tap through bumper color, battery strap, SB50 lock, tether, and code before every match. Timing and readiness stay blank until you check items."
+          title="Nothing checked yet"
+          description="Each checklist walks the pit crew through bumpers, battery strap, locks, tether and code. Start one above before every match."
         />
       </div>
     );
