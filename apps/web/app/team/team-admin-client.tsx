@@ -929,7 +929,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href="/connectors">
           <strong>Connectors</strong>
-          <span>GitHub, CAD, Discord, Slack</span>
+          <span>Google Sheets, Discord, Slack and more</span>
         </a>
       </nav>
       </section>

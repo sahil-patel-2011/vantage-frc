@@ -435,7 +435,10 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     lockedTeamNumber: workspaceLocked ? locked.teamNumber : null,
     lockedOrgName: workspaceLocked ? locked.orgName : null,
     lockedOrgId: workspaceLocked ? locked.orgId : null,
-    isTeamHead: workspaceLocked ? isTeamHeadRole(locked.role) : false,
+    // Team details (location, affiliation, funding) are asked once, of whichever owner or admin
+    // onboards first. A later admin was asked again for answers the team already had.
+    isTeamHead:
+      workspaceLocked && isTeamHeadRole(locked.role) ? !orgFunding.teamAffiliation || !locked.city : false,
     orgCity: locked?.city ?? null,
     orgStateProv: locked?.stateProv ?? null,
     orgDescription: locked?.description ?? null,
