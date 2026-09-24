@@ -22,6 +22,8 @@ import type {
   DriveCoachBrief,
   PitFlag,
 } from "./types";
+import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
+import { withSavepoint } from "@vantage/db";
 
 /** Nexus is setup-required by design — no key means the panel shows guidance, not blanks. */
 function nexusKeyConfigured(): boolean {
@@ -689,13 +691,17 @@ export async function loadEventDayCommand(
       }
     : null;
 
+  // The same reason Home and My Day give (lib/matches/no-next-match.ts), not a guess that the
+  // schedule is missing when every match is simply over.
+  const noMatchMessage =
+    matches.length === 0
+      ? noNextMatchMessage(await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null))
+      : undefined;
+
   return {
     ...base,
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
-    message:
-      matches.length === 0
-        ? "No upcoming matches for your team at this event yet. Confirm the event and schedule."
-        : undefined,
+    message: noMatchMessage,
     matches,
     scoutQueue,
     briefs,

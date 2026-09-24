@@ -138,7 +138,7 @@ export function CommandReadyView({
               </span>
               <div>
                 <h2>Now / Next</h2>
-                <p>{next ? "Your upcoming match from the event schedule" : "Waiting for schedule"}</p>
+                <p>{next ? "Your upcoming match from the event schedule" : (snap.message ?? "No match coming up")}</p>
               </div>
             </div>
             {next ? <span className="edc-pill">{countdown}</span> : null}

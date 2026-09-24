@@ -490,7 +490,7 @@ export default function BriefingClient() {
 
       <section className="brief-hero">
         <div className="brief-hero-main">
-          <span className="brief-hero-kicker">Up next for the drive team</span>
+          <span className="brief-hero-kicker">{view.match.played ? "Played: looking back" : "Up next for the drive team"}</span>
           <strong className="brief-hero-match">{matchLabel(view.match.compLevel, view.match.matchNumber)}</strong>
           <span className="brief-hero-sub">{fmtMatchTime(view.match.scheduledTime) || "Time TBD"}</span>
           <div className="brief-hero-teams">

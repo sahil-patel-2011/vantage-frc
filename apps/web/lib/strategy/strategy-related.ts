@@ -139,9 +139,9 @@ export function classifyStrategyShell(input: {
 export function strategyWaitingCopy(eventName?: string | null): string {
   const name = eventName?.trim();
   if (name) {
-    return `${name} has no scheduled match yet. Win chance stays blank until a match and stats are synced.`;
+    return `No match ahead for your team at ${name}. Win chance shows here once your next match is on the schedule.`;
   }
-  return "Win chance stays blank until this event has a scheduled match and synced stats.";
+  return "No match ahead for your team. Win chance shows here once your next match is on the schedule.";
 }
 
 export function strategyCanSync(role?: string | null): boolean {

@@ -460,10 +460,18 @@ export async function computeBriefingView(
     }))
     .filter((entry) => entry.red.includes(teamKey) || entry.blue.includes(teamKey));
 
+  // Over = a posted score, or a scheduled time more than three hours gone (the same rule as
+  // Home's "no next match" line). The default is the next match still ahead; once every match
+  // is over, the last one, shown as a review. "First match without a score" picked long-past
+  // matches whose results never synced and called them "Up next".
+  const nowMs = Date.now();
+  const isOver = (entry: (typeof ourRows)[number]) =>
+    (entry.redScore != null && entry.blueScore != null) ||
+    (entry.scheduledTime != null && new Date(entry.scheduledTime).getTime() <= nowMs - 3 * 3_600_000);
   const selected =
     ourRows.find((entry) => entry.matchKey === input.requestedMatch) ??
-    ourRows.find((entry) => entry.redScore == null || entry.blueScore == null) ??
-    ourRows[0];
+    ourRows.find((entry) => !isOver(entry)) ??
+    ourRows[ourRows.length - 1];
   if (!selected) {
     const eventLabel = scoutEventLabel({ eventName: row.eventName, eventKey: row.eventKey });
     return {
@@ -482,6 +490,7 @@ export async function computeBriefingView(
     scheduledTime: selected.scheduledTime,
     red: selected.red,
     blue: selected.blue,
+    played: isOver(selected),
   };
   const ourAlliance = ourAllianceOf(match, teamKey);
   const ourKeys = ourAlliance === "red" ? match.red : ourAlliance === "blue" ? match.blue : [];

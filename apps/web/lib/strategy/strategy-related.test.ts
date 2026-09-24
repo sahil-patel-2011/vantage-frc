@@ -81,13 +81,13 @@ describe("classifyStrategyShell", () => {
 describe("strategyWaitingCopy", () => {
   it("names the event that has no match, and stays blank without one", () => {
     expect(strategyWaitingCopy("Pacific Practice")).toBe(
-      "Pacific Practice has no scheduled match yet. Win chance stays blank until a match and stats are synced.",
+      "No match ahead for your team at Pacific Practice. Win chance shows here once your next match is on the schedule.",
     );
     expect(strategyWaitingCopy("  ")).toBe(
-      "Win chance stays blank until this event has a scheduled match and synced stats.",
+      "No match ahead for your team. Win chance shows here once your next match is on the schedule.",
     );
     expect(strategyWaitingCopy(null)).toBe(
-      "Win chance stays blank until this event has a scheduled match and synced stats.",
+      "No match ahead for your team. Win chance shows here once your next match is on the schedule.",
     );
     expect(strategyWaitingCopy(undefined)).toBe(strategyShellCopy("empty").description);
     expect(strategyWaitingCopy("Pacific Practice")).not.toMatch(/\d+%/);
