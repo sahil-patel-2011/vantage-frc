@@ -130,9 +130,9 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   },
   ask_ai: {
     title: "Ask AI",
-    body: "Pair Claude Code on one computer so questions run on that plan — no API key.",
-    ctaHref: "/team/ai-bridge",
-    ctaLabel: "Connect Claude Code",
+    body: "Add an AI key (a free one works) and Ask AI answers from your team's data.",
+    ctaHref: "/team/ai-keys",
+    ctaLabel: "Add an AI key",
   },
   quick_actions: {
     title: "Get set up",

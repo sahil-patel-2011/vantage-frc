@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { readOrgAllowance } from "@vantage/billing";
+import { probeChatModel } from "../ai/capabilities";
 import { withSavepoint } from "@vantage/db";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { dashboardNextActions } from "./dashboard-related";
@@ -1187,6 +1188,25 @@ export async function loadDashboardSnapshot(
   }
 
   await Promise.all(jobs);
+
+  // Ask AI shows a question box only when a question would actually be answered. A billing
+  // row alone is not enough: with no key, no hosted AI and no paired Claude Code, the box
+  // took the question to a page that said AI was off. Probed after the other jobs because
+  // the probe uses its own savepoint on this client.
+  if (wants("ask_ai") && widgets.ask_ai?.status === "live") {
+    const probe = await probeChatModel(client, { orgId: input.orgId, userId: input.userId }).catch(() => null);
+    if (probe && !probe.ok && probe.reason === "no_model_provider") {
+      const owner = input.role === "owner" || input.role === "admin";
+      widgets.ask_ai = stamp(
+        "setup_required",
+        "ask_ai",
+        { href: "/ai?tab=chat", aiOff: true },
+        owner
+          ? "Add your team's AI key (a free one works) and Ask AI turns on for everyone."
+          : "Your team hasn't turned on AI yet. You can add your own key to use it yourself.",
+      );
+    }
+  }
 
   return { context, widgets };
 }
