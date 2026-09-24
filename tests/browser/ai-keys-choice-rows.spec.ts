@@ -22,8 +22,16 @@ test.beforeEach(async ({ context }) => {
   test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
 });
 
+/** Routing and model policy sit behind "More options" below the key forms. */
+async function openMoreOptions(page: import("@playwright/test").Page) {
+  const more = page.locator("details.ai-keys-advanced > summary");
+  await expect(more).toBeVisible({ timeout: 25_000 });
+  await more.click();
+}
+
 test("every choice sits on the same line as its label", async ({ page }) => {
   await gotoAsTeam(page, "/team/ai-keys");
+  await openMoreOptions(page);
   const rows = page.locator(".ai-keys-mode label, .ai-keys-pool label");
   await expect(rows.first()).toBeVisible({ timeout: 25_000 });
 
@@ -45,6 +53,7 @@ test("every choice sits on the same line as its label", async ({ page }) => {
 
 test("a checkbox is checkbox-sized, not input-sized", async ({ page }) => {
   await gotoAsTeam(page, "/team/ai-keys");
+  await openMoreOptions(page);
   await expect(page.locator(".ai-keys-pool input").first()).toBeVisible({ timeout: 25_000 });
 
   // The form's input rule sets min-height 44px and full width for text

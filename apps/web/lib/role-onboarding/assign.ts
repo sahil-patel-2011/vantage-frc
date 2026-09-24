@@ -36,6 +36,8 @@ export const SUBTEAM_KEYWORD_MAP: Array<{ trackKey: string; keywords: string[] }
   },
 ];
 
+export const TEAM_SETUP_TRACK = "team_setup";
+
 const ROLE_TRACK: Record<string, string> = {
   student: "role_student",
   mentor: "role_mentor",
@@ -87,6 +89,13 @@ function pushUnique(
 export function assignOnboardingTracks(input: AssignInput): AssignedTrack[] {
   const out: AssignedTrack[] = [];
   const seen = new Set<string>();
+
+  // The person who runs the team starts with the team's own setup: a student's first-week
+  // list ("Join a subteam calendar") was all an owner saw, with nothing about inviting anyone.
+  const orgRole = input.orgRole ? normalize(input.orgRole) : "";
+  if (orgRole === "owner" || orgRole === "admin") {
+    pushUnique(out, seen, TEAM_SETUP_TRACK, "role", "You run this team");
+  }
 
   pushUnique(out, seen, "welcome", "welcome", "Everyone starts here");
 

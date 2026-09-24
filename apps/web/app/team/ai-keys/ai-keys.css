@@ -396,3 +396,15 @@
 .ai-keys-status.warn{color:var(--warning);border-color:var(--warning)}
 .ai-keys-link{align-self:center;color:var(--accent);font-weight:700;text-decoration:none}
 .ai-keys-link:hover{text-decoration:underline}
+
+/* Set-once options live behind one disclosure below the key forms. */
+.ai-keys-advanced {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+}
+.ai-keys-advanced > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 0;
+}

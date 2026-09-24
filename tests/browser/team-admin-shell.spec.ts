@@ -32,7 +32,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   }
 
   await expect(page.getByRole("heading", { name: "GitHub" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Approve who enters this team." })).toBeVisible();
+  // The access inbox only appears while someone is waiting to join.
   await expect(page.getByRole("tab")).toHaveCount(0);
 
   if (process.env.ADMIN_SHOT === "1") {

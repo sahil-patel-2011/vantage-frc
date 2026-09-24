@@ -80,3 +80,20 @@ describe("assignOnboardingTracks", () => {
     );
   });
 });
+
+describe("team setup for the people who run the team", () => {
+  it("puts team setup first for owners and admins", () => {
+    for (const orgRole of ["owner", "admin"]) {
+      const tracks = assignOnboardingTracks({ orgRole, teamRole: "mentor", primaryFocus: null, subteamNames: [] });
+      expect(tracks[0]?.trackKey).toBe("team_setup");
+      expect(tracks.map((track) => track.trackKey)).toContain("welcome");
+    }
+  });
+
+  it("leaves scouts and viewers on their own path", () => {
+    for (const orgRole of ["scout", "viewer", null]) {
+      const tracks = assignOnboardingTracks({ orgRole, teamRole: "student", primaryFocus: null, subteamNames: [] });
+      expect(tracks.map((track) => track.trackKey)).not.toContain("team_setup");
+    }
+  });
+});

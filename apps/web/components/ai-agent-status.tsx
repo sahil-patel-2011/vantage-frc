@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { groupAgentStatuses, listAgentNames } from "../lib/ai/agent-status-groups";
 import type { AiAgentId, AiAgentStatus as AgentStatus } from "../lib/ai/capabilities";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { Badge } from "./ui";
@@ -75,12 +76,14 @@ export function AiAgentStatus({ orgId, agents, unavailableOnly = false, title, c
     .filter((agent) => !unavailableOnly || agent.status === "unavailable");
   if (!rows.length) return null;
 
-  return (
-    <section className={`ai-agent-status ${className ?? ""}`} aria-label={title ?? "AI status"}>
-      {title ? <h2 className="ai-agent-status-title">{title}</h2> : null}
-      <ul className="ai-agent-status-list">
-        {rows.map((agent) => (
-          <li key={agent.id} className="ai-agent-status-row" data-status={agent.status} data-reason={agent.reason ?? ""}>
+  // One agent keeps its full sentence. Several agents with the same reason share one line.
+  if (rows.length === 1 && rows[0]) {
+    const agent = rows[0];
+    return (
+      <section className={`ai-agent-status ${className ?? ""}`} aria-label={title ?? "AI status"}>
+        {title ? <h2 className="ai-agent-status-title">{title}</h2> : null}
+        <ul className="ai-agent-status-list">
+          <li className="ai-agent-status-row" data-status={agent.status} data-reason={agent.reason ?? ""}>
             <Badge tone={agent.status === "ready" ? "good" : "setup"}>{agent.status === "ready" ? "Ready" : "Off"}</Badge>
             <div className="ai-agent-status-body">
               <strong>{agent.name}</strong>
@@ -94,7 +97,40 @@ export function AiAgentStatus({ orgId, agents, unavailableOnly = false, title, c
               </a>
             ) : null}
           </li>
-        ))}
+        </ul>
+      </section>
+    );
+  }
+
+  const groups = groupAgentStatuses(rows);
+  return (
+    <section className={`ai-agent-status ${className ?? ""}`} aria-label={title ?? "AI status"}>
+      {title ? <h2 className="ai-agent-status-title">{title}</h2> : null}
+      <ul className="ai-agent-status-list">
+        {groups.map((group) => {
+          const names = listAgentNames(group.agents);
+          const ready = group.status === "ready";
+          return (
+            <li
+              key={group.agents.map((agent) => agent.id).join(",")}
+              className="ai-agent-status-row"
+              data-status={group.status}
+              data-reason={group.agents[0]?.reason ?? ""}
+            >
+              <Badge tone={ready ? "good" : "setup"}>{ready ? "Ready" : (group.verb ?? "Off")}</Badge>
+              <div className="ai-agent-status-body">
+                <strong>{names}</strong>
+                <span>{ready ? (group.agents.length === 1 ? (group.agents[0]?.sentence ?? "") : "Working now.") : group.reason}</span>
+              </div>
+              {!ready && group.setupHref ? (
+                <a className="app-button secondary ai-agent-status-setup" href={withOrgHref(group.setupHref, orgId)}>
+                  Set up
+                  <span className="sr-only"> {names}</span>
+                </a>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

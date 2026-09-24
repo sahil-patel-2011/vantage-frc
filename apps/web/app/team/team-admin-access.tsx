@@ -11,6 +11,9 @@ export function TeamAdminAccessPanel({
   message: string;
   onReview: (requestId: string, decision: "approved" | "declined", role?: "scout" | "viewer") => void;
 }) {
+  // Nothing to approve, nothing to show: an empty inbox was 270px of explanation on
+  // every visit. It appears the moment someone asks to join.
+  if (!accessRequests.some((request) => request.status === "pending")) return null;
   return (
     <section className="team-access-inbox" aria-labelledby="team-access-title">
       <header>

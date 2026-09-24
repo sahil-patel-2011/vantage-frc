@@ -270,3 +270,18 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Every other team setting, listed once after members, invites and the team profile. */
+.team-admin-more {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+.team-admin-more > h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.team-admin-invite-cta {
+  margin: 4px 0 12px;
+}

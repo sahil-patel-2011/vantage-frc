@@ -1,0 +1,52 @@
+/* One closed row per member; Edit opens that member's hubs or powers. */
+.member-access-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 0.6rem;
+  padding: 0;
+}
+.member-access-row > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  list-style: none;
+  padding: 0.75rem 1rem;
+}
+.member-access-row > summary::-webkit-details-marker {
+  display: none;
+}
+.member-access-who {
+  display: grid;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+.member-access-who small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.member-access-state {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.member-access-edit {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.2rem 0.8rem;
+}
+.member-access-row[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.member-access-row[open] .member-access-edit {
+  visibility: hidden;
+}
+.member-access-row > :not(summary) {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+.member-access-row > :last-child {
+  margin-bottom: 1rem;
+}

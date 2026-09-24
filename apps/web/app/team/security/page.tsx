@@ -2,6 +2,7 @@ import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import CapabilitiesClient from "./capabilities-client";
 import HubAccessClient from "./hub-access-client";
 import AuthPolicyClient from "./policy-client";
+import "./security.css";
 
 export const metadata = {
   title: "Team security",

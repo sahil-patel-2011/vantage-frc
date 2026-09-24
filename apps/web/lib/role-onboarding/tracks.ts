@@ -14,6 +14,20 @@ function checks(
 /** Static checklist templates. Progress is stored per member; nothing is seeded in SQL. */
 export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
   {
+    // Owners and admins only. Each step ticks itself from the team's real data
+    // (compute.ts teamSetupDone), so the list reflects the team, not a promise.
+    key: "team_setup",
+    title: "Set up your team",
+    summary: "The four things that make Vantage useful for everyone else.",
+    source: "role",
+    checks: checks([
+      ["invite", "Invite your team", "Add students and mentors by email. Ticks once someone joins.", "/team/admin"],
+      ["event", "Pick your event", "Matches, scouting and My Day all follow it.", "/command"],
+      ["scouting", "Set up your scouting form", "Start from this season's template and adjust it.", "/scouting"],
+      ["calendar", "Add your first practice", "So students know when to show up.", "/team/calendar"],
+    ]),
+  },
+  {
     key: "welcome",
     title: "Welcome to Vantage",
     summary: "Orient yourself before diving into a subteam path.",

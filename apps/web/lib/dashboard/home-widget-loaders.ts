@@ -141,7 +141,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     if (row) scoutDuty = { ...row, matchLabel: matchKeyLabel(row.matchKey) };
   }
   if (!matchLabel && events.length === 0 && duties.length === 0 && !scoutDuty) {
-    return empty("No matches on your day yet. Open My Day after match data is connected.");
+    return empty(await myDayEmptyReason(client, ctx.eventKey, teamKey));
   }
   return live({
     href: "/my-day",
@@ -152,6 +152,26 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     duties,
     scoutDuty,
   });
+}
+
+/**
+ * Why My Day is empty, said truthfully. It used to blame missing match data every time, so a
+ * student whose schedule was synced (with nothing left for them today) was told to wait for
+ * data that My Day itself was already showing.
+ */
+async function myDayEmptyReason(client: PoolClient, eventKey: string | null, teamKey: string | null): Promise<string> {
+  if (!eventKey || !teamKey) return "Pick your team's event to see your matches here.";
+  const rows = await query<{ n: string }>(
+    client,
+    `SELECT /* home-widget:my_day-any */ count(*)::text AS n
+       FROM matches_ref
+      WHERE event_key = $1
+        AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)`,
+    [eventKey, teamKey],
+  );
+  return Number(rows[0]?.n ?? 0) > 0
+    ? "No more matches for you today."
+    : "The match schedule for your event isn't out yet.";
 }
 
 async function learnProgress(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
@@ -688,7 +708,7 @@ export const HOME_WIDGET_LOADERS: Record<
 export const HOME_WIDGET_TYPES = Object.keys(HOME_WIDGET_LOADERS) as DashboardWidgetType[];
 
 const FALLBACK_MESSAGE: Record<string, string> = {
-  my_day: "No matches on your day yet. Open My Day after match data is connected.",
+  my_day: "Open My Day for your matches and duties.",
   learn_progress: "Start Learn CAD or programming setup to see progress here.",
   files_recent: "No files opened yet. Open Files to add one.",
   team_chat: "No unread team chats.",

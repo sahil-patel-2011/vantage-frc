@@ -19,6 +19,11 @@ const SHOWN = 3;
  */
 const SOURCE_ORDER: Record<string, number> = { subteam: 0, focus: 1, role: 2, manual: 3, welcome: 4 };
 
+/** The team's own setup (owners and admins) comes before anyone's personal path. */
+function sourceRank(track: StartTrackView): number {
+  return track.key === "team_setup" ? -1 : (SOURCE_ORDER[track.source] ?? 5);
+}
+
 export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHOWN): NextCheck[] {
   if (!view || view.status !== "live") return [];
   // The person's own crew and focus first — a programming student's first
@@ -26,7 +31,7 @@ export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHO
   // list in turn, the way onboarding's "first five minutes" reads.
   const queues = view.tracks
     .filter((track) => !track.dismissed)
-    .sort((a, b) => (SOURCE_ORDER[a.source] ?? 5) - (SOURCE_ORDER[b.source] ?? 5))
+    .sort((a, b) => sourceRank(a) - sourceRank(b))
     .map((track) => ({ track, checks: track.checks.filter((check) => !check.done) }));
   const out: NextCheck[] = [];
   while (out.length < limit && queues.some((queue) => queue.checks.length > 0)) {
@@ -76,16 +81,25 @@ export function FirstWeekCard({ orgId }: { orgId: string }) {
   );
 
   if (!view || view.status !== "live" || view.totalCount === 0) return null;
-  const next = nextFirstWeekChecks(view);
-  if (next.length === 0) return null;
   const left = view.totalCount - view.doneCount;
+  const setup = view.tracks.find((track) => track.key === "team_setup" && !track.dismissed);
+  const settingUp = Boolean(setup && setup.doneCount < setup.totalCount);
+  // While the team itself isn't set up, that is the whole card: an owner's own
+  // "first week" steps can wait until there is a team for them to happen in.
+  const next =
+    settingUp && setup
+      ? setup.checks.filter((check) => !check.done).slice(0, SHOWN).map((check) => ({ track: setup, check }))
+      : nextFirstWeekChecks(view);
+  if (next.length === 0) return null;
 
   return (
-    <section className="dash-first-week" aria-label="Your first week">
+    <section className="dash-first-week" aria-label={settingUp ? "Set up your team" : "Your first week"}>
       <header>
-        <strong>Your first week</strong>
+        <strong>{settingUp ? "Set up your team" : "Your first week"}</strong>
         <span>
-          {view.doneCount} of {view.totalCount} done · {left} to go
+          {settingUp && setup
+            ? `${setup.doneCount} of ${setup.totalCount} done`
+            : `${view.doneCount} of ${view.totalCount} done · ${left} to go`}
         </span>
       </header>
       <ol>

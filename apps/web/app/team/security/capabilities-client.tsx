@@ -48,6 +48,21 @@ const LABELS: Record<OrgCapability, { title: string; hint: string }> = {
 
 const ALL_CAPS = Object.keys(LABELS) as OrgCapability[];
 
+const SHORT: Record<OrgCapability, string> = {
+  manage_api_keys: "keys",
+  manage_team_settings: "settings",
+  manage_members: "members",
+  manage_billing: "billing",
+};
+
+/** The closed row's one-line answer to "what extra can this person do?" */
+function grantedSummary(granted: readonly OrgCapability[]): string {
+  const names = ALL_CAPS.filter((capability) => granted.includes(capability)).map((capability) => SHORT[capability]);
+  if (!names.length) return "No extra powers";
+  if (names.length === 1) return `Can manage ${names[0]}`;
+  return `Can manage ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
 type CapabilitiesSnapshot = {
   members: Member[];
   actorRole: string | null;
@@ -291,13 +306,21 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
             </EmptyState>
           ) : null}
           {editable.map((member) => (
-            <article className="admin-org" key={member.userId} style={{ marginBottom: "1rem" }}>
-              <div>
-                <strong>{member.name}</strong>
-                <small>
-                  {member.email} · {member.role}
-                </small>
-              </div>
+            <details className="admin-org member-access-row" key={member.userId}>
+              <summary>
+                <span className="member-access-who">
+                  <strong>{member.name}</strong>
+                  <small>
+                    {member.email} · {member.role}
+                  </small>
+                </span>
+                <span className="member-access-state">
+                  {grantedSummary(drafts[member.userId] ?? [])}
+                </span>
+                <span className="member-access-edit" aria-hidden="true">
+                  Edit
+                </span>
+              </summary>
               <div className="auth-policy-form" style={{ marginTop: "0.75rem" }}>
                 {ALL_CAPS.map((capability) => {
                   const disabled = capability === "manage_billing" && actorRole !== "owner";
@@ -325,7 +348,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
                   Promote to team admin
                 </button>
               </div>
-            </article>
+            </details>
           ))}
         </>
       )}

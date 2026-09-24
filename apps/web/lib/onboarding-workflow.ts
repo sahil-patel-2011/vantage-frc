@@ -93,7 +93,7 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
       label: "Your team",
       detail: "Team selected",
       done: true,
-      href: `/workspace${q}`,
+      href: `/dashboard${q}`,
     },
     {
       key: "event",

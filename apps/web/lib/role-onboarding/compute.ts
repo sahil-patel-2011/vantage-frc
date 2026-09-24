@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withOrgHref } from "../nav/product-nav";
-import { assignOnboardingTracks } from "./assign";
+import { TEAM_SETUP_TRACK, assignOnboardingTracks } from "./assign";
 import { TRACK_BY_KEY } from "./tracks";
 import type { RoleOnboardingView, StartTrackView, TrackSource } from "./types";
 
@@ -40,8 +40,8 @@ async function loadContext(client: PoolClient, userId: string, orgId: string) {
   );
   if (!org.rows[0]) return null;
 
-  const member = await client.query(
-    `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
+  const member = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
     [orgId, userId],
   );
   if (!member.rows[0]) return null;
@@ -64,6 +64,7 @@ async function loadContext(client: PoolClient, userId: string, orgId: string) {
 
   return {
     orgName: org.rows[0].name,
+    orgRole: member.rows[0].role,
     teamRole: profile.rows[0]?.teamRole ?? null,
     crewRole: profile.rows[0]?.crewRole ?? null,
     roleDescription: profile.rows[0]?.roleDescription ?? null,
@@ -88,11 +89,34 @@ async function ensureTracks(
   }
 }
 
+/**
+ * Which team-setup steps the team has really done, read from its own rows (RLS-scoped to
+ * this team). A step done this way stays done even if nobody ticked it.
+ */
+async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<string>> {
+  const result = await client.query<{ invite: boolean; event: boolean; scouting: boolean; calendar: boolean }>(
+    `SELECT (SELECT count(*) FROM memberships WHERE org_id = $1::uuid) > 1 AS invite,
+            EXISTS (SELECT 1 FROM org_active_context
+                     WHERE org_id = $1::uuid AND active_event_key IS NOT NULL) AS event,
+            EXISTS (SELECT 1 FROM scout_schemas WHERE org_id = $1::uuid) AS scouting,
+            EXISTS (SELECT 1 FROM subteam_calendar_events WHERE org_id = $1::uuid) AS calendar`,
+    [orgId],
+  );
+  const row = result.rows[0];
+  const done = new Set<string>();
+  if (!row) return done;
+  for (const key of ["invite", "event", "scouting", "calendar"] as const) {
+    if (row[key]) done.add(`${TEAM_SETUP_TRACK}::${key}`);
+  }
+  return done;
+}
+
 function buildTracksView(
   orgId: string,
   assigned: ReturnType<typeof assignOnboardingTracks>,
   trackRows: TrackRow[],
   checkRows: CheckRow[],
+  autoDone: Set<string> = new Set(),
 ): StartTrackView[] {
   const dismissed = new Map(
     trackRows.map((row) => [row.trackKey, row.dismissedAt != null] as const),
@@ -108,14 +132,15 @@ function buildTracksView(
     const template = TRACK_BY_KEY[assignment.trackKey];
     if (!template) continue;
     const checks = template.checks.map((check) => {
-      const doneAt = completed.get(`${template.key}::${check.key}`) ?? null;
+      const auto = autoDone.has(`${template.key}::${check.key}`);
+      const doneAt = completed.get(`${template.key}::${check.key}`) ?? (auto ? "" : null);
       return {
         key: check.key,
         label: check.label,
         detail: check.detail,
         href: check.href ? withOrgHref(check.href, orgId) : null,
         done: doneAt != null,
-        completedAt: doneAt,
+        completedAt: doneAt || null,
       };
     });
     const doneCount = checks.filter((c) => c.done).length;
@@ -155,6 +180,7 @@ export async function loadRoleOnboarding(
   }
 
   const assigned = assignOnboardingTracks({
+    orgRole: ctx.orgRole,
     teamRole: ctx.teamRole,
     crewRole: ctx.crewRole,
     roleDescription: ctx.roleDescription,
@@ -177,7 +203,10 @@ export async function loadRoleOnboarding(
     [orgId, input.userId],
   );
 
-  const tracks = buildTracksView(orgId, assigned, tracksResult.rows, checksResult.rows);
+  const autoDone = assigned.some((track) => track.trackKey === TEAM_SETUP_TRACK)
+    ? await teamSetupDone(client, orgId)
+    : new Set<string>();
+  const tracks = buildTracksView(orgId, assigned, tracksResult.rows, checksResult.rows, autoDone);
   const active = tracks.filter((t) => !t.dismissed);
   const doneCount = active.reduce((sum, t) => sum + t.doneCount, 0);
   const totalCount = active.reduce((sum, t) => sum + t.totalCount, 0);
@@ -213,6 +242,7 @@ export async function setCheckCompleted(
   }
   const context = await loadContext(client, input.userId, input.orgId);
   const assigned = context ? assignOnboardingTracks({
+    orgRole: context.orgRole,
     teamRole: context.teamRole,
     crewRole: context.crewRole,
     roleDescription: context.roleDescription,
@@ -254,6 +284,7 @@ export async function setTrackDismissed(
   if (!TRACK_BY_KEY[input.trackKey]) throw new Error("Unknown track.");
   const context = await loadContext(client, input.userId, input.orgId);
   const assigned = context ? assignOnboardingTracks({
+    orgRole: context.orgRole,
     teamRole: context.teamRole,
     crewRole: context.crewRole,
     roleDescription: context.roleDescription,

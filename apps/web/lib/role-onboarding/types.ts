@@ -22,6 +22,8 @@ export type AssignedTrack = {
 };
 
 export type AssignInput = {
+  /** Team membership role (owner/admin/scout/viewer). Owners and admins get the team-setup list. */
+  orgRole?: string | null;
   teamRole: string | null | undefined;
   crewRole?: string | null;
   roleDescription?: string | null;

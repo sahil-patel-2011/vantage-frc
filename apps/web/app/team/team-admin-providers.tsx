@@ -12,6 +12,8 @@ export function TeamAdminProvidersPanel({
   providers: CustomProvider[];
   onAction: (id: string, action: "test" | "disable") => void;
 }) {
+  // AI keys are listed under More settings; this panel is only for leftover endpoints.
+  if (!providers.length) return null;
   return (
     <section className="compare-panel" id="custom-providers">
       <span className="eyebrow">AI keys</span>

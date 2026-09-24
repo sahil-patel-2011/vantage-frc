@@ -114,41 +114,49 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
   } = props;
   return (
     <>
-          <section className="app-card soft-panel ai-keys-billing" aria-label="Hosting vs your keys">
-            <span className="eyebrow">{billing.title}</span>
-            <p>{billing.body}</p>
-            <p className="app-muted">
-              Track your-key call estimates on{" "}
-              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>Your keys usage</a>
-              . Hosted 0.75× metering still applies when no team key is configured.
+          {!payload.canManage ? (
+            <ShellPanel
+              shell="forbidden"
+              detail="You can see configured / missing status. Ask an owner or admin with Manage API keys to paste or remove secrets."
+              orgId={orgId}
+            />
+          ) : null}
+
+          {message ? (
+            <p className="ai-keys-flash" role="status">
+              {message}
             </p>
+          ) : null}
+
+          <section className="ai-keys-grid" aria-label="Provider API keys">
+            {providerMeta.map((meta) => {
+              const status = statusByProvider.get(meta.id) ?? {
+                provider: meta.id,
+                label: meta.label,
+                configured: false,
+                createdAt: null,
+                lastUsedAt: null,
+              };
+              return (
+                <ProviderCard
+                  key={meta.id}
+                  meta={meta}
+                  status={status}
+                  canManage={payload.canManage}
+                  setupBlocked={Boolean(payload.setupRequired)}
+                  busy={busyProvider === meta.id}
+                  draft={drafts[meta.id]}
+                  onDraft={(value) => setDrafts((prev) => ({ ...prev, [meta.id]: value }))}
+                  onSave={() => void save(meta.id)}
+                  onRemove={() => void remove(meta.id)}
+                />
+              );
+            })}
           </section>
 
-          {/* The promise this page exists to make, stated before any of the
-              provider-specific machinery below it: the endpoint is the team's
-              choice, and the choice does not gate features. Copy lives in
-              ./ai-keys-copy.ts so the promises stay pinned by tests. */}
-          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any OpenAI-compatible endpoint">
-            <span className="eyebrow">BRING ANY ENDPOINT</span>
-            <h2>{ANY_ENDPOINT_HEADLINE}</h2>
-            <p className="app-muted">{ANY_ENDPOINT_BODY}</p>
-            <ul className="ai-keys-any-points">
-              {ANY_ENDPOINT_POINTS.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-            <details className="ai-keys-any-examples">
-              <summary>Where does each one go?</summary>
-              <ul>
-                {ENDPOINT_EXAMPLES.map((example) => (
-                  <li key={example.id}>
-                    <strong>{example.name}</strong>
-                    <span className="app-muted"> — {example.howToUse}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </section>
+          {/* Web research sits with the keys a team brings, straight after the
+              model providers: it is the other key that changes what the AI can do. */}
+          {orgId ? <WebResearchCard orgId={orgId} /> : null}
 
           <section className="app-card soft-panel ai-keys-mine" aria-label="My personal AI keys">
             <span className="eyebrow">MINE</span>
@@ -250,49 +258,61 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             </form>
           </section>
 
-          {!payload.canManage ? (
-            <ShellPanel
-              shell="forbidden"
-              detail="You can see configured / missing status. Ask an owner or admin with Manage API keys to paste or remove secrets."
-              orgId={orgId}
-            />
-          ) : null}
-
-          {message ? (
-            <p className="ai-keys-flash" role="status">
-              {message}
+          <section className="app-card soft-panel ai-keys-my-model" aria-label="My model">
+            <span className="eyebrow">MINE</span>
+            <h2>My model</h2>
+            <p className="app-muted">
+              What you may pick under the current team policy. The same selector (and policy)
+              applies in every product surface where you choose a model.
             </p>
-          ) : null}
-
-          <section className="ai-keys-grid" aria-label="Provider API keys">
-            {providerMeta.map((meta) => {
-              const status = statusByProvider.get(meta.id) ?? {
-                provider: meta.id,
-                label: meta.label,
-                configured: false,
-                createdAt: null,
-                lastUsedAt: null,
-              };
-              return (
-                <ProviderCard
-                  key={meta.id}
-                  meta={meta}
-                  status={status}
-                  canManage={payload.canManage}
-                  setupBlocked={Boolean(payload.setupRequired)}
-                  busy={busyProvider === meta.id}
-                  draft={drafts[meta.id]}
-                  onDraft={(value) => setDrafts((prev) => ({ ...prev, [meta.id]: value }))}
-                  onSave={() => void save(meta.id)}
-                  onRemove={() => void remove(meta.id)}
-                />
-              );
-            })}
+            <ModelSelector
+              orgId={orgId}
+              value={myModelChoice}
+              onChange={setMyModelChoice}
+              label="My model"
+            />
           </section>
 
-          {/* Web research sits with the keys a team brings, straight after the
-              model providers: it is the other key that changes what the AI can do. */}
-          {orgId ? <WebResearchCard orgId={orgId} /> : null}
+          {/* Everything a team sets once, or never: how hosting is billed, any-endpoint
+              notes, local models, free keys, routing and model policy. The walkthrough
+              found the page ~5,500px tall with the key forms buried; they now come first. */}
+          <details className="ai-keys-advanced">
+            <summary>More options: hosting, local models, free keys, routing and model policy</summary>
+          <section className="app-card soft-panel ai-keys-billing" aria-label="Hosting vs your keys">
+            <span className="eyebrow">{billing.title}</span>
+            <p>{billing.body}</p>
+            <p className="app-muted">
+              Track your-key call estimates on{" "}
+              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>Your keys usage</a>
+              .
+            </p>
+          </section>
+
+          {/* The promise this page exists to make, stated before any of the
+              provider-specific machinery below it: the endpoint is the team's
+              choice, and the choice does not gate features. Copy lives in
+              ./ai-keys-copy.ts so the promises stay pinned by tests. */}
+          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any OpenAI-compatible endpoint">
+            <span className="eyebrow">BRING ANY ENDPOINT</span>
+            <h2>{ANY_ENDPOINT_HEADLINE}</h2>
+            <p className="app-muted">{ANY_ENDPOINT_BODY}</p>
+            <ul className="ai-keys-any-points">
+              {ANY_ENDPOINT_POINTS.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+            <details className="ai-keys-any-examples">
+              <summary>Where does each one go?</summary>
+              <ul>
+                {ENDPOINT_EXAMPLES.map((example) => (
+                  <li key={example.id}>
+                    <strong>{example.name}</strong>
+                    <span className="app-muted"> — {example.howToUse}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </section>
 
           <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
             <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>
@@ -622,21 +642,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               </form>
             </section>
           ) : null}
-
-          <section className="app-card soft-panel ai-keys-my-model" aria-label="My model">
-            <span className="eyebrow">MINE</span>
-            <h2>My model</h2>
-            <p className="app-muted">
-              What you may pick under the current team policy. The same selector (and policy)
-              applies in every product surface where you choose a model.
-            </p>
-            <ModelSelector
-              orgId={orgId}
-              value={myModelChoice}
-              onChange={setMyModelChoice}
-              label="My model"
-            />
-          </section>
+          </details>
     </>
   );
 }

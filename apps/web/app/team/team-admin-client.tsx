@@ -20,12 +20,10 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import {
   TEAM_ADMIN_RELATED_INCLUDE,
   classifyTeamAdminShell,
-  formatTeamAdminMetric,
   teamAdminCardPrimaryHref,
   teamAdminNextActions,
   teamAdminRelatedLinks,
   teamAdminShellCopy,
-  shouldShowTeamAdminSummaryTiles,
 } from "../../lib/team/team-admin-related";
 import {
   inviteDeliveryBanner,
@@ -76,7 +74,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [adminTenure, setAdminTenure] = useState<AdminTenure | null>(null);
-  const [membersLoaded, setMembersLoaded] = useState(false);
   const [membershipLoading, setMembershipLoading] = useState(true);
   const [membershipFetchFailed, setMembershipFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -125,7 +122,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     setGithubConnection(data.githubConnection);
     setGithubRepos(data.githubRepos);
     setDefaultRepo(data.defaultRepo);
-    setMembersLoaded(true);
   }, []);
 
   const load = useCallback(async () => {
@@ -203,7 +199,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         return;
       } else {
         setMembers([]);
-        setMembersLoaded(true);
         setMembershipFetchFailed(true);
         setMembershipErrorStatus(membersResponse.status);
         setMembershipErrorMessage(membersData.error ?? "Could not load members");
@@ -595,10 +590,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const membershipRelated = teamAdminRelatedLinks(orgId, {
     include: [...TEAM_ADMIN_RELATED_INCLUDE],
   });
-  const showMembershipTiles = shouldShowTeamAdminSummaryTiles({
-    memberCount: members.length,
-    inviteCount: invites.length,
-  });
 
   if (!view) {
     const copy = membershipFailure
@@ -669,86 +660,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       <TeamOpsNav orgId={orgId} active="admin" />
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
 
-      <TeamProfilePanel orgId={orgId} />
-
-      <TeamBrandingPanel orgId={orgId} />
-
-      <nav className="settings-hub" aria-label="Team settings">
-        <a href={withOrgHref("/team/background", orgId)}>
-          <strong>Team background</strong>
-          <span>Mission, history, demographics for sponsors</span>
-        </a>
-        <a href={withOrgHref("/team/security", orgId)}>
-          <strong>Security &amp; delegation</strong>
-          <span>Sign-in rules and who can do what</span>
-        </a>
-        <a href={withOrgHref("/team/ai-keys", orgId)}>
-          <strong>AI keys</strong>
-          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
-        </a>
-        <a href={withOrgHref("/team/budgets", orgId)}>
-          <strong>Chat limits</strong>
-          <span>How much Chat can spend</span>
-        </a>
-        <a href={withOrgHref("/team/ai-policy", orgId)}>
-          <strong>AI rules</strong>
-          <span>Tools, spend alerts, approvals</span>
-        </a>
-        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
-          <strong>Prompt caching</strong>
-          <span>Reuse stable AI context blocks</span>
-        </a>
-        <a href={withOrgHref("/team/ai-memory", orgId)}>
-          <strong>AI memory</strong>
-          <span>What Ask AI remembers</span>
-        </a>
-        <a href={withOrgHref("/team/data", orgId)}>
-          <strong>Live data</strong>
-          <span>Public match results</span>
-        </a>
-        <a href={withOrgHref("/team/discord", orgId)}>
-          <strong>Discord</strong>
-          <span>Guild, announcements, chat bridge</span>
-        </a>
-        <a href={withOrgHref("/team/slack", orgId)}>
-          <strong>Slack</strong>
-          <span>Two-way team chat bridge</span>
-        </a>
-        <a href="#github-connection">
-          <strong>GitHub</strong>
-          <span>Robot-code context for AI.</span>
-        </a>
-        <a href="/account?tab=notifications">
-          <strong>Notification prefs</strong>
-          <span>In-app and email opt-ins</span>
-        </a>
-        <a href="/connectors">
-          <strong>Connectors</strong>
-          <span>GitHub, CAD, Discord, Slack</span>
-        </a>
-      </nav>
-
-      <nav className="intel-actions settings-secondary-links" aria-label="More team admin links">
-        <a href={withOrgHref("/business", orgId)}>Business</a>
-        <a href={withOrgHref("/costs", orgId)}>Season costs</a>
-        <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
-        <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
-        <a href={withOrgHref("/chat", orgId)}>Assistant</a>
-        <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-        <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
-        <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
-        <a href={withOrgHref("/exports", orgId)}>Export</a>
-        <a href={withOrgHref("/showcase", orgId)}>Showcase</a>
-        <a href="/security">Personal security</a>
-        {/* Account, Discord and Connectors are in the membership panel's own
-            related row. A "more links" list is for things that are not
-            already on the page. */}
-      </nav>
-
       <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">
         <span className="eyebrow">MEMBERS &amp; INVITES</span>
         <h2 id="membership-title">{membershipCopy.title}</h2>
         <p className="app-muted">{membershipCopy.description}</p>
+        {membershipShell === "ready" ? (
+          <div className="team-admin-invite-cta">
+            <Button as="a" variant="primary" href="#invite-form">
+              Invite someone
+            </Button>
+          </div>
+        ) : null}
         <nav className="product-hub-related team-admin-related" aria-label="Related membership tools">
           {membershipRelated.map((link) => (
             <a key={link.id} href={link.href}>{link.label}</a>
@@ -797,23 +719,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <MembershipNextActionsPanel actions={membershipActions} />
         ) : null}
 
-        {showMembershipTiles ? (
-          <div className="team-admin-metrics" aria-label="Membership metrics">
-            <article>
-              <strong>{formatTeamAdminMetric(members.length, membersLoaded)}</strong>
-              <span>Real members</span>
-            </article>
-            <article>
-              <strong>{formatTeamAdminMetric(pendingInvites, membersLoaded)}</strong>
-              <span>Pending invites</span>
-            </article>
-            <article>
-              <strong>{formatTeamAdminMetric(pendingAccess, membersLoaded)}</strong>
-              <span>Access requests</span>
-            </article>
-          </div>
-        ) : null}
-
         {membershipShell === "ready" ? (
           <Panel className="team-admin-members invite-list" aria-label="Members list">
             <span className="eyebrow">Members</span>
@@ -829,9 +734,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                   </small>
                 </div>
                 <div className="team-member-actions">
-                  <Button as="a" variant="secondary" href={withOrgHref("/team/security", orgId)}>
-                    Capabilities
-                  </Button>
                   <Button variant="secondary" type="button" disabled={resetBusyUserId === member.userId} onClick={() => setResetTarget(member)}>
                     {resetBusyUserId === member.userId ? "Sending…" : "Send password reset"}
                   </Button>
@@ -841,6 +743,29 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           </Panel>
         ) : null}
       </section>
+
+      <TeamAdminInvitesPanel
+        adminTenure={adminTenure}
+        deliveryBanner={deliveryBanner}
+        email={email}
+        setEmail={setEmail}
+        role={role}
+        setRole={setRole}
+        inviteBusy={inviteBusy}
+        inviteNotice={inviteNotice}
+        invites={invites}
+        inviteLinks={inviteLinks}
+        copiedInviteId={copiedInviteId}
+        actingInviteId={actingInviteId}
+        onSend={(event) => void sendInvite(event)}
+        onCopyLink={(id, url) => void copyInviteLink(id, url)}
+        onAct={(inviteId, action) => void act(inviteId, action)}
+      />
+      <TeamAdminAccessPanel
+        accessRequests={accessRequests}
+        message={message}
+        onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
+      />
 
       <ConfirmDialog
         open={Boolean(resetTarget)}
@@ -861,28 +786,68 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         }}
       />
 
-      <TeamAdminAccessPanel
-        accessRequests={accessRequests}
-        message={message}
-        onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
-      />
-      <TeamAdminInvitesPanel
-        adminTenure={adminTenure}
-        deliveryBanner={deliveryBanner}
-        email={email}
-        setEmail={setEmail}
-        role={role}
-        setRole={setRole}
-        inviteBusy={inviteBusy}
-        inviteNotice={inviteNotice}
-        invites={invites}
-        inviteLinks={inviteLinks}
-        copiedInviteId={copiedInviteId}
-        actingInviteId={actingInviteId}
-        onSend={(event) => void sendInvite(event)}
-        onCopyLink={(id, url) => void copyInviteLink(id, url)}
-        onAct={(inviteId, action) => void act(inviteId, action)}
-      />
+      <TeamProfilePanel orgId={orgId} />
+
+      <TeamBrandingPanel orgId={orgId} />
+
+      <section className="team-admin-more" aria-labelledby="team-admin-more-title">
+        <h2 id="team-admin-more-title">More settings</h2>
+      <nav className="settings-hub" aria-label="Team settings">
+        <a href={withOrgHref("/team/background", orgId)}>
+          <strong>Team background</strong>
+          <span>Mission, history, demographics for sponsors</span>
+        </a>
+        <a href={withOrgHref("/team/security", orgId)}>
+          <strong>Team security</strong>
+          <span>Sign-in rules and who can do what</span>
+        </a>
+        <a href={withOrgHref("/team/ai-keys", orgId)}>
+          <strong>AI keys</strong>
+          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
+        </a>
+        <a href={withOrgHref("/team/budgets", orgId)}>
+          <strong>Chat limits</strong>
+          <span>How much Chat can spend</span>
+        </a>
+        <a href={withOrgHref("/team/ai-policy", orgId)}>
+          <strong>AI rules</strong>
+          <span>Tools, spend alerts, approvals</span>
+        </a>
+        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
+          <strong>Prompt caching</strong>
+          <span>Reuse stable AI context blocks</span>
+        </a>
+        <a href={withOrgHref("/team/ai-memory", orgId)}>
+          <strong>AI memory</strong>
+          <span>What Ask AI remembers</span>
+        </a>
+        <a href={withOrgHref("/team/data", orgId)}>
+          <strong>Live data</strong>
+          <span>Public match results</span>
+        </a>
+        <a href={withOrgHref("/team/discord", orgId)}>
+          <strong>Discord</strong>
+          <span>Guild, announcements, chat bridge</span>
+        </a>
+        <a href={withOrgHref("/team/slack", orgId)}>
+          <strong>Slack</strong>
+          <span>Two-way team chat bridge</span>
+        </a>
+        <a href="#github-connection">
+          <strong>GitHub</strong>
+          <span>Robot-code context for AI.</span>
+        </a>
+        <a href="/account?tab=notifications">
+          <strong>Notification prefs</strong>
+          <span>In-app and email opt-ins</span>
+        </a>
+        <a href="/connectors">
+          <strong>Connectors</strong>
+          <span>GitHub, CAD, Discord, Slack</span>
+        </a>
+      </nav>
+      </section>
+
       <TeamAdminGitHubPanel
         githubShell={githubShell}
         githubCopy={githubCopy}

@@ -264,9 +264,8 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
       ) : (
       <>
       <p className="app-muted">
-        Limit scouts and viewers to specific hubs. Start unrestricted (no hubs checked). Enabling a hub shows
-        it; leave its tabs unchecked for every tab, or check tabs to restrict to those only. Clear all restores full
-        navigation. Owners and admins stay unrestricted.
+        Scouts and viewers see every hub until you pick some. Pick hubs to show only those, and pick tabs inside a
+        hub to narrow it further. Owners and admins always see everything.
       </p>
       {message ? (
         <p role="status" className="telemetry-status">
@@ -283,7 +282,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                 <div>
                   <strong>{member.name}</strong>
                   <small>
-                    {member.email} · {member.role} · unrestricted hub access
+                    {member.email} · {member.role} · sees every hub
                   </small>
                 </div>
               </article>
@@ -305,14 +304,25 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
             const enabledCount = hubCatalog.filter((hubId) => draft[hubId] !== null).length;
             const unrestricted = enabledCount === 0;
             return (
-              <article className="admin-org" key={member.userId} style={{ marginBottom: "1rem" }}>
-                <div>
-                  <strong>{member.name}</strong>
-                  <small>
-                    {member.email} · {member.role}
-                    {unrestricted ? " · unrestricted" : ` · ${enabledCount} hub${enabledCount === 1 ? "" : "s"}`}
-                  </small>
-                </div>
+              // One line per member until you open it: the six hub checkboxes for every
+              // scout made this page ~5,500px for three people.
+              <details className="admin-org member-access-row" key={member.userId}>
+                <summary>
+                  <span className="member-access-who">
+                    <strong>{member.name}</strong>
+                    <small>
+                      {member.email} · {member.role}
+                    </small>
+                  </span>
+                  <span className="member-access-state">
+                    {unrestricted
+                      ? "Sees every hub"
+                      : `${enabledCount} hub${enabledCount === 1 ? "" : "s"} only`}
+                  </span>
+                  <span className="member-access-edit" aria-hidden="true">
+                    Edit
+                  </span>
+                </summary>
                 <div className="auth-policy-form" style={{ marginTop: "0.75rem" }}>
                   {hubCatalog.map((hubId) => {
                     const enabled = draft[hubId] !== null;
@@ -378,10 +388,10 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                     {savingUserId === member.userId ? "Saving…" : "Save hub access"}
                   </button>
                   <button type="button" onClick={() => clearAll(member.userId)}>
-                    Clear all (unrestricted)
+                    Show every hub
                   </button>
                 </div>
-              </article>
+              </details>
             );
           })}
         </>
