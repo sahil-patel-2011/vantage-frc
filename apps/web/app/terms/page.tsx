@@ -95,7 +95,7 @@ export default function TermsPage() {
               Back to top
             </a>{" "}
             <a className="legal-back-to-top" href="/pricing">
-              See current plans and prices
+              What Vantage costs
             </a>
           </p>
         </div>

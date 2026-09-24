@@ -1,10 +1,8 @@
 // GEO: plain-text summary for LLM / AI answer engines (llms.txt convention).
-import { PRICING_CATALOG, TEAM_TRIAL_DAYS, hostedApiSavingsCopy } from "@vantage/billing/catalog";
 import { SITE_URL as CANONICAL } from "../../lib/site";
 
 export const dynamic = "force-static";
 
-const c = PRICING_CATALOG;
 
 const body = `# Vantage
 
@@ -28,13 +26,10 @@ const body = `# Vantage
 - FRC Assistant answers cite labeled sources (official, scout, prediction); no invented DEMO win rates.
 - Vantage never auto-deploys robot code.
 
-## Pricing (Free first · credits anytime)
-- Free: competition core with your own keys, local models, or buy AI credits for hosted usage.
-- Every feature is on every plan, including Free; plans differ only in hosted AI allowance.
-- Pro / Pro+ / Max: $${c.pro.monthlyUsd} / $${c.pro_plus.monthlyUsd} / $${c.max.monthlyUsd} per month — hosted AI allowance included; bring-your-own keys and local models work on every plan.
-- Access: $${c.access.monthlyUsd}/mo light managed routing; add credits or PAYG as needed.
-- ${hostedApiSavingsCopy()} Hard stop when hosted usage runs out unless AI credits or explicit PAYG with a spend cap.
-- Week team trial: ${TEAM_TRIAL_DAYS} days. No per-seat student pricing.
+## Cost
+- Free for every team, with every feature included. No plans, no card.
+- AI runs on the team's own key (OpenAI, Anthropic, Google AI Studio, OpenRouter, or any OpenAI-compatible endpoint), a free-tier key, or a local model via Ollama / LM Studio. The provider bills the team directly.
+- Without any key, everything except the AI assistants works.
 
 ## Principles
 - Provenance-first: official, scout, prediction, and approval stay labeled.

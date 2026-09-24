@@ -51,7 +51,6 @@ export default function CodeFeaturePage() {
                 </li>
               ))}
             </ul>
-            <p className="product-glances-note">Marketing copy. Code stays empty until a repo is connected.</p>
           </div>
         </section>
 
@@ -60,13 +59,13 @@ export default function CodeFeaturePage() {
             <h2>Related.</h2>
             <p>
               <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/cad">CAD agent</a> ·{" "}
-              <a href="/pricing">What it costs</a>
+              <a href="/pricing">Free, with your own AI key</a>
             </p>
           </div>
           <MarketingRouteActions
             className="pricing-preview-actions"
             guestLabel="Join waitlist"
-            companion={{ href: "/pricing", label: "Pricing", variant: "secondary" }}
+            companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
           />
         </section>
       </main>

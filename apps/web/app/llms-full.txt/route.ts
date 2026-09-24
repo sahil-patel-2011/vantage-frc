@@ -1,10 +1,8 @@
 // GEO: longer citeable fact sheet for answer engines (companion to /llms.txt).
-import { PRICING_CATALOG, TEAM_TRIAL_DAYS, hostedApiEconomicsSoftLine, hostedApiSavingsCopy } from "@vantage/billing/catalog";
 import { SITE_URL as CANONICAL } from "../../lib/site";
 
 export const dynamic = "force-static";
 
-const c = PRICING_CATALOG;
 
 const body = `# Vantage — full product facts
 
@@ -37,20 +35,10 @@ Default island apps: Home, Matches, Scout, and Stats (customizable to four apps)
 - Scout facts feed Strategy, Pick clock, Alliance Selection Desk, Command / My Day, and Assistant — they do not invent missing numbers.
 - Marketing previews are CSS recreations of Soft-UI chrome, not live screenshots and not DEMO dashboards.
 
-## Pricing detail
-${hostedApiSavingsCopy()}
-${hostedApiEconomicsSoftLine()}
-
-| Plan | Monthly USD | Notes |
-| --- | --- | --- |
-| Free | 0 | Start here — own keys, local models, or buy AI credits |
-| Access | ${c.access.monthlyUsd} | Light managed routing; credits/PAYG optional |
-| Pro | ${c.pro.monthlyUsd} | Hosted AI allowance on top of BYOK |
-| Pro+ | ${c.pro_plus.monthlyUsd} | Larger hosted allowance |
-| Max | ${c.max.monthlyUsd} | Largest hosted allowance |
-| Week team trial | — | ${TEAM_TRIAL_DAYS} days; no surprise auto-charge |
-
-Public framing: Free → Individual → Team; AI credits top up hosted usage. Exact included API-dollar allotments are not plan-card copy.
+## Cost
+- Free for every team, with every feature included. No plans, no card.
+- AI runs on the team's own key (OpenAI, Anthropic, Google AI Studio, OpenRouter, or any OpenAI-compatible endpoint), a free-tier key, or a local model via Ollama / LM Studio. The provider bills the team directly.
+- Without any key, everything except the AI assistants works.
 
 ## Security / tenancy (high level)
 Invite-only orgs; request DB access uses RLS (\`withRls\`). Platform admin surfaces require a platform_admins row. See Privacy and Terms for legal detail.

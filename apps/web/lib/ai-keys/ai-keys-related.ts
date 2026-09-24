@@ -30,7 +30,7 @@ export function aiKeysRelatedLinks(
     { id: "budgets", label: "Chat limits", href: hubHref("/ai", "budgets", orgId) },
     { id: "byok-usage", label: "Your keys usage", href: withOrgHref("/team/ai-usage", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
-    { id: "pricing", label: "Pricing", href: withOrgHref("/pricing", orgId) },
+    { id: "pricing", label: "Free, own key", href: withOrgHref("/pricing", orgId) },
     { id: "account", label: "Account", href: withOrgHref("/account", orgId) },
     { id: "admin", label: "Custom providers", href: `${withOrgHref("/team/admin", orgId)}#custom-providers` },
     {

@@ -1,61 +1,57 @@
 /**
- * Pricing teaser shared by the landing page and /for-teams.
- * Server component, no client JS. Every figure and note comes from the billing
- * catalog, so this strip cannot drift from the real ladder.
+ * What Vantage costs, on the landing page and /for-teams: nothing.
+ *
+ * There are no plans to choose between right now. Every team gets every feature for free, and
+ * AI runs on the team's own key (or a free one, or a model on a shop computer, or not at all).
+ * The section used to show a ladder of monthly hosted-AI tiers, which read as "this costs money"
+ * to a mentor skimming it. Server component, no client JS.
  */
 
-import { pricingTeaserByokCopy, pricingTeaserTiers } from "./pricing-teaser";
+const AI_WAYS = [
+  {
+    title: "Your own key",
+    body: "Paste an OpenAI, Anthropic, Google or OpenRouter key. The provider bills you directly, usually cents a week.",
+  },
+  {
+    title: "A free key",
+    body: "Google AI Studio, OpenRouter and Groq all have free tiers that work as a team key.",
+  },
+  {
+    title: "A shop computer",
+    body: "Point Vantage at Ollama or LM Studio and the AI runs on your own hardware.",
+  },
+  {
+    title: "No AI at all",
+    body: "Scouting, strategy, the build and the budget all work without it.",
+  },
+] as const;
 
 export function PricingStrip({ headingId }: { headingId: string }) {
-  const tiers = pricingTeaserTiers();
-
   return (
-    <section className="mk-price" aria-labelledby={headingId}>
+    <section className="mk-price mk-free" id="cost" aria-labelledby={headingId}>
       <div className="lux-content">
-        {/*
-          The software is free, and that is the first thing this section
-          should say.
-
-          It used to open with the word "Pricing" over a ladder of monthly
-          figures, which reads as "here are the tiers" — and a mentor skimming
-          it concluded the product costs money and that the cheap plan is the
-          crippled one. Neither is true: nothing is feature-gated, and the only
-          thing on this page that costs anything is AI run on our hardware
-          instead of yours, which a team can decline entirely.
-        */}
         <header className="lux-section-head" data-reveal>
           <p className="lux-eyebrow">What it costs</p>
-          <h2 id={headingId}>Every feature is free, for every team.</h2>
+          <h2 id={headingId}>Free for every team. Bring your own AI key.</h2>
           <p>
-            Scouting, strategy, the build, the budget and the shop are the same on every plan. Plans only buy AI that
-            runs on our servers — bring your own key, run a model on a shop computer, or skip AI and pay nothing. Each
-            plan stops at its allowance, so there is never a surprise bill on a booster club&rsquo;s card.
+            Every feature is included for every team, with no plans and no card. The only thing that can cost money is
+            AI, and that goes on your own key, so you see the bill and you set the limit.
           </p>
         </header>
 
-        <p className="mk-price-kicker" data-reveal>
-          Optional: AI we run for you
-        </p>
-        <ul className="mk-price-grid" data-reveal>
-          {tiers.map((tier) => (
-            <li key={tier.id}>
-              <span className="mk-price-label">{tier.label}</span>
-              <strong className="mk-price-figure">
-                {tier.price}
-                <small>/mo</small>
-              </strong>
-              <span className="mk-price-blurb">{tier.blurb}</span>
+        <ul className="mk-price-grid mk-free-grid" data-reveal>
+          {AI_WAYS.map((way) => (
+            <li key={way.title}>
+              <span className="mk-price-label">{way.title}</span>
+              <span className="mk-price-blurb">{way.body}</span>
             </li>
           ))}
         </ul>
 
         <div className="mk-price-foot" data-reveal>
-          <p>
-            {pricingTeaserByokCopy()} Prices come straight from the billing catalog; the{" "}
-            <a href="/pricing">full detail</a> covers allowances, credit packs and the usage ledger.
-          </p>
+          <p>Vantage is free while we bring teams on one at a time.</p>
           <a className="button secondary" href="/pricing">
-            How the AI allowances work
+            How AI keys work
           </a>
         </div>
       </div>

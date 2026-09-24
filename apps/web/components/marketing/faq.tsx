@@ -38,7 +38,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "Nothing, unless you want AI we run for you. Every feature is free for every team. Pro, Pro+ and Max only add hosted AI, and each stops when its allowance is used — no surprise bill. You can also use your own AI key, or no AI at all.",
+    a: "Nothing. Every feature is free for every team, with no plans and no card. AI runs on your team's own key (or a free one, or a model on a shop computer), so the provider bills you directly and you set the limit. Or use no AI at all.",
   },
   {
     q: "Is team data private?",

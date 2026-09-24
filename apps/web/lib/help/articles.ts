@@ -5,17 +5,12 @@
  * Accuracy rules:
  * - Every article maps to something a member can actually reach (deep-link
  *   checked against the app tree in help.test.ts).
- * - Pricing copy is composed from `@vantage/billing/catalog` so it cannot
- *   drift from what billing actually charges (also guarded by a test).
+ * - Vantage is free with the team's own AI key; no article lists paid plans
+ *   (guarded by help.test.ts).
  * - Setup-required integrations are described as setup-required, never as
  *   already working.
  */
 
-import {
-  CATALOG_SERVICE_MULTIPLIER,
-  PRICING_CATALOG,
-  TEAM_TRIAL_DAYS,
-} from "@vantage/billing/catalog";
 import { defaultIslandLabelList, islandCatalogLabelList } from "../nav/island-preferences";
 
 export type HelpCategoryId =
@@ -123,17 +118,6 @@ export type HelpArticle = {
   relatedHref: string;
   sections: HelpSection[];
 };
-
-// Pricing strings composed from the billing catalog — the numbers in these
-// constants are the same objects checkout reads, so help can never disagree.
-const P = PRICING_CATALOG;
-const LADDER_LINE =
-  `Free $${P.free.monthlyUsd} · Pro $${P.pro.monthlyUsd}/mo · ` +
-  `Pro+ $${P.pro_plus.monthlyUsd}/mo · Max $${P.max.monthlyUsd}/mo.`;
-const ALLOWANCE_LINE =
-  `Hosted AI allowances per month: Free $${P.free.includedAllowanceUsd} (budget-class models only), ` +
-  `Pro $${P.pro.includedAllowanceUsd}, Pro+ $${P.pro_plus.includedAllowanceUsd}, ` +
-  `Max $${P.max.includedAllowanceUsd} — all on frontier models for the paid rungs.`;
 
 export const HELP_ARTICLES: HelpArticle[] = [
   // ----------------------------------------------------------- Getting started
@@ -1508,46 +1492,26 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "plans-and-pricing",
     slug: "plans-and-pricing",
-    title: "Plans: Free, Pro, Pro+, and Max",
+    title: "What Vantage costs: free, with your own AI key",
     summary:
-      "Every feature ships on every plan, including Free. Plans differ only in how much hosted AI usage is included.",
+      "Vantage is free for every team with every feature included. AI runs on your team's own key, a free key, or a model on a shop computer.",
     category: "billing-plans",
-    keywords: [
-      "pricing",
-      "plans",
-      "free",
-      "pro",
-      "pro+",
-      "max",
-      "upgrade",
-      "hosted ai",
-      "allowance",
-      "trial",
-      "cost",
-    ],
+    keywords: ["pricing", "plans", "free", "cost", "upgrade", "trial", "own key", "byok", "api key"],
     relatedHref: "/pricing",
     sections: [
       {
-        heading: "The ladder",
+        heading: "Free, with nothing held back",
         body: [
-          LADDER_LINE,
-          "Nothing on Vantage is feature-gated by plan — no locked hubs, no plan-only tools. All paid plans are team-wide billing.",
-          `A ${TEAM_TRIAL_DAYS}-day team trial exists too: admin-granted, $${P.team_trial.includedAllowanceUsd} hosted allowance, never auto-charged.`,
+          "Every team gets every feature: scouting, strategy, pit, the build, the budget, chat and the calendar. There are no plans and no card.",
+          "It is free while we bring teams on one at a time. If that ever changes, owners hear it by email first, and nothing is charged unless an owner chooses it.",
         ],
       },
       {
-        heading: "What the money buys",
+        heading: "AI runs on your key",
         body: [
-          ALLOWANCE_LINE,
-          `Hosted usage debits at ${CATALOG_SERVICE_MULTIPLIER}× typical provider list rates — about 25% less than the same call on your own key.`,
-          "Free's hosted allowance runs on budget-class models (Mistral Small / Llama-class via the sponsored pool, or OpenRouter's free-model router) — never frontier models. The pricing page says the same.",
-        ],
-      },
-      {
-        heading: "Your own keys and local models on every plan",
-        body: [
-          "Bring any provider key — OpenAI, Anthropic, Google AI Studio, OpenRouter, Groq, Mistral, or anything OpenAI-compatible — or point Vantage at Ollama / LM Studio. Unlimited by Vantage; you pay your provider directly.",
-          "When a hosted allowance runs out, Chat stops: buy a credit pack, turn on pay-as-you-go with an explicit cap, or keep working on your own keys or a shop model. There is never a silent extra bill.",
+          "An owner or admin adds a key under AI keys (/team/ai-keys): OpenAI, Anthropic, Google AI Studio, OpenRouter, or anything OpenAI-compatible such as Groq. The provider bills your team directly.",
+          "No budget? Google AI Studio, OpenRouter and Groq have free tiers. Or point Vantage at Ollama or LM Studio on a shop computer.",
+          "Members can add a personal key that only their own requests use. Without any key, everything except the AI assistants keeps working.",
         ],
       },
     ],
@@ -1555,43 +1519,24 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "credits-vs-free",
     slug: "credits-vs-free",
-    title: "Hosted credits, pay-as-you-go, and spend limits",
+    title: "AI spend limits on your own key",
     summary:
-      "How the hosted allowance, credit packs, and pay-as-you-go work — Chat stops before every extra billed call, with no surprise bill.",
+      "Your provider bills your key directly. Set a cap there, and per-member limits in Vantage so one person can't use it all.",
     category: "billing-plans",
-    keywords: [
-      "credits",
-      "credit packs",
-      "payg",
-      "pay as you go",
-      "budgets",
-      "spend cap",
-      "hosted ai",
-      "allowance",
-      "usage",
-      "hard stop",
-    ],
+    keywords: ["credits", "budgets", "spend cap", "limits", "usage", "hard stop", "own key"],
     relatedHref: "/team/budgets",
     sections: [
       {
-        heading: "Where hosted usage comes from",
+        heading: "Two limits",
         body: [
-          "Every plan includes a monthly hosted AI allowance (see Plans: Free, Pro, Pro+, and Max). Billed features draw from it whenever no key of your own or shop model answers first.",
-          "Credit packs top the pool up without changing plans; pay-as-you-go continues past the allowance only up to a spend cap you set explicitly.",
+          "Set a monthly cap with your AI provider; that is the real ceiling on what your key can spend.",
+          "In Vantage, Ask AI → Limits (/team/budgets) sets how much each member and each feature may use. Limits are checked before a request runs, so a request over the limit is refused with a clear message instead of billed.",
         ],
       },
       {
-        heading: "Hard stops, not surprises",
+        heading: "Seeing what was used",
         body: [
-          "Chat limits are checked before each billed call runs, not tallied afterwards — when the pool is empty and no pay-as-you-go cap allows more, the call is refused with a clear banner.",
-          "Set spend and token caps under Ask AI → Controls (/team/budgets); watch real usage and refusals under /team/usage. Estimates for your own keys live under /team/ai-usage.",
-        ],
-      },
-      {
-        heading: "What Free does not include",
-        body: [
-          "On Free with nothing configured, hosted calls run on the budget-class pool until its allowance is spent, then features show a clear cutoff state.",
-          "Adding your own key or a local model at /team/ai-keys removes the ceiling entirely; Vantage never bills those calls.",
+          "AI usage (/team/ai-usage) shows an estimate of what your key has been used for, by person and feature.",
         ],
       },
     ],

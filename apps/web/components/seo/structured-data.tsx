@@ -1,11 +1,9 @@
 /** Site-wide JSON-LD structured data for SEO rich results + GEO (AI answer engines). */
-import { PRICING_CATALOG } from "@vantage/billing/catalog";
 import { SITE_URL as CANONICAL } from "../../lib/site";
 
 const description =
   "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It unifies offline scouting, live The Blue Alliance and Statbotics data, win/loss prediction, strategy and pick lists, AI CAD, and robot-code review in one source-attributed, team-private event context — with every AI action behind a human decision.";
 
-const c = PRICING_CATALOG;
 
 const graph = {
   "@context": "https://schema.org",
@@ -67,35 +65,7 @@ const graph = {
           name: "Free",
           price: "0",
           priceCurrency: "USD",
-          description: "The complete competition core with bring-your-own-key or local AI.",
-        },
-        {
-          "@type": "Offer",
-          name: "Access",
-          price: String(c.access.monthlyUsd),
-          priceCurrency: "USD",
-          description: "Light plan unlocking managed AI routing; hosted AI cheaper than typical own-key billing.",
-        },
-        {
-          "@type": "Offer",
-          name: "Pro",
-          price: String(c.pro.monthlyUsd),
-          priceCurrency: "USD",
-          description: "Every feature plus a hosted AI allowance — no keys needed to start.",
-        },
-        {
-          "@type": "Offer",
-          name: "Pro+",
-          price: String(c.pro_plus.monthlyUsd),
-          priceCurrency: "USD",
-          description: "Every feature with a larger hosted AI allowance for busy season weeks.",
-        },
-        {
-          "@type": "Offer",
-          name: "Max",
-          price: String(c.max.monthlyUsd),
-          priceCurrency: "USD",
-          description: "Every feature with the largest hosted AI allowance for all-season heavy use.",
+          description: "Every feature for every team. AI runs on the team's own key, a free key, or a local model.",
         },
       ],
     },

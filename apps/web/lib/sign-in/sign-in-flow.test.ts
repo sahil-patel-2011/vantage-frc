@@ -42,7 +42,7 @@ describe("sign-in Soft-UI helpers", () => {
   it("exposes waitlist + raised pricing CTAs without inventing access", () => {
     const actions = signInNextActions();
     expect(actions.find((a) => a.id === "waitlist")?.href).toBe("/#waitlist");
-    expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/\$20/);
+    expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/own AI key/);
     expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$20", "$60", "$100"]);
   });
 

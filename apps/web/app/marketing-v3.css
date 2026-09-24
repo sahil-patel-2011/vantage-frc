@@ -718,3 +718,14 @@ html:has(.marketing-lux){scroll-padding-top:76px}
     gap: 24px 16px;
   }
 }
+
+/* /pricing is now "it's free": three steps for an AI key and four short answers. */
+.marketing-lux .pricing-steps{display:grid;gap:18px;margin:0;padding:0;list-style:none;counter-reset:step}
+.marketing-lux .pricing-steps li{display:grid;gap:4px;padding-left:44px;position:relative;counter-increment:step;font-size:16px;line-height:1.6}
+.marketing-lux .pricing-steps li::before{content:counter(step);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:999px;display:grid;place-items:center;background:var(--m-ink,#111);color:var(--m-paper,#fff);font-weight:700;font-size:14px}
+.marketing-lux .pricing-faq{background:transparent}
+.marketing-lux .pricing-faq dl{display:grid;gap:22px;margin:0}
+.marketing-lux .pricing-faq dt{font-weight:700;font-size:17px}
+.marketing-lux .pricing-faq dd{margin:4px 0 0;color:var(--m-muted);line-height:1.6}
+.marketing-lux .mk-free-grid li{min-height:0}
+@media (max-width:760px){.marketing-lux .payg{grid-template-columns:1fr;gap:24px}}

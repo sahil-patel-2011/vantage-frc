@@ -2,7 +2,6 @@
 
 import {
   raisedPricingStrip as catalogRaisedPricingStrip,
-  raisedPricingSummaryLine,
   type CatalogPlanCode,
 } from "@vantage/billing/catalog";
 
@@ -196,8 +195,8 @@ export function signInNextActions(): SignInNextAction[] {
     },
     {
       id: "pricing",
-      label: "View pricing",
-      detail: raisedPricingSummaryLine(),
+      label: "It's free",
+      detail: "Every feature, every team. Bring your own AI key.",
       href: "/pricing",
     },
   ];

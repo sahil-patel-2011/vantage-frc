@@ -188,17 +188,13 @@ describe("help pricing stays in lockstep with the billing catalog", () => {
     }
   });
 
-  it("states the full ladder with the catalog's exact numbers", () => {
+  it("says Vantage is free with your own AI key, and lists no paid plans", () => {
     const pricing = getHelpArticle("plans-and-pricing");
     expect(pricing).toBeDefined();
     const text = articleText(pricing!);
-    expect(text).toContain(`Pro $${PRICING_CATALOG.pro.monthlyUsd}/mo`);
-    expect(text).toContain(`Pro+ $${PRICING_CATALOG.pro_plus.monthlyUsd}/mo`);
-    expect(text).toContain(`Max $${PRICING_CATALOG.max.monthlyUsd}/mo`);
-    expect(text).toContain(`Free $${PRICING_CATALOG.free.monthlyUsd}`);
-    expect(text).toContain(`$${PRICING_CATALOG.pro.includedAllowanceUsd}`);
-    expect(text).toContain(`$${PRICING_CATALOG.pro_plus.includedAllowanceUsd}`);
-    expect(text).toContain(`$${PRICING_CATALOG.max.includedAllowanceUsd}`);
+    expect(text).toMatch(/free/i);
+    expect(text).toMatch(/own key/i);
+    expect(text).not.toMatch(/Pro\+? \$\d|Max \$\d|\/mo\b/);
   });
 });
 

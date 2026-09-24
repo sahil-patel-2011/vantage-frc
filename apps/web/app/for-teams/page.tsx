@@ -106,15 +106,15 @@ export default function ForTeamsPage() {
 
         <section className="lux-pricing">
           <div>
-            <h2>Invite-only. Every feature on every plan.</h2>
+            <h2>Free for every team. Bring your own AI key.</h2>
             <p>
-              Free is scouting and event day with a small hosted AI allowance or the team&rsquo;s own AI. Pro, Pro+,
-              and Max add hosted AI. See <a href="/pricing">pricing</a> or walk <a href="/workflow">how it works</a>.
+              Every feature, no plans, no card. AI runs on your team&rsquo;s own key (or a free one), so you see the
+              bill and set the limit. Walk through <a href="/workflow">how it works</a>.
             </p>
           </div>
           <MarketingRouteActions
             className="pricing-preview-actions"
-            companion={{ href: "/pricing", label: "See plans" }}
+            companion={{ href: "/pricing", label: "How AI keys work" }}
           />
         </section>
       </main>

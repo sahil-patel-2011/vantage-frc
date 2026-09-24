@@ -17,10 +17,9 @@ import "./marketing-styles";
 const links = [
   ["/features", "Product"],
   ["/workflow", "How it works"],
-  // "What it costs", not "Pricing". The page leads with the software being
-  // free; a link reading "Pricing" tells a mentor the opposite before they have
-  // read a word. The footer already says this — the header now agrees with it.
-  ["/pricing", "What it costs"],
+  ["/for-teams", "For teams"],
+  // No pricing link: Vantage is free, and the hero says so. A "Pricing" tab
+  // tells a mentor the opposite before they have read a word.
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {
@@ -252,7 +251,7 @@ export function SiteFooter() {
         </nav>
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>
-          <a href="/pricing">What it costs</a>
+          <a href="/pricing">Free, bring your own AI key</a>
           <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
           <a href="mailto:vantagefrc@gmail.com">Contact</a>

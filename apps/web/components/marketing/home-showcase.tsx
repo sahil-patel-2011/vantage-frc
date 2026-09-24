@@ -134,7 +134,7 @@ export function HomeShowcase() {
             {" · "}
             <a href="/workflow">How it works</a>
             {" · "}
-            <a href="/pricing">What it costs</a>
+            <a href="/pricing">Free, with your own AI key</a>
             {" · "}
             <MarketingAccountTextLink />
           </p>
