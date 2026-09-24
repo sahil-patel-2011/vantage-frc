@@ -3,7 +3,7 @@
 import { useContext, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
-import { Badge, EmptyState } from "../../../components/ui";
+import { EmptyState } from "../../../components/ui";
 import { type EmptyHint, liveLinkLabel, studentWidgetDescription } from "./widget-empty-copy";
 import { WidgetsLoadedContext } from "./widgets-loaded";
 
@@ -11,8 +11,6 @@ export type { EmptyHint } from "./widget-empty-copy";
 export { emptyHintFor, liveLinkLabel, syncStatusDestination } from "./widget-empty-copy";
 
 /** Cards that are a tool, not a feed: a "Live" badge on them says nothing. */
-const NO_LIVE_BADGE = new Set(["ask_ai"]);
-
 /**
  * Widget accents are HUES, named from the tone ramp (soft-ui.css). They used to
  * be hex pairs — a hue plus a light-only plate — written straight into an inline
@@ -60,13 +58,6 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string }> = {
   event_readiness: { icon: "target", tone: "var(--tone-blue)" },
   weather_venue: { icon: "display", tone: "var(--tone-teal)" },
 };
-
-function StatusBadge({ status }: { status: WidgetPayload["status"] | "waiting" }) {
-  // icon={null}: the "good" tone's default checkmark glyph would be new visual
-  // noise on every live widget header — keep the text-only pill this replaced.
-  if (status === "live") return <Badge tone="good" icon={null}>Live</Badge>;
-  return null;
-}
 
 /** Widget-scoped empty slot — the shared `EmptyState` in `compact` mode, so it drops
  * into a widget that is already an `app-card` without doubling the border/shadow. */
@@ -156,12 +147,10 @@ export function WidgetShell({
           ) : null}
           <div>
             <h2>{title}</h2>
-            {showLive && payload?.updatedAt ? (
-              <small className="dash-updated">Updated {new Date(payload.updatedAt).toLocaleTimeString()}</small>
-            ) : null}
           </div>
         </div>
-        {showLive && !NO_LIVE_BADGE.has(type) ? <StatusBadge status={payload?.status ?? "live"} /> : null}
+        {/* No "LIVE" pill or to-the-second "Updated" stamp on each card: live is the normal state,
+            and Home says once, under the cards, when it last synced. */}
       </header>
       {loading ? (
         <div className="dash-widget-wait" aria-busy="true" aria-label={`Loading ${title}`}>

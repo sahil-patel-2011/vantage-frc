@@ -152,7 +152,7 @@ export function DashboardWidgetLibrary({
                           <small>{status === "locked" && reason ? reason : entry.description}</small>
                           {addable && emptyNow ? (
                             <small className="dash-sheet-empty-note" data-testid="dash-library-empty-note">
-                              Empty right now. It will stay on Home anyway (Always show).
+                              Nothing in it yet. Added from here, it stays on Home and fills in as your team uses it.
                             </small>
                           ) : null}
                         </span>

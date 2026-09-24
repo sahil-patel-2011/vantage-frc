@@ -167,7 +167,7 @@ export function useDashboardBoardOps(input: {
     setMessageAction(keepWhenEmpty ? "undo" : null);
     setMessage(
       keepWhenEmpty
-        ? `${label} added to the board. It shows on Home even while it is empty (Always show).`
+        ? `${label} added to the board. It stays on Home and fills in as your team uses it.`
         : `${label} added to the board.`,
     );
     setAnnounce(

@@ -43,7 +43,8 @@ export function DashboardActionsProvider({ orgId, refresh, children }: {
 const TASK_CARDS = new Set<DashboardWidgetType>(["team_todos"]);
 const SCOUT_CARDS = new Set<DashboardWidgetType>([
   "scouting_coverage",
-  "next_match",
+  // Not the Next match card: it was the only card on a default Home with a ••• menu, and
+  // offered "Log a scouting report" and "Refresh" even when the event was over.
   "match_schedule",
   "alliance_desk",
 ]);
