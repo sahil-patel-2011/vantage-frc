@@ -12,6 +12,8 @@ import {
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
+import { ensureHubSheetForNewTeam } from "../../../../lib/google-sheets/sheets-hub";
 import {
   OWNER_INVITE_HOURS,
   ownerProvisionMode,
@@ -165,6 +167,16 @@ export async function POST(request: Request) {
       confirmation.owner.inviteExpiresAt = created.inviteExpiresAt.toISOString();
       confirmation.owner.emailSent = delivery.emailSent;
     }
+    // The team's spreadsheet in the VantageFRC folder, made now so it is there on day one.
+    // After the response, and never fatal: a slow Google cannot hold up or undo the team.
+    after(() =>
+      ensureHubSheetForNewTeam({
+        key: created.orgId,
+        number: input.teamNumber ?? null,
+        name: input.name,
+        viewers: [input.ownerEmail],
+      }).then(() => undefined),
+    );
     return Response.json(confirmation, { status: 201 });
   } catch (error) {
     const conflict =

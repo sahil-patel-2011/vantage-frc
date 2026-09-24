@@ -14,9 +14,19 @@
  *   ping  → { ok, version, name, url }
  *   write → { items: [{ sheet, startRow, width, values, clear }] } → { ok, cells }
  *   read  → { sheets: [name] } → { ok, values: { [name]: rows | null } }
+ *
+ * Version 3 adds hub mode. The same script, deployed on its own (script.google.com → New
+ * project) instead of inside one spreadsheet, keeps one spreadsheet per team in a
+ * "VantageFRC" folder of the Google account that deployed it. Every request that carries
+ * `team: { key, number, name, viewers }` works on that team's spreadsheet:
+ *   team.ensure → { ok, id, url, name, created, lastHash, lastSyncAt }
+ *   team.stamp  → { team, hash } → { ok }   (after a full write; the next sync skips if unchanged)
+ *   write/read  → as above, on the team's spreadsheet
  */
 
-export const APPS_SCRIPT_VERSION = 2;
+export const APPS_SCRIPT_VERSION = 3;
+/** Hub mode (one spreadsheet per team in a VantageFRC folder) needs this version. */
+export const APPS_SCRIPT_HUB_VERSION = 3;
 /** The oldest script Vantage still talks to (spreadsheet sync only). */
 export const APPS_SCRIPT_MIN_VERSION = 1;
 /** Photos and videos in Google Drive need this version of the script. */
@@ -46,8 +56,9 @@ export function appsScriptSource(secret: string): string {
   return `/**
  * Vantage → Google Sheets and Drive bridge (version ${APPS_SCRIPT_VERSION}).
  *
- * Paste this into Extensions → Apps Script of the spreadsheet Vantage should keep up to
- * date, then Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone.
+ * For one team: paste this into Extensions → Apps Script of the spreadsheet Vantage should
+ * keep up to date. For every team (hub): paste it into a new project at script.google.com.
+ * Then Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone.
  * Vantage signs every request with the secret below; anything unsigned is refused, so the
  * web app address alone cannot read or change anything. It only touches this spreadsheet
  * and the one "Vantage media" Drive folder it makes (or the folder you pick in Vantage).
@@ -66,12 +77,16 @@ function doPost(e) {
     if (!(Math.abs(Date.now() - Number(request.ts)) <= MAX_CLOCK_SKEW_MS)) {
       return vantageReply_({ ok: false, error: "stale" });
     }
-    const book = SpreadsheetApp.getActiveSpreadsheet();
     if (request.action === "ping") {
-      return vantageReply_({ ok: true, version: VANTAGE_VERSION, name: book.getName(), url: book.getUrl() });
+      const active = SpreadsheetApp.getActiveSpreadsheet();
+      if (active) return vantageReply_({ ok: true, version: VANTAGE_VERSION, name: active.getName(), url: active.getUrl() });
+      const hub = vantageHubFolder_();
+      return vantageReply_({ ok: true, version: VANTAGE_VERSION, hub: true, name: hub.getName(), url: hub.getUrl() });
     }
-    if (request.action === "write") return vantageReply_(vantageWrite_(book, request.items || []));
-    if (request.action === "read") return vantageReply_(vantageRead_(book, request.sheets || []));
+    if (request.action === "team.ensure") return vantageReply_(vantageTeamEnsure_(request.team || {}));
+    if (request.action === "team.stamp") return vantageReply_(vantageTeamStamp_(request.team || {}, String(request.hash || "")));
+    if (request.action === "write") return vantageReply_(vantageWrite_(vantageBook_(request), request.items || []));
+    if (request.action === "read") return vantageReply_(vantageRead_(vantageBook_(request), request.sheets || []));
     if (request.action === "drive.setup") return vantageReply_(vantageDriveSetup_(request));
     if (request.action === "drive.list") return vantageReply_(vantageDriveList_(request));
     if (request.action === "drive.test") return vantageReply_(vantageDriveTest_());
@@ -111,8 +126,17 @@ function vantageWrite_(book, items) {
         cells += rows * width;
       }
       if (item.startRow === 1) {
-        sheet.getRange(1, 1, 1, width).setFontWeight("bold");
+        const header = sheet.getRange(1, 1, 1, width);
+        header.setFontWeight("bold");
         sheet.setFrozenRows(1);
+        try {
+          // A tinted header row and columns sized to their contents. Niceties: the values
+          // are already in, so a failure here changes nothing that matters.
+          header.setBackground("#EEF2F7");
+          if (item.clear && rows > 0) sheet.autoResizeColumns(1, width);
+        } catch (styleError) {
+          // Keep going.
+        }
       }
     }
   } finally {
@@ -134,6 +158,146 @@ function vantageRead_(book, names) {
       : null;
   }
   return { ok: true, values: values };
+}
+
+// ---------------------------------------------------------------- hub: one spreadsheet per team
+// Deployed on its own, this script keeps every team's spreadsheet in one "VantageFRC" folder,
+// named the same way for every team: "FRC 6925 · Team Name". Each spreadsheet opens on an
+// About tab that says what it is and when it last changed.
+const VANTAGE_HUB_FOLDER = "VantageFRC";
+const VANTAGE_HUB_KEY = "VANTAGE_HUB_FOLDER";
+
+function vantageHubFolder_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty(VANTAGE_HUB_KEY);
+  if (id) {
+    try {
+      const found = DriveApp.getFolderById(id);
+      if (!found.isTrashed()) return found;
+    } catch (missing) {
+      // Deleted: make a new one below.
+    }
+  }
+  const existing = DriveApp.getFoldersByName(VANTAGE_HUB_FOLDER);
+  const folder = existing.hasNext() ? existing.next() : DriveApp.createFolder(VANTAGE_HUB_FOLDER);
+  props.setProperty(VANTAGE_HUB_KEY, folder.getId());
+  return folder;
+}
+
+function vantageTeamKey_(team) {
+  const key = String(team.key || "").replace(/[^A-Za-z0-9-]/g, "").slice(0, 64);
+  if (!key) throw new Error("A team key is required.");
+  return key;
+}
+
+function vantageTeamTitle_(team) {
+  const name = String(team.name || "").replace(/\\s+/g, " ").trim().slice(0, 80);
+  const number = String(team.number || "").replace(/[^0-9]/g, "").slice(0, 6);
+  if (number && name) return "FRC " + number + " · " + name;
+  if (number) return "FRC " + number;
+  return name || "Vantage team";
+}
+
+function vantageTeamBook_(team, create) {
+  const key = vantageTeamKey_(team);
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty("VANTAGE_BOOK_" + key);
+  const title = vantageTeamTitle_(team);
+  if (id) {
+    try {
+      const file = DriveApp.getFileById(id);
+      if (!file.isTrashed()) {
+        const book = SpreadsheetApp.openById(id);
+        if (book.getName() !== title) book.rename(title);
+        return { book: book, created: false };
+      }
+    } catch (missing) {
+      // Deleted or unreachable: make a new one below.
+    }
+  }
+  if (!create) return null;
+  const book = SpreadsheetApp.create(title);
+  DriveApp.getFileById(book.getId()).moveTo(vantageHubFolder_());
+  props.setProperty("VANTAGE_BOOK_" + key, book.getId());
+  return { book: book, created: true };
+}
+
+function vantageBook_(request) {
+  if (request.team) return vantageTeamBook_(request.team, true).book;
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (!active) throw new Error("This script is not inside a spreadsheet. Send a team, or paste it into Extensions → Apps Script of a spreadsheet.");
+  return active;
+}
+
+function vantageAbout_(book, team, lastSyncAt) {
+  const sheet = book.getSheetByName("About") || book.insertSheet("About", 0);
+  const rows = [
+    ["Team", vantageTeamTitle_(team)],
+    ["What this is", "Your team's data from Vantage, one tab per kind of record. Vantage keeps it up to date on its own."],
+    ["Editing", "Change things in Vantage. Edits made here are replaced on the next update."],
+    ["Last updated", lastSyncAt || "Not yet"],
+  ];
+  sheet.clearContents();
+  sheet.getRange(1, 1, rows.length, 2).setValues(rows);
+  sheet.getRange(1, 1, rows.length, 1).setFontWeight("bold");
+  sheet.setColumnWidth(1, 140);
+  sheet.setColumnWidth(2, 560);
+  const blank = book.getSheetByName("Sheet1");
+  if (blank && book.getSheets().length > 1 && blank.getLastRow() === 0) book.deleteSheet(blank);
+}
+
+function vantageShare_(book, team) {
+  const viewers = (team.viewers || []).map((email) => String(email).trim().toLowerCase()).filter((email) => /^[^@\\s]+@[^@\\s]+$/.test(email)).slice(0, 20);
+  if (!viewers.length) return;
+  const props = PropertiesService.getScriptProperties();
+  const doneKey = "VANTAGE_SHARED_" + vantageTeamKey_(team);
+  const done = (props.getProperty(doneKey) || "").split(",").filter(Boolean);
+  const file = DriveApp.getFileById(book.getId());
+  for (const email of viewers) {
+    if (done.indexOf(email) >= 0) continue;
+    try {
+      file.addViewer(email);
+      done.push(email);
+    } catch (shareError) {
+      // An address Google cannot share with; the others still get access.
+    }
+  }
+  props.setProperty(doneKey, done.slice(-50).join(","));
+}
+
+function vantageTeamEnsure_(team) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const found = vantageTeamBook_(team, true);
+    const props = PropertiesService.getScriptProperties();
+    const key = vantageTeamKey_(team);
+    if (found.created) vantageAbout_(found.book, team, "");
+    vantageShare_(found.book, team);
+    return {
+      ok: true,
+      id: found.book.getId(),
+      url: found.book.getUrl(),
+      name: found.book.getName(),
+      created: found.created,
+      lastHash: props.getProperty("VANTAGE_HASH_" + key) || null,
+      lastSyncAt: props.getProperty("VANTAGE_AT_" + key) || null,
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function vantageTeamStamp_(team, hash) {
+  const key = vantageTeamKey_(team);
+  const found = vantageTeamBook_(team, false);
+  if (!found) return { ok: false, error: "No spreadsheet for this team yet." };
+  const at = new Date().toISOString();
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("VANTAGE_HASH_" + key, hash.slice(0, 64));
+  props.setProperty("VANTAGE_AT_" + key, at);
+  vantageAbout_(found.book, team, at);
+  return { ok: true, at: at };
 }
 
 // ---------------------------------------------------------------- photos and videos

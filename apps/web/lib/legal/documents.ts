@@ -39,7 +39,7 @@
  * updated" in the future would be the first false statement in a document
  * whose whole point is that it can be checked.
  */
-export const LEGAL_LAST_UPDATED = "September 22, 2026";
+export const LEGAL_LAST_UPDATED = "September 23, 2026";
 
 /** Where a privacy question goes. */
 // The Privacy Policy and Terms name this address as the way to reach a
@@ -139,6 +139,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Resend (email) — sends sign-in codes, two-factor codes, invitations, password-reset emails, and notifications. It receives the recipient's email address and the message.",
         "Stripe (payments) — handles subscriptions and payments. Card details go directly to Stripe; we do not store card numbers.",
         "Google (sign-in) — if you sign in with Google, Google confirms your identity and returns your name, email, and account id.",
+        "Google (Sheets and Drive) — we keep a copy of each team's records in a Google spreadsheet for that team, in a VantageFRC folder of the Google account that runs Vantage. It holds the same tables your team can export. Each team's records are in their own spreadsheet, shared view-only with that team's owners and admins, and with no one else.",
         "The Blue Alliance and Statbotics (public FRC data) — we read public event, team, and match data from them. We send event and team keys, never your members' information.",
         "Onshape and Fusion (CAD, opt-in) — only if your team connects a CAD account. They receive the document and session requests your team makes.",
         "GitHub (opt-in) — only if your team connects a repository for robot-code review. It receives requests for the code your team pointed us at.",
@@ -152,6 +153,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "Where data lives, how long we keep it, and how to get it out",
       paragraphs: [
         "Your team's data lives in our Postgres database, hosted by Neon. We do not currently offer a choice of hosting region — if that matters for your organization, ask us before you sign up.",
+        "A copy of each team's records is also kept in that team's own Google spreadsheet in the operator's Google Drive (see the list of companies above). It is updated automatically while your team uses Vantage and deleted when the team is deleted. If your team connects its own Google Sheet or Excel workbook, a copy goes there too, into your team's own account.",
         "We keep a team's data for as long as the team is active, and afterwards only as long as we need it for security, legal, billing, or dispute reasons. Chat messages specifically have no automatic deletion, as noted above.",
         "Your team can export its own data at any time from the Exports area — individual areas as CSV, or the whole workspace as a ZIP archive. API keys and encryption material are never included in an export.",
         "When a member leaves a team, their membership is removed and they immediately lose access to that workspace. The work they created — scouting entries, hours, tasks, messages in team channels — stays with the team, because it is the team's operating record rather than personal property. Their Vantage account and their own profile stay with them.",
@@ -250,8 +252,8 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Neon — our Postgres database. Holds essentially everything described in this policy.",
         "Vercel — hosting for the web app. Sees requests and standard server logs.",
         "Resend — sends our email: sign-in codes, invitations, reminders, and digests. Sees the recipient address and the message.",
-        "Stripe — payments, for teams on a paid plan. Sees billing details; we do not store card numbers.",
-        "Google — only if you sign in with Google, which tells us your name and email.",
+        "Stripe — payments, only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing.",
+        "Google — if you sign in with Google, which tells us your name and email; and Google Sheets and Drive, which hold each team's spreadsheet copy in the VantageFRC folder described above.",
         "AI providers (Anthropic, OpenAI, Groq, OpenRouter) — process the text of an AI request when a team uses an AI feature. A team may supply its own provider key instead, in which case the request goes to that team's own account.",
         "Onshape — only if your team connects CAD. Sees the CAD documents you authorise.",
         "Discord and Slack — only if your team connects a chat bridge, which forwards the messages your team chooses to forward.",
@@ -385,12 +387,11 @@ export const TERMS_OF_SERVICE: LegalDocument = {
     },
     {
       id: "billing",
-      heading: "Plans, payment, and cancellation",
+      heading: "Cost",
       paragraphs: [
-        "Vantage offers a free tier, individual plans, team plans, an access tier with pay-as-you-go usage, and a short team trial. Current prices, what each plan includes, and how hosted AI credits are billed are on the pricing page — we do not restate prices here so that these Terms and the price list cannot disagree.",
-        "Paid plans are billed through Stripe on a recurring basis until cancelled. Cancelling stops future renewals; it does not automatically refund the period you are in. Prices can change, and we will tell you before a change affects your renewal.",
-        "Hosted AI usage is drawn from your plan's included allowance, then from prepaid credits, then — only if you enable it — from pay-as-you-go up to the spend cap you set. Bringing your own key means you pay your provider directly instead, and Vantage adds no markup to that.",
-        "Teams are responsible for any taxes that apply to their purchase.",
+        "Vantage is free. Every team gets every feature, and there is nothing to buy.",
+        "AI features run on an AI provider key your team supplies (or a free key, or a model on your own computer). Your team's provider bills your team directly under its own terms; Vantage adds no charge and no markup.",
+        "If Vantage ever offers something paid, owners will be told by email well before, nothing will be charged unless an owner chooses it, and these Terms will be updated first.",
       ],
     },
     {

@@ -1,0 +1,226 @@
+import { createHmac } from "node:crypto";
+import { describe, expect, it } from "vitest";
+import { AppsScriptBridge, AppsScriptTarget } from "./apps-script-bridge";
+import { APPS_SCRIPT_HUB_VERSION, appsScriptSource, newAppsScriptSecret } from "./apps-script-source";
+import { sheetsHubConfig, teamSheetTitle } from "./sheets-hub";
+
+const URL_OK = "https://script.google.com/macros/s/AKfycbxHUB1234567890abcdefghijk/exec";
+
+/**
+ * The script deployed on its own (hub mode): no active spreadsheet, a Drive with folders and
+ * files, and SpreadsheetApp.create/openById. Just enough of Google to run the real script.
+ */
+function loadHub(secret: string) {
+  type Sheet = { name: string; cells: unknown[][] };
+  type Book = { id: string; name: string; sheets: Sheet[]; parent: string | null; trashed: boolean; viewers: string[] };
+  let seq = 0;
+  const books = new Map<string, Book>();
+  const folders = new Map<string, { id: string; name: string; trashed: boolean }>();
+  const props = new Map<string, string>();
+  const iter = <T,>(items: T[]) => {
+    let i = 0;
+    return { hasNext: () => i < items.length, next: () => items[i++]! };
+  };
+  const range = (sheet: Sheet, row: number, rows: number) => ({
+    setValues(values: unknown[][]) {
+      values.forEach((r, i) => {
+        sheet.cells[row - 1 + i] = [...r];
+      });
+    },
+    setNumberFormats() {},
+    setFontWeight() {},
+    setBackground() {},
+    rows,
+  });
+  const sheetApi = (sheet: Sheet) => ({
+    clearContents() {
+      sheet.cells = [];
+    },
+    getMaxRows: () => 5000,
+    getMaxColumns: () => 50,
+    insertRowsAfter() {},
+    insertColumnsAfter() {},
+    setFrozenRows() {},
+    autoResizeColumns() {},
+    setColumnWidth() {},
+    getLastRow: () => sheet.cells.length,
+    getRange: (row: number, _col: number, rows: number) => range(sheet, row, rows),
+    getDataRange: () => ({ getValues: () => sheet.cells.map((r) => [...r]) }),
+  });
+  const bookApi = (book: Book): Record<string, unknown> => ({
+    getId: () => book.id,
+    getName: () => book.name,
+    getUrl: () => `https://docs.google.com/spreadsheets/d/${book.id}/edit`,
+    rename: (name: string) => {
+      book.name = name;
+    },
+    getSheets: () => book.sheets.map(sheetApi),
+    getSheetByName: (name: string) => {
+      const sheet = book.sheets.find((s) => s.name === name);
+      return sheet ? sheetApi(sheet) : null;
+    },
+    insertSheet: (name: string, index?: number) => {
+      const sheet = { name, cells: [] };
+      if (index === 0) book.sheets.unshift(sheet);
+      else book.sheets.push(sheet);
+      return sheetApi(sheet);
+    },
+    deleteSheet: (api: { getLastRow: () => number }) => {
+      book.sheets = book.sheets.filter((s) => sheetApi(s).getLastRow() !== api.getLastRow() || s.name !== "Sheet1");
+    },
+  });
+  const globals = {
+    SpreadsheetApp: {
+      getActiveSpreadsheet: () => null,
+      create: (name: string) => {
+        const book: Book = { id: `book${++seq}`, name, sheets: [{ name: "Sheet1", cells: [] }], parent: null, trashed: false, viewers: [] };
+        books.set(book.id, book);
+        return bookApi(book);
+      },
+      openById: (id: string) => {
+        const book = books.get(id);
+        if (!book) throw new Error("not found");
+        return bookApi(book);
+      },
+    },
+    DriveApp: {
+      getFolderById: (id: string) => {
+        const folder = folders.get(id);
+        if (!folder) throw new Error("not found");
+        return { getId: () => folder.id, getName: () => folder.name, getUrl: () => `https://drive.google.com/drive/folders/${folder.id}`, isTrashed: () => folder.trashed };
+      },
+      getFoldersByName: (name: string) =>
+        iter([...folders.values()].filter((f) => f.name === name).map((f) => globals.DriveApp.getFolderById(f.id))),
+      createFolder: (name: string) => {
+        const folder = { id: `folder${++seq}`, name, trashed: false };
+        folders.set(folder.id, folder);
+        return globals.DriveApp.getFolderById(folder.id);
+      },
+      getFileById: (id: string) => {
+        const book = books.get(id);
+        if (!book) throw new Error("not found");
+        return {
+          isTrashed: () => book.trashed,
+          moveTo: (folder: { getId: () => string }) => {
+            book.parent = folder.getId();
+          },
+          addViewer: (email: string) => {
+            book.viewers.push(email);
+          },
+        };
+      },
+    },
+    PropertiesService: {
+      getScriptProperties: () => ({ getProperty: (key: string) => props.get(key) ?? null, setProperty: (key: string, value: string) => props.set(key, value) }),
+    },
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    Utilities: {
+      computeHmacSha256Signature: (value: string, key: string) =>
+        [...createHmac("sha256", key).update(value).digest()].map((b) => (b > 127 ? b - 256 : b)),
+      formatDate: (date: Date) => date.toISOString(),
+    },
+    ContentService: {
+      MimeType: { JSON: "json" },
+      createTextOutput: (text: string) => ({ text, setMimeType() { return this; } }),
+    },
+  };
+  const factory = new Function(...Object.keys(globals), `${appsScriptSource(secret)}\nreturn { doPost };`) as (
+    ...args: unknown[]
+  ) => { doPost: (e: unknown) => { text: string } };
+  const script = factory(...Object.values(globals));
+  const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (init?.method === "POST") {
+      const sig = new URL(url).searchParams.get("sig") ?? "";
+      const out = script.doPost({ postData: { contents: String(init.body) }, parameter: { sig } });
+      return new Response(null, { status: 302, headers: { location: `https://script.googleusercontent.com/macros/echo?k=${encodeURIComponent(out.text)}` } });
+    }
+    return new Response(new URL(url).searchParams.get("k") ?? "", { status: 200 });
+  }) as typeof fetch;
+  return { books, folders, fetchImpl };
+}
+
+const TEAM = { key: "6925a000-0000-4000-8000-000000000001", number: 6925, name: "Ctrl  Alt Elite", viewers: ["Owner@Example.test"] };
+
+describe("team sheets in the VantageFRC folder", () => {
+  it("makes one spreadsheet per team, named the standard way, in the VantageFRC folder", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+
+    await expect(bridge.ping()).resolves.toMatchObject({ version: APPS_SCRIPT_HUB_VERSION, hub: true, name: "VantageFRC" });
+
+    const first = await bridge.ensureTeamBook(TEAM);
+    expect(first).toMatchObject({ created: true, name: "FRC 6925 · Ctrl Alt Elite", lastHash: null });
+    expect(first.url).toMatch(/^https:\/\/docs\.google\.com\/spreadsheets\//);
+
+    const book = hub.books.get(first.id)!;
+    const folder = [...hub.folders.values()].find((f) => f.id === book.parent);
+    expect(folder?.name).toBe("VantageFRC");
+    // Opens on an About tab that says what the file is; the empty default sheet is gone.
+    expect(book.sheets[0]?.name).toBe("About");
+    expect(book.sheets.some((sheet) => sheet.name === "Sheet1")).toBe(false);
+    expect(book.sheets[0]?.cells[0]).toEqual(["Team", "FRC 6925 · Ctrl Alt Elite"]);
+    // Owners get view access, once.
+    expect(book.viewers).toEqual(["owner@example.test"]);
+
+    const again = await bridge.ensureTeamBook(TEAM);
+    expect(again).toMatchObject({ id: first.id, created: false });
+    expect(book.viewers).toEqual(["owner@example.test"]);
+    expect(hub.books.size).toBe(1);
+  });
+
+  it("writes to the team's own spreadsheet and remembers what it wrote", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+    const other = { ...TEAM, key: "11111111-1111-4111-8111-111111111111", number: 254, name: "The Cheesy Poofs", viewers: [] };
+
+    const target = new AppsScriptTarget(bridge, TEAM);
+    const teams = { entity: "Teams" as const, sheet: "Teams", table: "VantageTeams", columns: ["id", "team_number"] };
+    await target.ensureTable(teams);
+    await target.replaceRows(teams, [["frc6925", 6925], ["frc254", 254]]);
+    await target.flush();
+    await bridge.stampTeamBook(TEAM, "abc123");
+
+    const mine = await bridge.ensureTeamBook(TEAM);
+    expect(mine.lastHash).toBe("abc123");
+    expect(mine.lastSyncAt).toBeTruthy();
+    const written = hub.books.get(mine.id)!.sheets.find((sheet) => sheet.name === "Teams");
+    expect(written?.cells[0]).toEqual(["id", "team_number"]);
+    expect(written?.cells).toHaveLength(3);
+
+    // Another team gets its own file and none of this team's rows.
+    const theirs = await bridge.ensureTeamBook(other);
+    expect(theirs.id).not.toBe(mine.id);
+    expect(theirs.name).toBe("FRC 254 · The Cheesy Poofs");
+    expect(theirs.lastHash).toBeNull();
+    expect(hub.books.get(theirs.id)!.sheets.some((sheet) => sheet.name === "Teams")).toBe(false);
+  });
+
+  it("follows a team rename", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+    const first = await bridge.ensureTeamBook(TEAM);
+    const renamed = await bridge.ensureTeamBook({ ...TEAM, name: "Ctrl Alt Elite Robotics" });
+    expect(renamed.id).toBe(first.id);
+    expect(renamed.name).toBe("FRC 6925 · Ctrl Alt Elite Robotics");
+  });
+});
+
+describe("hub configuration", () => {
+  it("is on only with a real web app address and a 64-hex secret", () => {
+    const secret = "a".repeat(64);
+    expect(sheetsHubConfig({ VANTAGE_SHEETS_HUB_URL: URL_OK, VANTAGE_SHEETS_HUB_SECRET: secret } as NodeJS.ProcessEnv)).toEqual({ url: URL_OK, secret });
+    expect(sheetsHubConfig({ VANTAGE_SHEETS_HUB_URL: URL_OK } as NodeJS.ProcessEnv)).toBeNull();
+    expect(sheetsHubConfig({ VANTAGE_SHEETS_HUB_URL: "https://evil.example/exec", VANTAGE_SHEETS_HUB_SECRET: secret } as NodeJS.ProcessEnv)).toBeNull();
+    expect(sheetsHubConfig({} as NodeJS.ProcessEnv)).toBeNull();
+  });
+
+  it("names every team's sheet the same way", () => {
+    expect(teamSheetTitle(6925, "  Ctrl   Alt Elite ")).toBe("FRC 6925 · Ctrl Alt Elite");
+    expect(teamSheetTitle(null, "Rookie Team")).toBe("Rookie Team");
+    expect(teamSheetTitle(254, "")).toBe("FRC 254");
+  });
+});

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SheetsHubCard } from "./sheets-hub-card";
 
 type IntegrationState = "healthy" | "configured" | "degraded" | "setup_required" | "error";
 
@@ -83,6 +84,8 @@ export default function IntegrationsClient() {
         </div>
         <a href="/admin/connectors">Data connectors →</a>
       </header>
+
+      <SheetsHubCard />
 
       {message && <p className="telemetry-status">{message}</p>}
       {loading && <p className="app-muted">Loading integration health…</p>}

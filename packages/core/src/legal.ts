@@ -9,7 +9,10 @@ import type { PoolClient } from "@neondatabase/serverless";
 //
 // A new version string is what forces that re-acceptance; leaving it stale
 // would silently hold people to terms they never saw.
-export const LEGAL_DOC_VERSION = "2026-09-09.1";
+// Bumped 2026-09-23.1: each team's records are now also copied to a Google spreadsheet in the
+// operator's Google Drive (the VantageFRC folder), a new place team data lives; and the Terms
+// now say Vantage is free, with AI on the team's own key.
+export const LEGAL_DOC_VERSION = "2026-09-23.1";
 export const LEGAL_EFFECTIVE_DATE = "September 9, 2026";
 
 export const TERMS_MISSING_MESSAGE = "You must agree to the Terms of Service to continue.";

@@ -145,21 +145,68 @@ export class AppsScriptBridge {
     }
   }
 
-  async ping(): Promise<{ version: number; name: string | null; url: string | null }> {
-    const data = await this.call<{ ok: boolean; version?: number; name?: string; url?: string }>("ping");
+  async ping(): Promise<{ version: number; name: string | null; url: string | null; hub: boolean }> {
+    const data = await this.call<{ ok: boolean; version?: number; name?: string; url?: string; hub?: boolean }>("ping");
     if (!(Number(data.version) >= APPS_SCRIPT_MIN_VERSION)) {
       throw bridgeError("bad_request", "This Apps Script is an older version. Copy the script from Connectors again and redeploy.", "old_version");
     }
-    return { version: Number(data.version), name: data.name ?? null, url: data.url ?? null };
+    return { version: Number(data.version), name: data.name ?? null, url: data.url ?? null, hub: data.hub === true };
+  }
+
+  /** Hub mode: find or make this team's spreadsheet in the VantageFRC folder. */
+  async ensureTeamBook(team: HubTeam): Promise<HubTeamBook> {
+    const data = await this.call<{
+      ok: boolean;
+      id?: string;
+      url?: string;
+      name?: string;
+      created?: boolean;
+      lastHash?: string | null;
+      lastSyncAt?: string | null;
+    }>("team.ensure", { team });
+    const url = typeof data.url === "string" && /^https:\/\/docs\.google\.com\/spreadsheets\//.test(data.url) ? data.url : null;
+    return {
+      id: String(data.id ?? ""),
+      url,
+      name: data.name ?? null,
+      created: data.created === true,
+      lastHash: data.lastHash ?? null,
+      lastSyncAt: data.lastSyncAt ?? null,
+    };
+  }
+
+  /** Hub mode: remember what was written, so the next sync can skip an unchanged team. */
+  async stampTeamBook(team: HubTeam, hash: string): Promise<void> {
+    await this.call("team.stamp", { team, hash });
   }
 }
+
+/** One team's spreadsheet in hub mode. `key` is the team's id; viewers get read access. */
+export type HubTeam = { key: string; number: number | null; name: string; viewers?: string[] };
+
+export type HubTeamBook = {
+  id: string;
+  url: string | null;
+  name: string | null;
+  created: boolean;
+  lastHash: string | null;
+  lastSyncAt: string | null;
+};
 
 /** WorkbookTarget/Reader over the bridge — batched exactly like the Sheets API target. */
 export class AppsScriptTarget implements WorkbookTarget, WorkbookReader {
   private readonly pending = new Map<string, { spec: TableSpec; rows: CellValue[][] }>();
   private reads: Record<string, unknown[][] | null> | null = null;
 
-  constructor(private readonly bridge: AppsScriptBridge) {}
+  /** `team` switches the script to hub mode: every call works on that team's spreadsheet. */
+  constructor(
+    private readonly bridge: AppsScriptBridge,
+    private readonly team: HubTeam | null = null,
+  ) {}
+
+  private scope(): Record<string, unknown> {
+    return this.team ? { team: this.team } : {};
+  }
 
   async ensureTable(spec: TableSpec): Promise<void> {
     if (!this.pending.has(spec.sheet)) this.pending.set(spec.sheet, { spec, rows: [] });
@@ -174,6 +221,7 @@ export class AppsScriptTarget implements WorkbookTarget, WorkbookReader {
     if (!tables.length) return;
     for (const request of planTableChunks(tables, MAX_CELLS_PER_SCRIPT_CALL)) {
       await this.bridge.call("write", {
+        ...this.scope(),
         // The first block of a table clears the sheet; later blocks append below it.
         items: request.map((chunk) => ({ ...chunk, clear: chunk.startRow === 1 })),
       });
@@ -184,7 +232,7 @@ export class AppsScriptTarget implements WorkbookTarget, WorkbookReader {
   async readTable(ref: WorkbookTableRef): Promise<WorkbookTableRead | null> {
     if (!this.reads) {
       const sheets = [...new Set([...IMPORT_TABLES.map((table) => table.sheet), ref.sheet])];
-      const data = await this.bridge.call<{ ok: boolean; values?: Record<string, unknown[][] | null> }>("read", { sheets });
+      const data = await this.bridge.call<{ ok: boolean; values?: Record<string, unknown[][] | null> }>("read", { ...this.scope(), sheets });
       this.reads = data.values ?? {};
     }
     const values = this.reads[ref.sheet];

@@ -7,6 +7,7 @@ import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellSidebar } from "./app-shell-sidebar";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
+import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
 import {
   ISLAND_TAB_CATALOG,
@@ -54,6 +55,8 @@ export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
   const [orgId, setOrgId] = useState("");
+  // The team's spreadsheets follow the app on their own: no Sync button to remember.
+  useSheetsAutoSync(orgId);
   /**
    * One overlay for navigation *and* search. There used to be two — a drawer of
    * destinations behind the hamburger and a command dialog of the same

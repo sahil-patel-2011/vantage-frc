@@ -303,7 +303,7 @@ describe("photos and videos through the same script", () => {
       ...old.script,
       doPost: (e: unknown) => {
         const out = oldPing(e);
-        return { text: out.text.replace('"version":2', '"version":1') };
+        return { text: out.text.replace(/"version":\d+/, '"version":1') };
       },
     };
     const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: googleFetch(script).impl });

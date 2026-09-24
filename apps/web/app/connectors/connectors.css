@@ -111,3 +111,19 @@
 .connectors-page .connector-message.success {
   font-weight: 600;
 }
+
+/* The team's sheet in the VantageFRC folder: one line and an Open button. */
+.team-hub-sheet {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.team-hub-sheet h2 {
+  margin: 2px 0 4px;
+}
+.team-hub-sheet p {
+  margin: 0;
+}

@@ -19,6 +19,7 @@ import {
 import CadDocumentPicker from "../cad/connections/cad-document-picker";
 import DriveMediaCard from "./drive-media-card";
 import SpreadsheetMirrorCard from "./spreadsheet-mirror-card";
+import { TeamHubSheet } from "./team-hub-sheet";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./connectors.css";
@@ -288,6 +289,7 @@ export default function ConnectorsClient() {
         </p>
       ) : null}
 
+      {orgId ? <TeamHubSheet orgId={orgId} canManage={canManage} /> : null}
       {orgId ? <SpreadsheetMirrorCard orgId={orgId} /> : null}
       {orgId ? <DriveMediaCard orgId={orgId} /> : null}
       <ul className="connector-list">

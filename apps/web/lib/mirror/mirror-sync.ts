@@ -43,7 +43,8 @@ export type MirrorTargetDef = {
 
 export type CopyResult = {
   copy: MirrorCopy;
-  status: "succeeded" | "partial" | "failed" | "deferred";
+  /** "unchanged": an automatic sync found this copy already holds exactly these tables. */
+  status: "succeeded" | "partial" | "failed" | "deferred" | "unchanged";
   rowsWritten: number;
   error: string | null;
   runId: string | null;
@@ -123,7 +124,13 @@ export function clampThrottle(ms: number | null): number {
 export async function syncMirror(
   client: PoolClient,
   orgId: string,
-  options: { targets: MirrorTargetDef[]; userId?: string | null; now?: () => Date },
+  options: {
+    targets: MirrorTargetDef[];
+    userId?: string | null;
+    now?: () => Date;
+    /** Each copy's last full-write hash. A copy already at this sync's hash is not rewritten. */
+    lastHashes?: Partial<Record<MirrorCopy, string | null>>;
+  },
 ): Promise<MirrorSyncResult> {
   const now = options.now ?? (() => new Date());
   const locked = (
@@ -146,6 +153,10 @@ export async function syncMirror(
 
   const copies: CopyResult[] = [];
   for (const def of options.targets) {
+    if (options.lastHashes && options.lastHashes[def.copy] === hash) {
+      copies.push({ copy: def.copy, status: "unchanged", rowsWritten: 0, error: null, runId: null });
+      continue;
+    }
     if (isDeferred(def.throttledUntil, now())) {
       copies.push({
         copy: def.copy,
