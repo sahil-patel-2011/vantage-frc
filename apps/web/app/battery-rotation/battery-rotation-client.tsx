@@ -386,7 +386,7 @@ export default function BatteryRotationClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Log IR on <a href={batteriesHref}>Batteries</a>, project retirement in{" "}
             <a href={forecastHref}>Health Forecast</a>, and check event-day rack status in{" "}
-            <a href={pitHref}>Pit command</a>
+            <a href={pitHref}>Robot status</a>
           </p>
         </Panel>
       </div>

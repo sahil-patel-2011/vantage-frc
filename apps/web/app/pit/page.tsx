@@ -11,7 +11,7 @@ import PitCommandClient from "./pit-command-client";
 export const metadata: Metadata = {
   title: "Pit Command",
   description:
-    "Robot release board from logged issues, maintenance, and battery evidence. Links to Batteries, Match checklist, and Event Day.",
+    "Is the robot ready to play? Open repairs, maintenance, and batteries from what your team logged.",
 };
 
 export default async function PitCommandPage({
@@ -29,10 +29,10 @@ export default async function PitCommandPage({
           breadcrumbs={
             <>
               <a href="/competition">Competition</a>
-              {" / Pit command"}
+              {" / Pit / Robot status"}
             </>
           }
-          title="Pit command"
+          title="Robot status"
           description={copy.description}
         >
           {related.length ? (

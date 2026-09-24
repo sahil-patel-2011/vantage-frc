@@ -70,7 +70,7 @@ const SURFACES = ["business_wall", "dashboard_footer", "pit_footer"] as const;
 const surfaceLabel: Record<string, string> = {
   business_wall: "Business portal",
   dashboard_footer: "Dashboard footer",
-  pit_footer: "Pit command footer",
+  pit_footer: "Robot status footer",
 };
 const today = () => new Date().toISOString().slice(0, 10);
 const nextYear = () => new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);

@@ -218,7 +218,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
     case "ready":
       return {
         kind,
-        title: "Robot release board",
+        title: "Robot status",
         description:
           "Gates use only logged issues, maintenance, and battery readings.",
       };

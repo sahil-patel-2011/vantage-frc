@@ -203,7 +203,7 @@ export function myDayNextActions(input: {
       {
         id: "command",
         label: "Open Event Day",
-        detail: "Pit command may still load from Competition if personal timing failed.",
+        detail: "Robot status may still load from Competition if personal timing failed.",
         href: hubHref("/competition", "command", orgId),
       },
       {

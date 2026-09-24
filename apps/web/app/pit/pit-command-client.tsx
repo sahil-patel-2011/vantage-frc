@@ -224,10 +224,10 @@ function PitShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit command"}
+            {" / Pit / Robot status"}
           </>
         }
-        title="Pit command"
+        title="Robot status"
         description={description}
       >
         <Button as="a" variant="secondary" href={withOrgHref("/display", orgId || null)}>
@@ -303,7 +303,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         if (!cached) {
           setFetchFailed(true);
           setErrorStatus(r.status);
-          setError("error" in body && body.error ? body.error : "Could not load Pit command");
+          setError("error" in body && body.error ? body.error : "Could not load Robot status");
         }
         return;
       }
@@ -318,7 +318,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       if (!cached) {
         setFetchFailed(true);
         setErrorStatus(null);
-        setError(e instanceof Error ? e.message : "Could not load Pit command");
+        setError(e instanceof Error ? e.message : "Could not load Robot status");
       }
     } finally {
       setLoading(false);
@@ -485,11 +485,11 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit command"}
+            {" / Pit / Robot status"}
             {data.organization.teamNumber != null ? ` · Team ${data.organization.teamNumber}` : ""}
           </>
         }
-        title="Robot release board"
+        title="Robot status"
         description={
           shell === "empty"
             ? data.context.eventName ?? "No event set yet"
@@ -912,7 +912,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
 
       <PitNextActionsPanel actions={nextActions} />
 
-      <PartnerPlacement orgId={orgId} surface="pit_footer" title="Pit command partners" />
+      <PartnerPlacement orgId={orgId} surface="pit_footer" title="Robot status partners" />
       <footer className="pit-foot">
         <span>Last calculated {new Date(data.updatedAt).toLocaleTimeString()}</span>
         <span>

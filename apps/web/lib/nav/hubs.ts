@@ -146,7 +146,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ...nest("match-checklist", [
         // The screen the pit crew points at the TV. It was only reachable by typing "TV" into search.
         { id: "pit-tv", label: "Pit TV", legacyHref: "/display", featured: true },
-        { id: "pit", label: "Pit command", legacyHref: "/pit" },
+        { id: "pit", label: "Robot status", legacyHref: "/pit" },
         { id: "pit-repair-triage", label: "Repair triage", legacyHref: "/pit-repair-triage" },
         { id: "battery-rotation", label: "Charge plan", legacyHref: "/battery-rotation" },
       ]),
