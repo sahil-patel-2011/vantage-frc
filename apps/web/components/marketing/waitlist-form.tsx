@@ -91,6 +91,9 @@ export function WaitlistForm({
     };
   }, []);
 
+  // What was sent, repeated back on success so a typo in the address is visible.
+  const [recorded, setRecorded] = useState<{ email: string; team: string } | null>(null);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     // Terms and Privacy are two separate agreements; neither one stands in for
@@ -127,6 +130,7 @@ export function WaitlistForm({
       if (!response.ok || !result?.ok) {
         throw new Error(result?.message ?? "Submission failed");
       }
+      setRecorded({ email: String(form.get("email") ?? "").trim(), team: String(form.get("teamNumber") ?? "").trim() });
       setState("success");
       setMessage("You're on the list. We'll email you when your team is set up.");
       track("waitlist_success");
@@ -163,14 +167,18 @@ export function WaitlistForm({
         <h3 ref={successRef} tabIndex={-1}>
           You’re on the list.
         </h3>
+        {/* Said to everyone, so the form never reveals which teams already use Vantage; first,
+            because for someone whose team is already on it, the wait is pointless. */}
         <p>
-          We set teams up one at a time and will email you when yours is ready. Then you sign in and invite your
-          students and mentors by email. Joining the waitlist does not create a Vantage account.
+          <strong>Is your team already on Vantage?</strong> You don&rsquo;t need to wait: ask its owner or a mentor to
+          invite this email, then <a href="/signin">sign in</a>.
         </p>
-        {/* Said to everyone, so the form never reveals which teams already use Vantage. */}
-        <p className="app-muted">
-          Is your team already on Vantage? You don&rsquo;t need to wait: ask its owner or a mentor to invite this
-          email, then <a href="/signin">sign in</a>.
+        <p>
+          {recorded?.email
+            ? `Otherwise we'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}.`
+            : "Otherwise we'll email you when your team is set up."}{" "}
+          We set teams up one at a time. Then you sign in and invite your students and mentors by email. Joining the
+          waitlist does not create a Vantage account.
         </p>
       </div>
     );
@@ -232,10 +240,11 @@ export function WaitlistForm({
         <input
           id={`${prefix}-teamNumber`}
           name="teamNumber"
-          type="number"
-          min={1}
-          max={99999}
+          type="text"
           inputMode="numeric"
+          pattern="[0-9]{1,5}"
+          maxLength={5}
+          title="Your FRC team number, 1 to 99999"
           placeholder="e.g. 6925"
           aria-describedby={`${prefix}-teamNumber-hint`}
           required
@@ -249,7 +258,7 @@ export function WaitlistForm({
 
       <div className="field">
         <label htmlFor={`${prefix}-phone`}>
-          Phone <span>optional</span>
+          Phone <span>(optional)</span>
         </label>
         <input
           id={`${prefix}-phone`}

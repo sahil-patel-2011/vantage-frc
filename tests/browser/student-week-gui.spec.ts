@@ -53,7 +53,8 @@ test.describe("student-week GUI path", () => {
     const cta = now.getByRole("link").first();
     await expect(cta).toHaveCount(1);
     await expect(cta).toBeVisible();
-    await expect(cta).toHaveAttribute("href", /\/(workspace|my-day|hours|todos|duties|invite)/);
+    // The team-setup steps (invite, event, form, practice) are the next thing while a team is new.
+    await expect(cta).toHaveAttribute("href", /\/(workspace|my-day|hours|todos|duties|invite|team\/calendar|team\/admin|command|scouting)/);
     await cta.click();
     await waitForLoadingGone(page);
     await expect(page.locator("body")).not.toContainText("Application error");
@@ -62,7 +63,7 @@ test.describe("student-week GUI path", () => {
     // My Day and Hours are hub tabs now — /my-day is a redirect into
     // /competition?tab=my-day — so the destination is the same place spelled
     // the way the hubs spell it.
-    await expect(page).toHaveURL(/\/(dashboard|workspace|signin|invite|onboarding|my-day|hours)|[?&]tab=(my-day|hours)/);
+    await expect(page).toHaveURL(/\/(dashboard|workspace|signin|invite|onboarding|my-day|hours|team|command|competition|scouting)|[?&]tab=(my-day|hours)/);
   });
 
   test("My Day Scout this match is a real click or Needs setup", async ({ page }) => {
