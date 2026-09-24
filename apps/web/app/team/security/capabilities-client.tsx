@@ -244,7 +244,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
       <>
       <p className="app-muted">
         Grant elevated capabilities to scouts and viewers without promoting them to full team admin. Includes the team's
-        keys / connectors and budgets. Changes are enforced on API routes and audited.
+        keys / connectors and budgets. Every change is recorded.
       </p>
       {adminTenure?.inviteHint ? (
         <p className="app-muted" role="note">

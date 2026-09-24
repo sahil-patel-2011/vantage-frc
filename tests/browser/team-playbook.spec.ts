@@ -75,4 +75,13 @@ test("a page is a page on the screen, not a second screen", async ({ page }) => 
 
   // The document still has its own structure, one level down.
   await expect(page.locator(".kb-document h2, .kb-document h3").first()).toBeVisible();
+
+  // Read mode reads like a page: **bold** is bold, not asterisks, and there is no
+  // wall of disabled form fields around it (those come back under Edit).
+  const documentText = (await page.locator(".kb-document").first().textContent()) ?? "";
+  expect(documentText).not.toContain("**");
+  await expect(page.locator(".kb-document strong").first()).toBeVisible();
+  await expect(page.getByLabel("Template kind")).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByLabel("Template kind")).toBeVisible();
 });

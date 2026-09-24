@@ -419,7 +419,7 @@ export function AppShellNavPanel({
             <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
               <Icon name="users" />
               <span>
-                <strong>Team settings</strong>
+                <strong>Team admin</strong>
                 <small>Members, role profiles and team preferences</small>
               </span>
             </a>

@@ -228,3 +228,45 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+/* Team profile (team-profile-panel.tsx): label above a full-width field, like every
+   other form; the two-column City / State row folds to one column on phones. */
+.team-profile-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.team-profile-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.team-profile-form label small {
+  font-weight: 500;
+}
+.team-profile-form input,
+.team-profile-form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 10px);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+.team-profile-form textarea {
+  resize: vertical;
+}
+.team-profile-form > button[type="submit"] {
+  justify-self: start;
+  width: auto;
+}
+@media (max-width: 560px) {
+  .team-profile-form > div {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -333,7 +333,9 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                                 ? selectedTabs.length
                                   ? `${selectedTabs.length} tab${selectedTabs.length === 1 ? "" : "s"} selected`
                                   : "All tabs in this hub"
-                                : "Hidden from this member"}
+                                : unrestricted
+                                  ? "Visible — no limits set"
+                                  : "Hidden from this member"}
                             </small>
                           </span>
                         </label>

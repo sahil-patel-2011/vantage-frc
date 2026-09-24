@@ -35,6 +35,7 @@ import {
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./attendance.css";
+import { TeamRoster } from "./team-roster";
 import { teamProseLabel } from "../../components/app-shell-model";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -778,6 +779,8 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         headerActions
       )}
       <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
+      {/* The Team hub calls this tab People: it starts with who is on the team. */}
+      {embedded && orgId ? <TeamRoster orgId={orgId} /> : null}
       {!embedded ? (
         <>
           <TeamOpsNav orgId={orgId} active="attendance" />

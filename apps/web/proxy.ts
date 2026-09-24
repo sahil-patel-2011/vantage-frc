@@ -364,6 +364,16 @@ export async function proxy(request: NextRequest) {
   if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
     const opened = request.nextUrl.searchParams.get("orgId");
     const remembered = request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null;
+    // /workspace was a second home page (event tiles, sync status, keyboard letters) that
+    // every "Choose your team" link pointed at. A member goes to their team's Home.
+    if (pathname === "/workspace") {
+      const teamId = isTeamId(opened) ? opened : isTeamId(remembered) ? remembered : null;
+      if (teamId) {
+        const home = new URL("/dashboard", request.url);
+        home.searchParams.set("orgId", teamId);
+        return NextResponse.redirect(home, 307);
+      }
+    }
     if (isTeamId(opened)) {
       const response = NextResponse.next();
       if (remembered !== opened) {

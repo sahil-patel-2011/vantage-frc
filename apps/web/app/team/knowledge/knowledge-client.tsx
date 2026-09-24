@@ -350,6 +350,10 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   }
 
   const bodyRemaining = MAX_BODY - draftBody.length;
+  const readTags = draftTags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 
   if (!view) {
     if (fetchFailed) {
@@ -712,9 +716,13 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                   )}
                 </div>
 
+                {/* Read mode is just the page: the form fields, Save and the link picker only
+                    appear while editing, so reading a playbook isn't a wall of disabled inputs. */}
+                {editing || creating ? (
+                <>
                 <label className="kb-field">
                   <span>Title</span>
-                  <input value={draftTitle} disabled={!editing && !creating} onChange={(e) => setDraftTitle(e.target.value)} />
+                  <input value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} />
                 </label>
                 <div className="kb-row">
                   <label className="kb-field">
@@ -759,7 +767,6 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                     placeholder="drivetrain, cad"
                   />
                 </label>
-                {editing || creating ? (
                   <label className="kb-field">
                     <span>Body</span>
                     <textarea
@@ -769,9 +776,24 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                       onChange={(e) => setDraftBody(e.target.value)}
                     />
                   </label>
+                </>
                 ) : (
-                  <MarkdownDocument source={draftBody} />
+                  <>
+                    {readTags.length || draftSeason || draftPinned ? (
+                      <p className="kb-read-tags">
+                        {draftPinned ? <span className="kb-tag kb-tag--pin">Pinned</span> : null}
+                        {draftSeason ? <span className="kb-tag">{draftSeason}</span> : null}
+                        {readTags.map((tag) => (
+                          <span key={tag} className="kb-tag">
+                            {tag}
+                          </span>
+                        ))}
+                      </p>
+                    ) : null}
+                    <MarkdownDocument source={draftBody} />
+                  </>
                 )}
+                {editing || creating ? (
                 <div className="kb-actions">
                   {/* Save is the one loud control. Cancel sits beside it while drafting;
                       Delete is always behind the overflow with a confirm step (no window.confirm). */}
@@ -820,8 +842,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                     ]}
                   />
                 </div>
+                ) : null}
 
-                {!creating && ready.selected ? (
+                {!creating && ready.selected && (editing || ready.selected.links.length > 0) ? (
                   <section className="kb-links-panel">
                     <h2>Linked decisions / reviews</h2>
                     <ul className="kb-list">
@@ -840,17 +863,20 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                             {link.targetSeasonYear != null ? `${link.targetSeasonYear}` : ""}
                             {link.note ? ` · ${link.note}` : ""}
                           </small>
-                          <button
-                            type="button"
-                            className="kb-link danger"
-                            disabled={busy}
-                            onClick={() => void run({ action: "unlink", linkId: link.id })}
-                          >
-                            Unlink
-                          </button>
+                          {editing ? (
+                            <button
+                              type="button"
+                              className="kb-link danger"
+                              disabled={busy}
+                              onClick={() => void run({ action: "unlink", linkId: link.id })}
+                            >
+                              Unlink
+                            </button>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
+                    {editing ? (
                     <div className="kb-row kb-link-form">
                       <select
                         value={linkType}
@@ -893,6 +919,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                         Link
                       </Button>
                     </div>
+                    ) : null}
                   </section>
                 ) : null}
               </>

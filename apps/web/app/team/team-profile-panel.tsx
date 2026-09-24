@@ -96,7 +96,7 @@ export function TeamProfilePanel({ orgId }: { orgId: string }) {
       {!view.canEdit ? (
         <p className="app-muted">{view.org.description?.trim() || "No team description yet."}</p>
       ) : (
-        <form onSubmit={(event) => void save(event)} style={{ display: "grid", gap: "12px", marginTop: "12px" }}>
+        <form className="team-profile-form" onSubmit={(event) => void save(event)}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <label>
               City

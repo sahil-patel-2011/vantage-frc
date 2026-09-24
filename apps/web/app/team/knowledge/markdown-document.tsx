@@ -13,6 +13,45 @@
 
 import type { ReactNode } from "react";
 
+/**
+ * Inline marks inside a line: **bold**, *italic* or _italic_, `code` and [text](https://link).
+ * Built as React elements like the blocks, so nothing an author types becomes markup. Only
+ * http(s) and mailto links are made clickable; anything else stays plain text.
+ */
+const INLINE = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|\*[^*\s][^*]*\*|_[^_\s][^_]*_)/g;
+
+export function renderInline(text: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  for (const match of text.matchAll(INLINE)) {
+    const token = match[0];
+    const at = match.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+    if (token.startsWith("**")) out.push(<strong key={key++}>{token.slice(2, -2)}</strong>);
+    else if (token.startsWith("`")) out.push(<code key={key++}>{token.slice(1, -1)}</code>);
+    else if (token.startsWith("[")) {
+      const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(token);
+      const href = link?.[2] ?? "";
+      if (link && /^(https?:\/\/|mailto:)/i.test(href)) {
+        out.push(
+          <a key={key++} href={href} target="_blank" rel="noreferrer">
+            {link[1]}
+          </a>,
+        );
+      } else out.push(token);
+    } else out.push(<em key={key++}>{token.slice(1, -1)}</em>);
+    last = at + token.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/** A paragraph's own line breaks are kept: templates put one fact per line. */
+function renderLines(lines: string[]): ReactNode[] {
+  return lines.flatMap((line, index) => (index === 0 ? renderInline(line) : [<br key={`br-${index}`} />, ...renderInline(line)]));
+}
+
 export function MarkdownDocument({ source }: { source: string }) {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const blocks: ReactNode[] = [];
@@ -66,15 +105,15 @@ export function MarkdownDocument({ source }: { source: string }) {
       blocks.push(
         level === 1 ? (
           <h2 className="kb-doc-1" key={`h-${index}`}>
-            {text}
+            {renderInline(text)}
           </h2>
         ) : level === 2 ? (
           <h3 className="kb-doc-2" key={`h-${index}`}>
-            {text}
+            {renderInline(text)}
           </h3>
         ) : (
           <h4 className="kb-doc-3" key={`h-${index}`}>
-            {text}
+            {renderInline(text)}
           </h4>
         ),
       );
@@ -87,7 +126,7 @@ export function MarkdownDocument({ source }: { source: string }) {
         items.push(lines[index]!.replace(/^[-*]\s+/, ""));
         index += 1;
       }
-      blocks.push(<ul key={`ul-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>);
+      blocks.push(<ul key={`ul-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{renderInline(item)}</li>)}</ul>);
       continue;
     }
     if (/^\d+\.\s+/.test(line)) {
@@ -96,11 +135,11 @@ export function MarkdownDocument({ source }: { source: string }) {
         items.push(lines[index]!.replace(/^\d+\.\s+/, ""));
         index += 1;
       }
-      blocks.push(<ol key={`ol-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ol>);
+      blocks.push(<ol key={`ol-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{renderInline(item)}</li>)}</ol>);
       continue;
     }
     if (/^>\s?/.test(line)) {
-      blocks.push(<blockquote key={`quote-${index}`}>{line.replace(/^>\s?/, "")}</blockquote>);
+      blocks.push(<blockquote key={`quote-${index}`}>{renderInline(line.replace(/^>\s?/, ""))}</blockquote>);
       index += 1;
       continue;
     }
@@ -109,7 +148,7 @@ export function MarkdownDocument({ source }: { source: string }) {
       paragraph.push(lines[index]!.trim());
       index += 1;
     }
-    blocks.push(<p key={`p-${index}`}>{paragraph.join(" ")}</p>);
+    blocks.push(<p key={`p-${index}`}>{renderLines(paragraph)}</p>);
   }
 
   return (

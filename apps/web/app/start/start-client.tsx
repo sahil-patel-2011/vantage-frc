@@ -291,61 +291,23 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
               view.crewRole ? `Crew: ${view.crewRole}` : null,
               view.roleDescription ? view.roleDescription : null,
               view.primaryFocus ? `Focus: ${view.primaryFocus}` : null,
-              view.subteamNames.length
-                ? `Subteams: ${view.subteamNames.join(", ")}`
-                : "No calendar subteams yet",
+              view.subteamNames.length ? `Subteams: ${view.subteamNames.join(", ")}` : null,
             ]
               .filter(Boolean)
               .join(" · ")}
           </p>
           <section className="start-progress" aria-label="Overall progress">
             <strong>
-              {view.doneCount}/{view.totalCount} checks · {pct}%
+              {pct === 100 ? "All done" : `${view.doneCount} of ${view.totalCount} done`}
             </strong>
             <div className="start-progress-bar">
               <span style={{ width: `${pct}%` }} />
             </div>
-          </section>
-          <section className="start-launchpad" aria-labelledby="start-launch-title">
-            <div className="start-launch-head">
-              <div>
-                <span>PERSONAL LAUNCH PLAN</span>
-                <h2 id="start-launch-title">Everything you need to become team-ready</h2>
-              </div>
-              <strong>{pct === 100 ? "Ready" : `${view.totalCount - view.doneCount} steps left`}</strong>
-            </div>
-            <div className="start-launch-grid">
-              <article className="done">
-                <b>1</b>
-                <div>
-                  <strong>Access verified</strong>
-                  <span>Your account is connected to this team through a closed membership.</span>
-                </div>
-              </article>
-              <article>
-                <b>2</b>
-                <div>
-                  <strong>{activeTracks.length} paths personalized</strong>
-                  <span>Built from your role, focus, and assigned subteams—not a generic tour.</span>
-                </div>
-              </article>
-              <article>
-                <b>3</b>
-                <div>
-                  <strong>{nextCheck?.label ?? "Launch path complete"}</strong>
-                  <span>{nextCheck?.detail ?? "You finished every active onboarding check."}</span>
-                  {nextCheck?.href ? <a href={nextCheck.href}>Do this next →</a> : null}
-                </div>
-              </article>
-              <article className="security">
-                <b>✓</b>
-                <div>
-                  <strong>Protect your account</strong>
-                  <span>Enroll an authenticator and save recovery codes before event day.</span>
-                  <a href="/security">Open security →</a>
-                </div>
-              </article>
-            </div>
+            {nextCheck?.href ? (
+              <a className="start-next" href={nextCheck.href}>
+                Next: {nextCheck.label} →
+              </a>
+            ) : null}
           </section>
           {activeTracks.map((track) => (
             <TrackCard key={track.key} track={track} busy={busy} onMutate={mutate} />
