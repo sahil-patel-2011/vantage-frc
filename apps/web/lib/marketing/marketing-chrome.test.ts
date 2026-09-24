@@ -48,7 +48,9 @@ describe("marketing chrome", () => {
     expect(frames).toMatch(/computeGameBrief/);
     expect(frames).toMatch(/gameBriefStatusBadge/);
     expect(frames).toMatch(/Ask about this game/);
-    expect(frames).toMatch(/Needs setup/);
+    // The hero shows the app working, never an unfinished "Needs setup" screen.
+    expect(frames).not.toMatch(/Needs setup/);
+    expect(frames).toMatch(/Your next robot, one tap/);
     expect(frames).not.toMatch(/never a fake/);
     // The gallery draws the three data screens a strategist lives in. They are
     // shapes, not scores: no frame may print a number a team did not produce.
@@ -58,8 +60,7 @@ describe("marketing chrome", () => {
     const gallery = frames.slice(frames.indexOf("export function ProductFrame"));
     const printed = [...gallery.matchAll(/>([^<>{}]*)</g)].map((match) => match[1]).join(" ");
     expect(printed).not.toMatch(/\d/);
-    expect(frames).toMatch(/Connect Claude Code/);
-    expect(frames).toMatch(/CAD Video Tutor/);
+    expect(frames).not.toMatch(/Connect Claude Code/);
     expect(src("app/marketing-showcase.css")).toMatch(/color:var\(--m-on-accent/);
     expect(frames).not.toMatch(/Good evening/);
     expect(frames).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);

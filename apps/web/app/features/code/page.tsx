@@ -26,7 +26,7 @@ export default function CodeFeaturePage() {
           <p className="lux-kicker">Code Coach</p>
           <h1>Flag risk. Teach the fix.</h1>
           <p>
-            Build hub Code Coach—local pattern review plus metered AI Bugbot. Human-approved diffs only. Never
+            Code Coach reviews your robot code for common mistakes, with an AI reviewer when you want a second look. Human-approved diffs only. Never
             auto-deploys to a robot.
           </p>
           <MarketingRouteActions

@@ -79,15 +79,15 @@ export function HeroProductPanel() {
             <dl className="mk-mock-rows">
               <div>
                 <dt>Scout this match</dt>
-                <dd>Needs setup</dd>
+                <dd>Your next robot, one tap</dd>
               </div>
               <div>
                 <dt>Learn CAD</dt>
-                <dd>CAD Video Tutor</dd>
+                <dd>Week by week</dd>
               </div>
               <div>
                 <dt>Ask AI</dt>
-                <dd>Connect Claude Code</dd>
+                <dd>About your own team</dd>
               </div>
             </dl>
           </article>

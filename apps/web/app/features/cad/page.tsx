@@ -20,7 +20,7 @@ const steps = [
     title: "Connectors",
     copy: "Onshape OAuth or Fusion relay.",
     frame: "Setup",
-    lines: ["Onshape hosted", "Fusion desktop", "Credentials required"],
+    lines: ["Onshape hosted", "Fusion desktop", "Sign in once"],
   },
   {
     title: "Review",
@@ -41,7 +41,7 @@ export default function CadFeaturePage() {
           <p>
             On the Build hub, you confirm a brief first. Then a metered plan (or a no-model starter plan)
             runs only after approval. Onshape uses hosted OAuth. Fusion uses a desktop relay. Credentials are required.
-            Nothing mutates CAD until a person checks the step.
+            Nothing changes in your CAD until a person approves the step.
           </p>
           <MarketingRouteActions
             companion={{ href: "/features", label: "Product overview", variant: "secondary" }}

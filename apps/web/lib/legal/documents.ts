@@ -81,7 +81,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         "Vantage is software for FIRST Robotics Competition teams. Teams use it to run scouting, match strategy, build hours, tasks, documents, chat, CAD work, and team finances in one place.",
         "Every team gets its own workspace. That workspace is controlled by the team's owners and admins — usually the head coach or lead mentors. They decide who is invited, what roles people have, and how the team's settings are configured. We host the software and keep it running; the team decides how it is used and who is in it.",
-        "Each workspace is separated in the database itself. Every row belongs to one team, and the database refuses to return another team's rows to a signed-in member — this is Postgres your team's own space, enforced by the database rather than by a check in application code. A separate background worker account handles scheduled jobs.",
+        "Each workspace is separated in the database itself. Every row belongs to one team, and the database refuses to return another team's rows to a signed-in member. That separation is enforced by the database itself, not only by application code. A separate background worker account handles scheduled jobs.",
       ],
     },
     {

@@ -241,7 +241,7 @@ export function SiteFooter() {
     <footer className="marketing-footer">
       <div className="marketing-footer-brand">
         <BrandLink />
-        <p>Competition operations for FRC teams. Invite-only.</p>
+        <p>Free software for FRC teams — scouting, strategy, build and business in one login.</p>
       </div>
       <div className="marketing-footer-cols">
         <nav className="marketing-footer-col" aria-label="Product">
@@ -249,7 +249,6 @@ export function SiteFooter() {
           <a href="/features">Hubs and tools</a>
           <a href="/workflow">How it works</a>
           <a href="/for-teams">For teams</a>
-          <a href="/desktop">Desktop</a>
         </nav>
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>

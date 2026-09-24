@@ -110,11 +110,11 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: "What happens when a hosted allowance runs out?",
-    a: "Hosted Chat stops when the included allowance is used up. You can buy credit packs, turn on pay-as-you-go with a spend cap, or keep working on your own keys or local models.",
+    a: "Hosted AI pauses when the included allowance is used up. You can buy credit packs, turn on pay-as-you-go with a spend cap, or keep working on your own keys or local models.",
   },
   {
     q: "Can we try team hosted AI before paying?",
-    a: `Platform admins can grant a ${TEAM_TRIAL_DAYS}-day team trial with a hosted allowance for the week. Nothing auto-charges unless you subscribe.`,
+    a: `Yes. Email vantagefrc@gmail.com for a free ${TEAM_TRIAL_DAYS}-day trial of hosted AI. Nothing is charged unless you subscribe.`,
   },
   {
     q: "Do hosted credits cost more than using our own keys?",
@@ -199,27 +199,14 @@ export function PricingCatalog() {
         <p>
           Available on Free and every paid plan when you want more hosted usage. {creditsLine} {economicsSoft}
         </p>
-        <div className="pricing-grid">
-          {[
-            { code: "credits_100", label: "$100", detail: "Good for light hosted use" },
-            { code: "credits_250", label: "$250", detail: "Most common top-up" },
-            { code: "credits_500", label: "$500", detail: "Heavy event / season stretch" },
-          ].map((pack) => (
-            <article key={pack.code}>
-              <span className="plan-signal">Credit pack</span>
-              <h2>{pack.label}</h2>
-              <p className="pricing-card-note">{pack.detail}</p>
-              <Cta label="Join waitlist for credits" />
-            </article>
-          ))}
-        </div>
+        <p>Top up with credit packs from $100, or set a monthly cap. Your team&apos;s owner does this from inside Vantage.</p>
       </section>
 
       <section className="pricing-trial">
         <h2>Try team hosted AI for {TEAM_TRIAL_DAYS} days</h2>
         <p>
-          Platform admins can grant a week team trial with a hosted allowance for the trial window. No surprise
-          auto-charge unless you subscribe.
+          Want to try hosted AI first? Ask us for a free {TEAM_TRIAL_DAYS}-day trial at{" "}
+          <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a>. Nothing is ever charged unless you subscribe.
         </p>
       </section>
 

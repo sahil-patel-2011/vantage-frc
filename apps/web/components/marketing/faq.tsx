@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     q: "Does scouting work offline?",
-    a: "Yes. Match and pit forms stay on the tablet, QR handoff and pit mesh move entries between devices, and everything syncs when you reconnect.",
+    a: "Yes. Match and pit forms stay on the tablet, tablets pass entries to each other by QR code, and everything syncs when you reconnect.",
   },
   {
     q: "What is the assembly manual?",

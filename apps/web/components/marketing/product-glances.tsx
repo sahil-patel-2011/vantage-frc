@@ -103,7 +103,7 @@ export function HeroProductVisual() {
                 </li>
                 <li>
                   <b>Scouting</b>
-                  <span>Offline forms · QR · pit mesh</span>
+                  <span>Works offline · QR handoff</span>
                 </li>
                 <li>
                   <b>Strategy</b>

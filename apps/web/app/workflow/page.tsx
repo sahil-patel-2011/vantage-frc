@@ -22,19 +22,19 @@ const stages = [
     id: "2",
     title: "Connect what you already have",
     detail:
-      "Connect Team Data for this team’s events. Publish scout forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. Missing connections show a Connect card with the exact next step.",
+      "Pick your events and publish your scouting forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. Anything not set up yet shows a card with the next step.",
   },
   {
     id: "3",
     title: "Scout at the venue",
     detail:
-      "Match and pit forms keep working when Wi-Fi drops. Photos compress before upload. QR handoff and pit mesh move entries between tablets. Sync joins the org when signal returns.",
+      "Match and pit forms keep working when Wi-Fi drops. Photos compress before upload. Tablets pass entries to each other by QR code, no Wi-Fi needed. Everything syncs when signal returns.",
   },
   {
     id: "4",
     title: "Run event day from one event",
     detail:
-      "Command and My Day use posted match times. Checklists, pit queue, bumper color, and strategy cards share that event. Empty until the cache and your scouts have rows.",
+      "Command and My Day use posted match times. Checklists, pit queue, bumper color, and strategy cards share that event. It fills in as your scouts record matches.",
   },
   {
     id: "5",
@@ -86,7 +86,7 @@ export default function WorkflowPage() {
           <div className="lux-content">
             <header className="lux-section-head">
               <h2 id="season-when-title">When teams actually use it.</h2>
-              <p>Shop weeks, load-in, venue, and alliance selection — not a numbered slogan strip.</p>
+              <p>Shop weeks, load-in, the venue, and alliance selection.</p>
             </header>
             <ul className="lux-feature-grid lux-feature-grid-4">
               {MARKETING_SEASON.map((item) => (

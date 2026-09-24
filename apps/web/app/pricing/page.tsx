@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import {
-  catalogDefaultsFootnote,
   hostedApiSavingsCopy,
 } from "@vantage/billing/catalog";
 import { WaitlistForm } from "../../components/marketing/waitlist-form";
@@ -16,7 +15,6 @@ export const metadata: Metadata = marketingPageMetadata({
 });
 
 export default function PricingPage() {
-  const catalogNote = catalogDefaultsFootnote();
   const creditsLine = hostedApiSavingsCopy();
 
   return (
@@ -54,11 +52,7 @@ export default function PricingPage() {
               Free teams can use their own AI, or buy credits for hosted usage. Paid plans include hosted AI; when you
               need more, buy credits or turn on pay-as-you-go with an explicit spend cap.
             </p>
-            <p className="pricing-note">{catalogNote}</p>
-            <p className="pricing-footnote">
-              Free includes offline scouting, reference data, manual strategy, and pick lists. Assistant still needs a
-              real event connected.
-            </p>
+
           </div>
         </section>
 

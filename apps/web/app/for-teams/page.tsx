@@ -14,7 +14,7 @@ export const metadata: Metadata = marketingPageMetadata({
 const roles = [
   {
     title: "Mentors & coaches",
-    copy: "Invite exact emails, set budgets, and keep at least one owner or admin. Students never see the keys page.",
+    copy: "Invite exact emails, set budgets, and keep at least one owner or admin. Students never see API keys.",
   },
   {
     title: "Drive & strategy",
@@ -22,7 +22,7 @@ const roles = [
   },
   {
     title: "Scouts & pit",
-    copy: "Offline forms, coverage, pit mesh, match checklist, repair triage, and battery rotation.",
+    copy: "Forms that work offline, scouting coverage, the match checklist, repair triage and battery rotation.",
   },
   {
     title: "Build & programming",
@@ -30,11 +30,11 @@ const roles = [
   },
   {
     title: "Business leads",
-    copy: "Finance, sponsors (when allowed), grants, impact, and media kit — totals from recorded rows only.",
+    copy: "Finance, sponsors (when allowed), grants, impact, and media kit — totals only from what your team actually recorded.",
   },
   {
     title: "Every member",
-    copy: "Home island is four apps: Home, Matches, Scout, and Stats. Menu and search for the rest. Chat stays inside your team.",
+    copy: "Every member starts on Home, Matches, Scout and Stats; the menu and search find the rest. Chat stays inside your team.",
   },
 ] as const;
 
@@ -91,7 +91,7 @@ export default function ForTeamsPage() {
           <div className="lux-content">
             <header className="lux-section-head">
               <h2 id="season-title">What happens when.</h2>
-              <p>Shop, load-in, venue, and alliance selection — the real calendar, not a slogan.</p>
+              <p>Shop, load-in, the venue, and alliance selection.</p>
             </header>
             <ul className="lux-feature-grid lux-feature-grid-4">
               {MARKETING_SEASON.map((item) => (

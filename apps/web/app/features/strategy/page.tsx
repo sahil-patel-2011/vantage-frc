@@ -18,8 +18,8 @@ const assistantJobs = [
 
 const scoutFeeds = [
   { title: "Competition · Strategy", copy: "Playbooks from your scouting plus public facts — empty until someone scouts." },
-  { title: "Alliance Selection Desk", copy: "Shared 8-alliance board with scout evidence attached. Official-record conflict flags when cache exists." },
-  { title: "Pick clock & pairwise", copy: "Timed picks plus qualitative A-beats-B ranking. Empty until real taps." },
+  { title: "Alliance Selection Desk", copy: "A shared board for all eight alliances, with your scouting behind every pick and a flag when it disagrees with the official results." },
+  { title: "Pick clock & pairwise", copy: "A pick timer and quick \"A beats B\" comparisons to settle close calls." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
   { title: "Command / My Day", copy: "Same event context: next match, pit queue, bumper color from Team Data lists." },
   { title: "Ask AI", copy: "Answers cite Team Data, ratings, and scout notes. Missing numbers stay blank." },
