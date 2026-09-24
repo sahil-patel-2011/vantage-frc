@@ -22,6 +22,31 @@ import {
 } from "../../../lib/team-data/team-data-related";
 
 type InventoryRow = { label: string; count: number };
+
+/** What each count is, in the words of the page that makes it (not the table it lives in). */
+const ROW_NAMES: Record<string, string> = {
+  match_scouting: "Match scouting entries",
+  pit_scouting: "Pit scouting entries",
+  disagreements: "Scout disagreements",
+  research_findings: "Research findings",
+  pick_lists: "Pick lists",
+  display_boards: "TV boards",
+  live_alerts: "Live alerts",
+  ai_artifacts: "Saved AI answers",
+  cad_jobs: "CAD agent runs",
+  export_jobs: "Exports",
+  teams_ref: "FRC teams",
+  events_ref: "Events",
+  matches_ref: "Matches at your event",
+  team_event_metrics: "Team stats at your event",
+};
+
+function rowName(label: string): string {
+  const known = ROW_NAMES[label];
+  if (known) return known;
+  const words = label.replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 type Credential = {
   id: string;
   opaqueKeyId: string;
@@ -619,20 +644,20 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             <ul className="team-data-inventory">
               {inventory.map((row) => (
                 <li key={row.label}>
-                  <span>{row.label.replace(/_/g, " ")}</span>
+                  <span>{rowName(row.label)}</span>
                   <strong>{row.count.toLocaleString()}</strong>
                 </li>
               ))}
             </ul>
           )}
-          <h3>Shared reference cache</h3>
+          <h3>Official event data</h3>
           {reference.length === 0 ? (
-            <p className="app-muted">Reference cache empty until TBA sync succeeds for this event.</p>
+            <p className="app-muted">Nothing synced yet. Sync your event to pull its teams, matches and rankings.</p>
           ) : (
             <ul className="team-data-inventory reference">
               {reference.map((row) => (
                 <li key={row.label}>
-                  <span>{row.label.replace(/_/g, " ")}</span>
+                  <span>{rowName(row.label)}</span>
                   <strong>{row.count.toLocaleString()}</strong>
                 </li>
               ))}

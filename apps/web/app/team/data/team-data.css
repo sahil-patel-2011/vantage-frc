@@ -10,7 +10,7 @@
 .team-data-panel h3{font-size:var(--title-4);color:var(--muted)}
 .team-data-inventory{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .team-data-inventory li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--bg)}
-.team-data-inventory li span{font-size:13px;color:var(--muted);text-transform:capitalize}
+.team-data-inventory li span{font-size:13px;color:var(--muted)}
 .team-data-inventory li strong{font-size:15px}
 .team-data-key-form{display:grid;gap:10px}
 .team-data-key-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
