@@ -63,6 +63,8 @@ const putSchema = z.object({
   firstName: z.string().trim().min(1).max(60).optional(),
   lastName: z.string().trim().min(1).max(60).optional(),
   dateOfBirth: z.string().trim().min(8).max(10).optional(),
+  /** Student, mentor, coach, parent or something else: the same choice onboarding offers. */
+  teamRole: z.enum(["student", "mentor", "coach", "parent", "other"]).optional(),
   recoveryEmail: z.string().trim().max(254).optional().nullable(),
   phoneE164: z.string().trim().max(20).optional().nullable(),
   notificationPrefs: prefsSchema.optional(),
@@ -360,6 +362,7 @@ export async function GET() {
         firstName: string | null;
         lastName: string | null;
         dateOfBirth: string | null;
+        teamRole: string | null;
         recoveryEmail: string | null;
         phoneE164: string | null;
         phoneVerifiedAt: string | null;
@@ -370,6 +373,7 @@ export async function GET() {
                 first_name AS "firstName",
                 last_name AS "lastName",
                 date_of_birth::text AS "dateOfBirth",
+                team_role AS "teamRole",
                 recovery_email AS "recoveryEmail",
                 phone_e164 AS "phoneE164",
                 phone_verified_at::text AS "phoneVerifiedAt"
@@ -429,6 +433,7 @@ export async function GET() {
       firstName: profile.row?.firstName ?? null,
       lastName: profile.row?.lastName ?? null,
       dateOfBirth: profile.row?.dateOfBirth ?? null,
+      teamRole: profile.row?.teamRole ?? null,
       recoveryEmail: profile.row?.recoveryEmail ?? null,
       phoneE164: profile.row?.phoneE164 ?? null,
       phoneVerified: Boolean(profile.row?.phoneVerifiedAt),
@@ -517,6 +522,10 @@ export async function PUT(request: Request) {
           phoneE164 !== undefined,
         ],
       );
+
+      if (body.data.teamRole) {
+        await client.query(`UPDATE profiles SET team_role = $2 WHERE user_id = $1`, [session.user.id, body.data.teamRole]);
+      }
 
       if (body.data.displayName || body.data.firstName || body.data.lastName) {
         const name =

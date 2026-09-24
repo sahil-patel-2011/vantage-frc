@@ -32,6 +32,8 @@ export type OnboardingState = {
   workspaceOrgId: string | null;
   workspaceOrgName: string | null;
   requestCreatedAt: string | null;
+  /** The team role this person holds or was invited with (owner, admin, scout, viewer). */
+  workspaceRole?: string | null;
   isTeamHead: boolean;
   orgCity: string | null;
   orgStateProv: string | null;

@@ -75,9 +75,13 @@ export default function OnboardingClient() {
       lastName: data.lastName ?? current.lastName,
       dateOfBirth: data.dateOfBirth ?? current.dateOfBirth,
       gender: isGender(data.gender) ? data.gender : current.gender,
-      // The person setting a team up is not a student; start them on Mentor instead of
-      // pre-picking Student for everyone.
-      teamRole: isRole(data.teamRole) ? data.teamRole : data.isTeamHead && !data.teamRole ? "mentor" : current.teamRole,
+      // Someone the team made an owner or admin is not a student; start them on Mentor instead
+      // of pre-picking Student for everyone.
+      teamRole: isRole(data.teamRole)
+        ? data.teamRole
+        : data.isTeamHead || data.workspaceRole === "owner" || data.workspaceRole === "admin"
+          ? "mentor"
+          : current.teamRole,
       crewRole: isCrew(data.crewRole) ? data.crewRole : current.crewRole,
       roleDescription: data.roleDescription ?? current.roleDescription,
       teamNumber: String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? current.teamNumber ?? ""),

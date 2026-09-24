@@ -76,6 +76,7 @@ export default function AccountClient() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [teamRole, setTeamRole] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [phoneE164, setPhoneE164] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -125,6 +126,7 @@ export default function AccountClient() {
     setFirstName(data.firstName ?? "");
     setLastName(data.lastName ?? "");
     setDateOfBirth(data.dateOfBirth ?? "");
+    setTeamRole(data.teamRole ?? "");
     setRecoveryEmail(data.recoveryEmail ?? "");
     setPhoneE164(data.phoneE164 ?? "");
     if (data.notificationPrefs) setPrefs(data.notificationPrefs);
@@ -232,6 +234,7 @@ export default function AccountClient() {
           firstName: firstName.trim() || undefined,
           lastName: lastName.trim() || undefined,
           dateOfBirth: dateOfBirth.trim() || undefined,
+          teamRole: teamRole || undefined,
           recoveryEmail: recoveryEmail.trim() || null,
           phoneE164: phoneE164.trim() || null,
         }),
@@ -241,9 +244,10 @@ export default function AccountClient() {
         setMessage(data.error ?? "Could not save profile.");
         return;
       }
+      // Reload first: load() clears the message, and the note must survive it.
+      await load();
       setMessage("Profile saved.");
       setMessageOk(true);
-      await load();
     } finally {
       setBusy(false);
     }
@@ -480,6 +484,9 @@ export default function AccountClient() {
               firstName={firstName}
               lastName={lastName}
               dateOfBirth={dateOfBirth}
+              teamRole={teamRole}
+              onTeamRoleChange={setTeamRole}
+              savedNote={messageOk ? message : ""}
               recoveryEmail={recoveryEmail}
               phoneE164={phoneE164}
               otpCode={otpCode}

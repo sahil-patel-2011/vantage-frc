@@ -67,6 +67,7 @@ export type AccountView = {
   firstName?: string | null;
   lastName?: string | null;
   dateOfBirth?: string | null;
+  teamRole?: string | null;
   recoveryEmail?: string | null;
   phoneE164?: string | null;
   phoneVerified?: boolean;

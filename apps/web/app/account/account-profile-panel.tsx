@@ -13,6 +13,9 @@ export function AccountProfilePanel({
   firstName,
   lastName,
   dateOfBirth,
+  teamRole,
+  onTeamRoleChange,
+  savedNote,
   recoveryEmail,
   phoneE164,
   otpCode,
@@ -35,6 +38,10 @@ export function AccountProfilePanel({
   firstName: string;
   lastName: string;
   dateOfBirth: string;
+  teamRole: string;
+  onTeamRoleChange: (value: string) => void;
+  /** Shown beside Save once the profile saved, so the button itself confirms it. */
+  savedNote: string;
   recoveryEmail: string;
   phoneE164: string;
   otpCode: string;
@@ -111,6 +118,20 @@ export function AccountProfilePanel({
           />
         </label>
         <label>
+          Your role on the team
+          <select value={teamRole} onChange={(event) => onTeamRoleChange(event.target.value)}>
+            {teamRole ? null : <option value="">Choose one</option>}
+            <option value="student">Student</option>
+            <option value="mentor">Mentor</option>
+            <option value="coach">Coach</option>
+            <option value="parent">Parent</option>
+            <option value="other">Something else (alum, volunteer, sponsor)</option>
+          </select>
+        </label>
+        <p className="app-muted">
+          Mentors, coaches and parents count as adults for the team&rsquo;s chat safety rules.
+        </p>
+        <label>
           Sign-in email
           <input value={account.email ?? ""} readOnly disabled />
         </label>
@@ -152,8 +173,13 @@ export function AccountProfilePanel({
         ) : null}
         <div className="account-actions">
           <Button variant="primary" type="submit" disabled={busy}>
-            Save profile
+            {busy ? "Saving…" : "Save profile"}
           </Button>
+          {savedNote ? (
+            <span className="account-saved" role="status">
+              {savedNote}
+            </span>
+          ) : null}
         </div>
       </form>
     </Panel>

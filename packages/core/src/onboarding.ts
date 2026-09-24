@@ -152,6 +152,8 @@ export type OnboardingState = {
   lockedTeamNumber: number | null;
   lockedOrgName: string | null;
   lockedOrgId: string | null;
+  /** The team role this person holds or was invited with (owner, admin, scout, viewer). */
+  workspaceRole: string | null;
   isTeamHead: boolean;
   orgCity: string | null;
   orgStateProv: string | null;
@@ -436,6 +438,7 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     lockedTeamNumber: workspaceLocked ? locked.teamNumber : null,
     lockedOrgName: workspaceLocked ? locked.orgName : null,
     lockedOrgId: workspaceLocked ? locked.orgId : null,
+    workspaceRole: workspaceLocked ? (locked.role ?? null) : null,
     // Team details (location, affiliation, funding) are asked once, of whichever owner or admin
     // onboards first. A later admin was asked again for answers the team already had.
     isTeamHead:

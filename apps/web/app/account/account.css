@@ -435,3 +435,6 @@
 .account-recovery-error {
   color: var(--danger, var(--ink));
 }
+
+/* "Profile saved." right beside the button that saved it. */
+.account-actions .account-saved{align-self:center;color:var(--good, #15803d);font-weight:600;font-size:14px}

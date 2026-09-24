@@ -326,9 +326,13 @@ export default function ChatSafetyPanel({
 
       {selected === "supervised" && noSecondAdult ? (
         <p className="chat-safety-warning">
-          This team has {policy.adultAdmins.length === 1 ? "only one" : "no"} adult owner or admin,
-          so there is nobody to be the second adult. Adult–student private chats will be refused
-          until another mentor, coach, or parent is made an owner or admin.
+          {policy.adultAdmins.length === 1
+            ? "Only one of the team's owners or admins is a mentor, coach or parent,"
+            : "None of the team's owners or admins is marked as a mentor, coach or parent,"}{" "}
+          so there is nobody to be the second adult, and private chats between an adult and a
+          student will be refused. Each adult sets their role under{" "}
+          <a href="/account?tab=profile">Account → Profile</a>; you can also make another mentor an
+          admin in Team admin.
         </p>
       ) : null}
 
