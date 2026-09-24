@@ -1,5 +1,6 @@
 "use client";
 
+import { formatInviteRole } from "../../../lib/invite/invite-flow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, Panel, Button } from "../../../components/ui";
@@ -281,7 +282,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
                 <div>
                   <strong>{member.name}</strong>
                   <small>
-                    {member.email} · {member.role} · full admin powers
+                    {member.email} · {formatInviteRole(member.role) ?? member.role} · full admin powers
                   </small>
                 </div>
                 {member.role === "admin" && actorRole === "owner" ? (
@@ -311,7 +312,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
                 <span className="member-access-who">
                   <strong>{member.name}</strong>
                   <small>
-                    {member.email} · {member.role}
+                    {member.email} · {formatInviteRole(member.role) ?? member.role}
                   </small>
                 </span>
                 <span className="member-access-state">

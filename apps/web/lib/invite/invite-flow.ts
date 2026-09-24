@@ -61,10 +61,12 @@ export function normalizeInviteStatus(status: string | null | undefined): Invite
 export function formatInviteRole(role: string | null | undefined): string | null {
   if (!role?.trim()) return null;
   const normalized = role.trim().toLowerCase();
+  // The words the invite form and member list use: team roles are scout/admin/viewer
+  // underneath, but nobody on a team calls a student a "scout" role or a parent a "viewer".
   if (normalized === "owner") return "Owner";
-  if (normalized === "admin") return "Admin";
-  if (normalized === "scout") return "Scout";
-  if (normalized === "viewer") return "Viewer";
+  if (normalized === "admin") return "Mentor / coach";
+  if (normalized === "scout") return "Student";
+  if (normalized === "viewer") return "Parent / guest";
   if (normalized === "mentor") return "Mentor";
   if (normalized === "member") return "Member";
   return role.trim();

@@ -107,6 +107,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [actor, setActor] = useState<{ userId: string | null; role: string | null }>({ userId: null, role: null });
   const [memberBusyId, setMemberBusyId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
   const [githubLoading, setGithubLoading] = useState(true);
   const [githubFetchFailed, setGithubFetchFailed] = useState(false);
   const [githubErrorStatus, setGithubErrorStatus] = useState<number | null>(null);
@@ -779,7 +780,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                         <select
                           value={member.role}
                           disabled={memberBusyId === member.userId}
-                          onChange={(event) => void changeMember(member, "set_role", event.target.value)}
+                          onChange={(event) => {
+                            if (event.target.value === "admin") setPromoteTarget(member);
+                            else void changeMember(member, "set_role", event.target.value);
+                          }}
                         >
                           <option value="scout">Student</option>
                           <option value="admin">Mentor / coach</option>
@@ -832,6 +836,24 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         accessRequests={accessRequests}
         message={message}
         onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(promoteTarget)}
+        opts={
+          promoteTarget
+            ? {
+                title: `Make ${promoteTarget.name || promoteTarget.email} a mentor or coach?`,
+                body: "They'll be able to invite and remove people, change team settings, and add AI keys, like an admin.",
+                confirmLabel: "Make mentor / coach",
+              }
+            : null
+        }
+        onResolve={(ok) => {
+          const member = promoteTarget;
+          setPromoteTarget(null);
+          if (ok && member) void changeMember(member, "set_role", "admin");
+        }}
       />
 
       <ConfirmDialog

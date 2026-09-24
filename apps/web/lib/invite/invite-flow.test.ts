@@ -26,12 +26,13 @@ describe("invite Soft-UI flow helpers", () => {
   });
 
   it("formats clear team identity and roles", () => {
-    expect(formatInviteRole("admin")).toBe("Admin");
-    expect(formatInviteRole("scout")).toBe("Scout");
+    expect(formatInviteRole("admin")).toBe("Mentor / coach");
+    expect(formatInviteRole("scout")).toBe("Student");
+    expect(formatInviteRole("viewer")).toBe("Parent / guest");
     expect(formatInviteRole("")).toBeNull();
     expect(
       formatInviteTeamIdentity({ orgName: "Vantage Robotics", teamNumber: 254, role: "scout" }),
-    ).toBe("Team 254 · Vantage Robotics · Scout");
+    ).toBe("Team 254 · Vantage Robotics · Student");
   });
 
   it("asks for consent unless BOTH documents were already accepted", () => {
@@ -158,9 +159,9 @@ describe("invite Soft-UI flow helpers", () => {
 
 describe("formatInviteTeamIdentity", () => {
   it("does not repeat a team whose name is its number", () => {
-    expect(formatInviteTeamIdentity({ orgName: "Team 6925", teamNumber: 6925, role: "scout" })).toBe("Team 6925 · Scout");
+    expect(formatInviteTeamIdentity({ orgName: "Team 6925", teamNumber: 6925, role: "scout" })).toBe("Team 6925 · Student");
     expect(formatInviteTeamIdentity({ orgName: "Ninjineers", teamNumber: 6925, role: "scout" })).toBe(
-      "Team 6925 · Ninjineers · Scout",
+      "Team 6925 · Ninjineers · Student",
     );
   });
 });

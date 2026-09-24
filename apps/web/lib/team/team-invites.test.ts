@@ -11,7 +11,7 @@ describe("team invite ledger helpers", () => {
   it("formats role and status without raw enums", () => {
     expect(normalizeInviteRowStatus("PENDING")).toBe("pending");
     expect(formatInviteRowStatus("pending")).toBe("Pending");
-    expect(formatInviteRowMeta({ role: "scout", status: "pending" })).toBe("Scout · Pending");
+    expect(formatInviteRowMeta({ role: "scout", status: "pending" })).toBe("Student · Pending");
   });
 
   it("does not claim email was sent in local or unconfigured mode", () => {
