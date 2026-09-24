@@ -26,7 +26,7 @@ export const ONSHAPE_NO_INVENTED_EXPORTS =
   "Onshape documents and STL, STEP, or GLTF exports appear only after a real connected run. Empty CAD stays empty until then.";
 
 export const ONSHAPE_PLATFORM_HINT_UNCONFIGURED =
-  "Ask a mentor to finish Onshape setup for this team, then connect in CAD Connections.";
+  "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.";
 
 export const ONSHAPE_PLATFORM_HINT_CONFIGURED =
   "Connect Onshape in CAD Connections. Hosted jobs run after you authorize in the browser.";
@@ -34,7 +34,7 @@ export const ONSHAPE_PLATFORM_HINT_CONFIGURED =
 export const ONSHAPE_HOSTED_BADGE = {
   connected: "Connected",
   oauthReady: "Ready to connect",
-  adminSetup: "Ask a mentor",
+  adminSetup: "Not available yet",
 } as const;
 
 export const ONSHAPE_OAUTH_CTA = {
@@ -42,7 +42,7 @@ export const ONSHAPE_OAUTH_CTA = {
   reconnect: "Reconnect Onshape",
   disabledTitle: "Onshape isn't ready yet",
   disabledDetail:
-    "Ask a mentor to finish Onshape setup for this team, then come back to connect.",
+    "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.",
 } as const;
 
 export type OnshapeHostedReason = "missing_env" | "missing_session" | "oauth_ready" | "connected";
@@ -66,7 +66,7 @@ export type HostedOnshapeFlags = {
 };
 
 export const MISSING_ENV_MESSAGE =
-  "Onshape isn't ready for this team yet. Ask a mentor to finish CAD setup, then connect in CAD Connections.";
+  "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.";
 
 export const MISSING_SESSION_MESSAGE =
   "Connect Onshape in CAD Connections before hosted CAD jobs can run.";

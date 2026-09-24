@@ -46,14 +46,14 @@ describe("CAD setup student copy", () => {
   it("never dumps CLI, env var names, or engineering vocabulary", () => {
     expect(ALL_COPY).not.toMatch(LEAK);
     expect(CAD_SETUP_CONNECT).toBe("Connect Onshape");
-    expect(CAD_SETUP_ASK_MENTOR).toMatch(/Ask a mentor/i);
+    expect(CAD_SETUP_ASK_MENTOR).toMatch(/isn.t switched on/i);
     expectPlainCopy(CAD_SETUP_DESCRIPTION);
     expectPlainCopy(CAD_SETUP_ASK_MENTOR);
     expectPlainCopy(CAD_SETUP_ONSHAPE_READY);
     expectPlainCopy(CAD_SETUP_FUSION);
     expectPlainCopy(CAD_SETUP_FUSION_ASK_MENTOR);
     expectPlainCopy(CAD_SETUP_FUSION_READY);
-    expect(CAD_SETUP_FUSION_ASK_MENTOR).toMatch(/Ask a mentor/i);
+    expect(CAD_SETUP_FUSION_ASK_MENTOR).toMatch(/isn.t switched on/i);
     expectPlainCopy(CAD_PAIR_DESCRIPTION);
     expectPlainCopy(CAD_PAIR_APPROVED);
     expect(CAD_PAIR_TITLE).toBe("Pair this computer");

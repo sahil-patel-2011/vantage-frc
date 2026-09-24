@@ -4,7 +4,7 @@
  */
 
 export const FUSION_MISSING_CONFIG_MESSAGE =
-  "Ask a mentor to finish Fusion setup for this team. You can still paste a Fusion share link to edit it.";
+  "Fusion pairing isn't switched on for Vantage yet. You can still paste a Fusion share link to edit it.";
 
 export const FUSION_READY_MESSAGE =
   "Paste a Fusion share link to edit it, or pair this computer for Autodesk jobs.";

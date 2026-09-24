@@ -40,8 +40,8 @@ describe("hosted Onshape setup copy", () => {
     expect(status.reason).toBe("missing_env");
     expect(status.connectCtaEnabled).toBe(false);
     expect(status.localPlaywrightAvailable).toBe(true);
-    expect(status.message).toMatch(/Onshape isn't ready/i);
-    expect(status.message).toMatch(/CAD Connections/);
+    expect(status.message).toMatch(/isn.t switched on/i);
+    expect(status.message).toMatch(/paste an Onshape link/);
     expect(status.message).not.toMatch(/ONSHAPE_OAUTH_CLIENT_ID|vantage-cad login/);
     expect(status.bannerTitle).toBe(ONSHAPE_HOSTED_UNCONFIGURED_TITLE);
   });
@@ -70,7 +70,7 @@ describe("hosted Onshape setup copy", () => {
     expect(status.configured).toBe(false);
     expect(status.reason).toBe("missing_env");
     expect(status.connectCtaEnabled).toBe(false);
-    expect(status.message).toMatch(/Onshape isn't ready/i);
+    expect(status.message).toMatch(/isn.t switched on/i);
     expect(status.message).not.toMatch(/CLI last-resort|API keys are configured/i);
   });
 

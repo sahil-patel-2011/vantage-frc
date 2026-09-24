@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { readOrgAllowance } from "@vantage/billing";
 import { withSavepoint } from "@vantage/db";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { dashboardNextActions } from "./dashboard-related";
@@ -1175,7 +1176,12 @@ export async function loadDashboardSnapshot(
   if (wants("ask_ai")) {
     jobs.push(
       (async () => {
-        widgets.ask_ai = stamp("live", "ask_ai", { href: "/ai?tab=chat" }, "Ask a question.");
+        // Only a definite "no billing row" means AI is off; an unreadable row keeps the box.
+        const allowance = await withSavepoint(client, () => readOrgAllowance(client, input.orgId), null);
+        widgets.ask_ai =
+          allowance && !allowance.configured
+            ? stamp("setup_required", "ask_ai", { href: "/ai?tab=chat", aiOff: true }, "Ask AI isn't turned on for your team yet.")
+            : stamp("live", "ask_ai", { href: "/ai?tab=chat" }, "Ask a question.");
       })(),
     );
   }

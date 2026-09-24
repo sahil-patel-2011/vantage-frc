@@ -219,6 +219,21 @@ export default function LogisticsClient() {
           cachedAt={cachedAt}
           detail={!online ? "Showing cached logistics from this device." : undefined}
         />
+        {/* "Add a trip" on the empty state points here: the form has to exist before the first trip. */}
+        {canManage ? (
+          <LogisticsTripsPanel
+            orgId={orgId}
+            canManage={canManage}
+            trips={trips}
+            trip={null}
+            legs={[]}
+            members={members}
+            act={act}
+            busy={busy}
+            run={run}
+            onSelectTrip={setSelectedTripId}
+          />
+        ) : null}
       </LogisticsShell>
     );
   }

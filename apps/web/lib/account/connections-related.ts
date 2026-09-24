@@ -213,7 +213,7 @@ export function connectionsNextActions(input: {
       label: input.onshapeStatus === "setup_required" ? "Ask a mentor about Onshape" : "Connect Onshape",
       detail:
         input.onshapeStatus === "setup_required"
-          ? "Ask a mentor to finish Onshape setup for this team, then connect in CAD Connections."
+          ? "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD."
           : "Connect Onshape in CAD Connections. Connected only after you authorize in the browser.",
       href: withOrgHref("/cad/connections", orgId),
       primary: actions.length === 0,

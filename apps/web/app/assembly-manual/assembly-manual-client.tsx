@@ -283,8 +283,8 @@ function Setup({ overview }: { overview: Overview }) {
 
   if (!overview.worker.lastCheckIn) {
     problems.push({
-      title: "No worker has picked up a run yet",
-      body: <p>{overview.worker.message}</p>,
+      title: "Background building isn't switched on yet",
+      body: <p>Manuals are queued but won&rsquo;t start until background jobs are turned on for Vantage.</p>,
     });
   }
 
@@ -328,7 +328,7 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
         if (!response.ok) throw new Error(body.error ?? "Could not start a run.");
         if (body.status === "queued") {
           setChoices(null);
-          setMessage(`Queued. "${body.assemblyName}" will be built on your team's relay.`);
+          setMessage(`Queued. "${body.assemblyName}" will be built in the background.`);
           onStarted(body.runId);
           return;
         }
@@ -430,9 +430,8 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
       {message ? <p className="am-note">{message}</p> : null}
 
       <p className="am-muted am-fineprint">
-        This runs on your team&rsquo;s relay, not in this page. A full robot is hours of Onshape calls, so the
-        run checkpoints as it goes and picks up where it left off if the relay restarts. You can close this
-        tab.
+        This runs in the background, not in this page. A full robot takes hours of Onshape calls, so the run saves
+        its progress as it goes. You can close this tab.
       </p>
     </section>
   );

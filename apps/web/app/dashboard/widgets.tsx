@@ -84,6 +84,12 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
     case "ask_ai": {
       const href = typeof data.href === "string" && data.href ? data.href : "/ai?tab=chat";
       const askHref = withOrg(href);
+      // AI not turned on for this team: no box that would drop the question on an off page.
+      if (data.aiOff) {
+        return (
+          <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={hint} orgId={orgId} />
+        );
+      }
       return (
         <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={hint} orgId={orgId} preferChildren>
           <AskAiWidget href={askHref} />

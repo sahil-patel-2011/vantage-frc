@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { EmptyState, Button } from "../../components/ui";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import {
   SPONSOR_PIPELINE_STAGES,
@@ -497,7 +498,7 @@ export function SponsorPipelinePanel({
         <span>Need packages, walls, or recognition surfaces?</span>
         <a href={`/business?tab=placements&orgId=${encodeURIComponent(view.orgId)}`}>Partner packages</a>
         <a href={`/sponsor-suite?orgId=${encodeURIComponent(view.orgId)}`}>Sponsor suite</a>
-        <a href={`/media-kit?orgId=${encodeURIComponent(view.orgId)}`}>Media kit</a>
+        {MEDIA_ENABLED ? <a href={`/media-kit?orgId=${encodeURIComponent(view.orgId)}`}>Media kit</a> : null}
         <a href={`/business?tab=sponsorship&orgId=${encodeURIComponent(view.orgId)}`}>Sponsorship one-pager</a>
       </div>
     </div>

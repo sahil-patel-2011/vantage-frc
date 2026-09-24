@@ -10,7 +10,7 @@ export const CAD_SETUP_DESCRIPTION =
   "Connect Onshape in the browser, or pair Fusion on this computer. Shape changes wait for a person to approve.";
 
 export const CAD_SETUP_ASK_MENTOR =
-  "Ask a mentor to finish Onshape setup for this team, then come back to connect.";
+  "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.";
 
 export const CAD_SETUP_CONNECT = "Connect Onshape";
 export const CAD_SETUP_RECONNECT = "Reconnect Onshape";
@@ -24,7 +24,7 @@ export const CAD_SETUP_FUSION =
   "Fusion stays on this computer. Pair the desktop app when you need Autodesk jobs.";
 
 export const CAD_SETUP_FUSION_ASK_MENTOR =
-  "Ask a mentor to finish Fusion setup for this team. You can still paste a Fusion share link to edit it.";
+  "Fusion pairing isn't switched on for Vantage yet. You can still paste a Fusion share link to edit it.";
 
 export const CAD_SETUP_FUSION_READY =
   "Paste a Fusion share link to edit it, or pair this computer for Autodesk jobs.";

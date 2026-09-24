@@ -108,7 +108,7 @@ describe("connectionsNextActions", () => {
       githubStatus: "connected",
     });
     expect(actions.find((a) => a.id === "onshape")?.label).toBe("Ask a mentor about Onshape");
-    expect(actions.find((a) => a.id === "onshape")?.detail).toMatch(/Ask a mentor/i);
+    expect(actions.find((a) => a.id === "onshape")?.detail).toMatch(/isn.t switched on/i);
     expect(actions.find((a) => a.id === "onshape")?.detail).not.toMatch(/ONSHAPE_OAUTH|Vercel|vantage-cad/i);
   });
 });

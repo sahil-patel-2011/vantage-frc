@@ -7,6 +7,7 @@ import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/m
 import { productRedirect, requestOrigin } from "./lib/products/products";
 import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
 import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
+import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -72,7 +73,6 @@ const PUBLIC_PREFIXES = [
   // Release-note publishing for coding agents/CI — bearer RELEASE_AGENT_TOKEN,
   // enforced by the route itself (no session cookie).
   "/api/agent/release-notes",
-  // Pi relay pairing: the worker prints a code and polls; approval stays session-gated.
   // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
   "/api/cad/pair/start",
   "/api/cad/pair/poll",
@@ -93,6 +93,16 @@ const PUBLIC_PREFIXES = [
   "/opengraph-image",
   "/twitter-image",
 ];
+const MARKETING_ALIASES: Record<string, string> = {
+  "/waitlist": "/#waitlist",
+  "/join": "/#waitlist",
+  "/signup": "/#waitlist",
+  "/sign-up": "/#waitlist",
+  "/register": "/#waitlist",
+  "/request-access": "/#waitlist",
+  "/contact": "mailto:vantagefrc@gmail.com",
+  "/about": "/for-teams",
+};
 const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
 
 /** Tokenized ICS subscribe URLs only — never the session JSON calendar APIs. */
@@ -243,11 +253,15 @@ export async function proxy(request: NextRequest) {
     const location = new URL(productTarget, requestOrigin(request)).toString();
     return new NextResponse(null, { status: 307, headers: { Location: location } });
   }
+  // Addresses people type or get told ("go to vantage…/waitlist") land on the waitlist or an
+  // email, not on a sign-in form for an invite-only product they cannot use yet.
+  const alias = MARKETING_ALIASES[pathname];
+  if (alias) return NextResponse.redirect(alias.startsWith("mailto:") ? alias : new URL(alias, request.url), 308);
   // Run before public routes and auth: nobody can use paused media endpoints.
   if (isPausedMediaRoute(pathname, request.nextUrl.searchParams.get("tab")) ||
       (!MEDIA_ENABLED && request.method === "POST" && (
-        pathname === "/api/business/assets" || pathname === "/api/branding/logo" ||
-        /^\/api\/reimbursements\/[^/]+\/receipt$/.test(pathname)
+        // Receipts stay open: they are small, shrunk photos that money depends on.
+        pathname === "/api/business/assets" || pathname === "/api/branding/logo"
       ))) {
     /*
       A page gets a page. This used to answer page requests with the same JSON
@@ -343,6 +357,41 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === "/signin" || pathname === "/sign-in" || pathname === "/onboarding") {
     return postOnboardingRedirect(request);
+  }
+
+  // Remember the team a page was opened for, and fill it in for team pages that arrive
+  // without one (lib/nav/remembered-team.ts). Pages still check membership themselves.
+  if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
+    const opened = request.nextUrl.searchParams.get("orgId");
+    const remembered = request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null;
+    if (isTeamId(opened)) {
+      const response = NextResponse.next();
+      if (remembered !== opened) {
+        response.cookies.set(REMEMBERED_TEAM_COOKIE, opened, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 365,
+        });
+      }
+      return response;
+    }
+    if (TEAM_SCOPED_PAGES.has(pathname)) {
+      const teamId = isTeamId(remembered)
+        ? remembered
+        : await withRls({ userId: session.user.id }, async (client) => {
+            const row = await client.query<{ orgId: string }>(
+              `SELECT org_id::text AS "orgId" FROM memberships WHERE user_id = $1::uuid
+                ORDER BY CASE role::text WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, created_at ASC
+                LIMIT 1`,
+              [session.user.id],
+            );
+            return row.rows[0]?.orgId ?? null;
+          }).catch(() => null);
+      const target = teamPageRedirect(new URL(request.url), teamId);
+      if (target) return NextResponse.redirect(target, 307);
+    }
   }
 
   return NextResponse.next();

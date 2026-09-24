@@ -55,7 +55,7 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
               // its own window, no API keys needed — but nothing on screen said
               // so, so this route existed and nobody could find it.
               ? withLocalPlaywrightHint(
-                  "Ask a mentor to finish Onshape setup, or paste a document link to edit it in Onshape.",
+                  "Onshape sign-in isn't switched on for Vantage yet. Paste a document link to open it in Onshape.",
                 )
               : "Paste an Onshape document link to edit it here. The viewport stays empty until a document is open."
           }

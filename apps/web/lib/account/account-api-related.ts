@@ -7,7 +7,7 @@
  */
 
 export const ACCOUNT_ONSHAPE_COPY = {
-  setupRequired: "Ask a mentor to finish Onshape setup for this team, then connect in CAD Connections.",
+  setupRequired: "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.",
   connected: "Onshape is linked for your account.",
   chooseTeam: "Onshape is ready. Choose your team, then connect in CAD Connections.",
   empty: "Connect Onshape in CAD Connections. Connected only after you authorize in the browser.",
