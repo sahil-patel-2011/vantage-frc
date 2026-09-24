@@ -287,6 +287,22 @@ export function formatDisplayPrediction(prediction: DisplayPrediction | null | u
   return `${red.label} red · ${blue.label} blue`;
 }
 
+/**
+ * The odds for our next match, labelled with that match, or a plain reason there are none.
+ * The snapshot falls back to the most recently scored prediction at the event, so without
+ * this check a TV said "No upcoming team match" next to odds for a match already played.
+ */
+export function nextMatchPredictionLabel(
+  snapshot: Pick<DisplaySnapshot, "nextMatch" | "prediction">,
+): string {
+  const next = snapshot.nextMatch;
+  if (!next) return "No match ahead";
+  const label = matchLabel(next.compLevel, next.matchNumber);
+  if (!snapshot.prediction || snapshot.prediction.matchKey !== next.matchKey) return `No prediction yet for ${label}`;
+  const odds = formatDisplayPrediction(snapshot.prediction);
+  return odds === "No grounded prediction" ? `No prediction yet for ${label}` : `${label} · ${odds}`;
+}
+
 export function widgetValue(
   type: string,
   snapshot: Pick<DisplaySnapshot, "nextMatch" | "prediction" | "scouting" | "eventStatus" | "readiness" | "strategyHeadline">,
@@ -297,7 +313,7 @@ export function widgetValue(
         ? matchLabel(snapshot.nextMatch.compLevel, snapshot.nextMatch.matchNumber)
         : "No upcoming team match";
     case "prediction":
-      return formatDisplayPrediction(snapshot.prediction);
+      return nextMatchPredictionLabel(snapshot);
     case "strategy":
       return snapshot.strategyHeadline?.trim() || "No strategy headline";
     case "robot_readiness":

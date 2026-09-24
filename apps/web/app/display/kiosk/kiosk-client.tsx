@@ -99,7 +99,9 @@ export default function KioskClient({
   }
 
   const match = data.nextMatch;
-  const prediction = data.prediction;
+  // Only odds for the match that is actually next; the snapshot can fall back to an old one.
+  const prediction =
+    data.prediction && data.nextMatch && data.prediction.matchKey === data.nextMatch.matchKey ? data.prediction : null;
   const clock = countdownState(match?.scheduledTime, now);
   const bumper = ourBumperColor(match, data.organization.teamNumber);
   const eventName = data.activeEvent?.name ?? "NO ACTIVE EVENT";

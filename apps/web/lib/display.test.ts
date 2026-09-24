@@ -21,6 +21,7 @@ import {
   kioskEventCommandEmptyCopy,
   kioskNextMatchEmptyCopy,
   widgetValue,
+  nextMatchPredictionLabel,
 } from "./display";
 
 describe("display helpers", () => {
@@ -134,7 +135,7 @@ describe("display helpers", () => {
       strategyHeadline: null,
     };
     expect(widgetValue("next_match", empty)).toMatch(/No upcoming/i);
-    expect(widgetValue("prediction", empty)).toMatch(/No stored prediction/i);
+    expect(widgetValue("prediction", empty)).toMatch(/No match ahead/i);
     expect(
       formatDisplayPrediction({
         matchKey: "2026test_qm1",
@@ -214,5 +215,20 @@ describe("display helpers", () => {
         reason: "no-cache",
       }),
     ).toContain("2026txho");
+  });
+});
+
+describe("nextMatchPredictionLabel", () => {
+  const next = { matchKey: "2026gacmp_qm37", compLevel: "qm", matchNumber: 37 } as never;
+  const odds = (matchKey: string) =>
+    ({ matchKey, pRed: 0.23, pBlue: 0.77, confidenceLow: 0.2, confidenceHigh: 0.3, modelVersion: "strategy-engine-max-v1", keyFactors: [], caveats: [], scoredAt: null }) as never;
+
+  it("never shows odds for a match that is not next", () => {
+    expect(nextMatchPredictionLabel({ nextMatch: null, prediction: odds("2026gacmp_qm36") })).toBe("No match ahead");
+    expect(nextMatchPredictionLabel({ nextMatch: next, prediction: odds("2026gacmp_qm36") })).toMatch(/^No prediction yet for /);
+  });
+
+  it("labels the odds with the match they are for", () => {
+    expect(nextMatchPredictionLabel({ nextMatch: next, prediction: odds("2026gacmp_qm37") })).toMatch(/37 · .*red · .*blue/);
   });
 });
