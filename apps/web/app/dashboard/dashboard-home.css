@@ -125,3 +125,8 @@
 
 /* ---- One faint line for the cards that are empty right now ---- */
 .dash-home .dash-empty-summary{border:0;padding:0 2px;font-size:13px}
+
+/* Setup steps still to do are links to where the step gets done. */
+.dash-setup-progress li a{display:inline-flex;align-items:center;min-height:32px;color:var(--ink);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 45%,transparent);text-underline-offset:3px}
+.dash-setup-progress li a:hover{color:var(--accent)}
+@media (pointer:coarse){.dash-setup-progress li a{min-height:44px}}

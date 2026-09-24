@@ -99,7 +99,7 @@ export type SetupHero = {
   cta: string;
   doneCount: number;
   totalCount: number;
-  steps: { key: string; label: string; done: boolean }[];
+  steps: { key: string; label: string; done: boolean; href: string }[];
 };
 
 /*
@@ -134,12 +134,20 @@ export function setupHeroFrom(view: RoleOnboardingView | null): SetupHero | null
     cta: action?.cta ?? next.label,
     doneCount: setup.doneCount,
     totalCount: setup.totalCount,
-    steps: setup.checks.map((check) => ({ key: check.key, label: check.label, done: check.done })),
+    steps: setup.checks.map((check) => ({
+      key: check.key,
+      label: check.label,
+      done: check.done,
+      href: SETUP_STEP_ACTION[check.key]?.href ?? check.href ?? "/start",
+    })),
   };
 }
 
-/** The setup steps as a small progress list inside the hero: ticks, not links. */
-export function SetupProgress({ hero }: { hero: SetupHero }) {
+/**
+ * The setup steps as a small progress list inside the hero. Steps still to do are links: they
+ * looked like a list you could tap, and "Pick your event" did nothing when tapped.
+ */
+export function SetupProgress({ hero, orgId }: { hero: SetupHero; orgId?: string | null }) {
   return (
     <div className="dash-setup-progress">
       <span>
@@ -149,10 +157,14 @@ export function SetupProgress({ hero }: { hero: SetupHero }) {
         {hero.steps.map((step) => (
           <li key={step.key} data-done={step.done ? "true" : "false"}>
             <i aria-hidden="true">{step.done ? "✓" : ""}</i>
-            <span>
-              {step.label}
-              {step.done ? <span className="dash-live-region"> (done)</span> : null}
-            </span>
+            {step.done ? (
+              <span>
+                {step.label}
+                <span className="dash-live-region"> (done)</span>
+              </span>
+            ) : (
+              <a href={withOrgHref(step.href, orgId ?? null)}>{step.label}</a>
+            )}
           </li>
         ))}
       </ol>

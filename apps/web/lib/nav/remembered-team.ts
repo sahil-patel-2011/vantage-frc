@@ -21,6 +21,9 @@ export const TEAM_SCOPED_PAGES: ReadonlySet<string> = new Set([
   "/cad/connections",
   "/cad/setup",
   "/chat",
+  // The competition hub: its Scouting tab loads with the team from the address, and a
+  // bare /competition?tab=scouting used to ask for no team at all ("Could not load scouting").
+  "/competition",
   "/display",
   "/exports",
   "/messages",

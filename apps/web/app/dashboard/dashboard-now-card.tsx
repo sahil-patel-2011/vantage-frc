@@ -49,7 +49,7 @@ export function DashboardNowCard({
             {setupHero.cta}
           </Button>
         </div>
-        <SetupProgress hero={setupHero} />
+        <SetupProgress hero={setupHero} orgId={orgId || null} />
       </section>
     );
   }
