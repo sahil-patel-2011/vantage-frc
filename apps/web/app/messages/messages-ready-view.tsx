@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useState,
   type Dispatch,
   type FormEvent,
   type KeyboardEvent,
@@ -23,8 +24,11 @@ import {
   type MentionRef,
 } from "../../lib/messages/mentions";
 import ChatSafetyPanel from "./chat-safety-panel";
-import { MessageModerationActions, RemovedMessageNotice } from "./message-moderation-actions";
+import { RemovedMessageNotice } from "./message-moderation-actions";
+import { MessageActionsMenu } from "./message-actions-menu";
+import { BackIcon, ComposeIcon, LinkIcon, PlusIcon, SendIcon } from "./chat-icons";
 import "./moderation.css";
+import "./chat-layout.css";
 import {
   formatTime,
   isArchived,
@@ -243,6 +247,55 @@ export function MessagesReadyView({
   setChannelArchived,
   softDelete,
 }: MessagesReadyViewProps) {
+  /*
+    Phones show one pane at a time: the conversation list, or one conversation full width.
+    Wide screens ignore this and show both side by side (chat-layout.css keys off data-pane
+    only below 640px). A link that names a conversation opens straight into it; otherwise a
+    phone starts on the list, where the unread counts are.
+  */
+  const [mobilePane, setMobilePane] = useState<"list" | "thread">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("conversationId")
+      ? "thread"
+      : "list",
+  );
+  // Anything that moves to another conversation (a new private chat, a channel just created,
+  // the fallback after archiving) should land in that conversation on a phone, not leave the
+  // person on the list wondering where it went. The first automatic pick on load does not count.
+  const [seenActiveId, setSeenActiveId] = useState(activeId);
+  if (activeId !== seenActiveId) {
+    if (seenActiveId !== null && activeId !== null) setMobilePane("thread");
+    setSeenActiveId(activeId);
+  }
+  const pane = safetyOpen || !teamChatEnabled ? "thread" : !active ? "list" : mobilePane;
+  const otherUnread = conversations.reduce(
+    (sum, item) => (item.id === activeId ? sum : sum + item.unreadCount),
+    0,
+  );
+
+  function openConversation(id: string) {
+    setMobilePane("thread");
+    selectConversation(id);
+  }
+
+  const backToList = (
+    <button
+      type="button"
+      className="messages-back"
+      onClick={() => {
+        setSafetyOpen(false);
+        setMobilePane("list");
+      }}
+    >
+      <BackIcon />
+      All chats
+      {otherUnread > 0 ? (
+        <b className="messages-unread" aria-label={`${otherUnread} unread elsewhere`}>
+          {otherUnread > 99 ? "99+" : otherUnread}
+        </b>
+      ) : null}
+    </button>
+  );
+
   return (
     <main className={`chat-page messages-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
@@ -272,17 +325,22 @@ export function MessagesReadyView({
           onRetry={() => void reloadMessages()}
         />
       ) : (
-        <div className="messages-layout">
+        <div className="messages-layout" data-pane={pane}>
           <aside className="chat-sidebar">
             {teamChatEnabled ? (
-              <button
-                type="button"
-                className="messages-new-dm"
-                onClick={() => void openMemberPicker()}
-                disabled={sending}
-              >
-                New message
-              </button>
+              <div className="messages-sidebar-head">
+                <span className="messages-sidebar-title">Chats</span>
+                <button
+                  type="button"
+                  className="messages-new-dm"
+                  onClick={() => void openMemberPicker()}
+                  disabled={sending}
+                  title="New message"
+                >
+                  <ComposeIcon />
+                  <span className="messages-btn-label">New message</span>
+                </button>
+              </div>
             ) : null}
             {teamChatEnabled ? (
             <div className="messages-group-heading">
@@ -294,6 +352,7 @@ export function MessagesReadyView({
                   onClick={() => setChannelDraft({ mode: "create", value: "" })}
                   disabled={sending}
                 >
+                  <PlusIcon />
                   New channel
                 </button>
               ) : null}
@@ -335,7 +394,7 @@ export function MessagesReadyView({
                 type="button"
                 className={`${activeId === item.id ? "active" : ""}${isArchived(item) ? " is-archived" : ""}`}
                 aria-current={activeId === item.id ? "true" : undefined}
-                onClick={() => void selectConversation(item.id)}
+                onClick={() => openConversation(item.id)}
               >
                 <span>
                   {isArchived(item) ? "Archived" : "Channel"}
@@ -377,7 +436,7 @@ export function MessagesReadyView({
                 type="button"
                 className={activeId === item.id ? "active" : ""}
                 aria-current={activeId === item.id ? "true" : undefined}
-                onClick={() => void selectConversation(item.id)}
+                onClick={() => openConversation(item.id)}
               >
                 <span>
                   Private
@@ -407,7 +466,10 @@ export function MessagesReadyView({
             <button
               type="button"
               className="chat-safety-toggle"
-              onClick={() => setSafetyOpen((open) => !open)}
+              onClick={() => {
+                setMobilePane("thread");
+                setSafetyOpen((open) => !open);
+              }}
               aria-expanded={safetyOpen}
             >
               {safetyOpen ? "Hide settings" : "Settings"}
@@ -416,7 +478,10 @@ export function MessagesReadyView({
 
           <section className="chat-main">
             {safetyOpen ? (
-              <ChatSafetyPanel orgId={orgId} onTeamChatChange={onTeamChatChange} />
+              <>
+                <div className="messages-mobile-bar">{backToList}</div>
+                <ChatSafetyPanel orgId={orgId} onTeamChatChange={onTeamChatChange} />
+              </>
             ) : !teamChatEnabled ? (
               <EmptyState
                 title="Team chat is off"
@@ -441,7 +506,8 @@ export function MessagesReadyView({
             ) : (
               <>
                 <header>
-                  <div>
+                  {backToList}
+                  <div className="messages-channel-heading">
                     <span className="eyebrow">
                       {active.kind !== "team"
                         ? "Private chat"
@@ -606,29 +672,18 @@ export function MessagesReadyView({
                               {item.objectLink.label}
                             </a>
                           ) : null}
-                          <div className="message-actions">
-                            {pinsSupported && active.kind === "team" ? (
-                              <button type="button" className="message-pin" onClick={() => void togglePin(item)}>
-                                {item.pinnedAt ? "Unpin" : "Pin note"}
-                              </button>
-                            ) : null}
-                            {item.mine ? (
-                              <button
-                                type="button"
-                                className="message-delete"
-                                onClick={() => void softDelete(item.id)}
-                              >
-                                Delete
-                              </button>
-                            ) : null}
-                            <MessageModerationActions
-                              orgId={orgId}
-                              messageId={item.id}
-                              mine={item.mine}
-                              canModerate={canManageChannels}
-                              onChanged={reloadMessages}
-                            />
-                          </div>
+                          <MessageActionsMenu
+                            orgId={orgId}
+                            messageId={item.id}
+                            authorLabel={`${item.mine ? "your message" : item.authorName}, ${formatTime(item.createdAt)}`}
+                            mine={item.mine}
+                            canPin={pinsSupported && active.kind === "team"}
+                            pinned={Boolean(item.pinnedAt)}
+                            canModerate={canManageChannels}
+                            onTogglePin={() => void togglePin(item)}
+                            onDelete={() => void softDelete(item.id)}
+                            onChanged={reloadMessages}
+                          />
                         </article>
                       ),
                     )
@@ -669,147 +724,158 @@ export function MessagesReadyView({
                       </span>
                     </div>
                   ) : null}
-                  <div className="messages-composer-wrap">
-                    {active.kind === "team" && linkPickerOpen ? (
-                      <div className="messages-link-picker" role="dialog" aria-label="Link an object">
-                        <div className="messages-link-picker-head">
-                          {COMPOSER_OBJECT_TYPES.map((type) => (
-                            <button
-                              key={type}
-                              type="button"
-                              className={linkPickerType === type ? "active" : undefined}
-                              onClick={() => {
-                                setLinkPickerType(type);
-                                setLinkQuery("");
-                              }}
-                            >
-                              {objectTypeLabel(type)}
-                            </button>
-                          ))}
+                  <div className="messages-composer-row">
+                    <div className="messages-composer-wrap">
+                      {active.kind === "team" && linkPickerOpen ? (
+                        <div className="messages-link-picker" role="dialog" aria-label="Link an object">
+                          <div className="messages-link-picker-head">
+                            {COMPOSER_OBJECT_TYPES.map((type) => (
+                              <button
+                                key={type}
+                                type="button"
+                                className={linkPickerType === type ? "active" : undefined}
+                                onClick={() => {
+                                  setLinkPickerType(type);
+                                  setLinkQuery("");
+                                }}
+                              >
+                                {objectTypeLabel(type)}
+                              </button>
+                            ))}
+                          </div>
+                          <input
+                            className="messages-link-picker-search"
+                            value={linkQuery}
+                            onChange={(event) => setLinkQuery(event.target.value)}
+                            placeholder={`Search ${objectTypeLabel(linkPickerType).toLowerCase()}…`}
+                            aria-label="Search link targets"
+                          />
+                          <ul className="messages-link-picker-list" role="listbox" aria-label="Link targets">
+                            {linkTargets.length === 0 ? (
+                              <li className="messages-link-picker-empty">
+                                No matches in this organization yet.
+                              </li>
+                            ) : (
+                              linkTargets.map((target) => (
+                                <li key={`${target.objectType}-${target.objectId}`}>
+                                  <button
+                                    type="button"
+                                    role="option"
+                                    onMouseDown={(event) => {
+                                      event.preventDefault();
+                                      setPendingObjectLink(target);
+                                      setLinkPickerOpen(false);
+                                      setLinkQuery("");
+                                    }}
+                                  >
+                                    <strong>{target.label}</strong>
+                                    {target.subtitle ? <small>{target.subtitle}</small> : null}
+                                  </button>
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                          <button
+                            type="button"
+                            className="messages-link-picker-close"
+                            onClick={() => setLinkPickerOpen(false)}
+                          >
+                            Close
+                          </button>
                         </div>
-                        <input
-                          className="messages-link-picker-search"
-                          value={linkQuery}
-                          onChange={(event) => setLinkQuery(event.target.value)}
-                          placeholder={`Search ${objectTypeLabel(linkPickerType).toLowerCase()}…`}
-                          aria-label="Search link targets"
-                        />
-                        <ul className="messages-link-picker-list" role="listbox" aria-label="Link targets">
-                          {linkTargets.length === 0 ? (
-                            <li className="messages-link-picker-empty">
-                              No matches in this organization yet.
-                            </li>
-                          ) : (
-                            linkTargets.map((target) => (
-                              <li key={`${target.objectType}-${target.objectId}`}>
+                      ) : null}
+                      {active.kind === "team" && activeMention ? (
+                        mentionSuggestions.length > 0 ? (
+                          <ul className="messages-mention-menu" role="listbox" aria-label="Mention teammate">
+                            {mentionSuggestions.map((member, index) => (
+                              <li key={member.id}>
                                 <button
                                   type="button"
                                   role="option"
+                                  aria-selected={index === mentionIndex}
+                                  className={index === mentionIndex ? "active" : undefined}
                                   onMouseDown={(event) => {
                                     event.preventDefault();
-                                    setPendingObjectLink(target);
-                                    setLinkPickerOpen(false);
-                                    setLinkQuery("");
+                                    selectMention(member);
                                   }}
                                 >
-                                  <strong>{target.label}</strong>
-                                  {target.subtitle ? <small>{target.subtitle}</small> : null}
+                                  <strong>{member.name}</strong>
+                                  <small>{member.email}</small>
                                 </button>
                               </li>
-                            ))
-                          )}
-                        </ul>
-                        <button
-                          type="button"
-                          className="messages-link-picker-close"
-                          onClick={() => setLinkPickerOpen(false)}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    ) : null}
-                    {active.kind === "team" && activeMention ? (
-                      mentionSuggestions.length > 0 ? (
-                        <ul className="messages-mention-menu" role="listbox" aria-label="Mention teammate">
-                          {mentionSuggestions.map((member, index) => (
-                            <li key={member.id}>
-                              <button
-                                type="button"
-                                role="option"
-                                aria-selected={index === mentionIndex}
-                                className={index === mentionIndex ? "active" : undefined}
-                                onMouseDown={(event) => {
-                                  event.preventDefault();
-                                  selectMention(member);
-                                }}
-                              >
-                                <strong>{member.name}</strong>
-                                <small>{member.email}</small>
-                              </button>
+                            ))}
+                            <li className="messages-mention-hint" aria-hidden="true">
+                              ↑↓ move · Enter or Tab select · Esc dismiss
                             </li>
-                          ))}
-                          <li className="messages-mention-hint" aria-hidden="true">
-                            ↑↓ move · Enter or Tab select · Esc dismiss
-                          </li>
-                        </ul>
-                      ) : (
-                        <div className="messages-mention-empty" role="status">
-                          <p>
-                            {members.length === 0
-                              ? canManageChannels
-                                ? "No teammates to mention yet — invite under Team admin."
-                                : "No teammates to mention yet. An owner or admin invites people."
-                              : activeMention.query
-                                ? `No org member matches @${activeMention.query}`
-                                : "Type a name to mention a teammate in this organization."}
-                          </p>
-                          <small>Esc to dismiss · mentions stay inside this team</small>
-                          {members.length === 0 && canManageChannels ? (
-                            <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
-                              Team admin
-                            </Button>
-                          ) : null}
-                        </div>
-                      )
+                          </ul>
+                        ) : (
+                          <div className="messages-mention-empty" role="status">
+                            <p>
+                              {members.length === 0
+                                ? canManageChannels
+                                  ? "No teammates to mention yet — invite under Team admin."
+                                  : "No teammates to mention yet. An owner or admin invites people."
+                                : activeMention.query
+                                  ? `No org member matches @${activeMention.query}`
+                                  : "Type a name to mention a teammate in this organization."}
+                            </p>
+                            <small>Esc to dismiss · mentions stay inside this team</small>
+                            {members.length === 0 && canManageChannels ? (
+                              <Button as="a" variant="secondary" href={withOrgHref("/team/admin", orgId)}>
+                                Team admin
+                              </Button>
+                            ) : null}
+                          </div>
+                        )
+                      ) : null}
+                      <textarea
+                        ref={composerRef}
+                        aria-label="Message"
+                        value={text}
+                        onChange={(event) => {
+                          updateComposer(
+                            event.target.value,
+                            event.target.selectionStart ?? event.target.value.length,
+                          );
+                        }}
+                        onClick={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                        onKeyUp={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                        onSelect={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                        onKeyDown={onComposerKeyDown}
+                        disabled={activeChannelArchived}
+                        placeholder={
+                          activeChannelArchived
+                            ? "This channel is archived. Reopen it to post."
+                            : active.kind === "team"
+                              ? "Message the team… use @name to notify someone"
+                              : "Private message…"
+                        }
+                        maxLength={8000}
+                      />
+                    </div>
+                    {active.kind === "team" ? (
+                      <button
+                        type="button"
+                        className="messages-link-toggle"
+                        onClick={() => setLinkPickerOpen((open) => !open)}
+                        disabled={sending}
+                        aria-expanded={linkPickerOpen}
+                        title="Link a match, task or file"
+                      >
+                        <LinkIcon />
+                        <span className="messages-btn-label">Link</span>
+                      </button>
                     ) : null}
-                    <textarea
-                      ref={composerRef}
-                      aria-label="Message"
-                      value={text}
-                      onChange={(event) => {
-                        updateComposer(
-                          event.target.value,
-                          event.target.selectionStart ?? event.target.value.length,
-                        );
-                      }}
-                      onClick={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
-                      onKeyUp={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
-                      onSelect={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
-                      onKeyDown={onComposerKeyDown}
-                      disabled={activeChannelArchived}
-                      placeholder={
-                        activeChannelArchived
-                          ? "This channel is archived. Reopen it to post."
-                          : active.kind === "team"
-                            ? "Message the team… use @name to notify someone"
-                            : "Private message…"
-                      }
-                      maxLength={8000}
-                    />
-                  </div>
-                  {active.kind === "team" ? (
                     <button
-                      type="button"
-                      className="messages-link-toggle"
-                      onClick={() => setLinkPickerOpen((open) => !open)}
-                      disabled={sending}
+                      type="submit"
+                      className="messages-send"
+                      disabled={!text.trim() || sending || activeChannelArchived}
+                      title="Send"
                     >
-                      Link
+                      <SendIcon />
+                      <span className="messages-btn-label">Send</span>
                     </button>
-                  ) : null}
-                  <button type="submit" disabled={!text.trim() || sending || activeChannelArchived}>
-                    Send
-                  </button>
+                  </div>
                 </form>
                 {status ? (
                   <p className="chat-status" role="status">

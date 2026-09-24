@@ -1,0 +1,526 @@
+/* =============================================================================
+   Team chat layout — list + conversation, the message box, and the per-message
+   "…" menu. Imported by messages-ready-view.tsx.
+
+   Older chat rules are spread over styles.css, soft-ui.css, product-hub.css and
+   vantage-scan/messages.css, and several of them assume the AI chat's layout
+   (a 230px sidebar that turns into a sideways-scrolling strip on phones). That
+   strip is what squeezed the message box to one letter per line at 390px.
+   Rather than edit those shared files, every rule here is scoped under
+   `.chat-page.messages-page .messages-layout[data-pane]` so it outranks them
+   (0,4,0 beats their 0,3,2) without !important, except where a shared rule is
+   itself !important.
+
+   Design tokens only, so light and dark both follow the theme.
+   ========================================================================== */
+
+/* ---- One font. Metadata, kickers, Link, Unpin and the old action row were
+   set in a monospace face that fell back to Courier on most machines. ------ */
+.chat-page.messages-page .messages-live,
+.chat-page.messages-page .messages-layout[data-pane] :is(
+  .chat-sidebar button span,
+  .messages article > span,
+  .messages article small,
+  .messages-pins button,
+  .messages-pins small,
+  .messages-link-chip-kind,
+  .message-object-link-kind,
+  .messages-link-toggle,
+  .messages-link-picker-head button,
+  .messages-link-picker-close,
+  .shared-warning,
+  .messages-composer-hint
+) {
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* ---- Sidebar head: title + one "new message" button ---------------------- */
+.chat-page.messages-page .messages-layout[data-pane] .messages-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-sidebar-title {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-new-dm {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  min-width: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 12px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-pill, 999px);
+  font: 600 13px/1 var(--font-sans, system-ui, sans-serif);
+  cursor: pointer;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-new-dm span {
+  color: inherit;
+  font: inherit;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-new-dm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* "New channel" is a small text action beside the Channels label, not a
+   second full-width block competing with the list under it. */
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-channel-add {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  min-height: 32px;
+  margin: 0;
+  padding: 4px 8px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-xs);
+  font: 600 12px/1 var(--font-sans, system-ui, sans-serif);
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-channel-add svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-channel-add:hover:not(:disabled) {
+  background: var(--accent-soft, var(--surface-2));
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-channel-archive-toggle {
+  display: block;
+  min-height: 36px;
+  padding: 8px 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--line);
+  font: 600 12px/1.2 var(--font-sans, system-ui, sans-serif);
+}
+
+/* Channel / DM rows: the kicker ("Channel", "Private") was 8px monospace. */
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar button > span:first-child:not(.messages-btn-label) {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar button.active > span:first-child,
+.chat-page.messages-page .messages-layout[data-pane] .chat-sidebar button[aria-current="true"] > span:first-child {
+  color: var(--accent);
+}
+
+/* ---- Conversation header ------------------------------------------------- */
+.chat-page.messages-page .messages-layout[data-pane] .chat-main > header {
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-channel-heading {
+  min-width: 0;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-channel-title {
+  overflow-wrap: anywhere;
+}
+
+/* The back button and its bar only exist on phones (see the media query). */
+.chat-page.messages-page .messages-layout[data-pane] .messages-back,
+.chat-page.messages-page .messages-layout[data-pane] .messages-mobile-bar {
+  display: none;
+}
+
+/* ---- Messages ------------------------------------------------------------ */
+.chat-page.messages-page .messages-layout[data-pane] .messages article {
+  position: relative;
+}
+
+/* Room at the right of the name/time line for the "…" button. */
+.chat-page.messages-page .messages-layout[data-pane] .messages article > span:first-child {
+  display: block;
+  padding-right: 40px;
+  font-size: 12px;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages article p {
+  overflow-wrap: anywhere;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+}
+
+/* Every message's "…" sits at the same z-index, so an open menu would slide
+   under the next message's button. The open one goes on top. */
+.chat-page.messages-page .messages-layout[data-pane] .message-menu:has(.message-menu-list) {
+  z-index: 30;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs, 8px);
+  cursor: pointer;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-trigger:hover,
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-trigger[aria-expanded="true"] {
+  color: var(--ink);
+  background: var(--surface-2, var(--bg));
+  border-color: var(--line);
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-trigger:focus-visible,
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list > :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 184px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 10px);
+  box-shadow: var(--shadow-pop, 0 12px 32px rgba(0, 0, 0, 0.18));
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list.is-upward {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list > :is(button, a) {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-xs, 6px);
+  font: 500 14px/1.2 var(--font-sans, system-ui, sans-serif);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list > :is(button, a):hover,
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list > :is(button, a):focus {
+  background: var(--surface-2, var(--bg));
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .message-menu-list > .is-danger {
+  color: var(--critical, #c2410c);
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-pins button {
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---- Message box --------------------------------------------------------- */
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* styles.css paints every direct div of the composer as a yellow monospace
+   banner; the row that holds the box and buttons is not a banner. */
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer > .messages-composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-composer-row > .messages-composer-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-composer-wrap textarea {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  max-height: 160px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 10px);
+  font: 15px/1.4 var(--font-sans, system-ui, sans-serif);
+  resize: none;
+  field-sizing: content;
+}
+
+/* soft-ui.css styles every composer button as a filled accent pill with
+   !important; Link is the secondary action, so it needs !important back. */
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-link-toggle,
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-send {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px !important;
+  font: 600 14px/1 var(--font-sans, system-ui, sans-serif);
+  cursor: pointer;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-link-toggle {
+  color: var(--accent) !important;
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-link-toggle[aria-expanded="true"] {
+  background: var(--accent-soft, var(--surface-2)) !important;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line)) !important;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-page.messages-page .messages-layout[data-pane] .messages-link-picker-head button,
+.chat-page.messages-page .messages-layout[data-pane] .messages-link-picker-close {
+  font-size: 12px;
+}
+
+/* =============================================================================
+   Phones: list → conversation. One pane at a time, full width; the message box
+   sticks just above the floating tab bar. The page scrolls, not an inner box,
+   so the browser's own scrolling, keyboard and pull-to-refresh all behave.
+   ========================================================================== */
+@media (max-width: 640px) {
+  .chat-page.messages-page {
+    display: block;
+    height: auto;
+    min-height: 0;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* The list: a normal vertical list, not the sideways strip styles.css makes. */
+  .chat-page.messages-page .messages-layout[data-pane] > .chat-sidebar {
+    display: block;
+    width: auto;
+    padding: 12px;
+    overflow: visible;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] > .chat-sidebar > button {
+    min-width: 0;
+    width: 100%;
+    min-height: 56px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages-new-dm .messages-btn-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-new-dm {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .chat-sidebar .messages-channel-add {
+    min-height: 40px;
+  }
+
+  /* The conversation: full width, grows with its messages, page scrolls. */
+  .chat-page.messages-page .messages-layout[data-pane] > .chat-main {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 200px);
+    overflow: visible;
+  }
+
+  /* Back link on its own row, then the channel name, then the channel's
+     controls; a grid keeps the back link only as wide as its words. */
+  .chat-page.messages-page .messages-layout[data-pane] .chat-main > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: 4px;
+    padding: 0 0 10px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages-channel-title {
+    margin: 2px 0 0;
+    font-size: 20px;
+  }
+
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages-mobile-bar {
+    display: flex;
+    padding: 0 0 10px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    width: auto;
+    min-height: 40px;
+    margin: 0 0 0 -8px;
+    padding: 0 10px 0 4px;
+    color: var(--accent);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-xs, 8px);
+    font: 600 14px/1 var(--font-sans, system-ui, sans-serif);
+    cursor: pointer;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .chat-main > .chat-safety-panel {
+    padding: 0;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages-pins {
+    padding: 10px 0;
+    background: transparent;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages {
+    flex: 1 0 auto;
+    overflow: visible;
+    padding: 10px 0;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages article {
+    max-width: none;
+    margin: 0 0 10px;
+    padding: 12px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages article.user {
+    margin-left: 24px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .messages article.member {
+    margin-right: 24px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .message-menu {
+    top: 4px;
+    right: 4px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .message-menu-trigger {
+    width: 40px;
+    height: 40px;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .message-menu-list > :is(button, a) {
+    min-height: 44px;
+  }
+
+  /* Pinned above the tab bar. --island-clearance is the bar's height plus the
+     gap it floats at, the same number the consent banner clears it by. */
+  .chat-page.messages-page .messages-layout[data-pane] .chat-composer {
+    position: sticky;
+    bottom: calc(var(--island-clearance, 88px) - 8px + var(--safe-bottom, 0px));
+    z-index: 6;
+    margin: 4px 0 0;
+    padding: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-pop, 0 8px 24px rgba(0, 0, 0, 0.12));
+  }
+
+  /* The placeholder already says "use @name". */
+  .chat-page.messages-page .messages-layout[data-pane] .chat-composer > .messages-composer-hint {
+    display: none;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-link-toggle,
+  .chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-send {
+    width: 44px;
+    padding: 0;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .chat-composer .messages-btn-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .chat-page.messages-page .messages-layout[data-pane] .chat-status {
+    padding: 8px 0;
+    background: transparent;
+  }
+
+  /* One pane at a time. Last in the block: these share specificity with the
+     display rules above for each pane and have to win over them. */
+  .chat-page.messages-page .messages-layout[data-pane="thread"] > .chat-sidebar,
+  .chat-page.messages-page .messages-layout[data-pane="list"] > .chat-main {
+    display: none;
+  }
+}

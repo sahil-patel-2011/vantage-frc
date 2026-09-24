@@ -1,8 +1,6 @@
 /* Team chat moderation — message-moderation-actions.tsx and /messages/moderation. */
-.messages-page .messages article .message-report,
-.messages-page .messages article .message-remove,
-.messages-page .messages article .message-moderation-link{margin-top:0;padding:6px 10px;min-height:32px;background:transparent;border:1px solid var(--line);cursor:pointer;font:10px var(--font-ibm-mono),monospace;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center}
-.messages-page .messages article .message-remove{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 45%,var(--line))}
+/* The per-message Report / Remove / Moderation buttons moved into the "…" menu (message-actions-menu.tsx);
+   their styles live in chat-layout.css with the rest of the message chrome. */
 .message-moderation-form{flex-basis:100%;display:grid;gap:8px;margin-top:6px;padding:10px 12px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs, 6px)}
 .message-moderation-form fieldset{border:0;margin:0;padding:0;display:grid;gap:4px}
 .message-moderation-form legend{font-weight:600;font-size:13px;margin-bottom:4px}

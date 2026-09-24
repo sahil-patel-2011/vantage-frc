@@ -2,26 +2,27 @@
 
 import { useId, useState } from "react";
 import { REPORT_REASONS, type ReportReason } from "../../lib/messages/moderation-copy";
-import { withOrgHref } from "../../lib/nav/product-nav";
+
+export type ModerationMode = "idle" | "report" | "remove";
 
 type Props = {
   orgId: string;
   messageId: string;
-  mine: boolean;
-  /** Owner/admin — the same role check the server makes again. */
-  canModerate: boolean;
+  /** Which form is open. The per-message "…" menu owns this so the forms open from its items. */
+  mode: ModerationMode;
+  onModeChange: (mode: ModerationMode) => void;
   /** Re-read the thread after a removal. */
   onChanged: () => void;
 };
 
-type Mode = "idle" | "report" | "remove";
-
 /**
- * Per-message moderation in team chat: any member can Report someone else's message; owners and
- * admins can Remove any message (with a reason) and jump to the moderation panel.
+ * The Report and Remove forms for one team chat message, plus the receipt line after either is
+ * sent. The buttons that open them live in the message's "…" menu (message-actions-menu.tsx):
+ * any member can report someone else's message; owners and admins can remove any message with a
+ * reason. The server checks the role again either way.
  */
-export function MessageModerationActions({ orgId, messageId, mine, canModerate, onChanged }: Props) {
-  const [mode, setMode] = useState<Mode>("idle");
+export function MessageModerationActions({ orgId, messageId, mode, onModeChange, onChanged }: Props) {
+  const setMode = onModeChange;
   const [reason, setReason] = useState<ReportReason>("harassment");
   const [note, setNote] = useState("");
   const [removeReason, setRemoveReason] = useState("");
@@ -77,34 +78,6 @@ export function MessageModerationActions({ orgId, messageId, mine, canModerate, 
 
   return (
     <>
-      {!mine ? (
-        <button
-          type="button"
-          className="message-report"
-          aria-expanded={mode === "report"}
-          aria-controls={`${formId}-report`}
-          onClick={() => setMode(mode === "report" ? "idle" : "report")}
-        >
-          Report
-        </button>
-      ) : null}
-      {canModerate && !mine ? (
-        <button
-          type="button"
-          className="message-remove"
-          aria-expanded={mode === "remove"}
-          aria-controls={`${formId}-remove`}
-          onClick={() => setMode(mode === "remove" ? "idle" : "remove")}
-        >
-          Remove
-        </button>
-      ) : null}
-      {canModerate ? (
-        <a className="message-moderation-link" href={withOrgHref("/messages/moderation", orgId)}>
-          Moderation
-        </a>
-      ) : null}
-
       {mode === "report" ? (
         <form id={`${formId}-report`} className="message-moderation-form" onSubmit={submitReport}>
           <fieldset>
@@ -117,6 +90,9 @@ export function MessageModerationActions({ orgId, messageId, mine, canModerate, 
                   value={option.id}
                   checked={reason === option.id}
                   onChange={() => setReason(option.id)}
+                  // The form opens from the "…" menu, which closes as it opens this. Focus has
+                  // to land somewhere inside, or a keyboard user is left on a vanished item.
+                  autoFocus={reason === option.id}
                 />
                 {option.label}
               </label>
@@ -148,6 +124,7 @@ export function MessageModerationActions({ orgId, messageId, mine, canModerate, 
             <input
               type="text"
               value={removeReason}
+              autoFocus
               maxLength={500}
               onChange={(event) => setRemoveReason(event.target.value)}
               placeholder="e.g. Not OK for a youth team"
