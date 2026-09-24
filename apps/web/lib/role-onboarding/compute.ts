@@ -95,7 +95,10 @@ async function ensureTracks(
  */
 async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<string>> {
   const result = await client.query<{ invite: boolean; event: boolean; scouting: boolean; calendar: boolean }>(
-    `SELECT (SELECT count(*) FROM memberships WHERE org_id = $1::uuid) > 1 AS invite,
+    // Inviting is the owner's step: it is done once an invite goes out, not when someone
+    // happens to accept it. Home used to keep saying "Invite your team" after two invites.
+    `SELECT ((SELECT count(*) FROM memberships WHERE org_id = $1::uuid) > 1
+             OR EXISTS (SELECT 1 FROM invites WHERE org_id = $1::uuid AND status IN ('pending', 'accepted'))) AS invite,
             EXISTS (SELECT 1 FROM org_active_context
                      WHERE org_id = $1::uuid AND active_event_key IS NOT NULL) AS event,
             EXISTS (SELECT 1 FROM scout_schemas WHERE org_id = $1::uuid) AS scouting,

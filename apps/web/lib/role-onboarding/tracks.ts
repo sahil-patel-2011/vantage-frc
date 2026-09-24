@@ -21,7 +21,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "The four things that make Vantage useful for everyone else.",
     source: "role",
     checks: checks([
-      ["invite", "Invite your team", "Add students and mentors by email. Ticks once someone joins.", "/team/admin"],
+      ["invite", "Invite your team", "Add students and mentors by email. Ticks once you send the first invite.", "/team/admin"],
       ["event", "Pick your event", "Matches, scouting and My Day all follow it.", "/command?pickEvent=1"],
       // The Form builder, not the entry form: "set up" landed on a form ready to fill in.
       ["scouting", "Set up your scouting form", "Start from this season's template and adjust it.", "/scouting/forms"],
