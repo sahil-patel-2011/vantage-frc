@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
   const provided = request.headers.get("x-bootstrap-token") ?? "";
   if (!provided || !tokensEqual(provided, bootstrapToken)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
 
   const capabilities = getAuthCapabilities();

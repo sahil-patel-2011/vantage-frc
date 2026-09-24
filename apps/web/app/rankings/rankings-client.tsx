@@ -360,7 +360,7 @@ export default function RankingsClient() {
         <div className="rank-header-actions">
           {standing ? (
             <span className="rank-standing">
-              #{standing.rank} of {standing.of} · top {standing.percentile}%
+              #{standing.rank} of {standing.of} · top {Math.max(1, Math.ceil((standing.rank / standing.of) * 100))}%
             </span>
           ) : null}
           <Button variant="secondary" type="button" onClick={() => void load()}>

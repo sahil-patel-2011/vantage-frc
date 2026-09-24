@@ -681,7 +681,7 @@ export function ShareDialog({
                     rejectedAddresses?: string[];
                   };
                   if (!response.ok) {
-                    setMessage(body.error ?? `That did not work (HTTP ${response.status}).`);
+                    setMessage(body.error ?? "That didn't work. Try again in a moment.");
                     return;
                   }
                   setCreated(body.shares ?? []);

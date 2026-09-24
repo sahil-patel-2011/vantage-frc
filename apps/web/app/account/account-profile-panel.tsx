@@ -27,7 +27,7 @@ export function AccountProfilePanel({
   onSave,
   onSendPhoneOtp,
   onVerifyPhoneOtp,
-  onSignOut,
+  onSignOut: _onSignOut,
 }: {
   account: AccountView;
   org: OrgContext;
@@ -115,6 +115,10 @@ export function AccountProfilePanel({
           <input value={account.email ?? ""} readOnly disabled />
         </label>
         <RecoveryEmailSettings suggested={recoveryEmail} />
+        {/* Phone codes only when Vantage can actually send a text; otherwise the buttons
+            did nothing but fail. */}
+        {account.phoneOtp?.configured || account.phoneVerified ? (
+          <>
         <label>
           Phone number for text codes
           <input
@@ -126,11 +130,7 @@ export function AccountProfilePanel({
           />
         </label>
         <p className="app-muted">
-          {account.phoneVerified
-            ? "This phone number is confirmed."
-            : account.phoneOtp?.configured
-              ? "Save the number, then send a code to confirm it."
-              : "Text messaging isn't set up for phone codes yet. Email sign-in still works."}
+          {account.phoneVerified ? "This phone number is confirmed." : "Save the number, then send a code to confirm it."}
         </p>
         <div className="account-actions">
           <Button variant="secondary" type="button" disabled={busy} onClick={() => void onSendPhoneOtp()}>
@@ -148,12 +148,11 @@ export function AccountProfilePanel({
             Verify phone
           </Button>
         </div>
+          </>
+        ) : null}
         <div className="account-actions">
           <Button variant="primary" type="submit" disabled={busy}>
             Save profile
-          </Button>
-          <Button variant="danger" type="button" disabled={busy} onClick={() => void onSignOut()}>
-            Sign out
           </Button>
         </div>
       </form>

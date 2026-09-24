@@ -182,12 +182,12 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
   if (kind === "missing_token") {
     return {
       kind,
-      eyebrow: "NO INVITE OPEN",
-      title: "No invite is open",
+      eyebrow: "TEAM INVITATION",
+      title: "Open your invite link",
       description:
         detail?.trim() ||
-        "Open the full link from the email your captain sent. If you were not invited, join the waitlist.",
-      badge: "No invite",
+        "Use the link in the invite email. Not invited yet? Ask your team lead, or join the waitlist.",
+      badge: "",
     };
   }
   if (kind === "auth_required") {
@@ -248,22 +248,20 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
   if (kind === "error") {
     return {
       kind,
-      eyebrow: "COULD NOT LOAD",
-      title: "Could not load this invitation",
-      description:
-        detail?.trim() ||
-        "A network or server issue prevented loading. Retry when you're back online.",
-      badge: "Retry",
+      eyebrow: "TEAM INVITATION",
+      title: "Couldn't open this invitation",
+      description: "Check your connection and try again.",
+      badge: "",
     };
   }
   return {
     kind: "invalid",
-    eyebrow: "INVITE UNAVAILABLE",
-    title: "This invitation is invalid or unavailable",
+    eyebrow: "TEAM INVITATION",
+    title: "This invite link doesn't work",
     description:
       detail?.trim() ||
-      "The link may be wrong, already used, or revoked. Ask your team for a new invite.",
-    badge: "Unavailable",
+      "The link may be cut off. Open it again straight from the email, or ask your team lead to send a new one.",
+    badge: "",
   };
 }
 

@@ -46,7 +46,7 @@ function fail(error: unknown) {
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
     const requestedOrg = new URL(request.url).searchParams.get("orgId");
     const view = await withRls({ userId: session.user.id }, (client) =>
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
     let body: unknown;
     try {

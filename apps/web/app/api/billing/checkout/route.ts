@@ -13,7 +13,7 @@ import { publicErrorMessage } from "../../../../lib/security/public-error";
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const body = (await request.json()) as {
       orgId?: string; action?: "subscription" | "credits" | "payg" | "portal";
       planCode?: string; packCode?: string;

@@ -36,7 +36,7 @@ function privateJson(value: unknown, init?: ResponseInit) {
  */
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return privateJson({ error: "Authentication required" }, { status: 401 });
+  if (!session) return privateJson({ error: "Your session ended. Sign in again." }, { status: 401 });
   const actorUserId = session.user.id;
 
   try {

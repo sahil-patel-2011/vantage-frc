@@ -22,7 +22,7 @@ async function requireSession() {
 
 export async function GET(request: Request) {
   const session = await requireSession();
-  if (!session) return noStore({ error: "Authentication required" }, 401);
+  if (!session) return noStore({ error: "Your session ended. Sign in again." }, 401);
   const orgId = new URL(request.url).searchParams.get("orgId")?.trim() ?? "";
   if (!orgId) return noStore({ error: "orgId is required" }, 400);
   try {
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await requireSession();
-  if (!session) return noStore({ error: "Authentication required" }, 401);
+  if (!session) return noStore({ error: "Your session ended. Sign in again." }, 401);
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;

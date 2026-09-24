@@ -28,7 +28,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "menu",
     target: "menu",
     title: "Find any page",
-    body: "Search opens every page. Ctrl or ⌘ + K does the same from anywhere.",
+    body: "The menu button opens every page. Ctrl or ⌘ + K searches from anywhere.",
     prefer: "bottom",
   },
   {

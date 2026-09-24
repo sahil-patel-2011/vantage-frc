@@ -36,6 +36,7 @@ const AUTH_PATTERNS = [
   "session expired",
   "sign in required",
   "unauthorized",
+  "session ended",
 ];
 
 const FORBIDDEN_PATTERNS = [

@@ -33,7 +33,7 @@ async function readState(userId: string): Promise<BetaState> {
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   try {
     return privateJson(await readState(session.user.id));
   } catch (error) {
@@ -51,7 +51,7 @@ const toggleSchema = z
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const userId = session.user.id;
 
   try {
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const userId = session.user.id;
 
   try {

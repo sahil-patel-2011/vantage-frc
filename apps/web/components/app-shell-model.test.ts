@@ -31,7 +31,7 @@ describe("formatMembershipLabel", () => {
 
 describe("formatRolePlanCue", () => {
   it("joins role and paid plan", () => {
-    expect(formatRolePlanCue("mentor", "Pro", true)).toBe("mentor · Pro");
+    expect(formatRolePlanCue("mentor", "Pro", true)).toBe("Mentor · Pro");
   });
 
   it("labels an unpaid plan as a plan", () => {

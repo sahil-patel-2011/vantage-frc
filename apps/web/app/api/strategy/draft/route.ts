@@ -24,7 +24,7 @@ function takenFromAlliances(alliances: AllianceSlot[]): string[] {
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) throw new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  if (!session) throw new Response(JSON.stringify({ error: "Your session ended. Sign in again." }), { status: 401 });
   return session;
 }
 

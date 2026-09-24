@@ -71,7 +71,7 @@ function qualsOnlyOf(value: string | null | unknown): boolean {
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
     let body: Record<string, unknown>;
     try {

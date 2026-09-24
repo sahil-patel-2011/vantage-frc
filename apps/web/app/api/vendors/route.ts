@@ -38,7 +38,7 @@ function ratingOrNull(value: unknown): number | null {
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   const requestedOrg = new URL(request.url).searchParams.get("orgId");
 
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   let body: Record<string, unknown>;
   try {

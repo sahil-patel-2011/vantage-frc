@@ -14,7 +14,7 @@ import { publicErrorMessage } from "../../../../lib/security/public-error";
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
     const setup = onshapeSetupStatus();
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const body = (await request.json()) as { orgId?: string; action?: string };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");

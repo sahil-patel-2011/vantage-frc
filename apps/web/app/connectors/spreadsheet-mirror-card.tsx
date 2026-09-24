@@ -37,6 +37,7 @@ type Status = {
   migrated: boolean;
   setupMessage: string | null;
   canManage: boolean;
+  platformAdmin?: boolean;
   summary: MirrorSummary;
   copies: Copy[];
   providers: {
@@ -73,13 +74,13 @@ const HEALTH_BADGE: Record<MirrorSummary["copies"][number]["health"], { tone: "g
 
 const CALLBACK_REASONS: Record<string, string> = {
   denied: "Google sign-in was cancelled or refused.",
-  setup_required: "Google Sheets is not set up on this server yet.",
+  setup_required: "Google Sheets isn't available right now. Use the Apps Script option below.",
   use_apps_script: "Connect Google Sheets with the Apps Script steps below. Google sign-in is not needed.",
-  api_disabled: "The Google Sheets API is not enabled on this server's Google Cloud project.",
+  api_disabled: "Google Sheets isn't available right now. Use the Apps Script option below.",
   no_offline_access: "Google did not grant offline access, so Vantage could not keep the spreadsheet updated. Connect again.",
-  not_migrated: "This server needs a database update before Google Sheets can be connected.",
+  not_migrated: "Google Sheets is being set up. Try again in a few minutes.",
   state_expired: "That Connect link expired. Start Connect again.",
-  encryption: "Key encryption is not configured on this server, so the Google sign-in cannot be stored.",
+  encryption: "Google Sheets isn't available right now. Try again later.",
   not_manager: "Only a team owner or admin can connect Google Sheets.",
 };
 
@@ -323,7 +324,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                   {!provider.configured && status.canManage && copy.copy !== "google" ? (
                     <p className="mirror-setup">Excel isn&apos;t available on Vantage yet. Google Sheets works on its own in the meantime.</p>
                   ) : null}
-                  {copy.copy === "google" && !copy.connected && status.canManage && status.providers.google.oauthOffered && status.providers.google.callbackUrl ? (
+                  {copy.copy === "google" && !copy.connected && status.platformAdmin && status.providers.google.oauthOffered && status.providers.google.callbackUrl ? (
                     <details className="mirror-setup">
                       <summary>Or: Google sign-in through Vantage&apos;s Google Cloud project</summary>
                       <p>

@@ -36,7 +36,7 @@ async function requireMember(client: PoolClient, orgId: string, userId: string) 
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   const url = new URL(request.url);
   const requestedOrg = trimmedOrNull(url.searchParams.get("orgId"), 64);
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 /** Create a document shell (metadata only — versions are uploaded separately). */
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   let body: Record<string, unknown>;
   try {
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
 /** Retitle, relink to a subsystem, change status, or edit metadata. */
 export async function PATCH(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   let body: Record<string, unknown>;
   try {

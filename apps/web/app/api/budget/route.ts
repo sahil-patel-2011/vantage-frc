@@ -78,7 +78,7 @@ function fail(error: unknown): Response {
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   let body: Record<string, unknown>;
   try {

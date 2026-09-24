@@ -37,7 +37,7 @@ async function load(client: PoolClient, orgId: string) {
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const orgId = new URL(request.url).searchParams.get("orgId");
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
   try { return Response.json(await withRls({ userId: session.user.id, orgId }, (client) => load(client, orgId))); }
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   let body: Body; try { body = await request.json() as Body; } catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
   const orgId = text(body.orgId, 64); const action = text(body.action, 80);
   if (!orgId || !action) return Response.json({ error: "orgId and action are required" }, { status: 400 });

@@ -171,7 +171,8 @@ export default function InviteClient() {
           setLoadError(data.error ?? "Sign in required.");
           return;
         }
-        if (response.status === 404) {
+        // A mistyped or cut-off link is not a network problem: show "doesn't work", not Retry.
+        if (response.status === 404 || response.status === 400) {
           setPreview(null);
           return;
         }

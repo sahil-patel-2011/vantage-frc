@@ -71,7 +71,7 @@ async function readError(response: Response, fallback: string): Promise<string> 
   } catch {
     /* non-JSON */
   }
-  return `${fallback} (HTTP ${response.status})`;
+  return fallback;
 }
 
 /**
@@ -164,7 +164,7 @@ export async function uploadOneFile(
         return;
       }
       if (!put.ok) {
-        onUpdate({ phase: "failed", error: `The object store refused the upload (HTTP ${put.status}).` });
+        onUpdate({ phase: "failed", error: "The upload didn't go through. Try again." });
         return;
       }
       onUpdate({ phase: "finishing", progress: 1 });

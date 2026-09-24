@@ -385,10 +385,10 @@ export function connectorSettingsPath(managePath: string, canManage: boolean): s
 }
 
 export const CONNECTORS_PAGE_STUDENT_DESCRIPTION =
-  "Connect Onshape, GitHub, and the other services this team uses. Ask a mentor when a card says to.";
+  "The services your team has linked. An owner or admin sets them up.";
 
 export const CONNECTORS_PAGE_OPERATOR_DESCRIPTION =
-  "Every service Vantage talks to, what it is missing, and the exact URL to register with the provider.";
+  "Link the services your team already uses. Each one is set up once for the whole team.";
 
 export const CONNECTORS_PAGE_LOADING =
   "Checking which services this team has linked.";

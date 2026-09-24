@@ -244,7 +244,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "github",
       label: "Link GitHub",
-      detail: "Owners/admins connect OAuth or save an encrypted PAT in Team admin — AI context stays empty until linked.",
+      detail: "Link your team's GitHub so Ask AI can read your robot code.",
       href: githubConnectionHref(orgId),
       primary: actions.length === 0,
     });
@@ -254,7 +254,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "google",
       label: "Google sign-in setup",
-      detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
+      detail: "Google sign-in isn't available yet. Sign in with an email code instead.",
       href: "/connectors",
     });
   }
@@ -270,7 +270,7 @@ export function connectionsNextActions(input: {
     {
       id: "discord-page",
       label: "Open Discord settings",
-      detail: "Guild / webhook bridge for announcements and object-linked chat posts.",
+      detail: "Post announcements and team chat into your Discord server.",
       href: withOrgHref("/team/discord", orgId),
     },
     {

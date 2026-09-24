@@ -75,7 +75,7 @@ function privateJson(value: unknown, init?: ResponseInit) {
 
 export async function GET() {
   const current = await session();
-  if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!current) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   try {
     const state = await withRls({ userId: current.user.id }, (client) =>
       getOnboardingState(client, current.user.id),
@@ -91,7 +91,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const current = await session();
-  if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!current) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   try {
     const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
     if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const current = await session();
-  if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!current) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   try {
     const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
     if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");

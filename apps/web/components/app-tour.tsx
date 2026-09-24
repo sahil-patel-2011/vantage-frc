@@ -47,7 +47,10 @@ function visibleTourTarget(name: string): HTMLElement | null {
   for (const node of nodes) {
     if (!(node instanceof HTMLElement)) continue;
     const box = node.getBoundingClientRect();
-    if (box.width > 0 && box.height > 0) return node;
+    // On screen and actually shown: the left menu is hidden by default now (slid off to the
+    // left with visibility hidden), and a highlight around an off-screen button is a dead tour.
+    const onScreen = box.right > 0 && box.left < window.innerWidth && box.bottom > 0 && box.top < window.innerHeight;
+    if (box.width > 0 && box.height > 0 && onScreen && getComputedStyle(node).visibility !== "hidden") return node;
   }
   return null;
 }
@@ -98,6 +101,8 @@ export function AppTour() {
   useEffect(() => {
     if (readDismissed()) return;
     if (tourBlockedOn(pathname)) return;
+    // Home only: on a working page (scouting, event day) the scrim covered the task at hand.
+    if (pathname !== "/dashboard") return;
     if (steps) return;
     // Poll rather than fire once: the consent banner is the other thing that
     // wants an answer on a first visit, and both appearing together meant a

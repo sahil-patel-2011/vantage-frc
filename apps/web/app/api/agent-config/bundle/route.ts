@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       orgId = device.rows[0].orgId;
     } else {
       const session = await auth.api.getSession({ headers: await headers() });
-      if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
       userId = session.user.id;
       orgId = new URL(request.url).searchParams.get("orgId");
     }

@@ -34,6 +34,19 @@ import "./consent-banner.css";
 
 const REOPEN_HASH = "#analytics";
 
+/**
+ * Pages where nobody is asked. The banner is about "your account … inside your team", which
+ * is not true of a visitor reading the website or someone still signing in, and it covered
+ * the one button those pages exist for. Nothing is recorded without an answer, so not
+ * asking here records nothing. The privacy policy's #analytics link still opens it.
+ */
+const NO_ASK_PATHS = new Set(["/", "/pricing", "/workflow", "/for-teams", "/desktop", "/privacy", "/terms", "/signin", "/sign-in", "/invite", "/onboarding", "/offline"]);
+
+function asksOn(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return !NO_ASK_PATHS.has(pathname) && !pathname.startsWith("/features");
+}
+
 export function ConsentBanner() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -100,7 +113,7 @@ export function ConsentBanner() {
     [],
   );
 
-  if (!mounted || !asking) return null;
+  if (!mounted || !asking || (!reopened && !asksOn(pathname))) return null;
 
   const copy = ANALYTICS_BANNER_COPY;
   const current = choice === "granted" ? copy.currentGranted : choice === "denied" ? copy.currentDenied : null;
@@ -111,8 +124,12 @@ export function ConsentBanner() {
         <div className="consent-banner-text">
           <h2 className="consent-banner-title">{copy.title}</h2>
           <p className="consent-banner-lead">{copy.lead}</p>
-          <p className="consent-banner-detail">{copy.detail}</p>
-          <p className="consent-banner-detail">{copy.reassurance}</p>
+          {/* The full list and the "no costs nothing" promise, one tap away so the card stays small. */}
+          <details className="consent-banner-more" open={reopened}>
+            <summary>{copy.detailsLabel}</summary>
+            <p className="consent-banner-detail">{copy.detail}</p>
+            <p className="consent-banner-detail">{copy.reassurance}</p>
+          </details>
           {reopened && current ? <p className="consent-banner-current">{current}</p> : null}
         </div>
         <div className="consent-banner-actions">
@@ -123,7 +140,7 @@ export function ConsentBanner() {
             {copy.declineLabel}
           </button>
           <a className="consent-banner-link" href={copy.detailsHref}>
-            {copy.detailsLabel}
+            Privacy policy
           </a>
         </div>
       </div>

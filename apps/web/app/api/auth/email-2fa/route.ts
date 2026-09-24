@@ -48,7 +48,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await currentSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   const ipPart = anonymizeIp(clientIp(request));
   try {

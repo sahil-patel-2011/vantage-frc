@@ -14,7 +14,7 @@ import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
 import { TOUR_STORAGE_KEY } from "../../lib/tour/tour-steps";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
-import { NextActions, OrgContextCard } from "./account-shell";
+import { OrgContextCard } from "./account-shell";
 import {
   DEFAULT_EMAIL_PREFS,
   DEFAULT_NOTIFICATION_PREFS,
@@ -323,14 +323,7 @@ export default function AccountClient() {
   }
 
   const orgId = org.orgId;
-  const hasProfile = Boolean(displayName.trim());
-  const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";
-  const googleReady = account?.integrations?.google.status === "available";
-  const tbaReady = account?.integrations?.tba.status === "available";
-  const showNextActions =
-    Boolean(account) &&
-    Boolean(orgId) &&
-    (!hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
+  const canManageTeam = Boolean(orgId) && (org.role === "owner" || org.role === "admin");
 
   return (
     <main className="module-page account-page">
@@ -387,14 +380,19 @@ export default function AccountClient() {
 
       <SettingsBar role={org.role} orgId={org.orgId} />
 
-      {/* These were a strip of small pills while the destinations directly
-          above them were tiled rows — same kind of thing, two appearances, on
-          one screen. "AI keys" is dropped here because the team settings rows
-          above already carry it and it points at the same page. */}
-      <KitEyebrow>Billing and help</KitEyebrow>
+      {/* One place for money and help. AI spending and usage only for the people who can
+          change them; a scout does not need a "No plan yet" chip. */}
+      <KitEyebrow>{canManageTeam ? "Spending and help" : "Help"}</KitEyebrow>
       <KitCard>
-        <KitRow icon="bolt" tone="amber" title="Billing" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
-        <KitRow icon="stats" tone="teal" title="AI usage" href="/team/usage" />
+        {canManageTeam ? (
+          <>
+            <KitRow icon="bolt" tone="amber" title="AI spending" subtitle="Limits and credits for Ask AI" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
+            <KitRow icon="stats" tone="teal" title="AI usage" subtitle="What AI has cost this team" href={withOrgHref("/team/usage", orgId || null)} />
+          </>
+        ) : null}
+        {!orgId ? (
+          <KitRow icon="users" tone="blue" title="You're not on a team yet" subtitle="See what's next" href="/onboarding" />
+        ) : null}
         <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
       </KitCard>
 
@@ -455,81 +453,6 @@ export default function AccountClient() {
         <>
           <OrgContextCard org={org} />
 
-          {showNextActions ? (
-            <NextActions
-              orgId={orgId}
-              hasProfile={hasProfile}
-              emailDeliveryReady={emailDeliveryReady}
-              googleReady={googleReady}
-              tbaReady={tbaReady}
-              role={org.role}
-            />
-          ) : null}
-
-          {orgId ? (
-            <section className="account-ai-keys app-card soft-panel" aria-label="AI keys">
-              <header>
-                <span className="app-badge">Keys</span>
-                <h2>AI keys</h2>
-                <p>
-                  Your OpenAI or Anthropic key, or an Ollama / LM Studio URL. Yours override the team for your chats.
-                </p>
-              </header>
-              <div className="account-ai-keys-actions">
-                <Button as="a" variant="secondary" href={withOrgHref("/team/ai-keys", orgId)}>
-                  Open AI keys
-                </Button>
-              </div>
-            </section>
-          ) : null}
-
-          <nav className="settings-hub" aria-label="Related settings">
-            <a href="/security">
-              <strong>Security</strong>
-              <span>Authenticator app, remembered devices</span>
-            </a>
-            <a href="/notifications">
-              <strong>Inbox</strong>
-              <span>In-app alerts for this account</span>
-            </a>
-            <button type="button" onClick={() => selectTab("notifications")}>
-              <strong>Notification prefs</strong>
-              <span>In-app alerts and email opt-ins</span>
-            </button>
-            <a href="/whats-new">
-              <strong>What’s new</strong>
-              <span>Published releases for your plan</span>
-            </a>
-            {orgId ? (
-              <>
-                <a href={withOrgHref("/team/ai-keys", orgId)}>
-                  <strong>AI keys</strong>
-                  <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
-                </a>
-                <a href={withOrgHref("/ai?tab=budgets", orgId)}>
-                  <strong>Billing</strong>
-                  <span>Chat limits and credits</span>
-                </a>
-                <a href={withOrgHref("/team/usage", orgId)}>
-                  <strong>AI usage</strong>
-                  <span>Live metered ledger for this team</span>
-                </a>
-                <a href={withOrgHref("/connectors", orgId)}>
-                  <strong>Connectors</strong>
-                  <span>Google, TBA, Onshape, GitHub, chat bridges</span>
-                </a>
-                <a href={withOrgHref("/team/security", orgId)}>
-                  <strong>Team security</strong>
-                  <span>Auth policy and delegated powers</span>
-                </a>
-              </>
-            ) : (
-              <a href="/workspace">
-                <strong>Your team</strong>
-                <span>Choose your team for keys, billing, and usage</span>
-              </a>
-            )}
-          </nav>
 
           {/* The one section switcher. `SettingsBar` used to render the same
               three destinations as a second row of links with the same

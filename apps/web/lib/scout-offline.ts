@@ -457,7 +457,7 @@ async function pushEntryBatch(orgId: string, batch: SyncEntry[]): Promise<Outbox
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `Sync failed (${response.status})`);
+    throw new Error(body.error ?? "Couldn't sync yet. It will retry when you're back online.");
   }
   return parseOutboxChunkBody(await response.json().catch(() => ({})));
 }

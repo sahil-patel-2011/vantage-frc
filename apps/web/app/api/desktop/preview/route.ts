@@ -15,7 +15,7 @@ const limiter = createRateLimiter({ limit: 20, windowMs: 60_000, namespace: "des
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     if (!(await limiter.allow(`user:${session.user.id}`))) {
       return rateLimitedResponse("Too many lookups. Wait a minute and try again.");
     }

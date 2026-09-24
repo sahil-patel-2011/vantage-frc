@@ -111,7 +111,7 @@ async function pushOne(event: QueuedClockEvent): Promise<KioskScanResult> {
   });
   const body = (await response.json().catch(() => ({}))) as { error?: string } & Partial<KioskScanResult>;
   if (!response.ok) {
-    const message = body.error ?? `Sync failed (${response.status})`;
+    const message = body.error ?? "Couldn't sync yet. It will retry when you're back online.";
     if (isPermanentClockStatus(response.status)) {
       const permanent = new Error(message);
       permanent.name = "PermanentClockRejection";

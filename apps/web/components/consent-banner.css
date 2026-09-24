@@ -307,3 +307,19 @@ body:has(.consent-banner) {
     animation: none;
   }
 }
+
+/* The full list folds away so the card is two lines plus buttons (walkthrough: it covered
+   a third of a phone screen). */
+.consent-banner-more {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.consent-banner-more > summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--ink);
+  font-weight: 600;
+}
+.consent-banner-more > p {
+  margin: 6px 0 0;
+}

@@ -699,3 +699,22 @@ html:has(.marketing-lux){scroll-padding-top:76px}
   .marketing-lux .lux-hero-inner{grid-template-columns:1fr;align-items:start}
   .marketing-lux .mk-mock{justify-self:stretch;width:100%;max-width:560px}
 }
+
+/* Footer columns: the older `.marketing-lux .marketing-footer nav{display:flex;…}` rule in
+   marketing.css out-ranked the column rule, so headings sat inline and links wrapped at
+   random. This selector wins on specificity whatever order the sheets load in. */
+.marketing-lux .marketing-footer nav.marketing-footer-col {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  justify-items: start;
+  justify-content: start;
+  flex-wrap: nowrap;
+}
+@media (max-width: 720px) {
+  .marketing-lux .marketing-footer .marketing-footer-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+}

@@ -28,7 +28,7 @@ function asRecords(payload: unknown): ScoutQrRecord[] {
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const body = (await request.json()) as { orgId?: string; records?: unknown };
     const records = asRecords(body.records);
     for (const record of records) {
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const url = new URL(request.url);
     const orgId = url.searchParams.get("orgId");
     const code = url.searchParams.get("code") ?? url.searchParams.get("handoff");

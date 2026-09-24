@@ -34,7 +34,7 @@ async function errorFrom(response: Response, fallback: string): Promise<string> 
   } catch {
     /* non-JSON body */
   }
-  return `${fallback} (HTTP ${response.status})`;
+  return fallback;
 }
 
 function itemUrl(ticket: StorageUploadTicket): string {

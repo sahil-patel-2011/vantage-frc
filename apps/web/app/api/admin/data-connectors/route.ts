@@ -34,7 +34,7 @@ function responseError(error: unknown) {
   }
   const message = publicErrorMessage(error, "Connector action failed");
   if (/authentication required/i.test(message)) {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
   if (/platform administrator/i.test(message)) {
     return Response.json({ error: "Not found" }, { status: 404 });

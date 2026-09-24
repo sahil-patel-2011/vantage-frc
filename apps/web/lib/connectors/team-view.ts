@@ -12,5 +12,15 @@ export function connectorsForViewer(connectors: ConnectorStatus[], viewer: { pla
   if (viewer.platformAdmin) return connectors;
   return connectors
     .filter((connector) => connector.scope !== "platform" && connector.state !== "not_configured")
-    .map((connector) => ({ ...connector, missingEnv: [], callbackUrl: null, callbackLabel: "", providerConsole: "" }));
+    .map((connector) => ({
+      ...connector,
+      // The operator-facing detail names provider consoles and URLs to register; a team
+      // gets the one line about what the link does.
+      detail: connector.powers,
+      missingEnv: [],
+      callbackUrl: null,
+      callbackLabel: "",
+      providerConsole: "",
+      permissions: [],
+    }));
 }

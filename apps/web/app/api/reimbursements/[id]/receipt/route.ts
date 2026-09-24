@@ -67,7 +67,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireTenantSession().catch(() => null);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: "Reimbursement not found." }, { status: 404 });
 

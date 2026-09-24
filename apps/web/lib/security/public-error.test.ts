@@ -29,3 +29,22 @@ describe("publicErrorMessage", () => {
     expect(isDatabaseError({ code: "not-sqlstate" })).toBe(false);
   });
 });
+
+describe("publicErrorMessage hides engineering text", () => {
+  it("keeps a plain sentence a person can act on", () => {
+    expect(publicErrorMessage(new Error("Only a team owner can do that."), "fallback")).toBe("Only a team owner can do that.");
+  });
+
+  it("swaps env names, migration ids, crashes and network internals for the fallback", () => {
+    for (const message of [
+      "Set STRIPE_SECRET_KEY on the server first.",
+      "Apply the duty roster migration first (0145_duty_roster).",
+      "Cannot read properties of undefined (reading 'id')",
+      "fetch failed",
+      "Sync failed (HTTP 500)",
+      "x".repeat(300),
+    ]) {
+      expect(publicErrorMessage(new Error(message), "Couldn't save. Try again.")).toBe("Couldn't save. Try again.");
+    }
+  });
+});

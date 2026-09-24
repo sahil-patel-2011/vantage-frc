@@ -387,7 +387,7 @@ describe("student connector cards", () => {
 
   it("keeps the Connectors page lead student-safe", () => {
     expect(connectorsPageDescription({ canManage: false, summary: "1 connected" })).toBe(
-      "Connect Onshape, GitHub, and the other services this team uses. Ask a mentor when a card says to. 1 connected.",
+      "The services your team has linked. An owner or admin sets them up. 1 connected.",
     );
     expect(connectorsPageDescription({ canManage: false, summary: "1 connected" })).not.toMatch(
       STUDENT_CONNECTOR_LEAK,

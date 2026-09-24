@@ -639,8 +639,7 @@ export function MessagesReadyView({
                 <form className="chat-composer" onSubmit={send}>
                   {active.kind === "team" ? (
                     <div className="messages-composer-hint">
-                      Team channel · type @ to mention · ↑↓ Enter to pick · Esc to dismiss · link a task,
-                      CAD, inventory, or event
+                      Type @ to mention someone.
                     </div>
                   ) : null}
                   {active.kind === "team" && selectedMentions.length > 0 ? (

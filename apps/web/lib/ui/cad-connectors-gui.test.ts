@@ -80,7 +80,7 @@ describe("CAD connectors GUI student chrome", () => {
       /register with the provider|OAuth|CLIENT_SECRET/,
     );
     expect(connectorsPageDescription({ canManage: true, summary: "3 connected" })).toMatch(
-      /register with the provider/,
+      /Link the services your team already uses/,
     );
     expect(connectorScopeNote("member", "student")).toBe("Personal — you connect your own account.");
     expect(connectorScopeNote("platform", "student")).toMatch(/ask a mentor/i);

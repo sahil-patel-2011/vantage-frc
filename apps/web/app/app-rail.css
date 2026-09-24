@@ -201,3 +201,30 @@
     display: inline-flex;
   }
 }
+
+/* Page title stacked over the team button (non-hub pages): the pair was 64px tall inside a
+   60px bar, so the title's top was clipped. A shorter team button fits both, centred; the
+   button keeps a full 44px tap area through its ::after. */
+.soft-page-head-copy:has(> .soft-topbar-title) {
+  height: auto;
+  align-content: center;
+  gap: 0;
+  overflow: visible;
+}
+.soft-page-head-copy:has(> .soft-topbar-title) > .soft-topbar-team {
+  position: relative;
+  min-height: 26px;
+  height: 26px;
+  padding-block: 0;
+}
+.soft-page-head-copy:has(> .soft-topbar-title) > .soft-topbar-team::after {
+  content: "";
+  position: absolute;
+  inset: -9px 0;
+}
+.soft-page-head-copy > .soft-topbar-title {
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

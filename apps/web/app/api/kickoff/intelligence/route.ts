@@ -78,7 +78,7 @@ async function fetchUrlText(url: string): Promise<string> {
     redirect: "follow",
     signal: AbortSignal.timeout(12_000),
   });
-  if (!response.ok) throw new HttpError(400, `Could not fetch source URL (HTTP ${response.status})`);
+  if (!response.ok) throw new HttpError(400, "Couldn't open that link. Check it opens in a browser, then try again.");
   const contentType = response.headers.get("content-type") ?? "";
   if (/pdf|octet-stream|image\//i.test(contentType)) {
     throw new HttpError(

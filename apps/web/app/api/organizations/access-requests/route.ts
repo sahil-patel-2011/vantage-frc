@@ -26,7 +26,7 @@ function privateJson(value: unknown, init?: ResponseInit) {
 
 export async function GET(request: Request) {
   const userId = await currentUser();
-  if (!userId) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!userId) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const orgId = new URL(request.url).searchParams.get("orgId")?.trim();
   if (!orgId || !z.string().uuid().safeParse(orgId).success) {
     return Response.json({ error: "A valid orgId is required" }, { status: 400 });
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   const userId = await currentUser();
-  if (!userId) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!userId) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   try {
     if (!(await reviewLimiter.allow(`${userId}:${anonymizeIp(clientIp(request))}`))) {
       return rateLimitedResponse("Too many access reviews. Wait a moment and try again.");

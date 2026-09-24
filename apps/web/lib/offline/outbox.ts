@@ -189,7 +189,7 @@ export async function syncOutbox(input: {
         continue;
       }
       if (!response.ok) {
-        await markOutboxItem(item.clientId, { status: "queued", lastError: `HTTP ${response.status}` });
+        await markOutboxItem(item.clientId, { status: "queued", lastError: response.status >= 500 ? "Vantage didn't answer. It will retry." : "Vantage refused this change." });
         continue;
       }
       await dropOutboxItem(item.clientId);

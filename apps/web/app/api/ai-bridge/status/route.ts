@@ -26,7 +26,7 @@ export type BridgeDeviceStatus = {
 
 async function requireSessionOrg(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return { error: Response.json({ error: "Authentication required" }, { status: 401 }) };
+  if (!session) return { error: Response.json({ error: "Your session ended. Sign in again." }, { status: 401 }) };
   const orgId = new URL(request.url).searchParams.get("orgId");
   if (!orgId) return { error: Response.json({ error: "orgId is required" }, { status: 400 }) };
   return { session, orgId };

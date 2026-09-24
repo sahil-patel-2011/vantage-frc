@@ -35,7 +35,7 @@ export type CadActivityRow = {
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const params = new URL(request.url).searchParams;
     const orgId = params.get("orgId");
     if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });

@@ -109,7 +109,7 @@ export async function GET(request: Request) {
   try {
     session = await requireSession();
   } catch {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
 
   const requested = new URL(request.url).searchParams.get("orgId");
@@ -139,7 +139,7 @@ export async function PUT(request: Request) {
   try {
     session = await requireSession();
   } catch {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
 
   const body = (await request.json().catch(() => null)) as {

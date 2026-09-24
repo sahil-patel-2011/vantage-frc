@@ -508,7 +508,7 @@ export async function POST(request: Request) {
         if (!response.ok) {
           throw new Error(
             response.status === 401 || response.status === 403
-              ? `Connection rejected (${response.status}) — check the optional API key`
+              ? "That server refused the connection. Check the address and the API key."
               : `Connection test returned ${response.status}. Is the server reachable from Vantage?`,
           );
         }

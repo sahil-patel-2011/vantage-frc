@@ -57,7 +57,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: "team-admin", label: "Team admin", href: "/team/admin", icon: "gear", scope: "team", requiredRole: "owner-admin" },
   {
     id: "member-access",
-    label: "Member access",
+    label: "Team security",
     href: "/team/security",
     icon: "users",
     scope: "team",

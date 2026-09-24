@@ -109,12 +109,14 @@ export default function PhotosClient() {
           badgeTone="setup"
           title="Connect your team's Google Drive"
           description={
-            loaded.status !== "ok"
-              ? loaded.message
-              : "Your team hasn't picked a media folder yet. It takes one click under Connectors."
+            !loaded.canManage
+              ? "Your team hasn't connected its Google Drive yet. An owner or admin can do it in a couple of minutes."
+              : loaded.status !== "ok"
+                ? loaded.message
+                : "Your team hasn't picked a media folder yet. It takes one click under Connectors."
           }
         >
-          {loaded.canManage || loaded.status === "ok" ? (
+          {loaded.canManage ? (
             <Button as="a" variant="primary" href={orgId ? `/connectors?orgId=${encodeURIComponent(orgId)}` : "/connectors"}>
               Open Connectors
             </Button>

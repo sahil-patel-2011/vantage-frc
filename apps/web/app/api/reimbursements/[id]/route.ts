@@ -103,7 +103,7 @@ function transitionSql(action: string): { sql: string; params: (userId: string, 
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireTenantSession().catch(() => null);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: "Reimbursement not found." }, { status: 404 });
 
@@ -221,7 +221,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 /** Delete a claim that never became money. Paid/approved rows are kept for the audit trail. */
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireTenantSession().catch(() => null);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const { id } = await params;
   const url = new URL(request.url);
   const orgId = url.searchParams.get("orgId");

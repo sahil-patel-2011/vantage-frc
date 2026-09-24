@@ -15,7 +15,7 @@ async function current() {
 function responseError(error: unknown) {
   const message = publicErrorMessage(error, "Team data request failed");
   if (/authentication required/i.test(message)) {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
   if (/organization administrator/i.test(message)) {
     return Response.json({ error: message }, { status: 403 });

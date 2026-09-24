@@ -83,7 +83,7 @@ export async function POST(request: Request) {
   try {
     session = await requireSession();
   } catch {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
 
   const form = await request.formData().catch(() => null);
@@ -167,7 +167,7 @@ export async function DELETE(request: Request) {
   try {
     session = await requireSession();
   } catch {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
   const body = (await request.json().catch(() => null)) as { orgId?: string } | null;
   const orgId = typeof body?.orgId === "string" ? body.orgId.trim() : "";

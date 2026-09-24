@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return Response.json({ error: "Authentication required" }, { status: 401 });
+      return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     }
     const sponsors = await withRls({ userId: session.user.id }, (client) =>
       listActiveSponsorBrands(client),

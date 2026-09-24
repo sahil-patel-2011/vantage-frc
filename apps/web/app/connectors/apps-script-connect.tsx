@@ -98,7 +98,7 @@ export default function AppsScriptConnect({
       <details className="mirror-setup apps-script-connect" open={open}>
         <summary>Get the latest script (adds photos and videos)</summary>
         <ol>
-          <li>Check the secret below matches the VANTAGE_SECRET line in your script (paste it in if this box is empty).</li>
+          <li>Check the secret below matches the one at the top of your script (paste it in if this box is empty).</li>
           <li>Copy the script, open your spreadsheet&apos;s Extensions → Apps Script, replace everything and save.</li>
           <li>
             <strong>Deploy → Manage deployments</strong>, press the pencil, set Version to <strong>New version</strong>, then
@@ -108,7 +108,7 @@ export default function AppsScriptConnect({
         <div className="apps-script-fields">
           <TextField
             label="Secret"
-            help="The 64-character value on the VANTAGE_SECRET line of your current script."
+            help="The secret at the top of your current script."
             value={secret}
             onChange={(event) => setSecret(event.target.value)}
             error={secret && !secretOk ? "The secret is 64 letters and digits (0–9, a–f)." : undefined}
@@ -162,7 +162,7 @@ export default function AppsScriptConnect({
       <div className="apps-script-fields">
         <TextField
           label="Secret"
-          help="Already set up the script? Paste the value from its VANTAGE_SECRET line instead."
+          help="Already set up the script? Paste the secret from the top of it instead."
           value={secret}
           onChange={(event) => setSecret(event.target.value)}
           error={secret && !secretOk ? "The secret is 64 letters and digits (0–9, a–f)." : undefined}

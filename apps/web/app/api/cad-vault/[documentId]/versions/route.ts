@@ -91,7 +91,7 @@ async function insertVersion(
 
 export async function POST(request: Request, { params }: { params: Promise<{ documentId: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   const { documentId } = await params;
   const userId = session.user.id;
 

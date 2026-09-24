@@ -177,7 +177,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "email-setup",
       label: "Email delivery not configured",
-      detail: "Opt-in emails need Resend on this deployment. In-app prefs still save; transactional mail stays setup-required.",
+      detail: "Email alerts aren't available yet. You'll still get them in your Vantage inbox.",
       href: "/account?tab=notifications",
       primary: actions.length === 0,
     });
@@ -187,7 +187,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "tba",
       label: "Connect Team Data",
-      detail: "Match alerts stay quiet until Team Data is connected.",
+      detail: "Match alerts start once your event's schedule is synced.",
       href: withOrgHref("/connectors", orgId),
       primary: actions.length === 0,
     });
@@ -197,7 +197,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "google",
       label: "Google sign-in setup",
-      detail: "This deployment is missing Google OAuth env — use email OTP until an admin configures it.",
+      detail: "Google sign-in isn't available yet. Sign in with an email code instead.",
       href: "/connectors",
     });
   }

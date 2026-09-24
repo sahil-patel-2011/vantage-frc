@@ -48,7 +48,7 @@
 .dash-board-current strong{color:var(--ink);font-size:13px;letter-spacing:-.01em}
 .dash-boards-group{margin:0 0 16px}
 .dash-boards-group>p{
-  margin:0 0 8px;color:var(--muted);font:700 11px/1 ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
+  margin:0 0 8px;color:var(--muted);font:700 11px/1 ui-sans-serif, system-ui, "Segoe UI", sans-serif;letter-spacing:.06em;text-transform:uppercase;
 }
 .dash-boards-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
 .dash-boards-list li{
@@ -86,7 +86,7 @@
 
 /* ---- Palette + snap HUD (edit mode) ---- */
 .dash-palette-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 0 4px}
-.dash-palette-heading span{color:var(--muted);font:700 10px/1 ui-sans-serif;letter-spacing:.07em;text-transform:uppercase}
+.dash-palette-heading span{color:var(--muted);font:700 10px/1 ui-sans-serif, system-ui, "Segoe UI", sans-serif;letter-spacing:.07em;text-transform:uppercase}
 .dash-palette-heading small{color:var(--muted);font-size:11px}
 .dash-widget-palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
 .dash-widget-palette>p{grid-column:1/-1;margin:0;color:var(--muted);font-size:13px}
@@ -115,7 +115,7 @@
 .dash-widget-palette span{display:grid;gap:2px;min-width:0}
 .dash-widget-palette strong{font-size:13px;letter-spacing:-.01em}
 .dash-widget-palette small{color:var(--muted);font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.dash-widget-palette em{font-style:normal;color:var(--muted);font:700 10px ui-sans-serif;white-space:nowrap}
+.dash-widget-palette em{font-style:normal;color:var(--muted);font:700 10px ui-sans-serif, system-ui, "Segoe UI", sans-serif;white-space:nowrap}
 
 .dash-grid-guide{
   display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px;padding:0 2px;

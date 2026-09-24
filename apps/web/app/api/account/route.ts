@@ -349,7 +349,7 @@ function slackIntegration(
 
 export async function GET() {
   const session = await currentSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   try {
     const profile = await withRls({ userId: session.user.id }, async (client) => {
@@ -466,7 +466,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const session = await currentSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   const body = putSchema.safeParse(await request.json());
   if (!body.success) {

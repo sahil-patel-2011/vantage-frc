@@ -42,7 +42,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const userId = await currentUserId();
-  if (!userId) return Response.json({ error: "Authentication required" }, { status: 401 });
+  if (!userId) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
   const body = (await request.json().catch(() => null)) as { appearance?: unknown } | null;
   // parseAppearancePrefs is the validator: unknown keys and bad values fall back

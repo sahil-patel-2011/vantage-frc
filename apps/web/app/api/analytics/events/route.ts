@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Authentication unavailable" }, { status: 503 });
   }
   if (!session) {
-    return Response.json({ error: "Authentication required" }, { status: 401 });
+    return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
   }
 
   // Consent is checked from the request's own cookies. No consent, no row —

@@ -199,7 +199,7 @@ export function AppShellNavPanel({
                     >
                       <strong>{formatMembershipLabel(row)}</strong>
                       <span>
-                        {row.role ?? "member"}
+                        {(row.role ?? "member").charAt(0).toUpperCase() + (row.role ?? "member").slice(1)}
                         {row.orgId === orgId ? " · active" : ""}
                       </span>
                     </a>
@@ -351,7 +351,6 @@ export function AppShellNavPanel({
           <nav className="soft-drawer-flat" aria-label="Hubs">
             {/* Says what this list is and what it is not: the few places you go
                 often, never every screen. Everything else is behind search. */}
-            <p className="soft-drawer-hint">Only the main places you use most.</p>
             {visibleNavGroups.map((group) => {
               const item = group.items[0];
               if (!item || item.state === "planned") return null;

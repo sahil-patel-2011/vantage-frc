@@ -273,11 +273,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         description="Todos, duties, chat, and team news for your signed-in account."
       >
         <div className="notif-header-actions">
-          {unreadCount >= 1 ? (
-            <span className="app-badge">{unreadCount} unread</span>
-          ) : (
-            <span className="app-badge good">Inbox clear</span>
-          )}
+          {unreadCount >= 1 ? <span className="app-badge">{unreadCount} unread</span> : null}
         </div>
         <InboxRelated />
       </PageHeader>
@@ -301,23 +297,18 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             { id: "unread", label: "Unread" },
           ]}
         />
-        <div className="notif-toolbar-actions">
-          <Button
-            variant="secondary"
-            type="button"
-            disabled={busy || unreadCount < 1}
-            onClick={() => void patch("read_all")}
-          >
-            Mark all as read
-          </Button>
-        </div>
+        {unreadCount >= 1 ? (
+          <div className="notif-toolbar-actions">
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => void patch("read_all")}>
+              Mark all as read
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
         <EmptyState
           soft
-          badge="Empty"
-          badgeTone="good"
           title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
           description={
             filter === "unread"

@@ -16,7 +16,7 @@ describe("invite Soft-UI flow helpers", () => {
   it("tells people without an invite they are on the waitlist", () => {
     expect(inviteEmptyCopy("auth_required").description).toMatch(/waitlist/);
     const missing = inviteEmptyCopy("missing_token");
-    expect(missing.title).toBe("No invite is open");
+    expect(missing.title).toBe("Open your invite link");
     expect(missing.title).not.toMatch(/incomplete/);
     expect(missing.description).toMatch(/waitlist/);
     const actions = inviteNextActions({ kind: "missing_token" });
@@ -142,7 +142,7 @@ describe("invite Soft-UI flow helpers", () => {
   it("keeps empty copy and next steps honest for exact-email security", () => {
     expect(inviteEmptyCopy("email_mismatch").description).toMatch(/sign out/i);
     expect(inviteEmptyCopy("expired").badge).toBe("Expired");
-    expect(inviteEmptyCopy("invalid").title).toMatch(/invalid/i);
+    expect(inviteEmptyCopy("invalid").title).toMatch(/doesn.t work/i);
     expect(inviteNextActions({ kind: "ready", token: "tok" })).toEqual([]);
     const mismatch = inviteNextActions({ kind: "email_mismatch", token: "tok" });
     expect(mismatch[0]?.href).toContain("/signin");
