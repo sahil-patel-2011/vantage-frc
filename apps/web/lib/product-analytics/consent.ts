@@ -103,3 +103,24 @@ export function consentCookieAttributes(secure: boolean): string {
   if (secure) parts.push("Secure");
   return parts.join("; ");
 }
+
+/**
+ * The choice to carry to the other product's host in a sign-in handoff, or null. Only a
+ * current, well-formed answer travels, so the other site never asks the same question
+ * again and never learns anything but that answer.
+ */
+export function consentToCarry(headers: Headers): string | null {
+  const state = parseConsent(readCookie(headers.get("cookie"), ANALYTICS_CONSENT_COOKIE));
+  return state && state.version === ANALYTICS_CONSENT_VERSION ? serializeConsent(state.choice) : null;
+}
+
+/**
+ * The Set-Cookie header that records a carried choice on this host, or null when the value
+ * isn't a current answer or this browser already answered here (its own answer wins).
+ */
+export function carriedConsentCookie(carried: string | null, headers: Headers, secure: boolean): string | null {
+  const state = parseConsent(carried);
+  if (!state || state.version !== ANALYTICS_CONSENT_VERSION) return null;
+  if (parseConsent(readCookie(headers.get("cookie"), ANALYTICS_CONSENT_COOKIE))) return null;
+  return `${ANALYTICS_CONSENT_COOKIE}=${serializeConsent(state.choice)}; ${consentCookieAttributes(secure)}`;
+}

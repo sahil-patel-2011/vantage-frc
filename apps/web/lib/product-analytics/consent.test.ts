@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   ANALYTICS_CONSENT_COOKIE,
   ANALYTICS_CONSENT_VERSION,
+  carriedConsentCookie,
   consentCookieAttributes,
+  consentToCarry,
   hasAnalyticsConsent,
   needsConsentDecision,
   parseConsent,
@@ -125,5 +127,29 @@ describe("consentCookieAttributes", () => {
       expect(attrs).toContain("SameSite=Lax");
       expect(attrs).toMatch(/Max-Age=\d+/);
     }
+  });
+});
+
+describe("consent across the two product hosts", () => {
+  const withCookie = (cookie: string) => new Headers({ cookie });
+
+  it("carries only a current, well-formed answer", () => {
+    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=denied.1`))).toBe("denied.1");
+    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=granted.1`))).toBe("granted.1");
+    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=granted.0`))).toBeNull();
+    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=yes`))).toBeNull();
+    expect(consentToCarry(new Headers())).toBeNull();
+  });
+
+  it("records the carried answer on the other host", () => {
+    const cookie = carriedConsentCookie("denied.1", new Headers(), true);
+    expect(cookie).toBe(`${ANALYTICS_CONSENT_COOKIE}=denied.1; ${consentCookieAttributes(true)}`);
+  });
+
+  it("never overrides an answer given on this host, and ignores junk", () => {
+    expect(carriedConsentCookie("granted.1", withCookie(`${ANALYTICS_CONSENT_COOKIE}=denied.1`), true)).toBeNull();
+    expect(carriedConsentCookie("granted.1; Domain=evil.example", new Headers(), true)).toBeNull();
+    expect(carriedConsentCookie("granted.0", new Headers(), true)).toBeNull();
+    expect(carriedConsentCookie(null, new Headers(), true)).toBeNull();
   });
 });

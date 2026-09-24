@@ -17,18 +17,22 @@ export function SignInCard({
   titleId,
   title,
   subtitle,
+  scouting = false,
   children,
 }: {
   titleId: string;
   title: string;
   subtitle?: string;
+  /** On the Scouting host the card says which product this is. */
+  scouting?: boolean;
   children: ReactNode;
 }) {
   return (
     <main className="signin-page">
       <section className="signin-card" aria-labelledby={titleId}>
         <div className="signin-brand">
-          <VantageLogo />
+          <VantageLogo href={scouting ? "/scout" : "/"} />
+          {scouting ? <span className="signin-product">Scouting</span> : null}
         </div>
         <h1 id={titleId}>{title}</h1>
         {subtitle ? <p className="signin-sub">{subtitle}</p> : null}

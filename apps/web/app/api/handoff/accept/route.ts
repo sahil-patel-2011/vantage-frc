@@ -1,5 +1,6 @@
 import { auth } from "@vantage/core";
 import { NextResponse } from "next/server";
+import { carriedConsentCookie } from "../../../../lib/product-analytics/consent";
 import { consumeHandoff, isHandoffTokenShape } from "../../../../lib/products/handoff";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { requestOrigin } from "../../../../lib/products/products";
@@ -32,7 +33,8 @@ export async function GET(request: Request) {
   if (!(await limiter.allow(anonymizeIp(clientIp(request), "handoff")))) {
     return rateLimitedResponse("Too many sign-in handoffs. Wait a minute and try again.");
   }
-  const token = new URL(request.url).searchParams.get("token");
+  const params = new URL(request.url).searchParams;
+  const token = params.get("token");
   const origin = requestOrigin(request);
   const signIn = () => noStore(NextResponse.redirect(new URL("/signin?handoff=expired", origin), 303));
   if (!isHandoffTokenShape(token)) return signIn();
@@ -57,6 +59,8 @@ export async function GET(request: Request) {
     });
     const response = NextResponse.redirect(new URL(safeAppPath(consumed.targetPath, "/"), origin), 303);
     for (const cookie of minted.headers.getSetCookie()) response.headers.append("Set-Cookie", cookie);
+    const consent = carriedConsentCookie(params.get("consent"), request.headers, origin.startsWith("https:"));
+    if (consent) response.headers.append("Set-Cookie", consent);
     return noStore(response);
   } catch {
     return signIn();

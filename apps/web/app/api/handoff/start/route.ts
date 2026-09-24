@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { consentToCarry } from "../../../../lib/product-analytics/consent";
 import { newHandoffToken } from "../../../../lib/products/handoff";
 import {
   SCOUTING_HOME,
@@ -58,7 +59,10 @@ export async function GET(request: Request) {
     ]),
   );
 
-  const response = NextResponse.redirect(`${origin}/api/handoff/accept?token=${token}`, 303);
+  // The cookie-banner answer travels too, so the other host doesn't ask it again.
+  const consent = consentToCarry(request.headers);
+  const accept = `${origin}/api/handoff/accept?token=${token}${consent ? `&consent=${consent}` : ""}`;
+  const response = NextResponse.redirect(accept, 303);
   // The token is in the next URL; never let it leak through a Referer.
   response.headers.set("Referrer-Policy", "no-referrer");
   response.headers.set("Cache-Control", "no-store");

@@ -72,10 +72,13 @@ export default function SignInClient({
   googleEnabled,
   nextPath = "/dashboard",
   initialStatus,
+  scouting = false,
 }: {
   googleEnabled: boolean;
   nextPath?: string;
   initialStatus: AuthStatus;
+  /** Signing in on the Scouting host. */
+  scouting?: boolean;
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [flow, dispatch] = useReducer(signInFlowReducer, undefined, () => initialSignInState());
@@ -583,12 +586,14 @@ export default function SignInClient({
         resolvedNext={resolvedNext}
         onContinue={() => void leave()}
         onSwitchAccount={(href) => void signOutAndRedirect(href)}
+        scouting={scouting}
       />
     );
   }
 
   return (
     <SignInCard
+      scouting={scouting}
       titleId="signin-title"
       title={notInvited ? "You’re not on a team yet" : stepCopy.title}
       subtitle={

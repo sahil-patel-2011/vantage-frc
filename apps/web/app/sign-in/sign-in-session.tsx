@@ -13,6 +13,7 @@ export function SignInSessionView({
   resolvedNext,
   onContinue,
   onSwitchAccount,
+  scouting = false,
 }: {
   inviteHeadline: string | null;
   inviteToken: string | null;
@@ -22,9 +23,11 @@ export function SignInSessionView({
   resolvedNext: string;
   onContinue: () => void;
   onSwitchAccount: (href: string) => void;
+  scouting?: boolean;
 }) {
   return (
     <SignInCard
+      scouting={scouting}
       titleId="signin-title"
       title={inviteHeadline ?? "You’re already signed in"}
       subtitle="Continue with the account already open in this browser."
