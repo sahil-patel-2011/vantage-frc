@@ -300,3 +300,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Each next step is a link named for what it does. */
+.invite-next-link{display:inline-flex;align-items:center;min-height:44px;font-weight:700;color:var(--accent,#2563eb);text-decoration:none}
+.invite-next-link:hover{text-decoration:underline}

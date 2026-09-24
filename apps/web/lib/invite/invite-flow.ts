@@ -315,10 +315,10 @@ export function inviteNextActions(input: {
   if (input.kind === "expired" || input.kind === "revoked" || input.kind === "invalid") {
     return [
       {
-        id: "workspace",
-        label: "Check team access",
-        detail: "If you already belong to a team, pick it from Your team.",
-        href: "/workspace",
+        id: "signin",
+        label: "Already joined? Sign in",
+        detail: "If you used this invite before, sign in and you land on your team.",
+        href: "/signin",
         primary: true,
       },
     ];

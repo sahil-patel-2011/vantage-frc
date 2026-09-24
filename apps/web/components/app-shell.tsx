@@ -31,6 +31,7 @@ import { Icon, type IconName } from "./icon";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
+import { isKnownAppPath } from "../lib/nav/app-route-roots";
 import {
   accountInitialFor,
   accountLabelFor,
@@ -462,6 +463,14 @@ export default function AppShell() {
     document.body.classList.toggle("shell-onboarding", onboarding);
     return () => document.body.classList.remove("shell-onboarding");
   }, [onboarding]);
+  // The invite landing and the 404 keep the product's styles but not its chrome: the person
+  // there usually has no account yet, or took a wrong turn, and a team switcher reading
+  // "No team selected" plus a tab bar of sign-in walls only looked broken.
+  const bare = pathname === "/invite" || !isKnownAppPath(pathname);
+  useEffect(() => {
+    document.body.classList.toggle("shell-bare", bare);
+    return () => document.body.classList.remove("shell-bare");
+  }, [bare]);
   const isHubRoot = isHubRootPath(pathname);
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
@@ -586,6 +595,8 @@ export default function AppShell() {
       setIslandSaving(false);
     }
   }
+
+  if (bare) return null;
 
   return (
     <>

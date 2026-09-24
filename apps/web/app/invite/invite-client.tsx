@@ -55,12 +55,12 @@ function NextActions({
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
             <div>
-              <strong>{action.label}</strong>
+              {/* The action's own name is the link; a row of "Open" links said nothing. */}
+              <a className="invite-next-link" href={action.href}>
+                {action.label}
+              </a>
               <span>{action.detail}</span>
             </div>
-            <a className="signin-link" href={action.href}>
-              Open
-            </a>
           </li>
         ))}
       </ol>
@@ -367,7 +367,7 @@ export default function InviteClient() {
               </button>
             </div>
           </>
-        ) : (
+        ) : kind === "auth_required" || kind === "email_mismatch" || kind === "loading" ? (
           <div className="invite-empty-shell">
             {kind === "auth_required" ? (
               <div className="invite-actions">
@@ -402,7 +402,7 @@ export default function InviteClient() {
             ) : null}
             {kind === "loading" ? <p className="onboarding-sub">Checking invite…</p> : null}
           </div>
-        )}
+        ) : null}
 
         {kind !== "ready" && kind !== "auth_required" && kind !== "email_mismatch" ? (
           <NextActions kind={kind} orgId={preview?.orgId} token={token} />

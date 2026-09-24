@@ -165,6 +165,12 @@ html[data-motion="reduced"] .hub-tool-overflow { animation: none; }
   }
 }
 
+/* No chrome at all (invite landing, 404): nothing to leave room for. */
+body.has-app-shell.shell-bare {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 /* Onboarding keeps the logo and the account menu (for Sign out) and nothing else. */
 body.shell-onboarding .soft-burger,
 body.shell-onboarding .soft-topbar-product,

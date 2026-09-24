@@ -1,6 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { EmptyState, Button } from "../components/ui";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 export default async function NotFound() {
   // A visitor who isn't signed in followed a bad link to the website, not into the app.
   const signedIn = Boolean(getSessionCookie(await headers()));
-  return (
+  const card = (
     <main className="module-page">
       <EmptyState
         soft
@@ -58,4 +59,15 @@ export default async function NotFound() {
       </EmptyState>
     </main>
   );
+  // Signed out, a bad link was a link to the website: show it inside the website.
+  if (!signedIn) {
+    return (
+      <div className="marketing-site marketing-lux">
+        <SiteHeader />
+        {card}
+        <SiteFooter />
+      </div>
+    );
+  }
+  return card;
 }
