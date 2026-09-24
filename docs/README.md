@@ -46,7 +46,7 @@ Start with the section that matches you. Each document says who it is for in its
 | [TEAM_SHEETS_HUB.md](TEAM_SHEETS_HUB.md) | One Google Sheet per team in the platform's VantageFRC Drive folder: turning it on, how auto-sync works |
 | [RELEASING.md](RELEASING.md) | Cutting releases, including desktop builds |
 | [../SECURITY_OPERATIONS.md](../SECURITY_OPERATIONS.md) | The security model, admin access, secrets and how to report a problem |
-| [PRICING.md](PRICING.md) | The plan and credit model, and what is charged when billing is configured |
+| [PRICING.md](PRICING.md) | Today: free for every team, bring your own AI key. Also the dormant plan and credit model |
 | [FINANCE_SECURITY.md](FINANCE_SECURITY.md) | How money-related data is protected |
 
 ## Contributing

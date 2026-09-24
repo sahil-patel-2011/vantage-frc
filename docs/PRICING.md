@@ -1,6 +1,11 @@
 # Vantage pricing ladder
 
-*For operators enabling billing, and anyone asking what a plan includes. Last updated 2026-08-24.*
+> **What teams are offered today (2026-09-24): Vantage is free for every team, and AI runs on the
+> team's own key (or not at all).** The public /pricing page says exactly that. The plan ladder below
+> is the billing model the code still carries for a future paid tier; no team is offered or charged
+> for it.
+
+*For operators enabling billing later. Last updated 2026-08-24.*
 
 Effective 2026-08-24 (migration `0481_pricing_ladder.sql`, catalog `packages/billing/src/catalog.ts`).
 
