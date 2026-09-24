@@ -590,10 +590,12 @@ async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promis
 async function batteries(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
   const rows = await query<{ active: string; service: string }>(
     client,
+    // battery_packs is the one battery table since 0153 (the old "batteries" table is gone, and
+    // reading it failed the card on every Home that had it). "In service" = quarantine there.
     `SELECT /* home-widget:batteries */
             count(*) FILTER (WHERE status = 'active')::text AS active,
-            count(*) FILTER (WHERE status = 'service')::text AS service
-       FROM batteries
+            count(*) FILTER (WHERE status = 'quarantine')::text AS service
+       FROM battery_packs
       WHERE org_id = $1::uuid`,
     [ctx.orgId],
   );
