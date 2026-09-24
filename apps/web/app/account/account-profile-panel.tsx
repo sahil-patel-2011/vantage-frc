@@ -2,13 +2,12 @@
 
 import type { FormEvent } from "react";
 import { Panel, Button } from "../../components/ui";
-import { formatAccountOrgLabel } from "../../lib/account";
 import type { AccountView, OrgContext } from "./account-types";
 import { RecoveryEmailSettings } from "./recovery-email-settings";
 
 export function AccountProfilePanel({
   account,
-  org,
+  org: _org,
   displayName,
   firstName,
   lastName,
@@ -59,7 +58,6 @@ export function AccountProfilePanel({
   onSignOut: () => void;
 }) {
   const initial = (displayName.trim()?.[0] ?? account.email?.trim()?.[0] ?? "?").toUpperCase();
-  const orgId = org.orgId;
 
   return (
     <Panel className="account-panel">
@@ -72,11 +70,6 @@ export function AccountProfilePanel({
         <div>
           <strong>{displayName || "Signed-in user"}</strong>
           <span>{account.email ?? "—"}</span>
-          <span className="account-identity-scope">
-            {orgId
-              ? `Personal account · team ${formatAccountOrgLabel(org) ?? "active"}`
-              : "Personal account · no team selected"}
-          </span>
         </div>
       </div>
       <form className="account-form" onSubmit={(event) => void onSave(event)}>

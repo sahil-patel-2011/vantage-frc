@@ -11,7 +11,14 @@ export function countdownLabel(iso: string | null | undefined) {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  // "24:18:25" had no unit and ticked every second a day out. Hours and days in words;
+  // the ticking clock only in the last hour, when the seconds matter.
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    const rest = h % 24;
+    return `${d} ${d === 1 ? "day" : "days"}${rest ? ` ${rest} hr` : ""}`;
+  }
+  if (h > 0) return `${h} hr ${m} min`;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
