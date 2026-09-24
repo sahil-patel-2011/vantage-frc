@@ -90,7 +90,6 @@ export function StrategyShell({
   fromCache = false,
   cachedAt = null,
   eventName = null,
-  canSync = false,
   lastMatch = null,
   children,
 }: {
@@ -102,7 +101,6 @@ export function StrategyShell({
   fromCache?: boolean;
   cachedAt?: string | null;
   eventName?: string | null;
-  canSync?: boolean;
   /** Our last match here when none is ahead: the empty state offers to review it. */
   lastMatch?: { matchKey: string; compLevel: string; matchNumber: number } | null;
   children?: ReactNode;
@@ -115,7 +113,6 @@ export function StrategyShell({
         : strategyWaitingCopy(eventName)
       : copy.description;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
 
   const Root = embedded ? "div" : "main";
@@ -173,15 +170,12 @@ export function StrategyShell({
                 Open pre-match briefing
               </Button>
             )}
-            {canSync ? (
-              <Button as="a" variant="secondary" href={teamDataHref}>
-                Check for new schedule
-              </Button>
-            ) : (
-              <Button as="a" variant="secondary" href={hubHref("/competition", "scouting", orgId)}>
-                Open Scouting
-              </Button>
-            )}
+            {/* Where the team stands is the other question with no match ahead. (This used to
+                open Team Data, a page of sync plumbing, to "check for new schedule"; the
+                schedule refreshes on its own.) */}
+            <Button as="a" variant="secondary" href={withOrgHref("/rankings", orgId ?? null)}>
+              See the rankings
+            </Button>
           </>
         ) : null}
       </EmptyState>

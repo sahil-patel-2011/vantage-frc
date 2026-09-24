@@ -227,7 +227,6 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         fromCache={fromCache}
         cachedAt={cachedAt}
         eventName={eventName}
-        canSync={canSync}
         lastMatch={view && view.status !== "live" ? view.lastMatch ?? null : null}
       >
         {/* The switcher has to survive this state. Without it, clicking Matchup
