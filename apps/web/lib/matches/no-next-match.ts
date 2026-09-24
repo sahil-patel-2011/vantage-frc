@@ -48,7 +48,9 @@ export function noNextMatchMessage(summary: OurMatchSummary | null): string {
     const score =
       last.ours != null && last.theirs != null
         ? ` (${last.won === true ? "W" : last.won === false ? "L" : "T"} ${last.ours}–${last.theirs})`
-        : "";
+        : // Otherwise "Recent result" (the last scored match) names an earlier one and the two
+          // cards look like they disagree.
+          " (score not posted yet)";
     return `All ${summary.total} of our matches here are played. Last: ${last.label}${score}.`;
   }
   if ((summary.behind ?? 0) > 0) return "Our next match is running behind schedule.";

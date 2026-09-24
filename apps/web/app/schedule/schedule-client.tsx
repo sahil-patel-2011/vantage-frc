@@ -271,6 +271,9 @@ function MatchRow({
               <span className="sched-score-sep">–</span>
               <b className={match.winningAlliance === "blue" ? "win blue" : "blue"}>{match.blueScore}</b>
             </span>
+          ) : played ? (
+            // A played match's pre-match estimate beside "played 8:57 PM" read as its result.
+            <span className="sched-prediction">Score not posted</span>
           ) : match.prediction ? (
             <span className="sched-prediction">{formatSchedulePrediction(match.prediction)}</span>
           ) : null}
