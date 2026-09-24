@@ -149,10 +149,12 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       return;
     }
     const layout: DisplayWidget[] = toGridLayout(widgets);
+    // A preset draws its own fixed screen on the TV; only "custom" draws the panels. So a
+    // preset whose panels were changed is saved as custom, or the TV ignored the edit.
     const body: Record<string, unknown> = {
       orgId,
       name: boardName,
-      preset,
+      preset: preset !== "custom" && !matchesPreset(widgets, preset) ? "custom" : preset,
       widgets: layout,
     };
     if (editId) body.id = editId;
@@ -390,8 +392,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               <DisplayWidgetEditor widgets={widgets} onChange={setWidgets} />
               {preset !== "custom" && !matchesPreset(widgets, preset) ? (
                 <p className="app-muted dwe-customised">
-                  Customised from the {preset.replaceAll("_", " ")} preset. Reset to
-                  preset puts it back.
+                  Customised from the {preset.replaceAll("_", " ")} preset, so the TV will show exactly these
+                  panels. Reset to preset puts the preset&rsquo;s screen back.
                 </p>
               ) : null}
 

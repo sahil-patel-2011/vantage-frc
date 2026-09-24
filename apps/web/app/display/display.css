@@ -863,3 +863,15 @@
 .tv-link-qr { margin: 0; display: grid; gap: 6px; justify-items: center; max-width: 240px; }
 .tv-link-qr img { border-radius: 12px; background: #fff; padding: 6px; }
 .tv-link-qr figcaption { font-size: 12px; color: var(--muted, #6b7280); text-align: center; }
+
+/* From three metres away the match is what matters, not the board's name: the name drops to a
+   label, and the numbers, alliances and custom panels grow. */
+.display-kiosk-pit .display-kiosk-title h1 { font-size: clamp(1.1rem, 1.8vw, 1.6rem); opacity: 0.75; }
+.display-kiosk-pit .display-kiosk-title span { font-size: clamp(1rem, 1.6vw, 1.4rem); }
+.display-kiosk-pit .display-kiosk-panel article p { font-size: clamp(1.4rem, 3vw, 2.6rem); font-weight: 800; margin: 0.2rem 0; }
+.display-kiosk-pit .display-kiosk-panel article small,
+.display-kiosk-pit .display-kiosk-panel article em { font-size: clamp(1rem, 1.6vw, 1.4rem); }
+.display-kiosk-pit .display-kiosk-empty h2 { font-size: clamp(2rem, 5vw, 4rem); }
+.display-kiosk-pit .display-kiosk-custom { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.display-kiosk-pit .display-kiosk-custom article span { font-size: clamp(0.9rem, 1.4vw, 1.2rem); }
+.display-kiosk-pit .display-kiosk-custom article strong { font-size: clamp(2rem, 4.5vw, 4rem); }

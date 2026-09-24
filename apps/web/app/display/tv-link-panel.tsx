@@ -8,21 +8,22 @@ import { displayKioskHref, pitChromiumKioskCommand } from "../../lib/display";
 type Check = { state: "idle" | "checking" | "ok" | "failed"; detail: string };
 
 /**
- * The link a TV opens, shown once right after it is made. The event board is the one to use:
- * it follows the event (next match with bumper colour and opponents, queue, rankings, bracket)
- * on its own. A QR code saves typing a 60-character address with a TV remote, and "Test" opens
- * the same feed the TV will, so a dead link is found at the laptop, not at the TV.
+ * The link a TV opens, shown once right after it is made. The main link shows the board you
+ * built, exactly as "Open fullscreen" does; the event board (which rotates through next match,
+ * queue, rankings and bracket on its own and ignores the board's layout) is offered beside it,
+ * named as the different thing it is. A QR code saves typing a 60-character address with a TV
+ * remote, and "Test" opens the same feed the TV will, so a dead link is found at the laptop.
  */
 export function TvLinkPanel({ token, onCopied }: { token: string; onCopied: (message: string) => void }) {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const yourBoard = displayKioskHref(origin, token, "pit");
   const eventBoard = displayKioskHref(origin, token, "stage");
-  const simpleBoard = displayKioskHref(origin, token, "pit");
   const [qr, setQr] = useState<string | null>(null);
   const [check, setCheck] = useState<Check>({ state: "idle", detail: "" });
 
   useEffect(() => {
     let active = true;
-    void qrDataUrl(eventBoard, { margin: 1, width: 220 })
+    void qrDataUrl(yourBoard, { margin: 1, width: 220 })
       .then((url) => {
         if (active) setQr(url);
       })
@@ -30,7 +31,7 @@ export function TvLinkPanel({ token, onCopied }: { token: string; onCopied: (mes
     return () => {
       active = false;
     };
-  }, [eventBoard]);
+  }, [yourBoard]);
 
   const copy = (url: string, message: string) => {
     void navigator.clipboard
@@ -42,7 +43,7 @@ export function TvLinkPanel({ token, onCopied }: { token: string; onCopied: (mes
   const test = async () => {
     setCheck({ state: "checking", detail: "" });
     try {
-      const response = await fetch(`/api/display/stage?token=${encodeURIComponent(token)}`, { cache: "no-store" });
+      const response = await fetch(`/api/display/snapshot?token=${encodeURIComponent(token)}`, { cache: "no-store" });
       const body = (await response.json().catch(() => ({}))) as { error?: string; board?: { name?: string } };
       if (response.ok && body.board) {
         setCheck({ state: "ok", detail: `Works. The TV will show "${body.board.name ?? "your board"}".` });
@@ -60,12 +61,11 @@ export function TvLinkPanel({ token, onCopied }: { token: string; onCopied: (mes
         <strong>TV link ready. Copy it now: it is shown only once.</strong>
         <p className="app-muted">
           Open it in the TV&rsquo;s browser (or on the laptop plugged into the TV) and press F11 for full screen. It
-          shows your next match, bumper colour and opponents, and switches to rankings and the bracket as the event
-          goes on.
+          shows this board exactly as you built it.
         </p>
-        <code className="tv-link-url">{eventBoard}</code>
+        <code className="tv-link-url">{yourBoard}</code>
         <div className="display-actions">
-          <Button variant="primary" type="button" onClick={() => copy(eventBoard, "TV link copied.")}>
+          <Button variant="primary" type="button" onClick={() => copy(yourBoard, "TV link copied.")}>
             Copy TV link
           </Button>
           <Button variant="secondary" type="button" disabled={check.state === "checking"} onClick={() => void test()}>
@@ -80,14 +80,15 @@ export function TvLinkPanel({ token, onCopied }: { token: string; onCopied: (mes
         <details className="tv-link-more">
           <summary>Other ways to show it</summary>
           <p>
-            Simpler one-screen board (no rotation):{" "}
-            <button type="button" className="text-button" onClick={() => copy(simpleBoard, "Simple board link copied.")}>
-              copy link
+            <strong>Event board instead</strong>: ignores this board&rsquo;s layout and rotates on its own through the next
+            match (bumper colour, who you&rsquo;re with and against), the queue, rankings and the bracket.{" "}
+            <button type="button" className="text-button" onClick={() => copy(eventBoard, "Event board link copied.")}>
+              Copy event board link
             </button>
           </p>
           <p>
             Raspberry Pi or a kiosk stick, starting full screen on boot:
-            <code>{pitChromiumKioskCommand(eventBoard)}</code>
+            <code>{pitChromiumKioskCommand(yourBoard)}</code>
           </p>
         </details>
       </div>
