@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { plainStrategyText } from "../../lib/briefing/plain-text";
+import { ourSideRange } from "../../lib/strategy/our-side-range";
 import { intelTags } from "../../lib/display/match-intel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
@@ -409,6 +410,7 @@ export default function BriefingClient() {
   const winInput = briefingWinDisplayInput(view.prediction, side);
   const winDisplay = predictionWinDisplay(winInput);
   const winPct = formatPredictionWinDisplay(winInput);
+  const ourRange = ourSideRange(view.prediction?.confidenceLow, view.prediction?.confidenceHigh, side);
   const stored = includeStoredBriefingSections({
     card: view.card,
     counterBooks: view.counterBooks,
@@ -509,9 +511,11 @@ export default function BriefingClient() {
           <div className="brief-prob">
             <span className="brief-prob-num">{winPct ?? ""}</span>
             <span className="brief-prob-label">win probability</span>
-            <span className="brief-prob-range">
-              typical range {pct(view.prediction.confidenceLow)}–{pct(view.prediction.confidenceHigh)}
-            </span>
+            {ourRange ? (
+              <span className="brief-prob-range">
+                typical range {pct(ourRange.low)}–{pct(ourRange.high)}
+              </span>
+            ) : null}
           </div>
         ) : (
           <div className="brief-prob none">
