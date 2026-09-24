@@ -627,3 +627,22 @@
 @media (max-width: 760px) {
   .stage-sides { grid-template-columns: 1fr; }
 }
+
+/* Readable colour on the bumper banner and win line: the generic `.display-stage p` rule
+   (muted grey) won over the banner's own colour and put dark grey on red. */
+.display-stage .stage-bumpers { color: #fff; }
+.display-stage .stage-win { color: var(--stage-ink); }
+.display-stage .stage-next-head .stage-kicker {
+  color: var(--stage-ink);
+  font-size: calc(clamp(1.3rem, 3vw, 2.6rem) * var(--stage-scale));
+  font-weight: 700;
+}
+
+/* A TV cannot scroll: the board fits the screen, and short (720p) screens get smaller type
+   and tighter rows so all three partners and opponents stay visible. */
+.display-stage { height: 100dvh; overflow: hidden; }
+@media (max-height: 820px) {
+  .display-stage { --stage-scale: 0.78; }
+  .display-stage .stage-lineup li { padding-block: 0.25rem; }
+  .display-stage .stage-bumpers { padding-block: 0.35rem; }
+}

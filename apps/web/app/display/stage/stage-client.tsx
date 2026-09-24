@@ -174,7 +174,12 @@ export default function StageClient({
         : [],
     [data, phase],
   );
-  const screen = rotation.length ? rotation[tick % rotation.length] : null;
+  // From half an hour before our match until ten minutes after its time, the TV stops
+  // rotating and holds the next-match screen: that is the only thing the pit needs then.
+  const minutesToNext = nextMatch?.scheduledTime ? (new Date(nextMatch.scheduledTime).getTime() - now) / 60_000 : null;
+  const pinNext =
+    minutesToNext != null && Number.isFinite(minutesToNext) && minutesToNext <= 30 && minutesToNext >= -10 && rotation.includes("next_match");
+  const screen = pinNext ? "next_match" : rotation.length ? rotation[tick % rotation.length] : null;
   const sponsorText = sponsorScrollText(data?.sponsors ?? []);
 
   const cycleScale = () => {
@@ -469,9 +474,13 @@ function ScheduleScreen({ data }: { data: DisplayStagePayload }) {
 }
 
 function RankingsScreen({ data, selection }: { data: DisplayStagePayload; selection: boolean }) {
-  const rows = data.rankings ?? [];
-  if (!rows.length) return <p className="stage-note">No ranking rows synced for this event yet.</p>;
+  const all = data.rankings ?? [];
+  if (!all.length) return <p className="stage-note">No ranking rows synced for this event yet.</p>;
   const ourKey = `frc${data.organization.teamNumber}`;
+  // A TV cannot scroll: the top eight, plus our own row when we are further down.
+  const top = all.slice(0, 8);
+  const ours = all.find((row) => row.teamKey === ourKey);
+  const rows = ours && !top.includes(ours) ? [...top, ours] : top;
   return (
     <div className="stage-table-wrap">
       {selection ? (
