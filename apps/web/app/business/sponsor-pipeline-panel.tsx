@@ -160,10 +160,19 @@ export function SponsorPipelinePanel({
     [view.sponsors, contributionRows, contributionsLoaded],
   );
 
+  // With no goal, no sponsors and no money recorded, five "$0" tiles and six empty stages say
+  // nothing. One empty state with one action does, and the numbers appear once there are some.
+  const hasFundraising =
+    activeSponsors.length > 0 ||
+    Boolean(progress.goalCents) ||
+    progress.actualCents > 0 ||
+    progress.pledgedPipelineCents > 0;
+
   return (
     <div className="biz-stack">
       {activeSponsors.length ? <NextActions view={view} /> : null}
 
+      {hasFundraising ? (
       <section className="app-card soft-panel biz-pipeline-goal">
         <header className="biz-card-head">
           <div>
@@ -213,6 +222,7 @@ export function SponsorPipelinePanel({
         </div>
         <p className="app-muted">Only this team’s sponsors appear here.</p>
       </section>
+      ) : null}
 
       {!activeSponsors.length ? (
         <EmptyState
@@ -222,10 +232,24 @@ export function SponsorPipelinePanel({
           title={view.canManageFinance ? "No sponsors yet" : "Sponsor list is empty"}
           description={
             view.canManageFinance
-              ? "Add a partner below, or open Fundraisers and Grants. Totals only reflect recorded contributions."
+              ? "Add the first company or person backing your team. Totals and the pipeline appear once there is something to count."
               : "A finance lead adds sponsors. You can still open Fundraisers and Grants while this list is empty."
           }
-        />
+        >
+          {view.canManageFinance ? (
+            <Button
+              variant="primary"
+              type="button"
+              onClick={() => {
+                const form = document.getElementById("biz-add-partner");
+                form?.scrollIntoView({ behavior: "smooth", block: "start" });
+                form?.querySelector<HTMLInputElement>("input[name=name]")?.focus({ preventScroll: true });
+              }}
+            >
+              Add your first sponsor
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : null}
 
       {reminders.length ? (
@@ -284,6 +308,7 @@ export function SponsorPipelinePanel({
         </section>
       ) : null}
 
+      {activeSponsors.length ? (
       <section className="app-card">
         <header className="biz-card-head">
           <div>
@@ -315,9 +340,10 @@ export function SponsorPipelinePanel({
           ))}
         </div>
       </section>
+      ) : null}
 
       <section className="biz-grid two">
-        <article className="app-card">
+        <article className="app-card" id="biz-add-partner">
           <header className="biz-card-head">
             <div>
               <span className="biz-overline">Add partner</span>
