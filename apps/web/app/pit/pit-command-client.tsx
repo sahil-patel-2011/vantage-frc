@@ -231,6 +231,9 @@ function PitShell({
         title="Pit command"
         description={description}
       >
+        <Button as="a" variant="secondary" href={withOrgHref("/display", orgId || null)}>
+          Show on the pit TV
+        </Button>
         <PitRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}

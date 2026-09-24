@@ -392,6 +392,7 @@ const STANDALONE: CommandEntry[] = [
   { id: "logistics", label: "Logistics", context: "Vantage", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
   { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
   { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
+  { id: "pit-tv", label: "Pit TV", context: "Competition", href: "/display", kind: "destination", keywords: ["pit tv", "tv", "display", "kiosk", "screen", "monitor", "pit display", "board"] },
   // Four complete features — API, offline support, browser specs — that no
   // menu pointed at. They were reachable only by typing the URL, which the
   // route-coverage rule was supposed to catch and did not: it counted a route

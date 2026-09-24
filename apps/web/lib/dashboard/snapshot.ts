@@ -279,7 +279,7 @@ export async function loadDashboardSnapshot(
             ? "Switch to BLUE bumpers"
             : "Alliance TBD — confirm bumpers",
       bumperColor: ourAlliance ? ourAlliance.toUpperCase() : null,
-      href: `/my-day?orgId=${encodeURIComponent(input.orgId)}`,
+      href: `/briefing?orgId=${encodeURIComponent(input.orgId)}&matchKey=${encodeURIComponent(row.matchKey)}`,
       pRed: stored?.pRed ?? null,
       pBlue: stored?.pBlue ?? null,
       confidenceLow: stored?.confidenceLow ?? null,
