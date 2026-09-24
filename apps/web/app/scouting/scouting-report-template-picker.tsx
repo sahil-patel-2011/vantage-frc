@@ -58,37 +58,31 @@ export function ScoutingReportTemplatePicker({ fields }: { fields: readonly Fiel
     target?.querySelector<HTMLElement>("button, input, select, textarea")?.focus({ preventScroll: true });
   }
 
+  // One control, not a card. As a card of eleven buttons in three groups this
+  // sat between the robot a scout had just tapped and the first field, and on
+  // a phone it was most of a screen of scrolling before any counting could
+  // start. It is optional — the form is complete without it — so it now takes
+  // one row, and choosing a focus still lists the matching fields to jump to.
   return (
-    <section className="scout-template-picker" aria-labelledby="scout-template-title">
-      <div className="scout-template-copy">
-        <span className="eyebrow">Quick start</span>
-        <strong id="scout-template-title">What are you watching?</strong>
-        <p>Tap a focus. The form stays complete, and the matching fields jump into reach.</p>
-      </div>
-      {CATEGORIES.map((category) => (
-        <div className="scout-template-group" key={category}>
-          <span className="scout-template-category">{category}</span>
-          <div className="scout-template-choices" role="group" aria-label={category}>
-            {SCOUTING_REPORT_TEMPLATES.filter((candidate) => candidate.category === category).map((candidate) => {
-              const count = counts.get(candidate.id) ?? 0;
-              const selected = templateId === candidate.id;
-              return (
-                <button
-                  key={candidate.id}
-                  type="button"
-                  aria-pressed={selected}
-                  disabled={count === 0}
-                  title={count === 0 ? "This form has no fields for that focus" : candidate.description}
-                  onClick={() => choose(selected ? "" : candidate.id)}
-                >
-                  <span>{candidate.name}</span>
-                  <small>{count === 0 ? "None on this form" : `${count} field${count === 1 ? "" : "s"}`}</small>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+    <section className="scout-template-picker is-compact" aria-label="What are you watching?">
+      <label className="scout-template-select">
+        <span>What are you watching?</span>
+        <select value={templateId} onChange={(event) => choose(event.target.value)}>
+          <option value="">Everything</option>
+          {CATEGORIES.map((category) => (
+            <optgroup key={category} label={category}>
+              {SCOUTING_REPORT_TEMPLATES.filter((candidate) => candidate.category === category).map((candidate) => {
+                const count = counts.get(candidate.id) ?? 0;
+                return (
+                  <option key={candidate.id} value={candidate.id} disabled={count === 0}>
+                    {candidate.name} · {count === 0 ? "none on this form" : `${count} field${count === 1 ? "" : "s"}`}
+                  </option>
+                );
+              })}
+            </optgroup>
+          ))}
+        </select>
+      </label>
       {template ? (
         <div className="scout-template-result" role="status">
           <p>{template.description}</p>

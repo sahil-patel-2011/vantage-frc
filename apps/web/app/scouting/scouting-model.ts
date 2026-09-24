@@ -47,6 +47,19 @@ export type Bootstrap = {
 
 export type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust" | "teams";
 
+/** What the confirmation after Save says. `next` is only set when the schedule or an assignment names it. */
+export type SaveReceipt = {
+  teamKey: string;
+  matchKey?: string;
+  /** "Qual 10", read the same way the robot tiles read it. */
+  matchLabel?: string | null;
+  entryType: "match" | "pit";
+  offline: boolean;
+  /** Tells two saves of the same robot apart, so each one scrolls to its confirmation. */
+  savedAt: number;
+  next?: { matchLabel: string; teamNumber: string | null; stationLabel: string | null } | null;
+};
+
 export type RecentEntry = NonNullable<Bootstrap["recentEntries"]>[number];
 
 /**

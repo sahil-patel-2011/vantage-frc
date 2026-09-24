@@ -1,20 +1,19 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ExportButton } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
-import { ASSIGNMENTS_ARE_SUGGESTIONS_COPY, describeMatchKey, groupScoutTargets } from "../../lib/scouting/scout-target";
-import { PitTeamField, ScoutTargetByHand } from "./scout-target-by-hand";
+import { PitTeamField, ScoutTargetChoices } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
-import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
+import { scoutContext } from "../../lib/scouting/scout-context";
 import { hubHref } from "../../lib/nav/hubs";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
@@ -30,6 +29,7 @@ import {
   type Bootstrap,
   type ConflictCandidate,
   type OfficialFlag,
+  type SaveReceipt,
   type ScoutTab,
 } from "./scouting-model";
 import { ScoutQuarantinePanel } from "./scouting-quarantine";
@@ -40,7 +40,15 @@ import ScoutingTrustPanel from "./scouting-trust-panel";
 import { ScoutingReportTemplatePicker } from "./scouting-report-template-picker";
 import { NextMatchCard } from "./next-match-card";
 import { MatchTimer } from "./match-timer";
+import { ScoutSaveConfirmation } from "./scout-save-confirmation";
+import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
+import "./scout-flow.css";
+
+/** Smooth unless the phone asks for less motion. */
+function smoothOrInstant(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
 
 type MatchOption = {
   matchKey: string;
@@ -48,12 +56,6 @@ type MatchOption = {
   label: string;
   /** One of yours. Sorted first and marked; never a restriction. */
   assigned?: boolean;
-};
-type SaveReceipt = {
-  teamKey: string;
-  matchKey?: string;
-  entryType: "match" | "pit";
-  offline: boolean;
 };
 
 export type ScoutingReadyViewProps = {
@@ -86,6 +88,8 @@ export type ScoutingReadyViewProps = {
   conflicts: Array<Record<string, unknown>>;
   selectedWinners: Record<string, string>;
   message: string;
+  /** "Uploaded 1 entry" — shown by the queue count, not under Save. */
+  syncNote: string | null;
   saveReceipt: SaveReceipt | null;
   showFormula: boolean;
   formulaName: string;
@@ -156,6 +160,7 @@ export function ScoutingReadyView({
   conflicts,
   selectedWinners,
   message,
+  syncNote,
   saveReceipt,
   showFormula,
   formulaName,
@@ -187,6 +192,55 @@ export function ScoutingReadyView({
   saveFormula,
   setMessage,
 }: ScoutingReadyViewProps) {
+  const context =
+    type === "match" ? scoutContext({ matches: data?.matches ?? [], matchKey, teamKey }) : null;
+  const canSave = Boolean(schema) && (type === "match" ? Boolean(matchKey && teamKey) : Boolean(teamKey));
+  const formStartRef = useRef<HTMLSpanElement | null>(null);
+  const scrollToFormPending = useRef(false);
+
+  // Tapping a robot tile used to only outline the tile; the form it opened
+  // started about 1,300px further down, under the match list, the typed-team
+  // box and a card of focus buttons. Now the tap is the start of the form.
+  const scrollToForm = useCallback(() => {
+    formStartRef.current?.scrollIntoView({ behavior: smoothOrInstant(), block: "start" });
+  }, []);
+  const pickRobot = useCallback(
+    (nextMatch: string, nextTeam: string) => {
+      if (nextMatch === matchKey && nextTeam === teamKey) {
+        scrollToForm();
+        return;
+      }
+      // The bar and anchor render with the new pick; scroll once they exist.
+      scrollToFormPending.current = true;
+      setMatchKey(nextMatch);
+      setTeamKey(nextTeam);
+    },
+    [matchKey, teamKey, scrollToForm, setMatchKey, setTeamKey],
+  );
+  useEffect(() => {
+    if (!scrollToFormPending.current) return;
+    scrollToFormPending.current = false;
+    window.requestAnimationFrame(scrollToForm);
+  }, [matchKey, teamKey, scrollToForm]);
+
+  const backToPicker = useCallback(() => {
+    document
+      .getElementById("scout-robot-picker")
+      ?.scrollIntoView({ behavior: smoothOrInstant(), block: "start" });
+  }, []);
+
+  // After Save the scout is at the bottom of a cleared form. Take them to the
+  // confirmation, which sits directly over the next robot to tap.
+  const savedAt = saveReceipt?.savedAt;
+  useEffect(() => {
+    if (!savedAt) return;
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("scout-save-confirmation")
+        ?.scrollIntoView({ behavior: smoothOrInstant(), block: "start" });
+    });
+  }, [savedAt]);
+
 return (
   <main className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
     {embedded ? null : (
@@ -230,6 +284,11 @@ return (
       <Button variant="secondary" type="button" onClick={() => void sync()}>
         Sync now
       </Button>
+      {syncNote ? (
+        <span className="scout-sync-note" role="status">
+          {syncNote}
+        </span>
+      ) : null}
     </div>
     <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
@@ -274,19 +333,7 @@ return (
       </>
     ) : null}
 
-    <ToolStrip
-      aria-label="Scouting views"
-      value={tab}
-      onChange={onTabChange}
-      items={[
-        { id: "match", label: "Match" },
-        { id: "pit", label: "Pit" },
-        { id: "handoff", label: "QR handoff" },
-        { id: "conflicts", label: "Conflicts" },
-        { id: "teams", label: "Robots", featured: true },
-        { id: "trust", label: "Trust & coverage" },
-      ]}
-    />
+    <ScoutViewSwitcher tab={tab} onChange={onTabChange} orgId={orgId} embedded={embedded} />
 
     {tab === "teams" ? (
       /* The one screen that answers what the scouting was *for*. Everything
@@ -477,8 +524,12 @@ return (
             </p>
           ) : null}
 
+          {saveReceipt ? (
+            <ScoutSaveConfirmation receipt={saveReceipt} onDismiss={() => setSaveReceipt(null)} />
+          ) : null}
+
           {type === "match" ? (
-            <>
+            <div id="scout-robot-picker" className="scout-robot-picker">
               {/* Scouting is not assignment-gated. The list is a convenience:
                   your matches first, then every other robot on the schedule,
                   and a typed team number for anything not on it at all. */}
@@ -489,66 +540,63 @@ return (
                   assignments={data.assignments ?? []}
                   matchKey={matchKey}
                   teamKey={teamKey}
-                  onPick={(nextMatch, nextTeam) => {
-                    setMatchKey(nextMatch);
-                    setTeamKey(nextTeam);
-                  }}
+                  onPick={pickRobot}
                 />
               ) : null}
-              {matchOptions.length ? (
-                <FormRow
-                  label={data?.matches?.length ? "Or pick any match" : "Who are you scouting?"}
-                  hint={
-                    matchOptions.some((option) => option.assigned)
-                      ? ASSIGNMENTS_ARE_SUGGESTIONS_COPY
-                      : undefined
-                  }
-                >
-                  <select
-                    value={`${matchKey}|${teamKey}`}
-                    onChange={(event) => {
-                      const [match, team] = event.target.value.split("|");
-                      setMatchKey(match ?? "");
-                      setTeamKey(team ?? "");
-                    }}
-                  >
-                    <option value="|">Select match and team</option>
-                    {/* Grouped by match. Flat, a 36-match event is 216 rows in
-                        one scroll, and the scout is looking for one of them
-                        while the match they want is starting. */}
-                    {groupScoutTargets(matchOptions).map((group) => (
-                      <optgroup key={group.key} label={group.label}>
-                        {group.options.map((option) => (
-                          <option
-                            key={`${option.matchKey}-${option.teamKey}`}
-                            value={`${option.matchKey}|${option.teamKey}`}
-                          >
-                            {option.assigned ? `★ ${option.label} · yours` : option.label}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </FormRow>
-              ) : null}
-
-              {/* The only path at an offseason event, and on the first morning
-                  of any event before the schedule lands. Previously an empty
-                  dropdown meant match scouting was simply impossible. */}
-              <ScoutTargetByHand
-                eventKey={data?.eventKey ?? ""}
-                matchKey={matchKey}
-                teamKey={teamKey}
-                startOpen={!matchOptions.length}
-                onPick={(nextMatch, nextTeam) => {
-                  setMatchKey(nextMatch);
-                  setTeamKey(nextTeam);
-                }}
-              />
-            </>
+              {data?.matches?.length ? (
+                // With the robot tiles on screen, the full list and the typed
+                // team are the exception. Open, they put about 300px between
+                // the tile a scout just tapped and the form it opens.
+                <details className="scout-other-target">
+                  <summary>Another match, or a team that isn’t listed</summary>
+                  <ScoutTargetChoices
+                    matchOptions={matchOptions}
+                    hasSchedule
+                    eventKey={data?.eventKey ?? ""}
+                    matchKey={matchKey}
+                    teamKey={teamKey}
+                    onPick={pickRobot}
+                  />
+                </details>
+              ) : (
+                <ScoutTargetChoices
+                  matchOptions={matchOptions}
+                  hasSchedule={false}
+                  eventKey={data?.eventKey ?? ""}
+                  matchKey={matchKey}
+                  teamKey={teamKey}
+                  onPick={pickRobot}
+                />
+              )}
+            </div>
           ) : (
             <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
           )}
+
+          {type === "match" && context ? (
+            <>
+              {/* Where "Scout team 1323" lands. The bar under it sticks to the
+                  top while the form scrolls, so the robot being counted, and
+                  the match clock, stay in sight the whole way down. */}
+              <span id="scout-form-start" className="scout-form-start" ref={formStartRef} aria-hidden="true" />
+              <div className="scout-context-bar" role="group" aria-label="Robot you are scouting">
+                <div className="scout-context-line">
+                  <p>
+                    <span className="scout-context-eyebrow">Scouting</span>{" "}
+                    <strong>{context.teamNumber}</strong>
+                    {context.matchLabel ? <> · {context.matchLabel}</> : null}
+                    {context.stationLabel ? <> · {context.stationLabel}</> : null}
+                  </p>
+                  <button type="button" className="scout-context-change" onClick={backToPicker}>
+                    Change
+                  </button>
+                </div>
+                {formFields.length ? (
+                  <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`} />
+                ) : null}
+              </div>
+            </>
+          ) : null}
 
           {type === "match" && formFields.length ? (
             <ScoutingReportTemplatePicker
@@ -578,10 +626,6 @@ return (
                 ))}
               </ul>
             </div>
-          ) : null}
-
-          {type === "match" && teamKey && formFields.length ? (
-            <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`} />
           ) : null}
 
           {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
@@ -657,50 +701,28 @@ return (
             </label>
           ) : null}
 
-          <Button variant="primary" type="button" onClick={() => void submit()}>
-            {online ? `Save this ${type}` : "Save on this phone"}
+          {/* Disabled, and saying why, until there is a robot to save it
+              against. It used to accept the tap and answer with an error line
+              below the button, after the scout had filled in the whole form. */}
+          <Button
+            variant="primary"
+            type="button"
+            className="scout-save-button"
+            disabled={!canSave}
+            onClick={() => void submit()}
+          >
+            {!canSave
+              ? type === "match"
+                ? "Pick a robot above to save"
+                : "Type a team number above to save"
+              : online
+                ? `Save this ${type}`
+                : "Save on this phone"}
           </Button>
           {message ? (
             <p className="form-message" role="status">
               {message}
             </p>
-          ) : null}
-          {saveReceipt ? (
-            <div className="scout-save-receipt" role="status">
-              <div className="scout-save-receipt-head">
-                <span className="eyebrow">Where your data went</span>
-                <strong>
-                  {saveReceipt.entryType === "pit" ? "Pit" : "Match"} entry for{" "}
-                  {saveReceipt.teamKey.replace(/^frc/i, "")}
-                  {saveReceipt.matchKey ? ` · ${describeMatchKey(saveReceipt.matchKey)}` : ""}
-                </strong>
-                <small className="app-muted">
-                  {saveReceipt.offline
-                    ? "Saved on this phone. It will upload when you have signal."
-                    : "Saved. You can scout the next one."}
-                </small>
-              </div>
-              <ul className="scout-save-next">
-                {scoutingPostSaveNextSteps(orgId, {
-                  eventKey: data?.eventKey,
-                  entryType: saveReceipt.entryType,
-                }).map((step) => (
-                  <li key={step.id}>
-                    <Button as="a" variant="secondary" href={step.href}>
-                      {step.label}
-                    </Button>
-                    <small className="app-muted">{step.detail}</small>
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => setSaveReceipt(null)}
-              >
-                Dismiss
-              </button>
-            </div>
           ) : null}
         </Panel>
 

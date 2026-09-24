@@ -206,3 +206,11 @@
   .scout-page{max-width:none!important;padding:0!important}
   .scout-page .app-card,.scout-page .scout-form-panel{break-inside:avoid;box-shadow:none!important}
 }
+
+/* On the scouting tab at phone width the hub's tool row (Forms · Coverage ·
+   Shifts · More tools) was a third row of navigation over the form. Its tools
+   are in this screen's More menu instead (scout-view-switcher.tsx). Here, not
+   in scout-flow.css, because the hub loads this file before the tab's code. */
+@media (max-width:720px){
+  .product-hub--competition:has(> .product-hub-panel[data-hub-tab="scouting"]) > .hub-bar .hub-tool-strip{display:none}
+}

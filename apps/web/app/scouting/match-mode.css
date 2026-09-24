@@ -75,6 +75,8 @@
   letter-spacing: -0.02em;
 }
 .next-match-robot small {
+  /* Set, not inherited: a global small{} rule made "Red 2" dark grey on red. */
+  color: #fff;
   font-size: 11px;
   opacity: 0.92;
 }

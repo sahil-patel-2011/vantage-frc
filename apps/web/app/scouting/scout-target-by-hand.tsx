@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, FormRow } from "../../components/ui";
 import {
+  ASSIGNMENTS_ARE_SUGGESTIONS_COPY,
   COMP_LEVELS,
+  groupScoutTargets,
   NO_SCHEDULE_COPY,
   describeMatchKey,
   manualMatchKey,
@@ -185,5 +187,71 @@ export function ScoutTargetByHand({
         </p>
       ) : null}
     </div>
+  );
+}
+
+type TargetOption = { matchKey: string; teamKey: string; label: string; assigned?: boolean };
+
+/**
+ * Every other way to choose a robot: the whole schedule as a grouped list, and
+ * a typed team for anything that is not on it. Under the robot tiles these are
+ * folded away; with no schedule they are the only way in, so they show open.
+ */
+export function ScoutTargetChoices({
+  matchOptions,
+  hasSchedule,
+  eventKey,
+  matchKey,
+  teamKey,
+  onPick,
+}: {
+  matchOptions: TargetOption[];
+  hasSchedule: boolean;
+  eventKey: string;
+  matchKey: string;
+  teamKey: string;
+  onPick: (matchKey: string, teamKey: string) => void;
+}) {
+  return (
+    <>
+      {matchOptions.length ? (
+        <FormRow
+          label={hasSchedule ? "Any match on the schedule" : "Who are you scouting?"}
+          hint={matchOptions.some((option) => option.assigned) ? ASSIGNMENTS_ARE_SUGGESTIONS_COPY : undefined}
+        >
+          <select
+            value={`${matchKey}|${teamKey}`}
+            onChange={(event) => {
+              const [match, team] = event.target.value.split("|");
+              onPick(match ?? "", team ?? "");
+            }}
+          >
+            <option value="|">Select match and team</option>
+            {/* Grouped by match. Flat, a 36-match event is 216 rows in one
+                scroll, and the scout is looking for one of them while the
+                match they want is starting. */}
+            {groupScoutTargets(matchOptions).map((group) => (
+              <optgroup key={group.key} label={group.label}>
+                {group.options.map((option) => (
+                  <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
+                    {option.assigned ? `★ ${option.label} · yours` : option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </FormRow>
+      ) : null}
+
+      {/* The only path at an offseason event, and on the first morning of any
+          event before the schedule lands. */}
+      <ScoutTargetByHand
+        eventKey={eventKey}
+        matchKey={matchKey}
+        teamKey={teamKey}
+        startOpen={!matchOptions.length}
+        onPick={onPick}
+      />
+    </>
   );
 }

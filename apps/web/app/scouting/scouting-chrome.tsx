@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button, Skeleton } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
+import "./scout-flow.css";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -49,6 +50,38 @@ export function ScoutingNextActionsPanel({ actions }: { actions: ScoutingNextAct
         ))}
       </ol>
     </section>
+  );
+}
+
+/**
+ * The shape of the match screen while it loads: status line, view switcher,
+ * the match card and its six robots. A card saying "Loading scouting…" and
+ * then a different screen made every first open look like two pages; this is
+ * the page, with its data still on the way. It never says "no event" or
+ * "choose your team" — those wait until the load has actually answered.
+ */
+export function ScoutingLoadingSkeleton() {
+  return (
+    <div className="scout-loading" aria-busy="true">
+      <span className="sr-only" role="status">
+        Loading scouting…
+      </span>
+      <div className="scout-loading-row" aria-hidden="true">
+        <Skeleton width="52%" height={18} />
+        <Skeleton width={110} height={28} radius={999} />
+      </div>
+      <Skeleton width="100%" height={46} radius={12} />
+      <div className="scout-loading-card" aria-hidden="true">
+        <Skeleton width="45%" height={22} />
+        <Skeleton width="100%" height={40} radius={10} />
+        <Skeleton width="30%" height={20} style={{ justifySelf: "center" }} />
+        <div className="scout-loading-tiles">
+          {Array.from({ length: 6 }, (_, index) => (
+            <Skeleton key={index} width="100%" height={64} radius={12} />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -104,6 +137,9 @@ export function ScoutingShell({
       </PageHeader>
       )}
       {children}
+      {shell === "loading" ? (
+        <ScoutingLoadingSkeleton />
+      ) : (
       <EmptyState
         soft
         className="scout-shell-empty"
@@ -114,7 +150,6 @@ export function ScoutingShell({
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : (error ?? copy.description)}
-        aria-busy={shell === "loading"}
       >
         {failure?.primary ? (
           <Button as="a" variant="primary" href={failure.primary.href}>
@@ -133,6 +168,7 @@ export function ScoutingShell({
           <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>
         ) : null}
       </EmptyState>
+      )}
     </main>
   );
 }

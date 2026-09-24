@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, Skeleton } from "../../components/ui";
 import { putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { warmOfflineRoutes } from "../../lib/offline/warm-routes";
 import { loadRoster, prefetchEventTeams } from "../../lib/intel/offline-teams";
@@ -64,6 +64,9 @@ export function ScoutingHome() {
   const orgId = useSearchParams().get("orgId");
   const online = useOnline();
   const [roster, setRoster] = useState<Roster | null>(null);
+  // "No event set" is an answer, so it waits for one. Before this the hero
+  // said it on every first open, for the second the roster took to arrive.
+  const [rosterState, setRosterState] = useState<"loading" | "ready" | "failed">("loading");
   const [queue, setQueue] = useState<{ entries: number; media: number; quarantined: number } | null>(null);
   const [storage, setStorage] = useState<DeviceStorage | null>(null);
   const [preparing, setPreparing] = useState(false);
@@ -95,15 +98,24 @@ export function ScoutingHome() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    setRosterState("loading");
     void fetch(`/api/intel/teams?orgId=${encodeURIComponent(orgId)}&q=`)
       .then((response) => (response.ok ? (response.json() as Promise<Roster>) : null))
       .then((data) => {
-        if (!cancelled) setRoster(data);
+        if (cancelled) return;
+        setRoster(data);
+        setRosterState(data ? "ready" : "failed");
       })
       .catch(async () => {
         // No signal: the event's teams as last saved, so pit coverage still shows.
         const saved = await loadRoster(orgId);
-        if (!cancelled && saved?.roster.length) setRoster({ roster: saved.roster });
+        if (cancelled) return;
+        if (saved?.roster.length) {
+          setRoster({ roster: saved.roster });
+          setRosterState("ready");
+        } else {
+          setRosterState("failed");
+        }
       });
     return () => {
       cancelled = true;
@@ -200,6 +212,7 @@ export function ScoutingHome() {
   }
 
   const withOrg = (href: string) => (orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href);
+  const rosterLoading = Boolean(orgId) && rosterState === "loading";
   const teams = roster?.roster ?? [];
   const unscouted = teams.filter((team) => team.scouted === 0);
   const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? null;
@@ -211,18 +224,39 @@ export function ScoutingHome() {
 
   return (
     <main className="scout-home">
-      <section className="scout-home-hero" aria-labelledby="scout-home-title">
-        <p className="scout-home-eyebrow">{eventName ?? "No event set"}</p>
+      <section
+        className="scout-home-hero"
+        aria-labelledby="scout-home-title"
+        aria-busy={rosterLoading || undefined}
+      >
+        {rosterLoading ? (
+          <p className="scout-home-eyebrow" aria-hidden="true">
+            <Skeleton width={180} height={12} />
+          </p>
+        ) : (
+          <p className="scout-home-eyebrow">{eventName ?? (orgId ? "No event set" : "No team chosen")}</p>
+        )}
         <h1 id="scout-home-title">Scouting</h1>
-        <p className="scout-home-lede">
-          {teams.length > 0
-            ? unscouted.length > 0
-              ? `${teams.length} teams at this event · ${unscouted.length} nobody has scouted yet.`
-              : `${teams.length} teams at this event · every one has been scouted.`
-            : eventName
-              ? "The team list for this event has not synced yet."
-              : "Set the event you are at in Vantage and the team list appears here."}
-        </p>
+        {rosterLoading ? (
+          <p className="scout-home-lede">
+            <span className="sr-only">Loading this event’s teams…</span>
+            <Skeleton width="85%" height={16} />
+          </p>
+        ) : (
+          <p className="scout-home-lede">
+            {teams.length > 0
+              ? unscouted.length > 0
+                ? `${teams.length} teams at this event · ${unscouted.length} nobody has scouted yet.`
+                : `${teams.length} teams at this event · every one has been scouted.`
+              : !orgId
+                ? "Choose your team in Vantage, then come back here to scout."
+                : rosterState === "failed"
+                  ? "Could not load this event’s teams. Check the connection and reload."
+                  : eventName
+                    ? "The team list for this event has not synced yet."
+                    : "Set the event you are at in Vantage and the team list appears here."}
+          </p>
+        )}
         {duty ? (
           <p className="scout-home-duty">
             <span>Your next robot</span>

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { ScoutingLoadingSkeleton } from "../scouting/scouting-chrome";
 import "../product-hub.css";
 import "../scouting/scouting.css";
 import "../scouting/forms/forms.css";
@@ -10,7 +11,12 @@ import "../my-day/my-day.css";
 const CommandClient = dynamic(() => import("../command/command-client"), { ssr: false });
 const MyDayClient = dynamic(() => import("../my-day/my-day-client"), { ssr: false });
 const StrategyClient = dynamic(() => import("../strategy/strategy-client"), { ssr: false });
-const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), { ssr: false });
+// The scouting screen's own shape while its code downloads, not a blank panel:
+// on a phone that blank was the first thing a scout saw after signing in.
+const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), {
+  ssr: false,
+  loading: () => <ScoutingLoadingSkeleton />,
+});
 const FormsClient = dynamic(() => import("../scouting/forms/forms-client"), { ssr: false });
 const MatchChecklistClient = dynamic(() => import("../match-checklist/match-checklist-client"), {
   ssr: false,

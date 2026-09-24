@@ -43,7 +43,7 @@ import {
 import { buildAttachMediaWire } from "../../lib/scouting/attach-media-wire";
 import { prepareScoutMediaFile, scoutMediaKind } from "../../lib/scouting/prepare-scout-media";
 import { nextMatchKey } from "../../lib/scouting/form-builder";
-import { nextAssignedTarget } from "../../lib/scouting/next-assignment";
+import { nextScoutTarget, scoutContext, syncSummary, teamNumberOf } from "../../lib/scouting/scout-context";
 import {
   classifyScoutingShell,
   scoutingOfflineBannerDetail,
@@ -52,6 +52,7 @@ import { asMediaFile, downscaleImageInBrowser } from "./scouting-media-browser";
 import {
   type Bootstrap,
   type OfficialFlag,
+  type SaveReceipt,
   type ScoutTab,
   type TrustSnapshot,
 } from "./scouting-model";
@@ -89,14 +90,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [counts, setCounts] = useState({ entries: 0, media: 0, quarantined: 0 });
   const [quarantine, setQuarantine] = useState<QuarantinedItem[]>([]);
   const [message, setMessage] = useState("");
+  const [syncNote, setSyncNote] = useState<string | null>(null);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [bootstrapStatus, setBootstrapStatus] = useState<number | null>(null);
-  const [saveReceipt, setSaveReceipt] = useState<{
-    teamKey: string;
-    matchKey?: string;
-    entryType: "match" | "pit";
-    offline: boolean;
-  } | null>(null);
+  const [saveReceipt, setSaveReceipt] = useState<SaveReceipt | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "degraded">("idle");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
@@ -140,16 +137,23 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       const media = await syncMediaOutbox(orgId);
       if (entries.validations.length) setOfficialFlags(entries.validations);
       const quarantinedNow = entries.quarantined + media.quarantined;
-      if (entries.count || media.synced || quarantinedNow) {
-        const conflictCount = entries.validations.filter((flag) => flag.status === "conflict").length;
-        const attention = quarantinedNow
-          ? ` · ${quarantinedNow} need${quarantinedNow === 1 ? "s" : ""} attention below`
-          : "";
-        setMessage(
-          conflictCount
-            ? `Synced ${entries.count} entries · ${conflictCount} official-score disagreement${conflictCount === 1 ? "" : "s"} flagged${attention}`
-            : `Synced ${entries.count} entries and ${media.synced} media files${attention}`,
-        );
+      const uploaded = syncSummary({ entries: entries.count, media: media.synced });
+      const conflictCount = entries.validations.filter((flag) => flag.status === "conflict").length;
+      const problems = [
+        conflictCount
+          ? `${conflictCount} official-score disagreement${conflictCount === 1 ? "" : "s"} flagged`
+          : null,
+        quarantinedNow ? `${quarantinedNow} need${quarantinedNow === 1 ? "s" : ""} attention below` : null,
+      ].filter(Boolean);
+      if (problems.length) {
+        // Something to act on: this stays in the message line by the form.
+        setMessage([uploaded, ...problems].filter(Boolean).join(" · "));
+      } else if (uploaded) {
+        // Plain good news goes beside the queue count, not under Save in the
+        // colour the form uses for problems.
+        setSyncNote(uploaded);
+        // A retry notice from earlier in this sync is no longer true.
+        setMessage((current) => (current.startsWith("Sync retry") ? "" : current));
       }
       setSyncState("idle");
       await refreshCounts();
@@ -391,12 +395,26 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     // alliance), step the ones that count up, and drop everything else. The
     // match number box steps too, so the next match is one tap away.
     setPayload(applyFormResetBehavior(schema.definition, payload));
-    if (type === "match") {
-      // Your next assignment (match AND robot) when you have one; else step the number.
-      const assigned = nextAssignedTarget(data.assignments, matchKey);
-      const stepped = assigned ? assigned.matchKey : nextMatchKey(matchKey);
+    const savedContext =
+      type === "match" ? scoutContext({ matches: data.matches ?? [], matchKey, teamKey: storedTeam }) : null;
+    // Your next assignment (match AND robot) when you have one; else the same
+    // station in the next scheduled match. A match typed by hand is not on the
+    // schedule, so it keeps the old step: the number goes up, the team stays.
+    const next =
+      type === "match"
+        ? nextScoutTarget({
+            matches: data.matches ?? [],
+            assignments: data.assignments ?? [],
+            savedMatchKey: matchKey,
+            savedTeamKey: storedTeam,
+          })
+        : null;
+    if (next) {
+      setMatchKey(next.matchKey);
+      setTeamKey(next.teamKey);
+    } else if (type === "match") {
+      const stepped = nextMatchKey(matchKey);
       if (stepped) setMatchKey(stepped);
-      if (assigned) setTeamKey(assigned.teamKey);
     }
     setSource("manual");
     setEntryClientId(stableClientId());
@@ -405,14 +423,21 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setSaveReceipt({
       teamKey: storedTeam,
       matchKey: type === "match" ? matchKey : undefined,
+      matchLabel: savedContext?.matchLabel ?? null,
       entryType: type,
       offline: !online,
+      savedAt: Date.now(),
+      next: next
+        ? {
+            matchLabel: next.matchLabel,
+            teamNumber: next.teamKey ? teamNumberOf(next.teamKey) : null,
+            stationLabel: next.stationLabel,
+          }
+        : null,
     });
-    setMessage(
-      online
-        ? "Saved. You can scout the next one."
-        : "Saved on this phone. It will upload when you have signal.",
-    );
+    // The confirmation says it; a second copy under Save only repeated it.
+    setMessage("");
+    setSyncNote(null);
     await refreshCounts();
     await sync();
   }
@@ -715,6 +740,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       conflicts={conflicts}
       selectedWinners={selectedWinners}
       message={message}
+      syncNote={syncNote}
       saveReceipt={saveReceipt}
       showFormula={showFormula}
       formulaName={formulaName}
