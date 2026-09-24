@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, type MatchPhase } from "../../lib/scouting/match-clock";
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
-  pre: "Before the match",
+  pre: "Match timer",
   auto: "Auto",
   teleop: "Teleop",
   endgame: "Endgame",
@@ -96,7 +96,8 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
         </>
       ) : (
         <button type="button" className="start" onClick={() => { setNow(Date.now()); setStartedAt(Date.now()); }}>
-          Start with the field
+          {/* Says what it is and when to press it; "Start with the field" read as a place. */}
+          Start match timer when auto starts
         </button>
       )}
     </div>
