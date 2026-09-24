@@ -203,54 +203,49 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading Chat limits…",
-        description: "Checking your team's spend limits and included allowance.",
+        title: "Loading AI limits…",
+        description: "Checking your team's AI limits.",
       };
     case "auth_required":
       return {
         kind,
         badge: "Sign in",
-        title: "Sign in to manage Chat limits",
-        description: "Spend limits are per team. Sign in, then reopen Budgets from Chat.",
+        title: "Sign in to see AI limits",
+        description: "AI limits belong to a team. Sign in, then open AI limits again.",
       };
     case "forbidden":
       return {
         kind,
-        badge: "Admins only",
-        title: "Chat limits need an admin",
-        description:
-          "Owners and admins set spend limits. Members still use Chat under existing limits — open Pricing or Account if you need plan access.",
+        badge: "Owners and mentors",
+        title: "An owner or mentor sets the AI limits",
+        description: "AI follows the limits already saved. Ask an owner or mentor if something is blocked.",
       };
     case "empty":
       return {
         kind,
-        badge: "Defaults",
-        title: "No extra spend limits yet",
-        description:
-          "The included allowance stops at 100%. Set daily or monthly limits below — totals stay at zero until someone uses Chat.",
+        badge: "No limit yet",
+        title: "No AI limit yet",
+        description: "Your team's key is only limited by your provider. Set a monthly limit below if you want one.",
       };
     case "setup":
       return {
         kind,
         badge: "Needs setup",
-        title: "Finish Chat limits",
-        description:
-          "Add a spend limit next to any model list. Chat, Pricing, and Account stay one hop away.",
+        title: "Add a limit",
+        description: "A list of allowed models doesn't stop spending on its own. Add a monthly limit too.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Chat limits",
-        description:
-          "A network or server issue blocked Chat limits. Retry, or open Chat / Pricing / Account while it reloads.",
+        title: "Couldn't load AI limits",
+        description: "Something went wrong loading this page. Try again in a moment.",
       };
     case "ready":
       return {
         kind,
-        title: "Chat limits",
-        description:
-          "Spend and token limits are checked before every Chat message. The included allowance stops unless you buy credits or turn on pay-as-you-go.",
+        title: "AI limits",
+        description: "Limits are checked before every AI request on your team's key.",
       };
     default: {
       const _exhaustive: never = kind;
@@ -283,8 +278,6 @@ export function aiBudgetsNextActions(input: {
   }
 
   const chatHref = hubHref("/ai", "chat", orgId);
-  const pricingHref = withOrgHref("/pricing", orgId);
-  const accountHref = withOrgHref("/account", orgId);
   const usageHref = hubHref("/ai", "usage", orgId);
 
   if (input.shell === "auth_required") {
@@ -346,16 +339,10 @@ export function aiBudgetsNextActions(input: {
       primary: true,
     },
     {
-      id: "pricing",
-      label: "View pricing",
-      detail: "Buy AI credits, turn on pay-as-you-go, or upgrade after hosted usage runs out.",
-      href: pricingHref,
-    },
-    {
-      id: "account",
-      label: "Open Account",
-      detail: "Plan seating and which team you are on live under Account.",
-      href: accountHref,
+      id: "ai-keys",
+      label: "Your team's AI key",
+      detail: "Vantage's AI runs on your team's own key. Add or change it here.",
+      href: withOrgHref("/team/ai-keys", orgId),
     },
     {
       id: "usage",
@@ -374,7 +361,6 @@ export function classifyAiUsageShell(input: {
   status?: number | null;
   error?: string | null;
   orgId?: string | null;
-  hasPlan?: boolean;
   meteredCalls?: number;
 }): AiBudgetsShellKind {
   if (input.loading) return "loading";
@@ -391,7 +377,6 @@ export function classifyAiUsageShell(input: {
     return "error";
   }
   if (status != null && status >= 500) return "error";
-  if (!input.hasPlan) return "setup";
   if (!(Number(input.meteredCalls) > 0)) return "empty";
   return "ready";
 }
@@ -416,40 +401,35 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
       return {
         kind,
         badge: "Admins only",
-        title: "AI usage needs billing access",
-        description:
-          "Owners and admins review metered spend. Members can still open Chat under Budgets — Pricing and Account stay available.",
+        title: "Owners and mentors see AI usage",
+        description: "You can still use Ask AI. Owners and mentors see what the team's key was used for.",
       };
     case "empty":
       return {
         kind,
         badge: "Empty",
-        title: "No Chat calls billed yet",
-        description:
-          "This list stays empty until someone uses Chat or another billed helper. Totals stay at zero.",
+        title: "No AI use yet",
+        description: "This fills in once someone on the team uses Ask AI or another AI helper.",
       };
     case "setup":
       return {
         kind,
         badge: "Needs setup",
-        title: "Choose your team and plan",
-        description:
-          "Usage needs a team on a plan. Choose your team, then send a Chat message to record the first call.",
+        title: "Choose your team",
+        description: "AI usage belongs to a team. Choose your team first.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
         title: "Could not load AI usage",
-        description:
-          "A network or server issue blocked the usage log. Retry, or open Chat / Chat limits / Pricing.",
+        description: "Something went wrong loading AI usage. Try again in a moment.",
       };
     case "ready":
       return {
         kind,
         title: "AI usage & activity",
-        description:
-          "A record of every billed Chat call — model, feature, member, and which key funded it.",
+        description: "Every AI request on your team's key: which model, which feature and who asked.",
       };
     default: {
       const _exhaustive: never = kind;
@@ -481,8 +461,6 @@ export function aiUsageNextActions(input: {
 
   const chatHref = hubHref("/ai", "chat", orgId);
   const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const pricingHref = withOrgHref("/pricing", orgId);
-  const accountHref = withOrgHref("/account", orgId);
 
   if (input.shell === "auth_required") {
     return [
@@ -522,17 +500,6 @@ export function aiUsageNextActions(input: {
     ];
   }
 
-  if (input.shell === "setup") {
-    return [
-      {
-        id: "pricing",
-        label: "View pricing",
-        detail: "Confirm a plan, then return to Usage.",
-        href: pricingHref,
-        primary: true,
-      },
-    ];
-  }
 
   actions.push(
     {
@@ -549,16 +516,10 @@ export function aiUsageNextActions(input: {
       href: chatHref,
     },
     {
-      id: "pricing",
-      label: "View pricing",
-      detail: "Buy AI credits or upgrade when hosted usage is exhausted.",
-      href: pricingHref,
-    },
-    {
-      id: "account",
-      label: "Open Account",
-      detail: "Plan seating and which team you are on live under Account.",
-      href: accountHref,
+      id: "ai-keys",
+      label: "Your team's AI key",
+      detail: "Vantage's AI runs on your team's own key. Add or change it here.",
+      href: withOrgHref("/team/ai-keys", orgId),
     },
   );
 

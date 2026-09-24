@@ -97,15 +97,10 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
         </div>
         <div className="account-org-meta">
           {role ? <span className="app-badge">{role}</span> : null}
-          {org.planCode?.trim() ? (
-            <span className="app-badge good">{org.planCode.trim()}</span>
-          ) : (
-            <span className="app-badge setup">No plan yet</span>
-          )}
         </div>
       </div>
       <p className="app-muted">
-        Display name and notification prefs are personal. AI keys, billing, and connectors follow this team.
+        Your name and notifications are yours. AI keys and connectors belong to this team.
       </p>
       {/* AI keys / Billing / AI usage are exactly the related strip above this
           panel, same hrefs in the same order. What belongs here is the one link

@@ -299,7 +299,6 @@ export default function UsageClient({ orgId }: { orgId: string }) {
     status: httpStatus,
     error: loadError,
     orgId,
-    hasPlan: Boolean(usage?.entitlement?.planCode),
     meteredCalls,
   });
   const shellCopy = aiUsageShellCopy(shell);

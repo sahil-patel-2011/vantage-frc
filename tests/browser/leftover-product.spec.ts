@@ -14,7 +14,7 @@ const LEAVES = [
   { path: "/team/usage", heading: /Where the team's AI spend goes|Choose your team|Usage/ },
   /*
     /team/budgets redirects into the AI hub, which supplies the page's h1 and
-    hides the feature's own with display:none — so "Chat limits" is not
+    hides the feature's own with display:none — so the page title is not
     something a person or a role locator can find there. This entry passed
     only when the org had not resolved yet and the team gate was briefly on
     screen, which is to say it passed by accident and failed the rest of the
@@ -23,7 +23,7 @@ const LEAVES = [
     Every other leaf here shows its own heading; this is the one that does
     not, so it names what the tab actually puts on screen.
   */
-  { path: "/team/budgets", heading: /This tab · hard limits|Chat limits|Choose your team/ },
+  { path: "/team/budgets", heading: /Team AI limits|An owner or mentor sets the AI limits|Choose your team/ },
   { path: "/files", heading: "Files" },
   // A media tool: the paused page while media is switched off.
   { path: "/media", heading: "Media", pausedAs: "Media" },

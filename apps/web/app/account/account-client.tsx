@@ -381,13 +381,13 @@ export default function AccountClient() {
       <SettingsBar role={org.role} orgId={org.orgId} />
 
       {/* One place for money and help. AI spending and usage only for the people who can
-          change them; a scout does not need a "No plan yet" chip. */}
-      <KitEyebrow>{canManageTeam ? "Spending and help" : "Help"}</KitEyebrow>
+          change them. */}
+      <KitEyebrow>{canManageTeam ? "AI and help" : "Help"}</KitEyebrow>
       <KitCard>
         {canManageTeam ? (
           <>
-            <KitRow icon="bolt" tone="amber" title="AI spending" subtitle="Limits and credits for Ask AI" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
-            <KitRow icon="stats" tone="teal" title="AI usage" subtitle="What AI has cost this team" href={withOrgHref("/team/usage", orgId || null)} />
+            <KitRow icon="bolt" tone="amber" title="AI limits" subtitle="A monthly limit or pause for your team's AI key" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
+            <KitRow icon="stats" tone="teal" title="AI usage" subtitle="What your team's AI key has been used for" href={withOrgHref("/team/usage", orgId || null)} />
           </>
         ) : null}
         {!orgId ? (

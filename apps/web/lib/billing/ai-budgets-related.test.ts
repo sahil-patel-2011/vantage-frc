@@ -139,28 +139,13 @@ describe("aiBudgetsNextActions", () => {
 });
 
 describe("classifyAiUsageShell + next actions", () => {
-  it("classifies empty ledger vs missing plan setup", () => {
+  it("classifies an empty ledger, and needs only a team (there are no plans)", () => {
+    expect(classifyAiUsageShell({ loading: false, orgId: "org-1", meteredCalls: 0 })).toBe("empty");
+    expect(classifyAiUsageShell({ loading: false, orgId: null, meteredCalls: 0 })).toBe("setup");
     expect(
       classifyAiUsageShell({
         loading: false,
         orgId: "org-1",
-        hasPlan: true,
-        meteredCalls: 0,
-      }),
-    ).toBe("empty");
-    expect(
-      classifyAiUsageShell({
-        loading: false,
-        orgId: "org-1",
-        hasPlan: false,
-        meteredCalls: 0,
-      }),
-    ).toBe("setup");
-    expect(
-      classifyAiUsageShell({
-        loading: false,
-        orgId: "org-1",
-        hasPlan: true,
         meteredCalls: 3,
       }),
     ).toBe("ready");

@@ -1,4 +1,4 @@
-/** Soft-UI + CTA helpers for plan allowance / credit / PAYG hard cutoffs. */
+/** Plain copy and next steps for when AI stops: the team's own limits, the pause switch, or no key. */
 
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
@@ -54,14 +54,6 @@ export function cutoffBudgetsHref(orgId?: string | null): string {
 export function cutoffPricingHref(orgId?: string | null): string {
   const base = withOrgHref("/pricing", orgId);
   return `${base}#credits`;
-}
-
-export function cutoffChatHref(orgId?: string | null): string {
-  return hubHref("/ai", "chat", orgId);
-}
-
-export function cutoffAccountHref(orgId?: string | null): string {
-  return withOrgHref("/account", orgId);
 }
 
 export function cutoffAiKeysHref(orgId?: string | null): string {
@@ -138,100 +130,43 @@ export function buildUsageCutoffSnapshot(input: {
   };
 }
 
+/**
+ * Vantage is free and AI runs on the team's own key, so the only limits a team meets are the
+ * ones it set itself (a monthly spend limit) and the pause switch. Hosted allowance, credits and
+ * pay-as-you-go no longer exist; old snapshots that still carry them raise no alert.
+ */
 export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffAlert | null {
   if (snapshot.killSwitch) {
     return {
       level: "at",
       reason: "kill_switch",
-      title: "AI routing paused",
-      body: "An admin paused Chat. They can turn it back on under Chat limits.",
+      title: "AI is paused",
+      body: "An owner or mentor paused AI for the team. They can turn it back on under AI limits.",
       percent: null,
     };
   }
 
   const floor = nearFloor(snapshot.warningThresholds);
-  const allowance = snapshot.allowancePercent;
-
-  if (allowance != null && allowance >= 100) {
-    if (!snapshot.paygEnabled && snapshot.walletBalanceUsd <= 0) {
-      return {
-        level: "at",
-        reason: "allowance",
-        title: "Hosted AI usage exhausted",
-        body: "Hosted Chat for this period is used up. Buy credits, turn on pay-as-you-go with a spend cap, or upgrade.",
-        percent: allowance,
-      };
-    }
-    if (snapshot.walletBalanceUsd <= 0 && snapshot.paygEnabled) {
-      return {
-        level: "at",
-        reason: "credits",
-        title: "AI credits depleted",
-        body: "Plan hosted usage is used up and prepaid credits are at $0. Buy another pack or raise the pay-as-you-go spend cap.",
-        percent: allowance,
-      };
-    }
-  }
-
-  if (snapshot.paygEnabled && snapshot.spendCapUsd != null && snapshot.spendCapUsd > 0) {
-    // When allowance is exhausted, spend cap is the remaining hard stop for overage.
-    if (allowance != null && allowance >= 100 && snapshot.walletBalanceUsd <= 0) {
-      return {
-        level: "at",
-        reason: "spend_cap",
-        title: "Pay-as-you-go spend cap reached",
-        body: "Spending stopped at the monthly cap. Raise the cap, buy credits, or wait for the next billing period.",
-        percent: 100,
-      };
-    }
-  }
-
-  if (snapshot.orgMonthlyBudgetPercent != null && snapshot.orgMonthlyBudgetPercent >= 100) {
+  const budget = snapshot.orgMonthlyBudgetPercent;
+  if (budget != null && budget >= 100) {
     return {
       level: "at",
       reason: "org_budget",
-      title: "Team monthly Chat limit reached",
-      body: "Team spend limits blocked further Chat. Raise the monthly limit under Chat limits, or wait until next month.",
-      percent: snapshot.orgMonthlyBudgetPercent,
+      title: "Your team's monthly AI limit is reached",
+      body: "AI stops until next month, or until an owner or mentor raises the limit under AI limits.",
+      percent: budget,
     };
   }
-
-  const candidates: Array<{ percent: number | null; reason: CutoffReason; title: string; body: string }> = [];
-  if (allowance != null && allowance >= floor) {
-    candidates.push({
-      percent: allowance,
-      reason: "allowance",
-      title: "Approaching hosted AI limit",
-      body: `${Math.round(allowance)}% of this period’s hosted Chat is used. After 100%, Chat stops unless you buy credits or turn on pay-as-you-go.`,
-    });
-  }
-  if (snapshot.orgMonthlyBudgetPercent != null && snapshot.orgMonthlyBudgetPercent >= floor) {
-    candidates.push({
-      percent: snapshot.orgMonthlyBudgetPercent,
+  if (budget != null && budget >= floor) {
+    return {
+      level: "near",
       reason: "org_budget",
-      title: "Approaching team Chat limit",
-      body: `${Math.round(snapshot.orgMonthlyBudgetPercent)}% of the team monthly spend limit is used. Chat will stop at the limit.`,
-    });
+      title: "Close to your team's monthly AI limit",
+      body: `${Math.round(budget)}% of this month's AI limit is used. AI stops at the limit.`,
+      percent: budget,
+    };
   }
-  if (snapshot.walletBalanceUsd > 0 && snapshot.walletBalanceUsd < 5 && (allowance == null || allowance >= 90)) {
-    candidates.push({
-      percent: null,
-      reason: "credits",
-      title: "AI credits running low",
-      body: `About $${snapshot.walletBalanceUsd.toFixed(2)} prepaid credits remain. Buy another pack before Chat stops.`,
-    });
-  }
-
-  if (!candidates.length) return null;
-  candidates.sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0));
-  const top = candidates[0]!;
-  return {
-    level: "near",
-    reason: top.reason,
-    title: top.title,
-    body: top.body,
-    percent: top.percent,
-  };
+  return null;
 }
 
 /**
@@ -244,137 +179,54 @@ export function cutoffCheckoutVisible(canCheckout: boolean | undefined, role?: s
   return normalized === "owner" || normalized === "admin";
 }
 
+/** What to do about a stop: add the team's key, or look at the team's own limits. */
 export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] {
   const budgetsHref = cutoffBudgetsHref(orgId);
-  const pricingHref = cutoffPricingHref(orgId);
   const aiKeysHref = cutoffAiKeysHref(orgId);
-  const ctas: CutoffCta[] = [];
-
-  if (alert.reason === "sponsored_promo_expired") {
-    ctas.push({ id: "ai-keys", label: "Add AI keys", href: aiKeysHref });
-    ctas.push({ id: "pricing", label: "Upgrade for hosted AI", href: pricingHref });
-    return ctas;
+  if (alert.reason === "kill_switch" || alert.reason === "org_budget" || alert.reason === "spend_cap") {
+    return [{ id: "budgets", label: "Open AI limits", href: budgetsHref }];
   }
-
-  if (alert.reason === "kill_switch" || alert.reason === "org_budget") {
-    ctas.push({ id: "budgets", label: "Open Chat limits", href: budgetsHref });
-  }
-
-  if (alert.reason === "allowance" || alert.reason === "payg_required" || alert.reason === "credits") {
-    ctas.push({
-      id: "credits",
-      label: "Buy AI credits",
-      checkoutAction: "credits",
-      packCode: "credits_100",
-      href: pricingHref,
-    });
-    ctas.push({
-      id: "payg",
-      label: "Turn on pay-as-you-go",
-      checkoutAction: "payg",
-      href: pricingHref,
-    });
-  }
-
-  if (alert.reason === "spend_cap") {
-    ctas.push({
-      id: "credits",
-      label: "Buy AI credits",
-      checkoutAction: "credits",
-      packCode: "credits_100",
-      href: pricingHref,
-    });
-    ctas.push({ id: "pricing", label: "Review pricing", href: pricingHref });
-  }
-
-  if (alert.reason === "allowance" || alert.reason === "payg_required") {
-    ctas.push({
-      id: "upgrade",
-      label: "Upgrade plan",
-      checkoutAction: "subscription",
-      planCode: "pro",
-      href: pricingHref,
-    });
-  }
-
-  if (!ctas.some((c) => c.id === "budgets")) {
-    ctas.push({ id: "budgets", label: "Chat limits", href: budgetsHref });
-  }
-
-  if (!ctas.some((c) => c.id === "pricing")) {
-    ctas.push({ id: "pricing", label: "Pricing", href: pricingHref });
-  }
-
-  return ctas;
+  return [
+    { id: "ai-keys", label: "Add your team's AI key", href: aiKeysHref },
+    { id: "budgets", label: "AI limits", href: budgetsHref },
+  ];
 }
 
-/** Map API / meteredAI error names or reason codes to Soft-UI copy. */
+const NEEDS_KEY = {
+  title: "AI needs your team's key",
+  body: "Vantage doesn't pay for AI: it runs on your team's own key. Add one (Google Gemini has a free key) and this works again.",
+};
+
+/** Map API / meteredAI error names or reason codes to plain copy. */
 export function messageForCutoffError(
   codeOrMessage: CutoffErrorCode,
   orgId?: string,
 ): { title: string; body: string; ctas: CutoffCta[] } {
-  const raw = String(codeOrMessage ?? "");
-  const lower = raw.toLowerCase();
-  const org = orgId ?? "";
-  const budgetsHref = cutoffBudgetsHref(org || null);
-  const pricingHref = cutoffPricingHref(org || null);
-
+  const lower = String(codeOrMessage ?? "").toLowerCase();
   const match = (needle: string) => lower.includes(needle);
 
   let reason: CutoffReason = "allowance";
-  let title = "Chat paused";
-  let body =
-    "This team hit a usage limit. Buy credits, turn on pay-as-you-go with a spend cap, or upgrade.";
+  let { title, body } = NEEDS_KEY;
 
-  if (match("sponsored_promo_expired") || match("promotional sponsored ai")) {
-    reason = "sponsored_promo_expired";
-    title = "Sponsored AI ended";
-    body =
-      "Promotional sponsored AI for team 1111 ended on 2026-10-18. Add your own AI keys or upgrade for hosted AI — the rest of the team keeps working.";
-  } else if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
+  if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
     reason = "kill_switch";
-    title = "AI routing paused";
-    body = "An admin paused Chat. They can turn it back on under Chat limits.";
-  } else if (match("spend_cap") || match("overage spend")) {
-    reason = "spend_cap";
-    title = "Pay-as-you-go spend cap reached";
-    body = "Spending stopped at the monthly pay-as-you-go cap.";
-  } else if (match("insufficient_prepaid") || match("credit_cap") || match("credit limit") || match("usage_hard_cutoff")) {
-    reason = match("payg_not_enabled") ? "payg_required" : "credits";
-    title = match("payg_not_enabled") ? "Pay-as-you-go or credits required" : "Chat credits used up";
-    body = match("payg_not_enabled")
-      ? "Hosted Chat is used up and pay-as-you-go is off. Turn it on or buy credits to continue."
-      : "Prepaid credits cannot cover this call. Buy a pack or turn on pay-as-you-go.";
-  } else if (match("payg_not_enabled")) {
-    reason = "payg_required";
-    title = "Pay-as-you-go or credits required";
-    body = "Hosted Chat is used up and pay-as-you-go is off. Turn it on or buy credits to continue.";
-  } else if (match("managed_allowance") || match("sponsored_allowance") || match("allowance")) {
-    reason = "allowance";
-    title = "Hosted AI usage exhausted";
-    body = "Hosted Chat for this period is used up. Buy credits or upgrade.";
-  } else if (match("budget") || match("daily_spend") || match("monthly_spend") || match("daily_tokens") || match("monthly_tokens")) {
+    title = "AI is paused";
+    body = "An owner or mentor paused AI for the team. They can turn it back on under AI limits.";
+  } else if (
+    !match("allowance") &&
+    !match("payg") &&
+    !match("credit") &&
+    !match("prepaid") &&
+    !match("sponsored") &&
+    (match("budget") || match("daily_spend") || match("monthly_spend") || match("daily_tokens") || match("monthly_tokens"))
+  ) {
     reason = "org_budget";
-    title = "Team spend limit reached";
-    body = "A team spend limit blocked this call. Adjust limits under Chat limits.";
+    title = "Your team's AI limit is reached";
+    body = "A limit your team set stopped this. An owner or mentor can change it under AI limits.";
   }
 
   const alert: UsageCutoffAlert = { level: "at", reason, title, body, percent: null };
-  const ctas = org
-    ? cutoffCtas(alert, org)
-    : reason === "sponsored_promo_expired"
-      ? [
-          { id: "ai-keys" as const, label: "Add AI keys", href: cutoffAiKeysHref(null) },
-          { id: "pricing" as const, label: "Upgrade for hosted AI", href: pricingHref },
-        ]
-      : [
-          { id: "pricing" as const, label: "View pricing", href: pricingHref },
-          { id: "budgets" as const, label: "Chat limits", href: budgetsHref },
-          { id: "chat" as const, label: "Chat", href: cutoffChatHref(null) },
-          { id: "account" as const, label: "Account", href: cutoffAccountHref(null) },
-        ];
-
-  return { title, body, ctas };
+  return { title, body, ctas: cutoffCtas(alert, orgId ?? "") };
 }
 
 export function isCutoffError(codeOrMessage: unknown): boolean {

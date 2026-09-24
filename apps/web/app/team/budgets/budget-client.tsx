@@ -3,23 +3,16 @@
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
 import { PageHeader, Button, EmptyState } from "../../../components/ui";
-import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
-  AI_BUDGETS_RELATED_INCLUDE,
-  AI_BUDGETS_SCOPE_CARDS,
   aiBudgetsNextActions,
-  aiBudgetsRelatedLinks,
   aiBudgetsShellCopy,
   classifyAiBudgetsShell,
   formatAiBudgetsCount,
   formatAiBudgetsMoney,
   policySnapshotFromBudgetForm,
-  shouldShowAiBudgetsSummaryTiles,
   type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
-import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
 import "./ai-budgets.css";
 
 const blank = {
@@ -30,69 +23,11 @@ const blank = {
 };
 
 const fieldLabel: Record<keyof typeof blank, string> = {
-  dailySpendLimitUsd: "Daily spend limit (USD)",
-  monthlySpendLimitUsd: "Monthly spend limit (USD)",
-  dailyTokenLimit: "Daily token limit",
-  monthlyTokenLimit: "Monthly token limit",
+  dailySpendLimitUsd: "Daily limit ($)",
+  monthlySpendLimitUsd: "Monthly limit ($)",
+  dailyTokenLimit: "Daily word limit (tokens)",
+  monthlyTokenLimit: "Monthly word limit (tokens)",
 };
-
-type CutoffPayload = {
-  planCode?: string | null;
-  includedAllowanceUsd?: number;
-  usedUsd?: number;
-  walletBalanceUsd?: number;
-  paygEnabled?: boolean;
-  spendCapUsd?: number | null;
-  killSwitch?: boolean;
-  monthlySpendUsd?: number;
-  monthlySpendLimitUsd?: number | null;
-  warningThresholds?: number[];
-};
-
-function BudgetsRelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiBudgetsRelatedLinks(orgId, { include: [...AI_BUDGETS_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-budgets-related" aria-label="Related AI budget tools">
-      {links.map((link) => (
-        <a key={link.href} href={link.href}>{link.label}</a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({
-  orgId,
-  shell,
-  canManage,
-}: {
-  orgId: string;
-  shell: AiBudgetsShellKind;
-  canManage: boolean;
-}) {
-  const actions = aiBudgetsNextActions({ orgId, shell, canManage });
-  if (!actions.length) return null;
-  return (
-    <section
-      className="ai-budgets-next-actions app-card soft-panel edc-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 function ShellPrimary({
   orgId,
@@ -132,8 +67,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     promptCachingEnabled: true,
   });
   const [usage, setUsage] = useState<Record<string, string>>({});
-  const [projected, setProjected] = useState<number | null>(null);
-  const [cutoff, setCutoff] = useState<CutoffPayload | null>(null);
   const [layer, setLayer] = useState({
     scope: "feature",
     identifier: "research",
@@ -151,9 +84,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const [canManage, setCanManage] = useState(false);
 
   const chatHref = hubHref("/ai", "chat", orgId);
-  const usageHref = hubHref("/ai", "usage", orgId);
-  const pricingHref = withOrgHref("/pricing", orgId);
-  const accountHref = withOrgHref("/account", orgId);
   async function load() {
     setLoading(true);
     setLoadError(null);
@@ -163,13 +93,11 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       canManage?: boolean;
       policy?: Record<string, unknown> | null;
       usage?: Record<string, string>;
-      projectedExhaustionDays?: number | null;
       members?: Array<{ userId: string; name: string; email: string }>;
-      cutoff?: CutoffPayload | null;
     };
     setHttpStatus(response.status);
     if (!response.ok) {
-      setLoadError(data.error ?? "Unable to load Chat limits");
+      setLoadError(data.error ?? "Couldn't load AI limits");
       setCanManage(false);
       setMessage("");
       setLoading(false);
@@ -207,9 +135,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       }));
     }
     setUsage(data.usage ?? {});
-    setProjected(data.projectedExhaustionDays ?? null);
     setMembers(data.members ?? []);
-    setCutoff(data.cutoff ?? null);
     setMessage("");
     setLoading(false);
   }
@@ -233,26 +159,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       body: JSON.stringify(normalized),
     });
     const data = (await response.json()) as { error?: string };
-    setMessage(response.ok ? "Budget controls saved and audited." : (data.error ?? "Save failed"));
+    setMessage(response.ok ? "Saved." : (data.error ?? "Couldn't save. Try again."));
     if (response.ok) await load();
   }
-
-  const snapshot = cutoff
-    ? buildUsageCutoffSnapshot({
-        planCode: cutoff.planCode,
-        includedAllowanceUsd: cutoff.includedAllowanceUsd,
-        usedUsd: cutoff.usedUsd,
-        walletBalanceUsd: cutoff.walletBalanceUsd,
-        paygEnabled: cutoff.paygEnabled,
-        spendCapUsd: cutoff.spendCapUsd,
-        killSwitch: cutoff.killSwitch || policy.killSwitch,
-        monthlySpendUsd: cutoff.monthlySpendUsd ?? usage.monthlySpend,
-        monthlySpendLimitUsd: cutoff.monthlySpendLimitUsd ?? policy.monthlySpendLimitUsd,
-        warningThresholds:
-          cutoff.warningThresholds ??
-          policy.warningThresholds.split(",").map(Number).filter(Number.isFinite),
-      })
-    : null;
 
   const shell = classifyAiBudgetsShell({
     loading,
@@ -263,27 +172,25 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   });
   const shellCopy = aiBudgetsShellCopy(shell);
   const blocked = shell === "forbidden" || shell === "auth_required" || shell === "error";
-  const showEmptyBanner = shell === "empty" || shell === "setup";
   const metricsLoaded = !loading && !blocked;
-  const allowanceLabel =
-    metricsLoaded && snapshot?.allowancePercent != null
-      ? `${Math.round(snapshot.allowancePercent)}%`
-      : metricsLoaded
-        ? "—"
-        : "…";
+  const saveOrgPolicy = () =>
+    void save({ scope: "org", ...policy, warningThresholds: policy.warningThresholds.split(",").map(Number) });
 
   return (
     <main className="module-page budget-page ai-budgets-page">
       <PageHeader
-        breadcrumbs="Chat / Limits"
-        title="Chat limits"
-        description="Spend and token limits are checked before every Chat message. The included allowance stops unless you buy credits or turn on pay-as-you-go."
+        breadcrumbs="AI / Limits"
+        title="AI limits"
+        description="Vantage's AI runs on your team's own key, so your provider bills your team directly. Set a monthly limit so it can't run up a surprise bill, or pause it for everyone."
       />
 
       <AiHubRelated orgId={orgId} active="budgets" />
-      <BudgetsRelatedStrip orgId={orgId} />
 
-      {message ? <p className="telemetry-status">{message}</p> : null}
+      {message ? (
+        <p className="telemetry-status" role="status">
+          {message}
+        </p>
+      ) : null}
 
       {loading ? (
         <section className="app-card soft-panel product-hub-setup" aria-busy>
@@ -306,401 +213,219 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
 
       {!loading && !blocked ? (
         <>
-          <section className="ai-budgets-scope" aria-label="What budgets owns">
-            {AI_BUDGETS_SCOPE_CARDS.map((card) => (
-              <article key={card.id} className="app-card soft-panel ai-budgets-scope-card">
-                <span className="eyebrow">
-                  {card.id === "limits"
-                    ? "LIMITS"
-                    : card.id === "usage"
-                      ? "USAGE"
-                      : card.id === "chat"
-                        ? "CHAT"
-                        : "PRICING"}
-                </span>
-                <h2>{card.title}</h2>
-                <p className="app-muted">{card.body}</p>
-                {card.id === "limits" ? (
-                  canManage ? (
-                    <Button as="a" variant="secondary" href="#org-hard-limits">
-                      Edit spend limits
-                    </Button>
-                  ) : (
-                    <Button as="a" variant="secondary" href={chatHref}>
-                      Open Chat
-                    </Button>
-                  )
-                ) : null}
-                {card.id === "usage" ? (
-                  <Button as="a" variant="secondary" href={usageHref}>
-                    Open AI usage
-                  </Button>
-                ) : null}
-                {card.id === "chat" ? (
-                  <Button as="a" variant="secondary" href={chatHref}>
-                    Open Chat
-                  </Button>
-                ) : null}
-                {card.id === "pricing" ? (
-                  <Button as="a" variant="secondary" href={pricingHref}>
-                    View pricing
-                  </Button>
-                ) : null}
-              </article>
-            ))}
+          <section className="metric-grid" aria-label="AI use">
+            <article>
+              <span>Spent today</span>
+              <strong>{formatAiBudgetsMoney(usage.dailySpend, metricsLoaded)}</strong>
+            </article>
+            <article>
+              <span>Spent this month</span>
+              <strong>{formatAiBudgetsMoney(usage.monthlySpend, metricsLoaded)}</strong>
+            </article>
+            <article>
+              <span>Words used today (tokens)</span>
+              <strong>{formatAiBudgetsCount(usage.dailyTokens, metricsLoaded)}</strong>
+            </article>
           </section>
 
           {!canManage ? (
             <EmptyState
               soft
-              badge="No access"
+              badge="Owners and mentors"
               badgeTone="setup"
-              title="Owners and admins set spend limits"
-              description="Chat still follows the limits already saved. An owner or admin changes the caps, the pause switch, and which models the team can use."
+              title="An owner or mentor sets the AI limits"
+              description="AI follows the limits already saved. Ask an owner or mentor if something is blocked."
             >
               <Button as="a" variant="primary" href={chatHref}>
-                Open Chat
+                Open Ask AI
               </Button>
-            </EmptyState>
-          ) : showEmptyBanner ? (
-            <EmptyState
-              soft
-              badge={shellCopy.badge}
-              badgeTone="setup"
-              title={shellCopy.title}
-              description={shellCopy.description}
-            >
-              <ShellPrimary orgId={orgId} shell={shell} canManage={canManage} />
             </EmptyState>
           ) : (
-            <NextActions orgId={orgId} shell={shell} canManage={canManage} />
-          )}
-
-          {snapshot ? (
-            <UsageCutoffBanner orgId={orgId} snapshot={snapshot} canCheckout={canManage} />
-          ) : null}
-
-          {shouldShowAiBudgetsSummaryTiles(shell) ? (
-          <section className="metric-grid" aria-label="Usage snapshot">
-            <article>
-              <span>Spend today</span>
-              <strong>{formatAiBudgetsMoney(usage.dailySpend, metricsLoaded)}</strong>
-            </article>
-            <article>
-              <span>Spend this month</span>
-              <strong>{formatAiBudgetsMoney(usage.monthlySpend, metricsLoaded)}</strong>
-            </article>
-            <article>
-              <span>Included allowance used</span>
-              <strong>{allowanceLabel}</strong>
-            </article>
-            <article>
-              <span>Credits</span>
-              <strong>{formatAiBudgetsMoney(cutoff?.walletBalanceUsd, metricsLoaded)}</strong>
-            </article>
-            <article>
-              <span>Tokens today</span>
-              <strong>{formatAiBudgetsCount(usage.dailyTokens, metricsLoaded)}</strong>
-            </article>
-            <article>
-              <span>Projected exhaustion</span>
-              <strong>
-                {!metricsLoaded ? "…" : projected === null ? "—" : `${projected.toFixed(1)}d`}
-              </strong>
-            </article>
-          </section>
-          ) : null}
-
-          <section className="intel-panel budget-cutoff-panel" aria-label="When hosted Chat runs out">
-            <span className="eyebrow">When hosted Chat runs out</span>
-            <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After hosted AI runs out</h2>
-            <p className="app-muted" style={{ marginTop: 0 }}>
-              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted Chat stops at 100%.{" "}
-              {canManage
-                ? "Resume with credits, pay-as-you-go with a spend cap, or a higher plan."
-                : "An owner or admin buys credits or changes the plan."}{" "}
-              Your own keys and local models do not use hosted allowance.
-            </p>
-            <div className="usage-cutoff-banner-ctas" style={{ marginTop: 4 }}>
-              <UsageCutoffQuickActions
-                orgId={orgId}
-                paygEnabled={Boolean(cutoff?.paygEnabled)}
-                pricingHref={pricingHref}
-                accountHref={accountHref}
-                canCheckout={canManage}
-              />
-            </div>
-          </section>
-
-          {canManage ? (
-          <>
-          <section className="intel-panel" id="prompt-caching" style={{ marginBottom: 16 }}>
-            <span className="eyebrow">Prompt caching</span>
-            <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>Reuse stable system and context blocks</h2>
-            <p className="app-muted" style={{ marginTop: 0 }}>
-              When enabled, the assistant adapter can cache long-lived system/context prefixes to lower input cost. Turn
-              off when you need the freshest team context on every call. Cache read/write tokens appear on{" "}
-              <a href={usageHref}>AI usage</a>.
-            </p>
-            <label className="check-field">
-              <input
-                type="checkbox"
-                checked={policy.promptCachingEnabled}
-                onChange={(e) => setPolicy({ ...policy, promptCachingEnabled: e.target.checked })}
-              />
-              Enable prompt caching for this organization
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-              <button
-                type="button"
-                className="primary-action"
-                onClick={() =>
-                  void save({
-                    scope: "org",
-                    ...policy,
-                    warningThresholds: policy.warningThresholds.split(",").map(Number),
-                  })
-                }
-              >
-                Save caching preference
-              </button>
-              <Button as="a" variant="secondary" href={chatHref}>
-                Open Chat
-              </Button>
-            </div>
-          </section>
-
-          <section className="admin-grid">
             <form
               id="org-hard-limits"
               className="intel-panel ai-budgets-policy"
               onSubmit={(e) => {
                 e.preventDefault();
-                void save({
-                  scope: "org",
-                  ...policy,
-                  warningThresholds: policy.warningThresholds.split(",").map(Number),
-                });
+                saveOrgPolicy();
               }}
             >
-              <span className="eyebrow">Team spend limits</span>
+              <h2 style={{ margin: 0, fontSize: 18 }}>Team AI limits</h2>
+              <p className="app-muted" style={{ margin: 0 }}>
+                AI runs on your team&rsquo;s own key, and your provider bills you. A monthly limit stops it before a
+                surprise bill. Leave blank for no limit.
+              </p>
               <div className="budget-fields">
-                {(Object.keys(blank) as Array<keyof typeof blank>).map((key) => (
+                {(["monthlySpendLimitUsd", "dailySpendLimitUsd"] as const).map((key) => (
                   <label key={key}>
                     {fieldLabel[key]}
                     <input
                       type="number"
                       min="0"
+                      inputMode="decimal"
+                      placeholder="No limit"
                       value={policy[key]}
                       onChange={(e) => setPolicy({ ...policy, [key]: e.target.value })}
                     />
                   </label>
                 ))}
               </div>
-              <label>
-                Warning thresholds (%)
-                <input
-                  value={policy.warningThresholds}
-                  onChange={(e) => setPolicy({ ...policy, warningThresholds: e.target.value })}
-                />
-              </label>
-              <label className="check-field">
-                <input
-                  type="checkbox"
-                  checked={policy.enforceByoTokenLimits}
-                  onChange={(e) => setPolicy({ ...policy, enforceByoTokenLimits: e.target.checked })}
-                />
-                Apply token limits to your keys / local
-              </label>
-              <label className="check-field">
-                <input
-                  type="checkbox"
-                  checked={policy.modelAllowlistEnabled}
-                  onChange={(e) => setPolicy({ ...policy, modelAllowlistEnabled: e.target.checked })}
-                />
-                Only allow the models I pick
-              </label>
-              <label className="check-field">
-                <input
-                  type="checkbox"
-                  checked={policy.providerAllowlistEnabled}
-                  onChange={(e) => setPolicy({ ...policy, providerAllowlistEnabled: e.target.checked })}
-                />
-                Only allow the providers I pick
-              </label>
               <label className="check-field danger">
                 <input
                   type="checkbox"
                   checked={policy.killSwitch}
                   onChange={(e) => setPolicy({ ...policy, killSwitch: e.target.checked })}
                 />
-                Pause Chat for everyone
+                Pause AI for everyone on the team
               </label>
-              <button className="primary-action">Save limits</button>
-            </form>
-
-            <form
-              className="intel-panel"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const identity =
-                  layer.scope === "member"
-                    ? { userId: layer.identifier }
-                    : layer.scope === "feature"
-                      ? { feature: layer.identifier }
-                      : { provider: layer.provider, model: layer.model, allowed: layer.allowed };
-                void save({ ...layer, ...identity });
-              }}
-            >
-              <span className="eyebrow">Layered limit</span>
-              <label>
-                Scope
-                <select value={layer.scope} onChange={(e) => setLayer({ ...layer, scope: e.target.value })}>
-                  <option value="feature">Feature</option>
-                  <option value="member">Member</option>
-                  <option value="model">Provider + model</option>
-                </select>
-              </label>
-              {layer.scope === "member" ? (
+              <details className="ai-budgets-more">
+                <summary>More controls</summary>
+                <div className="budget-fields">
+                  {(["monthlyTokenLimit", "dailyTokenLimit"] as const).map((key) => (
+                    <label key={key}>
+                      {fieldLabel[key]}
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        placeholder="No limit"
+                        value={policy[key]}
+                        onChange={(e) => setPolicy({ ...policy, [key]: e.target.value })}
+                      />
+                    </label>
+                  ))}
+                </div>
                 <label>
-                  Member
-                  <select
-                    value={layer.identifier}
-                    onChange={(e) => setLayer({ ...layer, identifier: e.target.value })}
-                  >
-                    <option value="">Choose member</option>
-                    {members.map((m) => (
-                      <option key={m.userId} value={m.userId}>
-                        {m.name} · {m.email}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : layer.scope === "feature" ? (
-                <label>
-                  Feature
+                  Warn at (% of the monthly limit, comma separated)
                   <input
-                    value={layer.identifier}
-                    onChange={(e) => setLayer({ ...layer, identifier: e.target.value })}
-                    placeholder="strategy, cad, coding, research…"
+                    value={policy.warningThresholds}
+                    onChange={(e) => setPolicy({ ...policy, warningThresholds: e.target.value })}
                   />
                 </label>
-              ) : (
-                <>
-                  <label>
-                    Provider
-                    <input
-                      value={layer.provider}
-                      onChange={(e) => setLayer({ ...layer, provider: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    Model (* for provider cap)
-                    <input value={layer.model} onChange={(e) => setLayer({ ...layer, model: e.target.value })} />
-                  </label>
-                  <label className="check-field">
-                    <input
-                      type="checkbox"
-                      checked={layer.allowed}
-                      onChange={(e) => setLayer({ ...layer, allowed: e.target.checked })}
-                    />
-                    Allowed
-                  </label>
-                </>
-              )}
-              <div className="budget-fields">
-                {(Object.keys(blank) as Array<keyof typeof blank>).map((key) => (
-                  <label key={key}>
-                    {fieldLabel[key]}
-                    <input
-                      type="number"
-                      min="0"
-                      value={layer[key]}
-                      onChange={(e) => setLayer({ ...layer, [key]: e.target.value })}
-                    />
-                  </label>
-                ))}
-              </div>
-              <button className="primary-action">Save layered limit</button>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={policy.enforceByoTokenLimits}
+                    onChange={(e) => setPolicy({ ...policy, enforceByoTokenLimits: e.target.checked })}
+                  />
+                  Count the word limits on personal keys too
+                </label>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={policy.modelAllowlistEnabled}
+                    onChange={(e) => setPolicy({ ...policy, modelAllowlistEnabled: e.target.checked })}
+                  />
+                  Only allow the models I pick
+                </label>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={policy.providerAllowlistEnabled}
+                    onChange={(e) => setPolicy({ ...policy, providerAllowlistEnabled: e.target.checked })}
+                  />
+                  Only allow the providers I pick
+                </label>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={policy.promptCachingEnabled}
+                    onChange={(e) => setPolicy({ ...policy, promptCachingEnabled: e.target.checked })}
+                  />
+                  Reuse the team&rsquo;s standing instructions between questions (cheaper)
+                </label>
+              </details>
+              <Button variant="primary" type="submit">
+                Save limits
+              </Button>
             </form>
-          </section>
-          </>
+          )}
+
+          {canManage ? (
+            <details className="intel-panel ai-budgets-more">
+              <summary>A limit for one person, feature or model</summary>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const identity =
+                    layer.scope === "member"
+                      ? { userId: layer.identifier }
+                      : layer.scope === "feature"
+                        ? { feature: layer.identifier }
+                        : { provider: layer.provider, model: layer.model, allowed: layer.allowed };
+                  void save({ ...layer, ...identity });
+                }}
+              >
+                <label>
+                  Limit applies to
+                  <select value={layer.scope} onChange={(e) => setLayer({ ...layer, scope: e.target.value })}>
+                    <option value="member">One person</option>
+                    <option value="feature">One feature</option>
+                    <option value="model">One provider or model</option>
+                  </select>
+                </label>
+                {layer.scope === "member" ? (
+                  <label>
+                    Person
+                    <select value={layer.identifier} onChange={(e) => setLayer({ ...layer, identifier: e.target.value })}>
+                      <option value="">Choose a person</option>
+                      {members.map((m) => (
+                        <option key={m.userId} value={m.userId}>
+                          {m.name} · {m.email}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : layer.scope === "feature" ? (
+                  <label>
+                    Feature
+                    <input
+                      value={layer.identifier}
+                      onChange={(e) => setLayer({ ...layer, identifier: e.target.value })}
+                      placeholder="strategy, cad, coding, research…"
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <label>
+                      Provider
+                      <input value={layer.provider} onChange={(e) => setLayer({ ...layer, provider: e.target.value })} />
+                    </label>
+                    <label>
+                      Model (leave * for every model)
+                      <input value={layer.model} onChange={(e) => setLayer({ ...layer, model: e.target.value })} />
+                    </label>
+                    <label className="check-field">
+                      <input
+                        type="checkbox"
+                        checked={layer.allowed}
+                        onChange={(e) => setLayer({ ...layer, allowed: e.target.checked })}
+                      />
+                      Allowed
+                    </label>
+                  </>
+                )}
+                <div className="budget-fields">
+                  {(Object.keys(blank) as Array<keyof typeof blank>).map((key) => (
+                    <label key={key}>
+                      {fieldLabel[key]}
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="No limit"
+                        value={layer[key]}
+                        onChange={(e) => setLayer({ ...layer, [key]: e.target.value })}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <Button variant="secondary" type="submit">
+                  Save this limit
+                </Button>
+              </form>
+            </details>
           ) : null}
         </>
       ) : null}
     </main>
-  );
-}
-
-function UsageCutoffQuickActions({
-  orgId,
-  paygEnabled,
-  pricingHref,
-  accountHref,
-  canCheckout,
-}: {
-  orgId: string;
-  paygEnabled: boolean;
-  pricingHref: string;
-  accountHref: string;
-  /** When false, checkout stays with an owner or admin. Omitted keeps the checkout buttons. */
-  canCheckout?: boolean;
-}) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const [hint, setHint] = useState("");
-
-  async function checkout(
-    action: "credits" | "payg" | "subscription",
-    extra?: { packCode?: string; planCode?: string },
-  ) {
-    setBusy(action);
-    setHint("");
-    try {
-      const response = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action, ...extra }),
-      });
-      const data = (await response.json()) as { url?: string; error?: string };
-      if (response.ok && data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setHint(data.error ?? "Checkout is not configured yet — open Pricing.");
-    } catch {
-      setHint("Checkout unavailable. Open Pricing instead.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <>
-      {canCheckout !== false ? (
-        <>
-          <button
-            type="button"
-            className="primary-action"
-            disabled={busy != null}
-            onClick={() => void checkout("credits", { packCode: "credits_100" })}
-          >
-            {busy === "credits" ? "Opening…" : "Buy AI credits"}
-          </button>
-          <Button variant="secondary" type="button" disabled={busy != null || paygEnabled} onClick={() => void checkout("payg")}>
-            {paygEnabled ? "Pay-as-you-go is on" : busy === "payg" ? "Opening…" : "Turn on pay-as-you-go"}
-          </Button>
-          <Button variant="secondary" type="button" disabled={busy != null} onClick={() => void checkout("subscription", { planCode: "pro" })}>
-            {busy === "subscription" ? "Opening…" : "Upgrade plan"}
-          </Button>
-        </>
-      ) : null}
-      <Button as="a" variant="secondary" href={pricingHref}>
-        View pricing
-      </Button>
-      <Button as="a" variant="secondary" href={accountHref}>
-        Account
-      </Button>
-      {hint ? <p className="usage-cutoff-hint">{hint}</p> : null}
-    </>
   );
 }

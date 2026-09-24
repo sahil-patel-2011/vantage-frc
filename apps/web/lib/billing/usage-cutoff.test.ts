@@ -19,37 +19,26 @@ describe("evaluateUsageCutoff", () => {
     expect(evaluateUsageCutoff(snap)).toBeNull();
   });
 
-  it("warns when approaching included allowance", () => {
-    const snap = buildUsageCutoffSnapshot({
-      includedAllowanceUsd: 100,
-      usedUsd: 80,
-      warningThresholds: [50, 75, 90],
-    });
-    const alert = evaluateUsageCutoff(snap);
-    expect(alert?.level).toBe("near");
-    expect(alert?.reason).toBe("allowance");
-    expect(alert?.percent).toBeCloseTo(80);
-  });
-
-  it("hard-stops at 100% allowance without PAYG or credits", () => {
+  it("raises nothing for old hosted-allowance, credit or pay-as-you-go numbers", () => {
+    // Vantage is free and runs AI on the team's own key: none of these can stop a team.
     const snap = buildUsageCutoffSnapshot({
       includedAllowanceUsd: 40,
       usedUsd: 40,
       paygEnabled: false,
       walletBalanceUsd: 0,
     });
+    expect(evaluateUsageCutoff(snap)).toBeNull();
+  });
+
+  it("stops at the team's own monthly limit and points at AI limits", () => {
+    const snap = buildUsageCutoffSnapshot({ monthlySpendUsd: 25, monthlySpendLimitUsd: 25 });
     const alert = evaluateUsageCutoff(snap);
-    expect(alert?.level).toBe("at");
-    expect(alert?.reason).toBe("allowance");
+    expect(alert).toMatchObject({ level: "at", reason: "org_budget" });
     const ctas = cutoffCtas(alert!, "org-1");
-    expect(ctas.some((c) => c.id === "credits")).toBe(true);
-    expect(ctas.some((c) => c.id === "payg")).toBe(true);
-    expect(ctas.some((c) => c.id === "upgrade")).toBe(true);
-    expect(ctas.find((c) => c.id === "budgets")?.href).toContain("/ai?");
-    expect(ctas.find((c) => c.id === "budgets")?.href).toContain("tab=budgets");
-    expect(ctas.find((c) => c.id === "budgets")?.href).toContain("orgId=org-1");
-    expect(ctas.find((c) => c.id === "budgets")?.href).not.toMatch(/\/team\/budgets\?/);
-    expect(ctas.find((c) => c.id === "pricing")?.href).toContain("/pricing");
+    expect(ctas.map((c) => c.id)).toEqual(["budgets"]);
+    expect(ctas[0]?.href).toContain("tab=budgets");
+    expect(ctas[0]?.href).toContain("orgId=org-1");
+    expect(ctas.some((c) => c.checkoutAction)).toBe(false);
   });
 
   it("surfaces kill switch above allowance math", () => {
@@ -90,22 +79,21 @@ describe("cutoffCheckoutVisible", () => {
   });
 });
 
-describe("cutoff Soft-UI error mapping", () => {
-  it("maps credit / PAYG codes to actionable copy", () => {
+describe("cutoff error mapping", () => {
+  it("sends every old allowance, credit or pay-as-you-go stop to the team's own key", () => {
     expect(isCutoffError("CreditCapExceededError")).toBe(true);
     expect(isCutoffError("payg_not_enabled")).toBe(true);
-    const msg = messageForCutoffError("managed_allowance_exhausted", "org-9");
-    expect(msg.title.toLowerCase()).toMatch(/hosted ai|allowance|exhausted/);
-    expect(msg.ctas.some((c) => c.checkoutAction === "credits" || c.id === "credits")).toBe(true);
+    for (const code of ["managed_allowance_exhausted", "payg_not_enabled", "credit_cap_exceeded", "sponsored_promo_expired", "usage_hard_cutoff"]) {
+      const msg = messageForCutoffError(code, "org-9");
+      expect(msg.title).toBe("AI needs your team's key");
+      expect(msg.ctas[0]).toMatchObject({ id: "ai-keys", label: "Add your team's AI key" });
+      expect(msg.ctas.some((c) => c.checkoutAction || c.id === "pricing" || c.id === "credits")).toBe(false);
+    }
   });
 
-  it("maps sponsored_promo_expired to BYOK / upgrade CTAs (AI-only)", () => {
-    const msg = messageForCutoffError("sponsored_promo_expired", "org-1111");
-    expect(msg.title).toMatch(/Sponsored AI ended/i);
-    expect(msg.body).toMatch(/keeps working/i);
-    expect(msg.ctas.some((c) => c.id === "ai-keys")).toBe(true);
-    expect(msg.ctas.some((c) => c.id === "pricing")).toBe(true);
-    expect(msg.ctas.some((c) => c.checkoutAction === "credits")).toBe(false);
+  it("names the team's own limit and the pause switch plainly", () => {
+    expect(messageForCutoffError("budget_limit_exceeded", "org-1").title).toMatch(/team's AI limit/);
+    expect(messageForCutoffError("kill_switch", "org-1").title).toBe("AI is paused");
   });
 });
 

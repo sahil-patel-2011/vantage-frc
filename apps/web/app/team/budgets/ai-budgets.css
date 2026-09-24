@@ -37,3 +37,10 @@
 .ai-budgets-policy {
   scroll-margin-top: 88px;
 }
+
+/* Advanced AI limits fold away; the team limit and pause switch are the page. */
+.ai-budgets-more > summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent)}
+.ai-budgets-more[open] > summary{margin-bottom:8px}
+.ai-budgets-more form,.ai-budgets-more{display:grid;gap:12px}
+.ai-budgets-policy{display:grid;gap:14px;max-width:720px}
+.ai-budgets-policy > .app-button{justify-self:start}
