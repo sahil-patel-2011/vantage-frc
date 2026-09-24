@@ -15,6 +15,7 @@ import {
   type AdminShellKind,
 } from "../../lib/admin";
 import {
+  confirmationDetails,
   confirmationLines,
   type ProvisionConfirmation,
 } from "../../lib/admin-analytics/provisioning";
@@ -199,6 +200,8 @@ function AdminClientInner() {
       {/* One card, three numbers, each in its own colour. People come back to
           this page for the count and read the captions once, ever — so the
           number is the large thing and the caption is the small one. */}
+      {/* One number. "Closed / Membership" and "Admin only / Provisioning" never changed and
+          pushed the Create a team form to the fold. */}
       <KitCard aria-label="Provisioning summary">
         <KitStats
           items={[
@@ -207,8 +210,6 @@ function AdminClientInner() {
               label: "Teams provisioned",
               tone: "blue",
             },
-            { value: "Closed", label: "Membership", tone: "violet" },
-            { value: "Admin only", label: "Provisioning", tone: "green" },
           ]}
         />
       </KitCard>
@@ -217,27 +218,33 @@ function AdminClientInner() {
         <Panel className="admin-provision-confirmation" aria-label="Team created">
           <span className="eyebrow">Team created</span>
           <h2>
-            #{confirmation.teamNumber} {confirmation.name}
+            {confirmation.name} (#{confirmation.teamNumber}) is ready.
           </h2>
-          <ul>
-            {confirmationLines(confirmation).map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
+          {confirmationLines(confirmation).map((line) => (
+            <p key={line}>{line}</p>
+          ))}
           {confirmation.owner.mode === "invited" && confirmation.owner.inviteUrl ? (
             <div className="admin-invite-link">
               <label>
-                One-time owner invite link (shown once — it is not stored)
+                Owner invite link (shown once)
                 <input readOnly value={confirmation.owner.inviteUrl} onFocus={(event) => event.target.select()} />
               </label>
-              <Button variant="secondary" type="button" onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}>
-                {copied ? "Copied" : "Copy link"}
+              <Button variant="primary" type="button" onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}>
+                {copied ? "Copied" : "Copy invite link"}
               </Button>
             </div>
           ) : null}
+          <details className="admin-confirmation-details">
+            <summary>Details</summary>
+            <ul>
+              {confirmationDetails(confirmation).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </details>
           <div className="admin-confirmation-actions">
-            <Button variant="primary" type="button" onClick={() => setConfirmation(null)}>
-              Provision another team
+            <Button variant="secondary" type="button" onClick={() => setConfirmation(null)}>
+              Create another team
             </Button>
             <Button as="a" variant="secondary" href="/admin/analytics">
               Open platform analytics

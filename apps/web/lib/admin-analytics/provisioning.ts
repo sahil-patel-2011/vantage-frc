@@ -73,28 +73,31 @@ export type ProvisionConfirmation = {
   };
 };
 
-/** Human summary lines for the confirmation screen — real created rows only. */
+/** What to do next, in plain words. The technical record is in confirmationDetails. */
 export function confirmationLines(confirmation: ProvisionConfirmation): string[] {
-  const lines = [
-    `Workspace "${confirmation.name}" (#${confirmation.teamNumber}, slug ${confirmation.slug}) created.`,
-    "Billing row seeded on the free tier with a $0 credit cap.",
-  ];
-  if (confirmation.owner.mode === "seeded") {
-    lines.push(`${confirmation.owner.email} was seeded as owner — they can open /workspace now.`);
-  } else {
-    lines.push(
-      `${confirmation.owner.email} has no verified Vantage account yet — a one-time owner invite was created instead.`,
-    );
-    if (confirmation.owner.inviteExpiresAt) {
-      lines.push(`The invite link expires ${new Date(confirmation.owner.inviteExpiresAt).toLocaleString()}.`);
-    }
-    lines.push(
-      confirmation.owner.emailSent
-        ? "The invite email was sent; the link below is the same one-time URL."
-        : "Invite email delivery is not configured — copy the one-time link below and send it yourself.",
-    );
+  const { owner } = confirmation;
+  if (owner.mode === "seeded") {
+    return [`${owner.email} is the owner and can sign in now.`];
   }
-  return lines;
+  const expires = owner.inviteExpiresAt
+    ? ` It expires ${new Date(owner.inviteExpiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.`
+    : "";
+  return [
+    owner.emailSent
+      ? `We emailed an owner invite to ${owner.email}.${expires}`
+      : `Email isn't set up here, so copy the invite link below and send it to ${owner.email}.${expires}`,
+  ];
+}
+
+/** The record for a platform admin who wants it: web address, billing row, how the owner was added. */
+export function confirmationDetails(confirmation: ProvisionConfirmation): string[] {
+  return [
+    `Web address: ${confirmation.slug}`,
+    "Billing: free tier, no AI credit (teams bring their own key).",
+    confirmation.owner.mode === "seeded"
+      ? "Owner: existing verified account, added directly."
+      : "Owner: no verified account yet, so a one-time invite was created. The link is shown once and not stored.",
+  ];
 }
 
 /** Friendly message for the two uniqueness races provisioning can hit. */

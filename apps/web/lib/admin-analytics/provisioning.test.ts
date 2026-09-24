@@ -59,7 +59,7 @@ describe("confirmationLines", () => {
       ...base,
       owner: { email: "coach@example.com", mode: "seeded" },
     });
-    expect(lines.join(" ")).toContain("seeded as owner");
+    expect(lines.join(" ")).toContain("is the owner and can sign in now");
     expect(lines.join(" ")).not.toContain("invite");
   });
 
@@ -75,8 +75,9 @@ describe("confirmationLines", () => {
       },
     });
     const text = lines.join(" ");
-    expect(text).toContain("one-time owner invite");
-    expect(text).toContain("copy the one-time link");
+    expect(text).toContain("copy the invite link below");
+    expect(text).toContain("coach@example.com");
+    expect(text).not.toMatch(/slug|Billing row|seeded/);
   });
 
   it("notes when the invite email actually went out", () => {
@@ -84,7 +85,7 @@ describe("confirmationLines", () => {
       ...base,
       owner: { email: "coach@example.com", mode: "invited", emailSent: true },
     });
-    expect(lines.join(" ")).toContain("invite email was sent");
+    expect(lines.join(" ")).toContain("We emailed an owner invite");
   });
 });
 
