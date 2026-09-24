@@ -64,6 +64,10 @@ const NOT_A_PANEL: Record<string, string> = {
   // Matches on dash-drag-proxy / dash-drop-slot, the widget drag affordances.
   // The only disclosure here is the board bar, which expands in flow.
   "app/dashboard/dashboard-home-view.tsx": "drag-and-drop affordances, not a menu",
+  // The card's size bar opens from its size button (aria-expanded) but is closed from the
+  // board: Escape and a tap on another card or the board clear the selection in
+  // dashboard-home-view.tsx, which owns selectedId.
+  "app/dashboard/dashboard-grid-item.tsx": "size bar is closed by the board (Escape, tap elsewhere)",
   // Matches on .soft-topbar itself (position: fixed). The account menu it
   // contains is dismissed by .soft-account-scrim, rendered from app-shell.tsx.
   // Verified: opened the avatar menu, clicked the page, menu closed.
