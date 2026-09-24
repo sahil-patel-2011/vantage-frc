@@ -1,14 +1,6 @@
 /* Home: the loading skeleton, the "what to do now" hero, the header's share
    button, and the per-card size button. Edit-mode chrome is in dashboard-edit.css. */
 
-/* ---- Centred on the page ----
-   The shell still reserves 244px on the left for a rail that is no longer
-   drawn, so Home's column sat 268px from the left and 24px from the right.
-   Home gives that space back while nothing is docked there. */
-@media (min-width:1024px){
-  body.has-app-shell:has(main.dash-home):not(.soft-nav-open){padding-left:0 !important}
-}
-
 /* ---- Skeleton: shapes, no words ---- */
 @keyframes dash-skel-pulse{0%,100%{opacity:.55}50%{opacity:1}}
 .dash-skel-chip,.dash-skel-lines>i,.dash-skel-board>i,.dash-widget-wait>i{

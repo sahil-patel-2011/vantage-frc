@@ -208,11 +208,6 @@ body.has-app-shell .app-badge {
 }
 
 
-@media (min-width: 1024px) {
-  body.has-app-shell { padding-left: 244px !important; }
-  body.has-app-shell .soft-topbar { left: 244px; }
-}
-
 @media (max-width: 680px) {
   body.has-app-shell .soft-topbar { height: 56px; }
 }
