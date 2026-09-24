@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { plainStrategyText } from "../../lib/briefing/plain-text";
+import { intelTags } from "../../lib/display/match-intel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import {
@@ -528,8 +530,8 @@ export default function BriefingClient() {
           <ol>
             {view.callouts.map((callout) => (
               <li key={`${callout.priority}-${callout.headline}`}>
-                <b>{callout.headline}</b>
-                {callout.detail ? <span> — {callout.detail}</span> : null}
+                <b>{plainStrategyText(callout.headline)}</b>
+                {callout.detail ? <span> — {plainStrategyText(callout.detail)}</span> : null}
               </li>
             ))}
           </ol>
@@ -542,14 +544,14 @@ export default function BriefingClient() {
             <ul className="brief-factors">
               {view.prediction.keyFactors.slice(0, 3).map((factor, index) => (
                 <li key={`${factor.name}-${index}`}>
-                  <b>{factor.name}</b>
-                  {factor.evidence ? <span> — {factor.evidence}</span> : null}
+                  <b>{plainStrategyText(factor.name)}</b>
+                  {factor.evidence ? <span> — {plainStrategyText(factor.evidence)}</span> : null}
                 </li>
               ))}
             </ul>
           ) : null}
           {view.prediction.caveats.length > 0 ? (
-            <p className="brief-caveats">Caveats: {view.prediction.caveats.join(" · ")}</p>
+            <p className="brief-caveats">Caveats: {view.prediction.caveats.map(plainStrategyText).join(" · ")}</p>
           ) : null}
         </section>
       ) : null}
@@ -610,11 +612,11 @@ export default function BriefingClient() {
         <Section title="Game plan">
           {view.plan ? (
             <>
-              {view.plan.title ? <p className="brief-plan-title">{view.plan.title}</p> : null}
+              {view.plan.title ? <p className="brief-plan-title">{plainStrategyText(view.plan.title)}</p> : null}
               {view.plan.priorities.length > 0 ? (
                 <ol className="brief-priorities">
                   {view.plan.priorities.map((priority, index) => (
-                    <li key={`${index}-${priority}`}>{priority}</li>
+                    <li key={`${index}-${priority}`}>{plainStrategyText(priority)}</li>
                   ))}
                 </ol>
               ) : null}
@@ -623,17 +625,17 @@ export default function BriefingClient() {
                   <span className="brief-chip-label">Protect</span>
                   {view.plan.strengths.map((entry, index) => (
                     <span key={`${index}-${entry}`} className="brief-chip positive">
-                      {entry}
+                      {plainStrategyText(entry)}
                     </span>
                   ))}
                 </div>
               ) : null}
               {view.plan.risks.length > 0 ? (
                 <div className="brief-chip-row">
-                  <span className="brief-chip-label">Mitigate</span>
+                  <span className="brief-chip-label">Watch out</span>
                   {view.plan.risks.map((entry, index) => (
                     <span key={`${index}-${entry}`} className="brief-chip critical">
-                      {entry}
+                      {plainStrategyText(entry)}
                     </span>
                   ))}
                 </div>
@@ -643,7 +645,7 @@ export default function BriefingClient() {
                   <span className="brief-chip-label">Checkpoints</span>
                   {view.plan.checkpoints.map((entry, index) => (
                     <span key={`${index}-${entry}`} className="brief-chip">
-                      {entry}
+                      {plainStrategyText(entry)}
                     </span>
                   ))}
                 </div>
@@ -707,12 +709,12 @@ export default function BriefingClient() {
                         <b>{stripFrc(tendency.teamKey)}</b>
                         {tendency.labels.map((label) => (
                           <span key={label} className="brief-chip">
-                            {label}
+                            {intelTags([label])[0] ?? label.replace(/-/g, " ")}
                           </span>
                         ))}
                       </p>
                       {tendency.evidence.length > 0 ? (
-                        <p className="app-muted brief-no-notes">{tendency.evidence.join(" ")}</p>
+                        <p className="app-muted brief-no-notes">{tendency.evidence.map(plainStrategyText).join(" ")}</p>
                       ) : null}
                     </li>
                   ))}
@@ -820,7 +822,7 @@ export default function BriefingClient() {
         <Section title="Linked whiteboard play">
           {view.play ? (
             <>
-              <p className="brief-play-title">{view.play.title}</p>
+              <p className="brief-play-title">{plainStrategyText(view.play.title)}</p>
               {view.play.description ? <p className="app-muted brief-play-desc">{view.play.description}</p> : null}
               <p className="brief-play-meta">
                 <span className="brief-chip">
