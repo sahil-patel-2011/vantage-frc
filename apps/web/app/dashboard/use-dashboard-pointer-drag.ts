@@ -155,6 +155,21 @@ export function useDashboardPointerDrag(input: {
     nothing jumps after you let go.
   */
   function previewMove(session: DragSession) {
+    if (session.cols === 1) {
+      // A phone board is one stack, so a drop is an insert: the card goes before the first
+      // card whose middle is below its own. Grid collision pushing reshuffled the stack
+      // instead (dragging the third card to the top sent the first to the bottom).
+      const dragged = session.baseDisplay.find((item) => item.i === session.id);
+      const center = session.cell.row + (dragged?.h ?? session.span.h) / 2;
+      const others = layoutOrder(session.baseDisplay).filter((id) => id !== session.id);
+      const index = others.filter((id) => {
+        const item = session.baseDisplay.find((row) => row.i === id);
+        return item ? item.y + item.h / 2 < center : false;
+      }).length;
+      const order = [...others.slice(0, index), session.id, ...others.slice(index)];
+      setLayout(packKeepingOrder(reorderLayout(session.baseLayout, order)));
+      return;
+    }
     const nextDisplay = moveItem(session.baseDisplay, session.id, session.cell, session.cols);
     setLayout(
       packKeepingOrder(
