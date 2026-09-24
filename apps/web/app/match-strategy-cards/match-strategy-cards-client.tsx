@@ -380,6 +380,53 @@ export default function MatchStrategyCardsClient() {
     );
   }
 
+  // Our matches from the next one on; the ones before it are played and fold away. With no
+  // next match nothing opens by itself: a plan for a match that's over is a lookup, not a job.
+  const nextIndex = view.nextMatchKey ? view.cards.findIndex((card) => card.matchKey === view.nextMatchKey) : -1;
+  const nextCard = nextIndex >= 0 ? view.cards[nextIndex]! : null;
+  const upcomingCards = nextIndex >= 0 ? view.cards.slice(nextIndex) : [];
+  const earlierCards = nextIndex >= 0 ? view.cards.slice(0, nextIndex) : view.cards;
+  const current = openMatchKey ?? nextCard?.matchKey ?? null;
+  const renderCard = (card: MatchStrategyCard) => {
+    const open = card.matchKey === current;
+    const mounted = open || visitedKeys.includes(card.matchKey);
+    return (
+      <Fragment key={card.matchKey}>
+        {mounted ? (
+          <div hidden={!open}>
+            <StrategyCardPanel
+              card={card}
+              eventKey={view.eventKey}
+              ownTeamNumber={view.teamNumber}
+              busy={busy}
+              mutate={mutate}
+            />
+          </div>
+        ) : null}
+        {open ? null : (
+          <button
+            type="button"
+            className={`msc-card-row${card.ownAllianceColor ? ` is-${card.ownAllianceColor}` : ""}`}
+            onClick={() => {
+              if (current) setVisitedKeys((keys) => (keys.includes(current) ? keys : [...keys, current]));
+              setOpenMatchKey(card.matchKey);
+            }}
+            aria-label={`Open the plan for ${matchLabel(card)}`}
+          >
+            <strong>{matchLabel(card)}</strong>
+            <span>
+              {card.scheduledAt
+                ? new Date(card.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                : "Time TBD"}
+            </span>
+            <span>{card.ownAllianceColor ? `${card.ownAllianceColor === "red" ? "Red" : "Blue"} alliance` : ""}</span>
+            <small>{card.hasCard ? "Plan saved" : "No plan yet"}</small>
+          </button>
+        )}
+      </Fragment>
+    );
+  };
+
   return (
     <main className="module-page msc-page">
       <PageHeader
@@ -390,7 +437,7 @@ export default function MatchStrategyCardsClient() {
           </>
         }
         title="Match strategy cards"
-        description="Printable game plan for our next match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only."
+        description="A printable game plan for each of our matches: roles, auto, defense and the robots to watch."
       >
         <div className="msc-header-actions">
           {relatedLinks.map((link) => (
@@ -409,7 +456,8 @@ export default function MatchStrategyCardsClient() {
         </p>
       ) : null}
 
-      <NextActionsPanel actions={nextActions} />
+      {/* Tips about the next plan only make sense while a match is coming. */}
+      {view.nextMatchKey ? <NextActionsPanel actions={nextActions} /> : null}
 
       {showTiles ? (
         <section className="msc-stats" aria-label="Match strategy cards counts">
@@ -422,51 +470,20 @@ export default function MatchStrategyCardsClient() {
         <Panel className="msc-panel">
           <span className="app-muted">
             {view.eventName ?? view.eventKey} · Team {view.teamNumber} ·{" "}
-            {view.nextMatchKey
-              ? `next ${view.nextMatchKey}`
-              : `${view.cards.length} scheduled match(es) — no upcoming match`}
+            {nextCard
+              ? `next up: ${matchLabel(nextCard)}`
+              : "no match of ours is coming up. Plans for earlier matches are below."}
           </span>
         </Panel>
-        {view.cards.map((card) => {
-          const current = openMatchKey ?? view.nextMatchKey ?? view.cards[0]?.matchKey;
-          const open = card.matchKey === current;
-          const mounted = open || visitedKeys.includes(card.matchKey);
-          return (
-            <Fragment key={card.matchKey}>
-              {mounted ? (
-                <div hidden={!open}>
-                  <StrategyCardPanel
-                    card={card}
-                    eventKey={view.eventKey}
-                    ownTeamNumber={view.teamNumber}
-                    busy={busy}
-                    mutate={mutate}
-                  />
-                </div>
-              ) : null}
-              {open ? null : (
-                <button
-                  type="button"
-                  className={`msc-card-row${card.ownAllianceColor ? ` is-${card.ownAllianceColor}` : ""}`}
-                  onClick={() => {
-                    if (current) setVisitedKeys((keys) => (keys.includes(current) ? keys : [...keys, current]));
-                    setOpenMatchKey(card.matchKey);
-                  }}
-                  aria-label={`Open the plan for ${matchLabel(card)}`}
-                >
-                  <strong>{matchLabel(card)}</strong>
-                  <span>
-                    {card.scheduledAt
-                      ? new Date(card.scheduledAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                      : "Time TBD"}
-                  </span>
-                  <span>{card.ownAllianceColor ? `${card.ownAllianceColor === "red" ? "Red" : "Blue"} alliance` : ""}</span>
-                  <small>{card.hasCard ? "Plan saved" : "No plan yet"}</small>
-                </button>
-              )}
-            </Fragment>
-          );
-        })}
+        {upcomingCards.map(renderCard)}
+        {earlierCards.length > 0 ? (
+          <details className="msc-earlier" open={!nextCard && earlierCards.some((card) => card.matchKey === openMatchKey)}>
+            <summary>
+              {nextCard ? "Played" : "Earlier matches"} ({earlierCards.length})
+            </summary>
+            {earlierCards.map(renderCard)}
+          </details>
+        ) : null}
       </div>
     </main>
   );

@@ -47,7 +47,7 @@ export function alliancePartners(alliances: MatchStrategyAlliance[], ownTeamNumb
 
 /** CD 2026: a good auto is only half the problem — agree paths with TBA partners. */
 export const AUTO_COORDINATION_CUE =
-  "Agree auto paths with alliance partners before you queue — visualization tools do not replace a spoken plan.";
+  "Agree auto paths with your alliance partners out loud before you queue.";
 
 /**
  * Cue only when TBA lists real partners and Auto assignment is still blank.
