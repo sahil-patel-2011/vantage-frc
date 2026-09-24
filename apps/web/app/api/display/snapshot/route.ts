@@ -3,7 +3,7 @@ import { withRls } from "@vantage/db";
 import { getDisplayPool } from "@vantage/db/display";
 import { headers } from "next/headers";
 import { DISPLAY_SNAPSHOT_SELECT } from "../../../../lib/display";
-import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { TV_LINK_DEAD, displayFeedError } from "../../../../lib/display/display-errors";
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       );
       const snapshot = result.rows[0]?.snapshot;
       if (!snapshot) {
-        return Response.json({ error: "Display token is invalid or expired" }, { status: 401 });
+        return Response.json({ error: TV_LINK_DEAD, code: "tv_link_dead" }, { status: 401 });
       }
       return Response.json(snapshot);
     }
@@ -44,9 +44,6 @@ export async function GET(request: Request) {
     }
     return Response.json(snapshot);
   } catch (error) {
-    return Response.json(
-      { error: publicErrorMessage(error, "Display unavailable") },
-      { status: 400 },
-    );
+    return displayFeedError(error, "snapshot");
   }
 }

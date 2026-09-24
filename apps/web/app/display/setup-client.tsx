@@ -6,9 +6,6 @@ import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
-  displayKioskHref,
-  pitChromiumKioskCommand,
-  type DisplayKioskMode,
   type DisplayWidget,
   type DisplayWidgetType,
 } from "../../lib/display";
@@ -48,6 +45,7 @@ type MintedToken = {
 };
 
 import { DisplayWidgetEditor } from "./display-widget-editor";
+import { TvLinkPanel } from "./tv-link-panel";
 import {
   WIDGET_LABEL,
   fromGridLayout,
@@ -215,11 +213,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     const d = await r.json();
     if (r.ok) {
       setMinted({ id: d.id, token: d.token, boardId, label: "Pit TV" });
-      setMessage("Kiosk token minted — copy it now. It will not be shown again.");
+      setMessage("TV link ready. Copy it now: it is shown only once.");
       setMessageOk(true);
       await load();
     } else {
-      setMessage(d.error ?? "Token mint failed");
+      setMessage(d.error ?? "Couldn't make a TV link. Try again.");
       setMessageOk(false);
     }
   }
@@ -233,27 +231,13 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     });
     const d = await r.json();
     if (r.ok) {
-      setMessage("Token revoked.");
+      setMessage("TV link turned off. Any TV using it stops updating.");
       setMessageOk(true);
       await load();
     } else {
       setMessage(d.error ?? "Revoke failed");
       setMessageOk(false);
     }
-  }
-
-  const MINTED_LINK_COPY: Record<DisplayKioskMode, string> = {
-    pit: "Pit / Pi display link copied.",
-    kiosk: "Kiosk link copied to clipboard.",
-    stage: "Event display link copied — the board follows the event phase on its own.",
-  };
-
-  function copyMintedLink(mode: DisplayKioskMode = "pit") {
-    if (!minted) return;
-    const url = displayKioskHref(location.origin, minted.token, mode);
-    void navigator.clipboard.writeText(url);
-    setMessage(MINTED_LINK_COPY[mode]);
-    setMessageOk(true);
   }
 
   const activeTokenCount = tokens.filter((t) => !t.revokedAt).length;
@@ -344,7 +328,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             <article className={step >= 3 ? "active" : undefined}>
               <span>Step 3</span>
               <strong>Pair TV</strong>
-              <p>Mint a kiosk token and open fullscreen on the pit display or a Pi stick.</p>
+              <p>Make a TV link and open it full screen on the pit TV.</p>
             </article>
           </section>
 
@@ -490,7 +474,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                       Duplicate
                     </button>
                     <button type="button" onClick={() => void mintToken(board.id)}>
-                      Mint TV token
+                      Make TV link
                     </button>
                     <button
                       type="button"
@@ -515,42 +499,25 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             <header className="disp-section-head">
               <span className="eyebrow">Pair TV</span>
               <p>
-                Mint a read-only kiosk token for a saved board. The secret is shown once — copy the
-                link before leaving this page.
+                A TV link shows a saved board on a TV that isn't signed in. It can only show the board, and
+                you can turn it off here at any time.
               </p>
             </header>
 
             {minted ? (
-              <div className="token-once">
-                <strong>Token shown once — copy now</strong>
-                <code>{displayKioskHref(location.origin, minted.token, "pit")}</code>
-                <p>
-                  Raspberry Pi / Chromium kiosk:{" "}
-                  <code>{pitChromiumKioskCommand(displayKioskHref(location.origin, minted.token, "pit"))}</code>
-                </p>
-                <p>
-                  Event display (auto-advances through pre-event, quals, alliance selection,
-                  playoffs, and thanks):{" "}
-                  <code>{displayKioskHref(location.origin, minted.token, "stage")}</code>
-                </p>
-                <div className="display-actions">
-                  <Button variant="primary" type="button" onClick={() => copyMintedLink("pit")}>
-                    Copy pit / Pi link
-                  </Button>
-                  <Button variant="secondary" type="button" onClick={() => copyMintedLink("stage")}>
-                    Copy event display link
-                  </Button>
-                  <Button variant="secondary" type="button" onClick={() => copyMintedLink("kiosk")}>
-                    Copy standard kiosk link
-                  </Button>
-                </div>
-              </div>
+              <TvLinkPanel
+                token={minted.token}
+                onCopied={(text) => {
+                  setMessage(text);
+                  setMessageOk(!/couldn/i.test(text));
+                }}
+              />
             ) : null}
 
             {canSync && boards.length ? (
               <div className="display-actions" style={{ marginBottom: "1rem" }}>
                 <label>
-                  Board for new token
+                  Board to show
                   <select
                     value={pairBoardId}
                     onChange={(e) => setPairBoardId(e.target.value)}
@@ -564,7 +531,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                   </select>
                 </label>
                 <Button variant="primary" type="button" onClick={() => pairBoardId && void mintToken(pairBoardId)}>
-                  Mint token
+                  Make TV link
                 </Button>
               </div>
             ) : null}
@@ -585,7 +552,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                     </div>
                     {!token.revokedAt && canSync ? (
                       <button type="button" onClick={() => void revokeToken(token.id)}>
-                        Revoke
+                        Turn off
                       </button>
                     ) : token.revokedAt ? (
                       <span>Revoked</span>

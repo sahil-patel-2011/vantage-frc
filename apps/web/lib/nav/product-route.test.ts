@@ -15,6 +15,7 @@ describe("pathnameUsesAppShell", () => {
     expect(pathnameUsesAppShell("/display/kiosk")).toBe(false);
     expect(pathnameUsesAppShell("/display/kiosk/abc")).toBe(false);
     expect(pathnameUsesAppShell("/display/pit")).toBe(false);
+    expect(pathnameUsesAppShell("/display/stage")).toBe(false);
     expect(pathnameUsesAppShell("/showcase/present")).toBe(false);
     expect(pathnameUsesAppShell("/support/acme")).toBe(false);
     expect(pathnameUsesAppShell("/f/0123456789abcdef0123456789abcdef")).toBe(false);

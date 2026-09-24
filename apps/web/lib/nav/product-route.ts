@@ -32,6 +32,8 @@ export function pathnameUsesAppShell(pathname: string): boolean {
   if (pathname === "/scout" || pathname.startsWith("/scout/")) return false;
   if (pathname.startsWith("/display/kiosk")) return false;
   if (pathname.startsWith("/display/pit")) return false;
+  // The event board is a TV too: full screen, no menu.
+  if (pathname.startsWith("/display/stage")) return false;
   if (pathname.startsWith("/showcase/present")) return false;
   // Public sponsor storefront stays shell-free; /support tickets use the app chrome.
   if (/^\/support\/[^/]+/.test(pathname)) return false;

@@ -18,7 +18,7 @@ import {
   type DisplayStagePayload,
   type DisplayStageSnapshot,
 } from "../../../../lib/display";
-import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { TV_LINK_DEAD, displayFeedError } from "../../../../lib/display/display-errors";
 
 function asPits(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       );
       const stage = result.rows[0]?.stage;
       if (!stage) {
-        return Response.json({ error: "Display token is invalid or expired" }, { status: 401 });
+        return Response.json({ error: TV_LINK_DEAD, code: "tv_link_dead" }, { status: 401 });
       }
       return Response.json(withNexusViews(stage));
     }
@@ -94,9 +94,6 @@ export async function GET(request: Request) {
     }
     return Response.json(withNexusViews(stage));
   } catch (error) {
-    return Response.json(
-      { error: publicErrorMessage(error, "Display unavailable") },
-      { status: 400 },
-    );
+    return displayFeedError(error, "stage");
   }
 }

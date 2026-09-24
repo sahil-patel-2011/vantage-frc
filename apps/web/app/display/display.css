@@ -851,3 +851,15 @@
     justify-content: flex-end;
   }
 }
+
+/* TV link, shown once after it is made: the link, Copy/Test, and a QR code beside it. */
+.tv-link { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.tv-link-main { display: grid; gap: 10px; flex: 1 1 320px; min-width: 0; }
+.tv-link-url { overflow-wrap: anywhere; font-size: 13px; }
+.tv-link-ok { color: var(--good, #1a7f37); font-weight: 600; margin: 0; }
+.tv-link-bad { color: var(--danger, #b42318); font-weight: 600; margin: 0; }
+.tv-link-more summary { cursor: pointer; }
+.tv-link-more code { display: block; margin-top: 6px; overflow-wrap: anywhere; font-size: 12px; }
+.tv-link-qr { margin: 0; display: grid; gap: 6px; justify-items: center; max-width: 240px; }
+.tv-link-qr img { border-radius: 12px; background: #fff; padding: 6px; }
+.tv-link-qr figcaption { font-size: 12px; color: var(--muted, #6b7280); text-align: center; }

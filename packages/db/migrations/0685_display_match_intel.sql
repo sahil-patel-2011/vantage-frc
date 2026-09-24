@@ -61,3 +61,11 @@ $$;
 
 REVOKE ALL ON FUNCTION get_display_match_intel(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_display_match_intel(text, text) TO vantage_display;
+
+-- A deployment with no separate DATABASE_DISPLAY_URL reaches these through DATABASE_URL (the app
+-- role), and the pit TV answered "Display unavailable" for a brand-new token. Every one of these
+-- is SECURITY DEFINER and refuses anything but a live, unrevoked token for its own board, so the
+-- token stays the whole capability whichever role calls.
+GRANT EXECUTE ON FUNCTION get_display_snapshot(text) TO vantage_app;
+GRANT EXECUTE ON FUNCTION get_display_stage(text) TO vantage_app;
+GRANT EXECUTE ON FUNCTION get_display_match_intel(text, text) TO vantage_app;

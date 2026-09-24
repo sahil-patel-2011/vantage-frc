@@ -45,6 +45,9 @@ const PUBLIC_PREFIXES = [
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",
   "/api/display/snapshot",
+  // The phase-aware event board's feed and match notes: token-gated in the route itself.
+  "/api/display/stage",
+  "/api/display/intel",
   "/api/strategy/draft/public",
   "/api/partner-placements",
   "/api/partner-assets",
@@ -60,6 +63,7 @@ const PUBLIC_PREFIXES = [
   "/strategy/board",
   "/display/kiosk",
   "/display/pit",
+  "/display/stage",
   // AI subscription bridge device traffic: pairing codes + device-token claim/heartbeat.
   "/api/ai-bridge/device",
   // Desktop shell browser-link sign-in: challenge start + poll + one-time code

@@ -44,6 +44,9 @@ const NO_ASK_PATHS = new Set(["/", "/pricing", "/workflow", "/for-teams", "/desk
 
 function asksOn(pathname: string | null): boolean {
   if (!pathname) return false;
+  // Pit TVs and kiosks run unattended: nobody is there to answer, and a banner over the
+  // bottom third of the screen hides the match. They record nothing, so there is nothing to ask.
+  if (pathname.startsWith("/display/")) return false;
   return !NO_ASK_PATHS.has(pathname) && !pathname.startsWith("/features");
 }
 
