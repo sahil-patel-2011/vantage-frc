@@ -190,6 +190,23 @@ export default function SeasonFinanceClient({
     void load();
   }, [load]);
 
+  // "What to log next" links to #add-funding / #log-receipt on this page: open that form.
+  const loaded = Boolean(view);
+  useEffect(() => {
+    if (!loaded) return;
+    const openFromHash = () => {
+      const id = window.location.hash.slice(1);
+      if (id !== "add-funding" && id !== "log-receipt") return;
+      const fold = document.getElementById(id);
+      if (!(fold instanceof HTMLDetailsElement)) return;
+      fold.open = true;
+      fold.scrollIntoView({ block: "start" });
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [loaded]);
+
   const mutate = useCallback(
     async (payload: Record<string, unknown>): Promise<boolean> => {
       if (busy) return false;
@@ -380,16 +397,29 @@ function LiveDesk({
           <span className="biz-overline">Plan this season</span>
           <h2>What to log next</h2>
         </header>
-        <ul>
+        {/* One row of buttons. Five stacked buttons, each with its own warning, were about
+            600px on a phone; the warnings now live where each action happens. */}
+        <div className="season-finance-next-row">
           {view.nextActions.map((action) => (
-            <li key={action.id}>
-              <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
-                {action.label}
-              </a>
-              <span>{action.detail}</span>
-            </li>
+            <a
+              key={action.id}
+              className={action.primary ? "app-button" : "app-button secondary"}
+              href={action.href}
+              title={action.detail}
+              onClick={(event) => {
+                // The form is on this page, folded: open it rather than re-navigating.
+                const id = action.href.split("#")[1];
+                const fold = id ? document.getElementById(id) : null;
+                if (!(fold instanceof HTMLDetailsElement)) return;
+                event.preventDefault();
+                fold.open = true;
+                fold.scrollIntoView({ block: "start" });
+              }}
+            >
+              {action.label}
+            </a>
           ))}
-        </ul>
+        </div>
       </section>
 
       <section className="biz-kpis" aria-label="Season cash plan">
@@ -412,13 +442,12 @@ function LiveDesk({
       </section>
 
       <section className="biz-grid two">
-        <article className="app-card">
-          <header className="biz-card-head">
-            <div>
-              <span className="biz-overline">Also recorded elsewhere</span>
-              <h2>Do not re-enter these deposits</h2>
-            </div>
-          </header>
+        <details className="app-card season-finance-fold">
+          <summary>
+            <span className="biz-overline">Also recorded elsewhere</span>
+            <h2>Money already on other pages</h2>
+            <small>Sponsors, grants, fundraisers, orders and season costs. Don&apos;t enter these again here.</small>
+          </summary>
           <ul className="season-finance-elsewhere">
             <li>
               <span>Sponsor cash</span>
@@ -483,7 +512,7 @@ function LiveDesk({
               </div>
             ) : null}
           </div>
-        </article>
+        </details>
         <article className="app-card">
           <header className="biz-card-head">
             <div>
@@ -493,6 +522,8 @@ function LiveDesk({
             <span className="biz-count">{view.funding.length}</span>
           </header>
           {view.canManageFinance ? (
+            <details className="season-finance-add" id="add-funding">
+              <summary>Add a funding source</summary>
             <form className="biz-form-grid" onSubmit={(event) => void onFunding(event)}>
               <label className="biz-field">
                 <span>Kind</span>
@@ -528,6 +559,7 @@ function LiveDesk({
                 Add funding source
               </Button>
             </form>
+            </details>
           ) : (
             <p className="app-muted">Finance leads add school funds and other income. Members can still log receipts.</p>
           )}
@@ -591,6 +623,8 @@ function LiveDesk({
           </div>
           <span className="biz-count">{view.purchases.length}</span>
         </header>
+        <details className="season-finance-add" id="log-receipt">
+          <summary>Log a receipt</summary>
         <form className="biz-form-grid" onSubmit={(event) => void onPurchase(event)}>
           <label className="biz-field">
             <span>Date</span>
@@ -641,6 +675,7 @@ function LiveDesk({
             Log purchase
           </Button>
         </form>
+        </details>
         <div className="biz-table-wrap">
           <table className="biz-table">
             <thead>

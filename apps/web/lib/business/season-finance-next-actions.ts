@@ -51,7 +51,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
       id: "first-funding",
       label: ctx.canManageFinance ? "Add school funds, fees, or expected grants" : "Ask a finance lead to add funding lines",
       detail: "Planned vs received stays blank until someone logs a real source.",
-      href: financeHref,
+      href: ctx.canManageFinance ? `${financeHref}#add-funding` : financeHref,
       primary: true,
     });
   } else if ((ctx.remainingToRaiseCents ?? 0) > 0) {
@@ -69,7 +69,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
       id: "first-purchase",
       label: "Log a receipt or reimbursement",
       detail: "The purchase log starts empty. Amazon approvals still live under Orders — do not invent spend here.",
-      href: financeHref,
+      href: `${financeHref}#log-receipt`,
       primary: actions.length === 0,
     });
   } else if ((ctx.reimbursementOpenCents ?? 0) > 0) {

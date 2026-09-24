@@ -46,3 +46,66 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* One row of next steps instead of five stacked buttons with a warning under each. */
+.season-finance-next-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* Reference totals and add-forms fold away; the page was 4,300px on a phone. */
+.season-finance-fold > summary {
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+  list-style: none;
+}
+.season-finance-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.season-finance-fold > summary h2 {
+  margin: 0;
+}
+.season-finance-fold > summary h2::after {
+  content: " ▾";
+  color: var(--muted);
+  font-size: 0.8em;
+}
+.season-finance-fold[open] > summary h2::after {
+  content: " ▴";
+}
+.season-finance-fold > summary small {
+  color: var(--muted);
+}
+.season-finance-fold[open] > summary {
+  margin-bottom: 12px;
+}
+.season-finance-add {
+  margin: 0 0 12px;
+}
+.season-finance-add > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.season-finance-add > summary::-webkit-details-marker {
+  display: none;
+}
+.season-finance-add[open] > summary {
+  margin-bottom: 12px;
+}
+/* A folded card in a two-column row keeps its own height, not the neighbour's. */
+.biz-grid > .season-finance-fold {
+  align-self: start;
+}
+.season-finance-add[id] {
+  scroll-margin-top: calc(var(--topbar-h, 60px) + 12px);
+}
