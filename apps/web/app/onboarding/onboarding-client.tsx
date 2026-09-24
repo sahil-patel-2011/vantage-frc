@@ -284,7 +284,10 @@ export default function OnboardingClient() {
         setMessage(data.error ?? "Could not save your progress.");
         return;
       }
-      hydrate(data);
+      // Keep the draft: it is what the person is looking at. Re-hydrating here copied the
+      // server's older values back over fields this step does not save (a role picked on
+      // step one rides along with step two), so "Coach" silently became "Student" again.
+      setState(data);
       setStep(result.step);
     } catch {
       setMessage("Could not save your progress. Check your connection and try again.");
