@@ -115,7 +115,7 @@ export function summariseDistribution(values: readonly number[]): Distribution |
 }
 
 export const CONSISTENCY_LABEL: Record<Consistency, string> = {
-  metronome: "Metronome",
+  metronome: "Very consistent",
   steady: "Steady",
   streaky: "Streaky",
   "boom-or-bust": "Boom or bust",

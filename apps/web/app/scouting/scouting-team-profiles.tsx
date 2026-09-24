@@ -360,12 +360,12 @@ function ProfileRow({
           </span>
           {profile.trend && profile.trend.direction !== "flat" ? (
             <span className="stp-tag" data-kind={profile.trend.direction}>
-              {profile.trend.direction === "up" ? "Improving" : "Falling off"}
+              {profile.trend.direction === "up" ? "Improving" : "Scoring less lately"}
             </span>
           ) : null}
           {profile.disabledRate > 0 ? (
             <span className="stp-tag" data-kind="risk">
-              Dead {Math.round(profile.disabledRate * 100)}%
+              Broke down in {Math.round(profile.disabledRate * 100)}% of matches
             </span>
           ) : null}
           {profile.percentile != null ? (

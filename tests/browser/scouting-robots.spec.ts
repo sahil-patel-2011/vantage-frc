@@ -46,7 +46,7 @@ test("names what kind of robot each one is, rather than only how many points", a
   const text = await page.locator(".stp").innerText();
   // The demo event has a metronome and a boom-or-bust robot in it; a screen
   // that cannot separate those is listing numbers, not saying anything.
-  expect(text).toMatch(/Metronome/);
+  expect(text).toMatch(/Very consistent/);
   expect(text).toMatch(/Boom or bust|Streaky/);
 
   // Every row is tagged with a consistency, so the colour down the edge means
@@ -64,7 +64,7 @@ test("never calls a robot's own alternation a trend", async ({ page }) => {
     const consistency = await row.getAttribute("data-consistency");
     if (consistency !== "boom-or-bust") continue;
     const text = await row.innerText();
-    if (/Improving|Falling off/.test(text)) {
+    if (/Improving|Scoring less lately/.test(text)) {
       // A swingy robot may genuinely trend — but then the change has to be
       // large, not a rounding difference between two noisy halves.
       const delta = Number(/([\d.]+) (?:more|less) per match/.exec(text)?.[1] ?? "0");
@@ -137,9 +137,9 @@ test("Best fit ranks on more than points, and is the order that opens", async ({
   for (const row of await page.locator(".stp-row").all()) {
     const text = await row.innerText();
     // "Keeps dying" means a real share of matches, like the third this comment describes.
-    // One dead match in thirteen is shown too ("Dead 8%"), and a robot like that with a
+    // One dead match in thirteen is shown too ("Broke down in 8% of matches"), and a robot like that with a
     // strong climb rightly ranks above where raw points put it.
-    const dead = Number(/Dead (\d+)%/.exec(text)?.[1] ?? "0");
+    const dead = Number(/Broke down in (\d+)%/.exec(text)?.[1] ?? "0");
     if (dead < 25) continue;
     const team = (await row.locator(".stp-team").innerText()).trim();
     checked += 1;

@@ -32,7 +32,7 @@ export function ScoutingDashboardSummary({ profiles }: { profiles: ScoutedTeamPr
     { label: "Field average", value: fieldAverage.toFixed(1), note: "points per match" },
     { label: "Top robot", value: teamNumber(top.teamKey), note: `${top.shrunkTotal.toFixed(1)} per match` },
     { label: "Improving", value: String(rising), note: "trending up late" },
-    { label: "Reliability risk", value: String(risky), note: "died in 10%+ of matches" },
+    { label: "Reliability risk", value: String(risky), note: "broke down in 10%+ of matches" },
   ];
 
   return (

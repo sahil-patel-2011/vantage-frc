@@ -143,12 +143,12 @@ export function ScoutingCompare({
                     {profile.trend && profile.trend.direction !== "flat"
                       ? profile.trend.direction === "up"
                         ? "Improving"
-                        : "Falling off"
+                        : "Scoring less lately"
                       : "Flat"}
                   </dd>
                 </div>
                 <div>
-                  <dt>Dead</dt>
+                  <dt>Broke down</dt>
                   <dd>{Math.round(profile.disabledRate * 100)}%</dd>
                 </div>
               </dl>
