@@ -39,6 +39,10 @@ export type OnboardingLanding = {
 };
 
 export const FIRST_FIVE_LIMIT = 5;
+/** Students and parents get a shorter first list. */
+export const MEMBER_FIRST_LIMIT = 3;
+/** Lead jobs a student or parent is not sent to on day one. */
+const LEAD_ONLY_PATHS = ["/scouting/lineup", "/scouting?scoutTab=conflicts", "/command", "/team/admin", "/team/security"];
 
 /**
  * Specificity rank: a crew/subteam path beats a focus path beats a role path
@@ -118,18 +122,27 @@ export function buildOnboardingLanding(input: {
   );
   const trackKeys = ordered.map((track) => track.trackKey);
 
+  // A student or parent who just joined gets a short list of things they do themselves.
+  // Assigning quals, resolving conflicts and running Event Day Command are a lead's jobs.
+  const member = role === "student" || role === "parent";
+  const limit = member ? MEMBER_FIRST_LIMIT : FIRST_FIVE_LIMIT;
+  const allowed = (href: string) => !member || !LEAD_ONLY_PATHS.some((path) => href.startsWith(path));
+  // Filtered before the round-robin, so a scout's first link is still their own track's.
+  const checksOf = (trackKey: string) =>
+    (TRACK_BY_KEY[trackKey]?.checks ?? []).filter((check) => check.href && allowed(check.href));
+
   // Round-robin one check per track so the list spans paths instead of dumping
   // four links from whichever track happened to sort first.
   const links: LandingLink[] = [];
   const seen = new Set<string>();
   const depth = Math.max(
     0,
-    ...ordered.map((track) => TRACK_BY_KEY[track.trackKey]?.checks.length ?? 0),
+    ...ordered.map((track) => checksOf(track.trackKey).length),
   );
-  for (let round = 0; round < depth && links.length < FIRST_FIVE_LIMIT; round += 1) {
+  for (let round = 0; round < depth && links.length < limit; round += 1) {
     for (const track of ordered) {
-      if (links.length >= FIRST_FIVE_LIMIT) break;
-      const check = TRACK_BY_KEY[track.trackKey]?.checks[round];
+      if (links.length >= limit) break;
+      const check = checksOf(track.trackKey)[round];
       if (!check?.href) continue;
       const key = basePath(check.href);
       if (seen.has(key)) continue;
@@ -146,9 +159,10 @@ export function buildOnboardingLanding(input: {
 
   // Fill from the org-wide setup path when the profile was too sparse to
   // produce five (e.g. no crew and no focus yet).
-  if (links.length < FIRST_FIVE_LIMIT && input.orgId) {
+  if (links.length < limit && input.orgId) {
     for (const hub of onboardingHubLinks(input.orgId)) {
-      if (links.length >= FIRST_FIVE_LIMIT) break;
+      if (links.length >= limit) break;
+      if (!allowed(hub.href)) continue;
       const key = basePath(hub.href);
       if (seen.has(key)) continue;
       seen.add(key);

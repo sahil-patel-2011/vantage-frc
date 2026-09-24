@@ -24,7 +24,10 @@ describe("role-aware landing", () => {
     });
     expect(view.trackKeys[0]).toBe("scouting");
     expect(view.firstFiveMinutes[0]?.href).toContain("/scouting");
-    expect(view.firstFiveMinutes.map((link) => link.label)).toContain("Assign quals");
+    // Assigning quals is a lead's job; a student who just joined is sent to scout, not to plan.
+    expect(view.firstFiveMinutes.map((link) => link.label)).not.toContain("Assign quals");
+    expect(view.firstFiveMinutes.map((link) => link.label).join(" ")).not.toMatch(/Event Day Command/);
+    expect(view.firstFiveMinutes.length).toBeLessThanOrEqual(3);
     expect(view.firstFiveMinutes.map((link) => link.label).join(" ")).not.toMatch(/Strategy and AI/i);
     expect(view.summary).toContain("Robo Rangers");
     // The reason caption says which track produced the link.
@@ -62,9 +65,9 @@ describe("role-aware landing", () => {
     expect(view.secondary?.href).toContain("/start");
   });
 
-  it("always fills exactly five distinct destinations, orgId-tagged", () => {
+  it("always fills exactly five distinct destinations for a mentor, orgId-tagged", () => {
     const view = landing({
-      teamRole: "student",
+      teamRole: "mentor",
       crewRole: "cad",
       primaryFocus: "build",
       orgId: ORG,

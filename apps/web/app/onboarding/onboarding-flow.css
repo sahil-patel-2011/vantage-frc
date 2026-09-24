@@ -177,3 +177,14 @@
   .onboarding-cards label,.onboarding-meanwhile a,.onboarding-landing-list a{transition:none}
   .onboarding-landing-list a:hover{transform:none}
 }
+
+/* "Open Home" sits right under the summary; the optional AI line and first steps follow. */
+.onboarding-landing-ai {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.onboarding-landing-next {
+  margin: 12px 0 4px;
+  font-size: 1rem;
+}

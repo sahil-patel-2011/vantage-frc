@@ -15,9 +15,23 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
     platformAdmin: state.platformAdmin,
   });
 
+  // Keys are a team leader's job; students and parents are not asked about them.
+  const leader = draft.teamRole !== "student" && draft.teamRole !== "parent";
+
   return (
     <div className="onboarding-landing">
       <p className="onboarding-landing-summary">{landing.summary}</p>
+      {/* The way on is the first thing under "You're in", not below a list. */}
+      <div className="onboarding-pending-actions">
+        <a className="signin-submit" href={landing.primary.href}>{landing.primary.label}</a>
+      </div>
+      {leader && state.workspaceOrgId ? (
+        <p className="onboarding-landing-ai">
+          Want Ask AI? It runs on your team&rsquo;s own key, and a free Google Gemini key works.{" "}
+          <a href={`/team/ai-keys?orgId=${encodeURIComponent(state.workspaceOrgId)}`}>Add one any time</a>.
+        </p>
+      ) : null}
+      <h2 className="onboarding-landing-next">Good first steps</h2>
       <ol className="onboarding-landing-list">
         {landing.firstFiveMinutes.map((link, index) => (
           <li key={link.key}>
@@ -32,10 +46,11 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
           </li>
         ))}
       </ol>
-      <div className="onboarding-pending-actions">
-        <a className="signin-submit" href={landing.primary.href}>{landing.primary.label}</a>
-        {landing.secondary ? <a className="signin-link" href={landing.secondary.href}>{landing.secondary.label}</a> : null}
-      </div>
+      {landing.secondary ? (
+        <div className="onboarding-pending-actions">
+          <a className="signin-link" href={landing.secondary.href}>{landing.secondary.label}</a>
+        </div>
+      ) : null}
     </div>
   );
 }
