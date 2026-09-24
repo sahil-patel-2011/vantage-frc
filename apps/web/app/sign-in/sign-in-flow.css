@@ -367,9 +367,9 @@
   justify-content: center;
   min-height: 44px;
   margin-top: 4px;
-  border: 1px solid var(--line, rgba(127, 127, 127, 0.3));
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface, #fff);
+  background: var(--surface);
   color: #2563eb;
   font-weight: 700;
   text-decoration: none;
