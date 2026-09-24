@@ -307,6 +307,16 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
             placeholder={view.hasWebhook ? "Saved — paste to replace" : "https://hooks.slack.com/services/…"}
           />
         </label>
+        <label className="account-check">
+          <input
+            type="checkbox"
+            checked={form.chatBridgeEnabled}
+            onChange={(event) => setForm({ ...form, chatBridgeEnabled: event.target.checked })}
+          />
+          Sync team chat both ways
+        </label>
+        <details className="slack-advanced">
+          <summary>Two-way chat setup (for whoever set up your Slack app)</summary>
         <label>
           Workspace id (T…)
           <input
@@ -332,7 +342,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
           />
         </label>
         <label>
-          Event signing secret (optional if SLACK_SIGNING_SECRET is set on the server)
+          Slack app signing secret (only needed for replies from Slack to reach Vantage)
           <input
             type="password"
             autoComplete="off"
@@ -341,14 +351,13 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
             placeholder={view.hasSigningSecret ? "Saved — paste to replace" : "Slack app signing secret"}
           />
         </label>
-        <label className="account-check">
-          <input
-            type="checkbox"
-            checked={form.chatBridgeEnabled}
-            onChange={(event) => setForm({ ...form, chatBridgeEnabled: event.target.checked })}
-          />
-          Sync team chat both ways
-        </label>
+        <p className="app-muted">
+          In your Slack app, set Event Subscriptions to{" "}
+          <code className="slack-events-url">{view.eventsUrl ?? "…"}</code> and subscribe to{" "}
+          <code>message.channels</code>.
+          {!view.inboundReady ? " Replies from Slack also need the signing secret above." : null}
+        </p>
+        </details>
         <div className="team-discord-actions">
           <Button variant="primary" type="submit" disabled={busy}>
             Save Slack
@@ -362,18 +371,6 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         </div>
         {view.bridgePostLabel ? <p className="app-muted">Bridge: {view.bridgePostLabel}</p> : null}
         {status ? <p className={ok ? "team-discord-status ok" : "team-discord-status err"}>{status}</p> : null}
-        {/* Was a relative path. Slack's Event Subscriptions field rejects one,
-            so there was no way to finish inbound setup from what the page told
-            you. The absolute URL comes from the server, which knows the
-            deployment origin. */}
-        <p className="app-muted">
-          Event Request URL for Slack → Event Subscriptions:{" "}
-          <code className="slack-events-url">{view.eventsUrl ?? "…"}</code>
-          {!view.inboundReady
-            ? " — inbound replies also need SLACK_SIGNING_SECRET on the deployment, or a per-team signing secret saved above."
-            : null}{" "}
-          Subscribe to <code>message.channels</code>; Vantage ignores bot messages so its own posts do not loop.
-        </p>
       </form>
 
       <section className="team-discord-next-actions app-card soft-panel" aria-label="Next actions">

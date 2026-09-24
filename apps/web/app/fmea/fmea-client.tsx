@@ -389,7 +389,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         <EmptyState
           soft
           title="No failures logged yet"
-          description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then."
+          description="When something breaks in the pit or on the field, log it and score how often, how bad and how hard to spot. The riskiest item shows here once there is one."
         >
           <div className="fmea-risk-links">
             <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
@@ -558,7 +558,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
   return (
     <Panel className="fmea-panel">
       <h2>Log a failure</h2>
-      <p>Preview RPN updates from the O/S/D you pick — it is not saved until you add the entry.</p>
+      <p>The risk score updates as you pick how often, how bad and how hard to spot. It saves when you add the entry.</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -737,7 +737,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             {busy ? "Saving…" : "Add failure"}
           </Button>
           <span className="fmea-preview">
-            Preview RPN: <strong>{previewRpn}</strong>{" "}
+            Risk score: <strong>{previewRpn}</strong>{" "}
             <span className="app-muted">({formatOsdFactors({
               occurrence: Number(form.occurrence) || 1,
               severity: Number(form.severity) || 1,

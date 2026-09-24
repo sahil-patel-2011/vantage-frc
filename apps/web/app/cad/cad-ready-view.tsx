@@ -172,7 +172,7 @@ export function CadReadyView({
           {/* Name the bound document, not just "bound" — the first thing to check
               before an agent edits geometry is that it is the right Part Studio. */}
           <span className={boundOk ? "on" : ""} title={state?.bound?.documentId ?? undefined}>
-            {boundOk ? state?.bound?.documentName || "Part Studio bound" : "Not bound"}
+            {boundOk ? state?.bound?.documentName || "Part Studio linked" : "Not linked yet"}
           </span>
           {editHref ? <OnshapeEditButton href={editHref} /> : null}
         </div>

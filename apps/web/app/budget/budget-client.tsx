@@ -338,12 +338,7 @@ export default function BudgetClient() {
       */}
       <Panel className="budget-who">
         <h2>Who can see this</h2>
-        <p>
-          Vantage has no separate <strong>mentor</strong> permission. Budget access is the team{" "}
-          <strong>Owner</strong> and <strong>Admin</strong> roles, plus anyone an owner has
-          explicitly granted budget access below. The adult/student field on a profile is
-          descriptive only — anyone can set it on themselves, so it grants nothing.
-        </p>
+        <p>Owners, admins and the people you add below can see the budget. No one else can.</p>
         <p className="app-muted">
           You are seeing this page as:{" "}
           <Badge tone="info">

@@ -550,7 +550,7 @@ export function MessagesReadyView({
                   </div>
                   {active.kind === "team" ? (
                     <div className="messages-channel-actions">
-                      <strong className="shared-warning">Visible to all org members</strong>
+                      <strong className="shared-warning">Everyone on the team can see this</strong>
                       {canManageChannels && !active.isDefaultChannel && !channelDraft ? (
                         <>
                           <button

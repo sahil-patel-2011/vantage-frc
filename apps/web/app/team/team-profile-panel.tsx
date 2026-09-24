@@ -100,11 +100,11 @@ export function TeamProfilePanel({ orgId }: { orgId: string }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <label>
               City
-              <input required maxLength={120} value={city} onChange={(e) => setCity(e.target.value)} placeholder="Portland" disabled={busy} />
+              <input required maxLength={120} value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Atlanta" disabled={busy} />
             </label>
             <label>
               State / province
-              <input required maxLength={80} value={stateProv} onChange={(e) => setStateProv(e.target.value)} placeholder="OR" disabled={busy} />
+              <input required maxLength={80} value={stateProv} onChange={(e) => setStateProv(e.target.value)} placeholder="e.g. GA" disabled={busy} />
             </label>
           </div>
           <label>

@@ -764,7 +764,7 @@ function ReadyCalendar({
       />
 
       <Panel as="details" className="cal-seed" open={milestones.length === 0}>
-        <summary>Seed a season template</summary>
+        <summary>Start from a season template</summary>
         <div className="cal-seed-body">
           <p className="app-muted">
             Templates are opt-in plans dated from your kickoff — not live TBA stats. Existing titles are skipped so you
@@ -794,7 +794,7 @@ function ReadyCalendar({
               onChange={(event) => setKickoff(event.target.value)}
             />
             <Button variant="primary" type="button" disabled={busy || !kickoff} onClick={() => void run({ action: "seed_season", orgId, kickoffDate: kickoff, templateId }, "seed") }>
-              Seed template
+              Use this template
             </Button>
           </div>
         </div>

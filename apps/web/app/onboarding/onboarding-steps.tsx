@@ -321,7 +321,7 @@ export function PreferencesForm({
                 value={draft.orgCity}
                 onChange={(event) => patch({ orgCity: event.target.value })}
                 autoComplete="address-level2"
-                placeholder="Portland"
+                placeholder="e.g. Atlanta"
                 aria-invalid={errorField === "orgCity" || undefined}
               />
             </label>
@@ -333,7 +333,7 @@ export function PreferencesForm({
                 value={draft.orgStateProv}
                 onChange={(event) => patch({ orgStateProv: event.target.value })}
                 autoComplete="address-level1"
-                placeholder="OR"
+                placeholder="e.g. GA"
               />
             </label>
           </div>

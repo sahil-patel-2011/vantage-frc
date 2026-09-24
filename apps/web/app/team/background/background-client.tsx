@@ -342,11 +342,11 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
             <div className="team-background-grid">
               <label>
                 City
-                <input value={view.form.city} onChange={set("city")} disabled={!view.canEdit} placeholder="Portland" maxLength={120} />
+                <input value={view.form.city} onChange={set("city")} disabled={!view.canEdit} placeholder="e.g. Atlanta" maxLength={120} />
               </label>
               <label>
                 State / province
-                <input value={view.form.stateProv} onChange={set("stateProv")} disabled={!view.canEdit} placeholder="OR" maxLength={80} />
+                <input value={view.form.stateProv} onChange={set("stateProv")} disabled={!view.canEdit} placeholder="e.g. GA" maxLength={80} />
               </label>
             </div>
             <label>
