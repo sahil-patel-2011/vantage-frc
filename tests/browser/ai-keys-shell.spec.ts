@@ -22,7 +22,7 @@ test("AI keys still loads after the panel split", async ({ page }) => {
     }
   }
 
-  const mine = page.getByRole("heading", { name: "Use your own key, just for you" });
+  const mine = page.getByRole("heading", { name: "Just for you: your own key or model" });
   const empty = page.getByRole("heading", { name: "Choose your team to add API keys" });
   const kms = page.getByRole("heading", { name: "Key encryption is not available" });
   if (!(await expectHubReadyOrGate(page, mine, empty.or(kms)))) {
@@ -32,7 +32,11 @@ test("AI keys still loads after the panel split", async ({ page }) => {
     return;
   }
 
+  // Second choices fold behind one line each; opening them shows the forms.
+  await mine.click();
   await expect(page.getByRole("region", { name: "My personal AI keys" })).toBeVisible();
+  const paid = page.getByRole("heading", { name: /Use a paid key instead|Your team's AI keys/ });
+  if (!(await page.getByRole("region", { name: "Provider API keys" }).isVisible())) await paid.click();
   await expect(page.getByRole("region", { name: "Provider API keys" })).toBeVisible();
   await expect(page.getByRole("tab")).toHaveCount(0);
 

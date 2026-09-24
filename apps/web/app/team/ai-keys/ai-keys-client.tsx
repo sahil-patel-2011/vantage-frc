@@ -47,6 +47,8 @@ async function persistAiKeysSnapshot(orgId: string, data: Payload): Promise<void
 export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [message, setMessage] = useState("");
+  // A refused key and a saved key used to look identical (a pale-blue bar); failures read red.
+  const [messageIsError, setMessageIsError] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(Boolean(orgId));
@@ -159,6 +161,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         setFromCache(false);
         setCachedAt(null);
         setMessage(errorMessage || "Could not load AI keys");
+        setMessageIsError(true);
         setErrorStatus(response.status);
         return;
       }
@@ -166,15 +169,18 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         if (hadCache || payloadRef.current) {
           setFromCache(true);
           setMessage("Could not refresh AI keys. Showing the last copy on this device.");
+          setMessageIsError(true);
           setErrorStatus(null);
           return;
         }
         setMessage(errorMessage || "Could not load AI keys");
+        setMessageIsError(true);
         setErrorStatus(response.status);
         setPayload(null);
         return;
       }
       setMessage("");
+      setMessageIsError(false);
       setErrorStatus(null);
       applyPayload(data);
       setFromCache(false);
@@ -184,10 +190,12 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       if (hadCache || payloadRef.current) {
         setFromCache(true);
         setMessage("Could not refresh AI keys. Showing the last copy on this device.");
+        setMessageIsError(true);
         setErrorStatus(null);
         return;
       }
       setMessage("Could not load AI keys");
+      setMessageIsError(true);
       setErrorStatus(null);
       setPayload(null);
     } finally {
@@ -205,6 +213,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!orgId) return;
     setBusyPolicy(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/model-policy", {
         method: "PUT",
@@ -218,6 +227,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as ModelPolicyPayload & { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save the model policy");
+        setMessageIsError(true);
         return;
       }
       setModelPolicy(data);
@@ -237,6 +247,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!orgId || !mineDraft.apiKey.trim()) return;
     setMineBusy(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -253,6 +264,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string; notice?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save your personal key");
+        setMessageIsError(true);
         return;
       }
       setMineDraft((d) => ({ ...d, apiKey: "" }));
@@ -267,6 +279,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!orgId) return;
     setMineBusy(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -276,6 +289,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not remove your personal key");
+        setMessageIsError(true);
         return;
       }
       setMessage("Personal key removed - back to the team key.");
@@ -291,6 +305,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!apiKey) return;
     setBusyProvider(provider);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -300,6 +315,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string; setupRequired?: boolean; notice?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save key");
+        setMessageIsError(true);
         return;
       }
       setDrafts((prev) => ({ ...prev, [provider]: "" }));
@@ -315,6 +331,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!confirm(`Remove the ${BYOK_PROVIDER_META[provider].label} API key from this team?`)) return;
     setBusyProvider(provider);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "DELETE",
@@ -324,6 +341,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not remove key");
+        setMessageIsError(true);
         return;
       }
       setMessage(`${BYOK_PROVIDER_META[provider].label} key removed.`);
@@ -337,6 +355,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!orgId) return;
     setBusyLocal(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -355,6 +374,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save local connector");
+        setMessageIsError(true);
         return;
       }
       setLocalDraft((prev) => ({ ...prev, apiKey: "" }));
@@ -373,6 +393,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!orgId) return;
     setBusyLocal(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -382,6 +403,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string; reachabilityWarning?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Connection test failed");
+        setMessageIsError(true);
         return;
       }
       setMessage(
@@ -400,6 +422,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!confirm("Remove the local OpenAI-compatible connector?")) return;
     setBusyLocal(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -409,6 +432,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not remove local connector");
+        setMessageIsError(true);
         return;
       }
       setLocalDraft({ baseUrl: "", model: "llama3.2", apiKey: "" });
@@ -423,6 +447,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     if (!orgId) return;
     setBusyRouting(true);
     setMessage("");
+    setMessageIsError(false);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -439,6 +464,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save model routing");
+        setMessageIsError(true);
         return;
       }
       setMessage(
@@ -533,6 +559,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           saveMemberKey={() => void saveMemberKey()}
           removeMemberKey={(provider) => void removeMemberKey(provider)}
           message={message}
+          messageIsError={messageIsError}
           providerMeta={providerMeta}
           statusByProvider={statusByProvider}
           busyProvider={busyProvider}

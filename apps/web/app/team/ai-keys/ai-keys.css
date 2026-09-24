@@ -427,3 +427,54 @@
 .ai-keys-start-form {
   max-width: 480px;
 }
+
+.ai-keys-page .ai-keys-flash.is-error {
+  background: color-mix(in srgb, var(--danger, #b91c1c) 10%, transparent);
+  color: var(--danger, #b91c1c);
+  font-weight: 600;
+}
+
+/* Second choices fold behind one plain line each. */
+.ai-keys-fold {
+  margin: 0 0 6px;
+}
+.ai-keys-fold {
+  border-top: 1px solid var(--line);
+}
+.ai-keys-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 4px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 650;
+  color: var(--ink);
+}
+.ai-keys-fold > summary::-webkit-details-marker {
+  display: none;
+}
+/* A chevron that turns when open, so each line reads as something that opens. */
+.ai-keys-fold > summary::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.ai-keys-fold[open] > summary::before {
+  transform: rotate(45deg);
+}
+.ai-keys-fold[open] > summary {
+  margin-bottom: 10px;
+}
+
+/* The fold line is a heading (for screen readers and skimming), sized as a row. */
+.ai-keys-fold-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+}

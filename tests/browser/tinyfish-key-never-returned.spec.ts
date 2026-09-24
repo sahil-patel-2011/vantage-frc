@@ -22,6 +22,13 @@ test.beforeEach(async ({ context }) => {
 
 const card = (page: import("@playwright/test").Page) => page.locator("section.ai-keys-web");
 
+/** Web research folds behind one line on the AI keys page; open it the way a person would. */
+async function openWebResearch(page: import("@playwright/test").Page) {
+  const line = page.getByRole("heading", { name: /search the web/i });
+  await line.waitFor({ timeout: 25_000 });
+  if (!(await card(page).isVisible())) await line.click();
+}
+
 async function removeKey(page: import("@playwright/test").Page) {
   await page.evaluate(async () => {
     const orgId = new URLSearchParams(location.search).get("orgId") ?? "";
@@ -35,10 +42,12 @@ async function removeKey(page: import("@playwright/test").Page) {
 
 test("a made-up key is refused by TinyFish, with a sentence that says what to do", async ({ page }) => {
   await gotoAsTeam(page, "/team/ai-keys");
+  await openWebResearch(page);
   const section = card(page);
   await expect(section).toBeVisible({ timeout: 25_000 });
   await removeKey(page);
   await page.reload();
+  await openWebResearch(page);
 
   await section.getByLabel(/TinyFish API key/).fill("sk-tinyfish-thisisnotarealkeyatall1234");
   await section.getByRole("button", { name: /Check & save/ }).click();
@@ -50,6 +59,7 @@ test("a made-up key is refused by TinyFish, with a sentence that says what to do
 
 test("something that is not a TinyFish key is caught before it leaves the page", async ({ page }) => {
   await gotoAsTeam(page, "/team/ai-keys");
+  await openWebResearch(page);
   const section = card(page);
   await expect(section).toBeVisible({ timeout: 25_000 });
 
@@ -64,12 +74,14 @@ test("a real key is accepted, shown only by its last four characters, and never 
   test.skip(!realKey, "set TINYFISH_TEST_KEY to run the accepted-key path");
 
   await gotoAsTeam(page, "/team/ai-keys");
+  await openWebResearch(page);
   const orgId = new URLSearchParams(new URL(page.url()).search).get("orgId");
   test.skip(!orgId, "no active org");
   const section = card(page);
   await expect(section).toBeVisible({ timeout: 25_000 });
   await removeKey(page);
   await page.reload();
+  await openWebResearch(page);
 
   // Watch every response for the rest of the test.
   const leaks: string[] = [];
@@ -104,6 +116,7 @@ test("a real key is accepted, shown only by its last four characters, and never 
   }
 
   await page.reload();
+  await openWebResearch(page);
   await expect(page.locator("body")).not.toContainText(realKey, { timeout: 20_000 });
   expect(leaks, "a response carried the key").toEqual([]);
 

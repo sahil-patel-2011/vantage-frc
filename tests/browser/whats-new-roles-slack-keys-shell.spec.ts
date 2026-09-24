@@ -41,7 +41,8 @@ const SURFACES = [
     path: "/team/ai-keys",
     heading: "AI keys",
     crumb: /AI\s*\/\s*AI keys/,
-    ready: "Use your own key, just for you",
+    // Personal keys fold behind one line; the line itself is the heading.
+    ready: "Just for you: your own key or model",
   },
 ] as const;
 

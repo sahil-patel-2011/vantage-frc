@@ -46,6 +46,7 @@ export type AiKeysReadyViewProps = {
   saveMemberKey: () => void;
   removeMemberKey: (provider: string) => void;
   message: string;
+  messageIsError?: boolean;
   providerMeta: ProviderMeta[];
   statusByProvider: Map<string, Payload["keys"][number]>;
   busyProvider: ByokProvider | null;
@@ -86,6 +87,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     saveMemberKey,
     removeMemberKey,
     message,
+    messageIsError,
     providerMeta,
     statusByProvider,
     busyProvider,
@@ -126,7 +128,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           ) : null}
 
           {message ? (
-            <p className="ai-keys-flash" role="status">
+            <p className={`ai-keys-flash${messageIsError ? " is-error" : ""}`} role={messageIsError ? "alert" : "status"}>
               {message}
             </p>
           ) : null}
@@ -179,12 +181,20 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 </div>
               </form>
               <p className="app-muted">
-                Already pay for OpenAI, Anthropic or OpenRouter? Paste that key in its card below instead.
+                Already pay for OpenAI, Anthropic or OpenRouter? Open &ldquo;Use a paid key instead&rdquo; below.
                 Keys are encrypted and never shown again.
               </p>
             </section>
           ) : null}
 
+          {/* With the free Gemini path on offer, the paid providers are the second choice and
+              wait behind one line; once a team has a key they are simply the page. */}
+          <details className="ai-keys-fold" open={!showStart}>
+            <summary>
+              <h2 className="ai-keys-fold-title">
+                {showStart ? "Use a paid key instead (OpenAI, Anthropic, OpenRouter)" : "Your team's AI keys"}
+              </h2>
+            </summary>
           <section className="ai-keys-grid" aria-label="Provider API keys">
             {/* While the start card offers the Gemini field, the Google card would be a
                 second field bound to the same draft. */}
@@ -212,11 +222,24 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               );
             })}
           </section>
+          </details>
 
           {/* Web research sits with the keys a team brings, straight after the
               model providers: it is the other key that changes what the AI can do. */}
-          {orgId ? <WebResearchCard orgId={orgId} /> : null}
+          {orgId ? (
+            <details className="ai-keys-fold">
+              <summary>
+                <h2 className="ai-keys-fold-title">Let the AI search the web (optional, free)</h2>
+              </summary>
+              <WebResearchCard orgId={orgId} />
+            </details>
+          ) : null}
 
+          {/* Personal keys and a personal model are for the few who want them. */}
+          <details className="ai-keys-fold" open={(payload.memberKeys ?? []).length > 0}>
+            <summary>
+              <h2 className="ai-keys-fold-title">Just for you: your own key or model</h2>
+            </summary>
           <section className="app-card soft-panel ai-keys-mine" aria-label="My personal AI keys">
             <span className="eyebrow">MINE</span>
             <h2>{MEMBER_KEY_HEADLINE}</h2>
@@ -331,11 +354,12 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               label="My model"
             />
           </section>
+          </details>
 
           {/* Everything a team sets once, or never: how hosting is billed, any-endpoint
               notes, local models, free keys, routing and model policy. The walkthrough
               found the page ~5,500px tall with the key forms buried; they now come first. */}
-          <details className="ai-keys-advanced">
+          <details className="ai-keys-advanced ai-keys-fold">
             <summary>More options: hosting, local models, free keys, routing and model policy</summary>
           <section className="app-card soft-panel ai-keys-billing" aria-label="Hosting vs your keys">
             <span className="eyebrow">{billing.title}</span>
