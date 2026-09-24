@@ -7,6 +7,7 @@ import {
   type MyDayView,
 } from "./my-day";
 import type { ScheduleMatch } from "./schedule-board";
+import { matchLabelFromKey } from "./matches/no-next-match";
 
 export type MyDayLodging = {
   hotelName: string;
@@ -321,6 +322,39 @@ export async function loadMyDayView(
     eventKey: row.eventKey,
   });
 
+  // The robots this person scouts next: primary duties, not filed yet, not long past. The
+  // same rules as Home's "what to do now" card (lib/dashboard/home-widget-loaders.ts).
+  const duties = await client.query<{ matchKey: string; teamKey: string; scheduledTime: string | null }>(
+    `SELECT /* my-day:scouting */ a.match_key AS "matchKey", a.team_key AS "teamKey",
+            coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at)::text AS "scheduledTime"
+       FROM scout_assignments a
+       JOIN matches_ref m ON m.match_key = a.match_key
+      WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
+        AND lower(coalesce(a.role, '')) <> 'backup'
+        AND coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at, now())
+            > now() - interval '15 minutes'
+        AND NOT EXISTS (
+          SELECT 1 FROM match_scout_entries e
+           WHERE e.org_id = a.org_id AND e.match_key = a.match_key AND e.team_key = a.team_key
+        )
+      ORDER BY coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at) NULLS LAST, m.match_number
+      LIMIT 4`,
+    [row.orgId, input.userId, row.eventKey],
+  );
+  const byKey = new Map(schedule.map((match) => [match.matchKey, match]));
+  const scouting = duties.rows.map((duty) => {
+    const match = byKey.get(duty.matchKey);
+    const redAt = match?.red.indexOf(duty.teamKey) ?? -1;
+    const blueAt = match?.blue.indexOf(duty.teamKey) ?? -1;
+    return {
+      matchKey: duty.matchKey,
+      teamKey: duty.teamKey,
+      matchLabel: matchLabelFromKey(duty.matchKey),
+      station: redAt >= 0 ? `Red ${redAt + 1}` : blueAt >= 0 ? `Blue ${blueAt + 1}` : null,
+      scheduledTime: duty.scheduledTime,
+    };
+  });
+
   const emptyReason: "no_schedule" | "no_upcoming" | null =
     schedule.length === 0 ? "no_schedule" : built.matches.length === 0 ? "no_upcoming" : null;
 
@@ -337,6 +371,7 @@ export async function loadMyDayView(
       ourMatchCount: built.matches.length,
     },
     logistics,
+    scouting,
     emptyReason,
     links: {
       command: `/command${orgQ}`,

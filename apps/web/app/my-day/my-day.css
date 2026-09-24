@@ -369,3 +369,45 @@
   font-size: 1.05rem;
   font-weight: 600;
 }
+
+/* "You scout": the person's own next robots, above the team's matches. */
+.myday-scouting {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 14px;
+  background: var(--surface);
+}
+.myday-scouting h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.myday-scouting ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.myday-scouting li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+}
+.myday-scouting li > span {
+  min-width: 0;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.myday-scouting li small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.myday-scouting .myday-link {
+  flex: 0 0 auto;
+}

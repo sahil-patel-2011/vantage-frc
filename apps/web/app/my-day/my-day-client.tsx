@@ -4,7 +4,7 @@ import { noNextMatchMessage } from "../../lib/matches/no-next-match";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
-import type { MyDayMatch, MyDayView } from "../../lib/my-day";
+import type { MyDayMatch, MyDayScoutDuty, MyDayView } from "../../lib/my-day";
 import {
   MY_DAY_RELATED_INCLUDE,
   classifyMyDayShell,
@@ -101,7 +101,7 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
           Scout this match
         </a>
         <a className="myday-link" href={commandHref}>
-          Event Day
+          Event day
         </a>
         <a className="myday-link" href={scheduleHref}>
           Schedule
@@ -471,6 +471,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         </p>
       ) : null}
 
+      {view.scouting?.length ? <MyScouting duties={view.scouting} orgId={orgId} /> : null}
+
       {view.next ? <MatchHero match={view.next} orgId={orgId} /> : null}
       {noNextLine ? <p className="myday-none">{noNextLine}</p> : null}
 
@@ -501,7 +503,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       {!view.next && view.matches.length > 0 ? (
         <nav className="myday-hero-links" aria-label="Live ops links">
           <a className="myday-link primary" href={commandHref}>
-            Event Day
+            Event day
           </a>
           <a className="myday-link" href={scheduleHref}>
             Schedule
@@ -514,5 +516,38 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
 
       {embedded ? null : <MyDayNextActionsPanel actions={nextActions} />}
     </main>
+  );
+}
+
+/**
+ * "You scout": the robots this person is down to watch next. My Day listed only the team's own
+ * matches, so a scout opened it and found nothing about their own job.
+ */
+function MyScouting({ duties, orgId }: { duties: MyDayScoutDuty[]; orgId: string | null }) {
+  return (
+    <section className="myday-scouting" aria-labelledby="myday-scouting-title">
+      <h2 id="myday-scouting-title">You scout</h2>
+      <ul>
+        {duties.map((duty, index) => {
+          const time = duty.scheduledTime ? new Date(duty.scheduledTime) : null;
+          const params = new URLSearchParams({ tab: "scouting", matchKey: duty.matchKey, teamKey: duty.teamKey });
+          if (orgId) params.set("orgId", orgId);
+          return (
+            <li key={`${duty.matchKey}-${duty.teamKey}`}>
+              <span>
+                <strong>{duty.teamKey.replace(/^frc/, "")}</strong> · {duty.matchLabel}
+                {duty.station ? ` · ${duty.station}` : ""}
+                {time && !Number.isNaN(time.getTime()) ? (
+                  <small>{time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small>
+                ) : null}
+              </span>
+              <a className={`myday-link${index === 0 ? " primary" : ""}`} href={`/competition?${params.toString()}`}>
+                Scout
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

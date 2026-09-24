@@ -70,7 +70,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     tabs: [
       { id: "command", label: "Event day", legacyHref: "/command" },
       ...nest("command", [
-        { id: "my-day", label: "My Day", legacyHref: "/my-day" },
+        // A student's own day: first chip whichever way they came in (it vanished from Matches).
+        { id: "my-day", label: "My Day", legacyHref: "/my-day", featured: true },
         { id: "event-day-plan", label: "Day plan", legacyHref: "/event-day-plan" },
         { id: "drive-team-signals", label: "Drive-team board", legacyHref: "/drive-team-signals" },
         // THE one pre-match surface (absorbed Match Copilot — see legacy-redirects).

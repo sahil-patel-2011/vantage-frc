@@ -97,6 +97,16 @@ export type MyDayLogisticsCue = {
   checklistPercent: number | null;
 };
 
+export type MyDayScoutDuty = {
+  matchKey: string;
+  teamKey: string;
+  /** "Qual 7". */
+  matchLabel: string;
+  /** "Blue 3", or null when the robot is not in the match's alliance lists. */
+  station: string | null;
+  scheduledTime: string | null;
+};
+
 export type MyDayView =
   | {
       status: "ready";
@@ -106,6 +116,8 @@ export type MyDayView =
       matches: MyDayMatch[];
       freshness: MyDayFreshness;
       logistics?: MyDayLogisticsCue;
+      /** The robots this person is down to scout next, not yet filed by anyone. */
+      scouting?: MyDayScoutDuty[];
       emptyReason: "no_schedule" | "no_upcoming" | null;
       links?: {
         command: string;
