@@ -285,7 +285,9 @@ export function CommandReadyView({
             </>
           ) : (
             <div className="dash-empty">
-              <strong>{snap.eventOver ? "Our matches here are done" : "No upcoming match"}</strong>
+              <strong>
+                {snap.playoffsAhead ? "Quals are done" : snap.eventOver ? "Our matches here are done" : "No upcoming match"}
+              </strong>
               <p>{snap?.message ?? "Set the event you’re at."}</p>
               {snap?.myDay?.nextTravelLabel || snap?.myDay?.lodgingLabel ? (
                 <ul className="edc-myday-strip" aria-label="Hotels and travel">
@@ -304,7 +306,12 @@ export function CommandReadyView({
                 </ul>
               ) : null}
               <div className="edc-empty-actions">
-                {snap.eventOver && snap.canSetEvent ? (
+                {snap.playoffsAhead ? (
+                  <a className="dash-empty-cta" href={hubHref("/competition", "alliance-selection-desk", orgId || null)}>
+                    Get ready for alliance selection
+                  </a>
+                ) : null}
+                {snap.eventOver && !snap.playoffsAhead && snap.canSetEvent ? (
                   <button type="button" className="dash-empty-cta" onClick={onSelectEvent}>
                     Pick your next event
                   </button>

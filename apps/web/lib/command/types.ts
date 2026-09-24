@@ -77,6 +77,11 @@ export type CommandSnapshot = {
   message?: string;
   /** Every one of our matches at this event is played. */
   eventOver?: boolean;
+  /**
+   * Our matches are all played but the event is not: playoffs are still to come or running.
+   * The next thing then is alliance selection, not the next event.
+   */
+  playoffsAhead?: boolean;
   computedAt: string;
   orgId: string | null;
   role: string | null;

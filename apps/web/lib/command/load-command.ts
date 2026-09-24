@@ -701,12 +701,35 @@ export async function loadEventDayCommand(
     matches.length === 0 ? await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null) : null;
   const noMatchMessage = matches.length === 0 ? noNextMatchMessage(summary) : undefined;
   const eventOver = Boolean(summary && summary.total > 0 && summary.played >= summary.total);
+  // Playoff matches still to play, or none posted yet while the event's last day has not
+  // passed: alliance selection and playoffs are what happens next.
+  const playoffsAhead = eventOver
+    ? await withSavepoint(
+        client,
+        async () =>
+          (
+            await client.query<{ ahead: boolean }>(
+              `SELECT (
+                  EXISTS (SELECT 1 FROM matches_ref
+                           WHERE event_key = $1::text AND comp_level <> 'qm' AND NOT placeholder
+                             AND winning_alliance IS NULL AND post_result_time IS NULL AND actual_time IS NULL)
+                  OR (NOT EXISTS (SELECT 1 FROM matches_ref WHERE event_key = $1::text AND comp_level <> 'qm')
+                      AND COALESCE((SELECT end_date FROM events_ref WHERE event_key = $1::text), now() - interval '2 days')
+                          >= now() - interval '1 day')
+                ) AS ahead`,
+              [eventKey],
+            )
+          ).rows[0]?.ahead === true,
+        false,
+      )
+    : false;
 
   return {
     ...base,
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
     message: noMatchMessage,
     eventOver,
+    playoffsAhead,
     matches,
     scoutQueue,
     briefs,
