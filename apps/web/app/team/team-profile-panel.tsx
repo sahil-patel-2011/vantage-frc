@@ -82,15 +82,15 @@ export function TeamProfilePanel({ orgId }: { orgId: string }) {
 
   return (
     <section className="intel-panel" aria-labelledby="team-profile-title">
-      <span className="eyebrow">TEAM PROFILE · THIS WORKSPACE ONLY</span>
+      <span className="eyebrow">TEAM PROFILE</span>
       <h2 id="team-profile-title" style={{ margin: "6px 0 4px", fontSize: "1.15rem" }}>
         Location &amp; description
       </h2>
       <p className="app-muted" style={{ marginTop: 0 }}>
         {locationLabel
           ? `Currently listed as ${locationLabel}.`
-          : "Add city and state so sponsorship one-pagers know where your team is based."}{" "}
-        Edit anytime; never shared across organizations.
+          : "Add your city and state so sponsor letters say where your team is based."}{" "}
+        Only your team sees this.
       </p>
 
       {!view.canEdit ? (
@@ -109,10 +109,10 @@ export function TeamProfilePanel({ orgId }: { orgId: string }) {
           </div>
           <label>
             Describe the FRC team <small>Optional</small>
-            <textarea maxLength={2000} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short blurb used in sponsorship value props and team background." disabled={busy} />
+            <textarea maxLength={2000} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A few sentences about your team, used in sponsor letters and grant forms." disabled={busy} />
           </label>
           <label>
-            Mission <small>Optional · sponsorship / grants</small>
+            Mission <small>Optional · used for sponsors and grants</small>
             <textarea maxLength={2000} rows={2} value={mission} onChange={(e) => setMission(e.target.value)} placeholder="One or two sentences about what the team is about." disabled={busy} />
           </label>
           <button className="primary-action" type="submit" disabled={busy}>

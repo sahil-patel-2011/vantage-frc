@@ -148,8 +148,10 @@ export function AppShellTopbar({
                     would only say the same thing again. */}
                 {(() => {
                   const sub = showBack ? crumbHint : orgLabel;
-                  if (!sub) return null;
-                  const heading = (title ?? "").trim().toLowerCase();
+                  // A page with no menu entry has "Vantage" for both lines ("Vantage / Vantage"
+                  // on Team security); the fallback crumb says nothing, so it is dropped.
+                  if (!sub || (showBack && sub.trim() === "Vantage")) return null;
+                  const heading = (title ?? "Vantage").trim().toLowerCase();
                   const crumb = sub.trim().toLowerCase();
                   // A crumb reading "Settings / Account" under a title reading
                   // "Account" ends in the word it sits beneath. Comparing the

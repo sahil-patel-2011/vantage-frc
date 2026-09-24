@@ -250,9 +250,9 @@ test("account keeps every setting reachable from one place", async ({ page, cont
     // place but do not carry tab semantics.
     await expect(page.getByRole("button", { name: tab, exact: true })).toBeVisible();
   }
-  // Rows carry a subtitle, so match on the start of the name. "Billing" is "AI spending":
-  // it only ever held Ask AI limits and credits.
-  for (const link of [/^Security/, /^AI usage/, /^AI spending/, /^Connectors/]) {
+  // Rows carry a subtitle, so match on the start of the name. "Billing" became "AI limits":
+  // Vantage is free, and the page only holds limits on the team's own AI key.
+  for (const link of [/^Security/, /^AI usage/, /^AI limits/, /^Connectors/]) {
     await expect(page.getByRole("link", { name: link }).first()).toBeVisible();
   }
 

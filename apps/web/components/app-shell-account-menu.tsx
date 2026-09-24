@@ -74,7 +74,8 @@ export function AppShellAccountMenu({
             appearance, notifications, security, keys. Repeating two of
             its rows here meant this menu had two ways to /account. */}
         <a role="menuitem" href="/account" onClick={onClose}>
-          Settings
+          {/* The page it opens is titled Account; the menu said Settings. */}
+          Account and settings
         </a>
         <a role="menuitem" href="/docs" onClick={onClose}>
           App manual
