@@ -1,5 +1,6 @@
 "use client";
 
+import { ourSideRange } from "../../../lib/strategy/our-side-range";
 import { nextMatchDriverLines, nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
@@ -23,8 +24,10 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
     alliance,
     modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
   });
-  const low = numericOrNull(data.confidenceLow);
-  const high = numericOrNull(data.confidenceHigh);
+  // Stored intervals are about red winning; show ours so the range brackets our win %.
+  const range = ourSideRange(numericOrNull(data.confidenceLow), numericOrNull(data.confidenceHigh), alliance);
+  const low = range?.low ?? null;
+  const high = range?.high ?? null;
   const drivers = nextMatchDriverLines(data);
 
   return (
