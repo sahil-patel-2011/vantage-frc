@@ -460,7 +460,9 @@ export default function AppShell() {
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
   const title = shellTitleForPath(pathname);
-  const orgLabel = orgLabelFor(me, orgId);
+  // During onboarding the person is joining a team, so "No team selected" contradicts the page.
+  const orgLabel =
+    !orgId && pathname === "/onboarding" ? "Getting set up" : orgLabelFor(me, orgId);
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
   const crumbHint = breadcrumbForPath(pathname);
   const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
