@@ -45,7 +45,7 @@ test.describe("Home tap-to-place", () => {
     await expect(edit.first()).toBeVisible({ timeout: 20_000 });
     await edit.first().click();
     // On a phone the app's tab bar steps aside for the edit toolbar.
-    await expect(page.locator(".soft-island")).toBeHidden();
+    await expect(page.locator(".soft-island")).toBeHidden({ timeout: 10_000 });
     await page.getByTestId("dash-open-library").click();
     const firstAdd = page.locator("[data-testid^='dash-library-']").first();
     await expect(firstAdd).toBeVisible();

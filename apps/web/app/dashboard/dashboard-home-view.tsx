@@ -116,6 +116,9 @@ export function DashboardHomeView(props: {
   dashShell: DashboardShellKind;
   nextActions: DashboardNextAction[];
   setupSteps: DashboardSetupStep[];
+  /** The owner's "Set up your team" card is on screen; other setup prompts step aside. */
+  teamSetupCard?: boolean;
+  onTeamSetupChange?: (showing: boolean) => void;
   dataSourceHealth: DataSourceHealthView | null;
   canOpenTeamData?: boolean;
   tbaConfigured: boolean | undefined;
@@ -406,6 +409,17 @@ export function DashboardHomeView(props: {
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
   const pendingLabel = pendingPlaceType ? catalogEntry(pendingPlaceType)?.label ?? pendingPlaceType : "";
   const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
+  // "Nothing you have to do right now" sat above a four-step setup list for a new owner.
+  // While that list shows, the quiet state says what is actually next. The mentor strip
+  // (duties, rooms, checklists) steps aside too: "all clear" on a team with no data is noise.
+  const nowView =
+    props.teamSetupCard && now.quiet
+      ? {
+          ...now,
+          title: "Finish setting up your team",
+          detail: "The steps below get everyone else going. Matches, duties and tasks show up here once there are some.",
+        }
+      : now;
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
@@ -547,8 +561,8 @@ export function DashboardHomeView(props: {
             reader. The sentence stays only when it adds a fact the other
             two do not. */}
         <div>
-          <strong>{now.title}</strong>
-          {now.detail ? <p>{now.detail}</p> : null}
+          <strong>{nowView.title}</strong>
+          {nowView.detail ? <p>{nowView.detail}</p> : null}
         </div>
         {now.quiet ? (
           <a className="dash-now-quiet" href={withOrgHref(now.href, orgId || null)}>
@@ -562,10 +576,10 @@ export function DashboardHomeView(props: {
       </section>
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} /> : null}
+      {orgId ? <FirstWeekCard orgId={orgId} onTeamSetupChange={props.onTeamSetupChange} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {orgId && homeStripItems.length > 0 ? (
+      {orgId && homeStripItems.length > 0 && !props.teamSetupCard ? (
         <section
           className="dash-role-strip"
           data-audience={homeAudience ?? "student"}
@@ -632,11 +646,11 @@ export function DashboardHomeView(props: {
         </div>
       ) : null}
 
-      {dashShell !== "ready" ? (
+      {dashShell !== "ready" && !props.teamSetupCard ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 ? (
+      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !props.teamSetupCard ? (
         <p className="dash-ready-cue" role="status" {...dim}>
           <span>{nextActions[0]?.detail ?? nextActions[0]?.label}</span>
           {nextActions[0]?.href ? (

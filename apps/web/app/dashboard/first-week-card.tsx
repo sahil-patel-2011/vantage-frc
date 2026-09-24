@@ -45,7 +45,14 @@ export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHO
   return out;
 }
 
-export function FirstWeekCard({ orgId }: { orgId: string }) {
+export function FirstWeekCard({
+  orgId,
+  onTeamSetupChange,
+}: {
+  orgId: string;
+  /** Tells Home when this card is the team's setup list, so Home can drop its other setup cards. */
+  onTeamSetupChange?: (showing: boolean) => void;
+}) {
   const [view, setView] = useState<RoleOnboardingView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -79,6 +86,12 @@ export function FirstWeekCard({ orgId }: { orgId: string }) {
     },
     [orgId],
   );
+
+  const setupTrack = view?.status === "live" ? view.tracks.find((track) => track.key === "team_setup" && !track.dismissed) : undefined;
+  const teamSetupShowing = Boolean(setupTrack && setupTrack.doneCount < setupTrack.totalCount);
+  useEffect(() => {
+    onTeamSetupChange?.(teamSetupShowing);
+  }, [teamSetupShowing, onTeamSetupChange]);
 
   if (!view || view.status !== "live" || view.totalCount === 0) return null;
   const left = view.totalCount - view.doneCount;

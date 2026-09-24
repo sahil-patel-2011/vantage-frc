@@ -261,12 +261,15 @@ export function homeViewLayout(
     editing: boolean;
     shell: "loading" | "no_org" | "setup" | "tba" | "ready";
     widgets?: Record<string, { status?: string } | undefined>;
+    /** The owner's "Set up your team" card is showing: it is the one setup list on Home. */
+    teamSetupCard?: boolean;
   },
 ): DashboardWidgetLayout[] {
   layout = layout.filter((item) => MEDIA_ENABLED || item.type !== "pit_youtube");
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
-  const visible = layout.filter((item) => !(ready && SETUP_ONLY_WIDGETS.has(item.type)));
+  const setupElsewhere = ready || input.teamSetupCard === true;
+  const visible = layout.filter((item) => !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type)));
   // A pinned card stays visible even when empty and keeps the user's saved size — except
   // the hero. An empty "Next match" at full hero height was the biggest thing on Home for
   // every day of the year that is not an event day; it takes its minimum three rows until it is live.

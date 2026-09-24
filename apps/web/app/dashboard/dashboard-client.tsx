@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DASHBOARD_COLUMNS,
   homeViewLayout,
@@ -102,9 +102,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     role: home.role,
   });
 
+  // While the owner's "Set up your team" card shows, it is Home's only setup list.
+  const [teamSetupCard, setTeamSetupCard] = useState(false);
   const viewLayout = useMemo(
-    () => homeViewLayout(home.layout, { editing: home.editing, shell: dashShell, widgets: home.widgets }),
-    [home.layout, home.editing, dashShell, home.widgets],
+    () => homeViewLayout(home.layout, { editing: home.editing, shell: dashShell, widgets: home.widgets, teamSetupCard }),
+    [home.layout, home.editing, dashShell, home.widgets, teamSetupCard],
   );
   const grid = resolveGrid(width);
   const gap = grid.margin[0];
@@ -250,6 +252,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   return (
     <DashboardActionsProvider orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
     <DashboardHomeView
+      teamSetupCard={teamSetupCard}
+      onTeamSetupChange={setTeamSetupCard}
       me={home.me}
       meLoaded={home.meLoaded}
       orgId={home.orgId}
