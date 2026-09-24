@@ -583,6 +583,31 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     padding: 0 0 8px;
     border-left: 0;
   }
+  /* The hub's name beside its sections left the sections ~210px, so "Strategy" read "Stra"
+     and "Pit" sat off-screen with nothing saying the row scrolls. The name repeats the tab
+     bar below and the page itself, so on a phone it stays for screen readers only and the
+     sections get the whole first line: four of them fit a 375px screen. */
+  .hub-bar-id {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* Five sections (Team, AI) fit a 375px line with slightly tighter tabs; the underline and
+     the 44px height are what make them tabs, not the side padding. */
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(a, button) {
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 14.5px;
+  }
+  /* The tool chips still scroll; the last one fades out so it reads as "more this way". */
+  .hub-bar .hub-tool-strip-row {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    padding-right: 24px;
+  }
 }
 
 /* "More tools" grouped by job (Strategy: Before a match / Alliance selection / Research). */
@@ -593,4 +618,18 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
   color: var(--ink);
   font-size: 12px;
   font-weight: 700;
+}
+
+/* Business keeps its own header, but its section tabs get the same phone fit as the hubs.
+   Its "?" still pushes the last tab to the edge, so that edge fades to say "scrolls". */
+@media (max-width: 720px) {
+  .product-hub--business .product-hub-tabs.soft-tab-bar > :is(a, button) {
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 14.5px;
+  }
+  .product-hub--business .product-hub-tabs.soft-tab-bar {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
 }

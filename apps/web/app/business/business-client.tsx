@@ -5,12 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
 import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
-import { BusinessRelated } from "../../components/business-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business-portal";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { BUSINESS_FUNDING_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";
 import { sectionHelpFor } from "../../lib/help/section-help";
 import {
@@ -31,14 +29,12 @@ import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
 import {
   isTab,
-  readOrgIdFromUrl,
   readTabFromUrl,
   redirectMoreToolTab,
   writeTabToUrl,
   type Tab,
 } from "./business-helpers";
 import { Budget, Evidence, Grants, Overview } from "./business-panels";
-import { ToneBadge } from "./business-ui";
 import "../product-hub.css";
 import { withWaitlistLink } from "../../components/waitlist-link";
 
@@ -283,24 +279,6 @@ export default function BusinessClient() {
 
   const orgId = live?.orgId;
 
-  /*
-    The org from the URL, read after mount rather than during render.
-
-    `readOrgIdFromUrl()` returns null on the server and the real id in the
-    browser, so calling it while rendering gave the related-links nav one set
-    of hrefs in the server HTML and a different set on hydration. React
-    reported it on every Business tab — "a tree hydrated but some attributes
-    of the server rendered HTML didn't match" — and it is the first cause its
-    own message lists: a `typeof window` branch.
-
-    Starting at null and filling in afterwards means the first client render
-    matches the server exactly, and the links gain their org a frame later,
-    which is what `live?.orgId` was already doing beside it.
-  */
-  const [urlOrgId, setUrlOrgId] = useState<string | null>(null);
-  useEffect(() => {
-    setUrlOrgId(readOrgIdFromUrl());
-  }, []);
 
   if (hubDenied) {
     return (
@@ -338,21 +316,8 @@ export default function BusinessClient() {
                 ))}
               </select>
             </label>
-            <ToneBadge tone={live.canManageFinance ? "blue" : "neutral"}>
-              {live.canManageFinance ? "Finance lead" : "Team member"}
-            </ToneBadge>
           </div>
         ) : null}
-        <BusinessRelated
-          orgId={live?.orgId ?? urlOrgId}
-          include={
-            sponsorsAllowed === false
-              ? BUSINESS_FUNDING_RELATED_INCLUDE.filter((id) => id !== "sponsors")
-              : [...BUSINESS_FUNDING_RELATED_INCLUDE]
-          }
-          className="business-funding-related"
-          ariaLabel="Related funding tools"
-        />
       </PageHeader>
 
       <OfflineBanner feature="Business" fromCache={fromCache} cachedAt={cachedAt} />

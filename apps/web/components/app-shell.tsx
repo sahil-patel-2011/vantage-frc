@@ -32,6 +32,7 @@ import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { isKnownAppPath } from "../lib/nav/app-route-roots";
+import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import {
   accountInitialFor,
   accountLabelFor,
@@ -166,6 +167,8 @@ export default function AppShell() {
     const onPop = () => setLocationTick((tick) => tick + 1);
     document.addEventListener("click", onClick);
     window.addEventListener("popstate", onPop);
+    // A hub switching tabs in place rewrites the address without navigating.
+    window.addEventListener(URL_CHANGE_EVENT, onPop);
     const readyTimer = window.setTimeout(() => {
       routerReady = true;
     }, 300);
@@ -173,6 +176,7 @@ export default function AppShell() {
       window.clearTimeout(readyTimer);
       document.removeEventListener("click", onClick);
       window.removeEventListener("popstate", onPop);
+      window.removeEventListener(URL_CHANGE_EVENT, onPop);
     };
   }, [router]);
 

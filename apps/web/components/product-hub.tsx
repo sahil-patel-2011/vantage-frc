@@ -27,6 +27,7 @@ import { fetchProductSession } from "../lib/nav/product-session";
 import { fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../lib/nav/resolve-org";
 import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { useClientAccessProfile } from "../lib/nav/use-client-access";
+import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 
 type ProductHubShellProps = {
   hubId: ProductHubDef["id"];
@@ -63,6 +64,8 @@ function writeTabToUrl(tab: string, defaultTab: string) {
   if (tab === defaultTab) url.searchParams.delete("tab");
   else url.searchParams.set("tab", tab);
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  // replaceState tells nobody; the app frame's tab bar follows the address, so say it moved.
+  window.dispatchEvent(new Event(URL_CHANGE_EVENT));
 }
 
 /**

@@ -82,13 +82,11 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
     await expect(page.locator("body"), `Business still shows ${phrase}`).not.toContainText(phrase);
   }
 
-  const related = page.getByRole("navigation", { name: /Related funding tools/i }).first();
-  await expect(related).toBeVisible({ timeout: 20_000 });
-  await expect(related.getByRole("link", { name: "Sponsors" })).toBeVisible();
-  await expect(related.getByRole("link", { name: "Budget" })).toBeVisible();
-  await expect(related.getByRole("link", { name: "Grants" })).toBeVisible();
-
+  // The tabs are the way around Business: a link row repeating Sponsors and Grants above
+  // them was a second navigation for the same places.
   const tabs = page.getByRole("tablist", { name: "Business sections" });
+  await expect(tabs).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("navigation", { name: /Related funding tools/i })).toHaveCount(0);
   await tabs.getByRole("tab", { name: "Overview" }).click();
   // Nothing recorded: one first step instead of six dash tiles, never a fake $0.
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
