@@ -254,6 +254,7 @@ function vantageAbout_(book, team, lastSyncAt) {
   const rows = [
     ["Team", vantageTeamTitle_(team)],
     ["What this is", "This team's records, one tab per table. The Tables tab lists every table, what it holds and how many rows it has."],
+    ["Summary", "The Summary tab adds up members, hours, money, scouting and robot records with live formulas."],
     ["Keys", "Every table starts with an id column. It never changes, so rows in different tabs can be matched on it."],
     ["Editing", "Change things in Vantage. Edits made here are replaced on the next update."],
     ["Last updated", lastSyncAt || "Not yet"],
@@ -366,8 +367,13 @@ function vantageFormatBook_(book, order) {
       // The data is in; the layout is a nicety.
     }
   }
+  try {
+    vantageSummary_(book);
+  } catch (summaryError) {
+    // The tables are what matter; the summary is built from them.
+  }
   const about = book.getSheetByName("About");
-  const ordered = (about ? ["About"] : []).concat(names);
+  const ordered = (about ? ["About"] : []).concat(book.getSheetByName("Summary") ? ["Summary"] : [], names);
   let position = 1;
   for (const name of ordered) {
     const sheet = book.getSheetByName(name);
@@ -444,6 +450,51 @@ function vantageFormatTable_(book, sheet) {
   if (!sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).length) {
     sheet.protect().setDescription("Kept up to date by Vantage. Edits here are replaced on the next update.").setWarningOnly(true);
   }
+}
+
+// ---------------------------------------------------------------- summary
+// Live formulas over the named tables (tbl_<Tab>), so the numbers follow the data between
+// updates and anyone can see how each one is worked out. A table that is missing reads 0.
+function vantageCol_(table, column) {
+  return "INDEX(tbl_" + table + ",0,MATCH(\\"" + column + "\\",INDEX(tbl_" + table + ",1,0),0))";
+}
+
+function vantageSummary_(book) {
+  const rowsOf = (table) => "=IFERROR(MAX(ROWS(tbl_" + table + ")-1,0),0)";
+  const sumOf = (table, column) => "=IFERROR(SUM(" + vantageCol_(table, column) + "),0)";
+  const countOf = (table, column, value) => "=IFERROR(COUNTIF(" + vantageCol_(table, column) + ",\\"" + value + "\\"),0)";
+  const sumIf = (table, column, value, amount) =>
+    "=IFERROR(SUMIF(" + vantageCol_(table, column) + ",\\"" + value + "\\"," + vantageCol_(table, amount) + "),0)";
+  const rows = [
+    ["Team", "Members", rowsOf("Members"), "Everyone on the team"],
+    ["Team", "Hours logged", sumOf("Hours", "hours"), "Total of the hours column in Hours"],
+    ["Team", "Open tasks", "=IFERROR(COUNTA(" + vantageCol_("Tasks", "status") + ")-1-COUNTIF(" + vantageCol_("Tasks", "status") + ",\\"done\\"),0)", "Tasks not marked done"],
+    ["Team", "Calendar entries", rowsOf("Calendar"), "Practices, meetings and events"],
+    ["Money", "Income (USD)", sumIf("Finance", "type", "income", "amount_usd"), "Finance rows of type income"],
+    ["Money", "Expenses (USD)", sumIf("Finance", "type", "expense", "amount_usd"), "Finance rows of type expense"],
+    ["Money", "Balance (USD)", "=C6-C7", "Income minus expenses"],
+    ["Money", "Active sponsors", countOf("Sponsors", "status", "active"), "Sponsors with status active"],
+    ["Competition", "Teams at the event", rowsOf("Teams"), "Teams at the active event"],
+    ["Competition", "Matches", rowsOf("Matches"), "Matches at the active event"],
+    ["Competition", "Match scouting entries", rowsOf("MatchScouting"), "One per robot per match"],
+    ["Competition", "Pit scouting entries", rowsOf("PitScouting"), "One per robot"],
+    ["Robot", "Failures logged", rowsOf("RobotFailures"), "Every logged robot failure"],
+    ["Robot", "Batteries in use", countOf("Batteries", "status", "active"), "Batteries with status active"],
+  ];
+  const sheet = book.getSheetByName("Summary") || book.insertSheet("Summary", 1);
+  sheet.clear();
+  const header = [["area", "measure", "value", "how it is worked out"]];
+  sheet.getRange(1, 1, 1, 4).setValues(header);
+  sheet.getRange(2, 1, rows.length, 4).setValues(rows);
+  sheet.getRange(1, 1, 1, 4).setFontWeight("bold").setFontColor("#FFFFFF").setBackground("#1F3A5F");
+  sheet.getRange(2, 3, rows.length, 1).setNumberFormat("#,##0.##");
+  sheet.getRange(6, 3, 3, 1).setNumberFormat("$#,##0.00");
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 120);
+  sheet.setColumnWidth(2, 200);
+  sheet.setColumnWidth(3, 120);
+  sheet.setColumnWidth(4, 320);
+  sheet.setTabColor("#6B7280");
 }
 
 // ---------------------------------------------------------------- team index

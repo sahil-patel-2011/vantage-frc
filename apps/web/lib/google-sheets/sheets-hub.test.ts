@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { AppsScriptBridge, AppsScriptTarget } from "./apps-script-bridge";
 import { APPS_SCRIPT_VERSION, appsScriptSource, newAppsScriptSecret } from "./apps-script-source";
-import { sheetsHubConfig, teamSheetTitle } from "./sheets-hub";
+import { ensureHubSheetForNewTeam, sheetsHubConfig, teamSheetTitle } from "./sheets-hub";
 
 const URL_OK = "https://script.google.com/macros/s/AKfycbxHUB1234567890abcdefghijk/exec";
 
@@ -274,6 +274,38 @@ describe("team sheets in the VantageFRC folder", () => {
     expect(renamed.name).toBe("6925 - Ctrl Alt Elite Robotics - VantageFRC");
   });
 
+  it("gives a brand-new team its whole spreadsheet at once: every table, the catalog and the summary", async () => {
+    const secret = newAppsScriptSecret();
+    const hub = loadHub(secret);
+    const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: hub.fetchImpl });
+    const team = { key: "22222222-2222-4222-8222-222222222222", number: 9856, name: "Gear Foxes", title: "9856 - Gear Foxes - VantageFRC", viewers: [] };
+
+    const book = await ensureHubSheetForNewTeam(team, bridge, () => new Date("2026-09-24T12:00:00Z"));
+    expect(book?.name).toBe("9856 - Gear Foxes - VantageFRC");
+    expect(book?.lastHash).toBeTruthy();
+
+    const file = hub.books.get(book!.id)!;
+    const tabs = file.sheets.map((sheet) => sheet.name);
+    expect(tabs.slice(0, 2)).toEqual(["About", "Summary"]);
+    for (const table of ["Teams", "Matches", "MatchScouting", "Members", "Hours", "Calendar", "Tasks", "Finance", "Sponsors", "RobotFailures", "Batteries", "Tables", "SyncInfo"]) {
+      expect(tabs, table).toContain(table);
+    }
+    // Header rows are in place before there is any data.
+    expect(file.sheets.find((sheet) => sheet.name === "Members")?.cells[0]?.[0]).toBe("id");
+    // The summary is live formulas over the named tables, not numbers typed in.
+    const summary = file.sheets.find((sheet) => sheet.name === "Summary")!.cells;
+    expect(summary[0]).toEqual(["area", "measure", "value", "how it is worked out"]);
+    const hours = summary.find((row) => row[1] === "Hours logged")!;
+    expect(String(hours[2])).toMatch(/^=IFERROR\(SUM\(INDEX\(tbl_Hours,0,MATCH\("hours"/);
+    const balance = summary.find((row) => row[1] === "Balance (USD)")!;
+    expect(balance[2]).toBe("=C6-C7");
+    expect(summary.findIndex((row) => row[1] === "Income (USD)")).toBe(5);
+
+    // The first real sync with nothing new has nothing to do.
+    const again = await bridge.ensureTeamBook(team);
+    expect(again.lastHash).toBe(book!.lastHash);
+  });
+
   it("uses the title Vantage sends, puts tabs in table order, and lists the team in the index", async () => {
     const secret = newAppsScriptSecret();
     const hub = loadHub(secret);
@@ -291,7 +323,7 @@ describe("team sheets in the VantageFRC folder", () => {
     const mine = await bridge.ensureTeamBook(team);
     const book = hub.books.get(mine.id)!;
     expect(book.name).toBe("6925 - Ctrl Alt Elite - VantageFRC");
-    expect(book.sheets.map((sheet) => sheet.name)).toEqual(["About", "Teams", "Members", "Tables"]);
+    expect(book.sheets.map((sheet) => sheet.name)).toEqual(["About", "Summary", "Teams", "Members", "Tables"]);
 
     const index = [...hub.books.values()].find((b) => b.name === "VantageFRC - Team index")!;
     expect(index.parent).toBe(book.parent);

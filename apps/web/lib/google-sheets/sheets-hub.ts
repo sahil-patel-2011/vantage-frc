@@ -18,6 +18,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { buildAllTables } from "../microsoft/team-ops-tables";
+import type { WorkbookSource } from "../microsoft/workbook-schema";
 import { loadWorkbookSource, summarizeOutcomes } from "../microsoft/workbook-sync";
 import { contentHash, withMirrorInfo } from "../mirror/mirror-hash";
 import { writeTablesToCopy } from "../mirror/mirror-sync";
@@ -146,14 +147,45 @@ export async function syncTeamToHub(
   return { status: summary.status, book, rowsWritten: summary.rowsWritten, error: summary.error };
 }
 
+/** A team with nothing in it yet: every table exists, with its columns and no rows. */
+export function emptyTeamSource(team: HubTeam): WorkbookSource {
+  return {
+    orgName: team.name,
+    teamNumber: team.number,
+    activeEventKey: null,
+    teams: [],
+    matches: [],
+    matchScouting: [],
+    pitScouting: [],
+    pickList: [],
+    ops: {},
+  };
+}
+
 /**
- * Make sure a brand-new team has its spreadsheet, straight after the team is created. Needs no
- * team data (there is none yet), so it only asks the script to create and name the file.
+ * Give a brand-new team its whole spreadsheet straight after the team is created: named the
+ * standard way, every table tab with its header row, the Tables catalog, the Summary formulas
+ * and the database layout, before anyone has signed in. There is no team data yet, so nothing
+ * is read from Postgres. The content stamp means the first real sync with nothing new skips.
  */
-export async function ensureHubSheetForNewTeam(team: HubTeam, bridge: AppsScriptBridge | null = sheetsHubBridge()): Promise<HubTeamBook | null> {
+export async function ensureHubSheetForNewTeam(
+  team: HubTeam,
+  bridge: AppsScriptBridge | null = sheetsHubBridge(),
+  now: () => Date = () => new Date(),
+): Promise<HubTeamBook | null> {
   if (!bridge) return null;
   try {
-    return await bridge.ensureTeamBook(team);
+    const book = await bridge.ensureTeamBook(team);
+    const built = buildAllTables(emptyTeamSource(team), now());
+    const hash = contentHash(built);
+    const { outcomes } = await writeTablesToCopy(new AppsScriptTarget(bridge, team), withMirrorInfo(built, hash, ["google"]), {
+      describe: describeGoogleError,
+      isFatal: (error) => isGoogleSheetsError(error) && error.kind === "auth_expired",
+      throttle: (error) => (isGoogleSheetsError(error) && error.kind === "throttled" ? (error.retryAfterMs ?? 0) : null),
+    });
+    if (summarizeOutcomes(outcomes).status !== "succeeded") return book;
+    await bridge.stampTeamBook(team, hash, built.map((table) => table.spec.sheet));
+    return { ...book, lastHash: hash, lastSyncAt: now().toISOString() };
   } catch {
     return null;
   }
