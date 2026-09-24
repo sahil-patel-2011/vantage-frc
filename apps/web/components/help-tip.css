@@ -224,17 +224,18 @@
 
 /* Phone: bottom sheet, so the panel never hangs off a 360px viewport. */
 @media (max-width: 720px) {
+  /* Above the bottom app island (z-index 95/96), which covered the end of the sheet. */
   .help-tip-scrim {
     display: block;
     position: fixed;
-    z-index: 94;
+    z-index: 118;
     inset: 0;
     background: rgba(9, 18, 30, 0.42);
   }
 
   .help-tip-panel {
     position: fixed;
-    z-index: 95;
+    z-index: 119;
     top: auto;
     right: 0;
     bottom: 0;
