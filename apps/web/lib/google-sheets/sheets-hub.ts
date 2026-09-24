@@ -79,7 +79,7 @@ export type HubRegistrationCheck = { ok: true; url: string } | { ok: false; erro
  * signed with this server's hub secret, opened within the last day.
  */
 export function verifyHubRegistration(
-  input: { url: unknown; ts: unknown; sig: unknown },
+  input: { url?: unknown; ts?: unknown; sig?: unknown },
   secret: string | undefined,
   now = Date.now(),
 ): HubRegistrationCheck {
