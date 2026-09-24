@@ -161,6 +161,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
       { id: "messages", label: "Chat", legacyHref: "/messages" },
+      ...nest("messages", [
+        // Announcements is nested rather than a fifth Team workbench (the set is pinned by a
+        // test on purpose). It sat under People, where nobody looking to tell the team
+        // something thought to look; it belongs beside Chat.
+        { id: "announcements", label: "Announcements", legacyHref: "/announcements", featured: true },
+      ]),
       { id: "attendance", label: "People", legacyHref: "/attendance" },
       ...nest("attendance", [
         // What the public record says about this team (TBA + Statbotics), built
@@ -177,10 +183,6 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // what the page is for.
         { id: "subteams", label: "Subteam progress", legacyHref: "/subteams", featured: true },
         { id: "team-forms", label: "Forms", legacyHref: "/forms", featured: true },
-        // Announcements is nested rather than a fifth Team workbench: the set
-        // of workbenches is pinned by a test on purpose, and "tell the team
-        // something" belongs with the people it is told to.
-        { id: "announcements", label: "Announcements", legacyHref: "/announcements", featured: true },
         // One presence record: RSVP → roll call → hours, so "who is coming tonight"
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
