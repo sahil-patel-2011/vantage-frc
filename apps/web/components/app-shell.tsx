@@ -456,6 +456,12 @@ export default function AppShell() {
     [memberships, recentOrgIds],
   );
 
+  // Onboarding is a short, focused flow: its tabs and shortcuts only bounced back to it.
+  const onboarding = pathname === "/onboarding";
+  useEffect(() => {
+    document.body.classList.toggle("shell-onboarding", onboarding);
+    return () => document.body.classList.remove("shell-onboarding");
+  }, [onboarding]);
   const isHubRoot = isHubRootPath(pathname);
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
@@ -689,6 +695,7 @@ export default function AppShell() {
         onSignOut={() => void handleSignOut()}
       />
       <AppTour />
+      {onboarding ? null : (
       <AppShellIsland
         orgId={orgId}
         islandTabs={islandTabs}
@@ -699,6 +706,7 @@ export default function AppShell() {
         islandPressOrigin={islandPressOrigin}
         islandLongPressed={islandLongPressed}
       />
+      )}
       <AppShellIslandEditor
         open={islandEditorOpen}
         islandDraft={islandDraft}

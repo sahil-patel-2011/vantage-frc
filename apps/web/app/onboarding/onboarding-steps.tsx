@@ -410,7 +410,7 @@ export function PreferencesForm({
             {lookup.joined
               ? "You are already on this team."
               : lookup.invited
-                ? `You're joining Team ${lookup.teamNumber ?? ""}.`
+                ? `You're joining ${lookup.title}.`
                 : lookup.teamNumber
                   ? "Submit sends a request — not access."
                   : "Finish without a team"}
@@ -435,7 +435,7 @@ export function PreferencesForm({
             : lookup.joined
               ? "Finish and open Home"
               : lookup.invited
-                ? `Join Team ${lookup.teamNumber ?? ""}`
+                ? `Join ${lookup.title}`
                 : lookup.teamNumber
                   ? "Submit access request"
                   : "Finish without a team"}

@@ -62,15 +62,22 @@ export default function OnboardingClient() {
     setDraft((current) => ({ ...current, ...next }));
   }, []);
 
+  // Answers saved in an earlier visit, noted once on arrival. "Progress restored" used to show
+  // after every Continue in the same visit, when nothing had been lost.
+  const [restoredFrom, setRestoredFrom] = useState<string | null | undefined>(undefined);
+
   const hydrate = useCallback((data: OnboardingState) => {
     setState(data);
+    setRestoredFrom((current) => (current === undefined ? data.savedAt ?? null : current));
     setDraft((current) => ({
       ...current,
       firstName: data.firstName ?? current.firstName,
       lastName: data.lastName ?? current.lastName,
       dateOfBirth: data.dateOfBirth ?? current.dateOfBirth,
       gender: isGender(data.gender) ? data.gender : current.gender,
-      teamRole: isRole(data.teamRole) ? data.teamRole : current.teamRole,
+      // The person setting a team up is not a student; start them on Mentor instead of
+      // pre-picking Student for everyone.
+      teamRole: isRole(data.teamRole) ? data.teamRole : data.isTeamHead && !data.teamRole ? "mentor" : current.teamRole,
       crewRole: isCrew(data.crewRole) ? data.crewRole : current.crewRole,
       roleDescription: data.roleDescription ?? current.roleDescription,
       teamNumber: String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? current.teamNumber ?? ""),
@@ -404,6 +411,7 @@ export default function OnboardingClient() {
 
   const setupStep = step === "pending" || step === "done" ? null : step;
   const onTeamAlready = state?.accessStatus === "approved" || state?.accessStatus === "invited";
+  const teamName = state?.lockedOrgName || state?.workspaceOrgName || null;
   const headerCopy =
     step === "done"
       ? { eyebrow: "YOU'RE IN", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
@@ -413,12 +421,19 @@ export default function OnboardingClient() {
             title: "Your profile is ready. Team access is next.",
             sub: "A team number never lets you in by itself. A team owner or administrator must approve this account.",
           }
-        : onTeamAlready
+        : onTeamAlready && state.isTeamHead
+          ? {
+              // The owner invite: they are setting the team up, not joining someone else's.
+              eyebrow: "YOU'RE THE OWNER",
+              title: `Set up ${teamName ?? "your team"}. Three short steps.`,
+              sub: "Tell us who you are, then Home walks you through inviting your team.",
+            }
+          : onTeamAlready
           ? {
               // Someone who just accepted an invite was told their team "still
               // has to let you in" — the one thing that had already happened.
               eyebrow: "WELCOME TO THE TEAM",
-              title: "You're on the team. Three short steps.",
+              title: `You're on ${teamName ?? "the team"}. Three short steps.`,
               sub: "Tell us who you are and what you do, and Home will open on what to do first.",
             }
           : {
@@ -455,10 +470,10 @@ export default function OnboardingClient() {
         {message ? (
           <p className={`onboarding-message${errorField ? " invalid" : ""}`} role="status">{message}</p>
         ) : null}
-        {state.savedAt && setupStep ? (
+        {restoredFrom && setupStep ? (
           <p className="onboarding-resume-note">
-            <b>Progress restored</b>
-            <span>Securely saved {new Date(state.savedAt).toLocaleString()}. Your earlier answers are already filled in.</span>
+            <b>Welcome back</b>
+            <span>Your earlier answers are already filled in.</span>
           </p>
         ) : null}
 

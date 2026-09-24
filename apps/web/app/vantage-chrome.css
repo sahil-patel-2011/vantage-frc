@@ -162,3 +162,12 @@ html[data-motion="reduced"] .hub-tool-overflow { animation: none; }
     display: none;
   }
 }
+
+/* Onboarding keeps the logo and the account menu (for Sign out) and nothing else. */
+body.shell-onboarding .soft-burger,
+body.shell-onboarding .soft-topbar-product,
+body.shell-onboarding .soft-ask-ai,
+body.shell-onboarding .soft-notif,
+body.shell-onboarding .soft-org-crumb {
+  display: none;
+}
