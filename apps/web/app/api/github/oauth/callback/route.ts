@@ -19,11 +19,11 @@ export async function GET(request: Request) {
 
   if (oauthError) {
     return Response.redirect(
-      `${base}/team/admin?github=denied&error=${encodeURIComponent(oauthError)}#github-connection`,
+      `${base}/connectors/github?github=denied&error=${encodeURIComponent(oauthError)}#github-connection`,
     );
   }
   if (!code || !state) {
-    return Response.redirect(`${base}/team/admin?github=error&error=missing_code#github-connection`);
+    return Response.redirect(`${base}/connectors/github?github=error&error=missing_code#github-connection`);
   }
 
   try {
@@ -51,12 +51,12 @@ export async function GET(request: Request) {
     });
 
     return Response.redirect(
-      `${base}/team/admin?orgId=${encodeURIComponent(claims.orgId)}&github=connected#github-connection`,
+      `${base}/connectors/github?orgId=${encodeURIComponent(claims.orgId)}&github=connected#github-connection`,
     );
   } catch (error) {
     const message = publicErrorMessage(error, "oauth_failed");
     return Response.redirect(
-      `${base}/team/admin?github=error&error=${encodeURIComponent(message)}#github-connection`,
+      `${base}/connectors/github?github=error&error=${encodeURIComponent(message)}#github-connection`,
     );
   }
 }

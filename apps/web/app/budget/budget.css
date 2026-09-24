@@ -155,3 +155,36 @@
     align-items: flex-start;
   }
 }
+
+/* Saved line sits beside the Save button, with Undo, so nobody scrolls for it. */
+.budget-saved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 12px);
+  background: color-mix(in srgb, var(--good, #16a34a) 12%, transparent);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.budget-who-line {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+/* Every form control is a comfortable tap target on a phone. */
+.budget-page .budget-field input,
+.budget-page .budget-field select {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .budget-page .budget-check input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+}

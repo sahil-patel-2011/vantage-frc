@@ -34,13 +34,13 @@ describe("season finance rollup", () => {
     expect(rollup.plannedIncomeCents).toBe(12_000_00);
     expect(rollup.fundingReceivedCents).toBe(6_000_00);
     expect(rollup.receivedIncomeCents).toBe(6_000_00 + 1_000_00 + 3_000_00 + 250_00);
-    expect(rollup.plannedSpendCents).toBe(9_000_00);
+    expect(rollup.plannedSpendCents).toBe(8_000_00);
     expect(rollup.purchaseLogCents).toBe(1_700_00);
     expect(rollup.actualSpendCents).toBe(1_700_00 + 300_00 + 50_00);
     expect(rollup.committedSpendCents).toBe(1_700_00 + 400_00 + 50_00);
     expect(rollup.reimbursementOpenCents).toBe(200_00);
     expect(rollup.cashPositionCents).toBe(rollup.receivedIncomeCents - rollup.actualSpendCents);
-    expect(rollup.remainingToRaiseCents).toBe(Math.max(0, 9_000_00 - rollup.receivedIncomeCents));
+    expect(rollup.remainingToRaiseCents).toBe(Math.max(0, 8_000_00 - rollup.receivedIncomeCents));
   });
 
   it("falls back to fundraising goals when no funding lines exist", () => {

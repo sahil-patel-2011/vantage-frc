@@ -17,7 +17,8 @@ export const BUSINESS_RELATED_LINKS = [
   { id: "writer", label: "Writer", kind: "path" as const, path: "/writer" },
   { id: "grant-workbench", label: "Grant writing", kind: "path" as const, path: "/team/grants" },
   { id: "finance-ai", label: "Ask AI about money", kind: "path" as const, path: "/ai?tab=finance" },
-  { id: "budget", label: "Budget", kind: "hub" as const, tab: "budget" },
+  // One season budget: every "Budget" link opens /budget, where it is set.
+  { id: "budget", label: "Budget", kind: "path" as const, path: "/budget" },
 ] as const;
 
 export type BusinessRelatedId = (typeof BUSINESS_RELATED_LINKS)[number]["id"];

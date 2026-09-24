@@ -19,7 +19,7 @@ describe("pairRelatedLinks", () => {
     });
     expect(links.map((l) => l.id)).toEqual(["code", "github", "chat"]);
     expect(links.find((l) => l.id === "code")?.href).toBe("/build?tab=code&orgId=org-1");
-    expect(links.find((l) => l.id === "github")?.href).toBe("/team/admin?orgId=org-1#github-connection");
+    expect(links.find((l) => l.id === "github")?.href).toBe("/connectors/github?orgId=org-1#github-connection");
     expect(links.find((l) => l.id === "chat")?.href).toBe("/ai?tab=chat&orgId=org-1");
   });
 
@@ -52,7 +52,7 @@ describe("pairSetupSteps", () => {
     const steps = pairSetupSteps("org-1");
     expect(steps.map((s) => s.id)).toEqual(["workspace", "code", "github", "chat"]);
     expect(steps.find((s) => s.id === "code")?.href).toBe("/build?tab=code&orgId=org-1");
-    expect(steps.find((s) => s.id === "github")?.href).toBe("/team/admin?orgId=org-1#github-connection");
+    expect(steps.find((s) => s.id === "github")?.href).toBe("/connectors/github?orgId=org-1#github-connection");
     expect(steps.find((s) => s.id === "chat")?.href).toBe("/ai?tab=chat&orgId=org-1");
   });
 });

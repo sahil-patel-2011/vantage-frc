@@ -2,13 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { ConfirmDialog, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
-import { formatInviteRole } from "../../lib/invite/invite-flow";
-import {
-  classifyGitHubShell,
-  githubShellCopy,
-} from "../../lib/github/github-related";
+import { Button, ConfirmDialog, EmptyState, Modal, PageHeader } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -17,38 +11,26 @@ import {
   putFeatureSnapshot,
 } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import {
-  TEAM_ADMIN_RELATED_INCLUDE,
-  classifyTeamAdminShell,
-  teamAdminCardPrimaryHref,
-  teamAdminNextActions,
-  teamAdminRelatedLinks,
-  teamAdminShellCopy,
-} from "../../lib/team/team-admin-related";
+import { classifyTeamAdminShell, teamAdminShellCopy } from "../../lib/team/team-admin-related";
 import {
   inviteDeliveryBanner,
   inviteSendResultCopy,
   type InviteDeliveryMode,
 } from "../../lib/team/team-invites";
-import { TeamBrandingPanel } from "../../lib/branding/team-branding-panel";
+import { MemberAccessPanel, type HubAccessRow } from "./admin/member-access-panel";
 import { TeamAdminAccessPanel } from "./team-admin-access";
-import { MembershipNextActionsPanel } from "./team-admin-chrome";
-import { TeamAdminGitHubPanel } from "./team-admin-github";
 import { TeamAdminInvitesPanel } from "./team-admin-invites";
 import {
   type AccessRequest,
   type AdminTenure,
   type CustomProvider,
-  type GitHubConnection,
-  type GitHubRepo,
   type Invite,
   type InviteNotice,
   type Member,
   type TeamAdminSnapshot,
 } from "./team-admin-model";
+import { TeamAdminPeople } from "./team-admin-people";
 import { TeamAdminProvidersPanel } from "./team-admin-providers";
-import { TeamProfilePanel } from "./team-profile-panel";
-import "./github-connection.css";
 import "./team-access-requests.css";
 import "./team-admin.css";
 
@@ -67,8 +49,52 @@ async function persistTeamAdminSnapshot(orgId: string, data: TeamAdminSnapshot):
   }
 }
 
-/** Team roles in the words people use (scout/admin/viewer underneath). */
-const ROLE_WORDS: Record<string, string> = { scout: "a student", admin: "a mentor or coach", viewer: "a parent or guest" };
+/** Keep people where they were: a role change used to re-sort the list and move the row. */
+function keepOrder(previous: Member[], next: Member[]): Member[] {
+  if (!previous.length) return next;
+  const rank = new Map(previous.map((member, index) => [member.userId, index]));
+  return [...next].sort(
+    (a, b) => (rank.get(a.userId) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.userId) ?? Number.MAX_SAFE_INTEGER),
+  );
+}
+
+/** Plain-words version of the server's "bootstrap window" hint. */
+function tenureTip(tenure: AdminTenure | null): string | null {
+  if (!tenure) return null;
+  if (tenure.adminCount <= 1) {
+    return "Tip: invite a second adult as a mentor or coach, so the team isn't locked out if you're away.";
+  }
+  return null;
+}
+
+/** Wants the invite form: ?invite=1 (Home's "Invite your team") or #invite. */
+function wantsInvite(): boolean {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.replace(/^#/, "");
+  return params.get("invite") === "1" || hash === "invite" || hash === "invite-form";
+}
+
+/** Settings that used to be a 13-tile grid on this page — one quiet row of links now. */
+function TeamSettingsLinks({ orgId }: { orgId: string | null }) {
+  const links = [
+    { href: withOrgHref("/team/admin/profile", orgId), label: "Team profile" },
+    { href: withOrgHref("/team/security", orgId), label: "Sign-in rules" },
+    { href: withOrgHref("/team/ai-keys", orgId), label: "AI keys" },
+    { href: withOrgHref("/connectors", orgId), label: "Connectors" },
+    { href: "/notifications/preferences", label: "Notifications" },
+    { href: withOrgHref("/messages/moderation", orgId), label: "Chat moderation" },
+  ];
+  return (
+    <nav className="team-admin-settings-links" aria-label="Team settings">
+      {links.map((link) => (
+        <a key={link.label} href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
 
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [view, setView] = useState<TeamAdminSnapshot | null>(null);
@@ -76,6 +102,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [hubAccessByUser, setHubAccessByUser] = useState<Record<string, HubAccessRow[]>>({});
   const [adminTenure, setAdminTenure] = useState<AdminTenure | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(true);
   const [membershipFetchFailed, setMembershipFetchFailed] = useState(false);
@@ -93,48 +120,32 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [inviteNotice, setInviteNotice] = useState<InviteNotice | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<InviteDeliveryMode | null>(null);
   const [providers, setProviders] = useState<CustomProvider[]>([]);
-  const [githubOAuthSetupRequired, setGithubOAuthSetupRequired] = useState(false);
-  /** Setup copy from the server — names the variables and the callback URL. */
-  const [githubOAuthMessage, setGithubOAuthMessage] = useState("");
-  const [githubCredentialRejected, setGithubCredentialRejected] = useState<{ login: string | null } | null>(null);
-  const [githubConnection, setGithubConnection] = useState<GitHubConnection | null>(null);
-  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
-  const [githubPat, setGithubPat] = useState("");
-  const [githubBusy, setGithubBusy] = useState(false);
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
   const [resetBusyUserId, setResetBusyUserId] = useState<string | null>(null);
   // Who is looking, so a row never offers to change or remove yourself or an owner.
   const [actor, setActor] = useState<{ userId: string | null; role: string | null }>({ userId: null, role: null });
   const [memberBusyId, setMemberBusyId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
-  const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
-  const [githubLoading, setGithubLoading] = useState(true);
-  const [githubFetchFailed, setGithubFetchFailed] = useState(false);
-  const [githubErrorStatus, setGithubErrorStatus] = useState<number | null>(null);
-  const [githubErrorMessage, setGithubErrorMessage] = useState("");
-  const [defaultRepo, setDefaultRepo] = useState("");
+  const [accessTarget, setAccessTarget] = useState<Member | null>(null);
   const viewRef = useRef<TeamAdminSnapshot | null>(null);
   viewRef.current = view;
+  const membersRef = useRef<Member[]>([]);
+  membersRef.current = members;
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const focusedInvite = useRef(false);
 
   const applySnapshot = useCallback((data: TeamAdminSnapshot) => {
     setView(data);
     setInvites(data.invites);
-    setMembers(data.members);
+    setMembers(keepOrder(membersRef.current, data.members));
+    setHubAccessByUser(data.hubAccessByUser ?? {});
     setAdminTenure(data.adminTenure);
     setAccessRequests(data.accessRequests);
     setProviders(data.providers);
     setDeliveryMode(data.deliveryMode);
-    setGithubOAuthSetupRequired(data.githubOAuthSetupRequired);
-    setGithubOAuthMessage(data.githubOAuthMessage);
-    setGithubCredentialRejected(data.githubCredentialRejected);
-    setGithubConnection(data.githubConnection);
-    setGithubRepos(data.githubRepos);
-    setDefaultRepo(data.defaultRepo);
   }, []);
 
   const load = useCallback(async () => {
-    setGithubLoading(true);
-    setGithubFetchFailed(false);
     setMembershipLoading(true);
     setMembershipFetchFailed(false);
     let hadCache = Boolean(viewRef.current);
@@ -145,7 +156,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setFromCache(true);
         setCachedAt(cached.cachedAt);
         setMembershipLoading(false);
-        setGithubLoading(false);
         hadCache = true;
       }
     } catch {
@@ -153,20 +163,25 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }
 
     const timeout = { signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS), cache: "no-store" as const };
+    const denied = (status: number, error: string) => {
+      setView(null);
+      setFromCache(false);
+      setCachedAt(null);
+      setMembershipFetchFailed(true);
+      setMembershipErrorStatus(status);
+      setMembershipErrorMessage(error);
+      setMembershipLoading(false);
+      void clearFeatureSnapshot("team-admin", orgId);
+    };
 
     try {
-      const response = await fetch(`/api/organizations/invites?orgId=${orgId}`, timeout);
+      const [response, membersResponse] = await Promise.all([
+        fetch(`/api/organizations/invites?orgId=${orgId}`, timeout),
+        fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`, timeout),
+      ]);
       const data = await response.json();
       if (response.status === 401 || response.status === 403) {
-        setView(null);
-        setFromCache(false);
-        setCachedAt(null);
-        setMembershipFetchFailed(true);
-        setMembershipErrorStatus(response.status);
-        setMembershipErrorMessage(typeof data.error === "string" ? data.error : "");
-        setMembershipLoading(false);
-        setGithubLoading(false);
-        void clearFeatureSnapshot("team-admin", orgId);
+        denied(response.status, typeof data.error === "string" ? data.error : "");
         return;
       }
       const nextInvites = Array.isArray(data.invites) ? data.invites : [];
@@ -174,21 +189,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       const nextDelivery = data.delivery ? (data.delivery as InviteDeliveryMode) : null;
       if (!response.ok) setMessage(data.error);
 
-      const membersResponse = await fetch(
-        `/api/organizations/members?orgId=${encodeURIComponent(orgId)}`,
-        timeout,
-      );
       const membersData = await membersResponse.json();
       if (membersResponse.status === 401 || membersResponse.status === 403) {
-        setView(null);
-        setFromCache(false);
-        setCachedAt(null);
-        setMembershipFetchFailed(true);
-        setMembershipErrorStatus(membersResponse.status);
-        setMembershipErrorMessage(membersData.error ?? "Could not load members");
-        setMembershipLoading(false);
-        setGithubLoading(false);
-        void clearFeatureSnapshot("team-admin", orgId);
+        denied(membersResponse.status, membersData.error ?? "Could not load members");
         return;
       }
 
@@ -204,76 +207,28 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setMembershipErrorMessage("");
       } else if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh membership. Showing the last copy on this device.");
+        setMessage("Could not refresh the people list. Showing the last copy on this device.");
         setMembershipFetchFailed(false);
         setMembershipLoading(false);
-        setGithubLoading(false);
         return;
       } else {
         setMembers([]);
         setMembershipFetchFailed(true);
         setMembershipErrorStatus(membersResponse.status);
         setMembershipErrorMessage(membersData.error ?? "Could not load members");
-        setMessage(membersData.error ?? "Could not load members");
         setMembershipLoading(false);
-        setGithubLoading(false);
         return;
       }
 
-      const accessResponse = await fetch(`/api/organizations/access-requests?orgId=${orgId}`, timeout);
+      const [accessResponse, providerResponse] = await Promise.all([
+        fetch(`/api/organizations/access-requests?orgId=${orgId}`, timeout),
+        fetch(`/api/organizations/providers?orgId=${orgId}`, timeout),
+      ]);
       const accessData = await accessResponse.json();
       const nextAccess = Array.isArray(accessData.requests) ? accessData.requests : [];
       if (!accessResponse.ok) setMessage(accessData.error);
-
-      const providerResponse = await fetch(`/api/organizations/providers?orgId=${orgId}`, timeout);
-      const providerData = await providerResponse.json();
+      const providerData = await providerResponse.json().catch(() => ({}));
       const nextProviders = Array.isArray(providerData.providers) ? providerData.providers : [];
-
-      const githubResponse = await fetch(`/api/github?orgId=${encodeURIComponent(orgId)}`, timeout);
-      const githubData = await githubResponse.json();
-      let nextGithub: Pick<
-        TeamAdminSnapshot,
-        | "githubOAuthSetupRequired"
-        | "githubOAuthMessage"
-        | "githubCredentialRejected"
-        | "githubConnection"
-        | "githubRepos"
-        | "defaultRepo"
-      > = {
-        githubOAuthSetupRequired: false,
-        githubOAuthMessage: "",
-        githubCredentialRejected: null,
-        githubConnection: null,
-        githubRepos: [],
-        defaultRepo: "",
-      };
-      if (githubResponse.ok) {
-        nextGithub = {
-          githubOAuthSetupRequired: Boolean(
-            githubData.oauthSetupRequired ?? (githubData.setupRequired && !githubData.patAvailable),
-          ),
-          githubOAuthMessage: "",
-          githubCredentialRejected: githubData.credentialRejected
-            ? { login: githubData.rejectedLogin ?? null }
-            : null,
-          githubConnection: githubData.connection ?? null,
-          githubRepos: [],
-          defaultRepo: githubData.connection?.defaultRepoFullName ?? "",
-        };
-        if (githubData.connection) {
-          const reposResponse = await fetch(`/api/github/repos?orgId=${encodeURIComponent(orgId)}`, timeout);
-          const reposData = await reposResponse.json();
-          nextGithub.githubRepos = reposResponse.ok && Array.isArray(reposData.repos) ? reposData.repos : [];
-        }
-        setGithubFetchFailed(false);
-        setGithubErrorStatus(null);
-        setGithubErrorMessage("");
-      } else {
-        setGithubFetchFailed(true);
-        setGithubErrorStatus(githubResponse.status);
-        setGithubErrorMessage(githubData.error ?? "Could not load GitHub context");
-        setMessage(githubData.error ?? "Could not load GitHub context");
-      }
 
       const snapshot: TeamAdminSnapshot = {
         invites: nextInvites,
@@ -282,35 +237,50 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         accessRequests: nextAccess,
         providers: nextProviders,
         deliveryMode: nextDelivery,
-        ...nextGithub,
+        hubAccessByUser:
+          membersData.hubAccessByUser && typeof membersData.hubAccessByUser === "object"
+            ? membersData.hubAccessByUser
+            : {},
       };
       applySnapshot(snapshot);
       setFromCache(false);
       setCachedAt(null);
       setMembershipLoading(false);
-      setGithubLoading(false);
       await persistTeamAdminSnapshot(orgId, snapshot);
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh membership. Showing the last copy on this device.");
+        setMessage("Could not refresh the people list. Showing the last copy on this device.");
         setMembershipFetchFailed(false);
         setMembershipLoading(false);
-        setGithubLoading(false);
         return;
       }
       setMembershipFetchFailed(true);
       setMembershipLoading(false);
-      setGithubLoading(false);
     }
   }, [applySnapshot, orgId]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("github") === "connected") setMessage("GitHub connected for this team.");
-    if (params.get("github") === "denied") setMessage("GitHub authorization was denied.");
-    if (params.get("github") === "error") setMessage(params.get("error") || "Could not connect GitHub.");
+    // GitHub moved to Connectors; old links and OAuth returns land there.
+    if (params.get("github") || window.location.hash === "#github-connection") {
+      window.location.replace(`/connectors/github${window.location.search}#github-connection`);
+      return;
+    }
     void load();
   }, [load, orgId]);
+
+  // Arriving from "Invite someone" / Home's "Invite your team": the form is at
+  // the top already, so put the cursor in Email, once.
+  useEffect(() => {
+    if (!view || focusedInvite.current || !wantsInvite()) return;
+    focusedInvite.current = true;
+    const input = emailRef.current;
+    if (!input) return;
+    document.getElementById("invite")?.scrollIntoView({ block: "start" });
+    input.focus({ preventScroll: true });
+  }, [view]);
+
   async function copyInviteLink(id: string, url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -319,31 +289,24 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setCopiedInviteId((current) => (current === id ? null : current));
       }, 2000);
     } catch {
-      // Copying is a convenience. The invite exists either way, and its link is in the list below.
-      setInviteNotice((current) => ({
-        tone: current?.tone === "ok" ? "ok" : "warn",
-        message: `${current?.message ? `${current.message} ` : ""}Copy its link from the list below.`,
-      }));
+      // Copying is a convenience; the Copy link button stays beside the message.
     }
   }
 
-  /** Change a member's role or take them off the team (PATCH /api/organizations/members). */
-  async function changeMember(member: Member, action: "set_role" | "remove", role?: string) {
+  /** Take someone off the team (PATCH /api/organizations/members). */
+  async function removeMember(member: Member) {
     if (memberBusyId) return;
     setMemberBusyId(member.userId);
     try {
       const response = await fetch("/api/organizations/members", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, userId: member.userId, action, role }),
+        body: JSON.stringify({ orgId, userId: member.userId, action: "remove" }),
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
-      const who = member.name || member.email;
       setMessage(
         response.ok
-          ? action === "remove"
-            ? `${who} is no longer on the team.`
-            : `${who} is now ${ROLE_WORDS[role ?? ""] ?? role}.`
+          ? `${member.name || member.email} is no longer on the team.`
           : (data.error ?? "That didn't save. Try again."),
       );
       if (response.ok) await load();
@@ -356,6 +319,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     event.preventDefault();
     if (inviteBusy) return;
     setInviteBusy(true);
+    setInviteNotice(null);
     try {
       const response = await fetch("/api/organizations/invites", {
         method: "POST",
@@ -371,7 +335,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         error?: string;
       };
       if (!response.ok) {
-        setInviteNotice({ tone: "error", message: data.error ?? "Could not create invitation." });
+        setInviteNotice({ tone: "error", message: data.error ?? "Could not create the invite." });
         return;
       }
       const result = inviteSendResultCopy({
@@ -379,11 +343,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         delivery: data.delivery ?? "failed",
         emailError: data.emailError,
       });
-      setInviteNotice({ tone: result.tone, message: `Invite ready for ${email.trim()}. ${result.message}` });
-      if (data.id && data.inviteUrl) {
-        setInviteLinks((current) => ({ ...current, [data.id!]: data.inviteUrl! }));
-        await copyInviteLink(data.id, data.inviteUrl);
-      }
+      const link = data.id && data.inviteUrl ? { id: data.id, url: data.inviteUrl } : null;
+      setInviteNotice({ tone: result.tone, message: `Invite ready for ${email.trim()}. ${result.message}`, link });
+      if (link) setInviteLinks((current) => ({ ...current, [link.id]: link.url }));
       setEmail("");
       await load();
     } finally {
@@ -391,14 +353,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }
   }
 
-  async function act(inviteId: string, action: "resend" | "revoke") {
+  async function act(inviteId: string, action: "resend" | "revoke" | "copy") {
     if (actingInviteId) return;
     setActingInviteId(inviteId);
+    const target = invites.find((invite) => invite.id === inviteId);
     try {
       const response = await fetch("/api/organizations/invites", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, inviteId, action }),
+        // "copy" on a row whose link we don't hold makes a fresh one — that is a resend.
+        body: JSON.stringify({ orgId, inviteId, action: action === "copy" ? "resend" : action }),
       });
       const data = (await response.json()) as {
         inviteUrl?: string;
@@ -410,28 +374,32 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       if (!response.ok) {
         setInviteNotice({
           tone: "error",
-          message: data.error ?? `Could not ${action} invitation.`,
+          message: data.error ?? `Could not ${action === "revoke" ? "revoke" : "resend"} that invite.`,
         });
         return;
       }
-      if (action === "resend") {
-        setInviteNotice(
-          inviteSendResultCopy({
-            emailSent: Boolean(data.emailSent),
-            delivery: data.delivery ?? "failed",
-            emailError: data.emailError,
-          }),
-        );
-        if (data.inviteUrl) {
-          setInviteLinks((current) => ({ ...current, [inviteId]: data.inviteUrl! }));
-          await copyInviteLink(inviteId, data.inviteUrl);
-        }
-      } else {
-        setInviteNotice({ tone: "ok", message: "Invite revoked." });
+      if (action === "revoke") {
+        setInviteNotice({ tone: "ok", message: `Invite to ${target?.email ?? "that person"} revoked.` });
         setInviteLinks((current) => {
           const next = { ...current };
           delete next[inviteId];
           return next;
+        });
+      } else {
+        const result = inviteSendResultCopy({
+          emailSent: Boolean(data.emailSent),
+          delivery: data.delivery ?? "failed",
+          emailError: data.emailError,
+        });
+        const link = data.inviteUrl ? { id: inviteId, url: data.inviteUrl } : null;
+        if (link) {
+          setInviteLinks((current) => ({ ...current, [inviteId]: link.url }));
+          if (action === "copy") await copyInviteLink(inviteId, link.url);
+        }
+        setInviteNotice({
+          tone: result.tone,
+          message: `${action === "copy" ? "Fresh link for" : "Invite sent again to"} ${target?.email ?? "them"}. ${result.message}`,
+          link,
         });
       }
       await load();
@@ -439,6 +407,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       setActingInviteId(null);
     }
   }
+
   async function reviewAccess(requestId: string, decision: "approved" | "declined", role: "scout" | "viewer" = "viewer") {
     const response = await fetch("/api/organizations/access-requests", {
       method: "PATCH",
@@ -449,12 +418,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     setMessage(
       response.ok
         ? decision === "approved"
-          ? "Access approved. Existing onboarding sessions were ended and a secure sign-in link was emailed."
-          : "Access request declined."
+          ? "Approved. We emailed them a sign-in link."
+          : "Request declined."
         : data.error,
     );
     if (response.ok) await load();
   }
+
   async function sendPasswordReset(member: Member) {
     if (resetBusyUserId) return;
     setResetBusyUserId(member.userId);
@@ -467,7 +437,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       const data = await response.json();
       setMessage(
         response.ok
-          ? `Password reset email sent to ${member.email}. They set the new password themselves; existing sessions end when the reset completes.`
+          ? `Password reset email sent to ${member.email}. They choose the new password themselves.`
           : data.error ?? "Could not send the password reset email.",
       );
     } finally {
@@ -476,7 +446,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   }
 
   async function providerAction(id: string, action: "test" | "disable") {
-    if (action === "disable" && !confirm("Disable this custom provider? Chat/CAD routes using it will stop.")) return;
     const response = await fetch("/api/organizations/providers", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -488,109 +457,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       return;
     }
     if (action === "test" && data.relayRequired) {
-      setMessage("Local relay providers must be tested from the paired desktop relay.");
+      setMessage("Test this one from the paired desktop app.");
     } else {
-      setMessage(action === "test" ? "Provider health check passed." : "Provider disabled.");
+      setMessage(action === "test" ? "It works." : "Turned off.");
     }
     await load();
   }
 
-  async function connectGitHubOAuth() {
-    setGithubBusy(true);
-    try {
-      const response = await fetch("/api/github", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "authorize-url" }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setMessage(data.error ?? "Could not start GitHub sign-in");
-        return;
-      }
-      window.location.href = data.url;
-    } finally {
-      setGithubBusy(false);
-    }
-  }
-
-  async function saveGitHubPat(event: React.FormEvent) {
-    event.preventDefault();
-    setGithubBusy(true);
-    try {
-      const response = await fetch("/api/github", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "connect-pat", pat: githubPat }),
-      });
-      const data = await response.json();
-      setMessage(response.ok ? "GitHub token saved for this team." : data.error);
-      if (response.ok) {
-        setGithubPat("");
-        await load();
-      }
-    } finally {
-      setGithubBusy(false);
-    }
-  }
-
-  async function setGitHubDefaultRepo(event: React.FormEvent) {
-    event.preventDefault();
-    if (!defaultRepo.trim()) return;
-    setGithubBusy(true);
-    try {
-      const response = await fetch("/api/github", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "set-default-repo", repoFullName: defaultRepo.trim() }),
-      });
-      const data = await response.json();
-      setMessage(response.ok ? `Default robot-code repo set to ${data.defaultRepo?.fullName}.` : data.error);
-      if (response.ok) await load();
-    } finally {
-      setGithubBusy(false);
-    }
-  }
-
-  async function disconnectGitHub() {
-    if (!confirm("Disconnect GitHub for this team? AI chat will stop using repo file context.")) return;
-    setGithubBusy(true);
-    try {
-      const response = await fetch("/api/github", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "disconnect" }),
-      });
-      const data = await response.json();
-      setMessage(response.ok ? "GitHub disconnected." : data.error);
-      if (response.ok) await load();
-    } finally {
-      setGithubBusy(false);
-    }
-  }
-
-  const githubConnected = Boolean(githubConnection);
-  const githubShell = classifyGitHubShell({
-    loading: githubLoading,
-    fetchFailed: githubFetchFailed,
-    hasOrgs: true,
-    orgId,
-    connected: githubConnected,
-  });
-  const githubCopy = githubShellCopy(githubShell);
   const online = typeof navigator === "undefined" ? true : navigator.onLine;
   const nextPath =
     typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`;
-  const githubFailure =
-    githubShell === "error"
-      ? loadFailureCopy(
-          classifyLoadFailure({ status: githubErrorStatus, message: githubErrorMessage, online }),
-          { nextPath, message: githubErrorMessage || githubCopy.description },
-        )
-      : null;
-
-  const pendingInvites = invites.filter((invite) => invite.status === "pending").length;
-  const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
   const deliveryBanner = inviteDeliveryBanner(deliveryMode);
   const membershipShell = classifyTeamAdminShell({
     loading: membershipLoading,
@@ -611,22 +487,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           { nextPath, message: membershipErrorMessage || membershipCopy.description },
         )
       : null;
-  const membershipCardPrimary =
-    membershipShell === "empty"
-      ? "#invite-form"
-      : membershipShell === "setup"
-        ? teamAdminCardPrimaryHref(orgId)
-        : null;
-  const membershipActions = teamAdminNextActions({
-    orgId,
-    shell: membershipShell,
-    memberCount: members.length,
-    pendingInviteCount: pendingInvites,
-    pendingAccessCount: pendingAccess,
-  }).filter((action) => !membershipCardPrimary || action.href !== membershipCardPrimary);
-  const membershipRelated = teamAdminRelatedLinks(orgId, {
-    include: [...TEAM_ADMIN_RELATED_INCLUDE],
-  });
+
+  const header = (
+    <PageHeader
+      breadcrumbs="Team / Admin"
+      title="Team admin"
+      description="Invite people and choose what each person can open."
+    >
+      <TeamSettingsLinks orgId={orgId} />
+    </PageHeader>
+  );
 
   if (!view) {
     const copy = membershipFailure
@@ -639,18 +509,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         };
     return (
       <main className="module-page team-admin-page">
-        <PageHeader
-          breadcrumbs="Team / Admin"
-          title="Team admin"
-          description="Invite teammates by exact email. People without an invite go to the waitlist."
-        >
-          <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
-            {membershipRelated.map((link) => (
-              <a key={link.id} href={link.href}>{link.label}</a>
-            ))}
-          </nav>
-        </PageHeader>
-        <TeamOpsNav orgId={orgId} active="admin" />
+        {header}
         <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
@@ -683,145 +542,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
   return (
     <main className="module-page team-admin-page">
-      {/* No related strip in the header.
-          `membershipRelated` was rendered here *and* inside the membership
-          panel below, so Account, Discord and Connectors were each two
-          buttons on one screen — and the "More team admin links" row repeated
-          all three a third time. The panel keeps its copy, because that is
-          where the links mean something: beside the members they relate to. */}
-      <PageHeader
-        breadcrumbs="Team / Admin"
-        title="Team admin"
-        description="Invite teammates by exact email. People without an invite go to the waitlist."
-      />
-      <TeamOpsNav orgId={orgId} active="admin" />
+      {header}
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
 
-      <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">
-        <span className="eyebrow">MEMBERS &amp; INVITES</span>
-        <h2 id="membership-title">{membershipCopy.title}</h2>
-        <p className="app-muted">{membershipCopy.description}</p>
-        {membershipShell === "ready" ? (
-          <div className="team-admin-invite-cta">
-            <Button as="a" variant="primary" href="#invite-form">
-              Invite someone
-            </Button>
-          </div>
-        ) : null}
-        <nav className="product-hub-related team-admin-related" aria-label="Related membership tools">
-          {membershipRelated.map((link) => (
-            <a key={link.id} href={link.href}>{link.label}</a>
-          ))}
-        </nav>
-
-        {membershipShell === "loading" || membershipShell === "error" ? (
-          <EmptyState
-            soft
-            badge={membershipFailure ? membershipFailure.badge : undefined}
-            badgeTone="setup"
-            title={membershipFailure ? membershipFailure.title : membershipCopy.title}
-            description={
-              membershipFailure ? membershipFailure.description : membershipCopy.description
-            }
-            aria-busy={membershipShell === "loading"}
-          >
-            {membershipFailure?.primary ? (
-              <Button as="a" variant="primary" href={membershipFailure.primary.href}>
-                {membershipFailure.primary.label}
-              </Button>
-            ) : null}
-            {membershipFailure?.showRetry ? (
-              <Button variant="secondary" type="button" onClick={() => void load()}>
-                Retry
-              </Button>
-            ) : null}
-          </EmptyState>
-        ) : null}
-
-        {membershipShell === "empty" ? (
-          <EmptyState
-            soft
-            badge={membershipCopy.badge}
-            badgeTone="setup"
-            title={membershipCopy.title}
-            description={membershipCopy.description}
-          >
-            <Button as="a" variant="primary" href="#invite-form">
-              Invite an exact email
-            </Button>
-          </EmptyState>
-        ) : null}
-
-        {membershipShell === "ready" ? (
-          <MembershipNextActionsPanel actions={membershipActions} />
-        ) : null}
-
-        {membershipShell === "ready" ? (
-          <Panel className="team-admin-members invite-list" aria-label="Members list">
-            <span className="eyebrow">Members</span>
-            {members.map((member) => (
-              <article key={member.userId}>
-                <div>
-                  <strong>{member.name || member.email}</strong>
-                  <small>
-                    {member.email} · {formatInviteRole(member.role) ?? member.role}
-                    {member.joinedAt
-                      ? ` · joined ${new Date(member.joinedAt).toLocaleDateString()}`
-                      : ""}
-                  </small>
-                </div>
-                <div className="team-member-actions">
-                  {member.role !== "owner" &&
-                  member.userId !== actor.userId &&
-                  (member.role !== "admin" || actor.role === "owner") ? (
-                    <>
-                      <label className="team-member-role">
-                        <span className="sr-only">Role for {member.name || member.email}</span>
-                        <select
-                          value={member.role}
-                          disabled={memberBusyId === member.userId}
-                          onChange={(event) => {
-                            if (event.target.value === "admin") setPromoteTarget(member);
-                            else void changeMember(member, "set_role", event.target.value);
-                          }}
-                        >
-                          <option value="scout">Student</option>
-                          <option value="admin">Mentor / coach</option>
-                          <option value="viewer">Parent / guest</option>
-                        </select>
-                      </label>
-                      <Button
-                        variant="secondary"
-                        type="button"
-                        disabled={memberBusyId === member.userId}
-                        onClick={() => setRemoveTarget(member)}
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="text-button team-member-reset"
-                    disabled={resetBusyUserId === member.userId}
-                    onClick={() => setResetTarget(member)}
-                  >
-                    {resetBusyUserId === member.userId ? "Sending…" : "Password reset"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </Panel>
-        ) : null}
-      </section>
-
       <TeamAdminInvitesPanel
-        adminTenure={adminTenure}
         deliveryBanner={deliveryBanner}
+        tip={tenureTip(adminTenure)}
         email={email}
         setEmail={setEmail}
         role={role}
         setRole={setRole}
+        emailRef={emailRef}
         inviteBusy={inviteBusy}
         inviteNotice={inviteNotice}
         invites={invites}
@@ -832,27 +563,62 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onCopyLink={(id, url) => void copyInviteLink(id, url)}
         onAct={(inviteId, action) => void act(inviteId, action)}
       />
+
       <TeamAdminAccessPanel
         accessRequests={accessRequests}
-        message={message}
-        onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
+        message=""
+        onReview={(requestId, decision, reviewRole) => void reviewAccess(requestId, decision, reviewRole)}
       />
 
-      <ConfirmDialog
-        open={Boolean(promoteTarget)}
-        opts={
-          promoteTarget
-            ? {
-                title: `Make ${promoteTarget.name || promoteTarget.email} a mentor or coach?`,
-                body: "They'll be able to invite and remove people, change team settings, and add AI keys, like an admin.",
-                confirmLabel: "Make mentor / coach",
-              }
-            : null
-        }
-        onResolve={(ok) => {
-          const member = promoteTarget;
-          setPromoteTarget(null);
-          if (ok && member) void changeMember(member, "set_role", "admin");
+      {message ? (
+        <p className="team-admin-message" role="status">
+          {message}
+        </p>
+      ) : null}
+
+      {membershipShell === "loading" || membershipShell === "error" ? (
+        <EmptyState
+          soft
+          badge={membershipFailure ? membershipFailure.badge : undefined}
+          badgeTone="setup"
+          title={membershipFailure ? membershipFailure.title : membershipCopy.title}
+          description={membershipFailure ? membershipFailure.description : membershipCopy.description}
+          aria-busy={membershipShell === "loading"}
+        >
+          {membershipFailure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      ) : (
+        <TeamAdminPeople
+          members={members}
+          actorUserId={actor.userId}
+          actorRole={actor.role}
+          busyUserId={memberBusyId ?? resetBusyUserId}
+          onAccess={(member) => setAccessTarget(member)}
+          onPasswordReset={(member) => setResetTarget(member)}
+          onRemove={(member) => setRemoveTarget(member)}
+        />
+      )}
+
+      <TeamAdminProvidersPanel
+        orgId={orgId}
+        providers={providers}
+        onAction={(id, action) => void providerAction(id, action)}
+      />
+
+      <MemberAccessPanel
+        orgId={orgId}
+        member={accessTarget}
+        actorRole={actor.role}
+        actorUserId={actor.userId}
+        hubRows={accessTarget ? (hubAccessByUser[accessTarget.userId] ?? []) : []}
+        onClose={() => setAccessTarget(null)}
+        onSaved={async (text) => {
+          setMessage(text);
+          await load();
         }}
       />
 
@@ -871,117 +637,38 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onResolve={(ok) => {
           const member = removeTarget;
           setRemoveTarget(null);
-          if (ok && member) void changeMember(member, "remove");
+          if (ok && member) void removeMember(member);
         }}
       />
 
-      <ConfirmDialog
+      {/* Not destructive, so not the red confirm: a plain dialog with a normal button. */}
+      <Modal
         open={Boolean(resetTarget)}
-        opts={
+        onClose={() => setResetTarget(null)}
+        title="Send a password reset email?"
+        description={
           resetTarget
-            ? {
-                title: "Send password reset email",
-                body: `Email a password reset link to ${resetTarget.name || resetTarget.email} (${resetTarget.email})? This never sets a password — they choose a new one from the email, and their existing sessions end when the reset completes.`,
-                confirmLabel: "Send password reset",
-                tone: "destructive",
-              }
-            : null
+            ? `${resetTarget.name || resetTarget.email} (${resetTarget.email}) gets a link to choose a new password. Nothing changes until they use it.`
+            : undefined
         }
-        onResolve={(ok) => {
-          const member = resetTarget;
-          setResetTarget(null);
-          if (ok && member) void sendPasswordReset(member);
-        }}
-      />
-
-      <TeamProfilePanel orgId={orgId} />
-
-      <TeamBrandingPanel orgId={orgId} />
-
-      <section className="team-admin-more" aria-labelledby="team-admin-more-title">
-        <h2 id="team-admin-more-title">More settings</h2>
-      <nav className="settings-hub" aria-label="Team settings">
-        <a href={withOrgHref("/team/background", orgId)}>
-          <strong>Team background</strong>
-          <span>Mission, history, demographics for sponsors</span>
-        </a>
-        <a href={withOrgHref("/team/security", orgId)}>
-          <strong>Team security</strong>
-          <span>Sign-in rules and who can do what</span>
-        </a>
-        <a href={withOrgHref("/team/ai-keys", orgId)}>
-          <strong>AI keys</strong>
-          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
-        </a>
-        <a href={withOrgHref("/team/budgets", orgId)}>
-          <strong>Chat limits</strong>
-          <span>How much Chat can spend</span>
-        </a>
-        <a href={withOrgHref("/team/ai-policy", orgId)}>
-          <strong>AI rules</strong>
-          <span>Tools, spend alerts, approvals</span>
-        </a>
-        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
-          <strong>Prompt caching</strong>
-          <span>Reuse stable AI context blocks</span>
-        </a>
-        <a href={withOrgHref("/team/ai-memory", orgId)}>
-          <strong>AI memory</strong>
-          <span>What Ask AI remembers</span>
-        </a>
-        <a href={withOrgHref("/team/data", orgId)}>
-          <strong>Live data</strong>
-          <span>Public match results</span>
-        </a>
-        <a href={withOrgHref("/team/discord", orgId)}>
-          <strong>Discord</strong>
-          <span>Guild, announcements, chat bridge</span>
-        </a>
-        <a href={withOrgHref("/team/slack", orgId)}>
-          <strong>Slack</strong>
-          <span>Two-way team chat bridge</span>
-        </a>
-        <a href="#github-connection">
-          <strong>GitHub</strong>
-          <span>Robot-code context for AI.</span>
-        </a>
-        <a href="/account?tab=notifications">
-          <strong>Notification prefs</strong>
-          <span>In-app and email opt-ins</span>
-        </a>
-        <a href="/connectors">
-          <strong>Connectors</strong>
-          <span>Google Sheets, Discord, Slack and more</span>
-        </a>
-      </nav>
-      </section>
-
-      <TeamAdminGitHubPanel
-        githubShell={githubShell}
-        githubCopy={githubCopy}
-        githubFailure={githubFailure}
-        githubLoading={githubLoading}
-        githubOAuthSetupRequired={githubOAuthSetupRequired}
-        githubOAuthMessage={githubOAuthMessage}
-        githubCredentialRejected={githubCredentialRejected}
-        githubConnection={githubConnection}
-        githubBusy={githubBusy}
-        githubPat={githubPat}
-        setGithubPat={setGithubPat}
-        githubRepos={githubRepos}
-        defaultRepo={defaultRepo}
-        setDefaultRepo={setDefaultRepo}
-        onRetry={() => void load()}
-        onConnectOAuth={() => void connectGitHubOAuth()}
-        onDisconnect={() => void disconnectGitHub()}
-        onSavePat={(event) => void saveGitHubPat(event)}
-        onSetDefaultRepo={(event) => void setGitHubDefaultRepo(event)}
-      />
-      <TeamAdminProvidersPanel
-        orgId={orgId}
-        providers={providers}
-        onAction={(id, action) => void providerAction(id, action)}
-      />
+      >
+        <div className="team-admin-dialog-actions">
+          <Button variant="secondary" type="button" onClick={() => setResetTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            type="button"
+            onClick={() => {
+              const member = resetTarget;
+              setResetTarget(null);
+              if (member) void sendPasswordReset(member);
+            }}
+          >
+            Send reset email
+          </Button>
+        </div>
+      </Modal>
     </main>
   );
 }

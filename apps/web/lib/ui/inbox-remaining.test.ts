@@ -54,12 +54,14 @@ describe("inbox remaining student chrome", () => {
     expect(prefs).toMatch(/if \(!view\)/);
     expect(prefs).not.toMatch(/fetchFailed \|\| !view/);
     expect(prefs).toMatch(/clearFeatureSnapshot/);
-    expect(prefs).toMatch(/Needs setup/);
+    // Honest email status: green only when email really goes out.
+    expect(prefs).toMatch(/Emails are off on this server/);
     expect(prefs).not.toMatch(/\bVantage\b/);
     expect(prefs).not.toMatch(/your notifications inbox/);
     const panel = readFileSync(join(WEB, "app/account/account-notifications-panel.tsx"), "utf8");
     expect(panel).toMatch(/variant="primary"/);
-    expect(panel).toMatch(/Needs setup/);
+    // One settings screen: the Account tab links to it.
+    expect(panel).toMatch(/\/notifications\/preferences/);
   });
 
   it("related strip and pref details stay student-readable", () => {

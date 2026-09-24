@@ -79,8 +79,8 @@ export default function DriveMediaCard({ orgId }: { orgId: string }) {
     <section className="app-card soft-panel connector-card drive-media-card" aria-labelledby="drive-media-title">
       <div className="connector-head">
         <div className="connector-identity">
-          <h2 id="drive-media-title">Photos and videos</h2>
-          {loaded ? <Badge tone={root ? "good" : "neutral"}>{root ? "Google Drive" : "Not set up"}</Badge> : null}
+          <h2 id="drive-media-title">Google Drive: photos and videos</h2>
+          {loaded ? <Badge tone={root ? "good" : "neutral"}>{root ? "Connected" : "Not set up"}</Badge> : null}
         </div>
         <p className="connector-detail">
           Keep match videos and robot photos in your own Google Drive folder. Vantage organizes it into folders and shows

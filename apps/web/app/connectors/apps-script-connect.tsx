@@ -142,51 +142,33 @@ export default function AppsScriptConnect({
 
   return (
     <details className="mirror-setup apps-script-connect" open={open}>
-      <summary>Connect with Apps Script — no Google Cloud needed</summary>
-      <ol>
+      <summary>Connect Google Sheets</summary>
+      <ol className="apps-script-steps">
         <li>
-          Open the Google spreadsheet Vantage should keep up to date (or make a new one), then choose{" "}
+          Open the Google spreadsheet to keep up to date (or make a new one), then choose{" "}
           <strong>Extensions → Apps Script</strong>.
         </li>
-        <li>Replace everything in the editor with the script below and save.</li>
         <li>
-          <strong>Deploy → New deployment</strong>, type <strong>Web app</strong>, Execute as <strong>Me</strong>, Who has
-          access <strong>Anyone</strong>. Authorize it, then copy the web app address.
+          Press <strong>Copy script</strong> below, replace everything in the Apps Script editor with it, and save.
+          <div className="connector-actions">
+            <Button variant="secondary" size="sm" type="button" disabled={!source} onClick={() => void copyScript()}>
+              {copied ? "Copied" : "Copy script"}
+            </Button>
+          </div>
         </li>
-        <li>Paste the address here and press Connect.</li>
+        <li>
+          Choose <strong>Deploy → New deployment</strong>. Set the type to <strong>Web app</strong>, Execute as{" "}
+          <strong>Me</strong>, and Who has access to <strong>Anyone</strong>. Press Deploy and allow access.
+        </li>
+        <li>
+          Copy the <strong>Web app URL</strong> Google shows (it ends in <code>/exec</code>), paste it below and press
+          Connect.
+        </li>
       </ol>
-      <p>
-        &quot;Anyone&quot; only lets the address be called: the script refuses every request that is not signed with the
-        secret, and it only touches this spreadsheet and your team's media folder.
-      </p>
       <div className="apps-script-fields">
         <TextField
-          label="Secret"
-          help="Already set up the script? Paste the secret from the top of it instead."
-          value={secret}
-          onChange={(event) => setSecret(event.target.value)}
-          error={secret && !secretOk ? "The secret is 64 letters and digits (0–9, a–f)." : undefined}
-          spellCheck={false}
-          autoComplete="off"
-          wide
-        />
-        <TextareaField
-          label="Script"
-          value={source}
-          readOnly
-          rows={6}
-          spellCheck={false}
-          onFocus={(event) => event.currentTarget.select()}
-          wide
-        />
-        <div className="connector-actions">
-          <Button variant="secondary" size="sm" type="button" disabled={!source} onClick={() => void copyScript()}>
-            {copied ? "Copied" : "Copy script"}
-          </Button>
-        </div>
-        <TextField
-          label="Web app address"
-          placeholder="https://script.google.com/macros/s/…/exec"
+          label="Web app URL"
+          placeholder="e.g. https://script.google.com/macros/s/…/exec"
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           error={url && !urlOk ? "Use the address that starts with https://script.google.com/macros/s/ and ends with /exec." : undefined}
@@ -206,6 +188,33 @@ export default function AppsScriptConnect({
           {busy ? "Checking the script…" : "Connect"}
         </Button>
       </div>
+      {/* The secret is built into the copied script; most people never need to see it. */}
+      <details className="apps-script-advanced">
+        <summary>Advanced: script text and secret</summary>
+        <p className="app-muted">
+          &quot;Anyone&quot; only lets the address be called: the script refuses every request that isn&apos;t signed
+          with this secret, and it only touches this spreadsheet and your team&apos;s media folder.
+        </p>
+        <TextField
+          label="Secret"
+          help="Already set up the script before? Paste the secret from the top of it instead."
+          value={secret}
+          onChange={(event) => setSecret(event.target.value)}
+          error={secret && !secretOk ? "The secret is 64 letters and digits (0–9, a–f)." : undefined}
+          spellCheck={false}
+          autoComplete="off"
+          wide
+        />
+        <TextareaField
+          label="Script"
+          value={source}
+          readOnly
+          rows={6}
+          spellCheck={false}
+          onFocus={(event) => event.currentTarget.select()}
+          wide
+        />
+      </details>
     </details>
   );
 }

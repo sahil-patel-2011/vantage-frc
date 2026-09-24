@@ -11,10 +11,6 @@ import { isBusinessPortalView, type BusinessPortalView } from "../../lib/busines
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { BUSINESS_FUNDING_RELATED_INCLUDE } from "../../lib/business/business-related";
-import {
-  businessDefaultTab,
-  fundingModelFromFlags,
-} from "../../lib/funding-profile";
 import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";
 import { sectionHelpFor } from "../../lib/help/section-help";
 import {
@@ -178,25 +174,9 @@ export default function BusinessClient() {
 
   const live = view?.status === "live" ? view : null;
   const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
-  const appliedFundingDefault = useRef(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !live || appliedFundingDefault.current) return;
-    if (new URLSearchParams(window.location.search).get("tab")) {
-      appliedFundingDefault.current = true;
-      return;
-    }
-    appliedFundingDefault.current = true;
-    const model = fundingModelFromFlags({
-      schoolFunded: Boolean(live.schoolFunded),
-      sponsorsAllowed: live.sponsorsAllowed !== false,
-    });
-    const next = businessDefaultTab(model);
-    if (isTab(next) && next !== tab) {
-      setTab(next);
-      writeTabToUrl(next);
-    }
-  }, [live, tab]);
+  // /business always opens on Overview unless the link names a tab. Jumping to
+  // Money or Sponsors based on how the team is funded made the page open
+  // somewhere different each time.
   const visibleWorkbenches = useMemo(
     () =>
       filterTabsByHubAccess(

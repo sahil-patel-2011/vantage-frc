@@ -18,11 +18,10 @@
  *
  * WHAT IT REFUSES TO DO:
  *  - No budget set => `remainingUsd` is null. Not zero, not the spend negated.
- *  - Budget set but NOTHING recorded => `remainingUsd` is STILL null, and the
- *    state is `budget_no_spend`. "$0 spent, 100% left" is a lie the data cannot
- *    support: an empty ledger means nobody has entered anything, which is not
- *    the same as nothing having been spent. Two flattering defaults have
- *    already shipped in this codebase; this is not the third.
+ *  - Budget set but NOTHING recorded => `remainingUsd` is the whole budget and
+ *    the state is `budget_no_spend`, so every money screen can say "no spending
+ *    recorded yet" beside it. Owners read a dash here as "the budget did not
+ *    save"; the full budget with that note is the honest reading of the data.
  *  - BOM estimates (counts_in_balance = false) are never counted as spend.
  *
  * Pure functions below the SQL are unit-tested in compute-budget.test.ts.
@@ -36,7 +35,7 @@ export type BudgetState =
   | "no_budget_no_spend"
   /** Real recorded spend, but no budget to measure it against. */
   | "no_budget"
-  /** A budget exists, but the ledger is empty — so nothing can be subtracted. */
+  /** A budget exists and the ledger is empty — remaining is the whole budget. */
   | "budget_no_spend"
   /** A budget and real spend. The only state with a remaining number. */
   | "tracking"
@@ -46,7 +45,7 @@ export type BudgetState =
 export type BudgetSummary = {
   totalBudgetUsd: number | null;
   recordedSpendUsd: number;
-  /** Non-null ONLY in `tracking` / `over`. See the module comment. */
+  /** Null only while no budget is set. See the module comment. */
   remainingUsd: number | null;
   /** 0–n against a positive budget; null when there is nothing honest to divide. */
   consumedRatio: number | null;
@@ -149,8 +148,8 @@ export function summarizeBudget(input: {
     return {
       totalBudgetUsd: budgetCents / 100,
       recordedSpendUsd,
-      remainingUsd: null,
-      consumedRatio: null,
+      remainingUsd: budgetCents / 100,
+      consumedRatio: budgetCents > 0 ? 0 : null,
       state: "budget_no_spend",
     };
   }
@@ -176,10 +175,7 @@ export function describeBudget(summary: BudgetSummary): string {
     case "no_budget":
       return `${money(summary.recordedSpendUsd)} of real spending is recorded, with no budget to measure it against.`;
     case "budget_no_spend":
-      return (
-        `${money(summary.totalBudgetUsd ?? 0)} budgeted. Nothing has been recorded against it yet, ` +
-        "so there is no remaining figure — an empty ledger means nothing has been entered, not that nothing has been spent."
-      );
+      return `${money(summary.totalBudgetUsd ?? 0)} budgeted. No spending is recorded yet, so all of it is still available.`;
     case "over":
       return `${money(summary.recordedSpendUsd)} recorded against ${money(summary.totalBudgetUsd ?? 0)} — over by ${money(Math.abs(summary.remainingUsd ?? 0))}.`;
     default:

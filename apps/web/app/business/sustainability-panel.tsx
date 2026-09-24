@@ -96,7 +96,7 @@ export default function SustainabilityPanel({
           <Button as="a" variant="ghost"
             href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}
           >
-            Open the finance desk
+            Record funding in Money
           </Button>
         </>
       ) : (

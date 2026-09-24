@@ -5,29 +5,12 @@ import { describe, expect, it } from "vitest";
 const DIR = __dirname;
 
 describe("Team security last snapshot stays on the phone", () => {
-  it("hub access reads and writes the hub-access IndexedDB feature cache", () => {
-    const src = readFileSync(join(DIR, "hub-access-client.tsx"), "utf8");
-    expect(src).toMatch(/getFeatureSnapshot/);
-    expect(src).toMatch(/putFeatureSnapshot/);
-    expect(src).toMatch(/"hub-access"/);
-    expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Team security"/);
-    expect(src).toMatch(/rosterReady && !editable.length/);
-    expect(src).toMatch(/Owners and admins set hub access/);
-  });
-
-  it("capabilities reads and writes the member-capabilities IndexedDB feature cache", () => {
-    const src = readFileSync(join(DIR, "capabilities-client.tsx"), "utf8");
-    expect(src).toMatch(/getFeatureSnapshot/);
-    expect(src).toMatch(/putFeatureSnapshot/);
-    expect(src).toMatch(/"member-capabilities"/);
-    expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Team security"/);
-    expect(src).not.toMatch(/API keys/);
-    expect(src).toMatch(/rosterReady && !editable.length/);
-    expect(src).toMatch(/Owners and admins grant extra powers/);
-    expect(src).toMatch(/\/team\/admin\?orgId=/);
-    expect(src).not.toMatch(/href=\{`\/team\?orgId=/);
+  it("points to Team admin Access instead of repeating the member list", () => {
+    const src = readFileSync(join(DIR, "policy-client.tsx"), "utf8");
+    expect(src).toMatch(/Who can open what/);
+    expect(src).toMatch(/#people/);
+    const page = readFileSync(join(DIR, "page.tsx"), "utf8");
+    expect(page).not.toMatch(/HubAccessClient|CapabilitiesClient/);
   });
 
   it("sign-in policy reads and writes the auth-policy IndexedDB feature cache", () => {

@@ -208,8 +208,10 @@ export function rollupSeasonFinance(input: {
       : input.fundraisingGoalCents + input.fundraiserGoalCents;
   const receivedIncomeCents =
     fundingReceivedCents + input.sponsorCashCents + input.grantAwardedCents + input.fundraiserProceedsCents;
+  // The season budget (set on /budget) is the plan. Category allocations only
+  // stand in while no season budget exists.
   const plannedSpendCents =
-    input.categoryAllocatedCents > 0 ? input.categoryAllocatedCents : input.operatingBudgetCents;
+    input.operatingBudgetCents > 0 ? input.operatingBudgetCents : input.categoryAllocatedCents;
   const actualSpendCents = purchaseLogCents + input.poSpentCents + input.seasonCostsPaidCents;
   const committedSpendCents = purchaseLogCents + input.poCommittedCents + input.seasonCostsPaidCents;
 
@@ -299,10 +301,21 @@ export async function computeSeasonFinanceView(
       costsResult,
       seasonsResult,
     ] = await Promise.all([
+      // The /budget number (season_budgets) is the season budget; the older
+      // operating budget here is only a fallback for teams that never set one.
       client.query<{ totalBudgetUsd: string; fundraisingGoalUsd: string }>(
-        `SELECT COALESCE(operating_budget_usd, 0)::text AS "totalBudgetUsd",
-                COALESCE(fundraising_goal_usd, 0)::text AS "fundraisingGoalUsd"
-         FROM finance_season_settings WHERE org_id = $1 AND season_year = $2`,
+        `SELECT COALESCE(
+                  (SELECT sb.total_budget_usd FROM season_budgets sb
+                    WHERE sb.org_id = $1::uuid AND sb.season_year = $2::int),
+                  (SELECT fs.operating_budget_usd FROM finance_season_settings fs
+                    WHERE fs.org_id = $1::uuid AND fs.season_year = $2::int),
+                  0
+                )::text AS "totalBudgetUsd",
+                COALESCE(
+                  (SELECT fs.fundraising_goal_usd FROM finance_season_settings fs
+                    WHERE fs.org_id = $1::uuid AND fs.season_year = $2::int),
+                  0
+                )::text AS "fundraisingGoalUsd"`,
         [orgId, seasonYear],
       ),
       client.query<{ id: string; name: string; allocatedUsd: string }>(

@@ -88,9 +88,19 @@ export async function loadBusinessView(
     monthResult,
     seasonsResult,
   ] = await Promise.all([
-    client.query<{ totalBudgetUsd: string; fundraisingGoalUsd: string }>(
-      `SELECT operating_budget_usd::text AS "totalBudgetUsd", fundraising_goal_usd::text AS "fundraisingGoalUsd"
-       FROM finance_season_settings WHERE org_id = $1 AND season_year = $2`,
+    // One season budget everywhere: the number set on /budget (season_budgets)
+    // wins; the older Business-only operating budget is only a fallback. RLS
+    // hides season_budgets from people without budget access, so they fall
+    // back exactly as before.
+    client.query<{ totalBudgetUsd: string | null; fundraisingGoalUsd: string | null }>(
+      `SELECT COALESCE(
+                (SELECT sb.total_budget_usd FROM season_budgets sb
+                  WHERE sb.org_id = $1::uuid AND sb.season_year = $2::int),
+                (SELECT fs.operating_budget_usd FROM finance_season_settings fs
+                  WHERE fs.org_id = $1::uuid AND fs.season_year = $2::int)
+              )::text AS "totalBudgetUsd",
+              (SELECT fs.fundraising_goal_usd FROM finance_season_settings fs
+                WHERE fs.org_id = $1::uuid AND fs.season_year = $2::int)::text AS "fundraisingGoalUsd"`,
       [orgId, seasonYear],
     ),
     client.query<{ id: string; name: string; allocatedUsd: string }>(
@@ -376,6 +386,7 @@ export async function loadBusinessView(
     sponsorsAllowed: org.sponsorsAllowed ?? null,
     budget: {
       totalBudgetCents,
+      seasonBudgetCents: configuredBudgetCents,
       fundraisingGoalCents,
       sponsorIncomeCents,
       grantIncomeCents,

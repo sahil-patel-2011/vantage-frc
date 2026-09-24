@@ -202,3 +202,44 @@
   font-size: 14px;
   color: var(--ink);
 }
+
+/* "What you'll get" leads the card: tabs, timing, direction. */
+.mirror-what-you-get {
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
+}
+.mirror-what-you-get h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.mirror-what-you-get ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.apps-script-steps {
+  display: grid;
+  gap: 10px;
+  padding-left: 1.3rem;
+  line-height: 1.5;
+}
+.apps-script-steps .connector-actions {
+  margin-top: 6px;
+}
+.apps-script-advanced {
+  margin-top: 12px;
+}
+.apps-script-advanced > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+}

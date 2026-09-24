@@ -15,8 +15,8 @@ import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("githubConnectionHref", () => {
   it("targets Team admin #github-connection via withOrgHref", () => {
-    expect(githubConnectionHref("org-1")).toBe("/team/admin?orgId=org-1#github-connection");
-    expect(githubConnectionHref(null)).toBe("/team/admin#github-connection");
+    expect(githubConnectionHref("org-1")).toBe("/connectors/github?orgId=org-1#github-connection");
+    expect(githubConnectionHref(null)).toBe("/connectors/github#github-connection");
   });
 });
 
@@ -40,7 +40,7 @@ describe("githubRelatedLinks", () => {
 describe("githubSetupSteps", () => {
   it("uses hubHref / withOrgHref and never DEMO repos", () => {
     const steps = githubSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "pat")?.href).toBe("/team/admin?orgId=org-1#github-connection");
+    expect(steps.find((s) => s.id === "pat")?.href).toBe("/connectors/github?orgId=org-1#github-connection");
     expect(steps.find((s) => s.id === "code")?.href).toBe("/build?tab=code&orgId=org-1");
     expect(steps.find((s) => s.id === "pair")?.href).toBe("/editor/pair?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);

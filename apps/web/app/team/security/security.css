@@ -58,3 +58,21 @@
 @media (max-width: 600px) {
   .member-access-row > :not(summary) { margin-left: 0.6rem; margin-right: 0.6rem; }
 }
+
+/* Same width as the sign-in card above it. */
+.team-security-page .auth-policy-form {
+  width: 100%;
+  max-width: none;
+}
+.team-security-access-pointer {
+  margin-top: 16px;
+}
+.team-security-page .auth-policy-form > button,
+.team-security-page .auth-policy-form > a {
+  justify-self: start;
+  width: auto;
+}
+.team-security-page .auth-policy-form select {
+  min-height: 44px;
+  font-size: 16px;
+}

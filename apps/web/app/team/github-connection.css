@@ -82,3 +82,19 @@
 .github-oauth-note {
   margin: 0.75rem 0;
 }
+
+.github-token > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.github-token-steps {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 14px;
+}

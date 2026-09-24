@@ -27,23 +27,21 @@ describe("budget honesty", () => {
   });
 
   /**
-   * THE ONE THIS FEATURE EXISTS FOR. A $25,000 budget with an empty ledger must
-   * not report "$25,000 remaining, 0% used" — that reads as a healthy season
-   * when it actually means nobody has entered anything. Two flattering defaults
-   * have already shipped here (a readiness score that rose the less a team
-   * entered; a battery score that rated an untested pack 100). Not a third.
+   * A $25,000 budget with an empty ledger shows $25,000 remaining. Owners read
+   * a dash as "my budget did not save"; the state still says nothing is
+   * recorded so every screen can print that beside the number.
    */
-  it("refuses to report a remaining balance when NOTHING has been recorded", () => {
+  it("reports the whole budget as remaining while nothing is recorded", () => {
     const summary = summarizeBudget({
       totalBudgetUsd: 25000,
       recordedSpendUsd: 0,
       recordedRowCount: 0,
     });
     expect(summary.state).toBe("budget_no_spend");
-    expect(summary.remainingUsd).toBeNull();
-    expect(summary.consumedRatio).toBeNull();
+    expect(summary.remainingUsd).toBe(25000);
+    expect(summary.consumedRatio).toBe(0);
     expect(summary.totalBudgetUsd).toBe(25000);
-    expect(describeBudget(summary)).toMatch(/nothing has been entered, not that nothing has been spent/i);
+    expect(describeBudget(summary)).toMatch(/No spending is recorded yet/i);
   });
 
   it("subtracts once a real row exists, even a zero-dollar one", () => {

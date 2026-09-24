@@ -170,16 +170,16 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
   return (
     <Card
       className="rpf"
-      title="Role profiles"
+      title="Presets"
       subtitle={
         canEdit
-          ? "Name the jobs on your team once, then give someone that job in one click. Applying a profile sets the same role, permissions and sections you could set by hand."
-          : "These are the named jobs on your team. An owner or admin is the one who applies them."
+          ? "Name the jobs on your team once, then give someone that job in one click. A preset sets the same role, sections and extra powers you could set by hand."
+          : "These are the named jobs on your team. An owner or mentor gives them out."
       }
       actions={
         draft || error || profiles === null || !canEdit ? null : (
           <Button variant="primary" onClick={() => setDraft(emptyDraft())}>
-            New profile
+            New preset
           </Button>
         )
       }
@@ -328,7 +328,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
                   </select>
                 </label>
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   disabled={busy || !applyTo[profile.key]}
                   onClick={() =>

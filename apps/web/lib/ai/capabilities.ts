@@ -265,7 +265,7 @@ export type ResolveAiCapabilitiesDeps = {
 const SETUP = {
   keys: { href: "/team/ai-keys", label: "Set up AI keys" },
   webKey: { href: "/team/ai-keys#ai-keys-web-title", label: "Add a TinyFish key" },
-  github: { href: "/team/admin", label: "Connect GitHub" },
+  github: { href: "/connectors/github", label: "Connect GitHub" },
   cad: { href: "/cad/connections", label: "Connect CAD" },
   budgets: { href: "/ai?tab=budgets", label: "Review AI limits" },
   governance: { href: "/ai?tab=governance", label: "Open AI governance" },
@@ -552,7 +552,7 @@ function checkRequirement(requirement: AiRequirement, agent: AiAgentDefinition, 
       if (proof?.linked) return null;
       return {
         reason: "missing_key:github",
-        sentence: `${agent.name} is off — GitHub isn't connected for this team. Connect it in Team admin.`,
+        sentence: `${agent.name} is off — GitHub isn't connected for this team. Connect it in Connectors.`,
         setup: SETUP.github,
       };
     }

@@ -27,11 +27,11 @@ export type GitHubRelatedLink = {
 export const GITHUB_RELATED_INCLUDE: GitHubRelatedId[] = ["pair", "code", "connections"];
 
 /**
- * Canonical Soft-UI deep link to the GitHub connection panel.
- * Lives on Team admin — never `/team` hub (no `#github-connection` there).
+ * Canonical deep link to the GitHub connection panel — its own page under
+ * Connectors, where every integration lives.
  */
 export function githubConnectionHref(orgId?: string | null): string {
-  return withOrgHref("/team/admin", orgId) + "#github-connection";
+  return withOrgHref("/connectors/github", orgId) + "#github-connection";
 }
 
 /**

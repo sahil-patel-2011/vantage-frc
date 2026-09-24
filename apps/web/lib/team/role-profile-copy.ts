@@ -10,23 +10,23 @@
 export const PROFILE_CAPABILITIES = [
   {
     id: "manage_members",
-    label: "Invite and manage members",
-    hint: "Send, resend and revoke invites. Does not let them hand out capabilities.",
+    label: "Invite and manage people",
+    hint: "Send, resend and cancel invites. They can't hand out extra powers.",
   },
   {
     id: "manage_team_settings",
     label: "Manage team settings",
-    hint: "Sign-in policy, the active event, and team preferences.",
+    hint: "How people sign in, the current event, and team preferences.",
   },
   {
     id: "manage_api_keys",
-    label: "Manage keys and connectors",
-    hint: "Provider keys, The Blue Alliance, model routing and AI budgets.",
+    label: "Manage AI keys and connectors",
+    hint: "AI keys, connected apps and how much AI the team can use.",
   },
   {
     id: "manage_billing",
     label: "Manage billing",
-    hint: "Checkout and the billing portal. Only an owner can grant this.",
+    hint: "The team's plan and payments. Only an owner can give this.",
   },
 ] as const;
 
@@ -40,15 +40,15 @@ export const PROFILE_HUBS = [
 ] as const;
 
 export const BASE_ROLE_COPY = {
-  admin: {
-    label: "Admin",
-    hint: "Full access to everything, including settings. Cannot be limited to certain hubs.",
-  },
   scout: {
-    label: "Member",
-    hint: "Works in the app: scouting, build, the calendar. Limit the hubs below.",
+    label: "Student",
+    hint: "Works in the app: scouting, build, the calendar. You can limit the sections below.",
   },
-  viewer: { label: "Viewer", hint: "Read-only. Good for parents, judges and alumni." },
+  admin: {
+    label: "Mentor or coach",
+    hint: "Can open everything and manage the team, including settings.",
+  },
+  viewer: { label: "Parent or guest", hint: "Can look, can't change. Good for parents, judges and alumni." },
 } as const;
 
 export type ProfileBaseRole = keyof typeof BASE_ROLE_COPY;

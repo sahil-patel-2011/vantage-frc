@@ -3,17 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
-import {
-  CONNECTIONS_RELATED_INCLUDE,
-  connectionsRelatedLinks,
-} from "../../../lib/account";
-import {
-  DISCORD_RELATED_INCLUDE,
-  discordNextActions,
-  discordRelatedLinks,
-  formatBridgePostCount,
-} from "../../../lib/discord-related";
+import { formatBridgePostCount } from "../../../lib/discord-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -78,72 +68,6 @@ async function persistDiscordSnapshot(orgId: string, data: DiscordView): Promise
   } catch {
     // Live Discord already painted; IndexedDB is best-effort.
   }
-}
-
-function DiscordRelated({ orgId }: { orgId: string }) {
-  const links = discordRelatedLinks(orgId, { include: [...DISCORD_RELATED_INCLUDE] });
-  const connectionLinks = connectionsRelatedLinks(orgId, {
-    active: "discord",
-    include: [...CONNECTIONS_RELATED_INCLUDE],
-  });
-  return (
-    <>
-      <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
-        {links.map((link) => (
-          <a key={link.href} href={link.href}>{link.label}</a>
-        ))}
-      </nav>
-      <nav className="product-hub-related team-discord-connections" aria-label="Related connection tools">
-        {connectionLinks.map((link) => (
-          <a key={link.href} href={link.href}>{link.label}</a>
-        ))}
-      </nav>
-    </>
-  );
-}
-
-function NextActions({
-  orgId,
-  view,
-}: {
-  orgId: string;
-  view: Pick<
-    DiscordView,
-    | "configured"
-    | "hasWebhook"
-    | "channelId"
-    | "platformConfigured"
-    | "chatBridgeEnabled"
-    | "bridgePosts"
-  > | null;
-}) {
-  const actions = discordNextActions({
-    orgId,
-    configured: view?.configured,
-    hasWebhook: view?.hasWebhook,
-    channelId: view?.channelId,
-    platformConfigured: view?.platformConfigured,
-    chatBridgeEnabled: view?.chatBridgeEnabled,
-    bridgePostedCount: view?.bridgePosts?.posted ?? null,
-  });
-  return (
-    <section className="team-discord-next-actions app-card soft-panel" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>From real Discord connection and bridge posts only — sync counts stay blank until messages post.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
 }
 
 export default function TeamDiscordClient({ orgId }: { orgId: string }) {
@@ -258,17 +182,17 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
     }
     setStatus(
       action === "save"
-        ? "Discord connection saved."
+        ? "Saved. Press Send test to check it."
         : action === "test"
-          ? "Test message posted to Discord."
+          ? "Test message sent. Check the channel in Discord."
           : action === "announce"
             ? "Announcement posted to Discord."
             : action === "disconnect"
               ? "Discord disconnected."
               : action === "set-bridge"
                 ? extra.chatBridgeEnabled
-                  ? "Chat bridge enabled."
-                  : "Chat bridge disabled."
+                  ? "Team chat copying is on."
+                  : "Team chat copying is off."
                 : "Done.",
     );
     await load();
@@ -309,9 +233,8 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         <PageHeader
           breadcrumbs="Team / Discord"
           title="Discord"
-          description="Link a guild and channel, post announcements, and optionally bridge object-linked team messages."
+          description="Post team announcements to a Discord channel."
         />
-        <TeamOpsNav orgId={orgId} active="admin" />
         <OfflineBanner feature="Discord" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
@@ -336,221 +259,157 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
 
   const postedCount = view.bridgePosts?.posted ?? null;
   const failedCount = view.bridgePosts?.failed ?? null;
-  const showEmptyShell = view.status === "empty";
-  const showSetupShell = view.status === "setup_required";
+  const channelName = view.channelLabel || view.guildName || "your Discord channel";
+
+  // One path: paste the channel's webhook link. Server/channel ids and the bot are under Advanced.
+  const connectForm = (
+    <form className="team-discord-connect" onSubmit={onSave}>
+      <ol className="team-discord-steps">
+        <li>In Discord, open the channel&apos;s settings (the gear next to its name).</li>
+        <li>
+          Choose <strong>Integrations → Webhooks → New Webhook</strong>, then press <strong>Copy Webhook URL</strong>.
+        </li>
+        <li>Paste the link below and press Save.</li>
+      </ol>
+      <label>
+        Channel webhook link
+        <input
+          type="url"
+          value={form.webhookUrl}
+          onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })}
+          placeholder={view.hasWebhook ? "Saved — paste a new link to change it" : "e.g. https://discord.com/api/webhooks/…"}
+          autoComplete="off"
+          required={!view.hasWebhook && !form.channelId}
+        />
+      </label>
+      <label>
+        Channel name (optional)
+        <input
+          value={form.channelLabel}
+          onChange={(e) => setForm({ ...form, channelLabel: e.target.value })}
+          placeholder="e.g. #announcements"
+        />
+      </label>
+      <details className="team-discord-advanced">
+        <summary>Advanced</summary>
+        <p className="app-muted">
+          Only needed if a mentor added the Vantage bot to your server instead of using a webhook. Turn on Developer
+          Mode in Discord to copy these numbers.
+        </p>
+        <label>
+          Server ID
+          <input
+            value={form.guildId}
+            onChange={(e) => setForm({ ...form, guildId: e.target.value })}
+            placeholder="e.g. 123456789012345678"
+            inputMode="numeric"
+          />
+        </label>
+        <label>
+          Server name
+          <input
+            value={form.guildName}
+            onChange={(e) => setForm({ ...form, guildName: e.target.value })}
+            placeholder="e.g. Team 254"
+          />
+        </label>
+        <label>
+          Channel ID
+          <input
+            value={form.channelId}
+            onChange={(e) => setForm({ ...form, channelId: e.target.value })}
+            placeholder="e.g. 987654321098765432"
+            inputMode="numeric"
+          />
+        </label>
+        <label className="soft-form-row check-field">
+          <input
+            type="checkbox"
+            checked={form.enabled}
+            onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
+          />
+          Posting is on
+        </label>
+        <label className="soft-form-row check-field">
+          <input
+            type="checkbox"
+            checked={form.chatBridgeEnabled}
+            onChange={(e) => setForm({ ...form, chatBridgeEnabled: e.target.checked })}
+          />
+          Also copy team chat messages that link to a task, part or file
+        </label>
+        {view.chatBridgeEnabled && postedCount != null ? (
+          <p className="app-muted">
+            Copied so far: {formatBridgePostCount(postedCount)}
+            {failedCount ? ` · didn't send: ${formatBridgePostCount(failedCount)}` : ""}
+          </p>
+        ) : null}
+        {view.inviteUrl ? (
+          <p>
+            <a href={view.inviteUrl} target="_blank" rel="noreferrer">
+              Add the Vantage bot to your server
+            </a>
+          </p>
+        ) : null}
+      </details>
+      <div className="team-discord-actions">
+        <Button variant={view.configured ? "secondary" : "primary"} type="submit" disabled={busy}>
+          {busy ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </form>
+  );
 
   return (
     <main className="module-page team-discord-page">
       <PageHeader
         breadcrumbs="Team / Discord"
         title="Discord"
-        description="Link a server and channel, post announcements, and optionally mirror Team Messages into Discord."
+        description="Post team announcements to a Discord channel."
       >
-        <div className="team-discord-header-actions">
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", orgId)}>
-            Messages
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team", orgId)}>
-            Team
-          </Button>
-        </div>
+        <nav className="team-admin-settings-links" aria-label="Related team tools">
+          <a href={withOrgHref("/connectors", orgId)}>‹ Connectors</a>
+          <a href={withOrgHref("/team?tab=messages", orgId)}>Team chat</a>
+        </nav>
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="admin" />
       <OfflineBanner feature="Discord" fromCache={fromCache} cachedAt={cachedAt} />
-      <DiscordRelated orgId={orgId} />
 
-      {showEmptyShell ? (
-        <EmptyState
-          soft
-          badge="Empty"
-          badgeTone="setup"
-          title="No Discord channel linked"
-          description={view.emptyReason ?? view.message}
-        >
-          <p className="app-muted">
-            Paste a channel webhook below, or set the server and channel IDs once a mentor has added the bot.
-            Bridge counts stay blank until a linked Team Message actually posts.
-          </p>
-        </EmptyState>
+      {status ? (
+        <p className={ok ? "team-discord-status ok" : "team-discord-status err"} role="status">
+          {status}
+        </p>
       ) : null}
 
-      {showSetupShell ? (
-        <EmptyState
-          soft
-          badge="Needs setup"
-          badgeTone="setup"
-          title="Posting path incomplete"
-          description={view.message}
-        >
-          {view.inviteUrl ? (
-            <Button as="a" variant="primary" href={view.inviteUrl} target="_blank" rel="noreferrer">
-              Open bot invite
-            </Button>
-          ) : (
-            <Button as="a" variant="primary" href={withOrgHref("/team?tab=messages", orgId)}>
-              Open Messages
-            </Button>
-          )}
-        </EmptyState>
-      ) : null}
-
-      {!view.platformConfigured && view.status === "live" ? (
-        <section className="app-card soft-panel team-discord-banner">
-          <span className="eyebrow">BOT OPTIONAL</span>
-          <h2>Platform Discord bot not configured</h2>
-          <p className="app-muted">
-            Webhook posting works. Ask a mentor to add the Discord bot on this deployment if you want
-            posts by channel id.
-          </p>
-          {view.inviteUrl ? (
-            <Button as="a" variant="secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
-              Open bot invite
-            </Button>
-          ) : null}
-        </section>
-      ) : null}
-
-      {view.status === "live" ? <NextActions orgId={orgId} view={view} /> : null}
-
-      <div className="team-discord-layout">
-        <form className="app-card soft-panel team-discord-panel" onSubmit={onSave}>
-          <span className="eyebrow">GUILD &amp; CHANNEL</span>
-          <h2>{view.configured ? "Update connection" : "Link Discord"}</h2>
-          <p className="app-muted">
-            Paste a channel webhook and/or server and channel IDs (Developer Mode in Discord).
-          </p>
-          <label>
-            Guild (server) id
-            <input
-              value={form.guildId}
-              onChange={(e) => setForm({ ...form, guildId: e.target.value })}
-              placeholder="123456789012345678"
-              inputMode="numeric"
-            />
-          </label>
-          <label>
-            Guild name
-            <input
-              value={form.guildName}
-              onChange={(e) => setForm({ ...form, guildName: e.target.value })}
-              placeholder="Team 254"
-            />
-          </label>
-          <label>
-            Channel id
-            <input
-              value={form.channelId}
-              onChange={(e) => setForm({ ...form, channelId: e.target.value })}
-              placeholder="987654321098765432"
-              inputMode="numeric"
-            />
-          </label>
-          <label>
-            Channel label
-            <input
-              value={form.channelLabel}
-              onChange={(e) => setForm({ ...form, channelLabel: e.target.value })}
-              placeholder="#announcements"
-            />
-          </label>
-          <label>
-            Channel webhook URL {view.hasWebhook ? "(leave blank to keep current)" : ""}
-            <input
-              type="url"
-              value={form.webhookUrl}
-              onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })}
-              placeholder="https://discord.com/api/webhooks/…"
-              autoComplete="off"
-            />
-          </label>
-          <label className="soft-form-row check-field">
-            <input
-              type="checkbox"
-              checked={form.enabled}
-              onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-            />
-            Posting enabled
-          </label>
-          <label className="soft-form-row check-field">
-            <input
-              type="checkbox"
-              checked={form.chatBridgeEnabled}
-              onChange={(e) => setForm({ ...form, chatBridgeEnabled: e.target.checked })}
-            />
-            Bridge object-linked Team Messages to Discord
-          </label>
-          <small className="app-muted">
-            Only messages with an object link (task, CAD, inventory, …) are mirrored — not a full chat dump.
-          </small>
-          <div className="team-discord-actions">
-            <button className="primary-action" type="submit" disabled={busy}>
-              {view.configured ? "Save connection" : "Connect Discord"}
-            </button>
-            {view.configured ? (
-              <>
-                <button type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
-                  Send test
-                </button>
-                <button type="button" disabled={busy} onClick={() => void run("disconnect")}>
-                  Disconnect
-                </button>
-              </>
-            ) : null}
-          </div>
-        </form>
-
+      {view.configured ? (
         <section className="app-card soft-panel team-discord-panel">
-          <span className="eyebrow">STATUS</span>
+          {/* One sentence instead of a status table. */}
           <h2>
-            {view.configured
-              ? `${view.guildName || view.channelLabel || "Connected"} · ${view.enabled ? "active" : "off"}`
-              : "Not connected"}
+            {view.canPost && view.enabled
+              ? `Posting to ${channelName}`
+              : view.canPost
+                ? `Connected to ${channelName} — posting is paused`
+                : `Saved, but Discord can't post to ${channelName} yet`}
           </h2>
-          {view.emptyReason && !view.configured ? <p className="app-muted">{view.emptyReason}</p> : null}
-          <ul className="team-discord-meta">
-            <li>
-              <span>Posting path</span>
-              <strong>{view.canPost ? "ready" : "setup required"}</strong>
-            </li>
-            <li>
-              <span>Platform bot</span>
-              <strong>{view.platformConfigured ? "configured" : "optional / unset"}</strong>
-            </li>
-            <li>
-              <span>Webhook</span>
-              <strong>{view.hasWebhook ? "saved" : "none"}</strong>
-            </li>
-            <li>
-              <span>Channel id</span>
-              <strong>{view.channelId || "—"}</strong>
-            </li>
-            <li>
-              <span>Chat bridge</span>
-              <strong>{view.chatBridgeEnabled ? "on" : "off"}</strong>
-            </li>
-            <li>
-              <span>Bridge posts (real)</span>
-              <strong>{formatBridgePostCount(postedCount)}</strong>
-            </li>
-            <li>
-              <span>Bridge failures (real)</span>
-              <strong>{formatBridgePostCount(failedCount)}</strong>
-            </li>
-          </ul>
-          {view.configured ? (
-            <Button variant="secondary" type="button" disabled={busy || !view.canPost} onClick={() => void run("set-bridge", { chatBridgeEnabled: !view.chatBridgeEnabled })}>
-              {view.chatBridgeEnabled ? "Disable chat bridge" : "Enable chat bridge"}
-            </Button>
+          {!view.canPost ? (
+            <p className="app-muted">Paste the channel&apos;s webhook link below to finish.</p>
           ) : null}
+          <div className="team-discord-actions">
+            <Button variant="secondary" type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
+              Send test
+            </Button>
+            <Button variant="ghost" type="button" disabled={busy} onClick={() => void run("disconnect")}>
+              Disconnect
+            </Button>
+          </div>
 
           <div className="team-discord-announce">
-            <span className="eyebrow">POST ANNOUNCEMENT</span>
+            <h3>Post an announcement</h3>
             <label>
               Title
               <input
                 value={announceTitle}
                 onChange={(e) => setAnnounceTitle(e.target.value)}
-                placeholder="Practice tonight"
+                placeholder="e.g. Practice tonight"
               />
             </label>
             <label>
@@ -559,13 +418,13 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
                 value={announceBody}
                 onChange={(e) => setAnnounceBody(e.target.value)}
                 rows={4}
-                placeholder="Shop opens at 5 — bring safety glasses."
+                placeholder="e.g. Shop opens at 5 — bring safety glasses."
               />
             </label>
-            <button
+            <Button
+              variant="primary"
               type="button"
-              className="primary-action"
-              disabled={busy || !announceBody.trim() || !view.configured || !view.canPost}
+              disabled={busy || !announceBody.trim() || !view.canPost}
               onClick={() =>
                 void run("announce", { title: announceTitle || "Announcement", message: announceBody }).then(() => {
                   setAnnounceTitle("");
@@ -574,16 +433,23 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
               }
             >
               Post to Discord
-            </button>
+            </Button>
           </div>
         </section>
-      </div>
-
-      {status ? (
-        <p className={ok ? "team-discord-status ok" : "team-discord-status err"} role="status">
-          {status}
-        </p>
       ) : null}
+
+      {view.configured ? (
+        <details className="app-card soft-panel team-discord-panel team-discord-change" open={!view.canPost}>
+          <summary>Change channel or settings</summary>
+          {connectForm}
+        </details>
+      ) : (
+        <section className="app-card soft-panel team-discord-panel">
+          <h2>Connect a Discord channel</h2>
+          <p className="app-muted">Takes about a minute. You need to be able to edit the channel in Discord.</p>
+          {connectForm}
+        </section>
+      )}
     </main>
   );
 }

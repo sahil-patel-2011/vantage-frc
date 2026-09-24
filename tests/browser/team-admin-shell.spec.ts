@@ -22,7 +22,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
     }
   }
 
-  const invite = page.getByRole("heading", { name: "Add a teammate" });
+  const invite = page.getByRole("heading", { name: "Invite someone" });
   const empty = page.getByRole("heading", { name: /Choose your team|Choose your team|Finish setup/i });
   if (!(await expectHubReadyOrGate(page, invite, empty))) {
     if (process.env.ADMIN_SHOT === "1") {
@@ -31,7 +31,16 @@ test("Team admin still loads after the panel split", async ({ page }) => {
     return;
   }
 
-  await expect(page.getByRole("heading", { name: "GitHub" })).toBeVisible();
+  // Team admin is people and invites; GitHub lives on Connectors now.
+  await expect(page.getByRole("heading", { name: /^People/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "GitHub" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Team settings" }).getByRole("link", { name: "Connectors" })).toBeVisible();
+
+  // Arriving from Home's "Invite your team" puts the cursor in Email.
+  const current = new URL(page.url());
+  current.searchParams.set("invite", "1");
+  await page.goto(current.toString());
+  await expect(page.getByRole("textbox", { name: "Email" })).toBeFocused({ timeout: 25_000 });
   // The access inbox only appears while someone is waiting to join.
   await expect(page.getByRole("tab")).toHaveCount(0);
 

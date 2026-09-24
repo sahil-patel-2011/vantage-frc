@@ -398,10 +398,10 @@ function LiveDesk({
         <Kpi
           label="Still to raise"
           value={rollup.plannedSpendCents > 0 ? money(rollup.remainingToRaiseCents) : "—"}
-          detail="Planned spend minus received cash — blank until a budget exists"
+          detail={rollup.plannedSpendCents > 0 ? "Season budget minus money received" : "Set a season budget to see this"}
           tone={rollup.remainingToRaiseCents > 0 ? "warn" : "neutral"}
         />
-        <Kpi label="Planned spend" value={rollup.plannedSpendCents > 0 ? money(rollup.plannedSpendCents) : "—"} detail="Category allocations or operating budget" />
+        <Kpi label="Planned spend" value={rollup.plannedSpendCents > 0 ? money(rollup.plannedSpendCents) : "—"} detail={view.operatingBudgetCents > 0 ? "Your season budget" : rollup.plannedSpendCents > 0 ? "Category plans — no season budget set" : "Set a season budget to see this"} />
         <Kpi label="Spent" value={money(rollup.actualSpendCents)} detail={`${money(rollup.purchaseLogCents)} receipts + orders + season costs`} />
         <Kpi
           label="Cash position"

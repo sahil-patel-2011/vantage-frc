@@ -37,3 +37,20 @@
 .team-discord-setup-steps li .app-button{flex:none}
 
 @media(max-width:900px){.team-discord-layout{grid-template-columns:1fr}}
+
+/* One path: webhook link, three steps, Advanced for ids and the bot. */
+.team-discord-page{max-width:760px}
+.team-discord-connect{display:grid;gap:12px}
+.team-discord-connect label{display:grid;gap:6px;font-size:13px;font-weight:600}
+.team-discord-connect input:not([type="checkbox"]){min-height:44px;font-size:16px}
+.team-discord-steps{margin:0;padding-left:1.25rem;display:grid;gap:6px;font-size:14px;line-height:1.5}
+.team-discord-advanced{border-top:1px solid var(--line);padding-top:8px}
+.team-discord-advanced>summary,.team-discord-change>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}
+.team-discord-advanced[open]{display:grid;gap:10px}
+.team-discord-advanced p{margin:0;font-size:13px}
+.team-discord-announce h3{margin:0;font-size:15px}
+.team-admin-settings-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.team-admin-settings-links a{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:var(--radius-pill,999px);background:var(--surface);color:var(--ink);font-size:.85rem;font-weight:600;text-decoration:none}
+.team-discord-advanced>summary::before,.team-discord-change>summary::before{content:"▸";display:inline-block;width:1.1em;transition:transform 120ms ease}
+.team-discord-advanced[open]>summary::before,.team-discord-change[open]>summary::before{transform:rotate(90deg)}
+.team-discord-page{padding-bottom:88px}

@@ -29,36 +29,39 @@ export function formatInviteRowMeta(input: {
   return `${role} · ${formatInviteRowStatus(input.status)}`;
 }
 
-/** Copy shown after create/resend — never claim email went out when it did not. */
+/**
+ * Copy shown after create/resend — never claim email went out when it did not.
+ * The invite itself worked in every case but a real send failure, so those
+ * read as success ("ok"); only a failed send is a warning.
+ */
 export function inviteSendResultCopy(input: {
   emailSent: boolean;
   delivery: InviteDeliveryMode;
   emailError?: string | null;
 }): { tone: "ok" | "warn" | "error"; message: string } {
-  if (input.delivery === "local") {
+  if (input.delivery === "local" || input.delivery === "unconfigured") {
     return {
-      tone: "warn",
-      message:
-        "Invite created. Local mode does not send email — copy the link and share it with that person.",
+      tone: "ok",
+      message: "Email is off on this server, so copy the link and send it to them yourself.",
     };
   }
-  if (input.delivery === "unconfigured" || (input.delivery === "failed" && !input.emailSent)) {
+  if (input.delivery === "failed" && !input.emailSent) {
     return {
       tone: "warn",
       message:
         input.emailError?.trim() ||
-        "Invite created, but email could not be sent. Copy the link and share it.",
+        "The email didn't send. Copy the link and send it to them yourself.",
     };
   }
   if (input.emailSent) {
     return {
       tone: "ok",
-      message: "Invitation emailed. You can also copy the link if they do not see it.",
+      message: "We emailed them a link. You can also copy it and send it yourself.",
     };
   }
   return {
     tone: "warn",
-    message: "Invite created. Copy the link and share it with that email.",
+    message: "Copy the link and send it to them yourself.",
   };
 }
 
@@ -67,19 +70,11 @@ export function inviteDeliveryBanner(mode: InviteDeliveryMode | null | undefined
   title: string;
   detail: string;
 } | null {
-  if (mode === "unconfigured") {
-    return {
-      tone: "setup",
-      title: "Email sending is not configured",
-      detail:
-        "Invites still work — copy the link after you send. Email sending is not configured on this deployment.",
-    };
-  }
-  if (mode === "local") {
+  if (mode === "unconfigured" || mode === "local") {
     return {
       tone: "info",
-      title: "Local invites do not email",
-      detail: "After you send, copy the invite link and share it.",
+      title: "Invites do not email from this server",
+      detail: "After you send, copy the link and share it yourself.",
     };
   }
   return null;

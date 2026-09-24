@@ -169,6 +169,8 @@ export type BusinessView = {
   sponsorsAllowed?: boolean | null;
   budget: {
     totalBudgetCents: number;
+    /** The season budget as set on /budget (0 when none, or when RLS hides it). Optional for old cached copies. */
+    seasonBudgetCents?: number;
     fundraisingGoalCents: number;
     sponsorIncomeCents: number;
     grantIncomeCents: number;

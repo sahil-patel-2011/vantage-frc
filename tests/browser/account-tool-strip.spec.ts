@@ -28,6 +28,10 @@ test("account sections are a tool strip, not a tab bar", async ({ page }) => {
   await expect(sections.getByRole("button", { name: "Notifications" })).toBeVisible();
 
   await sections.getByRole("button", { name: "Notifications" }).click();
-  await expect(page.getByRole("heading", { name: "In-app notifications" })).toBeVisible();
+  // One notification settings screen: the Account tab links to it.
+  await expect(page.getByRole("link", { name: "Open notification settings" })).toHaveAttribute(
+    "href",
+    "/notifications/preferences",
+  );
   await expect(sections.getByRole("button", { name: "Notifications" })).toHaveAttribute("aria-current", "page");
 });

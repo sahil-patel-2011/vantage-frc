@@ -16,16 +16,14 @@ export function TeamAdminProvidersPanel({
   if (!providers.length) return null;
   return (
     <section className="compare-panel" id="custom-providers">
-      <span className="eyebrow">AI keys</span>
-      <p>
-        OpenAI, Anthropic, and Ollama / LM Studio live on{" "}
-        <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a>
-        — personal or team-wide.
+      <h2>Older AI connections</h2>
+      <p className="app-muted">
+        AI keys now live on <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a>. These older connections still work until
+        you turn them off.
       </p>
       {providers.length ? (
         <section className="intel-panel">
-          <span className="eyebrow">LEFTOVER CUSTOM ENDPOINTS</span>
-          {providers.map((item) => (
+                    {providers.map((item) => (
             <article className="admin-org" key={item.id}>
               <b>{item.localRelay ? "RELAY" : "API"}</b>
               <div>
@@ -41,7 +39,7 @@ export function TeamAdminProvidersPanel({
                       Test
                     </button>
                     <button type="button" onClick={() => void onAction(item.id, "disable")}>
-                      Disable
+                      Turn off
                     </button>
                   </div>
                 ) : null}

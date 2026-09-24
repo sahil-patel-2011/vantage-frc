@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
-import { studentEmailDelivery } from "../../../lib/account/account-api-related";
+import { ACCOUNT_EMAIL_COPY, studentEmailDelivery } from "../../../lib/account/account-api-related";
+import { PushDevicePanel } from "../../account/account-push-panel";
+import {
+  DEFAULT_EMAIL_PREFS,
+  DEFAULT_NOTIFICATION_PREFS,
+  EMAIL_PREF_LABELS,
+  PREF_LABELS,
+  type EmailPrefs,
+  type NotificationPrefs,
+} from "../../account/account-types";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import {
   NOTIFICATION_RELATED_INCLUDE,
@@ -18,155 +27,20 @@ import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failu
 import "../../product-hub.css";
 import "../notifications.css";
 
-type InAppPrefs = {
-  matchAlerts: boolean;
-  scoutReminders: boolean;
-  syncFailures: boolean;
-  productUpdates: boolean;
-  todoAssigned: boolean;
-  todoCompleted: boolean;
-  dutyAssigned: boolean;
-  calendarEvents: boolean;
-  sponsorReminders: boolean;
-};
-
-type EmailPrefs = {
-  productUpdates: boolean;
-  coachAssignments: boolean;
-  coachTodos: boolean;
-  coachPracticeReminders: boolean;
-  sponsorReminders: boolean;
-  performanceDigest: boolean;
-  announcements: boolean;
-  duesReminders: boolean;
-  memberOnboarding: boolean;
-};
+type InAppPrefs = NotificationPrefs;
 
 type Delivery = { status: "available" | "setup_required"; detail: string };
 
-const IN_APP_PREF_LABELS: { key: keyof InAppPrefs; title: string; detail: string }[] = [
-  {
-    key: "todoAssigned",
-    title: "Todo assignments",
-    detail: "Inbox when a coach or teammate assigns you a todo.",
-  },
-  {
-    key: "todoCompleted",
-    title: "Todo completions",
-    detail: "Inbox when someone finishes a todo you created or own.",
-  },
-  {
-    key: "dutyAssigned",
-    title: "Duty assignments",
-    detail: "Inbox when you are put on a scouting, pit, drive, or outreach duty.",
-  },
-  {
-    key: "calendarEvents",
-    title: "Calendar events",
-    detail: "Inbox when your subteam (or whole team) gets a new or updated event.",
-  },
-  {
-    key: "matchAlerts",
-    title: "Match alerts",
-    detail: "Upcoming match reminders when the schedule is synced.",
-  },
-  {
-    key: "scoutReminders",
-    title: "Scout reminders",
-    detail: "Assigned scouting form nudges for your team.",
-  },
-  {
-    key: "syncFailures",
-    title: "Sync failures",
-    detail: "Tell me when team data stops updating.",
-  },
-  {
-    key: "productUpdates",
-    title: "In-app product notes",
-    detail: "Release notes and product updates in the inbox (on by default).",
-  },
-  {
-    key: "sponsorReminders",
-    title: "Sponsor reminders",
-    detail: "Thank-you, renewal, and overdue follow-up nudges for your team's sponsors.",
-  },
-];
+// One list of switches for the whole app. The Account tab links here instead of
+// keeping its own copy (it had Team chat and push; this page did not).
+const IN_APP_PREF_LABELS = PREF_LABELS;
+const DEFAULT_IN_APP: InAppPrefs = DEFAULT_NOTIFICATION_PREFS;
+const DEFAULT_EMAIL: EmailPrefs = DEFAULT_EMAIL_PREFS;
 
-const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string }[] = [
-  {
-    key: "productUpdates",
-    title: "Product updates / changelog",
-    detail: "Release-note emails when a staged release targets your plan. On by default — opt out anytime.",
-  },
-  {
-    key: "coachAssignments",
-    title: "Coach / mentor assignments",
-    detail: "Email when a coach or mentor assigns you work.",
-  },
-  {
-    key: "coachTodos",
-    title: "Coach / mentor todos",
-    detail: "Email when a todo is assigned to you.",
-  },
-  {
-    key: "coachPracticeReminders",
-    title: "Practice reminders",
-    detail: "Email reminders for scheduled driver / team practice.",
-  },
-  {
-    key: "sponsorReminders",
-    title: "Sponsor reminders",
-    detail: "Opt-in email for thank-you, renewal, and overdue follow-up reminders (never emails sponsors).",
-  },
-  {
-    key: "performanceDigest",
-    title: "Daily performance digest",
-    detail:
-      "One email on days your team has real data — match results, tomorrow's schedule, and grounded pointers. On by default; sends nothing on quiet days.",
-  },
-  {
-    key: "announcements",
-    title: "Urgent team announcements",
-    detail:
-      "Email only for announcements your team marks urgent or asks everyone to acknowledge — departure times, safety notices, deadlines. Every announcement still reaches your inbox. On by default.",
-  },
-  {
-    key: "duesReminders",
-    title: "Dues reminders",
-    detail:
-      "Email when your treasurer sends a reminder and your own answer says dues are outstanding. Never sent to anyone whose answer asked for financial assistance. On by default.",
-  },
-  {
-    key: "memberOnboarding",
-    title: "New member onboarding",
-    detail:
-      "A short sequence after you join a team, and only when you actually have something outstanding — a form to fill in, an announcement to acknowledge, a profile to finish. On by default.",
-  },
-];
-
-const DEFAULT_IN_APP: InAppPrefs = {
-  matchAlerts: true,
-  scoutReminders: true,
-  syncFailures: true,
-  productUpdates: true,
-  todoAssigned: true,
-  todoCompleted: true,
-  dutyAssigned: true,
-  calendarEvents: true,
-  sponsorReminders: true,
-};
-
-const DEFAULT_EMAIL: EmailPrefs = {
-  productUpdates: true,
-  coachAssignments: false,
-  coachTodos: false,
-  coachPracticeReminders: false,
-  sponsorReminders: false,
-  performanceDigest: true,
-  announcements: true,
-  duesReminders: true,
-  memberOnboarding: true,
-};
+/** Email really goes out only when delivery is available and not the local-only mailbox. */
+function emailIsOn(delivery: Delivery | null): boolean {
+  return delivery?.status === "available" && delivery.detail === ACCOUNT_EMAIL_COPY.ready;
+}
 
 type PrefsView = {
   status: "live";
@@ -189,6 +63,9 @@ function responseError(data: unknown): string {
 
 function studentDelivery(delivery: Delivery | null): Delivery | null {
   if (!delivery) return null;
+  // Already student copy (the API and the cache both store it). Re-running the
+  // mapper turned "does not send email" back into "Email delivery is on".
+  if ((Object.values(ACCOUNT_EMAIL_COPY) as string[]).includes(delivery.detail)) return delivery;
   return {
     status: delivery.status,
     detail: studentEmailDelivery({
@@ -303,18 +180,9 @@ export default function NotificationPreferencesClient() {
       const rawDelivery = row.delivery ?? null;
       const next: PrefsView = {
         status: "live",
-        notificationPrefs: row.notificationPrefs ?? DEFAULT_IN_APP,
-        emailPrefs: row.emailPrefs ?? DEFAULT_EMAIL,
-        delivery: rawDelivery
-          ? {
-              status: rawDelivery.status,
-              detail: studentEmailDelivery({
-                status: rawDelivery.status,
-                missingEnv: [],
-                detail: rawDelivery.detail,
-              }).detail,
-            }
-          : null,
+        notificationPrefs: { ...DEFAULT_IN_APP, ...(row.notificationPrefs ?? {}) },
+        emailPrefs: { ...DEFAULT_EMAIL, ...(row.emailPrefs ?? {}) },
+        delivery: studentDelivery(rawDelivery),
       };
       applyView(next);
       setFromCache(false);
@@ -372,7 +240,7 @@ export default function NotificationPreferencesClient() {
       setView(next);
       setFromCache(false);
       await persistPrefsSnapshot(next);
-      setMessage("Preferences saved. Opted-out categories stay out of your inbox and email.");
+      setMessage("Saved.");
       setMessageOk(true);
     } finally {
       setBusy(false);
@@ -403,7 +271,7 @@ export default function NotificationPreferencesClient() {
         <PageHeader
           breadcrumbs="Account / Notifications"
           title="Notification preferences"
-          description="Choose which events land in your inbox, plus optional email opt-ins."
+          description="Every notification switch in one place: your inbox, this device, and email."
         >
           <PrefsRelated />
         </PageHeader>
@@ -428,91 +296,90 @@ export default function NotificationPreferencesClient() {
     );
   }
 
+  const emailOn = emailIsOn(delivery);
   return (
-        <main className="module-page notif-prefs-page notif-page">
-          <PageHeader
-            breadcrumbs="Account / Notifications"
-            title="Notification preferences"
-            description="Choose which events land in your inbox, plus optional email opt-ins."
-          >
-            <PrefsRelated />
-          </PageHeader>
-          <OfflineBanner feature="Notification preferences" fromCache={fromCache} cachedAt={cachedAt} />
+    <main className="module-page notif-prefs-page notif-page">
+      <PageHeader
+        breadcrumbs="Account / Notifications"
+        title="Notification preferences"
+        description="Every notification switch in one place: your inbox, this device, and email."
+      >
+        <PrefsRelated />
+      </PageHeader>
+      <OfflineBanner feature="Notification preferences" fromCache={fromCache} cachedAt={cachedAt} />
 
-          {delivery ? (
-            <p className="telemetry-status" role="status">
-              <span className={`app-badge ${delivery.status === "available" ? "good" : "setup"}`}>
-                {delivery.status === "available" ? "Email ready" : "Needs setup"}
-              </span>{" "}
-              {delivery.detail}
-            </p>
-          ) : null}
+      <Panel className="account-panel">
+        <h2>Inbox</h2>
+        <p className="app-muted">What shows up in your inbox. Everything starts on.</p>
+        <ul className="account-prefs">
+          {IN_APP_PREF_LABELS.map((item) => (
+            <li key={item.key}>
+              <div>
+                <strong>{item.title}</strong>
+                <small>{item.detail}</small>
+              </div>
+              <label className="account-switch">
+                <span className="sr-only">{item.title}</span>
+                <input
+                  type="checkbox"
+                  checked={inAppPrefs[item.key]}
+                  onChange={(event) =>
+                    setInAppPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
+                  }
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
-          {message ? (
-            <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
-              {message}
-            </p>
-          ) : null}
+      <Panel className="account-panel">
+        <PushDevicePanel orgId={null} />
+      </Panel>
 
-          <Panel className="account-panel">
-            <h2>In-app inbox</h2>
-            <p className="app-muted">
-              Choose which todos, duties, chat, and team news land in your inbox. Assignments stay on
-              by default — turn off any category you do not want.
-            </p>
-            <ul className="account-prefs">
-              {IN_APP_PREF_LABELS.map((item) => (
-                <li key={item.key}>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <small>{item.detail}</small>
-                  </div>
-                  <label className="account-switch">
-                    <span className="sr-only">{item.title}</span>
-                    <input
-                      type="checkbox"
-                      checked={inAppPrefs[item.key]}
-                      onChange={(event) =>
-                        setInAppPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
-                      }
-                    />
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+      <Panel className="account-panel">
+        <h2>Email</h2>
+        {/* Honest status in the right colour: green only when email really goes out. */}
+        <p className={`notif-email-status ${emailOn ? "on" : "off"}`} role="status">
+          {emailOn
+            ? "Emails are on. We only send the kinds you switch on below."
+            : "Emails are off on this server, so you'll still get inbox alerts but no email. Your choices below are saved for when email is turned on."}
+        </p>
+        <p className="app-muted">
+          Each switch turns off one kind of email. Sign-in codes and security notices always arrive.
+        </p>
+        <ul className="account-prefs">
+          {EMAIL_PREF_LABELS.map((item) => (
+            <li key={item.key}>
+              <div>
+                <strong>{item.title}</strong>
+                <small>{item.detail}</small>
+              </div>
+              <label className="account-switch">
+                <span className="sr-only">{item.title}</span>
+                <input
+                  type="checkbox"
+                  checked={emailPrefs[item.key]}
+                  onChange={(event) =>
+                    setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
+                  }
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
-          <Panel className="account-panel">
-            <h2>Email opt-ins</h2>
-            <p className="app-muted">
-              Each switch turns off exactly one kind of message and nothing else — opting out of dues
-              reminders does not stop urgent announcements, and the other way round. The coach and sponsor
-              categories start off; the rest start on. Every message carries its own unsubscribe link.
-            </p>
-            <ul className="account-prefs">
-              {EMAIL_PREF_LABELS.map((item) => (
-                <li key={item.key}>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <small>{item.detail}</small>
-                  </div>
-                  <label className="account-switch">
-                    <span className="sr-only">{item.title}</span>
-                    <input
-                      type="checkbox"
-                      checked={emailPrefs[item.key]}
-                      onChange={(event) =>
-                        setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
-                      }
-                    />
-                  </label>
-                </li>
-              ))}
-            </ul>
-            <Button variant="primary" type="button" disabled={busy} onClick={() => void save()}>
-              Save preferences
-            </Button>
-          </Panel>
-        </main>
-      );
+      <div className="notif-prefs-save">
+        <Button variant="primary" type="button" disabled={busy} onClick={() => void save()}>
+          {busy ? "Saving…" : "Save settings"}
+        </Button>
+        {message ? (
+          <p className={`notif-prefs-message${messageOk ? " success" : ""}`} role="status">
+            {message}
+          </p>
+        ) : null}
+      </div>
+    </main>
+  );
 }

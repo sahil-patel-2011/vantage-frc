@@ -306,7 +306,10 @@ export default function ConnectorsClient() {
                   <h2>{connector.label}</h2>
                   <Badge tone={badge.tone}>{badge.label}</Badge>
                 </div>
-                <p className="connector-status-line">{connector.statusLine}</p>
+                {/* Status once: the badge already says "Not connected" / "Connected". */}
+                {connector.statusLine.trim().toLowerCase() !== badge.label.trim().toLowerCase() ? (
+                  <p className="connector-status-line">{connector.statusLine}</p>
+                ) : null}
               </div>
 
               <p className="connector-detail">{connector.detail}</p>
@@ -348,8 +351,8 @@ export default function ConnectorsClient() {
                 ) : null}
 
                 {settingsPath ? (
-                  <Button as="a" href={orgId ? withOrg(settingsPath, orgId) : settingsPath} variant="ghost" size="sm">
-                    Open settings
+                  <Button as="a" href={orgId ? withOrg(settingsPath, orgId) : settingsPath} variant="secondary">
+                    {connector.state === "connected" ? `Manage ${connector.label}` : `Set up ${connector.label}`}
                   </Button>
                 ) : null}
               </div>
@@ -360,7 +363,45 @@ export default function ConnectorsClient() {
           );
         })}
       </ul>
+
+      <MoreConnections orgId={orgId} listed={connectors.map((connector) => connector.id)} />
     </main>
+  );
+}
+
+/**
+ * Every integration is reachable from Connectors, even ones this server lists
+ * no card for (GitHub works with a token when sign-in isn't set up; CAD tools
+ * live under CAD). Each links to its own setup page.
+ */
+const MORE_CONNECTIONS = [
+  { id: "github", label: "GitHub", detail: "Robot code for the calendar, code review and Ask AI.", path: "/connectors/github" },
+  { id: "onshape", label: "Onshape and Fusion", detail: "CAD documents for the CAD tools and reviews.", path: "/cad/connections" },
+  { id: "discord", label: "Discord", detail: "Post team announcements to a Discord channel.", path: "/team/discord" },
+  { id: "slack", label: "Slack", detail: "Share team chat with a Slack channel.", path: "/team/slack" },
+] as const;
+
+function MoreConnections({ orgId, listed }: { orgId: string | null; listed: string[] }) {
+  const missing = MORE_CONNECTIONS.filter((entry) => !listed.includes(entry.id));
+  if (!orgId || !missing.length) return null;
+  return (
+    <ul className="connector-list">
+      {missing.map((entry) => (
+        <li key={entry.id} className="app-card soft-panel connector-card">
+          <div className="connector-head">
+            <div className="connector-identity">
+              <h2>{entry.label}</h2>
+            </div>
+          </div>
+          <p className="connector-detail">{entry.detail}</p>
+          <div className="connector-actions">
+            <Button as="a" variant="secondary" href={withOrg(entry.path, orgId)}>
+              Set up {entry.label}
+            </Button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

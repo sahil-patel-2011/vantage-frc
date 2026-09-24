@@ -85,9 +85,9 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
   if ((ctx.plannedSpendCents ?? 0) <= 0) {
     actions.push({
       id: "budget",
-      label: "Set category allocations",
-      detail: "Planned spend uses Business · Budget categories, or the season operating budget if none exist.",
-      href: hubHref("/business", "budget", orgId),
+      label: "Set your season budget",
+      detail: "Planned spend and Still to raise both come from the season budget.",
+      href: withOrgHref("/budget", orgId),
     });
   }
 

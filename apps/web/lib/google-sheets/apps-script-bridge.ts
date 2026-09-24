@@ -91,7 +91,7 @@ export class AppsScriptBridge {
       response = await this.send(location, { method: "GET" });
     }
     if (response.status === 404) {
-      throw bridgeError("not_found", "The Apps Script web app address no longer exists. Redeploy it and paste the new address.", "not_found", 404);
+      throw bridgeError("not_found", "We couldn't reach that address. Check it's deployed as a Web app with access set to Anyone, then paste the /exec address again.", "not_found", 404);
     }
     if (response.status === 429) {
       throw bridgeError("throttled", "Google asked the Apps Script to slow down. The Excel copy keeps working; Google catches up on the next sync.", "throttled", 429);

@@ -129,7 +129,7 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     callbackOverrideEnv: "GITHUB_OAUTH_REDIRECT_URI",
     providerConsole: "github.com → Settings → Developer settings → OAuth Apps → New OAuth App",
     permissions: ["read:user", "repo"],
-    managePath: "/team/admin",
+    managePath: "/connectors/github",
     hasConnectAction: true,
     hasDisconnectAction: true,
   },
@@ -373,6 +373,7 @@ export function connectorAudienceFromRole(canManage: boolean): ConnectorAudience
  */
 const MEMBER_CLOSED_SETTINGS = new Set([
   "/team/admin",
+  "/connectors/github",
   "/team/data",
   "/team/discord",
   "/team/slack",

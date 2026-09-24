@@ -49,8 +49,12 @@ export function TeamAdminGitHubPanel({
 }) {
   return (
     <section className="compare-panel github-panel" id="github-connection">
-      <h2>GitHub</h2>
-      <p className="app-muted">Connect so calendar due dates and code tools can use this team’s repo.</p>
+      <h2>{githubConnection ? "Connected" : "Connect GitHub"}</h2>
+      <p className="app-muted">
+        {githubConnection
+          ? "Pick the repository your robot code lives in."
+          : "Sign in with GitHub, or paste a personal access token if sign-in isn’t available."}
+      </p>
 
       {githubShell === "loading" || githubShell === "error" ? (
         <EmptyState
@@ -79,16 +83,13 @@ export function TeamAdminGitHubPanel({
           {githubOAuthSetupRequired ? (
             // Server setup copy names what to paste; fall back to a student-readable line.
             <p className="app-muted github-oauth-note">
-              {githubOAuthMessage || "GitHub sign-in isn’t set up here. Save a token instead."}{" "}
-              <a href="/connectors">See all connectors</a>
+              {githubOAuthMessage || "GitHub sign-in isn’t available here, so use a token instead."}
             </p>
           ) : null}
           {githubCredentialRejected ? (
             <p className="app-muted github-oauth-note" role="status">
-              GitHub refused the stored credential for @{githubCredentialRejected.login ?? "this account"}. The
-              token was revoked, expired, or lost its scopes — Disconnect, then Connect GitHub again to issue a
-              new one. Nothing that reads the repo (deploy log, code review, calendar milestones) works until
-              then.
+              GitHub stopped accepting the saved sign-in for @{githubCredentialRejected.login ?? "this account"}.
+              Disconnect, then connect again. Until then nothing can read the repo.
             </p>
           ) : null}
           {githubConnection ? (
@@ -97,27 +98,25 @@ export function TeamAdminGitHubPanel({
               <div>
                 <strong>@{githubConnection.githubLogin ?? "github"}</strong>
                 <small>
-                  {githubConnection.authMethod} · {githubConnection.status}
+                  {githubConnection.authMethod === "pat" ? "Token" : "GitHub sign-in"}
                   {githubConnection.defaultRepoFullName
                     ? ` · ${githubConnection.defaultRepoFullName}`
-                    : " · pick a default repo"}
+                    : " · no repository picked yet"}
                 </small>
               </div>
             </article>
           ) : null}
           <div className="intel-actions">
-            <Button
-              variant={githubOAuthSetupRequired ? "secondary" : "primary"}
-              type="button"
-              disabled={githubBusy || githubOAuthSetupRequired || githubLoading}
-              onClick={() => void onConnectOAuth()}
-            >
-              {githubOAuthSetupRequired
-                ? "GitHub sign-in unavailable"
-                : githubCredentialRejected
-                  ? "Reconnect GitHub"
-                  : "Connect GitHub"}
-            </Button>
+            {githubConnection || githubOAuthSetupRequired ? null : (
+              <Button
+                variant="primary"
+                type="button"
+                disabled={githubBusy || githubLoading}
+                onClick={() => void onConnectOAuth()}
+              >
+                {githubCredentialRejected ? "Reconnect GitHub" : "Sign in with GitHub"}
+              </Button>
+            )}
             {/* A rejected credential leaves no `connection` (that loader wants
                 a spendable token), but the row and its dead token are still
                 there — so Disconnect has to stay reachable, or the only way to
@@ -130,28 +129,36 @@ export function TeamAdminGitHubPanel({
           </div>
         </section>
         <section className="intel-panel">
-          <form onSubmit={onSavePat}>
-            <span className="eyebrow">{githubOAuthSetupRequired ? "CONNECT WITH A TOKEN" : "OR SAVE A TOKEN"}</span>
-            <label>
-              Personal access token
-              <input
-                type="password"
-                autoComplete="off"
-                value={githubPat}
-                onChange={(e) => setGithubPat(e.target.value)}
-                placeholder="ghp_… or github_pat_…"
-                required
-              />
-            </label>
-            <Button variant="primary" type="submit" disabled={githubBusy}>
-              Save token
-            </Button>
-          </form>
+          {githubConnection ? null : (
+            <details className="github-token" open={githubOAuthSetupRequired}>
+              <summary>Use a personal access token instead</summary>
+              <form onSubmit={onSavePat}>
+                <ol className="github-token-steps">
+                  <li>On GitHub, open Settings → Developer settings → Personal access tokens.</li>
+                  <li>Make a token that can read your robot-code repository.</li>
+                  <li>Paste it here and press Save token.</li>
+                </ol>
+                <label>
+                  Personal access token
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={githubPat}
+                    onChange={(e) => setGithubPat(e.target.value)}
+                    placeholder="e.g. github_pat_…"
+                    required
+                  />
+                </label>
+                <Button variant={githubOAuthSetupRequired ? "primary" : "secondary"} type="submit" disabled={githubBusy}>
+                  Save token
+                </Button>
+              </form>
+            </details>
+          )}
           {githubConnection ? (
-            <form id="github-default-repo" onSubmit={onSetDefaultRepo} style={{ marginTop: "1.25rem" }}>
-              <span className="eyebrow">DEFAULT REPO</span>
+            <form id="github-default-repo" onSubmit={onSetDefaultRepo}>
               <label>
-                Repository
+                Robot-code repository
                 <select value={defaultRepo} onChange={(e) => setDefaultRepo(e.target.value)} required>
                   <option value="">Choose a repository…</option>
                   {githubRepos.map((repo) => (
@@ -166,7 +173,7 @@ export function TeamAdminGitHubPanel({
                 <p className="app-muted">No repositories on this account yet.</p>
               ) : null}
               <Button variant="primary" type="submit" disabled={githubBusy || !defaultRepo}>
-                Set default repo
+                Save repository
               </Button>
             </form>
           ) : null}

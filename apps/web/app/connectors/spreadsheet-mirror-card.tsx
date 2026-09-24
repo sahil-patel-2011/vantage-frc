@@ -116,7 +116,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
     // Back from Google's consent screen: say how it went.
     const params = new URLSearchParams(window.location.search);
     const google = params.get("google");
-    if (google === "connected") setMessage({ ok: true, text: "Google Sheets connected. Sync both copies to fill it." });
+    if (google === "connected") setMessage({ ok: true, text: "Google Sheets connected. Press Sync now to fill it." });
     if (google === "error") {
       const reason = params.get("reason") ?? "";
       setMessage({ ok: false, text: CALLBACK_REASONS[reason] ?? "Connecting Google Sheets failed. Try again." });
@@ -206,7 +206,6 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
   }
 
   const summary = status?.summary;
-  const bothConnected = (summary?.connected ?? 0) === 2;
   const anyConnected = (summary?.connected ?? 0) > 0;
   const changeCount = importView?.preview.totals.changes ?? 0;
 
@@ -214,17 +213,32 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
     <section id="spreadsheet-mirror" className="app-card soft-panel connector-card mirror-card" aria-labelledby="mirror-title">
       <div className="connector-head">
         <div className="connector-identity">
-          <h2 id="mirror-title">Spreadsheet copies</h2>
-          {summary ? (
+          <h2 id="mirror-title">Google Sheets</h2>
+          {/* Status once: while nothing is connected the copy below already says so. */}
+          {summary && anyConnected ? (
             <Badge tone={summary.identical ? "good" : anyConnected ? "info" : "neutral"}>
               {summary.identical ? (status && status.copies.length === 1 ? "Up to date" : "Identical") : anyConnected ? "Not synced" : "Off"}
             </Badge>
           ) : null}
         </div>
-        <p className="connector-detail">
-          Your roster, matches, scouting and pick list in a spreadsheet you own. Vantage keeps it up to date, and edits
-          you make there can be pulled back in.
-        </p>
+        <p className="connector-detail">A copy of your team&apos;s data in a spreadsheet you own.</p>
+      </div>
+
+      {/* What you'll get, before any setup step: tabs, timing, and which way edits go. */}
+      <div className="mirror-what-you-get">
+        <h3>What you&apos;ll get</h3>
+        <ul>
+          <li>
+            Tabs named <strong>Teams</strong>, <strong>Matches</strong>, <strong>MatchScouting</strong>,{" "}
+            <strong>PitScouting</strong>, <strong>PickList</strong> and <strong>SyncInfo</strong>. Your own tabs and
+            formulas are left alone.
+          </li>
+          <li>Updated every night on its own, and straight away when you press Sync now.</li>
+          <li>
+            Changes you make in the sheet come back only when you press <strong>Pull edits</strong> and approve them —
+            only the pick list and scouting tabs are read back.
+          </li>
+        </ul>
       </div>
 
       {message ? (
@@ -376,10 +390,10 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
             ) : (
               <div className="connector-actions">
                 <Button variant="primary" type="button" disabled={busy !== null} onClick={() => void syncBoth()}>
-                  {busy === "sync" ? "Syncing…" : bothConnected ? "Sync both copies" : "Sync now"}
+                  {busy === "sync" ? "Syncing…" : "Sync now"}
                 </Button>
                 <Button variant="secondary" type="button" disabled={busy !== null} onClick={() => void previewImport()}>
-                  {busy === "preview" ? "Reading…" : "Pull edits from the spreadsheets"}
+                  {busy === "preview" ? "Reading…" : "Pull edits"}
                 </Button>
               </div>
             )

@@ -22,14 +22,11 @@ test("Home shows one What to do now primary without TBA jargon", async ({ page }
   await expect(page.getByText("Connect TBA")).toHaveCount(0);
   await expect(page.getByText("The Blue Alliance")).toHaveCount(0);
   await expect(page.getByText("Student focus")).toHaveCount(0);
-  // While the team is still being set up, the setup list under this card is the action and
-  // the card carries no link of its own. Otherwise it has exactly one.
+  // While the team is still being set up, the card is the next setup step itself, with its
+  // progress list as plain ticks. Either way it has exactly one link.
   await expect(now).not.toContainText("Working out what is next", { timeout: 25_000 });
+  await expect(now).not.toHaveAttribute("aria-busy", "true", { timeout: 25_000 });
   await page.waitForTimeout(1_500);
-  if (/Finish setting up your team/.test(await now.innerText())) {
-    await expect(now.getByRole("link")).toHaveCount(0);
-    return;
-  }
   await expect(now.getByRole("link")).toHaveCount(1);
   const cta = now.getByRole("link").first();
   await expect(cta).toBeVisible();

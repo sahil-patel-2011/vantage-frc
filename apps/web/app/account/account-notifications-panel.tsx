@@ -1,24 +1,19 @@
 "use client";
 
-import { EmptyState, Panel, Button } from "../../components/ui";
-import { PushDevicePanel } from "./account-push-panel";
-import {
-  EMAIL_PREF_LABELS,
-  PREF_LABELS,
-  type AccountView,
-  type EmailPrefs,
-  type NotificationPrefs,
-} from "./account-types";
+import { Panel, Button } from "../../components/ui";
+import type { AccountView, EmailPrefs, NotificationPrefs } from "./account-types";
 
+/**
+ * The Account → Notifications tab points to the one settings screen.
+ *
+ * It used to carry its own copy of every switch (with Team chat and push),
+ * while /notifications/preferences had a slightly different list. Two screens
+ * that disagree is worse than one link, so every switch now lives on
+ * /notifications/preferences. The extra props stay so Account's tab wiring is
+ * unchanged.
+ */
 export function AccountNotificationsPanel({
   account,
-  orgId,
-  prefs,
-  emailPrefs,
-  busy,
-  onPrefsChange,
-  onEmailPrefsChange,
-  onSave,
 }: {
   account: AccountView;
   orgId: string | null;
@@ -29,81 +24,24 @@ export function AccountNotificationsPanel({
   onEmailPrefsChange: (next: EmailPrefs) => void;
   onSave: () => void;
 }) {
+  const emailOn = account.emailDelivery?.status === "available" && /is on/i.test(account.emailDelivery.detail);
   return (
     <Panel className="account-panel">
-      {account.emailDelivery?.status === "setup_required" ? (
-        <EmptyState
-          soft
-          badge="Needs setup"
-          badgeTone="setup"
-          title="Email is not ready yet"
-          description={account.emailDelivery.detail}
-        >
-          <p className="app-muted">
-            Inbox switches still save. Opt-in email stays quiet until a mentor finishes email setup.
-          </p>
-        </EmptyState>
-      ) : null}
-      <h2>In-app notifications</h2>
+      <h2>Notifications</h2>
       <p className="app-muted">
-        Choose which todos, duties, chat, and team news land in your inbox.{" "}
+        Inbox alerts (including Team chat), push on this device, and email are all on one screen.
+      </p>
+      <p className="app-muted">
+        {emailOn
+          ? "Emails are on for this team."
+          : "Emails are off on this server, so you'll get inbox alerts but no email."}
+      </p>
+      <div className="account-actions">
+        <Button as="a" variant="primary" href="/notifications/preferences">
+          Open notification settings
+        </Button>
         <a href="/notifications">Open inbox</a>
-        {" · "}
-        <a href="/notifications/preferences">Preferences</a>
-        {" · "}
-        <a href="/whats-new">What’s new</a>
-      </p>
-      <ul className="account-prefs">
-        {PREF_LABELS.map((item) => (
-          <li key={item.key}>
-            <div>
-              <strong>{item.title}</strong>
-              <small>{item.detail}</small>
-            </div>
-            <label className="account-switch">
-              <span className="sr-only">{item.title}</span>
-              <input
-                type="checkbox"
-                checked={prefs[item.key]}
-                onChange={(event) => onPrefsChange({ ...prefs, [item.key]: event.target.checked })}
-              />
-            </label>
-          </li>
-        ))}
-      </ul>
-
-      <PushDevicePanel orgId={orgId} />
-
-      <h2 className="account-prefs-heading">Email opt-ins</h2>
-      <p className="app-muted">
-        Each email below says whether it starts on or off, and you can switch any of them off. Sign-in codes and security notices always arrive.{" "}
-        <a href="/notifications/preferences">Open email preferences</a>
-        {" · "}
-        <a href="/support">Help & Support</a>
-      </p>
-      <ul className="account-prefs">
-        {EMAIL_PREF_LABELS.map((item) => (
-          <li key={item.key}>
-            <div>
-              <strong>{item.title}</strong>
-              <small>{item.detail}</small>
-            </div>
-            <label className="account-switch">
-              <span className="sr-only">{item.title}</span>
-              <input
-                type="checkbox"
-                checked={emailPrefs[item.key]}
-                onChange={(event) =>
-                  onEmailPrefsChange({ ...emailPrefs, [item.key]: event.target.checked })
-                }
-              />
-            </label>
-          </li>
-        ))}
-      </ul>
-      <Button variant="primary" type="button" disabled={busy} onClick={() => void onSave()}>
-        Save preferences
-      </Button>
+      </div>
     </Panel>
   );
 }

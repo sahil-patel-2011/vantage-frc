@@ -1,5 +1,4 @@
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamDiscordClient from "./discord-client";
 
 export const metadata = {
@@ -18,18 +17,17 @@ export default async function TeamDiscordPage({
         <PageHeader
           breadcrumbs="Team / Discord"
           title="Discord"
-          description="Link a guild and channel for announcements and an optional object-linked chat bridge."
+          description="Post team announcements to a Discord channel."
         >
           <nav className="product-hub-related" aria-label="Related team tools">
             <a href="/team?tab=messages">Messages</a>
             <a href="/team">Team</a>
           </nav>
         </PageHeader>
-        <TeamOpsNav active="admin" />
         <EmptyState
           soft
           title="Choose your team"
-          description="Open a team to connect Discord and the object-linked Messages bridge."
+          description="Open a team to connect its Discord channel."
           badge="Needs setup"
           badgeTone="setup"
         >

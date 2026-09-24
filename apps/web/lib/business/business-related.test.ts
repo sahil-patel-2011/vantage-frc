@@ -61,7 +61,7 @@ describe("business-related Soft-UI helpers", () => {
     const links = businessRelatedLinks("org-1", { include: [...BUSINESS_FUNDING_RELATED_INCLUDE] });
     expect(links.map((link) => link.id)).toEqual(["sponsors", "grants", "budget"]);
     expect(links.find((link) => link.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
-    expect(links.find((link) => link.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
+    expect(links.find((link) => link.id === "budget")?.href).toBe("/budget?orgId=org-1");
     expect(links.find((link) => link.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
   });
 
@@ -86,7 +86,7 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(links.find((l) => l.id === "costs")?.href).toBe("/costs?orgId=org-1");
-    expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
+    expect(links.find((l) => l.id === "budget")?.href).toBe("/budget?orgId=org-1");
   });
 
   it("builds Season Costs Soft-UI cross-links to Orders, Fundraisers, and Business budget", () => {
@@ -97,7 +97,7 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.map((l) => l.id)).toEqual(["finance", "orders", "fundraisers", "finance-ai", "budget"]);
     expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
     expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
-    expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
+    expect(links.find((l) => l.id === "budget")?.href).toBe("/budget?orgId=org-1");
   });
 
   it("builds Community Impact Soft-UI cross-links to Awards, Outreach, and Writer", () => {

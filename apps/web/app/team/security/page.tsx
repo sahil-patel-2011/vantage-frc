@@ -1,7 +1,6 @@
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import CapabilitiesClient from "./capabilities-client";
-import HubAccessClient from "./hub-access-client";
 import AuthPolicyClient from "./policy-client";
+import "../team-admin.css";
 import "./security.css";
 
 export const metadata = {
@@ -20,14 +19,14 @@ export default async function TeamSecurityPage({
         <PageHeader
           breadcrumbs="Team / Security"
           title="Team security"
-          description="Access policy, hub access, and capabilities are set per team. Choose your team to open them."
+          description="Sign-in rules are set per team. Choose your team to open them."
         />
         <EmptyState
           soft
           badge="Team needed"
           badgeTone="setup"
           title="Choose your team"
-          description="These controls change who can do what inside one team, so they need a team before they mean anything."
+          description="These rules belong to one team. Choose which one."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -36,15 +35,7 @@ export default async function TeamSecurityPage({
       </main>
     );
   }
-  return (
-    <>
-      <AuthPolicyClient orgId={orgId} />
-      <main className="module-page team-security-hub-access" style={{ paddingTop: 0 }}>
-        <HubAccessClient orgId={orgId} />
-      </main>
-      <main className="module-page team-security-capabilities" style={{ paddingTop: 0 }}>
-        <CapabilitiesClient orgId={orgId} />
-      </main>
-    </>
-  );
+  // What each person can open is set in one place — Team admin → Access — and
+  // this page links there instead of repeating the member list.
+  return <AuthPolicyClient orgId={orgId} />;
 }

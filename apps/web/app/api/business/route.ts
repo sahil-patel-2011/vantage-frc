@@ -191,12 +191,23 @@ export async function POST(request: Request) {
           await client.query(
             `INSERT INTO finance_season_settings(
                org_id, season_year, operating_budget_usd, fundraising_goal_usd, notes, updated_by
-             ) VALUES ($1,$2,$3,$4,$5,$6)
+             ) VALUES ($1,$2,COALESCE($3::numeric, 0),$4,$5,$6)
              ON CONFLICT (org_id, season_year) DO UPDATE SET
-               operating_budget_usd = EXCLUDED.operating_budget_usd,
+               operating_budget_usd = CASE WHEN $3::numeric IS NULL
+                 THEN finance_season_settings.operating_budget_usd
+                 ELSE EXCLUDED.operating_budget_usd END,
                fundraising_goal_usd = EXCLUDED.fundraising_goal_usd,
                notes = EXCLUDED.notes, updated_by = EXCLUDED.updated_by, updated_at = now()`,
-            [orgId, seasonYear, dollars(body.totalBudgetCents), dollars(body.fundraisingGoalCents), text(body.notes, 4_000), session.user.id],
+            // The season budget itself is set on /budget. Business only sends a
+            // goal now, so a missing budget field keeps whatever was stored.
+            [
+              orgId,
+              seasonYear,
+              body.totalBudgetCents === undefined ? null : dollars(body.totalBudgetCents),
+              dollars(body.fundraisingGoalCents),
+              text(body.notes, 4_000),
+              session.user.id,
+            ],
           );
           await audit(client, { orgId, userId: session.user.id, action, entityType: "season_budget", metadata: { seasonYear } });
           break;

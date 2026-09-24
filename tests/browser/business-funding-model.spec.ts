@@ -67,7 +67,7 @@ async function stubBusiness(page: Page, payload: ReturnType<typeof livePortal>) 
   });
 }
 
-test("school-funded teams without sponsors land on Money and hide CRM", async ({ page }) => {
+test("school-funded teams without sponsors open on Overview and hide CRM", async ({ page }) => {
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business");
 
@@ -76,10 +76,9 @@ test("school-funded teams without sponsors land on Money and hide CRM", async ({
   await expect(tabs.getByRole("tab", { name: "Overview" })).toBeVisible();
   await expect(tabs.getByRole("tab", { name: "Money" })).toBeVisible();
   await expect(tabs.getByRole("tab", { name: "Sponsors" })).toHaveCount(0);
-  await expect(tabs.getByRole("tab", { name: "Money" })).toHaveAttribute("aria-selected", "true");
-
-  await tabs.getByRole("tab", { name: "Overview" }).click();
-  await expect(page.getByRole("heading", { name: "Know the number before saying yes." })).toBeVisible();
+  // /business always opens on Overview unless the link names a tab.
+  await expect(tabs.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open CRM" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open sponsors" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Sponsor CRM" })).toHaveCount(0);
@@ -92,7 +91,7 @@ test("a Sponsors deep-link is sent back to Overview when sponsors are not allowe
   const tabs = page.getByRole("tablist", { name: "Business sections" });
   await expect(tabs.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
   await expect(tabs.getByRole("tab", { name: "Sponsors" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Know the number before saying yes." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
 });
 
 test("sponsored teams still offer the Sponsors workbench", async ({ page }) => {
@@ -101,5 +100,5 @@ test("sponsored teams still offer the Sponsors workbench", async ({ page }) => {
 
   const tabs = page.getByRole("tablist", { name: "Business sections" });
   await expect(tabs.getByRole("tab", { name: "Sponsors" })).toBeVisible();
-  await expect(tabs.getByRole("tab", { name: "Sponsors" })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
 });

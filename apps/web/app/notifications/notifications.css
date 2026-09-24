@@ -93,3 +93,72 @@
   padding: 0 12px;
   font-size: 12px;
 }
+
+/* Related links read as chips, not plain text with stray dots. */
+.notif-related a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.notif-prefs-page .account-panel + .account-panel {
+  margin-top: 16px;
+}
+
+/* Email status in the right colour: green only when email really goes out. */
+.notif-email-status {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 12px);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.notif-email-status.on {
+  border: 1px solid color-mix(in srgb, var(--positive, #16a34a) 40%, var(--line));
+  background: color-mix(in srgb, var(--positive, #16a34a) 10%, var(--surface));
+}
+.notif-email-status.off {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.notif-prefs-save {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+.notif-prefs-message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.notif-prefs-message.success {
+  color: var(--positive, #16a34a);
+  font-weight: 600;
+}
+/* Clear the phone's bottom tab bar. */
+@media (max-width: 767px) {
+  .notif-prefs-save {
+    bottom: 76px;
+    padding-left: 4px;
+    border-radius: var(--radius-sm, 12px);
+  }
+  .notif-prefs-page {
+    padding-bottom: 96px;
+  }
+}

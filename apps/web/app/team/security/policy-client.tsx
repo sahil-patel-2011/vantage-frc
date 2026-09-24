@@ -146,7 +146,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json()) as { error?: string };
-    setMessage(response.ok ? "Sign-in policy saved and audited." : (data.error ?? "Could not save."));
+    setMessage(response.ok ? "Saved." : (data.error ?? "Could not save."));
     if (response.ok) await persistAuthPolicySnapshot(orgId, policy);
   }
 
@@ -155,13 +155,12 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Settings / Team security"
         title="Team security"
-        description="Team sign-in policy, 2FA requirements, hub access for scouts/viewers, and delegated admin powers. Personal authenticator setup lives under Account → Security."
+        description="Choose how people sign in to your team. What each person can open is set on Team admin."
       >
-        <nav className="settings-inline-links" aria-label="Related settings">
+        <nav className="team-admin-settings-links" aria-label="Related settings">
           {canManage ? <a href={withOrgHref("/team/admin", orgId)}>Team admin</a> : null}
-          <a href={`/team/budgets?orgId=${orgId}`}>Chat limits</a>
-          <a href={`/team/ai-keys?orgId=${orgId}`}>Team keys</a>
-          <a href="/security">Personal 2FA</a>
+          <a href={`/team/ai-keys?orgId=${orgId}`}>AI keys</a>
+          <a href="/security">Your own two-step sign-in</a>
         </nav>
       </PageHeader>
       <OfflineBanner feature="Team security" fromCache={fromCache} cachedAt={cachedAt} />
@@ -176,11 +175,8 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         <EmptyState soft title="Loading sign-in policy…" description="Checking which methods this team allows." aria-busy />
       ) : canEditPolicy ? (
       <Panel as="form" className="auth-policy-form" onSubmit={save}>
-        <h2>Allowed sign-in methods</h2>
-        <p>
-          These methods only authenticate an identity. Membership remains invite-only and verified-email matching still
-          applies.
-        </p>
+        <h2>Ways to sign in</h2>
+        <p>Only people you invite can join, whichever way they sign in.</p>
         <label className="state-control">
           <input
             type="checkbox"
@@ -188,8 +184,8 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
             onChange={(event) => setPolicy({ ...policy, allowEmailOtp: event.target.checked })}
           />
           <span>
-            <strong>Email one-time code</strong>
-            <small>Short-lived, single-use numeric code</small>
+            <strong>Emailed code</strong>
+            <small>We email a short code each time they sign in</small>
           </span>
         </label>
         <label className="state-control">
@@ -200,7 +196,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           />
           <span>
             <strong>Email and password</strong>
-            <small>Verified email, breach check, reset code, session revocation</small>
+            <small>They can reset a forgotten password by email</small>
           </span>
         </label>
         <label className="state-control">
@@ -211,23 +207,23 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           />
           <span>
             <strong>Google</strong>
-            <small>Verified Google email and existing membership only</small>
+            <small>Their Google account must use the email you invited</small>
           </span>
         </label>
-        <h2>Authenticator-app 2FA</h2>
+        <h2>Two-step sign-in (authenticator app)</h2>
         <label>
-          Policy
+          For this team
           <select
             value={policy.mfaPolicy}
             onChange={(event) => setPolicy({ ...policy, mfaPolicy: event.target.value })}
           >
             <option value="off">Off</option>
             <option value="optional">Optional</option>
-            <option value="required">Required for team access</option>
+            <option value="required">Required for everyone</option>
           </select>
         </label>
         <label>
-          Remember verified device for
+          Don&apos;t ask again on the same device for
           <input
             type="number"
             min={0}
@@ -235,10 +231,10 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
             value={policy.rememberedDeviceDays}
             onChange={(event) => setPolicy({ ...policy, rememberedDeviceDays: Number(event.target.value) })}
           />
-          <small>days (0 disables remembered devices)</small>
+          <small>days (0 means ask every time)</small>
         </label>
         <Button variant="primary" type="submit">
-          Save access policy
+          Save sign-in rules
         </Button>
       </Panel>
       ) : (
@@ -247,13 +243,26 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           badge="No access"
           badgeTone="setup"
           title="Owners and admins set sign-in methods"
-          description="An owner or admin chooses email codes, passwords, Google, and whether two-factor is required. Your own authenticator stays under Personal 2FA."
+          description="An owner or mentor chooses emailed codes, passwords, Google, and whether two-step sign-in is required. Your own authenticator app is under Account."
         >
           <Button as="a" variant="secondary" href="/security">
-            Personal 2FA
+            Your own two-step sign-in
           </Button>
         </EmptyState>
       )}
+
+      {canManage ? (
+        <Panel className="auth-policy-form team-security-access-pointer">
+          <h2>Who can open what</h2>
+          <p>
+            Each person&apos;s role, the sections they can open, extra powers and budget access are set in one place:
+            their <strong>Access</strong> button on Team admin.
+          </p>
+          <Button as="a" variant="secondary" href={`${withOrgHref("/team/admin", orgId)}#people`}>
+            Open Team admin
+          </Button>
+        </Panel>
+      ) : null}
     </main>
   );
 }

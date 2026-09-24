@@ -38,7 +38,7 @@ describe("Business funding GUI student chrome", () => {
     expect([...BUSINESS_FUNDING_RELATED_INCLUDE]).toEqual(["sponsors", "budget", "grants"]);
     const links = businessRelatedLinks("org-1", { include: [...BUSINESS_FUNDING_RELATED_INCLUDE] });
     expect(links.map((link) => link.label)).toEqual(["Sponsors", "Grants", "Budget"]);
-    expect(hubById("business").tabs.find((tab) => tab.id === "budget")?.featured).toBe(true);
+    expect(hubById("business").tabs.find((tab) => tab.id === "season-budget")?.featured).toBe(true);
     expect(hubFeaturedMoreTabs(hubById("business")).map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["parts-catalog", "grant-calendar"]),
     );

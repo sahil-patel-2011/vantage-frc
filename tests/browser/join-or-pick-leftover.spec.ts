@@ -26,7 +26,7 @@ test("Team admin setup and leftover boards never say Join or pick a team", async
     wording is checked when the gate is what is on screen.
   */
   const gate = page.getByRole("heading", { name: "Choose your team" });
-  const board = page.getByText("Invite teammates by exact email");
+  const board = page.getByText("Invite people and choose what each person can open.");
   // Waited for, not raced: asking whether the gate is visible before the
   // client has painted answers "no" about a page that is about to show it.
   await expect(gate.or(board).first()).toBeVisible({ timeout: 25_000 });

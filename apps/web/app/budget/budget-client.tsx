@@ -57,9 +57,8 @@ const money = (value: number) =>
   value.toLocaleString(undefined, { style: "currency", currency: "USD" });
 
 /**
- * Every state's headline. `remainingUsd` is null in three of the five states and
- * this renders a dash for it — a dash a mentor has to ask about is better than a
- * number that flatters.
+ * Every state's headline. `remainingUsd` is null only while no budget is set;
+ * with a budget and nothing recorded it is the whole budget, with a note.
  */
 function Headline({ summary }: { summary: BudgetSummary }) {
   const remaining =
@@ -76,7 +75,9 @@ function Headline({ summary }: { summary: BudgetSummary }) {
         value={remaining}
         footer={
           summary.remainingUsd == null ? (
-            <span className="budget-note">Not shown — see the line below</span>
+            <span className="budget-note">Set a budget to see this</span>
+          ) : summary.state === "budget_no_spend" ? (
+            <span className="budget-note">No spending recorded yet</span>
           ) : null
         }
       />
@@ -93,7 +94,10 @@ export default function BudgetClient() {
 
   const [budgetInput, setBudgetInput] = useState("");
   const [budgetNotes, setBudgetNotes] = useState("");
-  const [confirmBudget, setConfirmBudget] = useState(false);
+  /** Shown beside Save, with Undo: a budget change is easy to reverse, so it saves straight away. */
+  const [budgetSaved, setBudgetSaved] = useState<
+    { text: string; undo: { total: number | null; notes: string } | null } | null
+  >(null);
 
   const [feeLabel, setFeeLabel] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
@@ -102,7 +106,6 @@ export default function BudgetClient() {
   const [feePaid, setFeePaid] = useState(false);
   const [confirmFee, setConfirmFee] = useState(false);
 
-  const [grantUserId, setGrantUserId] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -327,41 +330,27 @@ export default function BudgetClient() {
       <PageHeader
         breadcrumbs="Business / Money"
         title={`Season budget ${view.seasonYear}`}
-        description={`${view.orgName} — visible to mentors only.`}
+        description={`The one budget number for ${view.orgName}. Money, orders and the Business overview all use it.`}
       />
       <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
-
-      {/*
-        The brief said to say this plainly rather than let anyone believe a
-        "mentor" permission exists. It does not: this is the Owner/Admin role
-        plus an explicit grant.
-      */}
-      <Panel className="budget-who">
-        <h2>Who can see this</h2>
-        <p>Owners, admins and the people you add below can see the budget. No one else can.</p>
-        <p className="app-muted">
-          You are seeing this page as:{" "}
-          <Badge tone="info">
-            {view.accessVia === "owner"
-              ? "Owner"
-              : view.accessVia === "admin"
-                ? "Admin"
-                : "Granted budget access"}
-          </Badge>
-        </p>
-      </Panel>
 
       <Panel>
         <h2>Where the season stands</h2>
         <Headline summary={summary} />
         <p className="budget-verdict">{describeBudget(summary)}</p>
-        {summary.state === "budget_no_spend" ? (
-          <p className="budget-warn">
-            Nothing has been recorded against this budget yet. That is a statement about the
-            records, not about the money — until spending is entered, there is no honest
-            &ldquo;remaining&rdquo; figure to show.
-          </p>
-        ) : null}
+        {/* One sentence on who can see this, not a panel and a contradiction. */}
+        <p className="app-muted budget-who-line">
+          Only owners, mentors and people you give budget access can see this page. You are
+          here as{" "}
+          <Badge tone="info">
+            {view.accessVia === "owner"
+              ? "Owner"
+              : view.accessVia === "admin"
+                ? "Mentor or coach"
+                : "Budget access"}
+          </Badge>
+          .
+        </p>
       </Panel>
 
       <Panel>
@@ -373,19 +362,30 @@ export default function BudgetClient() {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            if (!confirmBudget) {
-              setConfirmBudget(true);
-              return;
-            }
+            const previous = {
+              total: view.budget.totalBudgetUsd,
+              notes: view.budget.notes ?? "",
+            };
+            const nextTotal = budgetInput.trim() === "" ? null : budgetInput;
+            setBudgetSaved(null);
             void act(
               {
                 action: "set-budget",
                 seasonYear: view.seasonYear,
-                totalBudgetUsd: budgetInput.trim() === "" ? null : budgetInput,
+                totalBudgetUsd: nextTotal,
                 notes: budgetNotes,
               },
-              "Budget saved.",
-            ).then(() => setConfirmBudget(false));
+              "",
+            ).then((ok) => {
+              if (!ok) return;
+              setBudgetSaved({
+                text:
+                  nextTotal == null
+                    ? `Saved. The ${view.seasonYear} budget is cleared.`
+                    : `Saved. The ${view.seasonYear} budget is ${money(Number(nextTotal) || 0)}.`,
+                undo: previous,
+              });
+            });
           }}
         >
           <label className="budget-field">
@@ -396,10 +396,10 @@ export default function BudgetClient() {
               step="0.01"
               inputMode="decimal"
               value={budgetInput}
-              placeholder="Leave blank for no budget"
+              placeholder="e.g. 5000"
               onChange={(event) => {
                 setBudgetInput(event.target.value);
-                setConfirmBudget(false);
+                setBudgetSaved(null);
               }}
             />
           </label>
@@ -411,27 +411,51 @@ export default function BudgetClient() {
               maxLength={500}
               onChange={(event) => {
                 setBudgetNotes(event.target.value);
-                setConfirmBudget(false);
+                setBudgetSaved(null);
               }}
             />
           </label>
-          {confirmBudget ? (
-            <p className="budget-confirm">
-              {budgetInput.trim() === ""
-                ? "Clear the season budget?"
-                : `Set the ${view.seasonYear} budget to ${money(Number(budgetInput) || 0)}?`}{" "}
-              <Button variant="primary" type="submit" disabled={busy}>
-                Yes, save it
-              </Button>{" "}
-              <Button variant="ghost" type="button" onClick={() => setConfirmBudget(false)}>
-                Cancel
-              </Button>
+          <Button variant="primary" type="submit" disabled={busy}>
+            {busy ? "Saving…" : "Save budget"}
+          </Button>
+          {budgetSaved ? (
+            <p className="budget-saved" role="status">
+              <span>{budgetSaved.text}</span>
+              {budgetSaved.undo ? (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    const undo = budgetSaved.undo;
+                    if (!undo) return;
+                    void act(
+                      {
+                        action: "set-budget",
+                        seasonYear: view.seasonYear,
+                        totalBudgetUsd: undo.total,
+                        notes: undo.notes,
+                      },
+                      "",
+                    ).then((ok) => {
+                      if (!ok) return;
+                      setBudgetInput(undo.total == null ? "" : String(undo.total));
+                      setBudgetNotes(undo.notes);
+                      setBudgetSaved({
+                        text:
+                          undo.total == null
+                            ? "Undone. No budget is set."
+                            : `Undone. The budget is back to ${money(undo.total)}.`,
+                        undo: null,
+                      });
+                    });
+                  }}
+                >
+                  Undo
+                </Button>
+              ) : null}
             </p>
-          ) : (
-            <Button variant="primary" type="submit" disabled={busy}>
-              Save budget
-            </Button>
-          )}
+          ) : null}
         </form>
       </Panel>
 
@@ -440,8 +464,8 @@ export default function BudgetClient() {
         {view.spendBySource.length === 0 ? (
           <EmptyState
             compact
-            title="Nothing recorded yet"
-            description="No spending has been entered for this season. This page will not guess at a number."
+            title="Nothing spent yet"
+            description="Approved part requests and paid event fees show up here on their own."
           />
         ) : (
           <table className="budget-table">
@@ -603,9 +627,11 @@ export default function BudgetClient() {
               </Button>
             </p>
           ) : (
-            <Button variant="primary" type="submit" disabled={busy}>
-              Record fee
-            </Button>
+            <div>
+              <Button variant="secondary" type="submit" disabled={busy}>
+                Record fee
+              </Button>
+            </div>
           )}
         </form>
       </Panel>
@@ -630,74 +656,27 @@ export default function BudgetClient() {
       {payload.canGrantAccess ? (
         <Panel>
           <h2>Who else can see the budget</h2>
+          {/* Budget access is set per person in one place: Team admin → Access. */}
           <p className="app-muted">
-            Owners and admins already have access. Use this to give a mentor who is neither one
-            budget access without making them an admin. Nobody can grant it to themselves.
+            {payload.grants.length === 0
+              ? "Only owners and mentors can see it right now."
+              : `Also open to: ${payload.grants.map((grant) => grant.name || grant.email).join(", ")}.`}{" "}
+            To let someone else see it, open their <strong>Access</strong> on Team admin.
           </p>
-          {payload.implicitHolders.length > 0 ? (
-            <p className="app-muted">
-              Already have it by role:{" "}
-              {payload.implicitHolders
-                .map((person) => `${person.name || person.email} (${person.role})`)
-                .join(", ")}
-              .
-            </p>
-          ) : null}
-          {payload.grants.length === 0 ? (
-            <p className="app-muted">No extra budget access has been granted.</p>
-          ) : (
-            <ul className="budget-grant-list">
-              {payload.grants.map((grant) => (
-                <li key={grant.userId}>
-                  <span>
-                    <strong>{grant.name || grant.email}</strong>{" "}
-                    <span className="app-muted">
-                      granted {new Date(grant.grantedAt).toLocaleDateString()}
-                      {grant.grantedByName ? ` by ${grant.grantedByName}` : ""}
-                    </span>
-                  </span>
-                  <Button variant="ghost" type="button" disabled={busy} onClick={() => { void act( { action: "revoke-budget-access", userId: grant.userId }, `Budget access removed from ${grant.name || grant.email}.`, ); }}>
-                    Remove access
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {payload.candidates.length > 0 ? (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!grantUserId) return;
-                const person = payload.candidates.find((c) => c.userId === grantUserId);
-                void act(
-                  { action: "grant-budget-access", userId: grantUserId },
-                  `Budget access granted to ${person?.name || person?.email || "that member"}.`,
-                ).then((ok) => {
-                  if (ok) setGrantUserId("");
-                });
-              }}
+          <div>
+            <Button
+              as="a"
+              variant="secondary"
+              href={`/team/admin?orgId=${encodeURIComponent(view.orgId)}#people`}
             >
-              <label className="budget-field">
-                <span>Give budget access to</span>
-                <select value={grantUserId} onChange={(event) => setGrantUserId(event.target.value)}>
-                  <option value="">Choose a team member…</option>
-                  {payload.candidates.map((person) => (
-                    <option key={person.userId} value={person.userId}>
-                      {person.name || person.email} ({person.role})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Button variant="primary" type="submit" disabled={busy || !grantUserId}>
-                Grant budget access
-              </Button>
-            </form>
-          ) : null}
+              Choose who can see it
+            </Button>
+          </div>
         </Panel>
       ) : null}
 
       {error ? <p className="budget-error">{error}</p> : null}
-      {notice ? <p className="budget-notice">{notice}</p> : null}
+      {notice ? <p className="budget-notice" role="status">{notice}</p> : null}
     </main>
   );
 }

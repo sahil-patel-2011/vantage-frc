@@ -10,7 +10,7 @@ export const PAIR_RELATED_LINKS = [
     id: "github",
     label: "GitHub context",
     kind: "path" as const,
-    path: "/team/admin",
+    path: "/connectors/github",
     hash: "#github-connection",
   },
   { id: "chat", label: "AI chat", kind: "ai" as const, tab: "chat" },

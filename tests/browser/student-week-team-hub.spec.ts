@@ -82,7 +82,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
           phrase,
         );
       }
-      await expect(page.getByRole("heading", { name: "Add a teammate" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Invite someone" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Send invite" })).toBeVisible();
     }
   }

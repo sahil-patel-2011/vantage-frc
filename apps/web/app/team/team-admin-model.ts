@@ -16,6 +16,8 @@ export type Member = {
   email: string;
   role: string;
   joinedAt: string;
+  /** Extra powers (manage_members, …) — only meaningful for students and guests. */
+  capabilities?: string[];
 };
 
 export type AdminTenure = {
@@ -73,9 +75,14 @@ export type CustomProvider = {
   disabledAt?: string | null;
 };
 
-export type InviteNotice = { tone: "ok" | "warn" | "error"; message: string };
+export type InviteNotice = {
+  tone: "ok" | "warn" | "error";
+  message: string;
+  /** The link to copy, shown inside the message so the next step sits beside it. */
+  link?: { id: string; url: string } | null;
+};
 
-/** Last IndexedDB copy of Team admin membership + GitHub — never invented counts. */
+/** Last IndexedDB copy of Team admin membership — never invented counts. */
 export type TeamAdminSnapshot = {
   invites: Invite[];
   members: Member[];
@@ -83,12 +90,8 @@ export type TeamAdminSnapshot = {
   accessRequests: AccessRequest[];
   providers: CustomProvider[];
   deliveryMode: InviteDeliveryMode | null;
-  githubOAuthSetupRequired: boolean;
-  githubOAuthMessage: string;
-  githubCredentialRejected: { login: string | null } | null;
-  githubConnection: GitHubConnection | null;
-  githubRepos: GitHubRepo[];
-  defaultRepo: string;
+  /** Per-member hub allowlists (no rows = every section). Optional for older cached copies. */
+  hubAccessByUser?: Record<string, Array<{ hubId: string; allowedTabIds: string[] }>>;
 };
 
 export type { InviteDeliveryMode };

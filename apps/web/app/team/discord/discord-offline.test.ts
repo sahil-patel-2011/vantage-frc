@@ -14,6 +14,10 @@ describe("Discord last snapshot stays on the phone", () => {
     expect(src).toMatch(/feature="Discord"/);
     expect(src).not.toMatch(/if \(fetchFailed \|\| view == null\)/);
     expect(src).not.toMatch(/DISCORD_BOT_TOKEN/);
-    expect(src).toMatch(/view\.status === "live" \? <NextActions/);
+    // One path: paste the webhook link, 3 steps, Send test; ids and bot under Advanced.
+    expect(src).toMatch(/Copy Webhook URL/);
+    expect(src).toMatch(/Send test/);
+    expect(src).toMatch(/<summary>Advanced<\/summary>/);
+    expect(src).not.toMatch(/Guild \(server\) id/);
   });
 });

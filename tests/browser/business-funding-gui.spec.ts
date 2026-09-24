@@ -90,9 +90,9 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
 
   const tabs = page.getByRole("tablist", { name: "Business sections" });
   await tabs.getByRole("tab", { name: "Overview" }).click();
-  const workingFunds = page.getByLabel("Season funding summary").locator("article", { hasText: "Working funds" });
-  await expect(workingFunds.getByText("—")).toBeVisible();
-  await expect(workingFunds).not.toContainText("$0");
+  // Nothing recorded: one first step instead of six dash tiles, never a fake $0.
+  await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
+  await expect(page.getByLabel("Season funding summary")).toHaveCount(0);
 
   await expect(tabs.getByRole("tab", { name: "Sponsors" })).toBeVisible();
   await tabs.getByRole("tab", { name: "Money" }).click();

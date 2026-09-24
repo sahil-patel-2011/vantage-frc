@@ -50,15 +50,15 @@ export function FundraisingGlance({
         soft
         className="biz-fundraising-glance"
         badge="Get started"
-        title="No season fundraising goal yet"
+        title="No fundraising goal yet"
         description={
           sponsorsAllowed
-            ? "Set a budget goal, then add sponsors, grants, or fundraisers."
-            : "Set a budget goal, then add grants or fundraisers."
+            ? "Set how much you plan to raise, then add sponsors, grants or fundraisers."
+            : "Set how much you plan to raise, then add grants or fundraisers."
         }
       >
-        <Button variant="primary" type="button" onClick={onOpenBudget}>
-          Set a season goal
+        <Button variant="secondary" type="button" onClick={onOpenBudget}>
+          Set a fundraising goal
         </Button>
       </EmptyState>
     );
@@ -75,7 +75,7 @@ export function FundraisingGlance({
           </p>
         </div>
         <span className={`biz-badge ${tone}`}>
-          {attainment != null ? `${attainment}% of goal` : "Set a season goal"}
+          {attainment != null ? `${attainment}% of goal` : "No goal set"}
         </span>
       </header>
 
@@ -100,7 +100,7 @@ export function FundraisingGlance({
         </div>
       ) : (
         <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-          Progress bar appears after you set a fundraising goal on Budget. Actual in only counts recorded
+          A progress bar appears once you set a fundraising goal on Spending plan. Actual in only counts recorded
           {sponsorsAllowed ? " sponsor cash and grant awards." : " grant awards and fundraiser cash."}
         </p>
       )}

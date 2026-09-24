@@ -18,9 +18,8 @@ export function TeamAdminAccessPanel({
     <section className="team-access-inbox" aria-labelledby="team-access-title">
       <header>
         <div>
-          <span className="eyebrow">VERIFIED ACCESS REQUESTS</span>
-          <h2 id="team-access-title">Approve who enters this team.</h2>
-          <p>Team numbers route requests here; they never grant membership. Approval ends the applicant&apos;s onboarding sessions and emails a fresh sign-in link.</p>
+          <h2 id="team-access-title">Asking to join</h2>
+          <p>These people asked to join your team. Approving emails them a sign-in link.</p>
         </div>
         <strong>{accessRequests.filter((request) => request.status === "pending").length}</strong>
       </header>
@@ -35,17 +34,17 @@ export function TeamAdminAccessPanel({
               </div>
             </div>
             <dl>
-              <div><dt>TEAM ROLE</dt><dd>{request.requestedTeamRole ?? "Not specified"}</dd></div>
-              <div><dt>CREW</dt><dd>{request.crewRole ?? "Not specified"}</dd></div>
-              <div><dt>PRIMARY FOCUS</dt><dd>{request.primaryFocus}</dd></div>
+              <div><dt>Says they are</dt><dd>{request.requestedTeamRole ?? "Not specified"}</dd></div>
+              <div><dt>Job on the team</dt><dd>{request.crewRole ?? "Not specified"}</dd></div>
+              <div><dt>Mostly works on</dt><dd>{request.primaryFocus}</dd></div>
               {request.roleDescription ? (
-                <div><dt>HOW THEY HELP</dt><dd>{request.roleDescription}</dd></div>
+                <div><dt>How they help</dt><dd>{request.roleDescription}</dd></div>
               ) : null}
-              <div><dt>REQUESTED</dt><dd>{new Date(request.createdAt).toLocaleDateString()}</dd></div>
+              <div><dt>Asked on</dt><dd>{new Date(request.createdAt).toLocaleDateString()}</dd></div>
             </dl>
             <div className="team-access-actions">
-              <button type="button" className="approve" onClick={() => onReview(request.id, "approved", "scout")}>Allow as scout</button>
-              <button type="button" onClick={() => onReview(request.id, "approved", "viewer")}>Allow view-only</button>
+              <button type="button" className="approve" onClick={() => onReview(request.id, "approved", "scout")}>Allow as student</button>
+              <button type="button" onClick={() => onReview(request.id, "approved", "viewer")}>Allow as parent or guest</button>
               <button type="button" className="decline" onClick={() => onReview(request.id, "declined")}>Decline</button>
             </div>
           </article>

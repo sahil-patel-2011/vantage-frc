@@ -17,8 +17,52 @@ import { FundraisingGlance } from "./fundraising-glance";
 import { dollars, hasRecordedWorkingFunds, money, moneyWhenRecorded, percent, recordedWorkingFundsCents, statusLabel, type Tab } from "./business-helpers";
 import { Field, ToneBadge } from "./business-ui";
 
+/** True while this season has nothing recorded at all, so Overview shows one first step instead of a wall of dashes. */
+export function businessOverviewIsEmpty(view: BusinessView): boolean {
+  return (
+    view.budget.totalBudgetCents <= 0 &&
+    view.budget.sponsorIncomeCents <= 0 &&
+    view.budget.grantIncomeCents <= 0 &&
+    view.budget.committedCents <= 0 &&
+    view.purchases.length === 0 &&
+    view.sponsors.length === 0 &&
+    view.grants.length === 0 &&
+    view.awards.length === 0 &&
+    view.impact.activities === 0 &&
+    view.fundraisingProgress.goalCents <= 0 &&
+    view.fundraisingProgress.actualCents <= 0
+  );
+}
+
 export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => void }) {
   const sponsorsAllowed = view.sponsorsAllowed !== false;
+  const budgetHref = `/budget?orgId=${encodeURIComponent(view.orgId)}`;
+  if (businessOverviewIsEmpty(view)) {
+    return (
+      <div className="biz-stack">
+        <EmptyState
+          className="biz-first-step"
+          badge="First step"
+          title="Set your season budget"
+          description={
+            view.canManageFinance
+              ? "Start with one number: what this season will cost. Money, orders, sponsors and grants all measure against it."
+              : "An owner or mentor sets the season budget. Once it is set, this page shows how the money is going."
+          }
+        >
+          {view.canManageFinance ? (
+            <Button as="a" variant="primary" href={budgetHref}>
+              Set your season budget
+            </Button>
+          ) : null}
+        </EmptyState>
+        <p className="app-muted biz-first-step-note">
+          Already have orders{sponsorsAllowed ? ", sponsors" : ""} or grants to record? Use the tabs above. This summary
+          fills in as soon as anything is recorded.
+        </p>
+      </div>
+    );
+  }
   const available = recordedWorkingFundsCents(view.budget);
   const fundsOnRecord = hasRecordedWorkingFunds(view.budget);
   const utilization = fundsOnRecord ? percent(view.budget.committedCents, available) : null;
@@ -51,50 +95,59 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           label="Working funds"
           value={fundsOnRecord ? money(available) : "—"}
           detail={
-            view.budget.totalBudgetCents > 0
-              ? `${money(view.budget.totalBudgetCents)} base budget`
+            (view.budget.seasonBudgetCents ?? view.budget.totalBudgetCents) > 0
+              ? `${money(view.budget.seasonBudgetCents ?? view.budget.totalBudgetCents)} season budget`
+              : view.budget.totalBudgetCents > 0
+                ? `${money(view.budget.totalBudgetCents)} in category plans`
               : fundsOnRecord
-                ? "Recorded sponsor and grant cash — season budget not set"
+                ? "Sponsor and grant cash — no season budget set"
                 : "Set a season budget"
           }
+          href={view.budget.totalBudgetCents > 0 ? undefined : budgetHref}
           tone="blue"
         />
         <Kpi
           label="Committed"
           value={moneyWhenRecorded(view.budget.committedCents)}
-          detail={utilization == null ? "Blank until a budget or cash is recorded" : `${utilization}% of working funds`}
+          detail={utilization == null ? "Nothing approved or ordered yet" : `${utilization}% of working funds`}
           tone={utilization != null && utilization > 90 ? "danger" : "neutral"}
         />
-        <Kpi
-          label="Raised vs goal"
-          value={progress.goalCents > 0 ? `${progress.percentOfGoal}%` : "—"}
-          detail={
-            progress.goalCents > 0
-              ? `${money(progress.actualCents)} of ${money(progress.goalCents)}`
-              : progress.actualCents > 0
-                ? `${money(progress.actualCents)} recorded · set a goal`
-                : "Set a season goal."
-          }
-          tone={progress.goalCents > 0 && progress.percentOfGoal >= 100 ? "good" : "blue"}
-        />
-        <Kpi
-          label="Grant awards"
-          value={moneyWhenRecorded(view.budget.grantIncomeCents)}
-          detail={`${view.grants.length} applications tracked`}
-          tone="good"
-        />
-        <Kpi
-          label="Awaiting approval"
-          value={moneyWhenRecorded(view.budget.requestedCents)}
-          detail={`${pulse.pendingCount} open orders`}
-          tone={pulse.pendingCount ? "warn" : "neutral"}
-        />
-        <Kpi
-          label="Ready to buy"
-          value={String(pulse.readyToBuyCount)}
-          detail={pulse.openTotalCents > 0 ? `${money(pulse.openTotalCents)} open` : "No open order total yet"}
-          tone={pulse.readyToBuyCount ? "warn" : "neutral"}
-        />
+        {progress.goalCents > 0 || progress.actualCents > 0 ? (
+          <Kpi
+            label="Raised vs goal"
+            value={progress.goalCents > 0 ? `${progress.percentOfGoal}%` : "—"}
+            detail={
+              progress.goalCents > 0
+                ? `${money(progress.actualCents)} of ${money(progress.goalCents)}`
+                : `${money(progress.actualCents)} raised · no goal set`
+            }
+            tone={progress.goalCents > 0 && progress.percentOfGoal >= 100 ? "good" : "blue"}
+          />
+        ) : null}
+        {view.grants.length > 0 ? (
+          <Kpi
+            label="Grant awards"
+            value={moneyWhenRecorded(view.budget.grantIncomeCents)}
+            detail={`${view.grants.length} applications tracked`}
+            tone="good"
+          />
+        ) : null}
+        {view.purchases.length > 0 ? (
+          <>
+            <Kpi
+              label="Awaiting approval"
+              value={moneyWhenRecorded(view.budget.requestedCents)}
+              detail={`${pulse.pendingCount} open orders`}
+              tone={pulse.pendingCount ? "warn" : "neutral"}
+            />
+            <Kpi
+              label="Ready to buy"
+              value={String(pulse.readyToBuyCount)}
+              detail={pulse.openTotalCents > 0 ? `${money(pulse.openTotalCents)} open` : "No open orders"}
+              tone={pulse.readyToBuyCount ? "warn" : "neutral"}
+            />
+          </>
+        ) : null}
       </section>
 
       {pulse.financeAiEnabled && pulse.aiHeadline ? (
@@ -113,7 +166,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
             ))}
           </ul>
           <small className="app-muted" style={{ display: "block", marginTop: 8 }}>
-            Optional guidance from Season Costs — no card or bank data stored. Ask AI about money is under{" "}
+            Suggestions only — no card or bank details are stored. Ask AI about money is under{" "}
             <a href={financeAiHref}>Ask AI</a>.
           </small>
         </section>
@@ -128,26 +181,26 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
 
       <section className="biz-grid two">
         <article className="app-card biz-finance-pulse">
-          <header><div><span className="biz-overline">Financial pulse</span><h2>Know the number before saying yes.</h2></div><strong>{utilization == null ? "—" : `${utilization}%`}</strong></header>
+          <header><div><span className="biz-overline">Money</span><h2>Spending so far</h2></div><strong>{utilization == null ? "—" : `${utilization}%`}</strong></header>
           <div className="biz-progress"><i style={{ width: `${utilization ?? 0}%` }} /></div>
           <div className="biz-split-metrics">
             <div><span>Approved + ordered</span><strong>{moneyWhenRecorded(view.budget.committedCents)}</strong></div>
             <div><span>Actually ordered</span><strong>{moneyWhenRecorded(view.budget.spentCents)}</strong></div>
-            <div><span>Fundraising actual</span><strong>{moneyWhenRecorded(progress.actualCents)}</strong></div>
+            <div><span>Raised so far</span><strong>{moneyWhenRecorded(progress.actualCents)}</strong></div>
           </div>
-          {/* Three same-weight buttons became one primary + one secondary + overflow. */}
+          {/* The one filled button on Overview. The season budget itself is set on /budget. */}
           <ActionMenu
-            label="Financial pulse"
-            maxSecondary={1}
+            label="Spending so far"
+            maxSecondary={2}
             actions={[
-              { id: "finance", label: "Open season finance", intent: "primary", onClick: () => setTab("finance") },
-              { id: "budget", label: "Open budget", onClick: () => setTab("budget") },
+              { id: "finance", label: "Open Money", intent: "primary", onClick: () => setTab("finance") },
+              { id: "budget", label: "Season budget", href: budgetHref },
               { id: "orders", label: "Purchase orders", hint: "Approve, order, receive", href: businessOrdersHref },
             ]}
           />
         </article>
         <article className="app-card">
-          <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + reminders.length + followUps.length + grantDeadlines.length}</span></header>
+          <header className="biz-card-head"><div><span className="biz-overline">To do</span><h2>Needs attention</h2></div><span className="biz-count">{submitted.length + reminders.length + followUps.length + grantDeadlines.length}</span></header>
           <ul className="biz-action-list">
             {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">Purchase</ToneBadge><div><strong>{purchase.itemName}</strong><span>{money(purchase.totalCents)} requested by {purchase.requestedByName}</span></div><a href={`${ordersHref}&orderId=${encodeURIComponent(purchase.id)}`}>Review</a></li>)}
             {reminders.map((reminder) => (
@@ -162,42 +215,43 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
                 <button type="button" onClick={() => setTab("sponsors")}>Open</button>
               </li>
             ))}
-            {followUps.slice(0, 3).map((sponsor) => <li key={sponsor.id}><ToneBadge tone={sponsorHealth(sponsor) === "due" ? "danger" : "warn"}>Sponsor</ToneBadge><div><strong>{sponsor.name}</strong><span>{sponsor.nextFollowUpOn ? `Follow-up ${sponsor.nextFollowUpOn}` : "Relationship needs a next step"}</span></div><button type="button" onClick={() => setTab("sponsors")}>Connect</button></li>)}
+            {followUps.slice(0, 3).map((sponsor) => <li key={sponsor.id}><ToneBadge tone={sponsorHealth(sponsor) === "due" ? "danger" : "warn"}>Sponsor</ToneBadge><div><strong>{sponsor.name}</strong><span>{sponsor.nextFollowUpOn ? `Follow-up ${sponsor.nextFollowUpOn}` : "Needs a next step"}</span></div><button type="button" onClick={() => setTab("sponsors")}>Open</button></li>)}
             {grantDeadlines.map((grant) => <li key={grant.id}><ToneBadge tone="blue">Grant</ToneBadge><div><strong>{grant.title}</strong><span>Due {grant.deadline}</span></div><button type="button" onClick={() => setTab("grants")}>Open</button></li>)}
-            {!submitted.length && !reminders.length && !followUps.length && !grantDeadlines.length ? <li className="empty"><strong>Queue clear.</strong><span>{sponsorsAllowed ? "Add a purchase, sponsor, or grant opportunity to start the operating rhythm." : "Add a purchase or grant opportunity to start the operating rhythm."}</span></li> : null}
+            {!submitted.length && !reminders.length && !followUps.length && !grantDeadlines.length ? <li className="empty"><strong>Nothing waiting.</strong><span>Purchase requests{sponsorsAllowed ? ", sponsor follow-ups" : ""} and grant deadlines show up here.</span></li> : null}
           </ul>
         </article>
       </section>
 
       <section className="biz-grid three">
-        <article className="app-card"><span className="biz-overline">Monthly spend</span><h2>Order rhythm</h2><MonthBars rows={view.budget.monthlySpend} /></article>
-        {sponsorsAllowed ? (
-          <article className="app-card soft-panel"><span className="biz-overline">Relationship memory</span><h2>Built to survive graduation</h2><div className="biz-big-stat">{view.interactions.length}</div><p className="app-muted">Sponsor interactions logged with owners, dates, next steps, and follow-ups.</p><Button variant="secondary" type="button" onClick={() => setTab("sponsors")}>Open sponsors</Button></article>
+        {view.budget.monthlySpend.length > 0 ? (
+          <article className="app-card"><span className="biz-overline">Orders</span><h2>Monthly spend</h2><MonthBars rows={view.budget.monthlySpend} /></article>
         ) : null}
-        <article className="app-card soft-panel"><span className="biz-overline">Evidence locker</span><h2>Never write from memory again</h2><div className="biz-evidence-stats"><b>{view.awards.length}<small>awards</small></b><b>{view.impact.hours}<small>impact hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><Button variant="secondary" type="button" onClick={() => setTab("evidence")}>Open awards</Button></article>
+        {sponsorsAllowed && view.sponsors.length > 0 ? (
+          <article className="app-card soft-panel"><span className="biz-overline">Sponsors</span><h2>Sponsor contacts</h2><div className="biz-big-stat">{view.interactions.length}</div><p className="app-muted">Calls, emails and meetings logged with sponsors, with next steps.</p><Button variant="secondary" type="button" onClick={() => setTab("sponsors")}>Open sponsors</Button></article>
+        ) : null}
+        {view.awards.length > 0 || view.impact.activities > 0 ? (
+          <article className="app-card soft-panel"><span className="biz-overline">Outreach</span><h2>Awards and outreach</h2><div className="biz-evidence-stats"><b>{view.awards.length}<small>awards</small></b><b>{view.impact.hours}<small>impact hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><Button variant="secondary" type="button" onClick={() => setTab("evidence")}>Open outreach</Button></article>
+        ) : null}
       </section>
 
       <section className="biz-grid two">
-        {sponsorsAllowed ? (
+        {sponsorsAllowed && view.sponsors.length > 0 ? (
           <article className="app-card">
-            <span className="biz-overline">Partner recognition</span>
-            <h2>Sell placements without leaving Vantage.</h2>
-            <p className="app-muted">Storefront packages, creative approval, and live recognition strips share this org—dashboard, pit, and this portal.</p>
+            <span className="biz-overline">Sponsors</span>
+            <h2>Partner placements</h2>
+            <p className="app-muted">Sponsor packages, logo approval and the sponsor strip shown on Home and the pit screen.</p>
             <Button variant="secondary" type="button" onClick={() => setTab("placements")}>Open partners</Button>
           </article>
         ) : null}
         <article className="app-card soft-panel">
-          <span className="biz-overline">Season spend + finance AI</span>
-          <h2>Track spend, and choose what AI can read.</h2>
+          <span className="biz-overline">Event costs</span>
+          <h2>Registration, travel and event fees</h2>
           <p className="app-muted">
-            <a href={costsHref}>Season Costs</a> tracks event spend and a local assistant for open{" "}
-            <a href={ordersHref}>purchase requests</a>. Chat that reads redacted budgets lives under{" "}
-            <a href={financeAiHref}>Ask AI</a>. Card and bank details stay out.
+            Record event fees on the <a href={budgetHref}>season budget</a> or in{" "}
+            <a href={costsHref}>Season costs</a>. Ask questions about money under <a href={financeAiHref}>Ask AI</a>.
           </p>
-          {/* Finance-in-AI is the same label pointing at the same href three
-              lines up, in this card's own sentence. One copy. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <Button as="a" variant="secondary" href={costsHref}>Open Season Costs</Button>
+            <Button as="a" variant="secondary" href={costsHref}>Open Season costs</Button>
           </div>
         </article>
       </section>
@@ -209,8 +263,8 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
   );
 }
 
-function Kpi({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: "blue" | "good" | "warn" | "danger" | "neutral" }) {
-  return <article className={`biz-kpi ${tone}`}><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>;
+function Kpi({ label, value, detail, tone, href }: { label: string; value: string; detail: string; tone: "blue" | "good" | "warn" | "danger" | "neutral"; href?: string }) {
+  return <article className={`biz-kpi ${tone}`}><span>{label}</span><strong>{value}</strong><small>{href ? <a href={href}>{detail}</a> : detail}</small></article>;
 }
 
 function MonthBars({ rows }: { rows: BusinessView["budget"]["monthlySpend"] }) {
@@ -244,25 +298,39 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
     };
   }, [view.orgId, view.seasonYear]);
   return <div className="biz-stack">
-    <div className="biz-detail-link">
-      <span>Need help reading the season budget against open purchase requests?</span>
-      <a href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}>Season finance →</a>
-      <a href={financeAiHref}>Finance AI →</a>
-      <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs →</a>
-    </div>
     <section className="biz-grid two">
       <article className="app-card">
-        <header className="biz-card-head"><div><span className="biz-overline">Season guardrails</span><h2>Set the budget once. Compare every decision to it.</h2><p className="app-muted" style={{ margin: "8px 0 0", fontSize: 12 }}>For event-by-event spend tracking, use <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs</a>. Chat guidance lives under <a href={financeAiHref}>Finance AI</a>.</p></div>{view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Read only</ToneBadge>}</header>
-        <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["totalBudget", "fundraisingGoal"])}>
-          <Field label="Operating budget"><input name="totalBudgetDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.totalBudgetCents)} disabled={!view.canManageFinance} /></Field>
-          <Field label="Fundraising goal"><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>
-          <Field label="Finance notes" wide><textarea name="notes" rows={3} placeholder="Cash reserves, travel assumptions, board constraints…" disabled={!view.canManageFinance} /></Field>
-          <Button variant="primary" disabled={busy || !view.canManageFinance}>Save season guardrails</Button>
+        {/* The season budget is set in one place, /budget. This card only reads it. */}
+        <header className="biz-card-head">
+          <div>
+            <span className="biz-overline">Season budget</span>
+            <h2>
+              {(view.budget.seasonBudgetCents ?? 0) > 0
+                ? `${money(view.budget.seasonBudgetCents ?? 0)} for ${view.seasonYear}`
+                : `No ${view.seasonYear} budget yet`}
+            </h2>
+            <p className="app-muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+              Set on the season budget page and used on every money screen.
+            </p>
+          </div>
+          {view.canManageFinance ? (
+            <Button as="a" variant="secondary" href={`/budget?orgId=${encodeURIComponent(view.orgId)}`}>
+              {(view.budget.seasonBudgetCents ?? 0) > 0 ? "Change season budget" : "Set season budget"}
+            </Button>
+          ) : null}
+        </header>
+        <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["fundraisingGoal"])}>
+          <Field label="Fundraising goal" hint="How much you plan to raise from sponsors, grants and fundraisers."><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>
+          <Field label="Notes" wide><textarea name="notes" rows={2} placeholder="Cash reserves, travel plans, school rules…" disabled={!view.canManageFinance} /></Field>
+          <Button variant="secondary" disabled={busy || !view.canManageFinance}>Save goal</Button>
         </form>
-        {view.canManageFinance ? <form className="biz-inline-form" onSubmit={(event) => void submit(event, "add-category", ["allocated"])}><input name="name" placeholder="Category (Robot, Travel, Outreach…)" required /><input name="allocatedDollars" type="number" min="0" step="0.01" placeholder="Allocation" required /><button disabled={busy}>Add / update category</button></form> : null}
+        {view.canManageFinance ? <form className="biz-inline-form" onSubmit={(event) => void submit(event, "add-category", ["allocated"])}><input name="name" aria-label="Category name" placeholder="Category (Robot, Travel, Outreach…)" required /><input name="allocatedDollars" aria-label="Amount for this category" type="number" min="0" step="0.01" placeholder="Amount" required /><button disabled={busy}>Add or update category</button></form> : null}
+        <p className="app-muted" style={{ margin: "10px 0 0", fontSize: 12 }}>
+          Event fees go in <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season costs</a>. Ask questions about money in <a href={financeAiHref}>Ask AI</a>.
+        </p>
       </article>
       <article className="app-card biz-order-form">
-        <span className="biz-overline">Student purchasing</span><h2>Request an Amazon order without losing the why.</h2>
+        <span className="biz-overline">Purchases</span><h2>Request a purchase</h2>
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "submit-purchase", ["unitPrice", "shipping"])}>
           <Field label="Item" wide><input name="itemName" required placeholder="2 × 1 aluminum tube" /></Field>
           <Field label="Vendor"><input name="vendor" defaultValue="Amazon" required /></Field>
@@ -283,7 +351,7 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
         <header className="biz-card-head">
           <div>
             <span className="biz-overline">Budget vs recorded spend</span>
-            <h2>Season plan against the unified ledger.</h2>
+            <h2>Planned vs spent by category</h2>
           </div>
         </header>
         <div className="biz-category-grid">
@@ -302,12 +370,12 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
     ) : null}
 
     <section className="app-card">
-      <header className="biz-card-head"><div><span className="biz-overline">Category control</span><h2>Allocation vs. committed spend</h2></div><strong>{money(view.categories.reduce((total, category) => total + category.allocatedCents, 0))} allocated</strong></header>
-      <div className="biz-category-grid">{view.categories.map((category) => { const spent = categorySpend.get(category.id) ?? 0; const used = percent(spent, category.allocatedCents); return <article key={category.id}><header><strong>{category.name}</strong><span>{used}%</span></header><div className="biz-progress"><i style={{ width: `${used}%` }} /></div><footer><span>{money(spent)} committed</span><span>{money(category.allocatedCents)} allocated</span></footer></article>; })}{!view.categories.length ? <p className="biz-empty-inline">A finance lead can add categories so requests roll up to robot, travel, outreach, tools, and more.</p> : null}</div>
+      <header className="biz-card-head"><div><span className="biz-overline">Categories</span><h2>Planned vs approved</h2></div><strong>{money(view.categories.reduce((total, category) => total + category.allocatedCents, 0))} allocated</strong></header>
+      <div className="biz-category-grid">{view.categories.map((category) => { const spent = categorySpend.get(category.id) ?? 0; const used = percent(spent, category.allocatedCents); return <article key={category.id}><header><strong>{category.name}</strong><span>{used}%</span></header><div className="biz-progress"><i style={{ width: `${used}%` }} /></div><footer><span>{money(spent)} committed</span><span>{money(category.allocatedCents)} allocated</span></footer></article>; })}{!view.categories.length ? <p className="biz-empty-inline">Owners and mentors can add categories (robot, travel, outreach…) so requests add up by category.</p> : null}</div>
     </section>
 
     <section className="app-card">
-      <header className="biz-card-head"><div><span className="biz-overline">Purchase queue</span><h2>From request to receiving</h2></div><span className="biz-count">{view.purchases.length}</span></header>
+      <header className="biz-card-head"><div><span className="biz-overline">Purchases</span><h2>Purchase requests</h2></div><span className="biz-count">{view.purchases.length}</span></header>
       <div className="biz-table-wrap"><table className="biz-table"><thead><tr><th>Request</th><th>Category</th><th>Total</th><th>Needed</th><th>Status</th><th>Action</th></tr></thead><tbody>{view.purchases.map((purchase) => <PurchaseRow key={purchase.id} purchase={purchase} canManage={view.canManageFinance} busy={busy} mutate={mutate} />)}{!view.purchases.length ? <tr><td colSpan={6}>No purchase requests yet. Students can submit the first one above.</td></tr> : null}</tbody></table></div>
     </section>
   </div>;
@@ -543,6 +611,6 @@ export function Evidence({ view, busy, submit }: { view: BusinessView; busy: boo
       <span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span>
       <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open awards →</a>
     </div>
-    <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><Button variant="primary" disabled={busy}>Add award to {view.seasonYear}</Button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><Button as="a" variant="primary" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</Button></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
+    <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><Button variant="primary" disabled={busy}>Add award to {view.seasonYear}</Button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><Button as="a" variant="secondary" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</Button></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
   </div>;
 }
