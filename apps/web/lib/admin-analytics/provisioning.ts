@@ -105,6 +105,6 @@ export function provisionConflictMessage(errorText: string): string | null {
   const text = errorText.toLowerCase();
   if (!text.includes("duplicate key")) return null;
   if (text.includes("team_number")) return "That team number already has a team";
-  if (text.includes("slug")) return "That team slug is already taken";
+  if (text.includes("slug")) return "Another team already uses that web address. Change it under Advanced, or check the team isn't already set up";
   return "A team with those details already exists";
 }

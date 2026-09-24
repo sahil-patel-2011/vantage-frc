@@ -563,7 +563,7 @@ async function allianceDesk(client: PoolClient, ctx: HomeWidgetContext): Promise
 }
 
 async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
-  if (!ctx.eventKey) return empty("No match schedule synced for this event.");
+  if (!ctx.eventKey) return empty("Pick the event you're at to see its schedule.");
   const teamKey = teamKeyOf(ctx.teamNumber);
   const items = await query<{
     matchKey: string;
@@ -583,7 +583,14 @@ async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promis
       LIMIT 6`,
     [ctx.eventKey, teamKey],
   );
-  if (items.length === 0) return empty("No match schedule synced for this event.");
+  if (items.length === 0) {
+    // Nothing ahead: say why, the same way Home's Next match and Event day do ("All 16 of our
+    // matches here are played"), not that the schedule never synced.
+    const summary = teamKey
+      ? await withSavepoint(client, () => loadOurMatchSummary(client, ctx.eventKey!, teamKey), null)
+      : null;
+    return empty(noNextMatchMessage(summary));
+  }
   return live({ items, href: "/schedule" });
 }
 
@@ -750,7 +757,7 @@ const FALLBACK_MESSAGE: Record<string, string> = {
   coding_resources: "No robot-code repo bound yet.",
   team_profile: "Team profile has not been built yet. Open Team profile.",
   alliance_desk: "Alliance selection is not running.",
-  match_schedule: "No match schedule synced for this event.",
+  match_schedule: "Pick the event you're at to see its schedule.",
   batteries: "No batteries logged.",
   assembly_manual: "No assembly manual yet. Open Assembly manual to start one.",
   sponsor_followups: "No open sponsor follow-ups.",

@@ -116,6 +116,10 @@ export function DashboardWidgetLibrary({
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
+        {/* Said once here: it used to repeat under about twenty cards. */}
+        <p className="dash-sheet-empty-note" data-testid="dash-library-empty-note">
+          Cards you add stay on Home, even before they have anything to show.
+        </p>
         <div className="dash-sheet-list" data-testid="dash-catalog-inline">
           {addableCount === 0 && !query ? (
             <p className="dash-sheet-empty">Every widget you can use is already on your Home.</p>
@@ -125,7 +129,7 @@ export function DashboardWidgetLibrary({
             <section key={group.group} aria-label={group.label}>
               <h3>{group.label}</h3>
               <ul>
-                {group.rows.map(({ entry, status, reason, placedLabel, emptyNow }) => {
+                {group.rows.map(({ entry, status, reason, placedLabel }) => {
                   const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
                   const addable = status === "add";
                   return (
@@ -150,11 +154,6 @@ export function DashboardWidgetLibrary({
                         <span>
                           <strong>{entry.label}</strong>
                           <small>{status === "locked" && reason ? reason : entry.description}</small>
-                          {addable && emptyNow ? (
-                            <small className="dash-sheet-empty-note" data-testid="dash-library-empty-note">
-                              Nothing in it yet. Added from here, it stays on Home and fills in as your team uses it.
-                            </small>
-                          ) : null}
                         </span>
                         <em>{status === "placed" ? placedLabel ?? "On Home" : status === "locked" ? "Locked" : "Add"}</em>
                       </button>

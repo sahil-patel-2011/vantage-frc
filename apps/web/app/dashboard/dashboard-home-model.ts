@@ -31,8 +31,7 @@ export function dashboardPaletteRows(
     if (!canAccessWidget(entry.type, role)) {
       return { entry, status: "locked" as const, reason: widgetLockReason(entry) };
     }
-    const status = opts.widgets?.[entry.type]?.status;
-    return { entry, status: "add" as const, reason: null, emptyNow: status === "empty" || status === "setup_required" };
+    return { entry, status: "add" as const, reason: null };
   });
 }
 

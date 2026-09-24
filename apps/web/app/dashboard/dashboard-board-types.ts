@@ -92,6 +92,4 @@ export type PaletteRow = {
   reason: string | null;
   /** For a card on the board: "On Home", or why Home is not showing it. */
   placedLabel?: string;
-  /** Its data is empty right now, so it is added with Always show on. */
-  emptyNow?: boolean;
 };

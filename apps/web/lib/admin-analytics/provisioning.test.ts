@@ -98,7 +98,7 @@ describe("provisionConflictMessage", () => {
     ).toBe("That team number already has a team");
     expect(
       provisionConflictMessage('duplicate key value violates unique constraint "organizations_slug_key"'),
-    ).toBe("That team slug is already taken");
+    ).toBe("Another team already uses that web address. Change it under Advanced, or check the team isn't already set up");
     expect(provisionConflictMessage("duplicate key value violates unique constraint \"other\"")).toBe(
       "A team with those details already exists",
     );

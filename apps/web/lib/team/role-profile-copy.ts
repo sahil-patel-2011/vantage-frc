@@ -25,8 +25,9 @@ export const PROFILE_CAPABILITIES = [
   },
   {
     id: "manage_billing",
-    label: "Manage billing",
-    hint: "The team's plan and payments. Only an owner can give this.",
+    // Vantage is free: what this power guards now is the team's AI usage and limits.
+    label: "See AI usage and limits",
+    hint: "What the team's AI key has been used for, and the monthly limit. Only an owner can give this.",
   },
 ] as const;
 
