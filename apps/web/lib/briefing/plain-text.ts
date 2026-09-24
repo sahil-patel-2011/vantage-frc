@@ -32,6 +32,18 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bHighest-EPA\b/g, "Highest-rated")
       .replace(/\bhighest-EPA\b/g, "highest-rated")
       .replace(/\bEPA\b/g, "rating")
+      // The prediction model's own vocabulary ("MODEL strategy-engine-max-v1", "from sources
+      // statbotics, event 2026gacmp, 58 weighted team-matches", "Org scout foul penalty
+      // (capped)", "not a TBA …") reads like a log file to a drive coach.
+      .replace(/\bMODEL\s+[a-z0-9._-]+\s*[…:·-]*\s*/gi, "")
+      .replace(/\bfrom sources?\s+[^.;]*?(\d+)\s+weighted team-matches\b/gi, "from $1 matches of data")
+      .replace(/\bweighted team-matches\b/gi, "matches of data")
+      .replace(/\s*\(statbotics\)/gi, "")
+      .replace(/\bevent\s+\d{4}[a-z0-9]+\b/gi, "this event")
+      .replace(/\bOrg scout\b/g, "Our scouts'")
+      .replace(/\s*\(capped\)/gi, "")
+      .replace(/\bnot a TBA\b/gi, "not an official")
+      .replace(/\bTBA\b/g, "official results")
       .replace(/\b\d+\.\d{4,}\b/g, (whole) => String(Math.round(Number(whole) * 10) / 10))
       .replace(/\s{2,}/g, " ")
       .trim()

@@ -429,7 +429,20 @@ export default function BriefingClient() {
             {view.ourEpaTotal != null ? <span className="brief-chip">our rating {fmtEpa(view.ourEpaTotal)}</span> : null}
           </div>
         </div>
-        {winDisplay && view.prediction ? (
+        {/* A played match leads with how it went, not with odds for something already decided. */}
+        {view.match.played && side && view.match.redScore != null && view.match.blueScore != null ? (
+          <div className="brief-prob brief-result">
+            <span className="brief-prob-num">
+              {(() => {
+                const ours = side === "red" ? view.match.redScore! : view.match.blueScore!;
+                const theirs = side === "red" ? view.match.blueScore! : view.match.redScore!;
+                return `${ours > theirs ? "Won" : ours < theirs ? "Lost" : "Tied"} ${ours}–${theirs}`;
+              })()}
+            </span>
+            <span className="brief-prob-label">final score</span>
+            {winPct ? <span className="brief-prob-range">we gave ourselves {winPct} beforehand</span> : null}
+          </div>
+        ) : winDisplay && view.prediction ? (
           <div className="brief-prob">
             <span className="brief-prob-num">{winPct ?? ""}</span>
             <span className="brief-prob-label">chance to win</span>

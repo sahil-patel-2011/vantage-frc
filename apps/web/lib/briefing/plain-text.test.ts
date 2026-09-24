@@ -54,3 +54,15 @@ describe("rating words, not statistics words", () => {
     expect(readablePlanChip("")).toBeNull();
   });
 });
+
+describe("the prediction model's own words", () => {
+  it("reads as plain English on How we got this", () => {
+    const text = plainStrategyText(
+      "MODEL strategy-engine-max-v1 · Alliance rating margin -17.1 from sources statbotics, event 2026gacmp, 58 weighted team-matches",
+    );
+    expect(text).toBe("Alliance rating margin -17.1 from 58 matches of data");
+    expect(plainStrategyText("Org scout foul penalty (capped) margin 0.7; not a TBA figure")).toBe(
+      "Our scouts' foul penalty margin 0.7; not an official figure",
+    );
+  });
+});

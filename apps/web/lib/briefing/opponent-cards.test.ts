@@ -28,7 +28,7 @@ describe("opponent cards", () => {
     expect(card!.team).toBe("1678");
     expect(card!.standing).toBe("Ranked 3 · rating 57.5");
     expect(card!.lines).toEqual(["Strong scorer in auto and teleop", "Usually does the endgame", "~1.7 fouls a match"]);
-    expect(card!.likelyPlan).toBe("Likely plan: cycles");
+    expect(card!.likelyPlan).toBe("Likely plan: cycles fast, usually climbs");
     // The statistics move to "How we got this", off the card.
     expect(card!.lines.join(" ")).not.toMatch(/n=|reliability/);
     expect(card!.evidence.join(" ")).toMatch(/Scout reliability 89%/);
@@ -40,7 +40,7 @@ describe("opponent cards", () => {
       opponentKeys: ["frc254"],
       scouted: [scouted("frc254", { teleopCapability: 0.8, defenseLikely: true })],
     });
-    expect(card!.likelyPlan).toBe("Likely plan: cycles, may defend");
+    expect(card!.likelyPlan).toBe("Likely plan: cycles fast, may defend");
     expect(card!.lines).toContain("Plays defense");
   });
 

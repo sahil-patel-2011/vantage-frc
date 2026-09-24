@@ -491,6 +491,8 @@ export async function computeBriefingView(
     red: selected.red,
     blue: selected.blue,
     played: isOver(selected),
+    redScore: selected.redScore,
+    blueScore: selected.blueScore,
   };
   const ourAlliance = ourAllianceOf(match, teamKey);
   const ourKeys = ourAlliance === "red" ? match.red : ourAlliance === "blue" ? match.blue : [];

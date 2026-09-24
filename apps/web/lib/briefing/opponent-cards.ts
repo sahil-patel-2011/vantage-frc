@@ -79,10 +79,15 @@ function planTag(row: BriefingScoutedTeam | undefined, labels: string[]): string
   const teleop = capabilityLabel(row?.teleopCapability ?? null);
   const auto = capabilityLabel(row?.autoCapability ?? null);
   const endgame = capabilityLabel(row?.endgameCapability ?? null);
-  if (teleop === "strong" || teleop === "solid" || labels.includes("scout-teleop-capable")) parts.push("cycles");
+  // Say how, not just that: every decent scorer read "Likely plan: cycles", so the cards could
+  // not be told apart.
+  if (teleop === "strong") parts.push("cycles fast");
+  else if (teleop === "solid") parts.push("steady cycles");
+  else if (labels.includes("scout-teleop-capable")) parts.push("cycles");
   else if (auto === "strong" || auto === "solid" || labels.includes("autonomous-leaning")) parts.push("scores early in auto");
   if (row?.defenseLikely || labels.includes("defense-capable")) parts.push("may defend");
   else if (endgame === "strong" || labels.includes("endgame-leaning")) parts.push("goes for the endgame");
+  else if (endgame === "solid") parts.push("usually climbs");
   return parts.length ? `Likely plan: ${parts.slice(0, 2).join(", ")}` : null;
 }
 

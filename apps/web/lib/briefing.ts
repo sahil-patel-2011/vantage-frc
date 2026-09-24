@@ -17,6 +17,9 @@ export type BriefingMatch = {
   blue: string[];
   /** Over already (a score, or its time is 3+ hours past): the briefing is a review. */
   played?: boolean;
+  /** Posted final scores, when the match has them. */
+  redScore?: number | null;
+  blueScore?: number | null;
 };
 
 export type BriefingPrediction = {
