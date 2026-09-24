@@ -14,7 +14,7 @@ test("My Day still loads after the Saturday shell pass", async ({ page }) => {
   // /my-day opens inside the Competition hub, so the h1 belongs to the hub
   // and the page's own heading is "Our matches". Matching the hub title alone
   // would pass on any Competition tab, so the content heading is in here too.
-  const title = page.getByRole("heading", { name: /Our matches|My Day|Next match/i });
+  const title = page.getByRole("heading", { name: /Our matches|My Day|Next match|Coming up|After that|Played \(/i });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Waiting on the event schedule|Schedule is in/i });
   const unavailable = loadFailureHeading(page);

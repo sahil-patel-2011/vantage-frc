@@ -111,8 +111,39 @@
 }
 
 .myday-bumper.sm {
-  padding: 10px 12px;
-  font-size: 0.95rem;
+  display: inline-block;
+  justify-self: start;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+}
+
+/* Played matches fold away under one summary line. */
+.myday-played > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.myday-played > summary::-webkit-details-marker {
+  display: none;
+}
+.myday-played > summary::after {
+  content: "▾";
+  color: var(--myday-muted);
+}
+.myday-played[open] > summary::after {
+  content: "▴";
+}
+.myday-played > summary h2 {
+  margin: 0;
+}
+.myday-card.played {
+  opacity: 0.85;
 }
 
 .myday-chip-row {
@@ -331,4 +362,10 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+.myday-none {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
 }

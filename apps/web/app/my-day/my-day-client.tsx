@@ -1,5 +1,6 @@
 "use client";
 
+import { noNextMatchMessage } from "../../lib/matches/no-next-match";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
@@ -119,16 +120,23 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
   );
 }
 
-function MatchCard({ match }: { match: MyDayMatch }) {
+function MatchCard({ match, played = false }: { match: MyDayMatch; played?: boolean }) {
   return (
-    <li className={`myday-card alliance-${match.alliance}${match.isNext ? " next" : ""}`}>
+    <li className={`myday-card alliance-${match.alliance}${match.isNext ? " next" : ""}${played ? " played" : ""}`}>
       <div className="myday-card-top">
         <strong>{match.matchLabel}</strong>
         <span>{match.timeLabel}</span>
       </div>
-      <p className={`myday-bumper sm alliance-${match.alliance}`}>{match.bumperCue}</p>
-      <ScoutChips label="With" chips={match.links.scoutPartners} />
-      <ScoutChips label="Vs" chips={match.links.scoutOpponents} />
+      {/* A small tag, not a full-width bar that reads like a button; played matches need no cue. */}
+      <span className={`myday-bumper sm alliance-${match.alliance}`}>
+        {played ? (match.alliance === "red" ? "Red" : "Blue") : match.bumperCue}
+      </span>
+      {played ? null : (
+        <>
+          <ScoutChips label="With" chips={match.links.scoutPartners} />
+          <ScoutChips label="Vs" chips={match.links.scoutOpponents} />
+        </>
+      )}
       {match.scored ? (
         <p className="myday-score">
           {match.redScore} – {match.blueScore}
@@ -407,6 +415,30 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
   const nextActions = myDayNextActions({ orgId, shell: "ready" });
+  // What is still ahead comes first; played matches fold away. Everything before the next
+  // match is over, and with no next match every one of ours is.
+  const nextIndex = view.matches.findIndex((match) => match.isNext);
+  const isPlayed = (match: MyDayMatch, index: number) => match.scored || nextIndex < 0 || index < nextIndex;
+  const played = view.matches.filter(isPlayed).reverse();
+  const upcoming = view.matches.filter((match, index) => !isPlayed(match, index) && !match.isNext);
+  const lastPlayed = played[0] ?? null;
+  const lastOurs = lastPlayed ? (lastPlayed.alliance === "red" ? lastPlayed.redScore : lastPlayed.blueScore) : null;
+  const lastTheirs = lastPlayed ? (lastPlayed.alliance === "red" ? lastPlayed.blueScore : lastPlayed.redScore) : null;
+  // The same sentence Home, Event day and Strategy use when nothing is ahead.
+  const noNextLine = view.next
+    ? null
+    : noNextMatchMessage({
+        total: view.matches.length,
+        played: played.length,
+        last: lastPlayed
+          ? {
+              label: lastPlayed.matchLabel,
+              ours: lastOurs,
+              theirs: lastTheirs,
+              won: lastOurs != null && lastTheirs != null && lastOurs !== lastTheirs ? lastOurs > lastTheirs : null,
+            }
+          : null,
+      });
 
   return (
     <main className={`module-page myday-page${embedded ? " is-embedded" : ""}`}>
@@ -440,16 +472,30 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       ) : null}
 
       {view.next ? <MatchHero match={view.next} orgId={orgId} /> : null}
+      {noNextLine ? <p className="myday-none">{noNextLine}</p> : null}
 
-      {view.matches.length > 0 ? (
+      {upcoming.length > 0 ? (
         <section className="myday-list-section">
-          <h2>Our matches</h2>
+          <h2>{view.next ? "After that" : "Coming up"}</h2>
           <ul className="myday-list">
-            {view.matches.map((match) => (
+            {upcoming.map((match) => (
               <MatchCard key={match.matchKey} match={match} />
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {played.length > 0 ? (
+        <details className="myday-list-section myday-played">
+          <summary>
+            <h2>Played ({played.length})</h2>
+          </summary>
+          <ul className="myday-list">
+            {played.map((match) => (
+              <MatchCard key={match.matchKey} match={match} played />
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       {!view.next && view.matches.length > 0 ? (

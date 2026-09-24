@@ -78,7 +78,7 @@ test.describe("student-week GUI path", () => {
       passed only in the moment before the org resolved and the gate was still
       on screen. "Our matches" is the heading the tab actually paints.
     */
-    const title = page.getByRole("heading", { name: /My Day|Next match|Our matches/i });
+    const title = page.getByRole("heading", { name: /My Day|Next match|Our matches|Coming up|After that|Played \(/i });
     await expect(scout.or(setup).or(title).or(loadFailureHeading(page)).first()).toBeVisible({
       timeout: 15_000,
     });
