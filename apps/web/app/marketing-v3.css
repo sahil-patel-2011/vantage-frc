@@ -738,3 +738,7 @@ html:has(.marketing-lux){scroll-padding-top:76px}
 .waitlist-member-note h3{margin:6px 0 0}
 .waitlist-member-note p{margin:0;line-height:1.6;color:var(--m-muted,#555)}
 @media (max-width:480px){.waitlist-intent{grid-template-columns:1fr}}
+
+/* One quiet line under a waitlist field (the team-number hint for rookie teams). */
+.waitlist-form .field-hint{display:block;margin-top:6px;font-size:13px;line-height:1.4;color:var(--m-muted,#5a6578)}
+.waitlist-form .field-hint a{color:inherit;text-decoration:underline}

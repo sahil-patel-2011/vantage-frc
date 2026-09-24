@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { WaitlistForm } from "../components/marketing/waitlist-form";
+import { WaitlistSection } from "../components/marketing/waitlist-section";
 import {
   MarketingHeroActions,
-  MarketingInvitedNote,
   SiteFooter,
   SiteHeader,
 } from "../components/marketing/site-header";
@@ -61,17 +60,7 @@ export default function Home() {
         <PricingStrip headingId="lux-price-title" />
         <FAQ />
 
-        <section className="lux-waitlist" id="waitlist">
-          <div>
-            <p className="lux-eyebrow">Closed membership</p>
-            <h2>Join the waitlist.</h2>
-            <p>
-              We set teams up one at a time and email you when yours is ready. Joining does not create an account.
-            </p>
-            <MarketingInvitedNote />
-          </div>
-          <WaitlistForm idPrefix="hero" />
-        </section>
+        <WaitlistSection />
       </main>
       <SiteFooter />
     </div>

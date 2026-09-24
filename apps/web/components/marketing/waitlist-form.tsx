@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 import { track } from "../../lib/marketing/analytics";
@@ -19,12 +19,17 @@ function isUnavailablePayload(payload: WaitlistResponse | null, httpStatus: numb
   return payload?.status === "setup_required";
 }
 
+export type WaitlistStage = "setup" | "member" | "joined";
+
 export function WaitlistForm({
   idPrefix = "waitlist",
   compact = false,
+  onStageChange,
 }: {
   idPrefix?: string;
   compact?: boolean;
+  /** Lets the section around the form retitle itself to match what the form is showing. */
+  onStageChange?: (stage: WaitlistStage) => void;
 }) {
   const reactId = useId();
   const prefix = idPrefix || reactId.replace(/:/g, "");
@@ -37,6 +42,22 @@ export function WaitlistForm({
   // team already uses Vantage (who needs an invite from their team, not a months-long list).
   const [intent, setIntent] = useState<"setup" | "member">("setup");
   const [prefillEmail, setPrefillEmail] = useState("");
+  const successRef = useRef<HTMLHeadingElement | null>(null);
+
+  useEffect(() => {
+    onStageChange?.(state === "success" ? "joined" : intent);
+  }, [state, intent, onStageChange]);
+
+  // On a phone the form collapses into a short card and the page stays where it was, leaving
+  // the confirmation under the sticky header. Bring it into view and move focus to it.
+  useEffect(() => {
+    if (state !== "success") return;
+    const heading = successRef.current;
+    if (!heading) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    heading.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    heading.focus({ preventScroll: true });
+  }, [state]);
 
   // Sign-in hands over the address it already has, in session storage rather than the URL.
   useEffect(() => {
@@ -139,7 +160,9 @@ export function WaitlistForm({
         aria-live="polite"
         data-testid="waitlist-success"
       >
-        <h3>You’re on the list.</h3>
+        <h3 ref={successRef} tabIndex={-1}>
+          You’re on the list.
+        </h3>
         <p>
           We set teams up one at a time and will email you when yours is ready. Then you sign in and invite your
           students and mentors by email. Joining the waitlist does not create a Vantage account.
@@ -171,8 +194,8 @@ export function WaitlistForm({
         <div className="waitlist-member-note" role="status">
           <h3>Ask your team for an invite</h3>
           <p>
-            Your team&rsquo;s owner or a mentor adds you from Team admin → Invite someone, using the email you sign in
-            with. You&rsquo;ll get an email with a link, and that link is all you need. No waitlist.
+            Ask your team&rsquo;s owner or a mentor to invite the email you want to use. The invite email has a link,
+            and that link is all you need. No waitlist.
           </p>
           <a className="button secondary" href="/signin">
             I have an invite: sign in
@@ -213,9 +236,15 @@ export function WaitlistForm({
           min={1}
           max={99999}
           inputMode="numeric"
+          placeholder="e.g. 6925"
+          aria-describedby={`${prefix}-teamNumber-hint`}
           required
           disabled={state === "sending"}
         />
+        <small id={`${prefix}-teamNumber-hint`} className="field-hint">
+          New team still waiting on a number? Email <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a> and
+          we&rsquo;ll add you.
+        </small>
       </div>
 
       <div className="field">
