@@ -333,7 +333,9 @@ return (
           description={
             data?.canManageSchemas
               ? "Create starter match and pit forms for this season, or build a custom form and publish it."
-              : "Build a scouting form for this event — anyone on the team can."
+              : // A student's job is to scout, not to design the form: say who sets it up and
+                // that it will appear right here.
+                `Your team hasn't published a ${type} scouting form yet. Ask a mentor or team lead to publish one — it shows up here as soon as they do.`
           }
         >
           {data?.canManageSchemas ? (
@@ -341,8 +343,8 @@ return (
               Create starter forms
             </Button>
           ) : (
-            <Button as="a" variant="primary" href={hubHref("/competition", "forms", orgId)}>
-              Open Form builder
+            <Button as="a" variant="primary" href={hubHref("/team", "messages", orgId)}>
+              Message your team
             </Button>
           )}
         </EmptyState>
