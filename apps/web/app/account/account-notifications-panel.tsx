@@ -76,7 +76,7 @@ export function AccountNotificationsPanel({
 
       <h2 className="account-prefs-heading">Email opt-ins</h2>
       <p className="app-muted">
-        Email stays off until you explicitly opt in. Auth codes and security notices are separate.{" "}
+        Each email below says whether it starts on or off, and you can switch any of them off. Sign-in codes and security notices always arrive.{" "}
         <a href="/notifications/preferences">Open email preferences</a>
         {" · "}
         <a href="/support">Help & Support</a>
