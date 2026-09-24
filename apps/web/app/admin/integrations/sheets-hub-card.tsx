@@ -28,6 +28,7 @@ export function SheetsHubCard() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [connectNote, setConnectNote] = useState("");
 
   const load = useCallback(async () => {
     setChecking(true);
@@ -47,7 +48,35 @@ export function SheetsHubCard() {
   }, []);
 
   useEffect(() => {
-    void load();
+    // Back from the script's "Connect to Vantage" button: store its address, then check it.
+    const params = new URLSearchParams(window.location.search);
+    const url = params.get("sheetsHub");
+    const ts = params.get("ts");
+    const sig = params.get("sig");
+    if (!url || !ts || !sig) {
+      void load();
+      return;
+    }
+    for (const key of ["sheetsHub", "ts", "sig"]) params.delete(key);
+    const rest = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/sheets-hub", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "register", url, ts, sig }),
+        });
+        const data = (await response.json().catch(() => ({}))) as { error?: string; check?: { ok?: boolean } | null };
+        // When the script doesn't answer yet, the status line below says why; don't also claim success.
+        if (response.ok && data.check?.ok) setConnectNote("Connected. New and existing teams will get their spreadsheets from this script.");
+        else if (response.ok) setConnectNote("Saved the script's address.");
+        else setError(data.error ?? "Couldn't connect the script. Open its address again and press Connect.");
+      } catch {
+        setError("Couldn't reach Vantage. Check your connection, then open the script's address again.");
+      }
+      await load();
+    })();
   }, [load]);
 
   const copy = async () => {
@@ -75,6 +104,11 @@ export function SheetsHubCard() {
       </p>
 
       {error ? <p role="alert">{error}</p> : null}
+      {connectNote && !error ? (
+        <p role="status" className="sheets-hub-ok">
+          {connectNote}
+        </p>
+      ) : null}
       {!status && !error ? <p className="app-muted">Checking…</p> : null}
 
       {status ? (
@@ -87,7 +121,7 @@ export function SheetsHubCard() {
                 : !status.secretSet
                   ? "Off. The server has no VANTAGE_SHEETS_HUB_SECRET yet."
                   : !status.urlSet
-                    ? "Almost there. Deploy the script below, then add its address to the server."
+                    ? "Almost there. Deploy the script below, then open it once and press Connect to Vantage."
                     : "Off."}
             {working && status.check?.folderUrl ? (
               <>
@@ -124,18 +158,10 @@ export function SheetsHubCard() {
                 Allow the permissions Google asks for.
               </li>
               <li>
-                Copy the web app address (it ends in <code>/exec</code>) into the server setting{" "}
-                <code>VANTAGE_SHEETS_HUB_URL</code>, redeploy, then press Check again.
+                Open the web app address once (it ends in <code>/exec</code>) and press{" "}
+                <strong>Connect to Vantage</strong>. It brings you back here, connected.
               </li>
             </ol>
-          ) : null}
-
-          {working && status.check?.updateAvailable ? (
-            <p className="app-muted">
-              A newer script is ready: it lays each team&rsquo;s spreadsheet out as a database and keeps the team index.
-              Paste it over the old one and deploy a new version (Deploy → Manage deployments → Edit → New version), so
-              the address stays the same.
-            </p>
           ) : null}
 
           {(!working || status.check?.updateAvailable) && status.script ? (
