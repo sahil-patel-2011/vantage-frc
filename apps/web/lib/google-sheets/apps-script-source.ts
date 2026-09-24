@@ -40,8 +40,12 @@ export const APPS_SCRIPT_MIN_VERSION = 1;
 /** Photos and videos in Google Drive need this version of the script. */
 export const APPS_SCRIPT_DRIVE_VERSION = 2;
 
-/** Only real Apps Script web-app URLs: Vantage never sends team data anywhere else. */
-export const APPS_SCRIPT_URL = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,200}\/exec$/;
+/**
+ * Only real Apps Script web-app URLs: Vantage never sends team data anywhere else. A Google
+ * Workspace account (a school domain) deploys under /a/macros/<domain>/s/…/exec.
+ */
+export const APPS_SCRIPT_URL =
+  /^https:\/\/script\.google\.com\/(?:macros|a\/macros\/[A-Za-z0-9.-]{1,100})\/s\/[A-Za-z0-9_-]{20,200}\/exec$/;
 
 export function isAppsScriptUrl(url: string): boolean {
   return APPS_SCRIPT_URL.test(url.trim());
@@ -58,9 +62,28 @@ export function isAppsScriptSecret(secret: string): boolean {
   return /^[0-9a-f]{64}$/.test(secret);
 }
 
-/** The script the owner pastes. The secret is the only thing that differs per team. */
-export function appsScriptSource(secret: string): string {
+/** Vantage's own origin, safe to embed in the script: https, a host, an optional port. */
+export function isVantageOrigin(value: string): boolean {
+  return /^https?:\/\/[A-Za-z0-9.-]{1,200}(?::\d{1,5})?$/.test(value);
+}
+
+/**
+ * The text the script signs to register its own address, and the server checks. Registration
+ * is valid for a day after the address page was opened.
+ */
+export function hubRegistrationMessage(url: string, ts: number): string {
+  return `register|${url}|${ts}`;
+}
+export const HUB_REGISTRATION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The script the owner pastes. The secret is the only thing that differs per team. `appUrl`
+ * (the hub script from Admin → Integrations) adds a page at the web app address with a
+ * "Connect to Vantage" button, so the platform owner never copies the address by hand.
+ */
+export function appsScriptSource(secret: string, options: { appUrl?: string | null } = {}): string {
   if (!isAppsScriptSecret(secret)) throw new Error("Apps Script secret must be 64 hex characters");
+  const appUrl = options.appUrl && isVantageOrigin(options.appUrl) ? options.appUrl : "";
   return `/**
  * Vantage → Google Sheets and Drive bridge (version ${APPS_SCRIPT_VERSION}).
  *
@@ -74,6 +97,8 @@ export function appsScriptSource(secret: string): string {
  */
 const VANTAGE_SECRET = "${secret}";
 const VANTAGE_VERSION = ${APPS_SCRIPT_VERSION};
+// Where "Connect to Vantage" sends the platform owner (empty for a team's own script).
+const VANTAGE_APP_URL = "${appUrl}";
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 function doPost(e) {
@@ -110,7 +135,26 @@ function doPost(e) {
 }
 
 function doGet() {
-  return vantageReply_({ ok: true, service: "vantage-sheets-bridge", version: VANTAGE_VERSION });
+  if (!VANTAGE_APP_URL) return vantageReply_({ ok: true, service: "vantage-sheets-bridge", version: VANTAGE_VERSION });
+  // Opened in a browser after deploying: one button carries this script's own address, signed
+  // with the secret, to Vantage, which stores it. Nobody copies the address by hand.
+  const url = ScriptApp.getService().getUrl();
+  const ts = Date.now();
+  const sig = vantageHmacHex_("register|" + url + "|" + ts);
+  const link = VANTAGE_APP_URL + "/admin/integrations?sheetsHub=" + encodeURIComponent(url) + "&ts=" + ts + "&sig=" + sig;
+  const html =
+    '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:48px auto;line-height:1.5">' +
+    "<h2>Team spreadsheets are ready to connect</h2>" +
+    "<p>Press the button while signed in to Vantage as the platform admin. Vantage saves this address and starts making each team's spreadsheet.</p>" +
+    '<p><a href="' + link + '" target="_top" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-weight:600">Connect to Vantage</a></p>' +
+    "</div>";
+  return HtmlService.createHtmlOutput(html).setTitle("Connect to Vantage");
+}
+
+function vantageHmacHex_(text) {
+  return Utilities.computeHmacSha256Signature(text, VANTAGE_SECRET)
+    .map((byte) => ((byte + 256) % 256).toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function vantageWrite_(book, items) {
@@ -683,9 +727,7 @@ function vantageDriveTest_() {
 
 function vantageSignatureOk_(body, sig) {
   if (typeof sig !== "string" || sig.length !== 64) return false;
-  const mac = Utilities.computeHmacSha256Signature(body, VANTAGE_SECRET)
-    .map((byte) => ((byte + 256) % 256).toString(16).padStart(2, "0"))
-    .join("");
+  const mac = vantageHmacHex_(body);
   let diff = 0;
   for (let i = 0; i < 64; i++) diff |= mac.charCodeAt(i) ^ sig.charCodeAt(i);
   return diff === 0;

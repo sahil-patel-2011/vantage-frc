@@ -7,29 +7,46 @@
  * tables the team's own Google/Excel copy gets (lib/microsoft/workbook-schema), then stamps
  * the content hash in the script, so a sync with nothing new costs one small request.
  *
- * Configured by two server env vars, never by a team:
- *   VANTAGE_SHEETS_HUB_URL     the web app address (https://script.google.com/macros/s/…/exec)
+ * Configured by the server, never by a team:
  *   VANTAGE_SHEETS_HUB_SECRET  64 hex characters, the same value as VANTAGE_SECRET in the script
+ *   the web app address        registered by the script itself ("Connect to Vantage", stored in
+ *                              platform_sheets_hub), or VANTAGE_SHEETS_HUB_URL, which wins if set
  * Without both, every call here reports "not_configured" and nothing else changes.
  *
  * Runs on the caller's withRls client, as an owner or admin of the team (the caller checks
  * that), so it reads exactly what that person could export themselves.
  */
 
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { buildAllTables } from "../microsoft/team-ops-tables";
 import type { WorkbookSource } from "../microsoft/workbook-schema";
 import { loadWorkbookSource, summarizeOutcomes } from "../microsoft/workbook-sync";
 import { contentHash, withMirrorInfo } from "../mirror/mirror-hash";
 import { writeTablesToCopy } from "../mirror/mirror-sync";
 import { AppsScriptBridge, AppsScriptTarget, type HubTeam, type HubTeamBook } from "./apps-script-bridge";
-import { isAppsScriptSecret, isAppsScriptUrl } from "./apps-script-source";
+import {
+  HUB_REGISTRATION_MAX_AGE_MS,
+  hubRegistrationMessage,
+  isAppsScriptSecret,
+  isAppsScriptUrl,
+} from "./apps-script-source";
 import { describeGoogleError, isGoogleSheetsError } from "./google-api";
 
 export type SheetsHubConfig = { url: string; secret: string };
 
-export function sheetsHubConfig(env: NodeJS.ProcessEnv = process.env): SheetsHubConfig | null {
-  const url = env.VANTAGE_SHEETS_HUB_URL?.trim() ?? "";
+/**
+ * The hub's address and secret. VANTAGE_SHEETS_HUB_URL wins when set; otherwise the address the
+ * script registered itself (platform_sheets_hub, migration 0688). The secret only ever comes
+ * from the server env.
+ */
+export function sheetsHubConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  registeredUrl: string | null = null,
+): SheetsHubConfig | null {
+  const fromEnv = env.VANTAGE_SHEETS_HUB_URL?.trim() ?? "";
+  const url = isAppsScriptUrl(fromEnv) ? fromEnv : (registeredUrl?.trim() ?? "");
   const secret = env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "";
   if (!isAppsScriptUrl(url) || !isAppsScriptSecret(secret)) return null;
   return { url, secret };
@@ -37,6 +54,57 @@ export function sheetsHubConfig(env: NodeJS.ProcessEnv = process.env): SheetsHub
 
 export function sheetsHubBridge(config: SheetsHubConfig | null = sheetsHubConfig()): AppsScriptBridge | null {
   return config ? new AppsScriptBridge(config.url, config.secret) : null;
+}
+
+/** The address the script registered, or null (not registered, or 0688 not applied yet). */
+export async function readRegisteredHubUrl(client: PoolClient): Promise<string | null> {
+  return withSavepoint(
+    client,
+    async () =>
+      (await client.query<{ url: string }>(`SELECT url FROM platform_sheets_hub WHERE id = 1`)).rows[0]?.url ?? null,
+    null,
+  );
+}
+
+/** The hub bridge from env or the registered address, read on the caller's withRls client. */
+export async function loadSheetsHubBridge(client: PoolClient): Promise<AppsScriptBridge | null> {
+  if (!process.env.VANTAGE_SHEETS_HUB_SECRET) return null;
+  return sheetsHubBridge(sheetsHubConfig(process.env, await readRegisteredHubUrl(client)));
+}
+
+export type HubRegistrationCheck = { ok: true; url: string } | { ok: false; error: string };
+
+/**
+ * Check the address a freshly deployed hub script handed over: a real Apps Script address,
+ * signed with this server's hub secret, opened within the last day.
+ */
+export function verifyHubRegistration(
+  input: { url: unknown; ts: unknown; sig: unknown },
+  secret: string | undefined,
+  now = Date.now(),
+): HubRegistrationCheck {
+  const key = secret?.trim().toLowerCase() ?? "";
+  if (!isAppsScriptSecret(key)) return { ok: false, error: "The server has no hub secret yet." };
+  const url = typeof input.url === "string" ? input.url.trim() : "";
+  if (!isAppsScriptUrl(url)) {
+    return {
+      ok: false,
+      error: "That isn't a deployed web app address. Deploy the script as a web app (not a test deployment) and open its /exec address.",
+    };
+  }
+  const ts = Number(input.ts);
+  if (!Number.isFinite(ts) || now - ts > HUB_REGISTRATION_MAX_AGE_MS || ts - now > 5 * 60 * 1000) {
+    return { ok: false, error: "That link is out of date. Open the script's web app address again and press Connect." };
+  }
+  const sig = typeof input.sig === "string" ? input.sig.trim().toLowerCase() : "";
+  const expected = createHmac("sha256", key).update(hubRegistrationMessage(url, ts)).digest("hex");
+  if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+    return {
+      ok: false,
+      error: "The script's secret doesn't match this server. Copy the script from this page again, paste it over the old one and deploy a new version.",
+    };
+  }
+  return { ok: true, url };
 }
 
 /** The standard name every team's spreadsheet gets. Mirrors vantageTeamTitle_ in the script. */
@@ -101,7 +169,7 @@ export async function syncTeamToHub(
   orgId: string,
   options: { force?: boolean; bridge?: AppsScriptBridge | null; now?: () => Date } = {},
 ): Promise<HubSyncResult> {
-  const bridge = options.bridge === undefined ? sheetsHubBridge() : options.bridge;
+  const bridge = options.bridge === undefined ? await loadSheetsHubBridge(client) : options.bridge;
   if (!bridge) return { status: "not_configured" };
   const now = options.now ?? (() => new Date());
 

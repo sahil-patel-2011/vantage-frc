@@ -13,7 +13,7 @@ import {
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { after } from "next/server";
-import { ensureHubSheetForNewTeam, teamSheetTitle } from "../../../../lib/google-sheets/sheets-hub";
+import { ensureHubSheetForNewTeam, loadSheetsHubBridge, teamSheetTitle } from "../../../../lib/google-sheets/sheets-hub";
 import {
   OWNER_INVITE_HOURS,
   ownerProvisionMode,
@@ -169,15 +169,19 @@ export async function POST(request: Request) {
     }
     // The team's spreadsheet in the VantageFRC folder, made now so it is there on day one.
     // After the response, and never fatal: a slow Google cannot hold up or undo the team.
-    after(() =>
-      ensureHubSheetForNewTeam({
-        key: created.orgId,
-        number: input.teamNumber ?? null,
-        name: input.name,
-        title: teamSheetTitle(input.teamNumber ?? null, input.name),
-        viewers: [],
-      }).then(() => undefined),
-    );
+    after(async () => {
+      const bridge = await withRls({ userId: current.user.id }, (client) => loadSheetsHubBridge(client)).catch(() => null);
+      await ensureHubSheetForNewTeam(
+        {
+          key: created.orgId,
+          number: input.teamNumber ?? null,
+          name: input.name,
+          title: teamSheetTitle(input.teamNumber ?? null, input.name),
+          viewers: [],
+        },
+        bridge,
+      );
+    });
     return Response.json(confirmation, { status: 201 });
   } catch (error) {
     const conflict =

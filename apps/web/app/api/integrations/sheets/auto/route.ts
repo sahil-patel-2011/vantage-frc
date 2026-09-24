@@ -1,7 +1,7 @@
 import { withRls } from "@vantage/db";
 import { isPlatformAdmin } from "@vantage/core";
 import { after } from "next/server";
-import { sheetsHubBridge, syncTeamToHub } from "../../../../../lib/google-sheets/sheets-hub";
+import { loadSheetsHubBridge, syncTeamToHub } from "../../../../../lib/google-sheets/sheets-hub";
 import { HttpError, isUuid, readOrgRole, requireWorkbookManager, roleCanManageWorkbook } from "../../../../../lib/microsoft/authz";
 import { failJson, json, readOrgIdFromRequest, requireUser } from "../../../../../lib/microsoft/route-helpers";
 import { syncMirror } from "../../../../../lib/mirror/mirror-sync";
@@ -60,7 +60,8 @@ async function runAutoSync(orgId: string, runnerId: string, callerIsRunner: bool
   }).catch(() => undefined);
 
   // The team's sheet in the platform's VantageFRC folder, when the hub is configured.
-  if (sheetsHubBridge()) {
+  // (syncTeamToHub reads the hub address itself and does nothing when there is none.)
+  if (process.env.VANTAGE_SHEETS_HUB_SECRET) {
     await withRls({ userId: runnerId, orgId }, async (client) => {
       await requireWorkbookManager(client, orgId, runnerId);
       await syncTeamToHub(client, orgId);
@@ -93,9 +94,9 @@ export async function GET(request: Request) {
     const user = await requireUser();
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!isUuid(orgId)) throw new HttpError(400, "A valid orgId is required.", "invalid_team");
-    const bridge = sheetsHubBridge();
-    if (!bridge) return json({ configured: false });
     const result = await withRls({ userId: user.id, orgId }, async (client) => {
+      const bridge = await loadSheetsHubBridge(client);
+      if (!bridge) return null;
       if (!(await isPlatformAdmin(client))) return null;
       await requireWorkbookManager(client, orgId, user.id);
       return syncTeamToHub(client, orgId, { bridge });
