@@ -11,7 +11,7 @@ export function marketingHeaderLinks(signedIn: boolean): MarketingAccountLink[] 
   }
   return [
     { href: "/signin", label: "Sign in" },
-    { href: "/#waitlist", label: "Join waitlist", primary: true },
+    { href: "/#waitlist", label: "Join the waitlist", primary: true },
   ];
 }
 

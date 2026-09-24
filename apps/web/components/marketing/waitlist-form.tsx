@@ -38,13 +38,14 @@ export function WaitlistForm({
   const [intent, setIntent] = useState<"setup" | "member">("setup");
   const [prefillEmail, setPrefillEmail] = useState("");
 
-  // Sign-in sends people here with the address they already typed.
+  // Sign-in hands over the address it already has, in session storage rather than the URL.
   useEffect(() => {
     try {
-      const email = new URLSearchParams(window.location.search).get("email") ?? "";
+      const email = sessionStorage.getItem("vantage.waitlist.email") ?? "";
+      sessionStorage.removeItem("vantage.waitlist.email");
       if (/^[^@\s]+@[^@\s]+$/.test(email)) setPrefillEmail(email.slice(0, 200));
     } catch {
-      // No query string to read.
+      // Storage blocked: the field starts empty.
     }
   }, []);
 
@@ -141,7 +142,7 @@ export function WaitlistForm({
         <h3>You’re on the list.</h3>
         <p>
           We set teams up one at a time and will email you when yours is ready. Then you sign in and invite your
-          students and mentors by email. Nothing else to do until then.
+          students and mentors by email. Joining the waitlist does not create a Vantage account.
         </p>
       </div>
     );

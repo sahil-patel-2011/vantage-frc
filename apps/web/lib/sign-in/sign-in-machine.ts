@@ -164,8 +164,9 @@ export function signInFlowReducer(
           ? "A new code is on the way. The previous one no longer works."
           : state.channel === "email-otp"
             ? // `send-verification-otp` answers 200 for every address so it cannot
-              // leak who has an account — so promise delivery only conditionally.
-              "If that address belongs to a team, a 6-digit code is on the way."
+              // leak who has an account; the card's own line promises delivery only
+              // conditionally, so no second notice repeats it.
+              null
             : "Enter the 6-digit code we emailed you to finish signing in.",
         codeExpiresAt: event.now + ttl * 1_000,
         resendAvailableAt: cooldownDeadline(event.now, event.cooldownSeconds),
@@ -262,9 +263,17 @@ export function signInStepCopy(
   if (state.step === "code") {
     const target =
       state.channel === "email-2fa" ? state.emailHint : state.email || state.emailHint;
+    // A first sign-in cannot promise a code was sent: codes only go to invited addresses.
+    const conditional = state.channel === "email-otp" && !invite;
     return {
       title: invite ?? "Check your email",
-      sub: target ? `Enter the 6-digit code sent to ${target}.` : "Enter the 6-digit code we sent.",
+      sub: conditional
+        ? target
+          ? `If ${target} is on a Vantage team, a 6-digit code is on its way.`
+          : "If this address is on a Vantage team, a 6-digit code is on its way."
+        : target
+          ? `Enter the 6-digit code sent to ${target}.`
+          : "Enter the 6-digit code we sent.",
     };
   }
   if (state.channel === "email-2fa") {
@@ -344,7 +353,7 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
   }
 
   if (/INVALID_OTP|invalid otp|incorrect/i.test(text)) {
-    return { kind: "wrong_code", message: WRONG_CODE_MESSAGE, keepDigits: true, needsNewCode: false };
+    return { kind: "wrong_code", message: WRONG_CODE_MESSAGE, keepDigits: false, needsNewCode: false };
   }
 
   if (/WAITLIST_ONLY|waitlist-only/i.test(text)) {
@@ -377,7 +386,7 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
 
   // A 400 on the code step is Better Auth's generic OTP rejection.
   if (input.status === 400) {
-    return { kind: "wrong_code", message: WRONG_CODE_MESSAGE, keepDigits: true, needsNewCode: false };
+    return { kind: "wrong_code", message: WRONG_CODE_MESSAGE, keepDigits: false, needsNewCode: false };
   }
 
   // A 5xx is Vantage failing, not the person typing. "That didn't work" made

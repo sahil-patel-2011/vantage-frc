@@ -12,7 +12,7 @@ describe("marketing account links", () => {
   it("sends a guest to sign in and the waitlist", () => {
     expect(marketingHeaderLinks(false).map((link) => link.label)).toEqual([
       "Sign in",
-      "Join waitlist",
+      "Join the waitlist",
     ]);
     expect(marketingHeaderLinks(false).find((link) => link.primary)?.href).toBe("/#waitlist");
     expect(marketingHeroLinks(false).map((link) => link.label)).toEqual([

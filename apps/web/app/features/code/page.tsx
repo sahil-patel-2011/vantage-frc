@@ -64,7 +64,7 @@ export default function CodeFeaturePage() {
           </div>
           <MarketingRouteActions
             className="pricing-preview-actions"
-            guestLabel="Join waitlist"
+            guestLabel="Join the waitlist"
             companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
           />
         </section>

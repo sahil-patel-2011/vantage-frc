@@ -49,7 +49,7 @@ export default function Home() {
               <ul className="mk-hero-proof">
                 <li>Keeps working when the venue Wi-Fi does not</li>
                 <li>Match predictions that say how sure they are</li>
-                <li>Free, and your team&rsquo;s data stays your team&rsquo;s</li>
+                <li>Free for every team: AI runs on your own key, or not at all</li>
               </ul>
               <p className="lux-hero-note">Free for every FRC team. We bring teams on one at a time.</p>
             </div>

@@ -37,7 +37,10 @@ describe("sign-in flow transitions", () => {
     expect(sent.email).toBe("scout@team254.org");
     expect(sent.code).toBe("");
     // The server answers 200 for unknown addresses, so delivery is conditional.
-    expect(sent.notice).toMatch(/if that address belongs to a team/i);
+    // The card's own line says "If … is on a Vantage team, a code is on its way", so there is
+    // no second notice repeating it.
+    expect(sent.notice).toBeNull();
+    expect(signInStepCopy(sent).sub).toMatch(/if scout@team254\.org is on a Vantage team/i);
     expect(codeSecondsRemaining(sent, NOW)).toBe(300);
 
     const typing = run(sent, { type: "code_changed", code: "40 29 17" });
@@ -128,11 +131,12 @@ describe("resend cooldown math", () => {
 });
 
 describe("expired vs wrong code", () => {
-  it("keeps the digits and stays retryable on a wrong code", () => {
+  it("clears the boxes and stays retryable on a wrong code", () => {
     // Better Auth's first-factor rejection code.
     const failure = classifyOtpFailure({ channel: "email-otp", status: 400, code: "INVALID_OTP" });
     expect(failure.kind).toBe("wrong_code");
-    expect(failure.keepDigits).toBe(true);
+    // Entry auto-submits, so a typo means retyping six digits: start from empty boxes.
+    expect(failure.keepDigits).toBe(false);
     expect(failure.needsNewCode).toBe(false);
 
     const state = run(
@@ -141,11 +145,11 @@ describe("expired vs wrong code", () => {
       { type: "code_changed", code: "402917" },
       { type: "code_failed", now: NOW + 1_000, failure },
     );
-    expect(state.code).toBe("402917");
+    expect(state.code).toBe("");
     expect(state.failedAttempts).toBe(1);
     expect(isCodeExpired(state, NOW + 1_000)).toBe(false);
-    // Editing one character clears the error rather than shouting through it.
-    expect(run(state, { type: "code_changed", code: "40291" }).failure).toBeNull();
+    // Typing again clears the error rather than shouting through it.
+    expect(run(state, { type: "code_changed", code: "4" }).failure).toBeNull();
   });
 
   it("marks an expired code dead no matter what is retyped", () => {

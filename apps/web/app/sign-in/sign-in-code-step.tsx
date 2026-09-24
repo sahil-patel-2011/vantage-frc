@@ -109,19 +109,32 @@ export function SignInCodeStep({
         </div>
       ) : null}
 
-      {inviteHelp ? (
+      {inviteHelp && !invalid ? (
         <div className="signin-invite-help">
           <p>
             <strong>No code after a minute?</strong> Codes only go to emails a team has invited. Ask your team&rsquo;s
             owner to invite this address, or get your team set up.
           </p>
-          <a className="signin-link" href={inviteHelp.waitlistHref}>
+          <a className="signin-link" href={inviteHelp.waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
             Join the waitlist
           </a>
         </div>
       ) : null}
     </form>
   );
+}
+
+/**
+ * Hand the typed address to the waitlist form without putting it in the URL, where history,
+ * logs and analytics would keep it. Read once by components/marketing/waitlist-form.tsx.
+ */
+export const WAITLIST_EMAIL_KEY = "vantage.waitlist.email";
+function rememberWaitlistEmail(email: string) {
+  try {
+    sessionStorage.setItem(WAITLIST_EMAIL_KEY, email.trim().slice(0, 200));
+  } catch {
+    // Private mode: the form is simply empty.
+  }
 }
 
 /**
@@ -139,12 +152,11 @@ export function SignInNotInvited({
 }) {
   return (
     <div className="signin-not-invited" role="status">
-      <h2>You&rsquo;re not on a team yet</h2>
       <p>
         Vantage is invite-only. Ask your team&rsquo;s owner or a mentor to invite <strong>{email}</strong>, or join the
         waitlist to get your team set up.
       </p>
-      <a className="signin-submit" href={waitlistHref}>
+      <a className="signin-submit" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
         Join the waitlist
       </a>
       <button type="button" className="signin-link" onClick={onUseAnotherEmail}>

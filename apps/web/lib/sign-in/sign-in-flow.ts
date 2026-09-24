@@ -188,7 +188,7 @@ export function signInNextActions(): SignInNextAction[] {
   return [
     {
       id: "waitlist",
-      label: "Join waitlist",
+      label: "Join the waitlist",
       detail: "If you have not been invited, we email when your team is set up.",
       href: "/#waitlist",
       primary: true,

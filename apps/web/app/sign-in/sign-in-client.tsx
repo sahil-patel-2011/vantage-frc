@@ -560,10 +560,15 @@ export default function SignInClient({
     [remembered, googleAvailable, emailAvailable],
   );
 
+  const failureKind = flow.failure?.kind;
+  useEffect(() => {
+    if (failureKind === "wrong_code") codeRef.current?.focus();
+  }, [failureKind, flow.failedAttempts]);
+
   const hint = invitedOnlyHint(flow);
   const working = busy !== "idle";
   const notInvited = flow.step !== "identity" && flow.failure?.kind === "not_authorized";
-  const waitlistHref = `/?email=${encodeURIComponent(normalizeSignInEmail(flow.email))}#waitlist`;
+  const waitlistHref = "/#waitlist";
 
   if (probe.state === "active") {
     return (
@@ -583,13 +588,15 @@ export default function SignInClient({
   return (
     <SignInCard
       titleId="signin-title"
-      title={stepCopy.title}
+      title={notInvited ? "You’re not on a team yet" : stepCopy.title}
       subtitle={
         passwordPanel === "password"
           ? "Use the email and password for your team account."
           : passwordPanel === "reset"
             ? "We’ll email a link so you can choose a new password."
-            : stepCopy.sub
+            : notInvited
+              ? "Vantage is invite-only."
+              : stepCopy.sub
       }
     >
       <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
