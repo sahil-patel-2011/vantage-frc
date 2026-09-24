@@ -181,6 +181,8 @@ export function FirstWeekCard({
   const left = view.totalCount - view.doneCount;
   const next = nextFirstWeekChecks(view);
   if (next.length === 0) return null;
+  // The list shows the next few; the link says how many more there are.
+  const more = left - next.length;
 
   return (
     <section className="dash-first-week" aria-label="Your first week">
@@ -193,13 +195,16 @@ export function FirstWeekCard({
           const key = `${track.key}:${check.key}`;
           return (
             <li key={key}>
-              <input
-                type="checkbox"
-                aria-label={`Mark "${check.label}" done`}
-                checked={false}
-                disabled={busy === key}
-                onChange={() => void post({ action: "check", trackKey: track.key, checkKey: check.key }, key)}
-              />
+              {/* A 44px tap area around the box, so a thumb can tick it. */}
+              <label className="dash-first-week-tick">
+                <input
+                  type="checkbox"
+                  aria-label={`Mark "${check.label}" done`}
+                  checked={false}
+                  disabled={busy === key}
+                  onChange={() => void post({ action: "check", trackKey: track.key, checkKey: check.key }, key)}
+                />
+              </label>
               <div>
                 {check.href ? (
                   <a href={withOrgHref(check.href, orgId)}>{check.label}</a>
@@ -213,7 +218,7 @@ export function FirstWeekCard({
         })}
       </ol>
       <a className="dash-first-week-all" href={withOrgHref("/start", orgId)}>
-        See every step
+        {more > 0 ? `See ${more} more ${more === 1 ? "step" : "steps"}` : "See every step"}
       </a>
     </section>
   );

@@ -2930,7 +2930,8 @@ body.has-app-shell .soft-ask-ai:hover{color:var(--accent);border-color:var(--acc
 .dash-first-week header span{color:var(--muted);font-size:12px}
 .dash-first-week ol{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .dash-first-week li{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:10px}
-.dash-first-week li input{width:18px;height:18px;margin-top:2px}
+.dash-first-week-tick{display:grid;place-items:center;width:44px;height:44px;margin:-10px -6px -10px -12px;cursor:pointer}
+.dash-first-week li input{width:22px;height:22px;margin:0;cursor:pointer}
 .dash-first-week li div{display:grid;gap:2px;min-width:0}
 .dash-first-week li a{font-weight:600;color:var(--ink)}
 .dash-first-week li small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
