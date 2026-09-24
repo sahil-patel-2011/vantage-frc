@@ -11,10 +11,24 @@ const PHASE_LABEL: Record<MatchPhase, string> = {
   done: "Match over",
 };
 
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** The form's own Save button does the saving, so its checks and messages stay in one place. */
+function saveFromTimer() {
+  const save = document.querySelector<HTMLButtonElement>(".scout-save-button");
+  if (!save) return;
+  save.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
+  if (save.disabled) save.focus();
+  else save.click();
+}
+
 /**
  * Start it when the field starts. The phase follows the clock, and the form scrolls to the
  * part for that phase (auto, then teleop, then endgame) and outlines it, so a scout's eyes
- * stay on the field and their thumb finds the right counters. Restarting is one tap.
+ * stay on the field and their thumb finds the right counters. When the match ends the bar
+ * becomes "Save this match" and the form scrolls to its last answers. Restarting is one tap.
  */
 export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; label: string }>; resetKey: string }) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -28,27 +42,36 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
     lastPhase.current = "pre";
   }, [resetKey]);
 
-  useEffect(() => {
-    if (startedAt == null) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 250);
-    return () => window.clearInterval(timer);
-  }, [startedAt]);
-
   const elapsed = startedAt == null ? null : now - startedAt;
   const phase = phaseAt(elapsed);
+  const done = phase === "done";
+
+  useEffect(() => {
+    // Once the match is over there is nothing left to count, and the phone keeps its battery.
+    if (startedAt == null || done) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [startedAt, done]);
 
   useEffect(() => {
     if (phase === lastPhase.current) return;
     lastPhase.current = phase;
     document.querySelectorAll(".scout-phase-current").forEach((node) => node.classList.remove("scout-phase-current"));
+    const behavior = prefersReducedMotion() ? "auto" : "smooth";
+    if (phase === "done") {
+      // Broke down, notes and Save sit at the end of the form: take the scout there.
+      document.querySelector(".scout-save-button")?.scrollIntoView({ behavior, block: "center" });
+      return;
+    }
     const key = anchors[phase];
     if (!key) return;
     const target = document.getElementById(`scout-field-${encodeURIComponent(key)}`);
     if (!target) return;
     target.classList.add("scout-phase-current");
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    target.scrollIntoView({ behavior, block: "start" });
   }, [phase, anchors]);
+
+  const secondsLeft = elapsed == null || done ? 0 : phaseRemainingSeconds(elapsed);
 
   return (
     <div className="match-timer" role="timer" aria-live="off">
@@ -57,10 +80,18 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
       </span>
       {elapsed != null ? (
         <>
-          <span className="match-timer-clock">{clockLabel(elapsed)}</span>
-          {phase !== "done" ? <small className="app-muted">{phaseRemainingSeconds(elapsed)} s left</small> : null}
+          {done ? (
+            <button type="button" className="start" onClick={saveFromTimer}>
+              Save this match
+            </button>
+          ) : (
+            // Time left in this phase is what a scout needs; time elapsed is arithmetic.
+            <span className="match-timer-clock" aria-label={`${secondsLeft} seconds left in ${PHASE_LABEL[phase]}`}>
+              {clockLabel(secondsLeft * 1000)}
+            </span>
+          )}
           <button type="button" onClick={() => setStartedAt(null)}>
-            Reset
+            {done ? "Restart" : "Reset"}
           </button>
         </>
       ) : (
