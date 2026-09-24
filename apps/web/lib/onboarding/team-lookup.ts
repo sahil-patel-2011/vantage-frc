@@ -53,6 +53,8 @@ export type TeamLookupResult = {
   action: { href: string; label: string } | null;
   /** Locked because this account is already a member (accepted invite / approved). */
   joined?: boolean;
+  /** Locked by a pending invite: finishing onboarding joins the team (migration 0686). */
+  invited?: boolean;
 };
 
 export type TeamLookupInput = {
@@ -143,6 +145,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
 
   if (input.locked && input.lockedTeamNumber === parsed) {
     const joined = input.accessStatus === "approved";
+    const invited = input.accessStatus === "invited";
     const orgName = input.lockedOrgName?.trim();
     // Most teams are named "Team 6925"; "Team 6925 · Team 6925" read as a stutter.
     const title =
@@ -154,10 +157,13 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       title,
       body: joined
         ? "You are on this team already — you joined through your invite, so the number is set."
-        : "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
+        : invited
+          ? "This team invited you. Finishing these steps puts you on it."
+          : "This account is already tied to that team through an open request, so the number can't change here.",
       ok: true,
       action: null,
       joined,
+      invited,
     };
   }
 
@@ -168,10 +174,11 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       kind: "invited",
       tone: "good",
       teamNumber: parsed,
-      title: `Team ${parsed} already invited you`,
-      body: "Finish with the invitation link in your email — that is the fastest way in.",
+      title: `Team ${parsed} invited you`,
+      body: "Finishing these steps puts you on the team. No need to find the email.",
       ok: true,
-      action: { href: "/invite", label: "Open my invite" },
+      action: null,
+      invited: true,
     };
   }
 

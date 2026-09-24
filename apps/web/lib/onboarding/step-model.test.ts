@@ -318,7 +318,7 @@ describe("pending-approval plan", () => {
     expect(plan.primaryAction.kind).toBe("edit");
   });
 
-  it("points an invited person at the invitation instead of a second request", () => {
+  it("lets an invited person join in one tap instead of hunting for the email", () => {
     const plan = buildOnboardingPendingPlan({
       accessStatus: "invited",
       teamNumber: 1234,
@@ -326,6 +326,7 @@ describe("pending-approval plan", () => {
       adult: false,
     });
     expect(plan.kind).toBe("invited");
-    expect(plan.primaryAction.kind).toBe("invite");
+    expect(plan.primaryAction.kind).toBe("join");
+    expect(plan.primaryAction.label).toMatch(/Join/);
   });
 });

@@ -409,14 +409,18 @@ export function PreferencesForm({
           <strong>
             {lookup.joined
               ? "You are already on this team."
-              : lookup.teamNumber
-                ? "Submit sends a request — not access."
-                : "Finish without a team"}
+              : lookup.invited
+                ? `You're joining Team ${lookup.teamNumber ?? ""}.`
+                : lookup.teamNumber
+                  ? "Submit sends a request — not access."
+                  : "Finish without a team"}
           </strong>
           <span>
             {lookup.joined
               ? " Finishing saves your profile and opens Home on what to do first."
-              : lookup.teamNumber
+              : lookup.invited
+                ? " The team invited this email, so finishing puts you straight on it."
+                : lookup.teamNumber
                 ? " That team's owners must approve. You cannot join an existing team just by knowing the number."
                 : " You are not joining anyone. An invite or a later team-number request still needs that team's approval."}
           </span>
@@ -430,9 +434,11 @@ export function PreferencesForm({
             ? "Submitting…"
             : lookup.joined
               ? "Finish and open Home"
-              : lookup.teamNumber
-                ? "Submit access request"
-                : "Finish without a team"}
+              : lookup.invited
+                ? `Join Team ${lookup.teamNumber ?? ""}`
+                : lookup.teamNumber
+                  ? "Submit access request"
+                  : "Finish without a team"}
         </button>
       </div>
     </form>

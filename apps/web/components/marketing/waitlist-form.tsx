@@ -33,6 +33,20 @@ export function WaitlistForm({
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [phone, setPhone] = useState("");
+  // Two different people land here: a mentor who wants their team set up, and someone whose
+  // team already uses Vantage (who needs an invite from their team, not a months-long list).
+  const [intent, setIntent] = useState<"setup" | "member">("setup");
+  const [prefillEmail, setPrefillEmail] = useState("");
+
+  // Sign-in sends people here with the address they already typed.
+  useEffect(() => {
+    try {
+      const email = new URLSearchParams(window.location.search).get("email") ?? "";
+      if (/^[^@\s]+@[^@\s]+$/.test(email)) setPrefillEmail(email.slice(0, 200));
+    } catch {
+      // No query string to read.
+    }
+  }, []);
 
   const phoneProvided = phone.trim().length > 0;
   const consent = { terms: termsAccepted, privacy: privacyAccepted };
@@ -92,7 +106,7 @@ export function WaitlistForm({
         throw new Error(result?.message ?? "Submission failed");
       }
       setState("success");
-      setMessage("You're on the waitlist. We'll email launch news.");
+      setMessage("You're on the list. We'll email you when your team is set up.");
       track("waitlist_success");
     } catch (error) {
       setState("error");
@@ -125,7 +139,39 @@ export function WaitlistForm({
         data-testid="waitlist-success"
       >
         <h3>You’re on the list.</h3>
-        <p>We&apos;ll email when access opens. Joining the waitlist does not create a Vantage account.</p>
+        <p>
+          We set teams up one at a time and will email you when yours is ready. Then you sign in and invite your
+          students and mentors by email. Nothing else to do until then.
+        </p>
+      </div>
+    );
+  }
+
+  const choice = (
+    <div className="waitlist-intent" role="radiogroup" aria-label="What do you need?">
+      <button type="button" role="radio" aria-checked={intent === "setup"} onClick={() => setIntent("setup")}>
+        Get my team set up
+      </button>
+      <button type="button" role="radio" aria-checked={intent === "member"} onClick={() => setIntent("member")}>
+        My team already uses Vantage
+      </button>
+    </div>
+  );
+
+  if (intent === "member") {
+    return (
+      <div className={`waitlist-form soft-waitlist-form ${compact ? "compact-form" : ""}`} data-testid="waitlist-member">
+        {choice}
+        <div className="waitlist-member-note" role="status">
+          <h3>Ask your team for an invite</h3>
+          <p>
+            Your team&rsquo;s owner or a mentor adds you from Team admin → Invite someone, using the email you sign in
+            with. You&rsquo;ll get an email with a link, and that link is all you need. No waitlist.
+          </p>
+          <a className="button secondary" href="/signin">
+            I have an invite: sign in
+          </a>
+        </div>
       </div>
     );
   }
@@ -137,10 +183,13 @@ export function WaitlistForm({
       aria-label="Join the Vantage waitlist"
       data-testid="waitlist-form"
     >
+      {choice}
       <div className="field">
         <label htmlFor={`${prefix}-email`}>Email</label>
         <input
           id={`${prefix}-email`}
+          key={prefillEmail || "empty"}
+          defaultValue={prefillEmail}
           name="email"
           type="email"
           autoComplete="email"

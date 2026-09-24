@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { buildOnboardingPendingPlan } from "../../lib/onboarding";
 import type { OnboardingState } from "./onboarding-model";
 
@@ -78,13 +79,50 @@ export function PendingPanel({
           kind={plan.primaryAction.kind}
           label={plan.primaryAction.label}
           checking={checking}
+          orgId={state.workspaceOrgId}
           onCheck={onCheck}
           onEdit={onEdit}
         />
-        <a className="signin-link" href="/invite">Have an invite?</a>
+        {plan.primaryAction.kind === "join" ? null : <a className="signin-link" href="/invite">Have an invite?</a>}
         <button type="button" className="signin-link" disabled={busy} onClick={onSignOut}>Sign out</button>
       </div>
     </div>
+  );
+}
+
+/** One tap joins the team that invited this email (POST /api/invites/accept-mine). */
+function JoinTeamButton({ orgId, label }: { orgId: string | null; label: string }) {
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState("");
+  const join = async () => {
+    if (!orgId) return;
+    setJoining(true);
+    setError("");
+    try {
+      const response = await fetch("/api/invites/accept-mine", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { orgId?: string; error?: string };
+      if (!response.ok || !data.orgId) {
+        setError(data.error ?? "Couldn't join the team. Try again.");
+        return;
+      }
+      window.location.assign(`/dashboard?orgId=${encodeURIComponent(data.orgId)}`);
+    } catch {
+      setError("Couldn't reach Vantage. Check your connection and try again.");
+    } finally {
+      setJoining(false);
+    }
+  };
+  return (
+    <>
+      <button type="button" className="signin-submit" disabled={joining || !orgId} onClick={() => void join()}>
+        {joining ? "Joining…" : label}
+      </button>
+      {error ? <p role="alert">{error}</p> : null}
+    </>
   );
 }
 
@@ -92,16 +130,20 @@ function PendingPrimaryAction({
   kind,
   label,
   checking,
+  orgId,
   onCheck,
   onEdit,
 }: {
-  kind: "check" | "edit" | "invite" | "claim";
+  kind: "check" | "edit" | "invite" | "claim" | "join";
   label: string;
   checking: boolean;
+  orgId: string | null;
   onCheck: () => void;
   onEdit: () => void;
 }) {
   switch (kind) {
+    case "join":
+      return <JoinTeamButton orgId={orgId} label={label} />;
     case "check":
       return (
         <button type="button" className="signin-submit" disabled={checking} onClick={onCheck}>

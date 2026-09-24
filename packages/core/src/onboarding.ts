@@ -628,6 +628,20 @@ export async function completeOnboarding(
 
   await recordLegalAcceptance(client, userId);
 
+  // Invited: the person proved this email when they signed in, which is what the invite link
+  // proves, so finishing onboarding joins the team (0686). A deployment without 0686 keeps the
+  // old path (the invite email's link); the savepoint keeps the profile save either way.
+  if (state.accessStatus === "invited" && state.lockedOrgId) {
+    try {
+      await withSavepointOrThrow(client, () => client.query(`SELECT accept_my_org_invite($1::uuid)`, [state.lockedOrgId]));
+    } catch (error) {
+      const code = (error as { code?: string } | null)?.code;
+      if (code !== "42883" && !/invalid or already used|has expired/i.test(String((error as Error)?.message ?? ""))) {
+        throw error;
+      }
+    }
+  }
+
   await client.query(`UPDATE users SET name=$2 WHERE id=$1`, [
     userId,
     payload.displayName || `${payload.firstName} ${payload.lastName}`,

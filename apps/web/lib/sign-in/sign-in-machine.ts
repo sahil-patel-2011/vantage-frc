@@ -319,7 +319,7 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
     const retryAfterSeconds = input.retryAfterSeconds ?? DEFAULT_RESEND_COOLDOWN_SECONDS;
     return {
       kind: "rate_limited",
-      message: "Too many requests. Wait for the timer, then try again.",
+      message: `Too many tries in a row. Wait ${retryAfterSeconds} seconds, then try again.`,
       keepDigits: true,
       needsNewCode: false,
       retryAfterSeconds,

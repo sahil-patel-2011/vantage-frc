@@ -48,7 +48,7 @@ import {
   SignInCard,
   SignInStatusBlock,
 } from "./sign-in-chrome";
-import { SignInCodeStep } from "./sign-in-code-step";
+import { SignInCodeStep, SignInNotInvited } from "./sign-in-code-step";
 import { SignInIdentityStep, SignInPasswordFooter } from "./sign-in-identity";
 import {
   readOnboardingGate,
@@ -98,6 +98,9 @@ export default function SignInClient({
   const codeRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const lastSubmittedCode = useRef<string>("");
+  // The code already sent for checking. Pressing Verify again for the same six digits only
+  // spent a sign-in attempt and tripped the rate limit.
+  const [triedCode, setTriedCode] = useState("");
   const requestedInitialCode = useRef(false);
   const prefilled = useRef(false);
 
@@ -346,6 +349,7 @@ export default function SignInClient({
     const code = sanitizeCodeInput(flow.code);
     if (!isCodeComplete(code)) return;
     lastSubmittedCode.current = code;
+    setTriedCode(code);
     setBusy("verifying");
     try {
       const isSecondFactor = flow.channel === "email-2fa";
@@ -558,6 +562,8 @@ export default function SignInClient({
 
   const hint = invitedOnlyHint(flow);
   const working = busy !== "idle";
+  const notInvited = flow.step !== "identity" && flow.failure?.kind === "not_authorized";
+  const waitlistHref = `/?email=${encodeURIComponent(normalizeSignInEmail(flow.email))}#waitlist`;
 
   if (probe.state === "active") {
     return (
@@ -619,6 +625,12 @@ export default function SignInClient({
             onPasswordChange={setPassword}
             onCodeChange={(code) => dispatch({ type: "code_changed", code })}
           />
+        ) : notInvited ? (
+          <SignInNotInvited
+            email={normalizeSignInEmail(flow.email)}
+            waitlistHref={waitlistHref}
+            onUseAnotherEmail={() => dispatch({ type: "edit_email" })}
+          />
         ) : (
           <SignInCodeStep
             channel={flow.channel}
@@ -634,7 +646,7 @@ export default function SignInClient({
             codeSeconds={codeSeconds}
             resendReady={resendReady}
             resendSeconds={resendSeconds}
-            submitReady={submitReady}
+            submitReady={submitReady && flow.code !== triedCode}
             busy={busy}
             working={working}
             resolvedNext={resolvedNext}
@@ -646,12 +658,13 @@ export default function SignInClient({
             onEditEmail={() => dispatch({ type: "edit_email" })}
             onResend={() => void resend()}
             onSwitchAccount={(href) => void signOutAndRedirect(href)}
+            inviteHelp={flow.channel === "email-otp" && !inviteToken ? { waitlistHref } : null}
           />
         )}
       </div>
 
       <SignInStatusBlock
-        failure={flow.failure?.message ?? null}
+        failure={notInvited ? null : (flow.failure?.message ?? null)}
         notice={flow.notice}
         oauthMessage={oauthMessage}
         inviteHint={hint}

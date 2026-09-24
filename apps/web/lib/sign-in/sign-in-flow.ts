@@ -47,7 +47,7 @@ export type RaisedPriceItem = {
 export const SIGN_IN_RAISED_PRICES: RaisedPriceItem[] = catalogRaisedPricingStrip();
 
 export const WAITLIST_ONLY_MESSAGE =
-  "This account isn’t on a team yet. If you were invited, try the email on the invite. Otherwise join the waitlist.";
+  "This email isn’t on a team yet. If you were invited, use the email the invite was sent to. Otherwise join the waitlist.";
 
 export const SIGN_IN_FAILED_MESSAGE = "Couldn’t sign in. Check your email and try again.";
 

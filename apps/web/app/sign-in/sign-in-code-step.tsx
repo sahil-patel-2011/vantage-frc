@@ -28,6 +28,7 @@ export function SignInCodeStep({
   onEditEmail,
   onResend,
   onSwitchAccount,
+  inviteHelp,
 }: {
   channel: SignInChannel;
   email: string;
@@ -51,6 +52,8 @@ export function SignInCodeStep({
   onEditEmail: () => void;
   onResend: () => void;
   onSwitchAccount: (href: string) => void;
+  /** Shown under the code for a first sign-in without an invite link: where a code comes from. */
+  inviteHelp?: { waitlistHref: string } | null;
 }) {
   return (
     <form className="signin-form" onSubmit={onSubmit}>
@@ -105,6 +108,48 @@ export function SignInCodeStep({
           ) : null}
         </div>
       ) : null}
+
+      {inviteHelp ? (
+        <div className="signin-invite-help">
+          <p>
+            <strong>No code after a minute?</strong> Codes only go to emails a team has invited. Ask your team&rsquo;s
+            owner to invite this address, or get your team set up.
+          </p>
+          <a className="signin-link" href={inviteHelp.waitlistHref}>
+            Join the waitlist
+          </a>
+        </div>
+      ) : null}
     </form>
+  );
+}
+
+/**
+ * The right code, but this email is on no team. Not an error: Vantage is invite-only, and this
+ * is where a newcomer finds out. One clear next step, and a way back.
+ */
+export function SignInNotInvited({
+  email,
+  waitlistHref,
+  onUseAnotherEmail,
+}: {
+  email: string;
+  waitlistHref: string;
+  onUseAnotherEmail: () => void;
+}) {
+  return (
+    <div className="signin-not-invited" role="status">
+      <h2>You&rsquo;re not on a team yet</h2>
+      <p>
+        Vantage is invite-only. Ask your team&rsquo;s owner or a mentor to invite <strong>{email}</strong>, or join the
+        waitlist to get your team set up.
+      </p>
+      <a className="signin-submit" href={waitlistHref}>
+        Join the waitlist
+      </a>
+      <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
+        Use a different email
+      </button>
+    </div>
   );
 }

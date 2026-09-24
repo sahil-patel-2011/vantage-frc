@@ -729,3 +729,12 @@ html:has(.marketing-lux){scroll-padding-top:76px}
 .marketing-lux .pricing-faq dd{margin:4px 0 0;color:var(--m-muted);line-height:1.6}
 .marketing-lux .mk-free-grid li{min-height:0}
 @media (max-width:760px){.marketing-lux .payg{grid-template-columns:1fr;gap:24px}}
+
+/* Waitlist: who is this for? A two-way choice above the form. */
+.waitlist-intent{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border:1px solid var(--m-line,#dcdcd6);border-radius:14px;margin-bottom:6px}
+.waitlist-intent button{min-height:44px;border:0;border-radius:10px;background:transparent;font:inherit;font-weight:600;cursor:pointer;color:inherit}
+.waitlist-intent button[aria-checked="true"]{background:var(--m-ink,#111);color:var(--m-paper,#fff)}
+.waitlist-member-note{display:grid;gap:10px}
+.waitlist-member-note h3{margin:6px 0 0}
+.waitlist-member-note p{margin:0;line-height:1.6;color:var(--m-muted,#555)}
+@media (max-width:480px){.waitlist-intent{grid-template-columns:1fr}}

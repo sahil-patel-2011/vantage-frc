@@ -332,3 +332,36 @@
     transform: none;
   }
 }
+
+/* Where a code comes from, said up front; and the calm "not on a team yet" outcome. */
+.signin-invite-help {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--signin-soft, rgba(127, 127, 127, 0.08));
+  font-size: 14px;
+  line-height: 1.5;
+}
+.signin-invite-help p {
+  margin: 0;
+}
+.signin-not-invited {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+.signin-not-invited h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.signin-not-invited p {
+  margin: 0;
+  line-height: 1.55;
+}
+.signin-not-invited .signin-submit {
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}

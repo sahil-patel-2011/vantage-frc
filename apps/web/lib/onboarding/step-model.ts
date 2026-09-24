@@ -319,7 +319,7 @@ export type OnboardingPendingPlan = {
   notified: string;
   stages: PendingStage[];
   meanwhile: PendingMeanwhileLink[];
-  primaryAction: { kind: "check" | "edit" | "invite" | "claim"; label: string };
+  primaryAction: { kind: "check" | "edit" | "invite" | "claim" | "join"; label: string };
 };
 
 const MEANWHILE_BASE: PendingMeanwhileLink[] = [
@@ -357,15 +357,15 @@ export function buildOnboardingPendingPlan(input: {
     return {
       kind: "invited",
       eyebrow: "INVITATION READY",
-      headline: `${teamLabel} already invited you`,
+      headline: `${teamLabel} invited you`,
       notified: "",
       stages: [
         { key: "profile", title: "Profile saved", detail: "Your name, role, and crew are stored privately.", phase: "done" },
-        { key: "invite", title: "Open the invitation email", detail: "Its link finishes the join — this page can't do it for you.", phase: "current" },
-        { key: "in", title: "You're in", detail: "The invite drops you straight into the team.", phase: "upcoming" },
+        { key: "invite", title: "Join the team", detail: "The invite was sent to the email you signed in with, so one tap joins.", phase: "current" },
+        { key: "in", title: "You're in", detail: "Home opens on your team.", phase: "upcoming" },
       ],
       meanwhile: MEANWHILE_BASE,
-      primaryAction: { kind: "invite", label: "Open my invite" },
+      primaryAction: { kind: "join", label: `Join ${teamLabel}` },
     };
   }
 
