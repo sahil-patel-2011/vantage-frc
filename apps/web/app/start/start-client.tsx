@@ -265,16 +265,28 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
         </main>
       );
     case "live": {
-      const pct = view.totalCount ? Math.round((view.doneCount / view.totalCount) * 100) : 0;
       const activeTracks = view.tracks.filter((t) => !t.dismissed);
       const dismissedTracks = view.tracks.filter((t) => t.dismissed);
-      const nextCheck = activeTracks.flatMap((track) => track.checks).find((check) => !check.done);
+      // While the team is being set up, the four setup steps are the page, with the same count
+      // Home shows ("0 of 4 done"). Role and focus ideas wait below, folded, instead of turning
+      // four steps into sixteen.
+      const setup = activeTracks.find((track) => track.key === "team_setup" && track.doneCount < track.totalCount);
+      const mainTracks = setup ? [setup] : activeTracks;
+      const moreTracks = setup ? activeTracks.filter((track) => track !== setup) : [];
+      const doneCount = setup ? setup.doneCount : view.doneCount;
+      const totalCount = setup ? setup.totalCount : view.totalCount;
+      const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+      const nextCheck = mainTracks.flatMap((track) => track.checks).find((check) => !check.done);
       return (
         <main className="module-page start-page">
           <PageHeader
             navPath="/start"
-            title="Your path"
-            description={`Guided first steps for ${view.orgName} — from role, focus, and your subteams.`}
+            title={setup ? "Set up your team" : "Your path"}
+            description={
+              setup
+                ? `Four steps that get ${view.orgName} going for everyone else.`
+                : `First steps for ${view.orgName}, picked from your role and subteams.`
+            }
           >
             <StartRelated orgId={view.orgId} />
           </PageHeader>
@@ -287,10 +299,10 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
           ) : null}
           <p className="start-meta" role="status">
             {[
-              view.teamRole ? `Role: ${view.teamRole}` : null,
-              view.crewRole ? `Crew: ${view.crewRole}` : null,
+              view.teamRole ? `Role: ${sentenceCase(view.teamRole)}` : null,
+              view.crewRole ? `Crew: ${sentenceCase(view.crewRole)}` : null,
               view.roleDescription ? view.roleDescription : null,
-              view.primaryFocus ? `Focus: ${view.primaryFocus}` : null,
+              view.primaryFocus ? `Focus: ${sentenceCase(view.primaryFocus)}` : null,
               view.subteamNames.length ? `Subteams: ${view.subteamNames.join(", ")}` : null,
             ]
               .filter(Boolean)
@@ -298,7 +310,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
           </p>
           <section className="start-progress" aria-label="Overall progress">
             <strong>
-              {pct === 100 ? "All done" : `${view.doneCount} of ${view.totalCount} done`}
+              {pct === 100 ? "All done" : `${doneCount} of ${totalCount} done`}
             </strong>
             <div className="start-progress-bar">
               <span style={{ width: `${pct}%` }} />
@@ -309,9 +321,18 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
               </a>
             ) : null}
           </section>
-          {activeTracks.map((track) => (
+          {mainTracks.map((track) => (
             <TrackCard key={track.key} track={track} busy={busy} onMutate={mutate} />
           ))}
+          {moreTracks.length > 0 ? (
+            <details className="start-more">
+              <summary>More ideas for your role ({moreTracks.length})</summary>
+              <p className="start-more-note">Optional. Come back to these once the team is set up.</p>
+              {moreTracks.map((track) => (
+                <TrackCard key={track.key} track={track} busy={busy} onMutate={mutate} />
+              ))}
+            </details>
+          ) : null}
           {dismissedTracks.length > 0 ? (
             <section className="start-empty">
               <p>
@@ -341,6 +362,12 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
       return _never;
     }
   }
+}
+
+/** "coach" → "Coach", "leadership" → "Leadership", "drive_team" → "Drive team". */
+function sentenceCase(value: string): string {
+  const words = value.replace(/_/g, " ").trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : words;
 }
 
 function TrackCard({

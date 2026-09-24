@@ -7,7 +7,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 const LEAVES = [
-  { path: "/start", heading: /Your path/i },
+  { path: "/start", heading: /Your path|Set up your team/i },
   { path: "/security", heading: /Security/i },
   { path: "/notifications/preferences", heading: /Notification preferences/i },
   { path: "/cad/connections", heading: /CAD connections|Choose your team/i },

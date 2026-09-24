@@ -224,3 +224,19 @@
     justify-content: center;
   }
 }
+
+/* Role and focus ideas, folded under the four setup steps until setup is done. */
+.start-more {
+  margin-top: 16px;
+}
+.start-more > summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+.start-more-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
