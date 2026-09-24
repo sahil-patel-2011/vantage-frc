@@ -296,6 +296,14 @@ export function useDashboardBoardOps(input: {
         setMessage(data.error ?? "Save failed");
         return;
       }
+      // Edit mode ends only once the switch has happened; a failed switch leaves the member
+      // in their draft instead of showing it as if it were saved.
+      if (editing) {
+        setEditing(false);
+        setPreviewing(false);
+        setLibraryOpen(false);
+        setGrabbedId(null);
+      }
       writeStoredBoardId(orgId, userId, data.id);
       setBoard({
         id: data.id,
@@ -400,12 +408,6 @@ export function useDashboardBoardOps(input: {
   async function switchBoard(targetId: string, opts?: { leaveEditing?: boolean }) {
     if (!orgId || !targetId || targetId === board?.id || saving) return;
     if (editing && !opts?.leaveEditing) return;
-    if (editing) {
-      setEditing(false);
-      setPreviewing(false);
-      setLibraryOpen(false);
-      setGrabbedId(null);
-    }
     setSaving(true);
     setMessage("");
     try {
@@ -433,6 +435,9 @@ export function useDashboardBoardOps(input: {
       await loadHome(orgId, data.id);
       setMessageKind("success");
       setMessage(`Switched to ${data.name}`);
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not switch boards. Check your connection and try again.");
     } finally {
       setSaving(false);
     }

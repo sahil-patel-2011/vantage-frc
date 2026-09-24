@@ -111,9 +111,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     something you can see on the board.
   */
   const [addedThisEdit, setAddedThisEdit] = useState<ReadonlySet<string>>(() => new Set());
+  // Preview turns editing off for a moment; the edit session (and what it added) lasts until
+  // Done or Cancel, the same rule the undo history uses.
   useEffect(() => {
-    if (!home.editing) setAddedThisEdit(new Set());
-  }, [home.editing]);
+    if (!home.editing && !home.previewing) setAddedThisEdit(new Set());
+  }, [home.editing, home.previewing]);
   const markAdded = useCallback((id: string) => {
     setAddedThisEdit((current) => new Set(current).add(id));
   }, []);

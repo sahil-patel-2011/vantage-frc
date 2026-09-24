@@ -109,6 +109,10 @@ export default function MessagesClient({
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Which conversation the loaded messages belong to. Switching threads keeps the old
+  // thread's messages on screen until the new ones arrive; jumping on those would mark
+  // the new thread as landed before it had loaded.
+  const [messagesFor, setMessagesFor] = useState<string | null>(null);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   // Youth protection: who else is in this private chat, and why. Deliberately not dismissible —
@@ -325,6 +329,7 @@ export default function MessagesClient({
         }
       } else {
         setMessages(incoming);
+        setMessagesFor(conversationId);
         setPinned((data.pinned ?? []) as Message[]);
         setHasEarlier(Boolean(data.hasEarlier));
         sinceRef.current = nextWatermark(incoming, null);
@@ -430,7 +435,7 @@ export default function MessagesClient({
   const landedOnRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (activeId && landedOnRef.current !== activeId && messages.length) {
+    if (activeId && messagesFor === activeId && landedOnRef.current !== activeId && messages.length) {
       landedOnRef.current = activeId;
       stickToBottomRef.current = true;
       bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
@@ -446,7 +451,7 @@ export default function MessagesClient({
       return;
     }
     scrollToBottom();
-  }, [messages, scrollToBottom, activeId]);
+  }, [messages, scrollToBottom, activeId, messagesFor]);
 
   const loadEarlier = useCallback(async () => {
     if (!activeId || loadingEarlier) return;

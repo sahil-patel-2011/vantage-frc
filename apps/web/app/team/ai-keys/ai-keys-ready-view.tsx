@@ -32,9 +32,9 @@ import {
   type RoutingPrefs,
 } from "./ai-keys-model";
 import { ProviderCard } from "./ai-keys-provider-card";
+import { WebResearchCard } from "./ai-keys-web-research";
 
 const GEMINI_FREE = FREE_KEY_PROVIDERS.find((provider) => provider.byokProvider === "google") ?? null;
-import { WebResearchCard } from "./ai-keys-web-research";
 
 export type AiKeysReadyViewProps = {
   orgId: string | null;
@@ -114,6 +114,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     myModelChoice,
     setMyModelChoice,
   } = props;
+  const showStart = Boolean(payload.canManage && configuredProviders.size === 0 && GEMINI_FREE);
   return (
     <>
           {!payload.canManage ? (
@@ -132,7 +133,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
 
           {/* One recommended path before any choice: most teams have no AI budget, and Gemini's
               free tier covers a team's chat, scouting summaries and strategy. */}
-          {payload.canManage && configuredProviders.size === 0 && GEMINI_FREE ? (
+          {showStart && GEMINI_FREE ? (
             <section className="app-card soft-panel ai-keys-start" aria-labelledby="ai-keys-start-title">
               <span className="eyebrow">START HERE · FREE</span>
               <h2 id="ai-keys-start-title">Turn on AI with a free Google Gemini key</h2>
@@ -185,7 +186,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           ) : null}
 
           <section className="ai-keys-grid" aria-label="Provider API keys">
-            {providerMeta.map((meta) => {
+            {/* While the start card offers the Gemini field, the Google card would be a
+                second field bound to the same draft. */}
+            {providerMeta.filter((meta) => !(showStart && meta.id === "google")).map((meta) => {
               const status = statusByProvider.get(meta.id) ?? {
                 provider: meta.id,
                 label: meta.label,

@@ -183,10 +183,12 @@ describe("pointer drag round trip onto the saved board", () => {
     const first = display.find((item) => item.y === 0)!;
     const moved = moveItem(display, first.i, { col: 0, row: 20 }, 1);
 
-    // Writing a 1-column drag back through applyGridDrag would stretch
-    // everything to 12 wide, which is why the client reorders instead.
-    const flattened = applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 1);
-    expect(flattened.every((item) => item.w === DASHBOARD_COLUMNS)).toBe(true);
+    // applyGridDrag keeps saved widths a 1-column view cannot show, but it cannot
+    // express an order either, which is why the client reorders on a phone.
+    const kept = applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 1);
+    for (const before of DEFAULT_DASHBOARD_LAYOUT) {
+      expect(kept.find((item) => item.i === before.i)!.w).toBe(before.w);
+    }
 
     const reordered = reorderLayout(DEFAULT_DASHBOARD_LAYOUT, layoutOrder(moved));
     for (const before of DEFAULT_DASHBOARD_LAYOUT) {
@@ -203,5 +205,26 @@ describe("pointer drag round trip onto the saved board", () => {
     expect(applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 12)).toEqual(
       applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, display, 12),
     );
+  });
+});
+
+describe("applyGridDrag keeps what did not move on a tablet", () => {
+  it("does not shrink third-width cards when a 4-column view is written back unchanged", () => {
+    const saved = [
+      { i: "a", type: "next_match" as const, x: 0, y: 0, w: 4, h: 3 },
+      { i: "b", type: "recent_result" as const, x: 4, y: 0, w: 4, h: 3 },
+      { i: "c", type: "sync_status" as const, x: 8, y: 0, w: 4, h: 3 },
+      { i: "d", type: "prediction_summary" as const, x: 0, y: 3, w: 8, h: 3 },
+    ];
+    const shown = saved.map((item) => ({
+      i: item.i,
+      x: Math.round((item.x * 4) / 12),
+      y: item.y,
+      w: Math.max(1, Math.round((item.w * 4) / 12)),
+      h: item.h,
+    }));
+    const back = applyGridDrag(saved, shown, 4);
+    expect(back.map((item) => item.w)).toEqual([4, 4, 4, 8]);
+    expect(back.map((item) => item.x)).toEqual([0, 4, 8, 0]);
   });
 });

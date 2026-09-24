@@ -40,7 +40,13 @@ export function DashboardBoardSwitcher({
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
-    rootRef.current?.querySelector<HTMLButtonElement>("[role^=menuitem][aria-checked='true'], [role^=menuitem]")?.focus();
+    // querySelector("A, B") returns the first match in page order, not the first selector
+    // that matches, so look for the current board first.
+    const root = rootRef.current;
+    (
+      root?.querySelector<HTMLButtonElement>("[role^=menuitem][aria-checked='true']:not(:disabled)") ??
+      root?.querySelector<HTMLButtonElement>("[role^=menuitem]:not(:disabled)")
+    )?.focus();
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 

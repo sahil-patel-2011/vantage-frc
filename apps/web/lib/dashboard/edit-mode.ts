@@ -4,7 +4,6 @@
  * normal view hides. DOM-free so it runs under vitest in node.
  */
 
-import { applyGridDrag } from "./boards";
 import {
   findDashboardSlot,
   homeViewLayout,
@@ -200,31 +199,28 @@ export function setAlwaysShow(
  * on screen actually moved, so the toast never claims a move that did not
  * happen.
  *
- * On the full 12-column board and on a phone the saved board is packed. On a
- * tablet the saved board is scaled down, and the rounding leaves holes (three
- * 4-wide cards land in columns 1, 2 and 4 of 4), so the board is packed at the
- * tablet's width and written back through applyGridDrag — the same path a
- * drag on a tablet takes.
+ * The saved 12-column board is packed on every screen. A tablet shows it scaled
+ * down, and packing the tablet view instead and scaling that back up changed card
+ * widths on the desktop board (a 4-wide card came back 3 wide), so a rounding hole
+ * that only exists on a tablet stays and tidy says "Nothing to tidy."
  */
 export function tidyBoard(input: {
   layout: DashboardWidgetLayout[];
   /** Cards painted on the board right now (Home's hidden ones are not). */
   visibleIds: ReadonlySet<string>;
-  cols: number;
+  /** The screen's column count. Tidy packs the saved board whatever it is. */
+  cols?: number;
   /** The board as painted for a given saved layout. */
   displayFor: (layout: DashboardWidgetLayout[]) => DashboardWidgetLayout[];
 }): { layout: DashboardWidgetLayout[]; moved: boolean } {
-  const { layout, visibleIds, cols, displayFor } = input;
+  const { layout, visibleIds, displayFor } = input;
   const before = displayFor(layout);
-  let next: DashboardWidgetLayout[];
-  if (cols > 1 && cols < 12) {
-    next = applyGridDrag(layout, packInColumns(before, cols), cols);
-  } else {
-    const packed = new Map(
-      packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))).map((item) => [item.i, item]),
-    );
-    next = layout.map((item) => packed.get(item.i) ?? item);
-  }
+  // Always the saved 12-column board, never the scaled-down view written back: a tablet
+  // view cannot be scaled back up without changing card widths on the desktop board.
+  const packed = new Map(
+    packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))).map((item) => [item.i, item]),
+  );
+  const next = layout.map((item) => packed.get(item.i) ?? item);
   // Judged on screen: a saved-board change nobody can see is not "moved".
   const moved = !samePositions(before, displayFor(next));
   return moved ? { layout: next, moved } : { layout, moved: false };

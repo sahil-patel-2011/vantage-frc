@@ -185,15 +185,12 @@ describe("tidyBoard", () => {
   const displayAt = (cols: number) => (layout: DashboardWidgetLayout[]) =>
     compactLayout(scaleLayoutToCols(packDashboardLayout(layout), 12, cols), cols);
 
-  it("closes the hole tablet scaling leaves, and says it moved something", () => {
-    // Three 4-wide cards scale to columns 1, 2 and 4 of a 4-column tablet.
+  it("never rewrites card widths from a tablet view", () => {
+    // Three 4-wide cards scale to columns 1, 2 and 4 of a 4-column tablet. That hole is
+    // rounding; packing the tablet view and scaling it back made the desktop cards 3 wide.
     const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 4, 0), card("c", "team_todos", 8, 0)];
-    expect(displayAt(4)(layout).map((item) => item.x)).toEqual([0, 1, 3]);
     const result = tidyBoard({ layout, visibleIds: new Set(["a", "b", "c"]), cols: 4, displayFor: displayAt(4) });
-    expect(result.moved).toBe(true);
-    expect(displayAt(4)(result.layout).map((item) => item.x)).toEqual([0, 1, 2]);
-    // A second tidy has nothing left to do.
-    expect(tidyBoard({ layout: result.layout, visibleIds: new Set(["a", "b", "c"]), cols: 4, displayFor: displayAt(4) }).moved).toBe(false);
+    expect(result).toEqual({ layout, moved: false });
   });
 
   it("does not claim a move when the board is already tidy", () => {

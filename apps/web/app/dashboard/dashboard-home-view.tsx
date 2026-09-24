@@ -770,6 +770,7 @@ export function DashboardHomeView(props: {
                         onRemove={removeWidget}
                         onResize={setWidgetSize}
                         onResetSize={resetWidgetSize}
+                        onHideWhenEmpty={(id) => setAlwaysShown(id, false)}
                       />
                     );
                   })

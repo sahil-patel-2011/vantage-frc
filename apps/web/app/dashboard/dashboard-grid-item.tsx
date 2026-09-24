@@ -4,6 +4,7 @@ import { memo, type CSSProperties, type KeyboardEvent, type PointerEvent } from 
 import {
   WIDGET_SIZE_KEYS,
   WIDGET_SIZE_LABEL,
+  isAlwaysShown,
   type DashboardWidgetLayout,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
@@ -42,6 +43,8 @@ type DashboardGridItemProps = {
   onRemove: (id: string) => void;
   onResize: (id: string, size: WidgetSizeKey) => void;
   onResetSize: (id: string) => void;
+  /** Turns "Always show" back off; only offered on cards that have it. */
+  onHideWhenEmpty?: (id: string) => void;
 };
 
 /*
@@ -77,6 +80,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   onRemove,
   onResize,
   onResetSize,
+  onHideWhenEmpty,
 }: DashboardGridItemProps) {
   return (
     <article
@@ -177,6 +181,17 @@ export const DashboardGridItem = memo(function DashboardGridItem({
               >
                 Default
               </button>
+              {onHideWhenEmpty && isAlwaysShown(item) ? (
+                <button
+                  type="button"
+                  className="dash-size-btn dash-size-reset"
+                  data-testid="dash-hide-when-empty"
+                  aria-label={`Hide ${label} on Home when it has nothing to show`}
+                  onClick={() => onHideWhenEmpty(item.i)}
+                >
+                  Hide when empty
+                </button>
+              ) : null}
             </div>
           </div>
         </>

@@ -117,7 +117,15 @@ export function applyGridDrag(
       displayCols,
       DASHBOARD_COLUMNS,
     );
-    return scaled ?? item;
+    if (!scaled || displayCols === DASHBOARD_COLUMNS) return scaled ?? item;
+    // Scaling down and back up does not round-trip (a 4-wide card shows 1 wide on a
+    // 4-column tablet and would come back 3 wide). Keep the saved width and column
+    // wherever the displayed one did not change, so a tablet edit only rewrites what moved.
+    const [shown] = scaleLayoutToCols([item], DASHBOARD_COLUMNS, displayCols);
+    const w = shown && shown.w === match.w ? item.w : scaled.w;
+    const keptX = shown && shown.x === match.x ? item.x : scaled.x;
+    const x = Math.max(0, Math.min(DASHBOARD_COLUMNS - w, keptX));
+    return { ...scaled, x, w, ...(w === item.w && item.minW != null ? { minW: item.minW } : {}) };
   });
 }
 
