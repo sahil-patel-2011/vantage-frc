@@ -158,18 +158,17 @@ describe("TbaClient against a mocked The Blue Alliance", () => {
 });
 
 describe("the unconfigured message", () => {
-  it("names the key source, all three places it can go, and that there is no callback URL", async () => {
+  it("tells a team where to fix it and never names server settings", async () => {
     // Imported lazily: production-worker reaches the worker DB role at module
     // scope, and this assertion is about the string, not the wiring.
     const source = await import("node:fs").then((fs) =>
       fs.readFileSync(new URL("../src/production-worker.ts", import.meta.url), "utf8"),
     );
-    const message = source.slice(source.indexOf("TBA Read API key is not configured"));
+    const message = source.slice(source.indexOf("Match data isn't connected yet"));
     expect(message).toContain("thebluealliance.com");
-    expect(message).toContain("TBA_AUTH_KEY");
-    expect(message).toContain("Environment Variables");
-    expect(message).toContain("Admin → Live Data");
     expect(message).toContain("Team → Data");
-    expect(message).toContain("no callback URL");
+    // Teams never see hosting plumbing: no env variable names or hosting dashboards.
+    const thrown = message.slice(0, message.indexOf(");"));
+    expect(thrown).not.toMatch(/TBA_AUTH_KEY|TBA_API_KEY|Environment Variables|Vercel/);
   });
 });

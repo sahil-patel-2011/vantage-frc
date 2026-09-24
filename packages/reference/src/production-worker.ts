@@ -123,15 +123,12 @@ async function assertTbaConfigured(
     const fallbacks = await credentials.fallbackForOrgs(orgIds);
     if (fallbacks.length) return;
   }
-  // This string is the whole answer a team gets when a dossier or a sync
-  // fails, so it has to say where the key comes from and where it goes —
-  // "not configured" alone sent people to support.
+  // This string is the whole answer a team gets when a dossier or a sync fails, so it says
+  // what to do in the team's own words. It used to name server settings (env variable
+  // names, the hosting dashboard), which teams never see and cannot change.
   throw new Error(
-    "TBA Read API key is not configured. Create one at thebluealliance.com → Account → Read API Keys, " +
-      "then either set TBA_AUTH_KEY (or TBA_API_KEY) in your deployment environment " +
-      "(Vercel → Project → Settings → Environment Variables) and redeploy, save it as a platform credential " +
-      "in Admin → Live Data, or save it as this team's fallback key on Team → Data. " +
-      "TBA needs no callback URL and no OAuth application.",
+    "Match data isn't connected yet. An owner can connect it on Team → Data with a free Read API key " +
+      "from The Blue Alliance (thebluealliance.com → Account → Read API Keys).",
   );
 }
 

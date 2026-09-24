@@ -9,6 +9,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/fea
 import type { TeamDossierView } from "../../../lib/team-dossier/store";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./team-profile.css";
+import { teamFacingError } from "../../../lib/ui/team-facing-error";
 
 type View = TeamDossierView & { orgId: string | null };
 
@@ -318,7 +319,7 @@ export default function TeamProfileClient() {
 
       {view.status === "failed" ? (
         <p className="tp-error" role="alert">
-          The last build failed: {view.error ?? "neither source answered"}.
+          The last build failed: {teamFacingError(view.error, "neither source answered")}.
         </p>
       ) : null}
 
