@@ -323,3 +323,29 @@ body:has(.consent-banner) {
 .consent-banner-more > p {
   margin: 6px 0 0;
 }
+
+/* Phones: accept and decline side by side (same size, so neither is the pushed choice),
+   the policy link on its own short line. Cuts the card to about half its old height. */
+@media (max-width: 759px) {
+  .consent-banner-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .consent-banner-btn {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .consent-banner-link {
+    grid-column: 1 / -1;
+    justify-self: center;
+    min-height: 32px;
+  }
+  .consent-banner-title {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  .consent-banner-lead {
+    font-size: 13px;
+  }
+}

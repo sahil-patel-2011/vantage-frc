@@ -271,6 +271,34 @@ export function Field({
         </FormRow>
       );
     }
+    // Counted things (points, cycles, fouls, pieces) get big − / + buttons: a scout taps
+    // while watching instead of opening the phone keyboard mid-match. Times, weights and
+    // rates stay a typed box, because they are measured, not counted.
+    if (field.type === "number" && !/time|sec|\(s\)|weight|rate|avg|average|percent|%|speed/i.test(`${field.key} ${field.label}`)) {
+      const count = typeof value === "number" && Number.isFinite(value) ? value : 0;
+      return (
+        <FormRow label={label} hint={field.helpText}>
+          <div className="tap-counter">
+            <button type="button" aria-label={`${field.label}: one less`} disabled={count <= 0} onClick={() => onChange(Math.max(0, count - 1))}>
+              −
+            </button>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              aria-label={field.label}
+              value={typeof value === "number" && Number.isFinite(value) ? String(value) : ""}
+              placeholder="0"
+              required={field.required}
+              onChange={(event) => onChange(Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : undefined)}
+            />
+            <button type="button" className="plus" aria-label={`${field.label}: one more`} onClick={() => onChange(count + 1)}>
+              +
+            </button>
+          </div>
+        </FormRow>
+      );
+    }
     return (
       <FormRow label={label} hint={field.helpText}>
         <input

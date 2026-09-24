@@ -168,7 +168,7 @@ describe("dashboard tenant and role isolation rules", () => {
 });
 
 describe("home view layout", () => {
-  it("keeps pinned empty cards in view mode and hides completed setup cards", () => {
+  it("hides empty cards (not Next match) in view mode and hides completed setup cards", () => {
     const viewed = homeViewLayout(
       [
         ...DEFAULT_DASHBOARD_LAYOUT,
@@ -187,7 +187,11 @@ describe("home view layout", () => {
         },
       },
     );
-    expect(viewed.map((item) => item.type)).toEqual(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type));
+    // Empty cards step aside outside edit mode; Next match stays as the top of Home.
+    const empty = new Set(["robot_readiness", "recent_result", "scouting_coverage"]);
+    expect(viewed.map((item) => item.type)).toEqual(
+      DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type).filter((type) => !empty.has(type)),
+    );
     expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
   });

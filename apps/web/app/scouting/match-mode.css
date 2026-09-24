@@ -1,0 +1,212 @@
+/* Scouting match mode: the next-match card, tap counters and the match timer. Big targets
+   for a thumb at a noisy venue; red and blue read at a glance. */
+
+.next-match {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface);
+}
+.next-match-head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  text-align: center;
+}
+.next-match-head strong {
+  display: block;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.next-match-head small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.next-match-step {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: 12px;
+  background: var(--surface-2, var(--surface));
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.next-match-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.next-match-jump {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent, #2563eb);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.next-match-robots {
+  display: grid;
+  gap: 8px;
+}
+.next-match-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.next-match-robot {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-height: 64px;
+  padding: 8px 4px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform var(--dur-fast, 0.12s) ease, box-shadow var(--dur-fast, 0.12s) ease, opacity var(--dur-fast, 0.12s) ease;
+}
+.next-match-robot b {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.next-match-robot small {
+  font-size: 11px;
+  opacity: 0.92;
+}
+.next-match-row.red .next-match-robot {
+  background: #c9302c;
+}
+.next-match-row.blue .next-match-robot {
+  background: #1f5fbf;
+}
+.next-match-robot.is-done {
+  opacity: 0.6;
+}
+.next-match-robot.is-selected {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 25%, transparent);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.next-match-robot:active {
+  transform: scale(0.97);
+}
+
+/* Tap counter: − value + for whole-number fields, so the phone keyboard never opens. */
+.tap-counter {
+  display: grid;
+  grid-template-columns: 56px minmax(56px, 1fr) 56px;
+  align-items: center;
+  gap: 6px;
+  max-width: 280px;
+}
+.tap-counter button {
+  height: 52px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: 12px;
+  background: var(--surface-2, var(--surface));
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tap-counter button.plus {
+  background: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+  color: var(--accent-ink, #fff);
+}
+.tap-counter button:active {
+  transform: scale(0.96);
+}
+.tap-counter input {
+  height: 52px;
+  width: 100%;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Match timer: start with the field; the phase follows the clock. */
+.match-timer {
+  position: sticky;
+  top: calc(var(--topbar-h, 60px) + 4px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+.match-timer-clock {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 64px;
+}
+.match-timer-phase {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-2, var(--surface));
+}
+.match-timer-phase[data-phase="auto"] {
+  background: #fde68a;
+  color: #713f12;
+}
+.match-timer-phase[data-phase="teleop"] {
+  background: #bfdbfe;
+  color: #1e3a8a;
+}
+.match-timer-phase[data-phase="endgame"] {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+.match-timer-phase[data-phase="done"] {
+  background: #bbf7d0;
+  color: #14532d;
+}
+.match-timer button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+.match-timer button.start {
+  background: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+  color: var(--accent-ink, #fff);
+}
+.scout-phase-current {
+  outline: 2px solid color-mix(in srgb, var(--accent, #2563eb) 55%, transparent);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .next-match-robot,
+  .tap-counter button {
+    transition: none;
+  }
+}

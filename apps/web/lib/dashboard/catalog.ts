@@ -273,12 +273,28 @@ export function homeViewLayout(
   const widgets = input.widgets ?? {};
   const statusOf = (item: DashboardWidgetLayout) =>
     (widgets[item.i] ?? widgets[item.type] ?? Object.values(widgets).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
-  const sized = visible.map((item) => {
+  // Cards with nothing in them step aside outside edit mode: a new member's Home was nine
+  // cards, eight saying "nothing yet". They come back the moment they have something, and
+  // the page names them in one line (emptyHomeWidgets). Edit mode still shows every card.
+  // Next match is the exception: it is the top of Home and says when the next match is.
+  const filled = visible.filter((item) => HOME_ALWAYS_VISIBLE.has(item.type) || statusOf(item) !== "empty");
+  const sized = filled.map((item) => {
     if (!COMPACT_WHEN_EMPTY.has(item.type)) return item;
     const status = statusOf(item);
     return status && status !== "live" && item.h > 3 ? { ...item, h: 3 } : item;
   });
   return packDashboardLayout(sized);
+}
+
+/** Labels of the pinned cards hidden because they are empty right now, for one summary line. */
+export function emptyHomeWidgets(
+  layout: DashboardWidgetLayout[],
+  widgets: Record<string, { status?: string } | undefined> | undefined,
+): string[] {
+  const rows = widgets ?? {};
+  return layout
+    .filter((item) => !HOME_ALWAYS_VISIBLE.has(item.type) && (rows[item.i] ?? rows[item.type])?.status === "empty")
+    .map((item) => catalogEntry(item.type)?.label ?? item.type);
 }
 
 export const WIDGET_CATALOG: WidgetCatalogEntry[] = [

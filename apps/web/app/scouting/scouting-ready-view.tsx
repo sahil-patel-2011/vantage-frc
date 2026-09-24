@@ -38,6 +38,9 @@ import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import { ScoutingReportTemplatePicker } from "./scouting-report-template-picker";
+import { NextMatchCard } from "./next-match-card";
+import { MatchTimer } from "./match-timer";
+import "./match-mode.css";
 
 type MatchOption = {
   matchKey: string;
@@ -479,9 +482,22 @@ return (
               {/* Scouting is not assignment-gated. The list is a convenience:
                   your matches first, then every other robot on the schedule,
                   and a typed team number for anything not on it at all. */}
+              {data?.matches?.length ? (
+                <NextMatchCard
+                  matches={data.matches}
+                  scouted={data.recentEntries ?? []}
+                  assignments={data.assignments ?? []}
+                  matchKey={matchKey}
+                  teamKey={teamKey}
+                  onPick={(nextMatch, nextTeam) => {
+                    setMatchKey(nextMatch);
+                    setTeamKey(nextTeam);
+                  }}
+                />
+              ) : null}
               {matchOptions.length ? (
                 <FormRow
-                  label="Who are you scouting?"
+                  label={data?.matches?.length ? "Or pick any match" : "Who are you scouting?"}
                   hint={
                     matchOptions.some((option) => option.assigned)
                       ? ASSIGNMENTS_ARE_SUGGESTIONS_COPY
@@ -562,6 +578,10 @@ return (
                 ))}
               </ul>
             </div>
+          ) : null}
+
+          {type === "match" && teamKey && formFields.length ? (
+            <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`} />
           ) : null}
 
           {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (

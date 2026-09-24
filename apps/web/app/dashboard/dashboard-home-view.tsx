@@ -12,6 +12,7 @@ import { orgNameAddsDetail } from "../../components/app-shell-model";
 import { prefersTapToPlace } from "../../lib/dashboard/tap-to-place";
 import {
   catalogEntry,
+  emptyHomeWidgets,
   inferWidgetSize,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
@@ -79,6 +80,12 @@ type GridSpec = {
   cols: number;
   rowHeight: number;
 };
+
+/** "a, b and c" */
+function listWords(words: string[]): string {
+  if (words.length <= 1) return words[0] ?? "";
+  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
 
 export function DashboardHomeView(props: {
   me: Me;
@@ -521,6 +528,12 @@ export function DashboardHomeView(props: {
             );
           }}
         />
+      ) : null}
+
+      {orgId && !editing && emptyHomeWidgets(layout, widgets).length ? (
+        <p className="dash-empty-summary" role="status">
+          Nothing yet in {listWords(emptyHomeWidgets(layout, widgets))}. Those cards come back as soon as they have something.
+        </p>
       ) : null}
 
       {orgId || editing ? (
