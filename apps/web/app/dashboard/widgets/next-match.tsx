@@ -4,6 +4,7 @@ import { ourSideRange } from "../../../lib/strategy/our-side-range";
 import { nextMatchDriverLines, nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
+import { matchShortLabel } from "../../../lib/matches/no-next-match";
 import { LiveCountdown } from "./live-countdown";
 
 function allianceTeams(alliance: unknown) {
@@ -33,14 +34,16 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
   return (
     <div className={`dash-next-match${alliance ? ` alliance-${alliance}` : ""}`}>
       <div>
-        <span>{String(data.compLevel ?? "Match")}</span>
-        <strong>{String(data.matchNumber ?? "—")}</strong>
+        {/* "Qual 31", the name people say, not "QM" over "31". */}
+        <strong>
+          {typeof data.compLevel === "string" && Number.isFinite(Number(data.matchNumber))
+            ? matchShortLabel(data.compLevel.toLowerCase(), Number(data.matchNumber))
+            : `Match ${String(data.matchNumber ?? "")}`.trim()}
+        </strong>
       </div>
       <div className="dash-countdown">
         <span>Starts in</span>
-        <strong>
-          <LiveCountdown iso={scheduled} />
-        </strong>
+        <strong>{scheduled ? <LiveCountdown iso={scheduled} /> : "Time not posted"}</strong>
       </div>
       {typeof data.bumperCue === "string" && data.bumperCue ? (
         <p className="dash-bumper-cue">{data.bumperCue}</p>
@@ -68,7 +71,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
             : ""}
         </p>
       ) : (
-        <p className="app-muted">No stored prediction for this match yet. Open Strategy after match data is connected.</p>
+        <p className="app-muted">No win chance for this match yet.</p>
       )}
       {typeof data.redPredicted === "number" &&
       typeof data.bluePredicted === "number" &&
@@ -102,16 +105,17 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
           ))}
         </ul>
       ) : null}
-      <footer>
-        <div>
-          <span>Red</span>
-          <b>{allianceTeams(data.redAlliance)}</b>
-        </div>
-        <div>
-          <span>Blue</span>
-          <b>{allianceTeams(data.blueAlliance)}</b>
-        </div>
-      </footer>
+      {/* The alliances only when "With … vs …" above could not say them. */}
+      {Array.isArray(data.partners) || Array.isArray(data.opponents) ? null : (
+        <footer>
+          <div>
+            <span>Red</span> <b>{allianceTeams(data.redAlliance)}</b>
+          </div>
+          <div>
+            <span>Blue</span> <b>{allianceTeams(data.blueAlliance)}</b>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

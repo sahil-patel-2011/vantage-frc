@@ -1,4 +1,5 @@
 import { MEDIA_ENABLED } from "../../lib/media-availability";
+import { matchShortLabel } from "../../lib/matches/no-next-match";
 import {
   WIDGET_CATALOG,
   canAccessWidget,
@@ -250,10 +251,16 @@ export function homeNowFromWidgets(input: {
   }
   const byType = (type: string) => Object.values(input.widgets).find((row) => row.type === type)?.data;
   const next = input.nextMatchData ?? byType("next_match");
-  const matchBits = [firstString(next?.compLevel), firstString(String(next?.matchNumber ?? ""))].filter(Boolean);
+  const level = firstString(next?.compLevel);
+  const number = Number(next?.matchNumber);
+  // "Qual 31", not "qm 31".
   const matchLabel =
     firstString(next?.matchLabel) ??
-    (matchBits.length ? matchBits.join(" ") : null);
+    (level && Number.isFinite(number) && number > 0
+      ? /^(qm|ef|qf|sf|f)$/i.test(level)
+        ? matchShortLabel(level.toLowerCase(), number)
+        : `${level} ${number}`
+      : null);
   const myDay = byType("my_day");
   const dutyTitle = firstListTitle(myDay, "duties") ?? firstListTitle(byType("duties"), "items");
   const todoData = byType("team_todos");

@@ -116,6 +116,9 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           transform: `translate3d(${box.left}px, ${box.top}px, 0)`,
           width: `${box.width}px`,
           height: `${box.height}px`,
+          // The phone's read-only stack flows in board order and sizes cards to their content.
+          "--dash-order": item.y,
+          "--dash-min-h": `${box.height}px`,
         } as CSSProperties
       }
       onPointerDown={(event) => onCardPointerDown(event, item)}

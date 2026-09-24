@@ -132,3 +132,32 @@
   .dash-home-header .dash-hero-greeting { flex: 1 0 100%; padding-right: 88px; }
   .dash-home-header .dash-home-actions { position: absolute; top: 0; right: 0; }
 }
+
+/* Phone, not editing: one column, so cards stack in board order and grow to fit what they
+   show. With fixed grid heights the Next match card clipped its own "Open" link. Edit mode
+   keeps the placed grid, which drag and drop needs. */
+.dash-pgrid[data-flow="true"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-gap, 12px);
+  height: auto !important;
+}
+.dash-pgrid[data-flow="true"] > .dash-grid-item {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: var(--dash-min-h, 0);
+  order: var(--dash-order, 0);
+}
+.dash-pgrid[data-flow="true"] > .dash-grid-item .dash-widget,
+.dash-pgrid[data-flow="true"] > .dash-grid-item .app-card {
+  height: auto;
+  min-height: var(--dash-min-h, 0);
+  overflow: visible;
+}
+.dash-pgrid[data-flow="true"] > .dash-grid-skeleton,
+.dash-pgrid[data-flow="true"] > .dash-drop-slot {
+  display: none;
+}

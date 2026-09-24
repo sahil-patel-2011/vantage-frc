@@ -641,6 +641,7 @@ export function DashboardHomeView(props: {
               ref={setCanvasNode}
               className="dash-grid dash-pgrid"
               data-editing={editing ? "true" : "false"}
+              data-flow={cols === 1 && !editing ? "true" : "false"}
               data-testid="dash-place-canvas"
               data-measured={measured && width > 0 ? "true" : "false"}
               style={

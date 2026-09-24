@@ -117,7 +117,7 @@ export function DashboardWidgetLibrary({
           />
         </label>
         {/* Said once here: it used to repeat under about twenty cards. */}
-        <p className="dash-sheet-empty-note" data-testid="dash-library-empty-note">
+        <p className="dash-sheet-empty-note" data-testid="dash-sheet-empty-note">
           Cards you add stay on Home, even before they have anything to show.
         </p>
         <div className="dash-sheet-list" data-testid="dash-catalog-inline">

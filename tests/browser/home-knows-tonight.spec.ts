@@ -77,6 +77,8 @@ test("an event later today shows on the card, and goes when it is removed", asyn
   */
   await page.reload();
   await expect(page.getByTestId("dash-now")).not.toContainText("Working out what is next", { timeout: 25_000 });
+  // Empty while it loads (aria-busy), and an empty card matches none of the skips below.
+  await expect(page.getByTestId("dash-now")).not.toHaveAttribute("aria-busy", "true", { timeout: 25_000 });
   const before = (await page.getByTestId("dash-now").innerText()).trim();
   test.skip(
     /You.re up next|You.re scouting next|You.re on duty/i.test(before),
