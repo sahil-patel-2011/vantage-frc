@@ -32,18 +32,33 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bHighest-EPA\b/g, "Highest-rated")
       .replace(/\bhighest-EPA\b/g, "highest-rated")
       .replace(/\bEPA\b/g, "rating")
-      // The prediction model's own vocabulary ("MODEL strategy-engine-max-v1", "from sources
-      // statbotics, event 2026gacmp, 58 weighted team-matches", "Org scout foul penalty
-      // (capped)", "not a TBA …") reads like a log file to a drive coach.
-      .replace(/\bMODEL\s+[a-z0-9._-]+\s*[…:·-]*\s*/gi, "")
-      .replace(/\bfrom sources?\s+[^.;]*?(\d+)\s+weighted team-matches\b/gi, "from $1 matches of data")
+      // The prediction engine labels its own provenance ("MODEL output — not an official TBA
+      // result.", "Engine strategy-engine-max-v1 · depth 3 · Max.", "FACT TBA …", "MODEL: Org
+      // scout … (capped)", "(n=7.6)"). That bookkeeping reads like a log file to a drive coach:
+      // the pure labels go, and the parts that mean something are said plainly.
+      .replace(/^\s*MODEL output\s*[—-]\s*not an official TBA [a-z ]+\.?\s*$/i, "")
+      .replace(/^\s*MODEL [a-z0-9._-]+\s*[—-]\s*not an official TBA [a-z ]+\.?\s*$/i, "")
+      .replace(/^\s*Engine\s+\S+.*$/i, "")
+      .replace(/\s*via engine\s+\S+\s*\(depth \d+\)/gi, "")
+      .replace(/^\s*Includes (\d+) org scout observations as operational adjustments\.?\s*$/i, "Uses $1 observations from our scouts.")
+      .replace(/^\s*(\d+) FACT TBA match result\(s\) cited for alliance context\.?\s*$/i, "Uses $1 official match results.")
+      .replace(/\bFACT TBA\b/g, "Official result,")
+      .replace(/\bMODEL:\s*/g, "")
+      // Upper-case only: the engine's tag, not the word "model" in a sentence.
+      .replace(/\bMODEL\s+[a-z][a-z0-9._-]*\s*[…:·—-]*\s*/g, "")
+      .replace(/;?\s*not an? (?:official )?TBA(?:\/Statbotics)? (?:fact|result|figure)\.?/gi, "")
+      .replace(/\bfrom sources?\s+[^.;)]*?(\d+)\s+weighted team-matches\b/gi, "from $1 matches of data")
+      .replace(/\(sources?\s+[^)]*\)/gi, "")
       .replace(/\bweighted team-matches\b/gi, "matches of data")
       .replace(/\s*\(statbotics\)/gi, "")
+      .replace(/\s*\(n=[\d.]+\)/gi, "")
       .replace(/\bevent\s+\d{4}[a-z0-9]+\b/gi, "this event")
       .replace(/\bOrg scout\b/g, "Our scouts'")
       .replace(/\s*\(capped\)/gi, "")
-      .replace(/\bnot a TBA\b/gi, "not an official")
-      .replace(/\bTBA\b/g, "official results")
+      .replace(/\bofficial TBA\b/gi, "official")
+      .replace(/\bTBA\b/g, "official")
+      .replace(/\.{2,}/g, ".")
+      .replace(/\s+([.,;])/g, "$1")
       .replace(/\b\d+\.\d{4,}\b/g, (whole) => String(Math.round(Number(whole) * 10) / 10))
       .replace(/\s{2,}/g, " ")
       .trim()

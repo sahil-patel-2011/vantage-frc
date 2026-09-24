@@ -56,13 +56,22 @@ describe("rating words, not statistics words", () => {
 });
 
 describe("the prediction model's own words", () => {
-  it("reads as plain English on How we got this", () => {
-    const text = plainStrategyText(
-      "MODEL strategy-engine-max-v1 · Alliance rating margin -17.1 from sources statbotics, event 2026gacmp, 58 weighted team-matches",
+  it("drops the engine's bookkeeping and says the rest plainly", () => {
+    expect(plainStrategyText("MODEL output — not an official TBA result.")).toBe("");
+    expect(plainStrategyText("Engine strategy-engine-max-v1 · depth 3 · Max (strategy-engine-max-v1).")).toBe("");
+    expect(plainStrategyText("Includes 57 org scout observations as operational adjustments.")).toBe(
+      "Uses 57 observations from our scouts.",
     );
-    expect(text).toBe("Alliance rating margin -17.1 from 58 matches of data");
-    expect(plainStrategyText("Org scout foul penalty (capped) margin 0.7; not a TBA figure")).toBe(
-      "Our scouts' foul penalty margin 0.7; not an official figure",
+    expect(plainStrategyText("8 FACT TBA match result(s) cited for alliance context.")).toBe("Uses 8 official match results.");
+    expect(plainStrategyText("MODEL: Org scout foul penalty (capped) margin 0.7; not a TBA fact.")).toBe(
+      "Our scouts' foul penalty margin 0.7",
+    );
+    expect(
+      plainStrategyText("Alliance rating margin -17.1 from sources statbotics, event 2026gacmp, 58 weighted team-matches"),
+    ).toBe("Alliance rating margin -17.1 from 58 matches of data");
+    expect(plainStrategyText("Scout reliability 89% (n=7.6).")).toBe("Scout reliability 89%.");
+    expect(plainStrategyText("Logistic win model on alliance rating margin -17.1 via engine strategy-engine-max-v1 (depth 3).")).toBe(
+      "Logistic win model on alliance rating margin -17.1.",
     );
   });
 });

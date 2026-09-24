@@ -359,7 +359,8 @@ export default function BriefingClient() {
   };
   const opponentEvidence = opponentCards.flatMap((card) => card.evidence);
   const factors = view.prediction?.keyFactors.slice(0, 3) ?? [];
-  const caveats = view.prediction?.caveats ?? [];
+  // The engine's provenance labels read as empty once put in plain words; drop those.
+  const caveats = (view.prediction?.caveats ?? []).map(plainStrategyText).filter(Boolean);
   const hasRobotHealth = view.pitReports.length > 0 || view.openRisks.length > 0 || view.batteries.length > 0;
 
   return (
@@ -442,6 +443,11 @@ export default function BriefingClient() {
             <span className="brief-prob-label">final score</span>
             {winPct ? <span className="brief-prob-range">we gave ourselves {winPct} beforehand</span> : null}
           </div>
+        ) : view.match.played ? (
+          // Over, with no score posted yet: odds for a decided match say nothing useful.
+          <div className="brief-prob none">
+            <span className="brief-prob-label">Played. The score isn&rsquo;t posted yet.</span>
+          </div>
         ) : winDisplay && view.prediction ? (
           <div className="brief-prob">
             <span className="brief-prob-num">{winPct ?? ""}</span>
@@ -463,7 +469,8 @@ export default function BriefingClient() {
         )}
       </section>
 
-      {view.callouts.length > 0 ? (
+      {/* "Do this next" is advice for a match still ahead, not for one being reviewed. */}
+      {view.callouts.length > 0 && !view.match.played ? (
         <section className="app-card brief-callouts">
           <h2>Do this next</h2>
           <ol>
@@ -500,7 +507,7 @@ export default function BriefingClient() {
             </ul>
           ) : null}
           {caveats.length > 0 ? (
-            <p className="brief-caveats">Caveats: {caveats.map(plainStrategyText).join(" · ")}</p>
+            <p className="brief-caveats">Worth knowing: {caveats.join(" · ")}</p>
           ) : null}
           {opponentEvidence.length > 0 ? (
             <>
