@@ -16,7 +16,7 @@ const stages = [
     id: "1",
     title: "Set up your team",
     detail:
-      "A mentor or owner invites you by email. You finish a short setup (role, crew, optional team number). Until that is done, you stay on the welcome steps.",
+      "New team? Join the waitlist: we set your team up and make you its owner, then you invite your students and mentors by email. Joining a team already on Vantage? Its owner or a mentor invites you. Either way you finish a short setup (role, crew) and land on Home.",
   },
   {
     id: "2",

@@ -47,8 +47,8 @@ export default function FeaturesPage() {
             <ProductHubCatalog />
             <div className="mk-menu-block">
               <header className="lux-section-head">
-                <h2>Also from the menu.</h2>
-                <p>Also in the menu: travel and packing, and data exports.</p>
+                <h2>Also included.</h2>
+                <p>Travel and packing, data exports, and a Windows desktop app.</p>
               </header>
               <ul className="lux-feature-grid">
                 {MARKETING_MENU.map((item) => (

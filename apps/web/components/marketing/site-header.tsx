@@ -246,13 +246,14 @@ export function SiteFooter() {
       <div className="marketing-footer-cols">
         <nav className="marketing-footer-col" aria-label="Product">
           <b>Product</b>
-          <a href="/features">Hubs and tools</a>
+          {/* The same names as the top menu: "Product", "How it works", "For teams", "Free". */}
+          <a href="/features">Workspaces and tools</a>
           <a href="/workflow">How it works</a>
           <a href="/for-teams">For teams</a>
+          <a href="/pricing">Free, with your own AI key</a>
         </nav>
         <nav className="marketing-footer-col" aria-label="Company">
           <b>Company</b>
-          <a href="/pricing">Free, bring your own AI key</a>
           <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
           <a href="mailto:vantagefrc@gmail.com">Contact</a>
