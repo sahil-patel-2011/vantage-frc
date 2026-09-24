@@ -316,6 +316,38 @@ html[data-theme="dark"] .marketing-lux {
     min-height: 44px;
   }
 }
+/* The rule above has zero specificity (:where), so every button class with its own height
+   (the small 36px size, chips, row actions) won against it and phones got 36px targets. On a
+   touch screen 44px is a floor, not a default. Text links that act as buttons get it too. */
+@media (pointer: coarse) {
+  button:not(.signin-code-box):not(.kp-dot),
+  a.app-button,
+  .app-button,
+  .primary-action,
+  [role="button"] {
+    min-height: 44px !important;
+  }
+  a.dash-empty-cta,
+  a.dash-first-week-all,
+  a.dash-widget-link,
+  .team-admin-settings-links a,
+  .settings-inline-links a,
+  a.soft-topbar-product,
+  a.edc-link,
+  .dash-home a.dash-now-link,
+  .myday-strip a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px !important;
+  }
+}
+/* Form controls on a phone: a select rendered at its text height (23px) is a hard target. */
+@media (pointer: coarse) {
+  .account-form select,
+  .account-form input {
+    min-height: 44px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   :where(*, *::before, *::after) {
     animation-duration: 0.01ms !important;
