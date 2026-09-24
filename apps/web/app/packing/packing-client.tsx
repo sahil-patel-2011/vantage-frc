@@ -478,7 +478,7 @@ export default function PackingClient() {
       <main className="module-page pack-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Competition / Packing</span>
+            <span className="breadcrumbs">Logistics / Packing</span>
             <h1>Packing Lists</h1>
             <PackingRelatedStrip />
           </div>
@@ -533,7 +533,7 @@ export default function PackingClient() {
       <main className="module-page pack-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Competition / Packing</span>
+            <span className="breadcrumbs">Logistics / Packing</span>
             <h1>Packing Lists</h1>
             <p>
               {offerWaitlist
@@ -591,7 +591,7 @@ export default function PackingClient() {
     <main className="module-page pack-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Competition / Packing</span>
+          <span className="breadcrumbs">Logistics / Packing</span>
           <h1>Packing Lists</h1>
           <p>
             Load-out checklists for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — seeded with the standard FRC
