@@ -72,10 +72,40 @@ export const WIDGET_GROUP: Record<DashboardWidgetType, WidgetGroup> = {
 };
 
 /** Case-insensitive match on the name, the description, or the group it sits in. */
+/**
+ * Words people search for that a card's own label does not contain: "pit" finds Batteries and
+ * Robot readiness, "money" finds Budget.
+ */
+const WIDGET_KEYWORDS: Partial<Record<DashboardWidgetType, string>> = {
+  next_match: "match schedule queue bumper alliance partners",
+  recent_result: "match score result",
+  competition_snapshot: "event rank ranking record",
+  scouting_coverage: "scout scouting coverage",
+  prediction_summary: "odds win chance strategy",
+  pit_youtube: "pit stream video livestream",
+  robot_readiness: "pit robot inspection ready",
+  alerts: "pit warnings",
+  batteries: "pit battery charge",
+  event_readiness: "pit packing travel event",
+  budget_parts: "money budget spend parts orders",
+  sponsor_followups: "money sponsors fundraising",
+  hours_month: "attendance time shop",
+  attendance: "hours roll call",
+  outreach_hours: "community impact volunteer",
+  team_chat: "messages",
+  ask_ai: "ai chat assistant",
+  cad_resources: "onshape fusion design",
+  coding_resources: "code programming github",
+  match_schedule: "matches schedule qualification",
+  alliance_desk: "picks pick list selection",
+  weather_venue: "forecast rain",
+};
+
 export function widgetMatchesSearch(entry: WidgetCatalogEntry, query: string): boolean {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return true;
-  const haystack = `${entry.label} ${entry.description} ${WIDGET_GROUP_LABEL[WIDGET_GROUP[entry.type]]}`.toLowerCase();
+  const haystack =
+    `${entry.label} ${entry.description} ${WIDGET_GROUP_LABEL[WIDGET_GROUP[entry.type]]} ${WIDGET_KEYWORDS[entry.type] ?? ""}`.toLowerCase();
   return words.every((word) => haystack.includes(word));
 }
 

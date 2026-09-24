@@ -215,3 +215,12 @@ describe("suggestBoardName", () => {
     expect(suggestBoardName(["Match day", "Match day 2"])).toBe("Match day 3");
   });
 });
+
+describe("widget search keywords", () => {
+  it("finds pit tools by 'pit' and budget by 'money'", () => {
+    const find = (query: string) =>
+      WIDGET_CATALOG.filter((entry) => widgetMatchesSearch(entry, query)).map((entry) => entry.type);
+    expect(find("pit")).toEqual(expect.arrayContaining(["batteries", "robot_readiness"]));
+    expect(find("money")).toContain("budget_parts");
+  });
+});
