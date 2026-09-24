@@ -608,7 +608,7 @@ return (
                     <span className="scout-context-eyebrow">Scouting</span>{" "}
                     <strong>{context.teamNumber}</strong>
                     {context.matchLabel ? <> · {context.matchLabel}</> : null}
-                    {context.stationLabel ? <> · {context.stationLabel}</> : null}
+                    {context.stationLabel ? <span className="scout-context-station"> · {context.stationLabel}</span> : null}
                   </p>
                   <button type="button" className="scout-context-change" onClick={backToPicker}>
                     Change

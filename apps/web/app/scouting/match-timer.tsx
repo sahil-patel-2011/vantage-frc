@@ -74,10 +74,14 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
   const secondsLeft = elapsed == null || done ? 0 : phaseRemainingSeconds(elapsed);
 
   return (
-    <div className="match-timer" role="timer" aria-live="off">
-      <span className="match-timer-phase" data-phase={phase}>
-        {PHASE_LABEL[phase]}
-      </span>
+    <div className="match-timer" role="timer" aria-live="off" data-running={elapsed != null && !done ? "true" : "false"}>
+      {/* Before the start the button says what this is; a grey "Match timer" pill beside it
+          looked like a second button. */}
+      {elapsed != null ? (
+        <span className="match-timer-phase" data-phase={phase}>
+          {PHASE_LABEL[phase]}
+        </span>
+      ) : null}
       {elapsed != null ? (
         <>
           {done ? (

@@ -479,3 +479,49 @@
     backdrop-filter: none;
   }
 }
+
+/*
+  The bar only pins while the match clock runs. Pinned the whole time it was about 120px on
+  a phone and sat over the field being filled in. While it runs it is one row: the robot,
+  the phase, the clock and Reset; you do not change robots mid-match, so Change waits.
+*/
+.scout-context-bar:not(:has(.match-timer[data-running="true"])) {
+  position: relative;
+  top: auto;
+  box-shadow: none;
+  backdrop-filter: none;
+  background: var(--surface);
+}
+.scout-context-bar:has(.match-timer[data-running="true"]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  background: var(--surface);
+}
+.scout-context-bar:has(.match-timer[data-running="true"]) .scout-context-line {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.scout-context-bar:has(.match-timer[data-running="true"]) .scout-context-change,
+.scout-context-bar:has(.match-timer[data-running="true"]) .scout-context-eyebrow {
+  display: none;
+}
+.scout-context-bar:has(.match-timer[data-running="true"]) .match-timer {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+@media (max-width: 480px) {
+  .scout-context-bar:has(.match-timer[data-running="true"]) .scout-context-station {
+    display: none;
+  }
+  .scout-context-bar:has(.match-timer[data-running="true"]) .match-timer-clock {
+    min-width: 52px;
+    font-size: 20px;
+  }
+  .scout-context-bar:has(.match-timer[data-running="true"]) .match-timer button {
+    padding: 0 10px;
+  }
+}

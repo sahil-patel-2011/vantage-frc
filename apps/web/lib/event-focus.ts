@@ -25,7 +25,7 @@ export function buildEventFocus(
   const freshness = !online
     ? "Offline · saved data"
     : stale
-      ? `${view.freshness.label} · verify queue`
+      ? `${view.freshness.label} · may be out of date`
       : view.freshness.label;
 
   return {
