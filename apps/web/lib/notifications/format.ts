@@ -20,6 +20,7 @@ export function notificationTypeLabel(type: string): string {
     case "scout_reminder":
     case "scouting_coverage_gap":
     case "scouting_disagreement_resolved":
+    case "scout_pick_influence":
       return "Scouting";
     case "product_update":
       return "What’s new";

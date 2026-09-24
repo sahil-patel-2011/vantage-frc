@@ -57,14 +57,15 @@ export async function recordPickListInfluence(
 
   const notified = new Set<string>();
   for (const attribution of attributions) {
-    await client.query(
+    const written = await client.query<{ inserted: boolean }>(
       `INSERT INTO scout_pick_influence(org_id, event_key, pick_list_id, team_key, entry_id, reason, recorded_by)
        VALUES ($1::uuid, $2, $3::uuid, $4, $5::uuid, $6, $7::uuid)
        ON CONFLICT (org_id, event_key, team_key, entry_id)
        DO UPDATE SET reason = excluded.reason,
                      pick_list_id = excluded.pick_list_id,
                      recorded_by = excluded.recorded_by,
-                     recorded_at = now()`,
+                     recorded_at = now()
+       RETURNING (xmax = 0) AS inserted`,
       [
         input.orgId,
         input.eventKey,
@@ -75,6 +76,9 @@ export async function recordPickListInfluence(
         input.recordedBy,
       ],
     );
+    // Tell a scout once, when their entry first shapes a pick. Every save of the pick list
+    // used to notify again, so a student's bell filled with the same card minutes apart.
+    if (!written.rows[0]?.inserted) continue;
     if (notified.has(attribution.scoutUserId)) continue;
     notified.add(attribution.scoutUserId);
     await emitPreferredNotification(client, {

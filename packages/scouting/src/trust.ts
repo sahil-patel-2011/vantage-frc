@@ -542,7 +542,7 @@ export function selectPickInfluencingEntries(input: {
         entryId: entry.id,
         teamKey: team.teamKey,
         scoutUserId: entry.scoutUserId,
-        reason: `Your ${entry.confidence} scout of ${team.teamKey} informed ${tier} pick #${team.rank} on ${listLabel}.`,
+        reason: `Your scouting of ${team.teamKey.replace(/^frc/i, "")} helped put them at ${tier} pick #${team.rank} on ${listLabel}.`,
       });
     }
   }
