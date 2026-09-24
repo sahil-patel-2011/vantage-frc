@@ -183,17 +183,29 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
     void load();
   }, [load]);
 
+  /**
+   * One "Can open …" switch per hub, on by default. The stored shape is an allowlist (no rows
+   * means every hub), so switching one off from "everything" allows every other hub; switching
+   * the last one back on returns to "no limits". At least one hub stays on: an empty
+   * allowlist would mean no limits, the opposite of what the owner just did.
+   */
   function toggleHub(userId: string, hubId: ClientHubId) {
     setDrafts((prev) => {
       const current = prev[userId] ?? rowsToDraft(hubAccessByUser[userId]);
-      const enabled = current[hubId] !== null;
-      return {
-        ...prev,
-        [userId]: {
-          ...current,
-          [hubId]: enabled ? null : [],
-        },
-      };
+      const unrestricted = CLIENT_HUB_IDS.every((id) => current[id] === null);
+      let next: Record<ClientHubId, string[] | null>;
+      if (unrestricted) {
+        next = { ...current };
+        for (const id of CLIENT_HUB_IDS) next[id] = id === hubId ? null : [];
+      } else if (current[hubId] !== null) {
+        const others = CLIENT_HUB_IDS.filter((id) => id !== hubId && current[id] !== null);
+        if (!others.length) return prev;
+        next = { ...current, [hubId]: null };
+      } else {
+        next = { ...current, [hubId]: [] };
+      }
+      const allOpen = CLIENT_HUB_IDS.every((id) => next[id] !== null && next[id]!.length === 0);
+      return { ...prev, [userId]: allOpen ? rowsToDraft([]) : next };
     });
   }
 
@@ -264,8 +276,8 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
       ) : (
       <>
       <p className="app-muted">
-        Scouts and viewers see every hub until you pick some. Pick hubs to show only those, and pick tabs inside a
-        hub to narrow it further. Owners and admins always see everything.
+        Students and guests can open every hub until you switch one off. Inside a hub you can also keep only some
+        tabs. Owners and admins always see everything.
       </p>
       {message ? (
         <p role="status" className="telemetry-status">
@@ -303,6 +315,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
             const draft = drafts[member.userId] ?? rowsToDraft(hubAccessByUser[member.userId]);
             const enabledCount = hubCatalog.filter((hubId) => draft[hubId] !== null).length;
             const unrestricted = enabledCount === 0;
+            const openCount = unrestricted ? hubCatalog.length : enabledCount;
             return (
               // One line per member until you open it: the six hub checkboxes for every
               // scout made this page ~5,500px for three people.
@@ -315,9 +328,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                     </small>
                   </span>
                   <span className="member-access-state">
-                    {unrestricted
-                      ? "Sees every hub"
-                      : `${enabledCount} hub${enabledCount === 1 ? "" : "s"} only`}
+                    {unrestricted ? "Sees every hub" : `Sees ${openCount} of ${hubCatalog.length} hubs`}
                   </span>
                   <span className="member-access-edit" aria-hidden="true">
                     Edit
@@ -325,7 +336,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                 </summary>
                 <div className="auth-policy-form" style={{ marginTop: "0.75rem" }}>
                   {hubCatalog.map((hubId) => {
-                    const enabled = draft[hubId] !== null;
+                    const enabled = unrestricted || draft[hubId] !== null;
                     const tabs = tabsForHub(hubId);
                     const selectedTabs = draft[hubId] ?? [];
                     return (
@@ -337,19 +348,17 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
                             onChange={() => toggleHub(member.userId, hubId)}
                           />
                           <span>
-                            <strong>{HUB_LABELS[hubId]}</strong>
+                            <strong>Can open {HUB_LABELS[hubId]}</strong>
                             <small>
-                              {enabled
-                                ? selectedTabs.length
-                                  ? `${selectedTabs.length} tab${selectedTabs.length === 1 ? "" : "s"} selected`
-                                  : "All tabs in this hub"
-                                : unrestricted
-                                  ? "Visible — no limits set"
-                                  : "Hidden from this member"}
+                              {!enabled
+                                ? "Hidden from this member"
+                                : selectedTabs.length
+                                  ? `Only ${selectedTabs.length} tab${selectedTabs.length === 1 ? "" : "s"}`
+                                  : "Every tab"}
                             </small>
                           </span>
                         </label>
-                        {enabled && tabs.length ? (
+                        {!unrestricted && enabled && tabs.length ? (
                           <div
                             style={{
                               display: "flex",

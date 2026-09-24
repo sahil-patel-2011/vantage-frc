@@ -50,3 +50,5 @@
 .member-access-row > :last-child {
   margin-bottom: 1rem;
 }
+/* The open editor is one column at every width, under the member's name. */
+.member-access-row .auth-policy-form { display: grid; grid-template-columns: 1fr; gap: 6px; }
