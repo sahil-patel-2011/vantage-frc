@@ -368,9 +368,12 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       >
         <div className="sfb-toolbar">
           <FormBuilderRelatedStrip orgId={orgId} />
-          <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
-            {publishLabel}
-          </Button>
+          {/* With nothing published yet, Publish is the empty state's own button below. */}
+          {shell === "empty" ? null : (
+            <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
+              {publishLabel}
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -385,8 +388,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           title={formBuilderShellCopy("empty", { entryType: type }).title}
           description={formBuilderShellCopy("empty", { entryType: type }).description}
         >
-          <Button as="a" variant="primary" href={scoutingHref}>
-            Open Scouting
+          {/* The step people arrive for is publishing; "Open Scouting" left the page. */}
+          <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
+            {publishLabel}
           </Button>
         </EmptyState>
       ) : null}
