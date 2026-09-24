@@ -485,22 +485,26 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         breadcrumbs={
           <>
             <a href={aiHubHref}>AI</a>
-            {" / API keys"}
+            {" / AI keys"}
           </>
         }
         navPath="/team/ai-keys"
-        title="AI API keys"
+        title="AI keys"
         description={PAGE_DESCRIPTION}
       >
       </PageHeader>
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
-      {orgId ? <AiAgentStatus orgId={orgId} title="What your keys turn on" /> : null}
+      {/* Until the team has a key, the start card below says the one thing to do; a status
+          list of everything that is off, pointing back at this page, only adds noise. */}
+      {orgId && payload && (configuredProviders.size > 0 || !payload.canManage) ? (
+        <AiAgentStatus orgId={orgId} title="What your keys turn on" />
+      ) : null}
       {orgId ? <SponsoredPromoBanner orgId={orgId} /> : null}
       <OfflineBanner feature="AI keys" fromCache={fromCache} cachedAt={cachedAt} />
 
       {shell === "loading" ? (
-        <div aria-busy="true" aria-label="Loading AI API keys">
+        <div aria-busy="true" aria-label="Loading AI keys">
           <SoftBlockSkeleton lines={3} />
         </div>
       ) : null}

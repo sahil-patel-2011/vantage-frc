@@ -32,6 +32,8 @@ import {
   type RoutingPrefs,
 } from "./ai-keys-model";
 import { ProviderCard } from "./ai-keys-provider-card";
+
+const GEMINI_FREE = FREE_KEY_PROVIDERS.find((provider) => provider.byokProvider === "google") ?? null;
 import { WebResearchCard } from "./ai-keys-web-research";
 
 export type AiKeysReadyViewProps = {
@@ -126,6 +128,60 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             <p className="ai-keys-flash" role="status">
               {message}
             </p>
+          ) : null}
+
+          {/* One recommended path before any choice: most teams have no AI budget, and Gemini's
+              free tier covers a team's chat, scouting summaries and strategy. */}
+          {payload.canManage && configuredProviders.size === 0 && GEMINI_FREE ? (
+            <section className="app-card soft-panel ai-keys-start" aria-labelledby="ai-keys-start-title">
+              <span className="eyebrow">START HERE · FREE</span>
+              <h2 id="ai-keys-start-title">Turn on AI with a free Google Gemini key</h2>
+              <ol className="ai-keys-start-steps">
+                <li>
+                  Open{" "}
+                  <a href={GEMINI_FREE.signupUrl} target="_blank" rel="noreferrer noopener">
+                    Google AI Studio
+                  </a>{" "}
+                  and sign in with any Google account.
+                </li>
+                <li>Press Create API key and copy it.</li>
+                <li>Paste it here and press Save. It takes about two minutes, and it costs nothing.</li>
+              </ol>
+              <form
+                className="ai-keys-form ai-keys-start-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  save("google");
+                }}
+              >
+                <label>
+                  Gemini API key
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder={BYOK_PROVIDER_META.google.placeholder}
+                    value={drafts.google ?? ""}
+                    disabled={busyProvider === "google"}
+                    onChange={(event) => setDrafts((prev) => ({ ...prev, google: event.target.value }))}
+                    required
+                  />
+                </label>
+                <div className="ai-keys-actions">
+                  <button
+                    className="primary-action"
+                    type="submit"
+                    disabled={busyProvider === "google" || !(drafts.google ?? "").trim()}
+                  >
+                    {busyProvider === "google" ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </form>
+              <p className="app-muted">
+                Already pay for OpenAI, Anthropic or OpenRouter? Paste that key in its card below instead.
+                Keys are encrypted and never shown again.
+              </p>
+            </section>
           ) : null}
 
           <section className="ai-keys-grid" aria-label="Provider API keys">

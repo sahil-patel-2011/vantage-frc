@@ -134,7 +134,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/business")).toBe("Business");
     expect(breadcrumbForPath("/sponsorship")).toBe("Business / Packages");
     expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
-    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / API keys");
+    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / AI keys");
     expect(breadcrumbForPath("/kickoff")).toBe("Build / Kickoff");
     expect(breadcrumbForPath("/logistics")).toBe("Logistics");
     expect(breadcrumbForPath("/packing")).toBe("Competition / Packing");

@@ -188,7 +188,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
       <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="Your keys usage" />
 
       <nav className="product-hub-related" aria-label="Related">
-        <a href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>AI API keys</a>
+        <a href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>AI keys</a>
         <a href={orgId ? withOrgHref("/team/usage", orgId) : "/team/usage"}>All AI usage</a>
         <a href={orgId ? withOrgHref("/account", orgId) : "/account"}>Account</a>
       </nav>
@@ -257,10 +257,10 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
             <EmptyState
               soft
               title="No calls with your keys yet"
-              description="Nothing to show until your own API key or a local connector is used. Add a key under AI API keys, then try Chat, Writer, or CAD."
+              description="Nothing to show until your own API key or a local connector is used. Add a key under AI keys, then try Chat, Writer, or CAD."
             >
               <Button as="a" variant="primary" href={withOrgHref("/team/ai-keys", orgId ?? "")}>
-                Open AI API keys
+                Open AI keys
               </Button>
             </EmptyState>
           ) : (

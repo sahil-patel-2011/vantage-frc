@@ -408,3 +408,22 @@
   font-weight: 600;
   padding: 12px 0;
 }
+
+/* The one recommended path, shown until the team has any key. */
+.ai-keys-start {
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 35%, transparent);
+  display: grid;
+  gap: 12px;
+}
+.ai-keys-start h2 {
+  margin: 0;
+}
+.ai-keys-start-steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 6px;
+}
+.ai-keys-start-form {
+  max-width: 480px;
+}

@@ -1321,7 +1321,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     related: [
       { label: "Controls", href: "/team/budgets" },
       { label: "Memory", href: "/ai?tab=memory" },
-      { label: "API keys", href: "/team/ai-keys" },
+      { label: "AI keys", href: "/team/ai-keys" },
     ],
   },
   {
@@ -1384,7 +1384,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     ],
     tips: ["Open a team first or the page has nothing to write to."],
     related: [
-      { label: "API keys", href: "/team/ai-keys" },
+      { label: "AI keys", href: "/team/ai-keys" },
       { label: "Governance", href: "/ai?tab=governance" },
       { label: "Usage", href: "/team/usage" },
     ],
@@ -1410,7 +1410,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "A device counts as online while its heartbeat is under 3 minutes old.",
     ],
     related: [
-      { label: "API keys", href: "/team/ai-keys" },
+      { label: "AI keys", href: "/team/ai-keys" },
       { label: "AI controls", href: "/team/budgets" },
       { label: "Usage", href: "/team/usage" },
     ],

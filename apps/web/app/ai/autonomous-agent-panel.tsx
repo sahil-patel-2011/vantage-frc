@@ -292,7 +292,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           <h2>Add a key to run agents</h2>
           <p>
             {error ??
-              "Add your own key, a team key, or a sponsored key under AI API keys, or ask an admin to set up web search."}
+              "Add your own key, a team key, or a sponsored key under AI keys, or ask an admin to set up web search."}
           </p>
             <Button as="a" variant="primary" href={hubHref("/ai", "ai-keys", orgId)}>
             Open AI keys
