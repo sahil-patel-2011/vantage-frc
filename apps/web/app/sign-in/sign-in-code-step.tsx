@@ -110,10 +110,12 @@ export function SignInCodeStep({
       ) : null}
 
       {inviteHelp && !invalid ? (
-        <div className="signin-invite-help">
+        // Folded: most people on this screen were invited and their code is on its way.
+        <details className="signin-invite-help">
+          <summary>No code?</summary>
           <p>
-            <strong>Not invited yet?</strong> We only send codes to emails a team has invited, so none will come.
-            If your team uses Vantage, ask its owner to invite this address.
+            We only send codes to emails a team has invited. If yours hasn&rsquo;t arrived after a minute, check spam,
+            or ask your team&rsquo;s owner to invite this address.
           </p>
           <a
             className="signin-invite-help-cta"
@@ -122,7 +124,7 @@ export function SignInCodeStep({
           >
             New team? Join the waitlist
           </a>
-        </div>
+        </details>
       ) : null}
     </form>
   );

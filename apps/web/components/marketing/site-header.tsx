@@ -179,6 +179,27 @@ export function SiteHeader() {
   const pathname = usePathname();
   const signedIn = useSignedIn();
   const account = marketingHeaderLinks(signedIn);
+  // The phone menu is a <details>: it stayed open over the page until its button was tapped
+  // again. Escape and a tap anywhere outside it close it too.
+  useEffect(() => {
+    const menu = () => document.querySelector<HTMLDetailsElement>("header.nav details.mobile-menu");
+    const onKey = (event: KeyboardEvent) => {
+      const open = menu();
+      if (event.key !== "Escape" || !open?.open) return;
+      open.open = false;
+      open.querySelector("summary")?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      const open = menu();
+      if (open?.open && !open.contains(event.target as Node)) open.open = false;
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, []);
   const nav = (mobile = false) =>
     links.map(([href, label]) => (
       <a

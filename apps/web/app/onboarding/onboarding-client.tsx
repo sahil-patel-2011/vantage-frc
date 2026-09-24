@@ -418,7 +418,7 @@ export default function OnboardingClient() {
   const teamName = state?.lockedOrgName || state?.workspaceOrgName || null;
   const headerCopy =
     step === "done"
-      ? { eyebrow: "YOU'RE IN", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
+      ? { eyebrow: "ALL SET", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
       : step === "pending"
         ? {
             eyebrow: "WAITING ON YOUR TEAM",

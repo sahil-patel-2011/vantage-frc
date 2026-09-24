@@ -357,6 +357,14 @@
   font-size: 14px;
   line-height: 1.5;
 }
+.signin-invite-help > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -8px 0;
+  font-weight: 700;
+  cursor: pointer;
+}
 .signin-invite-help p {
   margin: 0;
 }

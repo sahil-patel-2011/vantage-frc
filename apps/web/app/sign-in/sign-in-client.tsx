@@ -717,8 +717,9 @@ export default function SignInClient({
         {emailAvailable && flow.step === "identity" && passwordPanel === "closed" ? (
           <SignInRecovery nextPath={resolvedNext} open={recoveryOpen} onOpenChange={setRecoveryOpen} />
         ) : null}
-        {/* The not-on-a-team step already leads with Join the waitlist. */}
-        {notInvited ? null : <AccessFooter />}
+        {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
+            "No code?" help with the same link; a second one under it was noise. */}
+        {notInvited || flow.step === "code" ? null : <AccessFooter />}
       </div>
     </SignInCard>
   );

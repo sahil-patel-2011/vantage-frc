@@ -105,6 +105,9 @@ const MARKETING_ALIASES: Record<string, string> = {
   "/sign-up": "/#waitlist",
   "/register": "/#waitlist",
   "/request-access": "/#waitlist",
+  // The URLs people guess for signing in. /login was the 404 page.
+  "/login": "/signin",
+  "/log-in": "/signin",
   "/contact": "mailto:vantagefrc@gmail.com",
   "/about": "/for-teams",
 };

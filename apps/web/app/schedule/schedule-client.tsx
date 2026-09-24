@@ -880,7 +880,7 @@ export default function ScheduleClient() {
 
           {hasTimelineDetail ? (
             <p className="tl-legend">
-              Each robot shows who is assigned and how many entries our scouts submitted. Scores are official (TBA);
+              Each robot shows who is assigned and how many entries our scouts submitted. Scores are the official results;
               estimates come from event ratings.
             </p>
           ) : null}

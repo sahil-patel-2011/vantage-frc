@@ -169,10 +169,10 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Guide students without becoming the bottleneck.",
     source: "role",
     checks: checks([
-      ["getting_started", "Finish team setup signals", "Invites, knowledge, budgets — org-wide checklist.", "/team/getting-started"],
-      ["invite", "Invite missing mentors/students", "Exact-email invites keep the roster closed.", "/team"],
+      ["getting_started", "Finish team setup", "Invites, team knowledge, and AI limits.", "/team/getting-started"],
+      ["invite", "Invite mentors and students", "Only people you invite by email can join.", "/team"],
       ["roles", "Review role assignments", "Who owns mechanical, software, scouting, business.", "/roles"],
-      ["risks", "Skim the risk register", "Surface blockers before they slip a week.", "/risks"],
+      ["risks", "Look at the team's risks", "What could stop the team, written down early.", "/risks"],
     ]),
   },
   {
@@ -181,10 +181,10 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Season rhythm, adults in the room, and competition readiness.",
     source: "role",
     checks: checks([
-      ["calendar", "Review the team calendar", "Practice density and adult coverage.", "/team/calendar"],
-      ["logistics", "Open event logistics", "Travel, lodging, and day-of contacts.", "/logistics"],
+      ["calendar", "Review the team calendar", "When the team meets, and which adults are there.", "/team/calendar"],
+      ["logistics", "Open travel plans", "Travel, hotels, and who to call on the day.", "/logistics"],
       ["briefing", "Read event briefing", "Venue, pits, and alliance notes before you travel.", "/briefing"],
-      ["budgets", "Confirm AI budgets", "Hard caps before students run expensive tools.", "/team/budgets"],
+      ["budgets", "Set AI limits", "A monthly cap on what the team's AI key can spend.", "/team/budgets"],
     ]),
   },
   {
@@ -217,9 +217,9 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     source: "focus",
     checks: checks([
       ["command_focus", "Open Event day", "Match flow and pit coordination.", "/command"],
-      ["scout_focus", "Visit Scouting Hub", "Stand coverage feeds picks.", "/scouting"],
-      ["my_day_focus", "Pin My Day", "Glanceable next-match card on your phone.", "/my-day"],
-      ["strategy_focus", "Open Strategy and AI", "Alliance chemistry before eliminations.", "/strategy"],
+      ["scout_focus", "Open Scouting", "What scouts record becomes your pick list.", "/scouting"],
+      ["my_day_focus", "Open My Day", "Your next match and the robots you scout.", "/my-day"],
+      ["strategy_focus", "Open Strategy", "Plan matches and alliance picks.", "/strategy"],
     ]),
   },
   {
@@ -228,8 +228,8 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Design/build season — CAD, code, and subsystem delivery.",
     source: "focus",
     checks: checks([
-      ["cad_focus", "Connect CAD tooling", "Onshape/Fusion for design reviews.", "/cad"],
-      ["code_focus", "Open Code", "Repo and season branch.", "/code"],
+      ["cad_focus", "Connect CAD", "Onshape or Fusion, for design reviews.", "/cad"],
+      ["code_focus", "Open Code", "The robot code for this season.", "/code"],
       ["subsystems", "Review subsystems", "Ownership and status of each mechanism.", "/subsystems"],
       ["kickoff", "Kickoff summary", "Scoring priorities that drive design tradeoffs.", "/kickoff"],
     ]),
@@ -240,7 +240,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Sponsors, grants, and awards narrative.",
     source: "focus",
     checks: checks([
-      ["business_focus", "Business Hub", "Fundraising home base.", "/business"],
+      ["business_focus", "Open Business", "Money, sponsors, and grants.", "/business"],
       ["sponsors_focus", "Sponsors", "Active partners and asks.", "/team/sponsors"],
       ["writer", "Award Writer", "Draft Chairman and EI language from real evidence.", "/writer"],
       ["exports", "Exports", "Pull packets for judges and partners.", "/exports"],
@@ -253,8 +253,8 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     source: "focus",
     checks: checks([
       ["goals_focus", "Season goals", "Publish what success looks like.", "/goals"],
-      ["risks_focus", "Risk register", "Name blockers early.", "/risks"],
-      ["roles_focus", "Roles", "Clear owners for each pillar.", "/roles"],
+      ["risks_focus", "Risks", "What could stop the team, written down early.", "/risks"],
+      ["roles_focus", "Roles", "Who owns what.", "/roles"],
       ["alumni", "Alumni network", "Keep grads connected for mentorship.", "/team/alumni"],
     ]),
   },

@@ -89,7 +89,7 @@ const ROLE_HEADLINE: Record<OnboardingRole, string> = {
 const ROLE_SUMMARY: Record<OnboardingRole, string> = {
   student: "Your first steps: pulled from your role and crew, not a generic tour.",
   mentor: "Your first steps: team setup, invites, and the checks that unblock students.",
-  coach: "Your first steps: calendar, logistics, and the budget guardrails.",
+  coach: "Your first steps: the calendar, travel plans, and AI limits.",
   parent: "Your first steps: announcements, logistics, and how student time is tracked.",
   other: "Your first steps: pulled from your role and focus.",
 };

@@ -83,7 +83,6 @@ function TeamRow({ team, maxEpa, isUs }: { team: RankedTeam; maxEpa: number; isU
           A {fmtEpa(team.epaAuto)} · T {fmtEpa(team.epaTeleop)} · E {fmtEpa(team.epaEndgame)}
         </span>
       </span>
-      <span className="rank-source-chip">{team.source ?? "—"}</span>
     </li>
   );
 }
@@ -419,7 +418,6 @@ export default function RankingsClient() {
                 <span className="rank-team">Team</span>
                 <span className="rank-record">Record</span>
                 <span className="rank-epa">Rating · auto / teleop / endgame</span>
-                <span className="rank-source-label">Source</span>
               </li>
               {view.teams.map((entry) => (
                 <TeamRow key={entry.teamKey} team={entry} maxEpa={maxEpa} isUs={teamKey === entry.teamKey} />

@@ -22,12 +22,6 @@ function timeLabel(value: string | null): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function sourceLabel(source: string | null): string {
-  if (source === "tba") return " · from The Blue Alliance";
-  if (source === "statbotics") return " · from Statbotics";
-  return "";
-}
-
 /**
  * The panel a pit crew reads from three metres away: which match, how long until queue, what
  * colour bumpers, and who is with and against us. It is the same whether the board is the
@@ -176,8 +170,7 @@ export function KioskPanel({
     case "event_status":
       if (data.eventStatus) {
         value = `Rank ${rankLabel(data.eventStatus)}`;
-        // Name the source: a partly synced record can disagree with the schedule.
-        detail = `Record ${recordLabel(data.eventStatus)}${sourceLabel(data.eventStatus.source)}`;
+        detail = `Record ${recordLabel(data.eventStatus)}`;
       }
       break;
     case "scouting_coverage":

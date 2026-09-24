@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "../../components/ui";
 import type { CommandSnapshot } from "../../lib/command/types";
 import {
@@ -161,6 +161,15 @@ export function CommandEventPicker({
   message?: string;
 }) {
   const [adding, setAdding] = useState(false);
+  // Escape closes it, like every other dialog (it only closed from Cancel or ×).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
   if (!open) return null;
   // Rendered into <body>: inside the hub panel a transformed ancestor made "position: fixed"
   // relative to the panel, so the dim backdrop covered only part of the screen.
@@ -206,11 +215,9 @@ export function CommandEventPicker({
                             place that difference is visible. */}
                         {event.custom ? <em className="edc-event-own">Your event</em> : null}
                       </strong>
-                      <span>
-                        {event.eventKey}
-                        {event.city ? ` · ${event.city}` : ""}
-                        {event.stateProv ? `, ${event.stateProv}` : ""}
-                      </span>
+                      {/* Where and when, which is how people tell events apart; the raw key
+                          ("2026gacmp") meant nothing to them. */}
+                      <span>{eventWhereWhen(event) || event.eventKey}</span>
                     </button>
                   </li>
                 ))
@@ -243,4 +250,18 @@ export function CommandEventPicker({
     </div>
   );
   return typeof document === "undefined" ? dialog : createPortal(dialog, document.body);
+}
+
+/** "Macon, GA · Mar 19–22", from whatever the event row has. */
+function eventWhereWhen(event: EventOption): string {
+  const place = [event.city, event.stateProv].filter(Boolean).join(", ");
+  const day = (value: string | null) => {
+    if (!value) return null;
+    const date = new Date(`${value.slice(0, 10)}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+  const start = day(event.startDate);
+  const end = day(event.endDate);
+  const when = start && end && start !== end ? `${start}–${end}` : start;
+  return [place, when].filter(Boolean).join(" · ");
 }
