@@ -267,8 +267,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     }
   }
 
-  function getEventTvLink(boardId: string) {
+  // "Get a TV link" makes the link, then shows it: it used to only scroll to a second
+  // "Make TV link" button at the bottom of the page.
+  async function getEventTvLink(boardId: string) {
     setPairChoice(`stage:${boardId}`);
+    await mintToken(`stage:${boardId}`);
     document.getElementById("display-pair")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -564,7 +567,10 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             {activeTokens.length ? (
               <div className="token-list">
                 {activeTokens.map((token) => {
-                  const shows = boardName(token.boardId);
+                  // An event-board link rides on a saved board but shows the event board, so it
+                  // must not say it shows that board ("Event board · Shows 'Coach TV'").
+                  const eventLink = token.label === EVENT_BOARD_NAME;
+                  const shows = eventLink ? null : boardName(token.boardId);
                   const title = token.label && token.label !== "Pit TV" ? token.label : shows ?? "Pit TV";
                   return (
                     <div className={`token-row${token.revokedAt ? " revoked" : ""}`} key={token.id}>

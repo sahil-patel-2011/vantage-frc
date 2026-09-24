@@ -116,19 +116,21 @@ export default function KioskClient({
   }, [mode, chromeVisible]);
 
   if (!data) {
+    // A screen opened without its TV link cannot be fixed by retrying; say what to do instead.
+    const incomplete = !params.token && !(params.orgId && params.boardId);
     return (
       <main className={`display-kiosk ${mode === "pit" ? "display-kiosk-pit " : ""}${error ? "error" : "loading"}`}>
-        <h1>{error || "Loading display…"}</h1>
-        <p>
-          {params.token
-            ? mode === "pit"
-              ? "If this keeps failing, the TV link was turned off. Make a new one on the Pit TV page."
-              : "If this keeps failing, the TV link was turned off. Make a new one on the Pit TV page."
-            : "Open a saved board from the Pit TV page."}
-        </p>
-        <button type="button" onClick={() => void refresh()}>
-          Retry
-        </button>
+        <h1>{incomplete ? "This screen needs its TV link" : error ? "This TV can't load its board" : "Loading display…"}</h1>
+        {incomplete ? (
+          <p>On a signed-in computer, open Pit TV, press Get a TV link, and open that link on this screen.</p>
+        ) : error ? (
+          <p>{error} If it keeps failing, the TV link may have been turned off: make a new one on the Pit TV page.</p>
+        ) : null}
+        {incomplete ? null : error ? (
+          <button type="button" className="kiosk-retry" onClick={() => void refresh()}>
+            Try again
+          </button>
+        ) : null}
       </main>
     );
   }

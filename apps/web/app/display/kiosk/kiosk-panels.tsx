@@ -185,9 +185,12 @@ export function KioskPanel({
       detail = `${data.scouting.assignments} scout assignments at this event`;
       break;
     case "alerts":
-      if (data.scouting.openDisagreements > 0) {
-        value = String(data.scouting.openDisagreements);
-        detail = `scout ${data.scouting.openDisagreements === 1 ? "disagreement" : "disagreements"} to review at this event`;
+      // The pit's alerts are the robot's: open repairs someone logged. Scout disagreements
+      // ("43 to review") are a scouting lead's desk job, not something a pit crew can act on.
+      if (hasReadinessSignal(data.readiness)) {
+        const open = data.readiness!.openFailures;
+        value = open > 0 ? `${open} open ${open === 1 ? "repair" : "repairs"}` : "All clear";
+        detail = open > 0 ? "Robot problems logged and not fixed yet" : "No open robot problems";
       }
       break;
     case "team_intel": {

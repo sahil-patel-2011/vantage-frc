@@ -1172,3 +1172,31 @@ body.has-app-shell main.display-setup .preset-picker { grid-template-columns: re
   .disp-board-row { flex-wrap: wrap; }
   .disp-board-text { flex-basis: 100%; }
 }
+
+/* Read from 3 m: the pit TV's panel labels were 0.72rem at 55% opacity (about 11px on a 1080p
+   TV) and their sub-lines 14px. They scale with the screen now and are solid enough to read. */
+.display-kiosk-pit .display-kiosk-panel article span,
+.display-kiosk-pit .display-kiosk-custom article span {
+  font-size: clamp(1rem, 1.25vw, 1.6rem);
+  font-weight: 700;
+  opacity: 0.8;
+}
+.display-kiosk-pit .display-kiosk-panel article small,
+.display-kiosk-pit .display-kiosk-panel article em,
+.display-kiosk-pit .display-kiosk-custom article small {
+  font-size: clamp(1.05rem, 1.35vw, 1.7rem);
+  opacity: 0.85;
+}
+
+/* The one action on a TV that could not load: big enough to hit with a TV remote pointer. */
+.display-kiosk .kiosk-retry {
+  min-height: 56px;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+}
