@@ -141,16 +141,14 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
 }
 
 /** Billing framing — your keys vs hosted native AI (aligned with pricing soft-copy). */
-export function aiKeysBillingNote(tier: string | null | undefined): { title: string; body: string } {
-  const normalized = (tier ?? "free").toLowerCase();
-  if (normalized === "free") {
-    return {
-      title: "Free · hosted free models or your keys",
-      body: "Free teams use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local OpenAI-compatible relay still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
-    };
-  }
+/**
+ * Vantage is free for every team and AI runs on the team's own key, so this says the same
+ * thing whatever the team row's old tier column holds. It used to describe paid plans,
+ * credits and pay-as-you-go, none of which exist.
+ */
+export function aiKeysBillingNote(_tier?: string | null): { title: string; body: string } {
   return {
-    title: "Paid · hosted AI",
-    body: "Prefer Vantage-hosted Anthropic (Sonnet for chat/strategy, Opus for CAD/code) in the product, then buy AI credits or turn on pay-as-you-go when you need more. Credits go further than running the same models on your own keys. You can still paste your own keys; that traffic does not consume hosted usage.",
+    title: "AI runs on your team's keys",
+    body: "Paste an OpenAI, Anthropic, Google, or OpenRouter key and the AI tools use it; your provider bills you directly. A local OpenAI-compatible relay also works.",
   };
 }

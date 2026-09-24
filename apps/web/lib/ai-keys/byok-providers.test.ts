@@ -45,10 +45,11 @@ describe("ai keys soft-ui helpers", () => {
   });
 
   it("frames free vs paid without double-billing confusion", () => {
-    expect(aiKeysBillingNote("free").title).toMatch(/your keys/i);
+    expect(aiKeysBillingNote("free").title).toMatch(/your team's keys/i);
     expect(aiKeysBillingNote("free").body).not.toMatch(/workspace/i);
-    expect(aiKeysBillingNote("team").body).toMatch(/hosted/i);
-    expect(aiKeysBillingNote("team").body).toMatch(/not billed twice|does not consume/i);
+    // No plans, credits or tiers: every team reads the same note.
+    expect(aiKeysBillingNote("team")).toEqual(aiKeysBillingNote("free"));
+    expect(aiKeysBillingNote("team").body).not.toMatch(/credit|plan|pay-as-you-go/i);
   });
 
   it("empty copy says team, not workspace", () => {

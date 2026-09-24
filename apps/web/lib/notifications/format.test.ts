@@ -8,7 +8,7 @@ describe("notification helpers", () => {
   });
 
   it("humanizes type when payload has no title", () => {
-    expect(notificationTitle("credit_low")).toBe("Billing");
+    expect(notificationTitle("credit_low")).toBe("AI limits");
     expect(notificationTypeLabel("todo_assigned")).toBe("Todo");
     expect(notificationTypeLabel("unknown_kind")).toBe("Unknown Kind");
     expect(notificationBody({})).toBeNull();

@@ -30,7 +30,7 @@ export function notificationTypeLabel(type: string): string {
       return "Team";
     case "billing":
     case "credit_low":
-      return "Billing";
+      return "AI limits";
     case "sponsor_thank_you_due":
     case "sponsor_renewal_due":
     case "sponsor_followup_overdue":
