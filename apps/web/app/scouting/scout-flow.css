@@ -436,6 +436,18 @@
   line-height: 1;
   cursor: pointer;
 }
+.scout-saved-fix {
+  justify-self: start;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--positive) 45%, var(--line));
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 15px/1 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
 
 /* ---- Loading ---------------------------------------------------------------- */
 

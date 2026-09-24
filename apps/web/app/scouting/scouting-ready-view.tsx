@@ -97,6 +97,8 @@ export type ScoutingReadyViewProps = {
   /** "Uploaded 1 entry" — shown by the queue count, not under Save. */
   syncNote: string | null;
   saveReceipt: SaveReceipt | null;
+  /** Put the entry just saved back in the form. */
+  fixLastSave?: () => void;
   showFormula: boolean;
   formulaName: string;
   formulaWeights: Record<string, number>;
@@ -169,6 +171,7 @@ export function ScoutingReadyView({
   message,
   syncNote,
   saveReceipt,
+  fixLastSave,
   showFormula,
   formulaName,
   formulaWeights,
@@ -545,7 +548,7 @@ return (
           ) : null}
 
           {saveReceipt ? (
-            <ScoutSaveConfirmation receipt={saveReceipt} onDismiss={() => setSaveReceipt(null)} />
+            <ScoutSaveConfirmation receipt={saveReceipt} onDismiss={() => setSaveReceipt(null)} onFix={fixLastSave} />
           ) : null}
 
           {type === "match" ? (

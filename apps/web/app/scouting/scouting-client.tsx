@@ -95,6 +95,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [bootstrapStatus, setBootstrapStatus] = useState<number | null>(null);
   const [saveReceipt, setSaveReceipt] = useState<SaveReceipt | null>(null);
+  // The entry just saved, so "Fix it" can put it back in the form. Saving again with the
+  // same client id replaces it: the server lets the author update their own entry.
+  const [lastSaved, setLastSaved] = useState<{
+    clientId: string;
+    matchKey: string;
+    teamKey: string;
+    payload: Record<string, unknown>;
+    confidence: "high" | "normal" | "low";
+  } | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "degraded">("idle");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
@@ -391,6 +400,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       updatedAt: new Date().toISOString(),
     };
     await queueEntry(entry);
+    setLastSaved({ clientId: entryClientId, matchKey, teamKey, payload, confidence });
     if (type === "match") setSavedHere((current) => [...current, { matchKey, teamKey: storedTeam }]);
     clearScoutDraft(draftKey);
     // formResetBehavior: keep the constants a scout would only retype (station,
@@ -442,6 +452,33 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setSyncNote(null);
     await refreshCounts();
     await sync();
+  }
+
+  /** "Fix it" on the Saved note: the same robot and match, the answers as saved. */
+  function fixLastSave() {
+    if (!lastSaved) return;
+    writeScoutDraft(
+      scoutDraftStorageKey({
+        orgId,
+        eventKey: data?.eventKey ?? "",
+        entryType: type,
+        matchKey: lastSaved.matchKey,
+        teamKey: lastSaved.teamKey,
+      }),
+      {
+        payload: lastSaved.payload,
+        confidence: lastSaved.confidence,
+        matchKey: lastSaved.matchKey,
+        teamKey: lastSaved.teamKey,
+      },
+    );
+    setMatchKey(lastSaved.matchKey);
+    setTeamKey(lastSaved.teamKey);
+    setPayload(lastSaved.payload);
+    setConfidence(lastSaved.confidence);
+    setEntryClientId(lastSaved.clientId);
+    setSaveReceipt(null);
+    setMessage("Change what was wrong, then Save. It replaces the entry you just saved.");
   }
 
   async function attachMedia(file: File, options?: { fieldKey?: string; tags?: string[] }) {
@@ -759,6 +796,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       setSource={setSource}
       setSelectedWinners={setSelectedWinners}
       setSaveReceipt={setSaveReceipt}
+      fixLastSave={lastSaved ? fixLastSave : undefined}
       setShowFormula={setShowFormula}
       setFormulaName={setFormulaName}
       setFormulaWeights={setFormulaWeights}

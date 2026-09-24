@@ -73,7 +73,7 @@ export function ScoutingLeadTools({
         <div className="scout-lead-tools-body">
           <Panel id="recent-entries" className="scout-activity" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Saved entries</h2>
-            <p className="app-muted">Tap one to see what was recorded. Team leads can delete a report.</p>
+            <p className="app-muted">Tap one to see what was recorded. Made a mistake? Press Fix it on the green Saved note right after saving. Team leads can delete a report.</p>
             {data && shouldShowScoutingRecentEntries(entries.length) ? (
               <>
                 <ExportButton

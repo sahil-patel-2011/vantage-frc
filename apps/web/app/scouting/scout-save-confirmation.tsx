@@ -16,9 +16,12 @@ import type { SaveReceipt } from "./scouting-model";
 export function ScoutSaveConfirmation({
   receipt,
   onDismiss,
+  onFix,
 }: {
   receipt: SaveReceipt;
   onDismiss: () => void;
+  /** Reopen this entry to correct it. Scouts had no way to fix their own mistake. */
+  onFix?: () => void;
 }) {
   const saved = [
     receipt.entryType === "pit" ? `pit report for ${teamNumberOf(receipt.teamKey)}` : teamNumberOf(receipt.teamKey),
@@ -46,6 +49,11 @@ export function ScoutSaveConfirmation({
         {next ? <span className="scout-saved-next">Next: {next}</span> : null}
       </p>
       {detail ? <p className="scout-saved-detail">{detail}</p> : null}
+      {onFix ? (
+        <button type="button" className="scout-saved-fix" onClick={onFix}>
+          Fix it
+        </button>
+      ) : null}
       <button type="button" className="scout-saved-dismiss" onClick={onDismiss} aria-label="Dismiss saved message">
         ×
       </button>
