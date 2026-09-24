@@ -742,3 +742,12 @@ html:has(.marketing-lux){scroll-padding-top:76px}
 /* One quiet line under a waitlist field (the team-number hint for rookie teams). */
 .waitlist-form .field-hint{display:block;margin-top:6px;font-size:13px;line-height:1.4;color:var(--m-muted,#5a6578)}
 .waitlist-form .field-hint a{color:inherit;text-decoration:underline}
+
+/* Phones: one line in place of the workspaces and "how we work" sections. */
+.marketing-lux .lux-phone-summary{display:none}
+@media (max-width:640px){
+  .marketing-lux .lux-runs,.marketing-lux .lux-fit{display:none}
+  .marketing-lux .lux-phone-summary{display:block;padding:32px 20px}
+  .marketing-lux .lux-phone-summary p{margin:0;font-size:17px;line-height:1.5;color:var(--m-ink)}
+  .marketing-lux .lux-phone-summary a{display:inline-block;margin-top:8px;font-weight:600;color:var(--m-blue)}
+}

@@ -32,7 +32,7 @@ export function ProductHubCatalog() {
       {MARKETING_HUBS.map((hub) => (
         <article className="mk-hub-detail" id={`${hub.id}-detail`} key={hub.id}>
           <header>
-            <p className="lux-kicker">{hub.route}</p>
+            <p className="lux-kicker">Workspace</p>
             <h3 id={hub.id}>{hub.title}</h3>
             <p>{hub.promise}</p>
           </header>
@@ -64,7 +64,7 @@ export function HeroProductVisual() {
           </span>
           <div className="hero-soft-topbar-title">
             <strong>Competition</strong>
-            <small>Active event from Team Data</small>
+            <small>Your team&apos;s active event</small>
           </div>
           <span className="hero-soft-avatar">V</span>
         </header>

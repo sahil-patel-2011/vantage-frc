@@ -22,7 +22,7 @@ const scoutFeeds = [
   { title: "Pick clock & pairwise", copy: "A pick timer and quick \"A beats B\" comparisons to settle close calls." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
   { title: "Event day and My Day", copy: "Your next match, the pit queue and your bumper colour, in one place." },
-  { title: "Ask AI", copy: "Answers cite Team Data, ratings, and scout notes. Missing numbers stay blank." },
+  { title: "Ask AI", copy: "Answers show where they came from: public match data, ratings or your scouts. Missing numbers stay blank." },
 ] as const;
 
 export default function StrategyFeaturePage() {
@@ -34,8 +34,8 @@ export default function StrategyFeaturePage() {
           <p className="lux-kicker">Strategy</p>
           <h1>Strategy you can inspect.</h1>
           <p>
-            Competition Strategy, Alliance Selection Desk, pick clock, pairwise ranking, and Ask AI — sourced
-            from Team Data and your scout entries. Empty until those exist.
+            Match plans, the alliance selection board, a pick timer and Ask AI, built from public match data and
+            what your scouts record. Nothing is filled in until that data exists.
           </p>
           <MarketingRouteActions
             companion={{ href: "#frc-assistant", label: "Ask AI", variant: "secondary" }}
@@ -47,7 +47,7 @@ export default function StrategyFeaturePage() {
             <header>
               <span className="section-id">ASK AI</span>
               <h2 id="assistant-title">Ask about your event. See where every answer came from.</h2>
-              <p>Grounded in Team Data and your scouts. Empty events stay empty.</p>
+              <p>Built from public match data and your scouts. An event with no data says so.</p>
             </header>
             <div className="assistant-story-grid">
               <div className="assistant-job-grid">

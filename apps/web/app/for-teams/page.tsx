@@ -14,11 +14,11 @@ export const metadata: Metadata = marketingPageMetadata({
 const roles = [
   {
     title: "Mentors & coaches",
-    copy: "Invite exact emails, set budgets, and keep at least one owner or admin. Students never see API keys.",
+    copy: "Invite people by email, set spending limits, and choose who can change what. Students never see your AI key.",
   },
   {
     title: "Drive & strategy",
-    copy: "Event day, alliance desk, pick list, and strategy cards — empty until your scouts log real matches.",
+    copy: "Your next match, the alliance selection board, the pick list and match plans, filled in by what your scouts record.",
   },
   {
     title: "Scouts & pit",
@@ -34,7 +34,7 @@ const roles = [
   },
   {
     title: "Every member",
-    copy: "Every member starts on Home, Matches, Scout and Stats; the menu and search find the rest. Chat stays inside your team.",
+    copy: "Everyone starts on Home, Matches, Scout and Stats; the menu and search find the rest. Team chat is private to your roster.",
   },
 ] as const;
 

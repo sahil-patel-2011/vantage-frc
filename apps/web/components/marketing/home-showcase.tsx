@@ -94,6 +94,15 @@ export function HomeShowcase() {
         </div>
       </section>
 
+      {/* Phones get one line here instead of the two long sections below (hidden under 640px):
+          they repeated what the rest of the page says and made the page about 14 screens tall. */}
+      <section className="lux-phone-summary" aria-label="Everything else">
+        <p>
+          Four workspaces (Competition, Team, Build and Business), team chat, a pit TV and your own data, offline
+          when the Wi-Fi is not. <a href="/features">See everything Vantage does →</a>
+        </p>
+      </section>
+
       <section className="lux-runs" aria-labelledby="lux-runs-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>

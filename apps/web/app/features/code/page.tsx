@@ -5,16 +5,16 @@ import { marketingPageMetadata } from "../../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Code Coach — Vantage",
   description:
-    "Build hub Code Coach flags risky WPILib patterns, teaches safer habits, and proposes human-approved diffs. Never auto-deploys to a robot.",
+    "Code Coach reads your robot code, points out the mistakes that break robots at events, and explains the fix. Nothing changes without your approval, and it never deploys to a robot.",
   path: "/features/code",
 });
 
 const capabilities = [
-  { id: "01", title: "Review risk", body: "Blocking loops, hard-coded CAN, unsafe actuators." },
-  { id: "02", title: "Explain why", body: "Teaching notes tied to match-pressure failure modes." },
-  { id: "03", title: "Safer habits", body: "WPILib-aligned alternatives—not opaque rewrites." },
-  { id: "04", title: "Approve diffs", body: "Human-gated proposals; sim stays with the team." },
-  { id: "05", title: "AI code review", body: "Points to the exact line in your file. Anything it can't point to is left out." },
+  { id: "01", title: "Spot the risky parts", body: "Code that can freeze the robot, device IDs typed in by hand, motors that can run with no limit." },
+  { id: "02", title: "Explain why", body: "Each note says what goes wrong in a match, in words a new programmer can follow." },
+  { id: "03", title: "Show a safer way", body: "A small, standard WPILib fix you can read, not a mystery rewrite." },
+  { id: "04", title: "You decide", body: "Suggested changes wait for a person to approve them. Testing stays with your team." },
+  { id: "05", title: "Line by line", body: "Every note points to the exact line in your file. If it can't point to a line, it says nothing." },
 ] as const;
 
 export default function CodeFeaturePage() {
@@ -26,8 +26,8 @@ export default function CodeFeaturePage() {
           <p className="lux-kicker">Code Coach</p>
           <h1>Flag risk. Teach the fix.</h1>
           <p>
-            Code Coach reviews your robot code for common mistakes, with an AI reviewer when you want a second look. Human-approved diffs only. Never
-            auto-deploys to a robot.
+            Code Coach reviews your robot code for common mistakes, with an AI reviewer when you want a second look.
+            Nothing changes without your approval, and it never deploys to a robot.
           </p>
           <MarketingRouteActions
             companion={{ href: "/features", label: "Product overview", variant: "secondary" }}
@@ -37,7 +37,7 @@ export default function CodeFeaturePage() {
         <section className="lux-pillars" aria-labelledby="code-capabilities-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="code-capabilities-title">Review → explain → suggest → approve.</h2>
+              <h2 id="code-capabilities-title">Find it, explain it, fix it together.</h2>
             </header>
             <ul className="lux-pillar-list">
               {capabilities.map((item) => (

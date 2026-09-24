@@ -41,13 +41,18 @@ describe("marketing chrome", () => {
     expect(showcase).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
   });
 
-  it("hero and product frames show the real Kickoff brief, not a Good-evening mock", () => {
+  it("hero shows an event-day Home, labelled as an example, with no invented numbers", () => {
     const frames = src("components/marketing/app-frames.tsx");
     const hero = src("components/marketing/hero-product.tsx");
     expect(hero).toMatch(/export \{ HeroProductPanel \} from "\.\/app-frames"/);
-    expect(frames).toMatch(/computeGameBrief/);
-    expect(frames).toMatch(/gameBriefStatusBadge/);
-    expect(frames).toMatch(/Ask about this game/);
+    // It opened on next season's Kickoff brief, which reads "manual not out" most of the year.
+    expect(frames).not.toMatch(/computeGameBrief/);
+    expect(frames).toMatch(/Example screen/);
+    const heroSrc = frames.slice(frames.indexOf("export function HeroProductPanel"));
+    const heroText = [...heroSrc.slice(0, heroSrc.indexOf("\n}\n")).matchAll(/>([^<>{}]*)</g)]
+      .map((match) => match[1])
+      .join(" ");
+    expect(heroText).not.toMatch(/\d/);
     // The hero shows the app working, never an unfinished "Needs setup" screen.
     expect(frames).not.toMatch(/Needs setup/);
     expect(frames).toMatch(/Your next robot, one tap/);

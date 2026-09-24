@@ -18,8 +18,9 @@ const links = [
   ["/features", "Product"],
   ["/workflow", "How it works"],
   ["/for-teams", "For teams"],
-  // No pricing link: Vantage is free, and the hero says so. A "Pricing" tab
-  // tells a mentor the opposite before they have read a word.
+  // Named "Free", not "Pricing": a "Pricing" tab tells a mentor the opposite of the answer,
+  // but the cost question still needs a place in the nav (it was only in the footer).
+  ["/pricing", "Free"],
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {

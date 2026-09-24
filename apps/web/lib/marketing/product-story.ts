@@ -21,11 +21,11 @@ export const MARKETING_STUDENT_PATH = [
   },
   {
     title: "Talk with the team",
-    copy: "Team chat stays on this roster. A message you send shows up for a teammate with the same login.",
+    copy: "Team chat is private to your roster. Everyone on the team sees the same messages, on any device.",
   },
   {
     title: "Run practice",
-    copy: "Hours, packing, pit checklists, chat, and practice roll calls — emails already on the roster stay when you add people.",
+    copy: "Hours, packing, pit checklists, chat and practice roll calls, for everyone on your team.",
   },
 ] as const;
 

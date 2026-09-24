@@ -1,9 +1,8 @@
 /**
  * Public Soft-UI frames of the signed-in app.
- * Hero uses the live Kickoff brief. Never invents scores, ratings, or team counts.
+ * The hero is an example Home layout. Never invents scores, ratings, or team counts.
  */
 
-import { computeGameBrief, gameBriefStatusBadge } from "../../lib/game-brief/compute-game-brief";
 
 function AppChrome({ title, crumbs }: { title: string; crumbs: string }) {
   return (
@@ -33,9 +32,13 @@ function AppIsland({ island }: { island: (typeof PREVIEW_ISLAND)[number] }) {
   );
 }
 
-/** Hero: Kickoff + Home — the screens a new member actually opens. */
+/**
+ * Hero: Home on an event day, the screen a member opens most. An example layout with the
+ * labels a team sees, and no scores, ratings or team numbers: the page never invents data
+ * about real teams. (It used to open on next season's Kickoff brief, which reads "manual not
+ * out" for most of the year.)
+ */
 export function HeroProductPanel() {
-  const brief = computeGameBrief();
   return (
     <div className="mk-mock" aria-hidden="true">
       <div className="mk-mock-chrome">
@@ -44,37 +47,36 @@ export function HeroProductPanel() {
           <i />
           <i />
         </span>
-        <strong>Vantage · Kickoff</strong>
-        <b>Build / Kickoff</b>
+        <strong>Vantage · Home</strong>
+        <b>Example screen</b>
       </div>
 
       <div className="mk-mock-body">
         <div className="mk-mock-main">
-          <div className="mk-mock-tabs">
-            <span className="is-active">Kickoff</span>
-            <span>Home</span>
-          </div>
           <article className="mk-mock-card">
             <header>
-              <strong>
-                {brief.gameName} {brief.year}
-              </strong>
-              <span>{gameBriefStatusBadge(brief.status)}</span>
+              <strong>Next match</strong>
+              <span>Event day</span>
             </header>
-            <p className="mk-mock-empty">{brief.headline}</p>
-            {brief.priorSeason ? (
-              <p className="mk-mock-empty">
-                Last season you can study now — {brief.priorSeason.gameName} {brief.priorSeason.year}
-              </p>
-            ) : null}
-            <p className="mk-mock-shot">
-              <span className="mk-app-primary">Ask about this game</span>
-            </p>
+            <dl className="mk-mock-rows">
+              <div>
+                <dt>Your next qual</dt>
+                <dd>Countdown to queue</dd>
+              </div>
+              <div>
+                <dt>Red bumpers</dt>
+                <dd>Partners and opponents listed</dd>
+              </div>
+              <div>
+                <dt>Their likely plan</dt>
+                <dd>From your own scouting</dd>
+              </div>
+            </dl>
           </article>
           <article className="mk-mock-card">
             <header>
               <strong>What to do now</strong>
-              <span>Home</span>
+              <span>For you</span>
             </header>
             <dl className="mk-mock-rows">
               <div>
@@ -82,12 +84,12 @@ export function HeroProductPanel() {
                 <dd>Your next robot, one tap</dd>
               </div>
               <div>
-                <dt>Learn CAD</dt>
-                <dd>Week by week</dd>
+                <dt>Pit TV</dt>
+                <dd>Next match on the pit screen</dd>
               </div>
               <div>
                 <dt>Ask AI</dt>
-                <dd>About your own team</dd>
+                <dd>On your own key, if you want it</dd>
               </div>
             </dl>
           </article>
@@ -101,9 +103,7 @@ export function HeroProductPanel() {
         </div>
       </div>
 
-      <footer className="mk-mock-note">
-        Interface preview — the real Kickoff brief, not a team&apos;s scores.
-      </footer>
+      <footer className="mk-mock-note">Example screen. Your team&apos;s real matches fill it in.</footer>
     </div>
   );
 }
