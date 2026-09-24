@@ -561,7 +561,7 @@ function checkRequirement(requirement: AiRequirement, agent: AiAgentDefinition, 
         ? null
         : {
             reason: "provider_unavailable",
-            sentence: `${agent.name} is off — this Vantage deployment has no research search provider. Ask your Vantage admin to configure one.`,
+            sentence: `${agent.name} isn't available on Vantage yet. Everything else works without it.`,
             setup: null,
           };
     default: {
