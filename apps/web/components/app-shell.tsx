@@ -159,7 +159,12 @@ export default function AppShell() {
       // The router updates the address asynchronously; follow it for up to ~3s.
       let tries = 0;
       const follow = () => {
-        if (window.location.href !== before) setLocationTick((tick) => tick + 1);
+        if (window.location.href !== before) {
+          setLocationTick((tick) => tick + 1);
+          // A link to the page already open (a hub tool chip that lands on the same hub with
+          // a different view) does not remount it; tell it the address changed.
+          window.dispatchEvent(new Event(URL_CHANGE_EVENT));
+        }
         else if (++tries < 60) window.setTimeout(follow, 50);
       };
       window.setTimeout(follow, 0);

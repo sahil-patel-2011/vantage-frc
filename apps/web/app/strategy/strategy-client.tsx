@@ -26,6 +26,7 @@ import {
   type StrategyTab,
 } from "./strategy-chrome";
 import { LivePanel } from "./strategy-live-panel";
+import { URL_CHANGE_EVENT } from "../../lib/nav/url-change";
 import "./strategy.css";
 
 export default function StrategyClient({ embedded = false }: { embedded?: boolean } = {}) {
@@ -45,6 +46,22 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
 
   useEffect(() => {
     setUrlOrgId(new URLSearchParams(window.location.search).get("orgId"));
+  }, []);
+
+  // "Pick desk" links here from the hub's own tool strip, which does not remount this page:
+  // follow the view named in the address when it changes.
+  useEffect(() => {
+    const follow = () => {
+      const params = new URLSearchParams(window.location.search);
+      const requested = params.get("sub") ?? (params.get("tab") === "picks" ? "picks" : null);
+      if (requested === "picks") setTab("picks");
+    };
+    window.addEventListener(URL_CHANGE_EVENT, follow);
+    window.addEventListener("popstate", follow);
+    return () => {
+      window.removeEventListener(URL_CHANGE_EVENT, follow);
+      window.removeEventListener("popstate", follow);
+    };
   }, []);
 
   const loadStrategy = useCallback(() => {
