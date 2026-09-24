@@ -14,7 +14,7 @@ export const metadata: Metadata = marketingPageMetadata({
 const stages = [
   {
     id: "1",
-    title: "Stand up the team",
+    title: "Set up your team",
     detail:
       "A mentor or owner invites you by email. You finish a short setup (role, crew, optional team number). Until that is done, you stay on the welcome steps.",
   },
@@ -34,7 +34,7 @@ const stages = [
     id: "4",
     title: "Run event day from one event",
     detail:
-      "Command and My Day use posted match times. Checklists, pit queue, bumper color, and strategy cards share that event. It fills in as your scouts record matches.",
+      "Event day shows your next match, its time and your bumper colour. Checklists, the pit queue and strategy cards all follow the same event, and fill in as your scouts record matches.",
   },
   {
     id: "5",
@@ -59,7 +59,7 @@ export default function WorkflowPage() {
           <p className="lux-kicker">How it works</p>
           <h1>One team. One event. Then the rest of the season.</h1>
           <p>
-            Scouting feeds strategy and event day. CAD, code, money, and the playbook live in the same org — without a
+            Scouting feeds strategy and event day. CAD, code, money, and the playbook live in the same place — without a
             pile of extra logins.
           </p>
           <MarketingRouteActions

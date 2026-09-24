@@ -178,7 +178,7 @@ export const MARKETING_MENU = [
   },
   {
     title: "Desktop",
-    copy: "A Windows app around the same Vantage, with the local relay for Fusion CAD.",
+    copy: "A Windows app around the same Vantage, which also connects Fusion CAD on that computer.",
   },
 ] as const;
 

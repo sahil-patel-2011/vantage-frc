@@ -17,11 +17,7 @@ test("Sign-in still loads after the panel split", async ({ page }) => {
   const waitlist = page.locator('a[href*="waitlist"]').first();
   await expect(waitlist).toBeVisible();
   await expect(waitlist).toHaveAccessibleName(/\S/);
-  // Sign-in is deliberately minimal now — the logo and the form, no site nav —
-  // so the pricing link is not asserted here. Its label is: "What it costs",
-  // because the page leads with the software being free and a link reading
-  // "Pricing" told a mentor the opposite before they had read a word. Checked
-  // on the landing page below, which still carries the header.
+  // Sign-in is deliberately minimal now — the logo and the form, no site nav.
   await expect(page.getByText("setup_required")).toHaveCount(0);
   await expect(page.getByText("DEPLOYMENT.md")).toHaveCount(0);
   await expect(page.getByText("Setup required")).toHaveCount(0);
@@ -31,10 +27,10 @@ test("Sign-in still loads after the panel split", async ({ page }) => {
   await expect(page.getByTestId("waitlist-form").or(page.getByTestId("waitlist-unavailable"))).toBeVisible();
 });
 
-test("the site header calls the pricing page what it costs", async ({ page }) => {
+test("the site says Vantage is free and never shows a pricing tab", async ({ page }) => {
   await page.goto("/");
   const nav = page.getByRole("banner").or(page.locator("header")).first();
-  await expect(nav.getByRole("link", { name: "What it costs" })).toBeVisible();
-  // Never "Pricing": the product is free, and that word says otherwise first.
+  // Free, with your own AI key: there are no plans to shop for, so no pricing tab either.
   await expect(nav.getByRole("link", { name: "Pricing", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Free for every team/i }).first()).toBeVisible();
 });

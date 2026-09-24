@@ -191,7 +191,7 @@ function AdminClientInner() {
       <PageHeader
         breadcrumbs="Platform / Global Team Manager"
         title="Global Team Manager"
-        description="Closed membership: provision each real team and seed the first owner by exact verified email."
+        description="Create each team and invite its owner by email. The owner then invites everyone else."
       >
         <AdminRelated active="teams" />
       </PageHeader>
@@ -257,33 +257,49 @@ function AdminClientInner() {
               min={1}
               max={99999}
               value={form.teamNumber}
-              onChange={(event) => setForm({ ...form, teamNumber: event.target.value })}
+              onChange={(event) => {
+                const teamNumber = event.target.value;
+                // Name and web address follow the number until someone types their own.
+                const autoName = !form.name || form.name === `Team ${form.teamNumber}`;
+                const autoSlug = !form.slug || form.slug === `team-${form.teamNumber}`;
+                setForm({
+                  ...form,
+                  teamNumber,
+                  name: autoName ? (teamNumber ? `Team ${teamNumber}` : "") : form.name,
+                  slug: autoSlug ? (teamNumber ? `team-${teamNumber}` : "") : form.slug,
+                });
+              }}
             />
           </label>
           <label>
-            Organization name
+            Team name
             <input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
           </label>
           <label>
-            Team slug
-            <input
-              required
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              value={form.slug}
-              onChange={(event) => setForm({ ...form, slug: event.target.value })}
-            />
-          </label>
-          <label>
-            First owner’s verified email
+            Owner&rsquo;s email
             <input
               required
               type="email"
               value={form.ownerEmail}
               onChange={(event) => setForm({ ...form, ownerEmail: event.target.value })}
             />
+            <small className="app-muted">They get an invite by email. They don&rsquo;t need an account yet.</small>
           </label>
+          <details className="admin-advanced">
+            <summary>Advanced</summary>
+            <label>
+              Web address
+              <input
+                required
+                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                value={form.slug}
+                onChange={(event) => setForm({ ...form, slug: event.target.value })}
+              />
+              <small className="app-muted">Lowercase letters, numbers and dashes. Filled in from the team number.</small>
+            </label>
+          </details>
           <button className="primary-action" type="submit">
-            Create and seed owner
+            Create team &amp; invite owner
           </button>
           {message ? <p className="auth-message">{message}</p> : null}
         </Panel>

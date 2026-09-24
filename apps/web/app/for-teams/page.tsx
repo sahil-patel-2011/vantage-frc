@@ -26,11 +26,11 @@ const roles = [
   },
   {
     title: "Build & programming",
-    copy: "Paste an Onshape or Fusion link, Code Coach, Bugbot that quotes source, FMEA, inspection, power and wiring.",
+    copy: "Paste an Onshape or Fusion link, get code help and code review that points to the exact line, plus risk checks, inspection, power and wiring.",
   },
   {
     title: "Business leads",
-    copy: "Finance, sponsors (when allowed), grants, impact, and media kit — totals only from what your team actually recorded.",
+    copy: "Money, sponsors, grants, outreach and a media kit, with totals only from what your team actually recorded.",
   },
   {
     title: "Every member",
@@ -74,7 +74,7 @@ export default function ForTeamsPage() {
           <div className="lux-content">
             <header className="lux-section-head">
               <h2 id="roles-title">Who opens what.</h2>
-              <p>Same team. Different jobs. Access can be limited per hub for scouts and viewers.</p>
+              <p>Same team. Different jobs. Owners can choose what students and guests can open.</p>
             </header>
             <ul className="lux-feature-grid">
               {roles.map((role) => (

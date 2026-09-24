@@ -14,7 +14,7 @@ const steps = [
     title: "Brief",
     copy: "Intent before geometry.",
     frame: "CAD brief",
-    lines: ["Constraints listed", "Human gate first", "Empty until written"],
+    lines: ["Constraints listed", "You approve first", "Empty until written"],
   },
   {
     title: "Connectors",
@@ -39,8 +39,8 @@ export default function CadFeaturePage() {
           <p className="lux-kicker">CAD agent</p>
           <h1>CAD starts with a brief.</h1>
           <p>
-            On the Build hub, you confirm a brief first. Then a metered plan (or a no-model starter plan)
-            runs only after approval. Onshape uses hosted OAuth. Fusion uses a desktop relay. Credentials are required.
+            You confirm a short design brief first, and nothing changes in your CAD until you approve it.
+            Connect Onshape with one click, or Fusion through the Vantage desktop app.
             Nothing changes in your CAD until a person approves the step.
           </p>
           <MarketingRouteActions

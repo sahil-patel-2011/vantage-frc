@@ -14,7 +14,7 @@ const capabilities = [
   { id: "02", title: "Explain why", body: "Teaching notes tied to match-pressure failure modes." },
   { id: "03", title: "Safer habits", body: "WPILib-aligned alternatives—not opaque rewrites." },
   { id: "04", title: "Approve diffs", body: "Human-gated proposals; sim stays with the team." },
-  { id: "05", title: "AI Bugbot", body: "Metered pass quotes your file. Ungrounded claims are dropped." },
+  { id: "05", title: "AI code review", body: "Points to the exact line in your file. Anything it can't point to is left out." },
 ] as const;
 
 export default function CodeFeaturePage() {

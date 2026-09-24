@@ -5,23 +5,23 @@ import { marketingPageMetadata } from "../../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Strategy & Ask AI — Vantage",
   description:
-    "Competition Strategy, Alliance Selection Desk, Pick clock, and Ask AI—sourced from Team Data and your scouting.",
+    "Match plans, a shared pick list for alliance selection, and Ask AI, built from public match data and your own scouting.",
   path: "/features/strategy",
 });
 
 const assistantJobs = [
-  { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefs from real scout + Team Data facts." },
-  { id: "02", title: "Matchups & picks", copy: "Alliance Selection Desk and Pick clock, for the event you are at." },
+  { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefings from your scouting and the public match record." },
+  { id: "02", title: "Matchups & picks", copy: "A shared pick list and a pick timer, for the event you are at." },
   { id: "03", title: "Opponent history", copy: "How teams tend to auto, cycle, defend, climb." },
   { id: "04", title: "Robot capabilities", copy: "Pit notes beside public metrics—empty until scouted." },
 ] as const;
 
 const scoutFeeds = [
   { title: "Competition · Strategy", copy: "Playbooks from your scouting plus public facts — empty until someone scouts." },
-  { title: "Alliance Selection Desk", copy: "A shared board for all eight alliances, with your scouting behind every pick and a flag when it disagrees with the official results." },
+  { title: "Alliance selection", copy: "A shared board for all eight alliances, with your scouting behind every pick and a flag when it disagrees with the official results." },
   { title: "Pick clock & pairwise", copy: "A pick timer and quick \"A beats B\" comparisons to settle close calls." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
-  { title: "Command / My Day", copy: "Same event context: next match, pit queue, bumper color from Team Data lists." },
+  { title: "Event day and My Day", copy: "Your next match, the pit queue and your bumper colour, in one place." },
   { title: "Ask AI", copy: "Answers cite Team Data, ratings, and scout notes. Missing numbers stay blank." },
 ] as const;
 
@@ -46,7 +46,7 @@ export default function StrategyFeaturePage() {
           <div className="lux-content">
             <header>
               <span className="section-id">ASK AI</span>
-              <h2 id="assistant-title">Ask competition-ops. Keep the sources.</h2>
+              <h2 id="assistant-title">Ask about your event. See where every answer came from.</h2>
               <p>Grounded in Team Data and your scouts. Empty events stay empty.</p>
             </header>
             <div className="assistant-story-grid">
