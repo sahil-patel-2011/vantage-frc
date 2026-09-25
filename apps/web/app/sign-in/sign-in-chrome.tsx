@@ -57,7 +57,10 @@ export function AccessFooter() {
   const waitlistHref = useWaitlistHref();
   return (
     <p className="signin-waitlist">
-      New to Vantage? <a href={waitlistHref}>Join the waitlist</a>
+      <span>Not invited yet? Only invited emails get a code.</span>
+      <a className="signin-waitlist-btn" href={waitlistHref}>
+        Join the waitlist
+      </a>
     </p>
   );
 }

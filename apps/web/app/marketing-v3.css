@@ -764,5 +764,5 @@ html:has(.marketing-lux){scroll-padding-top:76px}
 /* Focused on an error, a field clears the sticky header instead of hiding under it. */
 .waitlist-form input{scroll-margin-top:110px}
 /* The already-on-a-team route, as a box: a grey footnote was missed by someone whose team was already here. */
-.waitlist-confirmation .waitlist-aside-box{margin-top:14px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--accent,#2563eb) 30%,transparent);border-radius:12px;background:color-mix(in srgb,var(--accent,#2563eb) 7%,transparent);color:inherit;font-size:15px;line-height:1.45}
+.waitlist-confirmation .waitlist-aside-box{margin:10px 0 12px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--accent,#2563eb) 30%,transparent);border-radius:12px;background:color-mix(in srgb,var(--accent,#2563eb) 7%,transparent);color:inherit;font-size:15px;line-height:1.45}
 .waitlist-confirmation .waitlist-aside-box strong{display:block;margin-bottom:2px}

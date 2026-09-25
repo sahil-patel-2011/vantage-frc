@@ -286,7 +286,8 @@ export function signInStepCopy(
     title: invite ?? "Sign in",
     sub: invite
       ? "Sign in with the address the invite was sent to, then accept."
-      : "Use your team email — we’ll send a 6-digit code.",
+      : // A new mentor presses Sign in first: say who gets a code before they wait for one.
+        "Use the email your team invited. We’ll send it a 6-digit code.",
   };
 }
 
@@ -304,7 +305,9 @@ type FailureInput = {
   networkError?: boolean;
 };
 
-const WRONG_CODE_MESSAGE = "That code doesn’t match. Check the six digits and try again.";
+// The boxes clear (entry auto-submits, so kept digits would send a half-retyped code), so the
+// message does not ask to "check the six digits" that are no longer there.
+const WRONG_CODE_MESSAGE = "That code doesn’t match. Type the six digits from your newest email again.";
 const EXPIRED_MESSAGE = "That code expired. Send a new one to continue.";
 const LOCKED_MESSAGE = "Too many attempts on that code. Send a new one to continue.";
 const NETWORK_MESSAGE =

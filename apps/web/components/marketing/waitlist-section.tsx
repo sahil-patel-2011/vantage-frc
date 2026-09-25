@@ -27,8 +27,10 @@ export function WaitlistSection() {
   const [stage, setStage] = useState<WaitlistStage>("setup");
   const copy = HEADING[stage];
   return (
-    <section className="lux-waitlist" id="waitlist">
-      <div>
+    <section className={`lux-waitlist${stage === "joined" ? " is-joined" : ""}`} id="waitlist">
+      {/* Once joined, the left column had only its eyebrow left over an empty half page: the
+          card is the whole section then. */}
+      <div hidden={stage === "joined"}>
         <p className="lux-eyebrow">Closed membership</p>
         {/* Once joined, the card's "You're on the list." is the one headline; this said "Thanks for
             joining." above it. */}

@@ -338,3 +338,7 @@
   .marketing-lux .mk-app-gallery-grid > li:hover,
   .marketing-lux .mk-price-grid li:hover { transform: none; }
 }
+
+/* Joined: the confirmation card is the section, centred, with no empty column beside it. */
+.marketing-lux .lux-waitlist.is-joined { display: grid; grid-template-columns: minmax(0, 640px); justify-content: center; }
+.marketing-lux .lux-waitlist.is-joined > div[hidden] { display: none; }

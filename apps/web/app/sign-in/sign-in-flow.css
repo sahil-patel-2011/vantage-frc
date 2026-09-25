@@ -423,3 +423,12 @@
 }
 
 .signin-email-hint { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
+
+/* The route for someone never invited, as a real button instead of a 92x18 text link. */
+.signin-waitlist { display: grid; gap: 8px; justify-items: stretch; }
+.signin-waitlist .signin-waitlist-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+  border: 1px solid var(--line); border-radius: var(--radius-pill, 999px); background: var(--surface);
+  color: var(--ink); font-weight: 650;
+}
+.signin-waitlist .signin-waitlist-btn:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }

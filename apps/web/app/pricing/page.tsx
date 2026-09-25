@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { WaitlistForm } from "../../components/marketing/waitlist-form";
-import { MarketingInvitedNote, MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { WaitlistSection } from "../../components/marketing/waitlist-section";
+import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
@@ -91,13 +91,9 @@ export default function PricingPage() {
           </dl>
         </section>
 
-        <section className="lux-waitlist pricing-waitlist" id="waitlist">
-          <div>
-            <h2>Join the waitlist.</h2>
-            <MarketingInvitedNote lead="Invite-only while we bring teams on. We email you when your team is set up." className="" />
-          </div>
-          <WaitlistForm idPrefix="pricing" />
-        </section>
+        {/* The home page's section: its heading follows the form, so after joining it no longer
+            says "Join the waitlist." above "You're on the list." */}
+        <WaitlistSection />
       </main>
       <SiteFooter />
     </div>

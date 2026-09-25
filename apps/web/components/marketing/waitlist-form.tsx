@@ -214,13 +214,6 @@ export function WaitlistForm({
         <h3 ref={successRef} tabIndex={-1}>
           You’re on the list.
         </h3>
-        <p>
-          {recorded?.email
-            ? `We'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}.`
-            : "We'll email you when your team is set up."}{" "}
-          We set teams up one at a time, usually within a few days. Then you sign in and invite your students and
-          mentors by email. Joining the waitlist does not create a Vantage account.
-        </p>
         {/* Said to everyone, so the form never reveals which teams already use Vantage. It names
             the number typed, so someone whose team is already here sees it is about them. */}
         <p className="waitlist-aside waitlist-aside-box">
@@ -229,6 +222,13 @@ export function WaitlistForm({
           </strong>{" "}
           Then there is no need to wait: ask the team&rsquo;s owner or a mentor to invite{" "}
           {recorded?.email ?? "your email"}, then <a href="/signin">sign in</a>.
+        </p>
+        <p>
+          {recorded?.email
+            ? `If not, we'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}.`
+            : "If not, we'll email you when your team is set up."}{" "}
+          We set teams up one at a time, usually within a few days. Then you sign in and invite your students and
+          mentors by email. Joining the waitlist does not create a Vantage account.
         </p>
       </div>
     );
@@ -267,6 +267,14 @@ export function WaitlistForm({
     <form
       className={`waitlist-form soft-waitlist-form ${compact ? "compact-form" : ""}`}
       onSubmit={submit}
+      // An error clears as soon as its field is edited: "Enter your FRC team number" stayed red
+      // beside a valid 9876 until the next submit.
+      onInput={(event) => {
+        const name = (event.target as HTMLInputElement).name as keyof FieldErrors;
+        if ((name === "email" || name === "teamNumber") && fieldErrors[name]) {
+          setFieldErrors((current) => ({ ...current, [name]: undefined }));
+        }
+      }}
       aria-label="Join the Vantage waitlist"
       data-testid="waitlist-form"
       noValidate
