@@ -2973,3 +2973,12 @@ body.has-app-shell .messages article small {
 .soft-topbar-team-num{flex:none;font-weight:inherit}
 .soft-topbar-team-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:520px){.soft-topbar-team-name{display:none}}
+
+/* A student's or parent's drawer: their day's places, then the rest folded. */
+.soft-drawer-quick{display:grid;gap:2px;margin-bottom:8px}
+.soft-drawer-more{margin-top:4px;border-top:1px solid var(--line);padding-top:6px}
+.soft-drawer-more > summary{min-height:44px;display:flex;align-items:center;padding:0 12px;color:var(--muted);font-weight:600;cursor:pointer}
+/* No keyboard, no keyboard shortcut hint. */
+@media (hover: none){.soft-panel-search kbd{display:none}}
+.soft-drawer-more > summary::after{content:"\203A";margin-left:auto;font-size:18px;transition:transform .15s ease}
+.soft-drawer-more[open] > summary::after{transform:rotate(90deg)}

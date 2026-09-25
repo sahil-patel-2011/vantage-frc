@@ -71,7 +71,7 @@ export function AssignmentRangeForm({
         </label>
         <label>
           Robot
-          <input value={teamKey} placeholder="254" onChange={(event) => setTeamKey(event.target.value)} />
+          <input value={teamKey} placeholder="e.g. 254" onChange={(event) => setTeamKey(event.target.value)} />
         </label>
         <label>
           Scout

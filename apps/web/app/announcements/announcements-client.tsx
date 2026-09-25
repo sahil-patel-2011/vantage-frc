@@ -238,7 +238,11 @@ export default function AnnouncementsClient() {
       <PageHeader
         breadcrumbs="Team / Announcements"
         title="Announcements"
-        description={`Post to everyone in ${view.orgName}, and see who has read the things that matter.`}
+        description={
+          view.canPost
+            ? `Post to everyone in ${view.orgName}, and see who has read the things that matter.`
+            : `News from your team leads at ${view.orgName}.`
+        }
       />
       <OfflineBanner feature="Announcements" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
@@ -338,7 +342,10 @@ export default function AnnouncementsClient() {
                         {item.pinned ? " · Pinned" : ""}
                       </small>
                     </div>
-                    <Badge tone={priorityTone(item.priority)}>{PRIORITY_LABEL[item.priority]}</Badge>
+                    {/* Only a priority that means something is marked; "Normal" on every card was noise. */}
+                    {item.priority !== "normal" ? (
+                      <Badge tone={priorityTone(item.priority)}>{PRIORITY_LABEL[item.priority]}</Badge>
+                    ) : null}
                   </div>
 
                   {item.body ? <p className="ann-body">{item.body}</p> : null}

@@ -101,7 +101,8 @@
 .product-hub-panel > main.module-page,
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
-.product-hub-panel > main { display: contents; }
+.product-hub-panel > main,
+.product-hub-panel > section.scout-page.is-embedded { display: contents; }
 .product-hub-panel .team-ops-nav { display: none; }
 /* One row of links under a page title, not two. Where the header already carries the
    page's related tools, the Team-operations sibling strip (Practice · Attendance ·

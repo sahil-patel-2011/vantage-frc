@@ -81,7 +81,7 @@ describe("product-nav", () => {
       PRODUCT_NAV_GROUPS.map((group) => [group.label, panelSubLinks(group)]),
     );
     expect(byLabel.Home).toEqual([]);
-    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Pit"]);
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Robot check"]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
       "/competition?tab=scouting",
       "/competition?tab=strategy",
@@ -162,7 +162,7 @@ describe("product-nav", () => {
       ),
     ).toBe(false);
     expect(findNavMatch("/scouting/forms")?.item.label).toBe("Forms");
-    expect(findNavMatch("/match-checklist")?.item.label).toBe("Pit");
+    expect(findNavMatch("/match-checklist")?.item.label).toBe("Robot check");
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {

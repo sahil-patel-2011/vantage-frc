@@ -256,8 +256,10 @@ export function ScoutingReadyView({
     });
   }, [savedAt]);
 
+// Inside the Competition hub there is already a <main>; one landmark, not two nested.
+const Root = embedded ? "section" : "main";
 return (
-  <main className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
+  <Root className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
     {embedded ? null : (
     <PageHeader
       breadcrumbs="Competition / Scouting"
@@ -733,7 +735,16 @@ return (
             type="button"
             className="scout-save-button"
             disabled={!canSave}
-            onClick={() => void submit()}
+            onClick={() => {
+              // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block.
+              if (
+                document.documentElement.dataset.scoutTimer === "running" &&
+                !window.confirm("The match is still running. Save it anyway?")
+              ) {
+                return;
+              }
+              void submit();
+            }}
           >
             {!canSave
               ? type === "match"
@@ -766,6 +777,6 @@ return (
         />
       </div>
     )}
-  </main>
+  </Root>
 );
 }

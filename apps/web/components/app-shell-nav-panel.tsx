@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent, RefObject } from "react";
-import { Icon } from "./icon";
+import { Icon, type IconName } from "./icon";
 import {
   formatMembershipLabel,
   islandTabIsActive,
@@ -12,6 +12,17 @@ import {
 } from "./app-shell-model";
 import type { CommandHit } from "../lib/nav/command-search";
 import { panelSubLinks, withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
+import { hubHref } from "../lib/nav/hubs";
+
+/** The drawer's first rows for a student or parent: the places a match day uses. */
+const MEMBER_QUICK: Array<{ label: string; path: string; icon: IconName; href: (orgId: string | null) => string }> = [
+  { label: "Home", path: "/dashboard", icon: "home", href: (orgId) => withOrgHref("/dashboard", orgId) },
+  { label: "My Day", path: "/my-day", icon: "calendar", href: (orgId) => hubHref("/competition", "my-day", orgId) },
+  { label: "Scout", path: "/scouting", icon: "scout", href: (orgId) => hubHref("/competition", "scouting", orgId) },
+  { label: "Strategy", path: "/strategy", icon: "target", href: (orgId) => hubHref("/competition", "strategy", orgId) },
+  { label: "Chat", path: "/messages", icon: "chat", href: (orgId) => hubHref("/team", "messages", orgId) },
+  { label: "Announcements", path: "/announcements", icon: "bell", href: (orgId) => withOrgHref("/announcements", orgId) },
+];
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
@@ -117,6 +128,7 @@ export function AppShellNavPanel({
   const activeMembershipRole = orgId
     ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
     : null;
+  const memberView = activeMembershipRole === "scout" || activeMembershipRole === "viewer";
   return (
     <>
       {navOpen ? (
@@ -359,6 +371,29 @@ export function AppShellNavPanel({
                 <span>Platform admin</span>
               </a>
             ) : null}
+            {/* A student or parent gets the few places their day uses first, and the rest folded:
+                a scout's menu listed 23 destinations and not My Day. */}
+            {memberView ? (
+              <div className="soft-drawer-quick" aria-label="Your match day">
+                {MEMBER_QUICK.filter((entry) => navHrefAllowed(entry.path)).map((entry) => (
+                  <a
+                    key={entry.label}
+                    className="soft-drawer-hub"
+                    href={entry.href(orgId)}
+                    aria-current={islandTabIsActive(pathname, pathSearch, entry.href(null)) ? "page" : undefined}
+                    onClick={closeNav}
+                  >
+                    <i>
+                      <Icon name={entry.icon} />
+                    </i>
+                    <span>{entry.label}</span>
+                  </a>
+                ))}
+              </div>
+            ) : null}
+            {memberView ? (
+              <details className="soft-drawer-more">
+                <summary>Everything else</summary>
             {visibleNavGroups.map((group) => {
               const item = group.items[0];
               if (!item || item.state === "planned") return null;
@@ -401,6 +436,53 @@ export function AppShellNavPanel({
                 </div>
               );
             })}
+              </details>
+            ) : (
+              <>
+            {visibleNavGroups.map((group) => {
+              const item = group.items[0];
+              if (!item || item.state === "planned") return null;
+              const isActive = activeGroupLabel === group.label;
+              const sub = panelSubLinks(group).filter((entry) => navHrefAllowed(entry.href));
+              const toneStyle = { ["--tone" as string]: group.tone };
+              return (
+                <div key={group.label} className="soft-nav-group" style={toneStyle}>
+                  <a
+                    className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                    href={withOrgHref(item.href, orgId)}
+                    onClick={closeNav}
+                  >
+                    <i>
+                      <Icon name={group.icon} />
+                    </i>
+                    <span>{item.label}</span>
+                  </a>
+                  {sub.length > 0 ? (
+                    <div className="soft-nav-items">
+                      {sub.map((entry) => (
+                        <a
+                          key={entry.href}
+                          href={withOrgHref(entry.href, orgId)}
+                          aria-current={
+                            islandTabIsActive(pathname, pathSearch, entry.href) ? "page" : undefined
+                          }
+                          onClick={closeNav}
+                        >
+                          <span>{entry.label}</span>
+                          {/* Every row that takes you somewhere says so. These
+                              were bare words in a list, indistinguishable from
+                              the group headings above them. */}
+                          <Icon name="chevron" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+              </>
+            )}
           </nav>
         )}
         {/* Settings, split the way people ask for them: "my stuff" and "the

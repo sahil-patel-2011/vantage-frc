@@ -125,8 +125,10 @@ export function ScoutingShell({
   const commandHref = hubHref("/competition", "command", orgId);
   const formsHref = hubHref("/competition", "forms", orgId);
 
+  // Inside the Competition hub there is already a <main>; one landmark, not two nested.
+  const Root = embedded ? "section" : "main";
   return (
-    <main className={`module-page scout-page soft-gate${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page scout-page soft-gate${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Scouting"
@@ -169,6 +171,6 @@ export function ScoutingShell({
         ) : null}
       </EmptyState>
       )}
-    </main>
+    </Root>
   );
 }

@@ -80,7 +80,7 @@ function TeamRow({ team, maxEpa, isUs }: { team: RankedTeam; maxEpa: number; isU
           </span>
         </span>
         <span className="rank-epa-split">
-          A {fmtEpa(team.epaAuto)} · T {fmtEpa(team.epaTeleop)} · E {fmtEpa(team.epaEndgame)}
+          Auto {fmtEpa(team.epaAuto)} · Teleop {fmtEpa(team.epaTeleop)} · Endgame {fmtEpa(team.epaEndgame)}
         </span>
       </span>
     </li>
@@ -359,7 +359,8 @@ export default function RankingsClient() {
         <div className="rank-header-actions">
           {standing ? (
             <span className="rank-standing">
-              #{standing.rank} of {standing.of} · top {Math.max(1, Math.ceil((standing.rank / standing.of) * 100))}%
+              {/* The official event rank, said as such: the list shows a rating too. */}
+              Ranked #{standing.rank} of {standing.of}
             </span>
           ) : null}
           <Button variant="secondary" type="button" onClick={() => void load()}>

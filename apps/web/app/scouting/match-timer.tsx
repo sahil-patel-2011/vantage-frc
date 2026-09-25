@@ -46,6 +46,16 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
   const phase = phaseAt(elapsed);
   const done = phase === "done";
 
+  // Save asks "still running?" while the clock is in the match (see scouting-ready-view).
+  const running = startedAt != null && !done;
+  useEffect(() => {
+    if (running) document.documentElement.dataset.scoutTimer = "running";
+    else delete document.documentElement.dataset.scoutTimer;
+    return () => {
+      delete document.documentElement.dataset.scoutTimer;
+    };
+  }, [running]);
+
   useEffect(() => {
     // Once the match is over there is nothing left to count, and the phone keeps its battery.
     if (startedAt == null || done) return;

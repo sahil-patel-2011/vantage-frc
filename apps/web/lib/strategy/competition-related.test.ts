@@ -70,7 +70,7 @@ describe("competition-related Soft-UI helpers", () => {
     const links = competitionRelatedLinks("org-1");
     expect(links.find((link) => link.id === "command")?.label).toBe("Event day");
     expect(links.find((link) => link.id === "forms")?.label).toBe("Forms");
-    expect(links.find((link) => link.id === "match-checklist")?.label).toBe("Pit");
+    expect(links.find((link) => link.id === "match-checklist")?.label).toBe("Robot check");
   });
 
   it("builds coverage explainability links without DEMO copy", () => {

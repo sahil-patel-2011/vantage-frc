@@ -495,9 +495,17 @@ export default function AppShell() {
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
   const crumbHint = breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
+  // Not while scouting either: the match card there already says which match, and on a phone
+  // the strip took ~105px from the counters.
+  const scouting =
+    pathname === "/scouting" ||
+    (pathname === "/competition" && new URLSearchParams(pathSearch).get("tab") === "scouting");
   const eventFocus = useMemo(
-    () => (pathname === "/dashboard" || pathname.startsWith("/admin") ? null : buildEventFocus(myDayGlance, online)),
-    [myDayGlance, online, pathname],
+    () =>
+      pathname === "/dashboard" || pathname.startsWith("/admin") || scouting
+        ? null
+        : buildEventFocus(myDayGlance, online),
+    [myDayGlance, online, pathname, scouting],
   );
   const islandTabs = useMemo(
     () => resolveIslandTabs(islandHrefs).filter((tab) => navHrefAllowed(tab.href)),

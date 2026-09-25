@@ -135,7 +135,7 @@ const MATCH_SCHEMA = {
     { key: "autoPoints", label: "Auto points", type: "number", role: "auto_score" },
     { key: "teleopCycles", label: "Teleop cycles", type: "number", role: "teleop_cycles" },
     { key: "endgame", label: "Endgame", type: "dropdown", options: ["none", "park", "climb"] },
-    { key: "totalPoints", label: "Total points", type: "number", role: "total_points" },
+    { key: "totalPoints", label: "Robot's points", type: "number", role: "total_points", helpText: "Your best count of the points this robot scored itself, not the alliance score." },
     { key: "fouls", label: "Fouls", type: "number", role: "fouls" },
     { key: "brokeDown", label: "Broke down", type: "dropdown", options: ["no", "yes"] },
     { key: "notes", label: "Notes", type: "long_text" },
@@ -281,7 +281,13 @@ async function main() {
       }
     }
 
-    const ranked = [...teams].sort((a, b) => b.epa - a.epa);
+    // Ranked the way an event ranks: by record first (a win is worth two, a tie one), the
+    // rating only breaking ties. Ranking by rating put 7-0-0 below 6-4-0.
+    const points = (key) => {
+      const rec = played.get(key) ?? { w: 0, t: 0 };
+      return rec.w * 2 + rec.t;
+    };
+    const ranked = [...teams].sort((a, b) => points(b.teamKey) - points(a.teamKey) || b.epa - a.epa);
     for (const [index, t] of ranked.entries()) {
       const rec = played.get(t.teamKey) ?? { w: 0, l: 0, t: 0, n: 0 };
       await db.query(

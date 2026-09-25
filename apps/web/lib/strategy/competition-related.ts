@@ -7,7 +7,7 @@ export const COMPETITION_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "forms", label: "Forms", tab: "forms" },
-  { id: "match-checklist", label: "Pit", tab: "match-checklist" },
+  { id: "match-checklist", label: "Robot check", tab: "match-checklist" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },
   { id: "alliance-desk", label: "Alliance desk", href: "/alliance-selection-desk" },

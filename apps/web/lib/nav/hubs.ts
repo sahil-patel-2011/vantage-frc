@@ -142,7 +142,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "dossier", label: "Team dossier", legacyHref: "/dossier" },
         { id: "video", label: "Video review", legacyHref: "/video" },
       ]),
-      { id: "match-checklist", label: "Pit", legacyHref: "/match-checklist" },
+      { id: "match-checklist", label: "Robot check", legacyHref: "/match-checklist" },
       ...nest("match-checklist", [
         // The screen the pit crew points at the TV. It was only reachable by typing "TV" into search.
         { id: "pit-tv", label: "Pit TV", legacyHref: "/display", featured: true },
