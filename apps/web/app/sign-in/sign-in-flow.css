@@ -421,3 +421,5 @@
 @media (max-width: 720px) {
   .signin-link, .signin-footer a, .signin-invite-help-cta { min-height: 44px; display: inline-flex; align-items: center; }
 }
+
+.signin-email-hint { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }

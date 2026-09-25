@@ -102,6 +102,12 @@ export function SignInIdentityStep({
                 </button>
               </small>
             ) : null}
+            {/* The button just stayed grey for "mentor@example": say what is missing. */}
+            {email.trim().length > 3 && !isLikelyEmail(email) ? (
+              <small className="signin-email-hint" aria-live="polite">
+                Finish the address, like name@school.org.
+              </small>
+            ) : null}
           </label>
           <button className="signin-submit" disabled={!emailAvailable || working || !isLikelyEmail(email)}>
             {emailSubmitLabel(busy)}

@@ -221,10 +221,14 @@ export function WaitlistForm({
           We set teams up one at a time, usually within a few days. Then you sign in and invite your students and
           mentors by email. Joining the waitlist does not create a Vantage account.
         </p>
-        {/* Said to everyone, so the form never reveals which teams already use Vantage. */}
-        <p className="waitlist-aside">
-          Already on a team that uses Vantage? No need to wait: ask its owner or a mentor to invite this email, then{" "}
-          <a href="/signin">sign in</a>.
+        {/* Said to everyone, so the form never reveals which teams already use Vantage. It names
+            the number typed, so someone whose team is already here sees it is about them. */}
+        <p className="waitlist-aside waitlist-aside-box">
+          <strong>
+            {recorded?.team ? `Does team ${recorded.team} already use Vantage?` : "Is your team already on Vantage?"}
+          </strong>{" "}
+          Then there is no need to wait: ask the team&rsquo;s owner or a mentor to invite{" "}
+          {recorded?.email ?? "your email"}, then <a href="/signin">sign in</a>.
         </p>
       </div>
     );
