@@ -77,6 +77,12 @@ export function AppShellAccountMenu({
           {/* The page it opens is titled Account; the menu said Settings. */}
           Account and settings
         </a>
+        {/* One tap to the team for the people who run it; it took Account and settings first. */}
+        {memberships.some((row) => row.orgId === orgId && (row.role === "owner" || row.role === "admin")) ? (
+          <a role="menuitem" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`} onClick={onClose}>
+            Team admin
+          </a>
+        ) : null}
         <a role="menuitem" href="/docs" onClick={onClose}>
           App manual
         </a>

@@ -41,6 +41,17 @@ function isOnAccountPage(item: SettingsNavItem): boolean {
   return item.href === "/account" || item.href.startsWith("/account?");
 }
 
+/** One line under each row, so "Security" and "Team security" side by side say how they differ. */
+const ROW_DETAIL: Record<string, string> = {
+  security: "Your sign-in and a second step",
+  connectors: "Onshape, Google and other tools linked to the team",
+  "team-admin": "Invite people and choose what each can do",
+  "member-access": "How everyone on the team signs in",
+  chat: "Channels and moderation",
+  "team-ai-keys": "The team's AI key, limits and model training",
+  "data-export": "Download the team's data",
+};
+
 const ROW_TONES: Record<string, KitTone> = {
   security: "teal",
   connectors: "violet",
@@ -71,6 +82,7 @@ function RowGroup({
             icon={item.icon}
             tone={ROW_TONES[item.id] ?? "blue"}
             title={item.label}
+            subtitle={ROW_DETAIL[item.id]}
             href={chipHref(item, orgId)}
           />
         ))}
@@ -81,8 +93,12 @@ function RowGroup({
 
 export function SettingsBar({ role, orgId }: SettingsBarProps) {
   const items = visibleSettingsNav(role);
-  const personal = items.filter((item) => item.scope === "personal" && !isOnAccountPage(item));
-  const team = items.filter((item) => item.scope === "team" && !isOnAccountPage(item));
+  // Connectors are set up once for the whole team; for someone who runs the team they sit with
+  // the team's settings. A member keeps the row with their own (their Onshape link can expire).
+  const lead = items.some((item) => item.scope === "team");
+  const teamScoped = (item: SettingsNavItem) => item.scope === "team" || (lead && item.id === "connectors");
+  const personal = items.filter((item) => !teamScoped(item) && !isOnAccountPage(item));
+  const team = items.filter((item) => teamScoped(item) && !isOnAccountPage(item));
 
   return (
     <>

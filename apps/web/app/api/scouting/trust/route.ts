@@ -3,7 +3,6 @@ import type { SchemaDefinition } from "@vantage/scouting";
 import {
   buildCoverageBoard,
   coverageGapFingerprint,
-  coverageGapMessage,
   coverageState,
   fatigueAwareAssignments,
   lintSchemaBudget,
@@ -11,6 +10,9 @@ import {
   summarizeFieldTrust,
 } from "@vantage/scouting/trust";
 import { headers } from "next/headers";
+// The plain-words version ("3 robots still need scouting at this event: Qual 31 · 2481"), not the
+// package's "rows are uncovered at 2026gacmp: QM 31".
+import { coverageGapMessage } from "../../../../lib/command/match-coverage";
 import { scoutingErrorResponse, withScoutingRequest } from "../../../../lib/scouting-auth";
 import { seatTopAccurateScouts } from "../../../../lib/scouting/pick-feedback";
 

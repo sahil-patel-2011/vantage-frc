@@ -214,7 +214,7 @@ export default function SecurityClient({
         <PageHeader
           breadcrumbs="Account / Security"
           title="Security"
-          description="Authenticator-app 2FA and remembered devices for this signed-in account."
+          description="A second sign-in step with an app like Google Authenticator, and the devices you told us to remember."
         >
           <SecurityRelated orgId={orgId} />
         </PageHeader>
@@ -245,7 +245,7 @@ export default function SecurityClient({
           <PageHeader
             breadcrumbs="Account / Security"
             title="Security"
-            description="Authenticator-app 2FA and remembered devices for this signed-in account. Appearance and notification prefs live under Account."
+            description="A second sign-in step with an app like Google Authenticator, and the devices you told us to remember. Appearance and notifications are under Account."
           >
             <SecurityRelated orgId={orgId} />
           </PageHeader>
@@ -284,7 +284,7 @@ export default function SecurityClient({
           <section className="admin-grid">
             <Panel as="article">
               <h2>Authenticator app</h2>
-              <p>No SMS. Codes stay in your authenticator app; the secret is encrypted at rest.</p>
+              <p>No text messages. The codes come from the app on your phone, and Vantage keeps the setup key locked away.</p>
               {!view.enrollment?.confirmedAt && !setup ? (
                 <Button variant="primary" type="button" onClick={() => void action("begin")}>
                   Set up authenticator
@@ -372,7 +372,7 @@ export default function SecurityClient({
                 <EmptyState
                   soft
                   title="No remembered devices"
-                  description="After step-up verification, trusted devices can appear here."
+                  description="Devices you told us to remember show up here."
                 />
               ) : (
                 view.devices.map((device) => (

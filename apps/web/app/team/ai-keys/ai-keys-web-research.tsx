@@ -166,7 +166,7 @@ export function WebResearchCard({ orgId }: { orgId: string }) {
 
       {status?.configured ? (
         <p className="ai-keys-meta app-muted">
-          {status.hint ? `Key ending in …${status.hint}` : "Key saved"} · encrypted at rest
+          {status.hint ? `Key ending in …${status.hint}` : "Key saved"} · stored locked away
           {when(status.lastUsedAt) ? ` · last used ${when(status.lastUsedAt)}` : ""}
           {!status.lastUsedAt && when(status.verifiedAt) ? ` · checked ${when(status.verifiedAt)}` : ""}.
         </p>

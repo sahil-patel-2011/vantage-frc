@@ -66,11 +66,13 @@ export async function maybeNotifyCoverageGaps(
     sample: missing,
   });
   const href = `/command?orgId=${encodeURIComponent(input.orgId)}`;
+  // Not the person who is looking at Event day right now: they can see the gaps already, and
+  // opening the page rang their own bell.
   const recipients = await client.query<{ userId: string }>(
     `SELECT user_id AS "userId"
      FROM memberships
-     WHERE org_id = $1::uuid AND role IN ('owner', 'admin')`,
-    [input.orgId],
+     WHERE org_id = $1::uuid AND role IN ('owner', 'admin') AND user_id <> $2::uuid`,
+    [input.orgId, input.actorUserId],
   );
 
   let emitted = 0;
