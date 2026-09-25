@@ -7,6 +7,12 @@ describe("why there is no next match", () => {
     expect(noNextMatchMessage({ total: 0, played: 0, last: null })).toMatch(/isn't out yet/);
   });
 
+  it("says the team is not on the schedule when the event has matches but none are ours", () => {
+    expect(noNextMatchMessage({ total: 0, played: 0, last: null, eventMatches: 36, teamNumber: "9717" })).toBe(
+      "Team 9717 isn't on this event's match schedule. Check that it's the event you're at.",
+    );
+  });
+
   it("says every match is played, with the last result", () => {
     expect(
       noNextMatchMessage({ total: 12, played: 12, last: { label: "Qual 72", ours: 138, theirs: 155, won: false } }),

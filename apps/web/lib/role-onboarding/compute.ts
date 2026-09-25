@@ -98,7 +98,10 @@ async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<str
     // Inviting is the owner's step: it is done once an invite goes out, not when someone
     // happens to accept it. Home used to keep saying "Invite your team" after two invites.
     `SELECT ((SELECT count(*) FROM memberships WHERE org_id = $1::uuid) > 1
-             OR EXISTS (SELECT 1 FROM invites WHERE org_id = $1::uuid AND status IN ('pending', 'accepted'))) AS invite,
+             -- The owner's own invite (the platform admin's, role owner) is not the owner inviting
+             -- anyone: counted, a new owner's first Home said "Invite your team ✓" with one person.
+             OR EXISTS (SELECT 1 FROM invites WHERE org_id = $1::uuid AND status IN ('pending', 'accepted')
+                          AND role::text <> 'owner')) AS invite,
             EXISTS (SELECT 1 FROM org_active_context
                      WHERE org_id = $1::uuid AND active_event_key IS NOT NULL) AS event,
             EXISTS (SELECT 1 FROM scout_schemas WHERE org_id = $1::uuid) AS scouting,

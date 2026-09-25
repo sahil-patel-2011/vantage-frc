@@ -154,10 +154,11 @@ export function myDayShellCopy(
       if (options?.emptyReason === "no_upcoming") {
         return {
           kind,
-          badge: "No upcoming matches",
-          title: "Schedule is in — you are not on deck yet",
+          badge: "Not on this schedule",
+          // Same words as Home and Event day for a team missing from the event's schedule.
+          title: "Your team isn't on this event's match schedule",
           description:
-            "Your team is not on remaining matches. Check back after alliances post.",
+            "Check that it's the event you're at. Playoff matches show here once alliances are picked.",
         };
       }
       return {

@@ -84,7 +84,7 @@ describe("myDayShellCopy", () => {
     expect(myDayShellCopy("empty").badge).toBe("No matches yet");
     expect(myDayShellCopy("empty").description).not.toMatch(/DEMO/i);
     expect(myDayShellCopy("empty", { emptyReason: "no_upcoming" }).badge).toBe(
-      "No upcoming matches",
+      "Not on this schedule",
     );
     expect(myDayShellCopy("setup").badge).toBe("Needs setup");
     expect(myDayShellCopy("ready").description).not.toMatch(/DEMO/i);

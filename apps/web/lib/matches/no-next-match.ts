@@ -19,6 +19,10 @@ export type OurMatchSummary = {
   played: number;
   /** Past their scheduled time by under three hours, with no result: the event is behind. */
   behind?: number;
+  /** Matches on the event's schedule for anyone. With none of ours, the team is not in it. */
+  eventMatches?: number;
+  /** "6925", for saying which team is missing from the schedule. */
+  teamNumber?: string;
   last: { label: string; ours: number | null; theirs: number | null; won: boolean | null } | null;
 };
 
@@ -41,6 +45,11 @@ export function matchLabelFromKey(matchKey: string): string {
 }
 
 export function noNextMatchMessage(summary: OurMatchSummary | null): string {
+  if (summary && summary.total === 0 && (summary.eventMatches ?? 0) > 0) {
+    // The schedule is out and we are not on it: usually the wrong event was picked. Home, Event
+    // day and My Day said "isn't out yet" for an event 30 matches in.
+    return `Team ${summary.teamNumber ?? "our team"} isn't on this event's match schedule. Check that it's the event you're at.`;
+  }
   if (!summary || summary.total === 0) return "The match schedule for this event isn't out yet.";
   if (summary.played >= summary.total) {
     const last = summary.last;
@@ -75,6 +84,18 @@ export async function loadOurMatchSummary(client: PoolClient, eventKey: string, 
       [eventKey, teamKey],
     )
   ).rows[0];
+  // None of ours: is the schedule out at all? (Then the team is simply not in this event.)
+  const eventMatches =
+    Number(counts?.total ?? 0) === 0
+      ? Number(
+          (
+            await client.query<{ n: string }>(
+              `SELECT count(*)::text AS n FROM matches_ref WHERE event_key = $1::text AND NOT placeholder`,
+              [eventKey],
+            )
+          ).rows[0]?.n ?? 0,
+        )
+      : undefined;
   const last = (
     await client.query<{ compLevel: string; matchNumber: number; setNumber: number; red: string | null; blue: string | null; onRed: boolean; winner: string | null }>(
       `SELECT comp_level AS "compLevel", match_number AS "matchNumber", set_number AS "setNumber",
@@ -95,6 +116,8 @@ export async function loadOurMatchSummary(client: PoolClient, eventKey: string, 
     return Number.isFinite(n) && n >= 0 ? n : null;
   };
   return {
+    eventMatches,
+    teamNumber: teamKey.replace(/^frc/i, ""),
     total: Number(counts?.total ?? 0),
     played: Number(counts?.played ?? 0),
     behind: Number(counts?.behind ?? 0),
