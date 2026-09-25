@@ -200,7 +200,23 @@ test("a clash is a warning, not a wall — the event still saves", async ({ page
   await expect(submit).toBeEnabled();
   await submit.click();
 
-  await expect(page.locator("body")).toContainText(overlapping, { timeout: 25_000 });
+  /*
+    Asked of the calendar itself, not the page text: the event is six days out (often next week,
+    outside the week view), and on an event day "Coming up" is full of today's matches.
+  */
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async (title) => {
+          const orgId = new URLSearchParams(location.search).get("orgId") ?? "";
+          const response = await fetch(`/api/team/calendar?orgId=${orgId}`, { cache: "no-store" });
+          if (!response.ok) return false;
+          const body = (await response.json()) as { events?: Array<{ title: string }> };
+          return (body.events ?? []).some((row) => row.title === title);
+        }, overlapping),
+      { timeout: 25_000 },
+    )
+    .toBe(true);
 
   await clearProbes(page);
 });
