@@ -276,7 +276,7 @@ function LiveTags({
             Note
             <input name="notes" placeholder="Optional — bumper lock, late auto…" />
           </label>
-          <Button variant="primary" disabled={busy || !view.defs.length}>
+          <Button type="submit" variant="primary" disabled={busy || !view.defs.length}>
             Tag robot
           </Button>
         </form>

@@ -548,7 +548,7 @@ function LiveDesk({
                 <span>Notes</span>
                 <input name="notes" placeholder="Check #, board vote, restrictions…" />
               </label>
-              <Button variant="primary" disabled={busy}>
+              <Button type="submit" variant="primary" disabled={busy}>
                 Add funding source
               </Button>
             </form>
@@ -664,7 +664,7 @@ function LiveDesk({
             <span>Notes</span>
             <input name="notes" placeholder="Who paid, PO number, restriction…" />
           </label>
-          <Button variant="primary" disabled={busy}>
+          <Button type="submit" variant="primary" disabled={busy}>
             Log purchase
           </Button>
         </form>

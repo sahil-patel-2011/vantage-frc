@@ -396,7 +396,7 @@ export function SponsorPipelinePanel({
                 disabled={!view.canManageFinance}
               />
             </Field>
-            <Button variant="primary" disabled={busy || !view.canManageFinance}>
+            <Button type="submit" variant="primary" disabled={busy || !view.canManageFinance}>
               Add to pipeline
             </Button>
           </form>
@@ -479,7 +479,7 @@ export function SponsorPipelinePanel({
               <Field label="Next step" wide>
                 <input name="nextStep" placeholder="Send impact update and invite to shop tour" />
               </Field>
-              <Button variant="primary" disabled={busy}>
+              <Button type="submit" variant="primary" disabled={busy}>
                 Log interaction
               </Button>
             </form>
@@ -512,7 +512,7 @@ export function SponsorPipelinePanel({
               <Field label="Description" wide>
                 <input name="description" placeholder="Check, machining time, materials…" disabled={!view.canManageFinance} />
               </Field>
-              <Button variant="primary" disabled={busy || !view.canManageFinance}>
+              <Button type="submit" variant="primary" disabled={busy || !view.canManageFinance}>
                 Record contribution
               </Button>
             </form>

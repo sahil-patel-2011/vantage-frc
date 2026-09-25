@@ -342,7 +342,7 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["fundraisingGoal"])}>
           <Field label="Fundraising goal" hint="How much you plan to raise from sponsors, grants and fundraisers."><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>
           <Field label="Notes" wide><textarea name="notes" rows={2} placeholder="Cash reserves, travel plans, school rules…" disabled={!view.canManageFinance} /></Field>
-          <Button variant="secondary" disabled={busy || !view.canManageFinance}>Save goal</Button>
+          <Button type="submit" variant="secondary" disabled={busy || !view.canManageFinance}>Save goal</Button>
         </form>
         {view.canManageFinance ? <form className="biz-inline-form" onSubmit={(event) => void submit(event, "add-category", ["allocated"])}><input name="name" aria-label="Category name" placeholder="Category (Robot, Travel, Outreach…)" required /><input name="allocatedDollars" aria-label="Amount for this category" type="number" min="0" step="0.01" placeholder="Amount" required /><button disabled={busy}>Add or update category</button></form> : null}
         <p className="app-muted" style={{ margin: "10px 0 0", fontSize: 12 }}>
@@ -361,7 +361,7 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
           <Field label="Shipping / tax estimate"><input name="shippingDollars" type="number" min="0" step="0.01" defaultValue="0" /></Field>
           <Field label="Needed by"><input name="neededBy" type="date" /></Field>
           <Field label="Why the team needs it" hint="Approvers should understand the outcome, not just the part." wide><textarea name="purpose" required rows={3} placeholder="Needed to finish the elevator rebuild before our first event…" /></Field>
-          <Button variant="primary" disabled={busy}>Submit for approval</Button>
+          <Button type="submit" variant="primary" disabled={busy}>Submit for approval</Button>
         </form>
       </article>
     </section>
@@ -484,7 +484,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
             <Field label="Requirements" wide>
               <textarea name="requirements" rows={2} placeholder="Prompts, attachments, character limits, reporting…" />
             </Field>
-            <Button variant="primary" disabled={busy}>
+            <Button type="submit" variant="primary" disabled={busy}>
               Add to pipeline
             </Button>
           </form>
@@ -518,7 +518,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
             <Field label="Goal" wide>
               <textarea name="goal" rows={3} required placeholder="Fund student tool certifications and safety equipment…" />
             </Field>
-            <Button variant="primary" disabled={busy}>
+            <Button type="submit" variant="primary" disabled={busy}>
               Create sourced draft
             </Button>
           </form>
@@ -631,6 +631,6 @@ export function Evidence({ view, busy, submit }: { view: BusinessView; busy: boo
       <span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span>
       <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open awards →</a>
     </div>
-    <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><Button variant="primary" disabled={busy}>Add award to {view.seasonYear}</Button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><Button as="a" variant="secondary" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</Button></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
+    <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><Button type="submit" variant="primary" disabled={busy}>Add award to {view.seasonYear}</Button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><Button as="a" variant="secondary" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</Button></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
   </div>;
 }

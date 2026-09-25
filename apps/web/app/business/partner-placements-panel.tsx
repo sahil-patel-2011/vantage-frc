@@ -441,7 +441,7 @@ export function PartnerPlacementsPanel({
                 <input name="storefrontEnabled" type="checkbox" defaultChecked={program.settings?.storefrontEnabled ?? false} />{" "}
                 Allow public sponsor inquiries
               </label>
-              <Button variant="primary" disabled={busy}>
+              <Button type="submit" variant="primary" disabled={busy}>
                 Save storefront
               </Button>
             </form>
@@ -486,7 +486,7 @@ export function PartnerPlacementsPanel({
                 <textarea name="benefits" rows={2} placeholder="Thank-you post, logo placement, season recap…" />
               </label>
               <SurfaceChecks />
-              <Button variant="primary" disabled={busy}>
+              <Button type="submit" variant="primary" disabled={busy}>
                 Add package
               </Button>
             </form>
@@ -630,7 +630,7 @@ export function PartnerPlacementsPanel({
                 <input name="linkUrl" type="url" placeholder="https://sponsor.example" />
               </label>
               <SurfaceChecks />
-              <Button variant="primary" disabled={busy}>
+              <Button type="submit" variant="primary" disabled={busy}>
                 Create draft placement
               </Button>
             </form>

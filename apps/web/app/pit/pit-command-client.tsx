@@ -755,7 +755,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               <Button variant="secondary" type="button" onClick={() => setForm(null)}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={busy === "form"}>
+              <Button type="submit" variant="primary" disabled={busy === "form"}>
                 {busy === "form" ? "Saving…" : "Save to pit board"}
               </Button>
             </footer>
