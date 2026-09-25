@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AiHubRelated } from "../../../components/ai-hub-related";
 import { PageHeader, Button, EmptyState } from "../../../components/ui";
 import {
   aiBudgetsNextActions,
@@ -187,7 +186,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         description="Vantage's AI runs on your team's own key, so your provider bills your team directly. Set a monthly limit so it can't run up a surprise bill, or pause it for everyone."
       />
 
-      <AiHubRelated orgId={orgId} active="budgets" />
 
       {message ? (
         <p className="telemetry-status" role="status">

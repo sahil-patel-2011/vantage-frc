@@ -383,7 +383,8 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
     defaultW: 6,
     defaultH: 4,
     minW: 3,
-    minH: 3,
+    // Its headline number and three rows need four rows; at three the number was sliced.
+    minH: 4,
   },
   {
     type: "recent_result",
@@ -444,9 +445,10 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
     label: "Competition snapshot",
     description: "Rank and record from match data",
     defaultW: 6,
-    defaultH: 3,
+    defaultH: 4,
     minW: 3,
-    minH: 2,
+    // Rank, record and the rating legend need four rows; at three the labels were cut in half.
+    minH: 4,
   },
   {
     type: "sync_status",
@@ -471,9 +473,9 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
     label: "Notifications",
     description: "Unread alerts for you",
     defaultW: 4,
-    defaultH: 3,
+    defaultH: 4,
     minW: 3,
-    minH: 2,
+    minH: 3,
   },
   {
     type: "quick_actions",

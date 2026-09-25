@@ -317,7 +317,13 @@ export default function TeamProfileClient() {
       <OfflineBanner feature="Team profile" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? <p className="tp-error" role="alert">{error}</p> : null}
 
-      {view.status === "failed" ? (
+      {view.status === "failed" && /not connected|api key|read api/i.test(String(view.error ?? "")) ? (
+        // Not a failure: the public history (past seasons, awards) comes from a source this team
+        // has not connected. Said calmly, not as a red error while the event is live.
+        <p className="app-muted">
+          Past seasons and awards fill in here once the team connects The Blue Alliance on Team → Data.
+        </p>
+      ) : view.status === "failed" ? (
         <p className="tp-error" role="alert">
           {/* "The last build failed: …." was worker vocabulary with a doubled full stop. */}
           The team&rsquo;s public record didn&rsquo;t load.{" "}

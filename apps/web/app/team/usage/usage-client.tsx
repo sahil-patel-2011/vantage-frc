@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AiHubRelated } from "../../../components/ai-hub-related";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
@@ -331,8 +330,6 @@ export default function UsageClient({ orgId }: { orgId: string }) {
         description="A record of every billed Chat call — the model, the feature, the member, and which key funded it."
       />
 
-      {/* One row of links: a second strip repeated Budgets, Chat and Governance. */}
-      <AiHubRelated orgId={orgId} />
 
       {message ? (
         <p role="status" className="telemetry-status">
