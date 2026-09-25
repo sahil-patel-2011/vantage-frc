@@ -392,35 +392,8 @@ function LiveDesk({
     <>
       <BalancePanel orgId={view.orgId} />
 
-      <section className="season-finance-next app-card soft-panel" aria-label="Next actions">
-        <header>
-          <span className="biz-overline">Plan this season</span>
-          <h2>What to log next</h2>
-        </header>
-        {/* One row of buttons. Five stacked buttons, each with its own warning, were about
-            600px on a phone; the warnings now live where each action happens. */}
-        <div className="season-finance-next-row">
-          {view.nextActions.map((action) => (
-            <a
-              key={action.id}
-              className={action.primary ? "app-button" : "app-button secondary"}
-              href={action.href}
-              title={action.detail}
-              onClick={(event) => {
-                // The form is on this page, folded: open it rather than re-navigating.
-                const id = action.href.split("#")[1];
-                const fold = id ? document.getElementById(id) : null;
-                if (!(fold instanceof HTMLDetailsElement)) return;
-                event.preventDefault();
-                fold.open = true;
-                fold.scrollIntoView({ block: "start" });
-              }}
-            >
-              {action.label}
-            </a>
-          ))}
-        </div>
-      </section>
+      {/* No "What to log next" row: each of its buttons repeated the button on its own section
+          ("Add money in", "Log a receipt"), and "Open purchase orders" repeated the Orders chip. */}
 
       {/* Three numbers a mentor asks for; six tiles repeated each other ("Planned spend" was
           the season budget, "Still to raise" the same figure again). The rest fold below. */}
@@ -824,6 +797,10 @@ function BalancePanel({ orgId }: { orgId: string }) {
 
   // usdToBalance: API returns USD numbers; reuse the file's cents formatter.
   const usd = (amount: number) => money(Math.round(amount * 100));
+
+  // Nothing recorded yet: no card. "No money recorded yet" sat above tiles showing $45
+  // committed, which read as a contradiction.
+  if (balance?.status === "live" && !balance.hasData) return null;
 
   return (
     <section className="app-card finance-balance" aria-label="Team money balance">

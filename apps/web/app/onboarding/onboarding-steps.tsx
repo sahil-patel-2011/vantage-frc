@@ -162,6 +162,8 @@ export function TeamForm({
   locked,
   busy,
   isTeamHead,
+  errorField,
+  errorMessage,
   onFocusTouch,
   onBack,
   onSubmit,
@@ -172,6 +174,8 @@ export function TeamForm({
   locked: boolean;
   busy: boolean;
   isTeamHead: boolean;
+  errorField?: string | null;
+  errorMessage?: string;
   onFocusTouch: () => void;
   onBack: () => void;
   onSubmit: () => void;
@@ -249,7 +253,7 @@ export function TeamForm({
         />
       </label>
 
-      {isTeamHead ? <FundingFields draft={draft} patch={patch} /> : null}
+      {isTeamHead ? <FundingFields draft={draft} patch={patch} errorField={errorField} errorMessage={errorMessage} /> : null}
 
       <div className="onboarding-actions">
         <button type="button" className="signin-link" onClick={onBack}>Back</button>

@@ -61,6 +61,7 @@ function AdminClientInner() {
   const [copied, setCopied] = useState(false);
   // A fresh owner link per team row, made on request (the first one is never stored).
   const [ownerLinks, setOwnerLinks] = useState<Record<string, { url?: string; note: string }>>({});
+  const [confirmOwnerLink, setConfirmOwnerLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -349,17 +350,35 @@ function AdminClientInner() {
                         : "No owner yet"}
                   </small>
                   {ownerLinks[org.id] ? (
-                    <small role="status">
+                    <small role="status" className="admin-owner-link">
                       {ownerLinks[org.id]!.note}
+                      {/* A full-width field with its own Copy button: a 180px box cut the link off at
+                          "invite?t" and there was no way to copy it but selecting by hand. */}
                       {ownerLinks[org.id]!.url ? (
-                        <input readOnly value={ownerLinks[org.id]!.url} onFocus={(event) => event.target.select()} aria-label="New owner invite link" />
+                        <span className="admin-owner-link-row">
+                          <input readOnly value={ownerLinks[org.id]!.url} onFocus={(event) => event.target.select()} aria-label="New owner invite link" />
+                          <Button variant="secondary" size="sm" type="button" onClick={() => void copyInviteLink(ownerLinks[org.id]!.url!)}>
+                            Copy
+                          </Button>
+                        </span>
                       ) : null}
                     </small>
                   ) : null}
                 </div>
                 {org.pendingOwnerEmail && !org.ownerEmail ? (
-                  <Button variant="secondary" size="sm" type="button" onClick={() => void newOwnerLink(org.id)}>
-                    New owner link
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    className="admin-owner-link-btn"
+                    onClick={() => {
+                      // A new link stops the one already sent working: a second tap says so first.
+                      if (confirmOwnerLink !== org.id) return setConfirmOwnerLink(org.id);
+                      setConfirmOwnerLink(null);
+                      void newOwnerLink(org.id);
+                    }}
+                  >
+                    {confirmOwnerLink === org.id ? "Make it? The old link stops working" : "Get a new owner link"}
                   </Button>
                 ) : null}
               </article>

@@ -142,7 +142,8 @@ export default function AppsScriptConnect({
 
   return (
     <details className="mirror-setup apps-script-connect" open={open}>
-      <summary>Connect Google Sheets</summary>
+      {/* The card is already titled Google Sheets; this says how, and how long. */}
+      <summary>Connect with Apps Script (about 5 minutes)</summary>
       <ol className="apps-script-steps">
         <li>
           Open the Google spreadsheet to keep up to date (or make a new one), then choose{" "}

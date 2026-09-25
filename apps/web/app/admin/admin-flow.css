@@ -182,3 +182,9 @@
 .sheets-hub-off { font-weight: 600; }
 .sheets-hub-steps { display: grid; gap: 8px; margin: 0; padding-left: 1.25rem; line-height: 1.5; }
 .sheets-hub-script textarea { width: 100%; font: 12px/1.4 ui-monospace, monospace; }
+
+/* A new owner link: the whole address in a full-width field with its own Copy button. */
+.admin-owner-link { display: grid; gap: 6px; margin-top: 6px; }
+.admin-owner-link-row { display: flex; gap: 8px; align-items: center; width: 100%; }
+.admin-owner-link-row input { flex: 1; min-width: 0; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.admin-owner-link-btn { white-space: nowrap; }

@@ -11,9 +11,14 @@ import { AFFILIATIONS } from "./onboarding-model";
 export function FundingFields({
   draft,
   patch,
+  errorField,
+  errorMessage,
 }: {
   draft: OnboardingDraft;
   patch: (next: Partial<OnboardingDraft>) => void;
+  /** Which of the two questions Continue stopped on, so its message sits under it in red. */
+  errorField?: string | null;
+  errorMessage?: string;
 }) {
   return (
     <fieldset className="onboarding-team-profile onboarding-funding-profile">
@@ -22,8 +27,11 @@ export function FundingFields({
         Required for owners and admins. This decides which Business tools you see — a school that cannot have
         sponsors will not see sponsor pages.
       </p>
-      <fieldset className="onboarding-affiliation">
+      <fieldset className="onboarding-affiliation" aria-invalid={errorField === "teamAffiliation" || undefined}>
         <legend>Affiliation</legend>
+        {errorField === "teamAffiliation" && errorMessage ? (
+          <p className="onboarding-field-error" role="alert">{errorMessage}</p>
+        ) : null}
         {AFFILIATIONS.map((option) => (
           <label key={option.value} className="check-field">
             <input
@@ -43,8 +51,11 @@ export function FundingFields({
           matches your school.
         </p>
       ) : null}
-      <fieldset className="onboarding-funding-paths">
+      <fieldset className="onboarding-funding-paths" aria-invalid={errorField === "funding" || undefined}>
         <legend>How is the team funded?</legend>
+        {errorField === "funding" && errorMessage ? (
+          <p className="onboarding-field-error" role="alert">{errorMessage}</p>
+        ) : null}
         {FUNDING_MODEL_OPTIONS.map((value) => (
           <label key={value} className="check-field">
             <input

@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, type RefObject } from "react";
+import { type FormEvent, type RefObject, useState } from "react";
 import { Panel, Button } from "../../components/ui";
 import { formatInviteRowMeta, inviteDeliveryBanner } from "../../lib/team/team-invites";
 import type { Invite, InviteNotice } from "./team-admin-model";
@@ -56,6 +56,8 @@ export function TeamAdminInvitesPanel({
   onCopyLink: (id: string, url: string) => void;
   onAct: (inviteId: string, action: "resend" | "revoke" | "copy") => void;
 }) {
+  // A new link kills the one already sent, so it takes a second tap that says so.
+  const [confirmNewLink, setConfirmNewLink] = useState<string | null>(null);
   const pending = invites.filter((invite) => invite.status === "pending");
   // The accepted owner invite is how the team was set up, not someone the team invited.
   const past = invites.filter(
@@ -195,11 +197,22 @@ export function TeamAdminInvitesPanel({
                         : `Makes a new link${emailOff ? "" : " and emails it"}. The link you sent before stops working.`
                     }
                     disabled={acting}
-                    onClick={() => (link ? onCopyLink(inviteRow.id, link) : onAct(inviteRow.id, "copy"))}
+                    onClick={() => {
+                      if (link) return onCopyLink(inviteRow.id, link);
+                      if (confirmNewLink !== inviteRow.id) return setConfirmNewLink(inviteRow.id);
+                      setConfirmNewLink(null);
+                      onAct(inviteRow.id, "copy");
+                    }}
                   >
                     {/* Links are kept only as long as this page is open (never stored in plain text), so
-                        after a reload the button makes a new one and says so. */}
-                    {copiedInviteId === inviteRow.id ? "Copied" : link ? "Copy link" : "New link"}
+                        after a reload the button makes a new one, and asks first. */}
+                    {copiedInviteId === inviteRow.id
+                      ? "Copied"
+                      : link
+                        ? "Copy link"
+                        : confirmNewLink === inviteRow.id
+                          ? "Make it? The old link stops working"
+                          : "Get a new link"}
                   </button>
                   {emailOff ? null : (
                     <button

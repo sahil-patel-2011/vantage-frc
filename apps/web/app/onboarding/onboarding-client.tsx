@@ -545,6 +545,8 @@ export default function OnboardingClient() {
             locked={locked}
             busy={busy}
             isTeamHead={state.isTeamHead}
+            errorField={errorField}
+            errorMessage={message}
             onFocusTouch={() => {
               focusTouched.current = true;
             }}

@@ -253,7 +253,9 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
         <p className="connector-status-line">{status.setupMessage}</p>
       ) : (
         <>
-          <p className="mirror-headline">{summary?.headline}</p>
+          {/* Before anything is connected the card title and the steps below already say it; the
+              headline repeated "Connect Google Sheets" a third time. */}
+          {anyConnected ? <p className="mirror-headline">{summary?.headline}</p> : null}
           <ul className="mirror-copies">
             {status.copies.map((copy) => {
               const health = summary?.copies.find((entry) => entry.copy === copy.copy);
