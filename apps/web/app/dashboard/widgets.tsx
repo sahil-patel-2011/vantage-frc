@@ -87,8 +87,12 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
       // One state: a question box only when Ask AI answers. AI off (or not known yet) shows
       // no box and no "Live" — the box and "AI is off" used to appear on the same card.
       if (data.aiOff || payload?.status !== "live") {
+        const offHint =
+          data.aiOff && data.canAddKey === false
+            ? { title: "AI is off", body: "Ask an owner or mentor to add an AI key for the team (a free one works).", noEmptyCta: true }
+            : hint;
         return (
-          <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={hint} orgId={orgId} />
+          <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={offHint} orgId={orgId} />
         );
       }
       return (

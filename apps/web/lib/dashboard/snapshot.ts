@@ -1186,7 +1186,16 @@ export async function loadDashboardSnapshot(
         const allowance = await withSavepoint(client, () => readOrgAllowance(client, input.orgId), null);
         widgets.ask_ai =
           allowance && !allowance.configured
-            ? stamp("setup_required", "ask_ai", { href: "/ai?tab=chat", aiOff: true }, "Ask AI isn't turned on for your team yet.")
+            ? stamp(
+                "setup_required",
+                "ask_ai",
+                // Only owners and admins can add a key; the others are not sent to a page that
+                // tells them so.
+                { href: "/ai?tab=chat", aiOff: true, canAddKey: input.role === "owner" || input.role === "admin" },
+                input.role === "owner" || input.role === "admin"
+                  ? "Ask AI isn't turned on for your team yet."
+                  : "Ask AI isn't turned on yet. Ask an owner or mentor to add an AI key (a free one works).",
+              )
             : stamp("live", "ask_ai", { href: "/ai?tab=chat" }, "Ask a question.");
       })(),
     );

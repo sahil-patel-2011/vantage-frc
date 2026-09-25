@@ -90,24 +90,27 @@
   color: var(--myday-muted);
 }
 
+/* A label, not a button: a filled full-width block in the button colour read as the page's main
+   action and did nothing when tapped. A tinted strip with a coloured edge says "note this". */
 .myday-bumper {
   margin: 4px 0 2px;
-  padding: 14px 16px;
-  border-radius:var(--radius-sm);
-  text-align: center;
-  font: 800 clamp(1.15rem, 4.5vw, 1.45rem) / 1.2 var(--font-source-sans), ui-sans-serif, system-ui,
+  padding: 10px 14px;
+  border-left: 6px solid currentColor;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font: 800 clamp(1.1rem, 4.2vw, 1.35rem) / 1.2 var(--font-source-sans), ui-sans-serif, system-ui,
     sans-serif;
   letter-spacing: 0.02em;
 }
 
 .myday-bumper.alliance-red {
-  color: var(--accent-ink);
-  background: var(--myday-red);
+  color: var(--myday-red);
+  background: color-mix(in srgb, var(--myday-red) 12%, var(--surface));
 }
 
 .myday-bumper.alliance-blue {
-  color: var(--accent-ink);
-  background: var(--myday-blue);
+  color: var(--myday-blue);
+  background: color-mix(in srgb, var(--myday-blue) 12%, var(--surface));
 }
 
 .myday-bumper.sm {
@@ -115,6 +118,7 @@
   justify-self: start;
   margin: 0;
   padding: 3px 10px;
+  border-left: 0;
   border-radius: 999px;
   font-size: 0.8rem;
   letter-spacing: 0.01em;

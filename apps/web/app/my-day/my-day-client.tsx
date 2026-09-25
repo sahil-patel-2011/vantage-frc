@@ -84,10 +84,7 @@ function ScoutChips({
   );
 }
 
-function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null }) {
-  const commandHref = hubHref("/competition", "command", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scheduleHref = withOrgHref("/schedule", orgId);
+function MatchHero({ match }: { match: MyDayMatch; orgId?: string | null }) {
   return (
     <section className={`myday-hero alliance-${match.alliance}`} aria-live="polite">
       <p className="myday-hero-kicker">Next match</p>
@@ -100,15 +97,8 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
         <a className="myday-link primary" href={match.links.scouting}>
           Scout this match
         </a>
-        <a className="myday-link" href={commandHref}>
-          Event day
-        </a>
-        <a className="myday-link" href={scheduleHref}>
-          Schedule
-        </a>
-        <a className="myday-link" href={strategyHref}>
-          Strategy
-        </a>
+        {/* Event day, Schedule and Strategy are the hub's own tabs; five more buttons here
+            buried the one that matters. */}
         <a className="myday-link" href={match.links.briefing}>
           Briefing
         </a>
