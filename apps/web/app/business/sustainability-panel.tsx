@@ -60,20 +60,36 @@ export default function SustainabilityPanel({
   // A failed read shows nothing rather than a reassuring "stable" the data never supported.
   if (failed || !view) return null;
 
+  // Not enough recorded to say anything: a folded line below the numbers, not a warning panel
+  // above them. A real early warning (below) still leads the page.
   if (view.status === "setup_required") {
     return (
-      <section className="biz-sustain" aria-labelledby="biz-sustain-title">
-        <header>
-          <h3 id="biz-sustain-title">Sustainability</h3>
-          <Badge tone="setup">Not enough recorded</Badge>
-        </header>
+      <details className="biz-sustain is-quiet">
+        <summary>Sustainability check: needs more records</summary>
         <p className="app-muted">{view.message}</p>
-      </section>
+      </details>
     );
   }
 
   const { assessment } = view;
   const factors = topFactors(assessment, 2);
+
+  if (assessment.level === "unknown") {
+    return (
+      <details className="biz-sustain is-quiet">
+        <summary>Sustainability check: needs more records</summary>
+        <p className="app-muted">Record these and it starts telling you something true:</p>
+        <ul className="biz-sustain-todo">
+          {assessment.missingInputs.map((input) => (
+            <li key={input}>{input}</li>
+          ))}
+        </ul>
+        <Button as="a" variant="secondary" href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}>
+          Record funding in Money
+        </Button>
+      </details>
+    );
+  }
 
   return (
     <section className="biz-sustain" aria-labelledby="biz-sustain-title">
@@ -82,44 +98,23 @@ export default function SustainabilityPanel({
         <Badge tone={levelTone(assessment.level)}>{levelLabel(assessment.level)}</Badge>
       </header>
 
-      {assessment.level === "unknown" ? (
-        <>
-          <p className="app-muted">
-            We will not score a team from thin data. Record these and this panel starts telling
-            you something true:
-          </p>
-          <ul className="biz-sustain-todo">
-            {assessment.missingInputs.map((input) => (
-              <li key={input}>{input}</li>
-            ))}
-          </ul>
-          <Button as="a" variant="ghost"
-            href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}
-          >
-            Record funding in Money
-          </Button>
-        </>
-      ) : (
-        <>
-          <ul className="biz-sustain-factors">
-            {factors.map((factor) => (
-              <li key={factor.key} className={`severity-${factor.severity}`}>
-                <strong>{factor.headline}</strong>
-                <span className="biz-sustain-evidence">{factor.evidence}</span>
-                <span className="biz-sustain-action">{factor.nextAction}</span>
-                {factor.href ? (
-                  <a href={factor.href}>Act on this</a>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <p className="biz-sustain-foot app-muted">
-            {assessment.totals.fundingSourceCount} funding{" "}
-            {assessment.totals.fundingSourceCount === 1 ? "source" : "sources"} recorded for{" "}
-            {view.seasonYear}. Computed from your rows only — never an estimate.
-          </p>
-        </>
-      )}
+      <ul className="biz-sustain-factors">
+        {factors.map((factor) => (
+          <li key={factor.key} className={`severity-${factor.severity}`}>
+            <strong>{factor.headline}</strong>
+            <span className="biz-sustain-evidence">{factor.evidence}</span>
+            <span className="biz-sustain-action">{factor.nextAction}</span>
+            {factor.href ? (
+              <a href={factor.href}>Act on this</a>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <p className="biz-sustain-foot app-muted">
+        {assessment.totals.fundingSourceCount} funding{" "}
+        {assessment.totals.fundingSourceCount === 1 ? "source" : "sources"} recorded for{" "}
+        {view.seasonYear}. Computed from your rows only — never an estimate.
+      </p>
     </section>
   );
 }

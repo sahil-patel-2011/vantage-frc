@@ -529,3 +529,42 @@
 .chat-page.messages-page .messages-bottom-anchor {
   scroll-margin-bottom: calc(var(--island-clearance, 88px) + 110px + var(--safe-bottom, 0px));
 }
+
+/* ===== Chat as chat (2026-09-25) =====
+   Every message was a full-width bordered card with ~100px of padding and air, which made a
+   conversation read like a list of tickets. Now: compact bubbles, theirs on the left in a soft
+   grey, yours on the right in the accent tint, and the "…" menu only on hover or focus. */
+.chat-page.messages-page .messages-layout[data-pane] .messages article:not(.deleted) {
+  width: fit-content;
+  max-width: min(72%, 640px);
+  margin: 0 0 8px;
+  padding: 8px 40px 10px 14px;
+  border: 0 !important;
+  border-radius: 16px;
+  box-shadow: none !important;
+  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+}
+.chat-page.messages-page .messages-layout[data-pane] .messages article.user {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.chat-page.messages-page .messages-layout[data-pane] .messages article > span:first-child {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.chat-page.messages-page .messages-layout[data-pane] .messages article p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+@media (hover: hover) {
+  .chat-page.messages-page .messages-layout[data-pane] .messages article .message-menu { opacity: 0; transition: opacity .12s ease; }
+  .chat-page.messages-page .messages-layout[data-pane] .messages article:hover .message-menu,
+  .chat-page.messages-page .messages-layout[data-pane] .messages article:focus-within .message-menu { opacity: 1; }
+}
+@media (max-width: 720px) {
+  .chat-page.messages-page .messages-layout[data-pane] .messages article:not(.deleted) { max-width: 86%; }
+  .chat-page.messages-page .messages-layout[data-pane] .messages article.user { margin-left: auto; }
+  .chat-page.messages-page .messages-layout[data-pane] .messages article.member { margin-right: 0; }
+}

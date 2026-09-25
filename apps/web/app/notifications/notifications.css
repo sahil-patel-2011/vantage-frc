@@ -173,3 +173,30 @@
 .notif-list li.unread .notif-row-main strong::before { content: ""; display: inline-block; width: 8px; height: 8px; margin: 0 8px 1px 0; border-radius: 50%; background: var(--accent); vertical-align: middle; }
 .notif-row-toggle { flex: 0 0 auto; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
 .notif-row-toggle:hover { color: var(--ink); }
+
+/* ===== Inbox as one list (2026-09-25) =====
+   A card per notice with a pill "Mark read" beside each read like a stack of alerts. One card,
+   rows split by hairlines, unread rows marked by the dot and a faint tint, and a quiet text toggle. */
+.notif-list {
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.notif-list li {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 14px 16px;
+}
+.notif-list li + li { border-top: 1px solid var(--line) !important; }
+.notif-list li.unread { background: color-mix(in srgb, var(--accent) 4%, var(--surface)) !important; }
+.notif-row-toggle {
+  border: 0 !important; background: transparent !important; padding: 0 6px !important;
+  color: var(--muted); font-size: 13px; text-decoration: underline; text-underline-offset: 2px;
+}
+.notif-row-toggle:hover { color: var(--accent); }
+/* The related links are chips: the "·" separators other link rows use sat inside them. */
+.notif-related a::before, .notif-related a::after { content: none !important; display: none !important; }

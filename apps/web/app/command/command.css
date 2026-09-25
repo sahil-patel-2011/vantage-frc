@@ -69,3 +69,46 @@
   padding-inline: 8px;
   margin-block: -8px;
 }
+
+/* ===== Event day, redone (2026-09-25): the same team chips and win bar as Home ===== */
+.edc-sides { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 4px 0 0; }
+.edc-sides .nm-side { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.edc-sides .nm-side > span { color: var(--muted); font: 700 11px/1 var(--font-source-sans, system-ui); letter-spacing: .06em; text-transform: uppercase; }
+.edc-sides .nm-teams { display: flex; flex-wrap: wrap; gap: 6px; }
+.edc-sides .nm-teams b {
+  display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--line); font: 700 15px/1 var(--font-source-sans, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.edc-match-hero.alliance-red ~ .edc-sides .nm-side:not(.nm-against),
+.edc-match-hero.alliance-blue ~ .edc-sides .nm-against { box-shadow: inset 3px 0 0 #d43a3a; }
+.edc-match-hero.alliance-blue ~ .edc-sides .nm-side:not(.nm-against),
+.edc-match-hero.alliance-red ~ .edc-sides .nm-against { box-shadow: inset 3px 0 0 #2563eb; }
+.edc-bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; margin: 2px 0 6px; }
+.edc-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.edc-why { margin: 4px 0 0; }
+.edc-why > summary { cursor: pointer; min-height: 36px; display: flex; align-items: center; color: var(--muted); font-weight: 600; font-size: 14px; }
+.edc-matchup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 8px; }
+.edc-text-btn {
+  min-height: 36px; padding: 0; border: 0; background: none; color: var(--muted);
+  font: 600 13px var(--font-source-sans, system-ui); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.edc-text-btn:hover { color: var(--accent); }
+.edc-queue-more a { display: inline-flex; align-items: center; min-height: 40px; font-weight: 650; color: var(--accent); }
+/* The three cards keep their own heights: Now / Next stretched to the Scout next list and sat
+   half empty. */
+.edc-priority { align-items: start; }
+.edc-why > summary { list-style: none; gap: 6px; }
+.edc-why > summary::-webkit-details-marker { display: none; }
+.edc-why > summary::before { content: "›"; display: inline-block; font-size: 18px; line-height: 1; transition: transform .15s ease; }
+.edc-why[open] > summary::before { transform: rotate(90deg); }
+/* Pills in the body font: "18 min" and "Coordinator nudged" were set in a code font. */
+.edc-page .edc-pill { font-family: var(--font-source-sans, system-ui); font-weight: 700; letter-spacing: 0; }
+/* The bumper call as a filled pill in our colour, the same as Home: link-blue text looked tappable. */
+.edc-match-hero .edc-bumper-cue.red,
+.edc-match-hero .edc-bumper-cue.blue {
+  display: inline-flex; align-items: center; justify-self: start; width: fit-content; min-height: 28px; padding: 0 12px;
+  border-radius: 999px; color: #fff !important; font: 700 13px/1 var(--font-source-sans, system-ui); margin-top: 4px;
+}
+.edc-match-hero .edc-bumper-cue.red { background: #d43a3a; }
+.edc-match-hero .edc-bumper-cue.blue { background: #2563eb; }

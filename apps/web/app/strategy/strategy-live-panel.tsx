@@ -276,23 +276,21 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             <i style={{ width: `${ourWinDisplay.percent}%` }} />
           </div>
         ) : null}
+        {/* Our alliance first and named as ours; each robot a small tile, three to a row. Red was
+            always listed first, even when we were Blue. */}
         <div className="strategy-alliance-row">
-          <div>
-            <h3>Red</h3>
-            <ul className="strategy-team-chips">
-              {view.matchup.red.map((team) => (
-                <TeamChip key={team.teamKey} {...team} />
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3>Blue</h3>
-            <ul className="strategy-team-chips">
-              {view.matchup.blue.map((team) => (
-                <TeamChip key={team.teamKey} {...team} />
-              ))}
-            </ul>
-          </div>
+          {(view.ourAlliance === "red" ? (["red", "blue"] as const) : (["blue", "red"] as const)).map((side) => (
+            <div key={side} className={`strategy-side is-${side}`}>
+              <h3>
+                {side === view.ourAlliance ? "Us" : "Against"} · {side === "red" ? "Red" : "Blue"}
+              </h3>
+              <ul className="strategy-team-chips">
+                {(side === "red" ? view.matchup.red : view.matchup.blue).map((team) => (
+                  <TeamChip key={team.teamKey} {...team} />
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
         <h3>What would move this</h3>
         <p className="app-muted lever-note">

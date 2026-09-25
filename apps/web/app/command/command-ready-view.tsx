@@ -211,31 +211,28 @@ export function CommandReadyView({
                       : "Alliance TBD — confirm bumpers")}
                 </span>
               </div>
-              <p className="edc-partners">
-                <span>With</span>{" "}
-                <b>
-                  {(next.ourAlliance === "red"
-                    ? next.red.teamKeys
-                    : next.ourAlliance === "blue"
-                      ? next.blue.teamKeys
-                      : []
-                  )
-                    .filter((key) => key !== snap?.teamKey)
-                    .map((key) => teamLabel(key))
-                    .join(" · ") || "—"}
-                </b>
-                <span className="edc-vs"> vs </span>
-                <b>
-                  {(next.ourAlliance === "red"
-                    ? next.blue.teamKeys
-                    : next.ourAlliance === "blue"
-                      ? next.red.teamKeys
-                      : []
-                  )
-                    .map((key) => teamLabel(key))
-                    .join(" · ") || "—"}
-                </b>
-              </p>
+              {next.ourAlliance ? (
+                <div className="nm-sides edc-sides">
+                  <div className="nm-side">
+                    <span>With us</span>
+                    <div className="nm-teams">
+                      {(next.ourAlliance === "red" ? next.red.teamKeys : next.blue.teamKeys)
+                        .filter((key) => key !== snap?.teamKey)
+                        .map((key) => (
+                          <b key={key}>{teamLabel(key)}</b>
+                        ))}
+                    </div>
+                  </div>
+                  <div className="nm-side nm-against">
+                    <span>Against</span>
+                    <div className="nm-teams">
+                      {(next.ourAlliance === "red" ? next.blue.teamKeys : next.red.teamKeys).map((key) => (
+                        <b key={key}>{teamLabel(key)}</b>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               {/* The Red/Blue rows only repeated "With … vs …" above; they stay for a match
                   we are not in, where "With" has nothing to say. */}
               {next.ourAlliance ? null : (
@@ -363,7 +360,8 @@ export function CommandReadyView({
           </header>
           {snap?.scoutQueue.length ? (
             <ul className="edc-queue">
-              {snap.scoutQueue.map((item) => (
+              {/* Five, then a link: eight rows made this card the longest thing on the page. */}
+              {snap.scoutQueue.slice(0, 5).map((item) => (
                 <li key={`${item.teamKey}-${item.matchKey}`}>
                   <div>
                     <strong>{item.teamNumber ?? teamLabel(item.teamKey)}</strong>
@@ -374,6 +372,11 @@ export function CommandReadyView({
                   <a href={item.formHref}>{item.hasMatchScout && !item.hasPitScout ? "Pit visit" : "Scout"}</a>
                 </li>
               ))}
+              {snap.scoutQueue.length > 5 ? (
+                <li className="edc-queue-more">
+                  <a href={scoutingHref}>See all {snap.scoutQueue.length} in Scouting →</a>
+                </li>
+              ) : null}
             </ul>
           ) : (
             <div className="dash-empty calm">
@@ -421,7 +424,10 @@ export function CommandReadyView({
                     caveats: snap.prediction.caveats,
                   })?.label}
                 </strong>
-                <span>Our win probability</span>
+                <span>chance we win</span>
+              </div>
+              <div className="nm-bar edc-bar" aria-hidden="true">
+                <i style={{ width: `${Math.max(2, Math.min(100, Math.round((snap.prediction.pOur ?? 0) * 100)))}%` }} />
               </div>
               {/* Our side only, the way Strategy says it; "Opp 25% · likely 15–35%" beside our 75%
                   gave the opponent's range for our number. */}
@@ -433,28 +439,32 @@ export function CommandReadyView({
                   </p>
                 ) : null;
               })()}
-              <ul className="edc-factors">
-                {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
-                  <li key={factor.name}>
-                    <strong>{plainStrategyText(factor.name)}</strong>
-                    <span>{plainStrategyText(factor.evidence)}</span>
-                  </li>
-                ))}
-              </ul>
-              {plainStrategyText(snap.prediction.caveats[0]) ? (
-                <p className="edc-caveat">{plainStrategyText(snap.prediction.caveats[0])}</p>
+              {/* The model's reasons ("weighted scoring", "foul exposure") are there for whoever asks
+                  why, not the first thing under the number. */}
+              {snap.prediction.keyFactors.length ? (
+                <details className="edc-why">
+                  <summary>Why this number</summary>
+                  <ul className="edc-factors">
+                    {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
+                      <li key={factor.name}>
+                        <strong>{plainStrategyText(factor.name)}</strong>
+                        <span>{plainStrategyText(factor.evidence)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {plainStrategyText(snap.prediction.caveats[0]) ? (
+                    <p className="edc-caveat">{plainStrategyText(snap.prediction.caveats[0])}</p>
+                  ) : null}
+                </details>
               ) : null}
-              <button
-                type="button"
-                className="edc-link"
-                disabled={recomputing}
-                onClick={onRecompute}
-              >
-                {recomputing ? "Recomputing…" : "Recompute prediction"}
-              </button>
-              <a className="edc-link" href={strategyHref}>
-                Open full strategy →
-              </a>
+              <div className="edc-matchup-actions">
+                <a className="edc-link" href={strategyHref}>
+                  Open full strategy →
+                </a>
+                <button type="button" className="edc-text-btn" disabled={recomputing} onClick={onRecompute}>
+                  {recomputing ? "Working it out…" : "Work it out again"}
+                </button>
+              </div>
             </>
           ) : (
             <div className="dash-empty calm">

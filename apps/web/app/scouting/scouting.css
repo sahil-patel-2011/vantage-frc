@@ -217,3 +217,12 @@
 
 /* A disabled Save looked exactly like an enabled one (solid blue): only its words said so. */
 .scout-save-button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;filter:saturate(.6)}
+
+/* Side column, flattened (2026-09-25): sections inside the open panel are separated by a hairline,
+   not drawn as cards inside a card. */
+.scout-lead-tools-body > .scout-activity {
+  border: 0 !important; box-shadow: none !important; background: transparent !important;
+  border-radius: 0 !important; padding: 14px 4px !important;
+}
+.scout-lead-tools-body > .scout-activity + .scout-activity { border-top: 1px solid var(--line) !important; }
+.scout-lead-tools-body > .scout-activity h2 { font-size: 16px; margin-bottom: 4px; }

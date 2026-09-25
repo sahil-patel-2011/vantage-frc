@@ -198,8 +198,6 @@
 /* ===== Home, redesigned (2026-09-25) =====
    Tighter spacing, one card look, and a Next match card laid out like a scoreboard. */
 
-/* Header to board: the board started ~70px under the chips. */
-body.has-app-shell .dash-home .dash-grid-wrap { margin-top: 4px; }
 
 /* The Next match hero. */
 .dash-next-match.nm { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }

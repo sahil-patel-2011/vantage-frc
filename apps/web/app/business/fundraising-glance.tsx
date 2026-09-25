@@ -45,22 +45,21 @@ export function FundraisingGlance({
           : "neutral";
 
   if (!hasGoal && !hasActual && partnerCount === 0) {
+    // One line with its button: a dashed empty-state panel took a whole band of the page.
     return (
-      <EmptyState
-        soft
-        className="biz-fundraising-glance"
-        badge="Get started"
-        title="No fundraising goal yet"
-        description={
-          sponsorsAllowed
-            ? "Set how much you plan to raise, then add sponsors, grants or fundraisers."
-            : "Set how much you plan to raise, then add grants or fundraisers."
-        }
-      >
+      <section className="app-card soft-panel biz-fundraising-glance biz-fundraising-empty" aria-label="Fundraising goal">
+        <div>
+          <strong>No fundraising goal yet</strong>
+          <span className="app-muted">
+            {sponsorsAllowed
+              ? "Set how much you plan to raise, then add sponsors, grants or fundraisers."
+              : "Set how much you plan to raise, then add grants or fundraisers."}
+          </span>
+        </div>
         <Button variant="secondary" type="button" onClick={onOpenBudget}>
           Set a fundraising goal
         </Button>
-      </EmptyState>
+      </section>
     );
   }
 

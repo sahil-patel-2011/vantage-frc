@@ -294,3 +294,29 @@
   .strategy-match-picker { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .strategy-match-picker a { flex: none; }
 }
+
+/* ===== Matchup card, redone (2026-09-25) =====
+   Robots as tiles three to a row instead of one tall row each; our side first; less air. */
+.strategy-primary .strategy-provenance { margin: 0 0 4px; }
+.strategy-primary .strategy-probability { margin: 8px 0 6px; }
+.strategy-alliance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+.strategy-side > h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.strategy-side.is-red > h3 { color: #b42323; }
+.strategy-side.is-blue > h3 { color: #1d4ed8; }
+.strategy-alliance-row .strategy-team-chips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.strategy-alliance-row .strategy-team-chips li {
+  display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); min-width: 0;
+}
+.strategy-side.is-red .strategy-team-chips li { border-top: 3px solid #d43a3a; }
+.strategy-side.is-blue .strategy-team-chips li { border-top: 3px solid #2563eb; }
+.strategy-alliance-row .strategy-team-chips strong { font-size: 17px; font-variant-numeric: tabular-nums; }
+.strategy-alliance-row .strategy-team-chips span { font-size: 12px; color: var(--ink); }
+.strategy-alliance-row .strategy-team-chips small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+@media (max-width: 720px) {
+  .strategy-alliance-row { grid-template-columns: 1fr; }
+}
+/* Tighter stack: the win number, its bar and the robots were 20–40px apart each. */
+.strategy-primary { row-gap: 10px !important; }
+.strategy-primary .mini-probability { margin: 0 0 4px !important; }
+.strategy-primary .strategy-alliance-row { margin: 6px 0 4px; }

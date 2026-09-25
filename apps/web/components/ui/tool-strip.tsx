@@ -58,7 +58,10 @@ type ToolStripProps = {
  * you have to read to rule out.
  */
 const DESKTOP_VISIBLE_COUNT = 3;
-const PHONE_VISIBLE_COUNT = 3;
+// One on a phone: three chips and "More tools" overflowed a 390px screen and were the second of
+// four stacked navigation rows. The tool you are in stays (it is ranked first); the rest are one
+// tap away under More tools.
+const PHONE_VISIBLE_COUNT = 1;
 const PHONE_QUERY = "(max-width: 720px)";
 
 function usePhoneLayout(): boolean {
@@ -135,11 +138,9 @@ export function ToolStrip({
    * The split is computed the same way open or closed, so the front row does
    * not reshuffle under the thumb that just tapped it.
    */
-  const { visible, hidden } = layoutToolStrip(
-    items,
-    value,
-    phone ? Math.min(PHONE_VISIBLE_COUNT, visibleCount) : visibleCount,
-  );
+  const wanted = phone ? Math.min(PHONE_VISIBLE_COUNT, visibleCount) : visibleCount;
+  // Never a "More tools (1)": a single leftover tool is shown instead of hidden behind a button.
+  const { visible, hidden } = layoutToolStrip(items, value, items.length - wanted === 1 ? items.length : wanted);
   const collapsible = hidden.length > 0;
 
   const renderChip = (item: ToolStripItem) => {

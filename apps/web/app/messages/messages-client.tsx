@@ -194,10 +194,17 @@ export default function MessagesClient({
     activeIdRef.current = activeId;
   }, [activeId]);
 
+  // Scroll the message list only: scrollIntoView also scrolled the page, so opening Chat landed
+  // 450px down with the tabs and the channel name off screen.
+  const scrollListToBottom = useCallback((behavior: ScrollBehavior) => {
+    const node = messagesRef.current;
+    if (node) node.scrollTo({ top: node.scrollHeight, behavior });
+  }, []);
+
   const scrollToBottom = useCallback(() => {
     if (!stickToBottomRef.current) return;
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, []);
+    scrollListToBottom("smooth");
+  }, [scrollListToBottom]);
 
   const applyInbox = useCallback((list: Conversation[]) => {
     setConversations(list);
@@ -438,7 +445,7 @@ export default function MessagesClient({
     if (activeId && messagesFor === activeId && landedOnRef.current !== activeId && messages.length) {
       landedOnRef.current = activeId;
       stickToBottomRef.current = true;
-      bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      scrollListToBottom("auto");
       return;
     }
     const anchor = scrollAnchorRef.current;
