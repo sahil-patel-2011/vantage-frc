@@ -264,7 +264,7 @@ export default function OnboardingClient() {
   }
 
   function goBack() {
-    const back = onboardingGoBack({ step, draft, error: null, errorField: null });
+    const back = onboardingGoBack({ step, draft, error: null, errorField: null }, context);
     setStep(back.step);
     setMessage("");
     setErrorField(null);

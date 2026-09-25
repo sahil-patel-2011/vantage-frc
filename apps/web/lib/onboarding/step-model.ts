@@ -222,18 +222,37 @@ export function validateOnboardingStep(
   }
 }
 
-export function nextOnboardingStep(step: OnboardingSetupStep): OnboardingSetupStep | null {
-  const index = ONBOARDING_SETUP_STEPS.indexOf(step);
-  return ONBOARDING_SETUP_STEPS[index + 1] ?? null;
+/**
+ * Someone who joined through an invite and is not the team's head has nothing to answer on the
+ * team screen: the number is locked to their team and the rest is for whoever runs it. They go
+ * You, then Finish; their focus keeps the default their role gave it (changeable in Account).
+ */
+export function skipsTeamStep(context?: Pick<OnboardingStepContext, "locked" | "isTeamHead"> | null): boolean {
+  return Boolean(context?.locked && !context.isTeamHead);
 }
 
-export function previousOnboardingStep(step: OnboardingFlowStep): OnboardingSetupStep | null {
+export function nextOnboardingStep(
+  step: OnboardingSetupStep,
+  context?: Pick<OnboardingStepContext, "locked" | "isTeamHead"> | null,
+): OnboardingSetupStep | null {
+  const index = ONBOARDING_SETUP_STEPS.indexOf(step);
+  const next = ONBOARDING_SETUP_STEPS[index + 1] ?? null;
+  if (next === "team" && skipsTeamStep(context)) return ONBOARDING_SETUP_STEPS[index + 2] ?? null;
+  return next;
+}
+
+export function previousOnboardingStep(
+  step: OnboardingFlowStep,
+  context?: Pick<OnboardingStepContext, "locked" | "isTeamHead"> | null,
+): OnboardingSetupStep | null {
   // From the pending panel, "change my answers" returns to the team screen.
   if (step === "pending") return "team";
   if (step === "done") return null;
   const index = ONBOARDING_SETUP_STEPS.indexOf(step);
   if (index <= 0) return null;
-  return ONBOARDING_SETUP_STEPS[index - 1] ?? null;
+  const previous = ONBOARDING_SETUP_STEPS[index - 1] ?? null;
+  if (previous === "team" && skipsTeamStep(context)) return ONBOARDING_SETUP_STEPS[index - 2] ?? null;
+  return previous;
 }
 
 export type OnboardingStepState = {
@@ -265,7 +284,7 @@ export function onboardingAdvance(
       submit: false,
     };
   }
-  const next = nextOnboardingStep(state.step);
+  const next = nextOnboardingStep(state.step, context);
   if (!next) {
     return { step: state.step, draft: state.draft, error: null, errorField: null, submit: true };
   }
@@ -273,8 +292,11 @@ export function onboardingAdvance(
 }
 
 /** Back never validates and never rewrites the draft. */
-export function onboardingGoBack(state: OnboardingStepState): OnboardingStepState {
-  const previous = previousOnboardingStep(state.step);
+export function onboardingGoBack(
+  state: OnboardingStepState,
+  context?: Pick<OnboardingStepContext, "locked" | "isTeamHead"> | null,
+): OnboardingStepState {
+  const previous = previousOnboardingStep(state.step, context);
   if (!previous) return { ...state, error: null, errorField: null };
   return { step: previous, draft: state.draft, error: null, errorField: null };
 }
