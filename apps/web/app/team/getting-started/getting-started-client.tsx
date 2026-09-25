@@ -60,10 +60,14 @@ function buildTasks(data: Data, orgId: string): Task[] {
     {
       title: "Invite your team",
       detail:
-        s.members > 1
-          ? `${s.members} members on board${s.pendingInvites ? `, ${s.pendingInvites} invite(s) pending` : ""}.`
+        s.members > 1 || s.pendingInvites > 0
+          ? `${s.members} ${s.members === 1 ? "member" : "members"} on the team${
+              s.pendingInvites ? `, ${s.pendingInvites} ${s.pendingInvites === 1 ? "invite" : "invites"} waiting` : ""
+            }.`
           : "Invite mentors and students by their exact email.",
-      done: s.members > 1,
+      // Done once an invite goes out, the same as Home's setup card (which said done while this
+      // page said not done until someone accepted).
+      done: s.members > 1 || s.pendingInvites > 0,
       href: `/team${q}`,
       cta: "Invite members",
       adminOnly: true,
