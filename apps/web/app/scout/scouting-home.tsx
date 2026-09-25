@@ -246,8 +246,8 @@ export function ScoutingHome() {
           <p className="scout-home-lede">
             {teams.length > 0
               ? unscouted.length > 0
-                ? `${teams.length} teams at this event · ${unscouted.length} nobody has scouted yet.`
-                : `${teams.length} teams at this event · every one has been scouted.`
+                ? `${teams.length} teams at this event · ${unscouted.length} with no match scouting yet.`
+                : `${teams.length} teams at this event · every one has match scouting.`
               : !orgId
                 ? "Choose your team in Vantage, then come back here to scout."
                 : rosterState === "failed"

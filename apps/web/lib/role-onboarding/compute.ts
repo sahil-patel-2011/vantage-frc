@@ -1,3 +1,5 @@
+import { readOrgAllowance } from "@vantage/billing";
+import { withSavepoint } from "@vantage/db/savepoint";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withOrgHref } from "../nav/product-nav";
 import { TEAM_SETUP_TRACK, assignOnboardingTracks } from "./assign";
@@ -123,6 +125,8 @@ function buildTracksView(
   trackRows: TrackRow[],
   checkRows: CheckRow[],
   autoDone: Set<string> = new Set(),
+  /** Steps that make no sense for this team right now ("track::check"). */
+  hidden: Set<string> = new Set(),
 ): StartTrackView[] {
   const dismissed = new Map(
     trackRows.map((row) => [row.trackKey, row.dismissedAt != null] as const),
@@ -137,7 +141,7 @@ function buildTracksView(
   for (const assignment of assigned) {
     const template = TRACK_BY_KEY[assignment.trackKey];
     if (!template) continue;
-    const checks = template.checks.map((check) => {
+    const checks = template.checks.filter((check) => !hidden.has(`${template.key}::${check.key}`)).map((check) => {
       const auto = autoDone.has(`${template.key}::${check.key}`);
       const doneAt = completed.get(`${template.key}::${check.key}`) ?? (auto ? "" : null);
       return {
@@ -212,7 +216,16 @@ export async function loadRoleOnboarding(
   const autoDone = assigned.some((track) => track.trackKey === TEAM_SETUP_TRACK)
     ? await teamSetupDone(client, orgId)
     : new Set<string>();
-  const tracks = buildTracksView(orgId, assigned, tracksResult.rows, checksResult.rows, autoDone);
+  // Steps that would send someone to a dead end: "Finish team setup" repeats the team's own
+  // setup list (owners and admins have it), and the AI steps while the team has no AI key.
+  const hidden = new Set<string>();
+  if (assigned.some((track) => track.trackKey === TEAM_SETUP_TRACK)) hidden.add("role_mentor::getting_started");
+  const allowance = await withSavepoint(client, () => readOrgAllowance(client, orgId), null);
+  if (allowance && !allowance.configured) {
+    hidden.add("welcome::try_chat");
+    hidden.add("role_coach::budgets");
+  }
+  const tracks = buildTracksView(orgId, assigned, tracksResult.rows, checksResult.rows, autoDone, hidden);
   const active = tracks.filter((t) => !t.dismissed);
   const doneCount = active.reduce((sum, t) => sum + t.doneCount, 0);
   const totalCount = active.reduce((sum, t) => sum + t.totalCount, 0);

@@ -346,7 +346,16 @@ export function CommandReadyView({
                   {/* Counts the list below. It said "0 gaps in upcoming alliances" over a list of
                       eight robots missing pit scouting. */}
                   {snap?.scoutQueue.length
-                    ? `${snap.scoutQueue.length} ${snap.scoutQueue.length === 1 ? "robot needs" : "robots need"} scouting`
+                    ? (() => {
+                        // Said by kind: "8 robots need scouting" over a list of pit visits read as match gaps.
+                        const match = snap.scoutQueue.filter((item) => !item.hasMatchScout).length;
+                        const pit = snap.scoutQueue.filter((item) => item.hasMatchScout && !item.hasPitScout).length;
+                        const parts = [
+                          match ? `${match} ${match === 1 ? "needs" : "need"} match scouting` : null,
+                          pit ? `${pit} ${pit === 1 ? "needs" : "need"} a pit visit` : null,
+                        ].filter(Boolean);
+                        return parts.length ? parts.join(" · ") : `${snap.scoutQueue.length} to check`;
+                      })()
                     : "Nothing waiting"}
                 </p>
               </div>

@@ -325,6 +325,19 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     // Several addresses pasted at once (commas, spaces, new lines): one invite each, same role,
     // and every link in one list to copy.
     const many = again ? [] : inviteEmail.split(/[\s,;]+/).map((entry) => entry.trim()).filter(Boolean);
+    // Checked here, by name: a typo came back from the server as "Request fields are invalid."
+    const notEmails = (many.length ? many : [inviteEmail.trim()]).filter(
+      (entry) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(entry),
+    );
+    if (!again && notEmails.length) {
+      setInviteNotice({
+        tone: "error",
+        message: `${notEmails.map((entry) => `"${entry}"`).join(", ")} ${
+          notEmails.length === 1 ? "isn't a full email address" : "aren't full email addresses"
+        }, like name@school.org.`,
+      });
+      return;
+    }
     if (many.length > 1) {
       await sendInvites(many, inviteRole);
       return;

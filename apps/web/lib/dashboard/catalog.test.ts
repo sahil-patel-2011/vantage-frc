@@ -196,12 +196,12 @@ describe("home view layout", () => {
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
   });
 
-  it("shrinks an empty next-match hero to two rows, and keeps it full size when live or still loading", () => {
+  it("shrinks an empty next-match hero to three rows, and keeps it full size when live or still loading", () => {
     const hero = DEFAULT_DASHBOARD_LAYOUT.find((item) => item.type === "next_match")!;
     const view = (status?: string) =>
       homeViewLayout([hero], { editing: false, shell: "ready", widgets: status ? { [hero.i]: { status } } : {} })[0]!.h;
-    expect(view("empty")).toBe(2);
-    expect(view("setup_required")).toBe(2);
+    expect(view("empty")).toBe(3);
+    expect(view("setup_required")).toBe(3);
     expect(view("live")).toBe(hero.h);
     expect(view()).toBe(hero.h);
     expect(homeViewLayout([hero], { editing: true, shell: "ready", widgets: { [hero.i]: { status: "empty" } } })[0]!.h).toBe(hero.h);
@@ -210,11 +210,11 @@ describe("home view layout", () => {
   it("keeps custom next-match sizes after leaving edit mode", () => {
     const resized = applyWidgetSize(DEFAULT_DASHBOARD_LAYOUT[0]!, "m");
     const viewed = homeViewLayout([resized], { editing: false, shell: "ready" });
-    // Alone on its row it is shown to the edge; its height, and the saved width, stay as chosen.
-    expect(viewed[0]?.w).toBe(12);
+    // Home shows the size chosen; only a strip too narrow for any card is filled.
+    expect(viewed[0]?.w).toBe(resized.w);
     expect(viewed[0]?.h).toBe(resized.h);
-    expect(resized.w).toBeLessThan(12);
-    expect(homeViewLayout([resized], { editing: true, shell: "ready" })[0]?.w).toBe(resized.w);
+    const withNarrowGap = homeViewLayout([{ ...resized, w: 10 }], { editing: false, shell: "ready" });
+    expect(withNarrowGap[0]?.w).toBe(12);
   });
 
   it("leaves the saved board untouched in edit mode", () => {

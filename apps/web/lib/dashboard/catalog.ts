@@ -315,6 +315,9 @@ export function fillRowEnds(
   for (const item of out) {
     const right = item.x + item.w;
     if (right >= cols) continue;
+    // Only a strip too narrow for the smallest card (S is 3 of 12) is filled. A half-width
+    // card the person chose stays half width on Home, as the edit board showed it.
+    if (cols - right >= 3) continue;
     const gap = { x: right, y: item.y, w: cols - right, h: item.h };
     if (out.some((other) => other !== item && overlaps(gap, other))) continue;
     item.w = cols - item.x;
@@ -335,7 +338,8 @@ export function sizeForHome(
   return layout.map((item) => {
     if (!COMPACT_WHEN_EMPTY.has(item.type)) return item;
     const status = (widgets[item.i] ?? widgets[item.type])?.status;
-    return status && status !== "live" && item.h > 2 ? { ...item, h: 2 } : item;
+    // Three rows, not two: the empty card says why and has a button ("Change event") that two clipped.
+    return status && status !== "live" && item.h > 3 ? { ...item, h: 3 } : item;
   });
 }
 

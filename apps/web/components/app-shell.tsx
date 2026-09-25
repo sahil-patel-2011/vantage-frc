@@ -497,9 +497,9 @@ export default function AppShell() {
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
   // Not while scouting either: the match card there already says which match, and on a phone
   // the strip took ~105px from the counters.
-  const scouting =
-    pathname === "/scouting" ||
-    (pathname === "/competition" && new URLSearchParams(pathSearch).get("tab") === "scouting");
+  // Nor on the Competition pages themselves (Event day, Scouting, Strategy, Robot check): they
+  // are about the next match already, and on a phone the strip stacked a third bar on top.
+  const scouting = pathname === "/scouting" || pathname === "/competition";
   const eventFocus = useMemo(
     () =>
       pathname === "/dashboard" || pathname.startsWith("/admin") || scouting
