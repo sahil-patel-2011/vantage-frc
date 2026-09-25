@@ -43,6 +43,8 @@ export type Bootstrap = {
     scoutName: string;
     scoutUserId?: string;
     payload?: Record<string, unknown> | null;
+    /** Saving again with this id replaces the entry (the author may update their own). */
+    clientId?: string | null;
   }>;
   scoutIdentity?: ScoutIdentity;
 };

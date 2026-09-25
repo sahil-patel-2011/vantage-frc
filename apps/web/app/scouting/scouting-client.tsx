@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 import { useSearchParams } from "next/navigation";
 import type { SyncEntry } from "@vantage/scouting";
@@ -86,6 +86,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">("normal");
   const [source, setSource] = useState<"manual" | "voice">("manual");
   const [entryClientId, setEntryClientId] = useState(() => stableClientId());
+  // Set while the form holds an entry that is already saved (Fix it, or your own earlier report
+  // for this robot): its client id, and the robot/match it belongs to. Saving replaces it.
+  // Switching to another robot drops it, so a new robot never overwrites the old report.
+  const editingRef = useRef<{ clientId: string; key: string | null } | null>(null);
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
   const [counts, setCounts] = useState({ entries: 0, media: 0, quarantined: 0 });
@@ -358,6 +362,48 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setDraftDirty(false);
   }, [draftKey]);
 
+  // Picking a robot you already scouted in this match loads your report instead of a blank form;
+  // tapping a "Done" robot used to start over, and saving made a second report.
+  const recentEntries = data?.recentEntries;
+  const myUserId = data?.scoutIdentity?.userId ?? null;
+  const loadedForKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (editingRef.current && editingRef.current.key !== draftKey) {
+      editingRef.current = null;
+      setEntryClientId(stableClientId());
+    }
+    // Only when the robot changes: a sync after Save (with no next robot to move to) must not
+    // put the report just saved back in the form.
+    const keyChanged = loadedForKeyRef.current !== draftKey;
+    loadedForKeyRef.current = draftKey;
+    if (!keyChanged || editingRef.current || type !== "match" || !draftKey || !myUserId) return;
+    const storedTeam = normalizeTeamKey(teamKey);
+    const mine = recentEntries?.find(
+      (entry) =>
+        entry.type === "match" &&
+        entry.matchKey === matchKey &&
+        entry.teamKey === storedTeam &&
+        entry.scoutUserId === myUserId &&
+        entry.clientId,
+    );
+    // Saved on this phone but not synced yet (offline): the entry just saved.
+    const local =
+      !mine && lastSaved && lastSaved.matchKey === matchKey && normalizeTeamKey(lastSaved.teamKey) === storedTeam
+        ? { clientId: lastSaved.clientId, payload: lastSaved.payload, confidence: lastSaved.confidence }
+        : null;
+    const found = mine?.clientId
+      ? { clientId: mine.clientId, payload: mine.payload ?? {}, confidence: mine.confidence }
+      : local;
+    if (!found || readScoutDraft(draftKey)) return;
+    editingRef.current = { clientId: found.clientId, key: draftKey };
+    setEntryClientId(found.clientId);
+    setPayload(found.payload);
+    if (found.confidence === "high" || found.confidence === "normal" || found.confidence === "low") setConfidence(found.confidence);
+    setMessage(
+      `You already scouted ${teamNumberOf(storedTeam ?? teamKey)} in this match. Change what's wrong, then Save; it replaces your report.`,
+    );
+  }, [draftKey, recentEntries, myUserId, type, matchKey, teamKey, lastSaved]);
+
   useEffect(() => {
     if (!draftKey || !payloadHasDraftContent(payload)) return;
     setDraftDirty(true);
@@ -429,6 +475,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       if (stepped) setMatchKey(stepped);
     }
     setSource("manual");
+    editingRef.current = null;
     setEntryClientId(stableClientId());
     setDraftSavedAt(null);
     setDraftDirty(false);
@@ -472,6 +519,16 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         teamKey: lastSaved.teamKey,
       },
     );
+    editingRef.current = {
+      clientId: lastSaved.clientId,
+      key: scoutDraftStorageKey({
+        orgId,
+        eventKey: data?.eventKey ?? "",
+        entryType: type,
+        matchKey: lastSaved.matchKey,
+        teamKey: lastSaved.teamKey,
+      }),
+    };
     setMatchKey(lastSaved.matchKey);
     setTeamKey(lastSaved.teamKey);
     setPayload(lastSaved.payload);

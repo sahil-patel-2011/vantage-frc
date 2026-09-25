@@ -112,12 +112,12 @@ export class ScoutingRepository {
       this.client.query(
         `SELECT e.id,'match' AS type,e.match_key AS "matchKey",e.team_key AS "teamKey",
           e.confidence,e.source,e.updated_at AS "updatedAt",
-          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload
+          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload,e.client_id AS "clientId"
          FROM match_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          UNION ALL
          SELECT e.id,'pit' AS type,NULL,e.team_key,e.confidence,e.source,
-          e.updated_at,e.scout_user_id,u.name,e.payload
+          e.updated_at,e.scout_user_id,u.name,e.payload,e.client_id
          FROM pit_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          ORDER BY "updatedAt" DESC LIMIT 30`,
