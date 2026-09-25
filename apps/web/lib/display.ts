@@ -173,8 +173,15 @@ export function countdownState(scheduledTime: string | null | undefined, nowMs: 
   if (remainingMs <= 0) return { label: "QUEUE NOW", remainingMs, leavePit: true, queueSoon: true, queueNow: true };
   const minutes = Math.floor(remainingMs / 60_000);
   const seconds = Math.floor((remainingMs % 60_000) / 1000);
+  // With units: from across the pit "17:15" read as a time of day (5:15 PM), not 17 minutes.
+  const label =
+    minutes >= 60
+      ? `${Math.floor(minutes / 60)} hr ${minutes % 60} min`
+      : minutes >= 10
+        ? `${minutes} min`
+        : `${minutes} min ${String(seconds).padStart(2, "0")} s`;
   return {
-    label: `${minutes}:${String(seconds).padStart(2, "0")}`,
+    label,
     remainingMs,
     leavePit: remainingMs <= LEAVE_PIT_MS,
     queueSoon: remainingMs <= QUEUE_SOON_MS,

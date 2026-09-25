@@ -54,7 +54,7 @@ describe("display helpers", () => {
 
     const now = Date.parse("2026-03-15T12:00:00.000Z");
     const soon = countdownState("2026-03-15T12:10:00.000Z", now);
-    expect(soon.label).toBe("10:00");
+    expect(soon.label).toBe("10 min");
     expect(soon.leavePit).toBe(true);
     expect(soon.queueSoon).toBe(false);
     expect(soon.queueNow).toBe(false);
