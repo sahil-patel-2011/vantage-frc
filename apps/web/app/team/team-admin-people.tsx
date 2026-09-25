@@ -60,13 +60,19 @@ export function TeamAdminPeople({
                     overflowLabel="More"
                     triggerTestId={`member-more-${member.userId}`}
                     actions={[
-                      {
-                        id: "access",
-                        label: busyUserId === member.userId ? "Working…" : "Access",
-                        intent: "primary",
-                        disabled: busyUserId === member.userId,
-                        onClick: () => onAccess(member),
-                      },
+                      // An owner's access cannot be changed here; the button opened a dialog that
+                      // said only that, so owners have no Access button.
+                      ...(member.role === "owner"
+                        ? []
+                        : [
+                            {
+                              id: "access",
+                              label: busyUserId === member.userId ? "Working…" : "Access",
+                              intent: "primary" as const,
+                              disabled: busyUserId === member.userId,
+                              onClick: () => onAccess(member),
+                            },
+                          ]),
                       {
                         id: "reset",
                         label: "Send password reset",
