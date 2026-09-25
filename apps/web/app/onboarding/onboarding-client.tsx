@@ -99,8 +99,8 @@ export default function OnboardingClient() {
       primaryFocus: data.primaryFocus ?? current.primaryFocus,
       displayName: data.displayName ?? current.displayName,
       themePreference: data.themePreference ?? current.themePreference,
-      orgCity: data.orgCity ?? current.orgCity,
-      orgStateProv: data.orgStateProv ?? current.orgStateProv,
+      orgCity: data.orgCity ?? (typeof local.orgCity === "string" ? local.orgCity : current.orgCity),
+      orgStateProv: data.orgStateProv ?? (typeof local.orgStateProv === "string" ? local.orgStateProv : current.orgStateProv),
       orgDescription: data.orgDescription ?? current.orgDescription,
       teamAffiliation:
         data.orgTeamAffiliation ??
@@ -112,7 +112,8 @@ export default function OnboardingClient() {
       fundingModel:
         data.orgFundingModel && isFundingModel(data.orgFundingModel)
           ? data.orgFundingModel
-          : current.fundingModel ||
+          : (typeof local.fundingModel === "string" && isFundingModel(local.fundingModel) ? local.fundingModel : "") ||
+            current.fundingModel ||
             // Only from answers the team already gave; a new team starts unpicked, like Affiliation.
             (data.orgSchoolFunded != null || data.orgSponsorsAllowed != null
               ? fundingModelFromFlags({
@@ -382,7 +383,15 @@ export default function OnboardingClient() {
       });
       const data = (await response.json()) as OnboardingState & { error?: string };
       if (!response.ok) {
-        setMessage(data.error ?? "Could not submit your access request.");
+        const text = data.error ?? "Could not submit your access request.";
+        // An answer from step two: go back to it and point at the field, instead of an error at
+        // the top of a step that has no way to fix it.
+        if (/affiliated|funding path|how the team is funded/i.test(text)) {
+          setStep("team");
+          setErrorField(/funded|funding/i.test(text) ? "fundingModel" : "teamAffiliation");
+        }
+        setMessage(text);
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
       clearLocalAnswers();
@@ -462,7 +471,8 @@ export default function OnboardingClient() {
         : onTeamAlready && state.isTeamHead
           ? {
               // The owner invite: they are setting the team up, not joining someone else's.
-              eyebrow: "YOU'RE THE OWNER",
+              // An invited mentor (admin) answering for a new team is not its owner.
+              eyebrow: state.workspaceRole === "owner" ? "YOU'RE THE OWNER" : "YOU'RE A TEAM LEAD",
               title: `Set up ${teamName ?? "your team"} in three steps.`,
               sub: "Tell us who you are, then Home walks you through inviting your team.",
             }
@@ -587,7 +597,15 @@ export default function OnboardingClient() {
 let answersTeam: string | null = null;
 const answersKey = () => `vantage.onboarding.answers${answersTeam ? `:${answersTeam}` : ""}`;
 const answersStore = (): Storage => (answersTeam ? window.localStorage : window.sessionStorage);
-type LocalAnswers = { teamRole?: unknown; crewRole?: unknown; roleDescription?: unknown; teamAffiliation?: unknown };
+type LocalAnswers = {
+  teamRole?: unknown;
+  crewRole?: unknown;
+  roleDescription?: unknown;
+  teamAffiliation?: unknown;
+  fundingModel?: unknown;
+  orgCity?: unknown;
+  orgStateProv?: unknown;
+};
 
 function readLocalAnswers(): LocalAnswers {
   try {
@@ -608,6 +626,11 @@ function saveLocalAnswers(draft: OnboardingDraft) {
         crewRole: draft.crewRole,
         roleDescription: draft.roleDescription,
         teamAffiliation: draft.teamAffiliation,
+        // Funding is taken with Finish too; after a reload it came back unpicked beside a
+        // "Welcome back, your answers are filled in" note.
+        fundingModel: draft.fundingModel,
+        orgCity: draft.orgCity,
+        orgStateProv: draft.orgStateProv,
       }),
     );
   } catch {

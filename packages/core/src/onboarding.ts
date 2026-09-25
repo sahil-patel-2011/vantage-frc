@@ -443,7 +443,9 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     // Team details (location, affiliation, funding) are asked once, of whichever owner or admin
     // onboards first. A later admin was asked again for answers the team already had.
     isTeamHead:
-      workspaceLocked && isTeamHeadRole(locked.role) ? !orgFunding.teamAffiliation || !locked.city : false,
+      // Affiliation only: the location is optional now, so a team that skipped it would have
+      // asked every later admin the whole set again.
+      workspaceLocked && isTeamHeadRole(locked.role) ? !orgFunding.teamAffiliation : false,
     orgCity: locked?.city ?? null,
     orgStateProv: locked?.stateProv ?? null,
     orgDescription: locked?.description ?? null,
@@ -556,6 +558,9 @@ export async function completeOnboarding(
     throw new Error("Team heads must keep their workspace team number.");
   }
 
+  // Checked now, written after the invite is accepted: an invited owner is not a member until
+  // then, so row security let the update change nothing and the team's answers were lost.
+  let teamDetails: unknown[] | null = null;
   if (state.isTeamHead && state.lockedOrgId) {
     // Optional here (a new required field on the "check and send" step surprised owners); a
     // blank keeps whatever the team already has, and Team profile asks for it later.
@@ -578,29 +583,17 @@ export async function completeOnboarding(
     if (!fundingModel && !schoolFunded && !outsideGrants && !sponsorsAllowed) {
       throw new Error("Select at least one funding path: school funds, outside grants, or sponsors.");
     }
-    await client.query(
-      `UPDATE organizations
-       SET city = COALESCE($2, city),
-           state_prov = COALESCE($3, state_prov),
-           description = COALESCE($4, description),
-           team_affiliation = $5,
-           school_funded = $6,
-           outside_grants = $7,
-           sponsors_allowed = $8,
-           funding_model = $9::org_funding_model
-       WHERE id = $1::uuid`,
-      [
-        state.lockedOrgId,
-        location.city,
-        location.stateProv,
-        location.description,
-        payload.teamAffiliation,
-        schoolFunded,
-        outsideGrants,
-        sponsorsAllowed,
-        fundingModel,
-      ],
-    );
+    teamDetails = [
+      state.lockedOrgId,
+      location.city,
+      location.stateProv,
+      location.description,
+      payload.teamAffiliation,
+      schoolFunded,
+      outsideGrants,
+      sponsorsAllowed,
+      fundingModel,
+    ];
   }
 
   await client.query(
@@ -660,6 +653,22 @@ export async function completeOnboarding(
         throw error;
       }
     }
+  }
+
+  if (teamDetails) {
+    await client.query(
+      `UPDATE organizations
+       SET city = COALESCE($2, city),
+           state_prov = COALESCE($3, state_prov),
+           description = COALESCE($4, description),
+           team_affiliation = $5,
+           school_funded = $6,
+           outside_grants = $7,
+           sponsors_allowed = $8,
+           funding_model = $9::org_funding_model
+       WHERE id = $1::uuid`,
+      teamDetails,
+    );
   }
 
   await client.query(`UPDATE users SET name=$2 WHERE id=$1`, [
