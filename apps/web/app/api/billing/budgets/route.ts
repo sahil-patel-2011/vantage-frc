@@ -1,5 +1,7 @@
+import { readOrgAllowance } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
@@ -63,7 +65,10 @@ export async function GET(request: Request) {
       const policyKill = Boolean(policy.rows[0]?.killSwitch);
       const usageKill = Boolean(usagePolicy.rows[0]?.killSwitch);
       const canManage = manage.rows[0]?.allowed === true;
+      // Whether the team has an AI key at all: without one the spend tiles are a row of $0.00.
+      const allowance = await withSavepoint(client, () => readOrgAllowance(client, orgId), null);
       return {
+        aiKeyConfigured: allowance ? allowance.configured : null,
         policy: policy.rows[0] ?? null,
         members: canManage ? members.rows : [],
         canManage,

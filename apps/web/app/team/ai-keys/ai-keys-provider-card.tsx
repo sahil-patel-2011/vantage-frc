@@ -13,6 +13,7 @@ export function ProviderCard({
   onDraft,
   onSave,
   onRemove,
+  error,
 }: {
   meta: ProviderMeta;
   status: ByokKeyStatus;
@@ -23,6 +24,8 @@ export function ProviderCard({
   onDraft: (value: string) => void;
   onSave: () => void;
   onRemove: () => void;
+  /** Why the last save of this key was refused, shown under its field. */
+  error?: string | null;
 }) {
   return (
     <article className="app-card soft-panel ai-keys-provider" data-configured={status.configured ? "yes" : "no"}>
@@ -68,6 +71,11 @@ export function ProviderCard({
               required={!status.configured}
             />
           </label>
+          {error ? (
+            <p className="ai-keys-field-error" role="alert">
+              {error}
+            </p>
+          ) : null}
           <div className="ai-keys-actions">
             <button className="primary-action" type="submit" disabled={busy || !draft.trim()}>
               {status.configured ? "Update & encrypt" : "Save & encrypt"}

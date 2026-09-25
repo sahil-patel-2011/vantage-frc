@@ -82,6 +82,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   /** Fail closed until the budget read says this account can manage keys. */
   const [canManage, setCanManage] = useState(false);
+  const [noKey, setNoKey] = useState(false);
 
   const chatHref = hubHref("/ai", "chat", orgId);
   async function load() {
@@ -91,6 +92,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     const data = (await response.json()) as {
       error?: string;
       canManage?: boolean;
+      aiKeyConfigured?: boolean | null;
       policy?: Record<string, unknown> | null;
       usage?: Record<string, string>;
       members?: Array<{ userId: string; name: string; email: string }>;
@@ -105,6 +107,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     }
     setLoadError(null);
     setCanManage(data.canManage === true);
+    setNoKey(data.aiKeyConfigured === false);
     if (data.policy) {
       const policy = data.policy;
       setPolicy((prev) => ({
@@ -213,6 +216,12 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
 
       {!loading && !blocked ? (
         <>
+          {noKey ? (
+            <p className="ai-budgets-nokey" role="note">
+              No AI key yet, so nothing has been spent. Limits apply once the team adds one.{" "}
+              {canManage ? <a href={`/team/ai-keys?orgId=${encodeURIComponent(orgId)}`}>Add a key</a> : null}
+            </p>
+          ) : (
           <section className="metric-grid" aria-label="AI use">
             <article>
               <span>Spent today</span>
@@ -227,6 +236,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               <strong>{formatAiBudgetsCount(usage.dailyTokens, metricsLoaded)}</strong>
             </article>
           </section>
+          )}
 
           {!canManage ? (
             <EmptyState

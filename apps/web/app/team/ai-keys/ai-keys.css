@@ -519,3 +519,8 @@
 .ai-training-note.ok {
   color: var(--positive);
 }
+
+/* A refused key says why right under its field, next to the button that was pressed. */
+.ai-keys-page .ai-keys-field-error{margin:6px 0 0;color:var(--danger);font-size:13px;font-weight:600}
+/* Room below the last Save on a phone, so the floating dock never sits on it. */
+@media (max-width:720px){.ai-keys-page{padding-bottom:calc(120px + env(safe-area-inset-bottom))}}

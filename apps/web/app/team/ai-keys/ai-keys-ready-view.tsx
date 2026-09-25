@@ -48,6 +48,7 @@ export type AiKeysReadyViewProps = {
   removeMemberKey: (provider: string) => void;
   message: string;
   messageIsError?: boolean;
+  keyError?: { provider: ByokProvider; message: string } | null;
   providerMeta: ProviderMeta[];
   statusByProvider: Map<string, Payload["keys"][number]>;
   busyProvider: ByokProvider | null;
@@ -89,6 +90,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     removeMemberKey,
     message,
     messageIsError,
+    keyError,
     providerMeta,
     statusByProvider,
     busyProvider,
@@ -171,6 +173,11 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                     required
                   />
                 </label>
+                {keyError?.provider === "google" ? (
+                  <p className="ai-keys-field-error" role="alert">
+                    {keyError.message}
+                  </p>
+                ) : null}
                 <div className="ai-keys-actions">
                   <button
                     className="primary-action"
@@ -219,6 +226,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                   onDraft={(value) => setDrafts((prev) => ({ ...prev, [meta.id]: value }))}
                   onSave={() => void save(meta.id)}
                   onRemove={() => void remove(meta.id)}
+                  error={keyError?.provider === meta.id ? keyError.message : null}
                 />
               );
             })}
@@ -409,10 +417,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>
             <h2>Ollama / LM Studio</h2>
             <p className="app-muted">
-              Set a base URL such as <code>http://localhost:11434/v1</code> (Ollama) or your LM Studio
-              OpenAI-compatible URL. Optional API key (often empty or <code>lm-studio</code>).
-              Cloud Vantage cannot call your laptop&apos;s localhost — use a tunnel or self-hosted
-              gateway with a reachable HTTPS URL.
+              Paste the address of your model server and the model to use. Vantage reaches it over
+              the internet, so a laptop-only address (localhost) won&apos;t work: it needs an https
+              address anyone can reach.
             </p>
             {payload.localConnector?.configured ? (
               <p className="ai-keys-meta app-muted">
@@ -489,6 +496,8 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           </section>
           </details>
 
+          {/* The start card is already the free path; this list is for a team without it. */}
+          {!showStart && configuredProviders.size === 0 ? (
           <section className="app-card soft-panel ai-keys-free" aria-label="Free API key providers">
             <span className="eyebrow">FREE API KEYS</span>
             <h2>No budget? Start with a free key</h2>
@@ -519,15 +528,14 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               ))}
             </ul>
           </section>
+          ) : null}
 
           <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
             <span className="eyebrow">ROUTING</span>
             <h2>Fixed model or Automode</h2>
             <p className="app-muted">
-              Automode picks from your enabled pool by task toughness: CAD and Code → high reasoning;
-              Strategy → strong mid; light chat → fast. Only models for providers you have keyed
-              (or a local connector) are eligible. Model ids are the real API strings below — not
-              hosted display names like &quot;GPT 5.6 Sol&quot;.
+              Automode picks a model for each job: the strongest for CAD and code, a balanced one for
+              strategy, a quick one for chat. It only picks from companies whose key you&apos;ve added.
             </p>
             {payload.canManage && modelOptions.length ? (
               <form
@@ -570,7 +578,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                     >
                       {modelOptions.map((opt) => (
                         <option key={opt.id} value={opt.id}>
-                          {opt.label} · {opt.tierLabel} ({opt.modelId})
+                          {opt.label} · {opt.tierLabel}
                         </option>
                       ))}
                     </select>
@@ -598,11 +606,12 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                               }))
                             }
                           />{" "}
-                          <strong>{opt.label}</strong>
+                          {/* The name people know; the API id is in the tooltip for whoever needs it. */}
+                          <strong title={opt.modelId}>{opt.label}</strong>
                           <span className="app-muted">
                             {" "}
-                            · {opt.tierLabel} · <code>{opt.modelId}</code>
-                            {!providerReady ? " · add provider key to use" : ""}
+                            · {opt.tierLabel}
+                            {!providerReady ? " · needs that company's key first" : ""}
                           </span>
                         </label>
                       );
@@ -715,10 +724,10 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                               }))
                             }
                           />{" "}
-                          <strong>{opt.label}</strong>
+                          <strong title={opt.modelId}>{opt.label}</strong>
                           <span className="app-muted">
                             {" "}
-                            · {opt.tierLabel} · <code>{opt.modelId}</code>
+                            · {opt.tierLabel}
                           </span>
                         </label>
                       );

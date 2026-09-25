@@ -44,3 +44,6 @@
 .ai-budgets-more form,.ai-budgets-more{display:grid;gap:12px}
 .ai-budgets-policy{display:grid;gap:14px;max-width:720px}
 .ai-budgets-policy > .app-button{justify-self:start}
+
+/* No AI key yet: one plain line instead of a row of $0.00 tiles. */
+.ai-budgets-nokey{margin:0 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font-size:14px}

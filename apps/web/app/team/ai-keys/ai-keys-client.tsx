@@ -49,6 +49,8 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [message, setMessage] = useState("");
   // A refused key and a saved key used to look identical (a pale-blue bar); failures read red.
   const [messageIsError, setMessageIsError] = useState(false);
+  // A rejected key's reason, shown under that key's field rather than in the banner at the top.
+  const [keyError, setKeyError] = useState<{ provider: ByokProvider; message: string } | null>(null);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(Boolean(orgId));
@@ -306,6 +308,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     setBusyProvider(provider);
     setMessage("");
     setMessageIsError(false);
+    setKeyError(null);
     try {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
@@ -314,8 +317,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       });
       const data = (await response.json()) as { error?: string; setupRequired?: boolean; notice?: string | null };
       if (!response.ok) {
-        setMessage(data.error ?? "Could not save key");
-        setMessageIsError(true);
+        setKeyError({ provider, message: data.error ?? "Could not save key" });
         return;
       }
       setDrafts((prev) => ({ ...prev, [provider]: "" }));
@@ -560,6 +562,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           removeMemberKey={(provider) => void removeMemberKey(provider)}
           message={message}
           messageIsError={messageIsError}
+          keyError={keyError}
           providerMeta={providerMeta}
           statusByProvider={statusByProvider}
           busyProvider={busyProvider}
