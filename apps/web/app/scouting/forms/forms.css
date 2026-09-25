@@ -617,3 +617,10 @@
   }
 }
 
+
+/* The Required switch sits beside its words (a generic panel label rule stacked it on top). */
+.soft-panel .sfb-check, .sfb-question .sfb-check { display: flex; align-items: flex-start; gap: 10px; }
+/* A question's less-used settings, one line until opened. */
+.sfb-more { border-top: 1px solid var(--line); padding-top: 8px; }
+.sfb-more > summary { min-height: 40px; display: flex; align-items: center; color: var(--muted); font-weight: 600; cursor: pointer; }
+.sfb-more[open] > summary { margin-bottom: 8px; }

@@ -660,38 +660,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                           ))}
                         </select>
                       </FormRow>
-                      <FormRow
-                        label="Feeds strategy as"
-                        hint={
-                          question.role === "none"
-                            ? detectedRoleForQuestion(question) !== "none"
-                              ? `Detected: ${
-                                  STRATEGY_ROLE_OPTIONS.find(
-                                    (option) => option.role === detectedRoleForQuestion(question),
-                                  )?.label ?? detectedRoleForQuestion(question)
-                                }`
-                              : "Not mapped — pick a role so answers reach strategy and pick tools"
-                            : STRATEGY_ROLE_OPTIONS.find((option) => option.role === question.role)
-                                ?.hint
-                        }
-                      >
-                        <select
-                          value={question.role}
-                          disabled={!payload.canManageSchemas}
-                          aria-label={`Strategy mapping for question ${index + 1}`}
-                          onChange={(event) =>
-                            updateQuestion(question.id, {
-                              role: event.target.value as StrategyFieldRole,
-                            })
-                          }
-                        >
-                          {STRATEGY_ROLE_OPTIONS.map((option) => (
-                            <option key={option.role} value={option.role}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </FormRow>
                     </div>
                     {needsOptionEditor(question.kind) ? (
                       <OptionEditor
@@ -719,6 +687,41 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                       </p>
                     ) : (
                       <>
+                        {/* The settings most forms never change, folded: every question showed all of them. */}
+                        <details className="sfb-more">
+                          <summary>More options</summary>
+                          <FormRow
+                            label="Feeds strategy as"
+                            hint={
+                              question.role === "none"
+                                ? detectedRoleForQuestion(question) !== "none"
+                                  ? `Detected: ${
+                                      STRATEGY_ROLE_OPTIONS.find(
+                                        (option) => option.role === detectedRoleForQuestion(question),
+                                      )?.label ?? detectedRoleForQuestion(question)
+                                    }`
+                                  : "Not mapped — pick a role so answers reach strategy and pick tools"
+                                : STRATEGY_ROLE_OPTIONS.find((option) => option.role === question.role)
+                                    ?.hint
+                            }
+                          >
+                            <select
+                              value={question.role}
+                              disabled={!payload.canManageSchemas}
+                              aria-label={`Strategy mapping for question ${index + 1}`}
+                              onChange={(event) =>
+                                updateQuestion(question.id, {
+                                  role: event.target.value as StrategyFieldRole,
+                                })
+                              }
+                            >
+                              {STRATEGY_ROLE_OPTIONS.map((option) => (
+                                <option key={option.role} value={option.role}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </FormRow>
                         <FormRow
                           label="After a save"
                           hint={
@@ -744,6 +747,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                             ))}
                           </select>
                         </FormRow>
+                        </details>
                         <label
                           className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}
                         >
@@ -817,7 +821,8 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                   </Button>
                 </li>
               </ul>
-            ) : (
+            ) : shell === "empty" ? null : (
+              // The empty state above already says nothing is published; said once.
               <p className="app-muted">No {type} form published yet for this season.</p>
             )}
             {published ? (
