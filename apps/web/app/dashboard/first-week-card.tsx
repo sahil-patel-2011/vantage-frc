@@ -93,10 +93,11 @@ function useJustSetUp(orgId: string, view: RoleOnboardingView | null): boolean {
       const seen = window.localStorage.getItem(key);
       if (state === "open") {
         window.localStorage.setItem(key, "open");
-      } else if (seen === "open") {
+      } else if (!seen || seen === "open") {
+        // The first time this device sees setup finished (it may have been finished elsewhere).
         window.localStorage.setItem(key, String(Date.now()));
         show = true;
-      } else if (seen && Date.now() - Number(seen) < SETUP_DONE_SHOWN_MS) {
+      } else if (Date.now() - Number(seen) < SETUP_DONE_SHOWN_MS) {
         show = true;
       }
     } catch {

@@ -482,7 +482,11 @@ export function DashboardHomeView(props: {
     : [];
   const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
   const teamSetupCard = Boolean(setupHero);
-  const showRoleStrip = Boolean(orgId && homeStripItems.length > 0 && !teamSetupCard);
+  // Only when something in it has a value: a strip of "Nothing waiting / No empty room slots /
+  // No member checks open" on a new team looked like a report of work already done.
+  const showRoleStrip = Boolean(
+    orgId && homeStripItems.some((item) => item.tone !== "neutral") && !teamSetupCard,
+  );
   const showsFirstWeek = Boolean(firstWeek.view && !teamSetupCard && firstWeek.view.status === "live");
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
@@ -540,17 +544,17 @@ export function DashboardHomeView(props: {
         <section
           className="dash-role-strip"
           data-audience={homeAudience ?? "student"}
-          aria-label={homeAudience === "mentor" ? "Mentor focus" : "This week"}
+          aria-label={homeAudience === "mentor" ? "Team logistics" : "This week"}
           {...dim}
         >
           <header className="dash-role-strip-head">
-            <span>{homeAudience === "mentor" ? "Mentor focus" : "This week"}</span>
+            <span>{homeAudience === "mentor" ? "Team logistics" : "This week"}</span>
             <a href={withOrgHref("/logistics", orgId)}>
               {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
             </a>
           </header>
           <ul>
-            {homeStripItems.map((item) => (
+            {homeStripItems.filter((item) => item.tone !== "neutral").map((item) => (
               <li key={item.key} data-tone={item.tone}>
                 <a href={item.href}>
                   <span>{item.label}</span>
