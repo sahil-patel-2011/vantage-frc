@@ -178,14 +178,14 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         breadcrumbs={
           <>
             <a href={aiHub}>AI</a>
-            {" / Your keys usage"}
+            {" / AI cost estimate"}
           </>
         }
         navPath="/team/ai-usage"
-        title="Your keys usage"
+        title="AI cost estimate"
         description="Calls made with your own API keys or a local connector. Estimated $ from public list rates — not an invoice. Empty until those calls exist."
       />
-      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="Your keys usage" />
+      <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature="AI cost estimate" />
 
       <nav className="product-hub-related" aria-label="Related">
         <a href={orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys"}>AI keys</a>

@@ -31,6 +31,8 @@ const PUBLIC_PAGES = new Set([
   "/unsubscribe",
   // Laptop setup script, fetched by `irm … | iex` before the student has an account.
   "/team-setup.ps1",
+  // The Claude Code connector (/team/ai-bridge step 2), fetched on the computer that runs it.
+  "/vantage-ai-bridge.mjs",
 ]);
 // Session cookie auth for product routes; Better Auth enforces CSRF/Origin on /api/auth.
 // Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.

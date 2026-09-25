@@ -50,10 +50,41 @@
   font-weight: 600;
 }
 
-.ai-bridge-card input[type="text"],
-.ai-bridge-card input:not([type]),
+/* Only the tick boxes are small; the pairing-code field was caught by this and drew 22px tall. */
 .ai-bridge-card input[type="checkbox"] {
   min-height: 24px;
+}
+.ai-bridge-card input:not([type]),
+.ai-bridge-card input[type="text"] {
+  min-height: 44px;
+  font: 600 18px/1.2 var(--font-ibm-mono, ui-monospace), monospace;
+  letter-spacing: 0.08em;
+  padding-inline: 12px;
+}
+.ai-bridge-commands {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin: 4px 0 0;
+  min-width: 0;
+  max-width: 100%;
+}
+.ai-bridge-steps li { min-width: 0; }
+.ai-bridge-commands pre {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 88%, var(--bg));
+  font: 13px/1.45 var(--font-ibm-mono, ui-monospace), monospace;
+  white-space: pre;
+}
+.ai-bridge-commands > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .ai-bridge-card input,

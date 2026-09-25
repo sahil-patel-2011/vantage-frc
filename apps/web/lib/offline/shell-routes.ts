@@ -290,7 +290,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/team/ai-bridge")) return "Claude Code";
   if (bare.startsWith("/team/ai-keys")) return "AI keys";
   if (bare.startsWith("/team/ai-runs")) return "Ask AI history";
-  if (bare.startsWith("/team/ai-usage")) return "Your keys usage";
+  if (bare.startsWith("/team/ai-usage")) return "AI cost estimate";
   if (bare.startsWith("/team/awards")) return "Awards";
   if (bare.startsWith("/team/background")) return "Team background";
   if (bare.startsWith("/team/discord")) return "Discord";

@@ -261,8 +261,11 @@ export default function AiBridgeClient({
             <form className="ai-bridge-card" onSubmit={approve}>
               <h2>Pair this computer</h2>
               <ol className="ai-bridge-steps">
-                {AI_BRIDGE_SETUP_STEPS.map((step) => (
-                  <li key={step}>{step}</li>
+                {AI_BRIDGE_SETUP_STEPS.map((step, index) => (
+                  <li key={step}>
+                    {step}
+                    {index === 1 ? <ConnectorCommands /> : null}
+                  </li>
                 ))}
               </ol>
               <label>
@@ -400,9 +403,8 @@ export default function AiBridgeClient({
                 exist.
               </li>
               <li>
-                Default is chat, writer, and troubleshooting
-                {status?.bridgeFeatures?.length ? ` (${status.bridgeFeatures.join(", ")})` : ""}. Choose Everything
-                above only if this computer should also run long jobs.
+                A paired computer answers chat, writing and troubleshooting. Under Status you can let it run
+                everything, including long jobs like season reports.
               </li>
               <li>Revoke the computer here to stop sending team prompts to it.</li>
             </ul>
@@ -410,5 +412,44 @@ export default function AiBridgeClient({
         </>
       )}
     </main>
+  );
+}
+
+/**
+ * The connector is one file (packages/ai-bridge/bridge.mjs, copied to public/ and kept equal by
+ * a unit test). Step 2 used to say "start the connector" with no way to get it.
+ */
+function ConnectorCommands() {
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
+  useEffect(() => setOrigin(window.location.origin), []);
+  const host = origin || "https://vantagefrc.vercel.app";
+  const commands = [
+    `curl -fsSLo vantage-ai-bridge.mjs ${host}/vantage-ai-bridge.mjs`,
+    `node vantage-ai-bridge.mjs --setup --url ${host}`,
+    "node vantage-ai-bridge.mjs",
+  ].join("\n");
+  return (
+    <div className="ai-bridge-commands">
+      <pre aria-label="Connector commands">{commands}</pre>
+      <div>
+        <Button
+          variant="secondary"
+          type="button"
+          onClick={() => {
+            void navigator.clipboard?.writeText(commands).then(
+              () => setCopied(true),
+              () => setCopied(false),
+            );
+          }}
+        >
+          {copied ? "Copied" : "Copy commands"}
+        </Button>
+        <a href="/vantage-ai-bridge.mjs" download>
+          Download the connector
+        </a>
+      </div>
+      <small className="app-muted">The first command downloads it; the second shows the code; the third keeps it running.</small>
+    </div>
   );
 }

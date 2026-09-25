@@ -377,7 +377,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             <p>{billing.body}</p>
             <p className="app-muted">
               See what the team&apos;s key has been used for on{" "}
-              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>AI usage</a>.
+              <a href={orgId ? withOrgHref("/team/usage", orgId) : "/team/usage"}>AI usage</a>.
             </p>
           </section>
 

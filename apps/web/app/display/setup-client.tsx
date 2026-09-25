@@ -41,6 +41,7 @@ type TokenRow = {
   expiresAt: string | null;
   revokedAt: string | null;
   lastUsedAt: string | null;
+  createdAt?: string | null;
 };
 
 type MintedToken = {
@@ -287,16 +288,18 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     }
   }
 
-  // "Get a TV link" makes the link, then shows it: it used to only scroll to a second
-  // "Make TV link" button at the bottom of the page.
-  async function getEventTvLink(boardId: string) {
+  // "Get a TV link" picks the Event board and asks which screen it is for before making the
+  // link: it used to make one at once, and the list filled with identical "Event board" rows.
+  function getEventTvLink(boardId: string) {
     setPairChoice(`stage:${boardId}`);
-    await mintToken(`stage:${boardId}`);
     document.getElementById("display-pair")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => document.getElementById("disp-tv-name")?.focus({ preventScroll: true }), 350);
+    say("Name the screen it goes on (Pit TV, Stands laptop), then press Make TV link.", true);
   }
 
-  async function revokeToken(tokenId: string) {
+  async function revokeToken(tokenId: string, title: string) {
     if (!canSync) return;
+    if (!window.confirm(`Turn off "${title}"? The TV using it goes blank until it gets a new link.`)) return;
     const r = await fetch("/api/display/boards", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -577,6 +580,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                 <label>
                   Which screen <small className="app-muted">optional</small>
                   <input
+                    id="disp-tv-name"
                     value={tvName}
                     maxLength={60}
                     placeholder="e.g. Pit TV, Stands laptop"
@@ -614,10 +618,12 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                           {eventLink && title !== EVENT_BOARD_NAME ? `${EVENT_BOARD_NAME} · ` : ""}
                           {shows && shows !== title ? `Shows "${shows}" · ` : ""}
                           {token.lastUsedAt ? `Last used ${new Date(token.lastUsedAt).toLocaleString()}` : "Never used"}
+                          {/* Two links with the same name still differ by when they were made. */}
+                          {token.createdAt ? ` · Made ${new Date(token.createdAt).toLocaleDateString()}` : ""}
                         </small>
                       </div>
                       {canSync ? (
-                        <button type="button" onClick={() => void revokeToken(token.id)}>
+                        <button type="button" onClick={() => void revokeToken(token.id, title)}>
                           Turn off
                         </button>
                       ) : (

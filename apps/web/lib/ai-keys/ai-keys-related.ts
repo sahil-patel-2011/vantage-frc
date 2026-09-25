@@ -28,7 +28,7 @@ export function aiKeysRelatedLinks(
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
     { id: "claude-code", label: "Claude Code", href: withOrgHref("/team/ai-bridge", orgId) },
     { id: "budgets", label: "Chat limits", href: hubHref("/ai", "budgets", orgId) },
-    { id: "byok-usage", label: "Your keys usage", href: withOrgHref("/team/ai-usage", orgId) },
+    { id: "byok-usage", label: "AI cost estimate", href: withOrgHref("/team/ai-usage", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "pricing", label: "Free, own key", href: withOrgHref("/pricing", orgId) },
     { id: "account", label: "Account", href: withOrgHref("/account", orgId) },

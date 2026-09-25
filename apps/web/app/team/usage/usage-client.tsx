@@ -327,7 +327,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Ask AI / Usage"
         title="AI usage"
-        description="A record of every billed Chat call — the model, the feature, the member, and which key funded it."
+        description="Every AI call the team made: the model, the feature, who asked, and which key paid for it."
       />
 
 
@@ -401,7 +401,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <section className="intel-panel">
                 <span className="eyebrow">FUNDING SOURCE · LAST {windowDays}D</span>
                 {!activity?.byKeySource.length && (
-                  <p className="app-muted">No metered calls in this window.</p>
+                  <p className="app-muted">No AI calls in this window.</p>
                 )}
                 {activity?.byKeySource.map((row) => (
                   <article className="admin-org" style={rowStyle} key={row.keySource}>
@@ -419,7 +419,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <section className="intel-panel">
                 <span className="eyebrow">SPEND BY FEATURE · LAST {windowDays}D</span>
                 {!activity?.byFeature.length && (
-                  <p className="app-muted">No metered calls in this window.</p>
+                  <p className="app-muted">No AI calls in this window.</p>
                 )}
                 {activity?.byFeature.map((row) => (
                   <article className="admin-org" style={rowStyle} key={row.feature}>
@@ -484,8 +484,8 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <h2>AI calls stopped by policy</h2>
               <p className="app-muted">
                 When a spend limit, a model list, or Pause Chat blocks a call, it is recorded here — so a feature that
-                suddenly stops working can be traced to the exact control that caught it. Adjust caps on{" "}
-                <a href={budgetsHref}>Chat limits</a>.
+                suddenly stops working can be traced to the exact control that caught it. Change them on{" "}
+                <a href={budgetsHref}>AI limits</a>.
               </p>
               {!!denials.byReason.length && (
                 <div className="tag-row" style={{ margin: "0.5rem 0 1rem" }}>
@@ -521,7 +521,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
             <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
               <span className="eyebrow">RECENT ACTIVITY · LAST {activity.events.length} CALLS</span>
               {!activity.events.length && (
-                <p className="app-muted">No AI calls have been metered for this team yet.</p>
+                <p className="app-muted">No AI calls yet.</p>
               )}
               {activity.events.map((event) => (
                 <article className="admin-org" style={rowStyle} key={event.id}>

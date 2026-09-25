@@ -4,7 +4,7 @@ export const AI_BRIDGE_FEATURE_LABEL = "Claude Code";
 
 export const AI_BRIDGE_SETUP_STEPS = [
   "On a computer that stays on, install Claude Code and sign in with the Claude plan you already pay for.",
-  "Start the Vantage Claude connector on that same computer. It shows an 8-character code.",
+  "On that computer, download the Vantage connector and start it with the commands below. It needs Node.js 20 or newer and shows an 8-character code.",
   "Type the code here and approve it. Chat then uses that computer — no API key.",
 ] as const;
 

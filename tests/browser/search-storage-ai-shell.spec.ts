@@ -15,8 +15,8 @@ const SURFACES = [
   },
   {
     path: "/team/ai-usage",
-    heading: "Your keys usage",
-    crumb: /AI\s*\/\s*Your keys usage/,
+    heading: "AI cost estimate",
+    crumb: /AI\s*\/\s*AI cost estimate/,
     ready: "No calls with your keys yet",
   },
   {

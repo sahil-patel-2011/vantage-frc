@@ -450,7 +450,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "finance", label: "Finance" },
         { id: "ai-keys", label: "AI keys", legacyHref: "/team/ai-keys", featured: true },
         { id: "ai-bridge", label: "Claude Code", legacyHref: "/team/ai-bridge", featured: true },
-        { id: "ai-usage", label: "Your keys usage", legacyHref: "/team/ai-usage" },
+        { id: "ai-usage", label: "AI cost estimate", legacyHref: "/team/ai-usage" },
         { id: "usage", label: "Usage", legacyHref: "/team/usage" },
       ]),
       { id: "decisions", label: "Notes", legacyHref: "/decisions" },
