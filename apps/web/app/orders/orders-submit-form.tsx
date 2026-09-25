@@ -58,6 +58,8 @@ export function SubmitForm({
   // "New vendor" in the select: a name typed here goes into the directory on submit. The form
   // used to refuse every purchase until someone had filled in the directory on another page.
   const [vendorChoice, setVendorChoice] = useState("");
+  // Shown by the button that was pressed, not at the top of the page.
+  const [formError, setFormError] = useState("");
   const directoryHref = hubHref("/business", "vendors", orgId);
   const addingVendor = vendorsReady && (vendors.length === 0 || vendorChoice === NEW_VENDOR);
 
@@ -113,15 +115,20 @@ export function SubmitForm({
       estimateUsd: data.estimateUsd,
     });
     if (!sheet.ok) {
-      setError(sheet.error);
+      setFormError(sheet.error);
+      return;
+    }
+    if (!addingVendor && !vendorChoice) {
+      setFormError("Pick a vendor, or choose New vendor… and type its name.");
       return;
     }
     const newVendorName = typeof data.newVendor === "string" ? data.newVendor.trim() : "";
     if (addingVendor && !newVendorName) {
-      setError("Type the vendor's name, for example AndyMark.");
+      setFormError("Type the vendor's name, for example AndyMark.");
       return;
     }
     setBusy(true);
+    setFormError("");
     setError("");
     const catalogId =
       typeof data.inventoryItemId === "string"
@@ -148,7 +155,7 @@ export function SubmitForm({
       .then(async (response) => {
         const payload = (await response.json()) as { error?: string; request?: unknown };
         if (!response.ok || !payload.request) {
-          setError(payload.error ?? "Choose a vendor from the vendor directory.");
+          setFormError(payload.error ?? "Choose a vendor from the vendor directory.");
           return;
         }
         form.reset();
@@ -156,7 +163,7 @@ export function SubmitForm({
         onCreated();
       })
       .catch((error: unknown) =>
-        setError(error instanceof VendorError ? error.message : "Network error — please try again."),
+        setFormError(error instanceof VendorError ? error.message : "Network error — please try again."),
       )
       .finally(() => setBusy(false));
   };
@@ -211,10 +218,10 @@ export function SubmitForm({
           </label>
           {vendors.length > 0 ? (
             <label>
-              Vendor
+              Vendor <small>required</small>
               <select
                 name="vendorId"
-                required
+                aria-invalid={formError.startsWith("Pick a vendor") || undefined}
                 disabled={!vendorsReady}
                 value={vendorChoice}
                 onChange={(event) => setVendorChoice(event.target.value)}
@@ -255,6 +262,11 @@ export function SubmitForm({
             </label>
           ) : null}
         </div>
+        {formError ? (
+          <p className="orders-error" role="alert">
+            {formError}
+          </p>
+        ) : null}
         <button type="submit" className="orders-submit" disabled={busy || !vendorsReady}>
           Add to buy sheet
         </button>

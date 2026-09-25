@@ -6,7 +6,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 
 type Member = { userId: string; name: string; role: string; you: boolean };
 
-const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Mentor / coach", scout: "Student", viewer: "Parent / guest" };
+const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Mentor or coach", scout: "Student", viewer: "Parent or guest" };
 
 /** Who is on the team, shown first on People. Owners and admins get the invite button. */
 export function TeamRoster({ orgId }: { orgId: string }) {

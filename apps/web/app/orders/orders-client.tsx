@@ -18,6 +18,7 @@ import {
   type OrdersView,
 } from "../../lib/orders";
 import { SubmitForm } from "./orders-submit-form";
+import { formatInviteRole } from "../../lib/invite/invite-flow";
 import "./orders.css";
 
 
@@ -694,6 +695,7 @@ function AdminReview({
 }) {
   const [buyerUserId, setBuyerUserId] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
+  const [confirmReject, setConfirmReject] = useState(false);
 
   return (
     <div className="orders-approve-panel">
@@ -706,7 +708,7 @@ function AdminReview({
           <option value="">Buyer defaults to requester</option>
           {buyerOptions.map((member) => (
             <option key={member.userId} value={member.userId}>
-              {member.name} ({member.role})
+              {member.name} ({formatInviteRole(member.role) ?? member.role})
             </option>
           ))}
         </select>
@@ -733,20 +735,32 @@ function AdminReview({
         >
           Approve → unlock buy link
         </button>
-        <button
-          type="button"
-          className="danger"
-          disabled={busy}
-          onClick={() =>
-            mutate({
-              action: "reject-order",
-              orderId: order.id,
-              reviewNotes: reviewNotes || null,
-            })
-          }
-        >
-          Reject
-        </button>
+        {/* Rejecting can't be taken back here, so it asks once, in place. */}
+        {confirmReject ? (
+          <>
+            <button
+              type="button"
+              className="danger"
+              disabled={busy}
+              onClick={() =>
+                mutate({
+                  action: "reject-order",
+                  orderId: order.id,
+                  reviewNotes: reviewNotes || null,
+                })
+              }
+            >
+              Yes, reject it
+            </button>
+            <button type="button" disabled={busy} onClick={() => setConfirmReject(false)}>
+              Keep it
+            </button>
+          </>
+        ) : (
+          <button type="button" className="danger" disabled={busy} onClick={() => setConfirmReject(true)}>
+            Reject
+          </button>
+        )}
       </div>
     </div>
   );

@@ -26,9 +26,9 @@ describe("invite Soft-UI flow helpers", () => {
   });
 
   it("formats clear team identity and roles", () => {
-    expect(formatInviteRole("admin")).toBe("Mentor / coach");
+    expect(formatInviteRole("admin")).toBe("Mentor or coach");
     expect(formatInviteRole("scout")).toBe("Student");
-    expect(formatInviteRole("viewer")).toBe("Parent / guest");
+    expect(formatInviteRole("viewer")).toBe("Parent or guest");
     expect(formatInviteRole("")).toBeNull();
     expect(
       formatInviteTeamIdentity({ orgName: "Vantage Robotics", teamNumber: 254, role: "scout" }),

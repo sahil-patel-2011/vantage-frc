@@ -182,11 +182,12 @@
   padding: 0 16px;
   border: 0;
   border-radius:var(--radius-sm);
-  background: var(--orders-accent-fill);
+  /* The same blue as every other primary button; it was the only green one. */
+  background: var(--accent);
   color: #fff;
   font: 700 13px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--orders-accent) 24%, transparent);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .orders-submit:disabled {

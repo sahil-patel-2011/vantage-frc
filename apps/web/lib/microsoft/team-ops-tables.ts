@@ -46,8 +46,8 @@ type OpsTableDef = {
 
 const ISO = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
 
-const ROLE_LABEL = `CASE m.role::text WHEN 'owner' THEN 'Owner' WHEN 'admin' THEN 'Mentor / coach'
-                   WHEN 'scout' THEN 'Student' WHEN 'viewer' THEN 'Parent / guest' ELSE m.role::text END`;
+const ROLE_LABEL = `CASE m.role::text WHEN 'owner' THEN 'Owner' WHEN 'admin' THEN 'Mentor or coach'
+                   WHEN 'scout' THEN 'Student' WHEN 'viewer' THEN 'Parent or guest' ELSE m.role::text END`;
 
 export const OPS_TABLES: OpsTableDef[] = [
   {

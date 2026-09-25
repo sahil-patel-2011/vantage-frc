@@ -27,7 +27,7 @@ describe("team invite ledger helpers", () => {
 
   it("surfaces an honest delivery banner", () => {
     expect(inviteDeliveryBanner("resend")).toBeNull();
-    expect(inviteDeliveryBanner("local")?.title).toMatch(/do not email/i);
-    expect(inviteDeliveryBanner("unconfigured")?.title).toMatch(/do not email/i);
+    expect(inviteDeliveryBanner("local")?.title).toMatch(/email is off/i);
+    expect(inviteDeliveryBanner("unconfigured")?.title).toMatch(/email is off/i);
   });
 });
