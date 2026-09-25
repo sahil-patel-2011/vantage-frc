@@ -57,7 +57,7 @@ describe("Files and Drive-team tags keep one primary", () => {
   it("live Tag robot is the only primary; next-actions stay secondary", () => {
     const src = readFileSync(join(WEB, "app/team-tags/team-tags-client.tsx"), "utf8");
     const live = src.slice(src.indexOf("function LiveTags"));
-    expect(live).toMatch(/<Button variant="primary"/);
+    expect(live).toMatch(/<Button type="submit" variant="primary"/);
     expect(live).not.toMatch(/action.primary \? "primary"/);
     expect(live).toMatch(/variant="secondary" href=\{action.href\}/);
   });
