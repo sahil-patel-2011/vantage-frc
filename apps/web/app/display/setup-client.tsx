@@ -247,6 +247,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     await load();
   }
 
+  const [tvName, setTvName] = useState("");
+
   async function mintToken(choice: PairChoice) {
     if (!canSync || !choice) return;
     const [mode, boardId] = choice.split(":") as ["pit" | "stage", string];
@@ -257,7 +259,9 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       return;
     }
     const board = boards.find((entry) => entry.id === boardId);
-    const label = mode === "stage" ? EVENT_BOARD_NAME : board?.name ?? "Pit TV";
+    // Named for the screen it goes on ("Pit TV", "Stands laptop"), so the list below can tell
+    // links apart: they were all "Event board".
+    const label = tvName.trim().slice(0, 60) || (mode === "stage" ? EVENT_BOARD_NAME : board?.name ?? "Pit TV");
     const r = await fetch("/api/display/boards", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -570,6 +574,15 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                       ))}
                   </select>
                 </label>
+                <label>
+                  Which screen <small className="app-muted">optional</small>
+                  <input
+                    value={tvName}
+                    maxLength={60}
+                    placeholder="e.g. Pit TV, Stands laptop"
+                    onChange={(e) => setTvName(e.target.value)}
+                  />
+                </label>
                 <Button variant="primary" type="button" onClick={() => void mintToken(pairValue)}>
                   Make TV link
                 </Button>
@@ -590,7 +603,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                 {activeTokens.map((token) => {
                   // An event-board link rides on a saved board but shows the event board, so it
                   // must not say it shows that board ("Event board · Shows 'Coach TV'").
-                  const eventLink = token.label === EVENT_BOARD_NAME;
+                  const eventLink = token.label === EVENT_BOARD_NAME || (eventCarrier != null && token.boardId === eventCarrier.id);
                   const shows = eventLink ? null : boardName(token.boardId);
                   const title = token.label && token.label !== "Pit TV" ? token.label : shows ?? "Pit TV";
                   return (
@@ -598,6 +611,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                       <div>
                         <strong>{title}</strong>
                         <small>
+                          {eventLink && title !== EVENT_BOARD_NAME ? `${EVENT_BOARD_NAME} · ` : ""}
                           {shows && shows !== title ? `Shows "${shows}" · ` : ""}
                           {token.lastUsedAt ? `Last used ${new Date(token.lastUsedAt).toLocaleString()}` : "Never used"}
                         </small>

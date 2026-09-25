@@ -47,7 +47,42 @@ const EXCLUSIONS = [
 ];
 
 /** "scouting_match_entries.csv" -> "Scouting match entries": the file name is not a title. */
-function datasetTitle(fileName: string): string {
+/** What each dataset is called on this page: the words a team uses, not the table's name. */
+const DATASET_NAMES: Record<string, { title: string; detail?: string }> = {
+  "scouting-match": { title: "Match scouting" },
+  "scouting-purple-standard": { title: "Match scouting, shared format", detail: "The same entries in the column layout other FRC scouting tools read." },
+  "scouting-pit": { title: "Pit scouting" },
+  "scouting-disagreements": { title: "Scout disagreements" },
+  "reference-teams": { title: "Teams at events" },
+  "reference-events": { title: "Events" },
+  "reference-matches": { title: "Match schedule and results" },
+  "reference-metrics": { title: "Team ratings" },
+  research: { title: "Research notes" },
+  "pick-lists": { title: "Pick lists" },
+  "accounting-ledger": { title: "Money in and out" },
+  "grant-artifacts": { title: "Grant drafts" },
+  "award-artifacts": { title: "Award drafts" },
+  "sponsor-artifacts": { title: "Sponsor documents" },
+  displays: { title: "Pit TV boards" },
+  "live-alerts": { title: "Alerts" },
+  "ai-artifacts": { title: "Things Ask AI made" },
+  "cad-jobs": { title: "CAD requests" },
+  "cad-artifacts": { title: "CAD files and notes" },
+  "cad-team-profile": { title: "CAD settings" },
+  "feature-context-links": { title: "Links between records", detail: "Which strategy notes, CAD parts and parts orders point at each other." },
+  "ai-team-conversations": { title: "Team Ask AI chats" },
+  "ai-team-memory": { title: "What Ask AI remembers for the team" },
+  "ai-team-artifacts": { title: "Team Ask AI files" },
+  "ai-private-conversations": { title: "Your Ask AI chats" },
+  "ai-private-memory": { title: "What Ask AI remembers for you" },
+  usage: { title: "AI usage" },
+  wallet: { title: "AI spending record", detail: "What the team's AI use cost, line by line." },
+  membership: { title: "Members and invites" },
+};
+
+function datasetTitle(fileName: string, id?: string): string {
+  const named = id ? DATASET_NAMES[id]?.title : undefined;
+  if (named) return named;
   const base = fileName.replace(/\.[a-z0-9]+$/i, "").replace(/[_-]+/g, " ").trim();
   return base ? base[0]!.toUpperCase() + base.slice(1) : fileName;
 }
@@ -377,8 +412,8 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                     }
                   />
                   <span>
-                    <strong>{datasetTitle(domain.fileName)}</strong>
-                    <small>{domain.description}</small>
+                    <strong>{datasetTitle(domain.fileName, domain.id)}</strong>
+                    <small>{DATASET_NAMES[domain.id]?.detail ?? domain.description}</small>
                   </span>
                   <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => { setSelected([domain.id]); void (async () => { setBusy(true); const response = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "csv", orgId, scope: exportScope, domain: domain.id, domains: [domain.id], filters: { eventKey: eventKey || undefined, excelBom }, }), }); if (!response.ok) { const data = await response.json(); setOk(false); setMessage(data.error ?? "CSV export failed"); } else { await downloadBlob(response, domain.fileName); setOk(true); setMessage(`Downloaded ${domain.fileName}`); } setBusy(false); })(); }}>
                     CSV

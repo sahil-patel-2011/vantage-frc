@@ -237,7 +237,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
 
       <section className="biz-grid three">
         {view.budget.monthlySpend.length > 0 ? (
-          <article className="app-card"><span className="biz-overline">Orders</span><h2>Monthly spend</h2><MonthBars rows={view.budget.monthlySpend} /></article>
+          <article className="app-card"><span className="biz-overline">Orders</span><h2>Committed by month</h2><MonthBars rows={view.budget.monthlySpend} /></article>
         ) : null}
         {sponsorsAllowed && view.sponsors.length > 0 ? (
           <article className="app-card soft-panel"><span className="biz-overline">Sponsors</span><h2>Sponsor contacts</h2><div className="biz-big-stat">{view.interactions.length}</div><p className="app-muted">Calls, emails and meetings logged with sponsors, with next steps.</p><Button variant="secondary" type="button" onClick={() => setTab("sponsors")}>Open sponsors</Button></article>

@@ -422,9 +422,18 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
           {countdown ? `${countdown} · ` : ""}
           {clockLabel(match.scheduledTime) ?? "No scheduled time posted"}
           {/* What the pit does now, the same cue the Coach TV gives ("LEAVE PIT NOW", "QUEUE NOW"). */}
-          {match.scheduledTime ? (
-            <b className="stage-queue-cue"> · {queueCue(countdownState(match.scheduledTime, now))}</b>
-          ) : null}
+          {match.scheduledTime
+            ? (() => {
+                const clock = countdownState(match.scheduledTime, now);
+                // Time to move: the cue becomes a filled amber label, not the same yellow words.
+                return (
+                  <b className={`stage-queue-cue${clock.leavePit ? " is-urgent" : ""}`}>
+                    {clock.leavePit ? " " : " · "}
+                    {queueCue(clock)}
+                  </b>
+                );
+              })()
+            : null}
         </span>
       </div>
 

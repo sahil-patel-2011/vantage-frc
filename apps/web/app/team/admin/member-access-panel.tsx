@@ -61,9 +61,21 @@ function hubLabel(hubId: ClientHubId): { label: string; hint: string } {
   return { label: entry?.label ?? hubId, hint: entry?.hint ?? "" };
 }
 
+/*
+  The pages to tick are a section's main tabs (Event day, Scouting, Strategy, Robot check), not
+  the ~55 tools inside them ("Heat signals", "Schema sync"). A tool follows the tab it sits under:
+  saving expands the ticked tabs to the tools inside them, so the stored access is the same shape.
+*/
 function tabsForHub(hubId: ClientHubId): Array<{ id: string; label: string }> {
   const hub = PRODUCT_HUBS.find((entry) => entry.id === hubId);
-  return hub ? hub.tabs.map((tab) => ({ id: tab.id, label: tab.label })) : [];
+  return hub ? hub.tabs.filter((tab) => !tab.group).map((tab) => ({ id: tab.id, label: tab.label })) : [];
+}
+
+function withNestedTools(hubId: ClientHubId, mainTabs: string[]): string[] {
+  const hub = PRODUCT_HUBS.find((entry) => entry.id === hubId);
+  if (!hub || !mainTabs.length) return mainTabs;
+  const nested = hub.tabs.filter((tab) => tab.group && mainTabs.includes(tab.group)).map((tab) => tab.id);
+  return [...new Set([...mainTabs, ...nested])];
 }
 
 type HubDraft = { open: ClientHubId[]; tabs: Partial<Record<ClientHubId, string[]>> };
@@ -72,7 +84,10 @@ function hubDraftFromRows(rows: HubAccessRow[]): HubDraft {
   const known = rows.filter((row) => (CLIENT_HUB_IDS as readonly string[]).includes(row.hubId));
   if (!known.length) return { open: [...CLIENT_HUB_IDS], tabs: {} };
   const tabs: Partial<Record<ClientHubId, string[]>> = {};
-  for (const row of known) tabs[row.hubId as ClientHubId] = [...(row.allowedTabIds ?? [])];
+  for (const row of known) {
+    const main = new Set(tabsForHub(row.hubId as ClientHubId).map((tab) => tab.id));
+    tabs[row.hubId as ClientHubId] = (row.allowedTabIds ?? []).filter((id) => main.has(id));
+  }
   return { open: known.map((row) => row.hubId as ClientHubId), tabs };
 }
 
@@ -83,7 +98,7 @@ function hubPayload(draft: HubDraft): HubAccessRow[] {
   if (everything) return [];
   return CLIENT_HUB_IDS.filter((id) => draft.open.includes(id)).map((hubId) => ({
     hubId,
-    allowedTabIds: draft.tabs[hubId] ?? [],
+    allowedTabIds: withNestedTools(hubId, draft.tabs[hubId] ?? []),
   }));
 }
 

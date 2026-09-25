@@ -640,3 +640,6 @@
 .stage-lineup em { font-size: calc(clamp(0.85rem, min(1.6vw, 2.2vh), 1.5rem) * var(--stage-scale)); }
 .stage-win { font-size: calc(clamp(1.1rem, min(3vw, 4vh), 2.6rem) * var(--stage-scale)); }
 .stage-queue-cue { font-weight: 900; color: var(--stage-accent); }
+.stage-queue-cue.is-urgent { display: inline-block; margin-left: 0.4em; padding: 0.05em 0.45em; border-radius: 10px; background: #f59e0b; color: #111; animation: stage-cue-pulse 1.6s ease-in-out infinite; }
+@keyframes stage-cue-pulse { 50% { opacity: 0.75; } }
+@media (prefers-reduced-motion: reduce) { .stage-queue-cue.is-urgent { animation: none; } }

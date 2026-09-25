@@ -475,7 +475,7 @@ export default function BudgetClient() {
               <tr>
                 <th>Where it came from</th>
                 <th className="num">Entries</th>
-                <th className="num">Spent</th>
+                <th className="num">Committed</th>
               </tr>
             </thead>
             <tbody>
