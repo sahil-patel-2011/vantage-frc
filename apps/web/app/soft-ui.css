@@ -2988,3 +2988,7 @@ body.has-app-shell .messages article small {
 .dash-widget{overflow:hidden}
 .dash-widget > :not(header):not(.dash-widget-link){min-height:0;flex:1 1 auto;overflow:auto;scrollbar-width:thin}
 .dash-widget > .dash-widget-link{flex:none;margin-top:auto}
+
+/* Countdowns never break across lines ("7 min 19" over "s"); with units they read in the body font. */
+.dash-countdown strong{white-space:nowrap;font:700 24px/1.1 var(--font-source-sans),system-ui;font-variant-numeric:tabular-nums}
+.edc-pill{white-space:nowrap}

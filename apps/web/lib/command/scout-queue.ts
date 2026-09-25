@@ -1,3 +1,5 @@
+import { matchShortLabel } from "../matches/no-next-match";
+
 export type ScoutCoverageRow = {
   teamKey: string;
   matchReports: number;
@@ -50,11 +52,25 @@ export function buildScoutQueue(input: {
     const cov = byTeam.get(row.teamKey) ?? { teamKey: row.teamKey, matchReports: 0, pitReports: 0 };
     const hasMatchScout = cov.matchReports > 0;
     const hasPitScout = cov.pitReports > 0;
+    // Only robots that still need something: a covered robot on this list read as "to scout"
+    // while Scouting showed it Done.
+    if (hasMatchScout && cov.matchReports >= 2 && hasPitScout) continue;
     const reasons: string[] = [];
     let priority = 0;
 
-    // Next match first
+    // Next match first; the gap is said first, then who they are to us.
     priority += Math.max(0, 40 - row.matchIndex * 12);
+    if (!hasMatchScout) {
+      priority += 28;
+      reasons.push("Needs match scouting");
+    } else if (cov.matchReports < 2) {
+      priority += 12;
+      reasons.push(`Only ${cov.matchReports} match report`);
+    }
+    if (!hasPitScout) {
+      priority += 16;
+      reasons.push("Needs a pit visit");
+    }
     if (row.slot === "opponent") {
       priority += 18;
       reasons.push("Upcoming opponent");
@@ -62,18 +78,7 @@ export function buildScoutQueue(input: {
       priority += 10;
       reasons.push("Alliance partner");
     }
-    if (!hasMatchScout) {
-      priority += 28;
-      reasons.push("No match scout reports yet");
-    } else if (cov.matchReports < 2) {
-      priority += 12;
-      reasons.push(`Thin match coverage (${cov.matchReports})`);
-    }
-    if (!hasPitScout) {
-      priority += 16;
-      reasons.push("No pit scout entry");
-    }
-    const matchLabel = `${row.compLevel.toUpperCase()} ${row.matchNumber}`;
+    const matchLabel = matchShortLabel(row.compLevel.toLowerCase(), row.matchNumber);
     const existing = best.get(row.teamKey);
     const candidate: ScoutQueueCandidate = {
       teamKey: row.teamKey,
@@ -114,7 +119,9 @@ export function withScoutFormHrefs(
   return items.map((item) => {
     const params = new URLSearchParams({ orgId });
     params.set("teamKey", item.teamKey);
-    if (item.matchKey) params.set("matchKey", item.matchKey);
+    // Match scouted but never visited in the pit: the link opens the pit form.
+    if (item.hasMatchScout && !item.hasPitScout) params.set("scoutTab", "pit");
+    else if (item.matchKey) params.set("matchKey", item.matchKey);
     return { ...item, formHref: `/scouting?${params.toString()}` };
   });
 }

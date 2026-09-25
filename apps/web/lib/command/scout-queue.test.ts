@@ -52,7 +52,9 @@ describe("buildScoutQueue", () => {
     });
 
     expect(queue[0]?.teamKey).toBe("frc118");
-    expect(queue[0]?.reasons.some((r) => /No match scout/i.test(r))).toBe(true);
+    expect(queue[0]?.reasons.some((r) => /Needs match scouting/i.test(r))).toBe(true);
+    // Fully covered (3 match reports and a pit visit): not on the list.
+    expect(queue.map((item) => item.teamKey)).not.toContain("frc1678");
     expect(queue.map((item) => item.teamKey)).toContain("frc2056");
     expect(queue.map((item) => item.teamKey)).not.toContain("frc254");
   });

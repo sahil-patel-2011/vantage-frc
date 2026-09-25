@@ -164,6 +164,8 @@ export function buildScheduleView(input: {
   setupMessage?: string;
   teamRatings?: ReadonlyMap<string, number>;
   fieldStd?: number | null;
+  /** The team's saved red-win chance per match key; replaces the ratings-only estimate. */
+  savedRedWin?: ReadonlyMap<string, number>;
   /** Assignments, entry counts, notes and videos for the timeline. Omitted → plain board. */
   detail?: TimelineDetailInput;
 }): ScheduleView {
@@ -182,9 +184,16 @@ export function buildScheduleView(input: {
     };
   }
   const mapped = mapTbaScheduleMatches(input.rows ?? []);
-  const predicted = input.teamRatings
+  const estimated = input.teamRatings
     ? attachSchedulePredictions(mapped, input.teamRatings, input.fieldStd ?? null)
     : mapped;
+  const predicted = input.savedRedWin?.size
+    ? estimated.map((match) => {
+        const red = input.savedRedWin!.get(match.matchKey);
+        if (red == null || !Number.isFinite(red) || !match.prediction) return match;
+        return { ...match, prediction: { ...match.prediction, redWinPct: red, blueWinPct: 1 - red } };
+      })
+    : estimated;
   return {
     status: "ready",
     context: input.context,

@@ -345,7 +345,7 @@ export function CommandReadyView({
                   {/* Counts the list below. It said "0 gaps in upcoming alliances" over a list of
                       eight robots missing pit scouting. */}
                   {snap?.scoutQueue.length
-                    ? `${snap.scoutQueue.length} ${snap.scoutQueue.length === 1 ? "robot" : "robots"} still to scout`
+                    ? `${snap.scoutQueue.length} ${snap.scoutQueue.length === 1 ? "robot needs" : "robots need"} scouting`
                     : "Nothing waiting"}
                 </p>
               </div>
@@ -361,7 +361,7 @@ export function CommandReadyView({
                       {item.matchLabel ?? "Event"} · {item.reasons.slice(0, 2).join(" · ")}
                     </span>
                   </div>
-                  <a href={item.formHref}>Scout</a>
+                  <a href={item.formHref}>{item.hasMatchScout && !item.hasPitScout ? "Pit visit" : "Scout"}</a>
                 </li>
               ))}
             </ul>

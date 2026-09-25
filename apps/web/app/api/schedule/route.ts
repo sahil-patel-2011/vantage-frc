@@ -1,5 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { headers } from "next/headers";
 import type { ScheduleContext } from "../../../lib/schedule-board";
 import { fieldStdFromRatings } from "../../../lib/schedule/schedule-predictions";
@@ -140,6 +141,25 @@ export async function GET(request: Request) {
         ),
       ]);
 
+      // The team's own saved prediction wins where there is one: the Predict list said 71% for a
+      // match Home and Strategy put at 75%. Missing table or no rows: the ratings estimate stays.
+      const saved = await withSavepoint(
+        client,
+        async () =>
+          (
+            await client.query<{ matchKey: string; pRed: number }>(
+              `SELECT DISTINCT ON (p.match_key) p.match_key AS "matchKey", p.p_red AS "pRed"
+                 FROM predictions p
+                 JOIN matches_ref m ON m.match_key = p.match_key AND m.event_key = $2::text
+                WHERE p.org_id = $1::uuid AND p.p_red IS NOT NULL
+                ORDER BY p.match_key, p.scored_at DESC`,
+              [row.orgId, row.eventKey],
+            )
+          ).rows,
+        [] as Array<{ matchKey: string; pRed: number }>,
+      );
+      const savedRedWin = new Map(saved.map((entry) => [entry.matchKey, Number(entry.pRed)]));
+
       const teamRatings = new Map<string, number>();
       for (const metric of metrics.rows) {
         if (metric.epaTotal == null || !Number.isFinite(metric.epaTotal)) continue;
@@ -151,6 +171,7 @@ export async function GET(request: Request) {
         rows: matches.rows,
         teamRatings,
         fieldStd: fieldStdFromRatings(teamRatings.values()),
+        savedRedWin,
         detail: {
           assignments: assignments.rows,
           entries: entries.rows,
