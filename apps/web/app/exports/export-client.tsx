@@ -39,13 +39,18 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const EXCLUSIONS = [
-  "API keys and OAuth / session tokens",
-  "Passwords, OTP / MFA secrets or hashes",
-  "Encryption material and payment credentials",
-  "Display tokens and internal security fields",
-  "Invite tokens",
-  "Other teams' workspaces (org_id isolation)",
+  "AI keys and sign-in sessions",
+  "Passwords and sign-in codes",
+  "Encryption keys and payment details",
+  "Pit TV links and invite links",
+  "Anything from other teams",
 ];
+
+/** "scouting_match_entries.csv" -> "Scouting match entries": the file name is not a title. */
+function datasetTitle(fileName: string): string {
+  const base = fileName.replace(/\.[a-z0-9]+$/i, "").replace(/[_-]+/g, " ").trim();
+  return base ? base[0]!.toUpperCase() + base.slice(1) : fileName;
+}
 
 function preselectedFromUrl(): string[] {
   if (typeof window === "undefined") return [];
@@ -372,7 +377,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                     }
                   />
                   <span>
-                    <strong>{domain.fileName}</strong>
+                    <strong>{datasetTitle(domain.fileName)}</strong>
                     <small>{domain.description}</small>
                   </span>
                   <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => { setSelected([domain.id]); void (async () => { setBusy(true); const response = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "csv", orgId, scope: exportScope, domain: domain.id, domains: [domain.id], filters: { eventKey: eventKey || undefined, excelBom }, }), }); if (!response.ok) { const data = await response.json(); setOk(false); setMessage(data.error ?? "CSV export failed"); } else { await downloadBlob(response, domain.fileName); setOk(true); setMessage(`Downloaded ${domain.fileName}`); } setBusy(false); })(); }}>
@@ -408,8 +413,9 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
               ))}
             </ul>
             <p className="app-muted">
-              CSV cells are RFC 4180 quoted, UTC timestamps are stable, and spreadsheet formulas are neutralized. ZIP
-              archives include <code>manifest.json</code> + <code>PROVENANCE.txt</code> and expire after 24 hours.
+              Files open in Excel, Google Sheets or Numbers. Times are in UTC, and nothing in a file can run as a
+              spreadsheet formula. A full export comes as a ZIP with a note on where each file came from; its
+              download link lasts 24 hours.
             </p>
           </section>
 
