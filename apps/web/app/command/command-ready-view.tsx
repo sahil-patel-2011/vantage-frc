@@ -21,6 +21,7 @@ import {
   EventDayNextActionsPanel,
 } from "./command-chrome";
 import { pct, teamLabel, type CommandHrefs, type Me } from "./command-model";
+import { EdcRoot } from "./edc-root";
 
 function AllianceChips({
   keys,
@@ -149,7 +150,7 @@ export function CommandReadyView({
   );
 
   return (
-    <main className={`edc-page${embedded ? " is-embedded" : ""}`}>
+    <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""}`}>
       <CommandReadyHeader
         embedded={embedded}
         orgId={orgId || null}
@@ -649,7 +650,7 @@ export function CommandReadyView({
       </nav>
 
       {eventPicker}
-    </main>
+    </EdcRoot>
   );
 }
 

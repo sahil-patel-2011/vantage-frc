@@ -99,8 +99,9 @@ export function scoutReportFromPayload(payload: Record<string, unknown> | null |
 /** What a teammate should read next to a saved report. "manual" is not a name. */
 export function scoutSourceLabel(source: string | null | undefined): string {
   switch (source) {
+    // Typed on the form is the normal case, so it goes unsaid ("E2E Member / Form" read as jargon).
     case "manual":
-      return "Form";
+      return "";
     case "voice":
       return "Voice";
     case "import":
@@ -120,6 +121,18 @@ export function scoutEntryByline(input: { scoutName?: string | null; source?: st
   const name = input.scoutName?.trim() ?? "";
   const source = scoutSourceLabel(input.source);
   return [name, source].filter((part) => part.length > 0).join(" · ");
+}
+
+/** "Today 5:24 PM", "Thu 9:56 PM", "Sep 20, 9:56 PM": when an entry was saved, without seconds. */
+export function savedWhen(iso: string, now = new Date()): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  const time = at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const days = Math.floor((new Date(now.toDateString()).getTime() - new Date(at.toDateString()).getTime()) / 86_400_000);
+  if (days === 0) return `Today ${time}`;
+  if (days === 1) return `Yesterday ${time}`;
+  if (days > 1 && days < 7) return `${at.toLocaleDateString([], { weekday: "short" })} ${time}`;
+  return `${at.toLocaleDateString([], { month: "short", day: "numeric" })}, ${time}`;
 }
 
 export function formatReportClock(atSeconds: number | null): string {

@@ -216,3 +216,19 @@
     transition: none;
   }
 }
+
+/* The robot you are scouting is unmistakable: a white ring and a check; the other open robots
+   step back while one is picked. */
+.next-match-robots:has(.is-selected) .next-match-robot:not(.is-selected):not(.is-done) { opacity: 0.72; }
+.next-match-robot.is-selected {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ink);
+  transform: scale(1.03);
+  position: relative;
+}
+.next-match-robot.is-selected::after {
+  content: "✓";
+  position: absolute; top: 4px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #fff; color: var(--ink); font-size: 12px; font-weight: 800;
+}

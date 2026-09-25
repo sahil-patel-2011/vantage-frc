@@ -15,6 +15,7 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { EdcRoot } from "./edc-root";
 
 export function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = eventDayRelatedLinks(orgId, {
@@ -85,7 +86,7 @@ export function EventDayShell({
 
   if (shell === "loading") {
     return (
-      <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
+      <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
           <PageHeader breadcrumbs="Competition / Event Day" title="Command" description="Next match and pit cues.">
             {related}
@@ -96,13 +97,13 @@ export function EventDayShell({
           <StatRowSkeleton count={3} />
           <CardGridSkeleton cols={3} rows={1} />
         </div>
-      </main>
+      </EdcRoot>
     );
   }
 
   if (shell === "error") {
     return (
-      <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
+      <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
           <PageHeader breadcrumbs="Competition / Event Day" title="Command" description="Next match and pit cues.">
             {related}
@@ -110,7 +111,7 @@ export function EventDayShell({
         )}
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
-      </main>
+      </EdcRoot>
     );
   }
 
@@ -127,7 +128,7 @@ export function EventDayShell({
     );
 
   return (
-    <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
+    <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
       {embedded ? null : (
         <PageHeader
           breadcrumbs="Competition / Event Day"
@@ -159,7 +160,7 @@ export function EventDayShell({
           </Button>
         ) : null}
       </EmptyState>
-    </main>
+    </EdcRoot>
   );
 }
 

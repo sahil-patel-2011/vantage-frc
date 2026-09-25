@@ -66,7 +66,10 @@ function roughLine(row: BriefingScoutedTeam | undefined, labels: string[]): stri
   const parts: string[] = [];
   if (row?.defenseLikely || labels.includes("defense-capable")) parts.push("Plays defense");
   if (labels.includes("contact-aware")) parts.push("physical");
-  if (row?.foulRate != null && row.foulRate >= 0.5) parts.push(`~${Math.round(row.foulRate * 10) / 10} fouls a match`);
+  if (row?.foulRate != null && row.foulRate >= 0.5) {
+    const fouls = Math.round(row.foulRate * 10) / 10;
+    parts.push(`~${fouls} ${fouls === 1 ? "foul" : "fouls"} a match`);
+  }
   else if (labels.includes("foul-prone")) parts.push("draws fouls");
   if (labels.includes("reliability-risk")) parts.push("breaks down sometimes");
   if (!parts.length) return null;

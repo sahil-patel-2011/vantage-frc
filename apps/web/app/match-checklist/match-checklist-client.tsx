@@ -184,7 +184,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
             </>
           }
           title="Pre-match checklist"
-          description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
+          description="Walk the robot through bumpers, battery, locks and code before each match."
         >
           {relatedStrip}
         </PageHeader>
@@ -221,7 +221,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           </>
         }
         title="Pre-match checklist"
-        description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
+        description="Walk the robot through bumpers, battery, locks and code before each match."
       >
         {relatedStrip}
       </PageHeader>

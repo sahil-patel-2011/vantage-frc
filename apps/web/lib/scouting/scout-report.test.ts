@@ -29,7 +29,7 @@ describe("scoutReportFromPayload", () => {
   });
 
   it("names the scout and the way the report was filed", () => {
-    expect(scoutEntryByline({ scoutName: "Noah Scout", source: "manual" })).toBe("Noah Scout · Form");
+    expect(scoutEntryByline({ scoutName: "Noah Scout", source: "manual" })).toBe("Noah Scout");
     expect(scoutEntryByline({ scoutName: "  ", source: "voice" })).toBe("Voice");
     expect(scoutEntryByline({ scoutName: null, source: "nope" })).toBe("");
   });

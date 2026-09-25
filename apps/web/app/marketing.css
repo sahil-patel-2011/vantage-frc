@@ -1646,3 +1646,12 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   .marketing-lux .lux-hero-copy > *,
   .marketing-lux .lux-hero-inner > :last-child{animation:none}
 }
+
+/* Phones: the step number sits beside a narrow rail, not in a 70px column with a 30px gap that
+   indented every step 100px and ran its text into the screen edge. */
+@media (max-width:560px){
+  .marketing-lux .flow-map{padding-inline:16px}
+  .marketing-lux .flow-map>article{grid-template-columns:38px minmax(0,1fr);gap:14px}
+  .marketing-lux .flow-map h2{font-size:22px;margin-top:6px}
+  .marketing-lux .flow-map section{padding-bottom:28px;padding-right:4px}
+}

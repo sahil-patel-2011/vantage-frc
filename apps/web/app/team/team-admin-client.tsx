@@ -63,9 +63,11 @@ function keepOrder(previous: Member[], next: Member[]): Member[] {
 }
 
 /** Plain-words version of the server's "bootstrap window" hint. */
-function tenureTip(tenure: AdminTenure | null): string | null {
+function tenureTip(tenure: AdminTenure | null, invites: Invite[] = []): string | null {
   if (!tenure) return null;
-  if (tenure.adminCount <= 1) {
+  // Gone once a second adult is on the way: it stayed up after a mentor had been invited.
+  const adultInvited = invites.some((invite) => invite.status === "pending" && invite.role !== "scout" && invite.role !== "viewer");
+  if (tenure.adminCount <= 1 && !adultInvited) {
     return "Tip: invite a second adult as a mentor or coach, so the team isn't locked out if you're away.";
   }
   return null;
@@ -640,7 +642,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       <TeamAdminInvitesPanel
         deliveryBanner={deliveryBanner}
         emailOff={inviteEmailIsOff(deliveryMode)}
-        tip={tenureTip(adminTenure)}
+        tip={tenureTip(adminTenure, invites)}
         email={email}
         setEmail={setEmail}
         role={role}

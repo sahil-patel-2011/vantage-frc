@@ -14,7 +14,7 @@ const AI_WAYS = [
   },
   {
     title: "A free key",
-    body: "Google AI Studio, OpenRouter and Groq all have free tiers that work as a team key.",
+    body: "A free Google Gemini key from Google AI Studio works as a team key. OpenRouter and Groq have free tiers too.",
   },
   {
     title: "A shop computer",

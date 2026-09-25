@@ -447,3 +447,9 @@
 .team-invite-bulk{display:grid;gap:8px;width:100%}
 .team-invite-bulk ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .team-invite-bulk li{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
+
+/* One rule between rows: each row had a line above and below, so two lines showed between
+   rows and the first row started with a stray divider under the heading. */
+body.has-app-shell .invite-list article { border-bottom: none; }
+body.has-app-shell .invite-list > h3 + article,
+body.has-app-shell .invite-list > article:first-child { border-top: none; }

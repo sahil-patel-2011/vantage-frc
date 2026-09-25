@@ -767,7 +767,7 @@ return (
             }}
           >
             {confirmRunning && canSave
-              ? "Match still running: tap again to save"
+              ? "Tap again to save"
               : !canSave
               ? type === "match"
                 ? "Pick a robot above to save"
@@ -778,11 +778,10 @@ return (
           </Button>
           {confirmRunning ? (
             <p className="form-message scout-running-note" role="status">
-              The match clock is still going. Tap Save again to save now, or{" "}
+              Match clock still running. Tap again to save now, or{" "}
               <button type="button" className="text-button" onClick={() => setConfirmRunning(false)}>
-                keep scouting
+                keep counting
               </button>
-              .
             </p>
           ) : null}
           {message ? (

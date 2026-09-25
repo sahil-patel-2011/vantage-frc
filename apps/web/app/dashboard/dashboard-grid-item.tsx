@@ -179,10 +179,8 @@ export const DashboardGridItem = memo(function DashboardGridItem({
               onSelect?.(selected ? null : item.i);
             }}
           >
-            <span aria-hidden="true">
-              {WIDGET_SIZE_LABEL[currentSize]}
-              {stretched ? <small className="dash-size-stretched"> · fills row</small> : null}
-            </span>
+            {/* The size letter only: "M · fills row" squeezed onto two 8px lines. The menu says it. */}
+            <span aria-hidden="true">{WIDGET_SIZE_LABEL[currentSize]}</span>
             <svg viewBox="0 0 12 12" aria-hidden="true">
               <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -198,6 +196,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
             aria-label={`Resize ${label}`}
             onPointerDown={(event) => event.stopPropagation()}
           >
+            {stretched ? <p className="dash-size-note">Stretched to fill its row on Home; its size is still {WIDGET_SIZE_LABEL[currentSize]}.</p> : null}
             <div className="dash-size-chips">
               {WIDGET_SIZE_KEYS.map((size) => (
                 <button

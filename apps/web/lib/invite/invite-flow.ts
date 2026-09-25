@@ -228,23 +228,22 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
   if (kind === "accepted") {
     return {
       kind,
-      eyebrow: "ALREADY ACCEPTED",
-      title: "This invitation was already used",
+      eyebrow: "TEAM INVITATION",
+      title: "This invite was already used",
       description:
         detail?.trim() ||
         "If you already joined, choose your team. Otherwise ask an owner for a fresh invite.",
-      badge: "Used",
+      badge: "",
     };
   }
   if (kind === "revoked") {
     return {
       kind,
-      eyebrow: "INVITE REVOKED",
-      title: "This invitation was cancelled",
-      description:
-        detail?.trim() ||
-        "A team leader revoked this invite. Request a new one if you still need access.",
-      badge: "Revoked",
+      // Said once: a "Revoked" pill, an "INVITE REVOKED" eyebrow and the heading said it three times.
+      eyebrow: "TEAM INVITATION",
+      title: "This invite was cancelled",
+      description: detail?.trim() || "Ask your team for a new one.",
+      badge: "",
     };
   }
   if (kind === "error") {

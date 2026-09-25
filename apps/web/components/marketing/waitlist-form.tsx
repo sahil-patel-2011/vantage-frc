@@ -287,6 +287,7 @@ export function WaitlistForm({
           name="email"
           type="email"
           autoComplete="email"
+          placeholder="you@school.org"
           required
           aria-invalid={fieldErrors.email ? true : undefined}
           aria-describedby={fieldErrors.email ? `${prefix}-email-error` : undefined}

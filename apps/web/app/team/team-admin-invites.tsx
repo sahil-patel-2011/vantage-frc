@@ -58,6 +58,7 @@ export function TeamAdminInvitesPanel({
 }) {
   // A new link kills the one already sent, so it takes a second tap that says so.
   const [confirmNewLink, setConfirmNewLink] = useState<string | null>(null);
+  const [showAllPast, setShowAllPast] = useState(false);
   const pending = invites.filter((invite) => invite.status === "pending");
   // The accepted owner invite is how the team was set up, not someone the team invited.
   const past = invites.filter(
@@ -243,7 +244,8 @@ export function TeamAdminInvitesPanel({
         <details className="team-invite-past">
           <summary>Past invites ({past.length})</summary>
           <div className="invite-list">
-            {past.map((inviteRow) => (
+            {/* The newest ten; the list had no end (42 revoked test addresses, 3,800px). */}
+            {(showAllPast ? past : past.slice(0, 10)).map((inviteRow) => (
               <article key={inviteRow.id}>
                 <div>
                   <strong>{inviteRow.email}</strong>
@@ -254,6 +256,11 @@ export function TeamAdminInvitesPanel({
                 </div>
               </article>
             ))}
+            {past.length > 10 && !showAllPast ? (
+              <button type="button" className="text-button" onClick={() => setShowAllPast(true)}>
+                Show all {past.length}
+              </button>
+            ) : null}
           </div>
         </details>
       ) : null}

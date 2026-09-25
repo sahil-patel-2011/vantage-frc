@@ -48,7 +48,8 @@ describe("rating words, not statistics words", () => {
   });
 
   it("keeps readable plan chips and drops engine ones", () => {
-    expect(readablePlanChip("foul exposure")).toBe("foul exposure");
+    expect(readablePlanChip("foul exposure")).toBe("fouls");
+    expect(readablePlanChip("weighted scoring")).toBe("our scoring");
     expect(readablePlanChip("match 2026gacmp_qm30")).toBeNull();
     expect(readablePlanChip("red leave-one-out 67")).toBeNull();
     expect(readablePlanChip("")).toBeNull();

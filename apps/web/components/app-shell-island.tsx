@@ -1,6 +1,7 @@
 "use client";
 
 import type { PointerEvent } from "react";
+import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { defaultIslandLabelList } from "../lib/nav/island-preferences";
 import { ISLAND_TAB_CATALOG, withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
@@ -22,6 +23,13 @@ export function AppShellEventFocus({
   onCollapse: () => void;
   onExpand: () => void;
 }) {
+  // The action for the page you are on is marked, not offered: "Brief" was a filled button on
+  // the briefing itself and on every other page, so it read as the current tab everywhere.
+  const pathname = usePathname() ?? "";
+  const isHere = (href: string) => {
+    const path = href.split(/[?#]/)[0] ?? "";
+    return path.length > 1 && pathname === path;
+  };
   if (focusCollapsed) {
     return (
       <button
@@ -43,9 +51,17 @@ export function AppShellEventFocus({
       </div>
       <small>{eventFocus.freshness}</small>
       <nav aria-label="Next match actions">
-        {eventFocus.actions.map((action) => (
-          <a className={action.emphasis} href={action.href} key={action.label}>{action.label}</a>
-        ))}
+        {eventFocus.actions.map((action) =>
+          isHere(action.href) ? (
+            <span className="is-current" aria-current="page" key={action.label}>
+              {action.label}
+            </span>
+          ) : (
+            <a className={action.emphasis} href={action.href} key={action.label}>
+              {action.label}
+            </a>
+          ),
+        )}
       </nav>
       <button
         className="soft-focus-collapse"

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { formatReportClock, scoutEntryByline, scoutReportFromPayload } from "../../lib/scouting/scout-report";
+import { formatReportClock, savedWhen, scoutEntryByline, scoutReportFromPayload } from "../../lib/scouting/scout-report";
 import { describeMatchKey } from "../../lib/scouting/scout-target";
 import type { RecentEntry } from "./scouting-model";
 
@@ -42,7 +42,7 @@ export function ScoutReportViewer({
               <small className="app-muted">
                 {/* The same words the scout picked from: Sure / OK / Guessing. */}
                 {entry.confidence === "high" ? "Sure" : entry.confidence === "low" ? "Guessing" : "OK"} ·{" "}
-                {new Date(entry.updatedAt).toLocaleTimeString()}
+                {savedWhen(entry.updatedAt)}
               </small>
             </button>
             {open && report ? (

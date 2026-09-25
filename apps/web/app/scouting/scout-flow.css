@@ -525,3 +525,11 @@
     padding: 0 10px;
   }
 }
+
+/* The sticky bar sits flush under the header on a solid surface: in the 4px gap above it and
+   through its translucent fill, the questions behind it showed through while scrolling. */
+.scout-context-bar {
+  top: var(--topbar-h, 60px);
+  background: var(--surface);
+  box-shadow: 0 -8px 0 0 var(--bg, var(--surface)), 0 6px 14px -8px rgba(12, 17, 24, 0.28);
+}

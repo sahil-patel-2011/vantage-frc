@@ -118,3 +118,11 @@
   padding:7px 10px;border:1px dashed var(--m-line-soft);border-radius:10px;
   color:var(--m-muted);font:600 10.5px/1.2 var(--m-sans);
 }
+
+/* "Works without AI" and "Predictions that show their range" sat 2px under the workspace cards;
+   they get the grid's own gap and read as a second row. */
+.marketing-lux .mk-helpers{margin-top:20px}
+/* Phones: one column for the four steps; two 145px columns ran "Learn" to eleven lines. */
+@media (max-width:480px){
+  .marketing-lux .lux-loop-steps-4{grid-template-columns:1fr}
+}
