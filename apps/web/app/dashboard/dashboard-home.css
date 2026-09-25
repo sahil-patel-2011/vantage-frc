@@ -175,3 +175,15 @@
 .dash-sheet-empty-note{padding:0 16px}
 /* Edit mode: dragging a card by its body does not select its text. */
 .dash-grid-item.is-editing{user-select:none;-webkit-user-select:none}
+
+/* On a phone a card is as tall as what it says: "Nothing on your list today" filled 330px and
+   "AI is off" 500px because the desktop grid's minimum height still applied. */
+.dash-pgrid[data-flow="true"] > .dash-grid-item,
+.dash-pgrid[data-flow="true"] > .dash-grid-item .dash-widget,
+.dash-pgrid[data-flow="true"] > .dash-grid-item .app-card {
+  min-height: 0;
+}
+.dash-pgrid[data-flow="true"] .dash-widget.is-empty .dash-empty,
+.dash-pgrid[data-flow="true"] .dash-widget.is-empty .soft-empty-compact {
+  min-height: 0;
+}

@@ -46,12 +46,13 @@ async function persistStartSnapshot(orgHint: string, data: RoleOnboardingView): 
   }
 }
 
-function StartRelated({ orgId }: { orgId: string | null }) {
+function StartRelated({ orgId, member = false }: { orgId: string | null; member?: boolean }) {
+  // Team setup and Security are an owner's pages; a student saw them beside Calendar.
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <a href={withOrgHref("/team/getting-started", orgId)}>Team setup</a>
+      {member ? null : <a href={withOrgHref("/team/getting-started", orgId)}>Team setup</a>}
       <a href={withOrgHref("/team/calendar", orgId)}>Calendar</a>
-      <a href="/security">Security</a>
+      {member ? null : <a href="/security">Security</a>}
     </nav>
   );
 }
@@ -301,7 +302,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
                 : `First steps for ${view.orgName}, picked from your role and subteams.`
             }
           >
-            <StartRelated orgId={view.orgId} />
+            <StartRelated orgId={view.orgId} member={isMemberRole(view.teamRole)} />
           </PageHeader>
           <TeamOpsNav orgId={view.orgId} active="start" />
           <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
