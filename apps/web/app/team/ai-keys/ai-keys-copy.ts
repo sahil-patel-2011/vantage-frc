@@ -82,7 +82,8 @@ export const ANY_ENDPOINT_POINTS: string[] = [
   ALL_FEATURES_BODY,
   QUALITY_NOTICE_BODY,
   "Keys are encrypted at rest and never shown again after you save them. Vantage calls your endpoint directly with them and stores nothing from the response beyond what the feature shows you.",
-  PUBLIC_SWARM_FALLBACK_BODY,
+  // Not PUBLIC_SWARM_FALLBACK_BODY: that fallback is off and, as of September 2026, answers
+  // nothing, so a paragraph about it was noise on a team's page. Kept for the admin setting.
 ];
 
 // ---------------------------------------------------------------------------

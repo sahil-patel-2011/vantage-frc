@@ -96,7 +96,8 @@ describe("page promises", () => {
   it("ships the parity claim, the quality note, and the key-handling note together", () => {
     expect(ANY_ENDPOINT_POINTS).toContain(ALL_FEATURES_BODY);
     expect(ANY_ENDPOINT_POINTS).toContain(QUALITY_NOTICE_BODY);
-    expect(ANY_ENDPOINT_POINTS).toContain(PUBLIC_SWARM_FALLBACK_BODY);
+    // The switched-off public swarm is not described on a team's page.
+    expect(ANY_ENDPOINT_POINTS).not.toContain(PUBLIC_SWARM_FALLBACK_BODY);
     expect(PUBLIC_SWARM_FALLBACK_BODY.toLowerCase()).toContain("petals");
     // The two facts a team needs before turning it on: strangers see the
     // conversation, and nobody has turned it on for them.

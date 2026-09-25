@@ -360,7 +360,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               notes, local models, free keys, routing and model policy. The walkthrough
               found the page ~5,500px tall with the key forms buried; they now come first. */}
           <details className="ai-keys-advanced ai-keys-fold">
-            <summary>More options: hosting, local models, free keys, routing and model policy</summary>
+            <summary>More options: free keys, your own model server, and which models to use</summary>
           <section className="app-card soft-panel ai-keys-billing" aria-label="Hosting vs your keys">
             <span className="eyebrow">{billing.title}</span>
             <p>{billing.body}</p>
@@ -375,6 +375,10 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               provider-specific machinery below it: the endpoint is the team's
               choice, and the choice does not gate features. Copy lives in
               ./ai-keys-copy.ts so the promises stay pinned by tests. */}
+          {/* For a team running its own model server: developer detail (endpoints, base URLs,
+              tunnels), so it opens only when asked for. */}
+          <details className="ai-keys-fold ai-keys-selfhost">
+            <summary>Use a model you host yourself (Ollama, LM Studio, any OpenAI-style server)</summary>
           <section className="app-card soft-panel ai-keys-any" aria-label="Bring any OpenAI-compatible endpoint">
             <span className="eyebrow">BRING ANY ENDPOINT</span>
             <h2>{ANY_ENDPOINT_HEADLINE}</h2>
@@ -479,6 +483,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               </form>
             ) : null}
           </section>
+          </details>
 
           <section className="app-card soft-panel ai-keys-free" aria-label="Free API key providers">
             <span className="eyebrow">FREE API KEYS</span>
