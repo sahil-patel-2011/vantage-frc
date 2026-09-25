@@ -1,7 +1,7 @@
 "use client";
 
 import { ourSideRange } from "../../../lib/strategy/our-side-range";
-import { nextMatchDriverLines, nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
+import { nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { matchShortLabel } from "../../../lib/matches/no-next-match";
@@ -29,7 +29,6 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
   const range = ourSideRange(numericOrNull(data.confidenceLow), numericOrNull(data.confidenceHigh), alliance);
   const low = range?.low ?? null;
   const high = range?.high ?? null;
-  const drivers = nextMatchDriverLines(data);
 
   return (
     <div className={`dash-next-match${alliance ? ` alliance-${alliance}` : ""}`}>
@@ -96,15 +95,8 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
       {typeof data.briefing === "string" && data.briefing ? (
         <p className="dash-bumper-cue">{data.briefing}</p>
       ) : null}
-      {drivers.length ? (
-        <ul className="dash-checklist">
-          {drivers.map((line) => (
-            <li key={line}>
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {/* No factor rows: "weighted scoring", "autonomous", "foul exposure" are the model's
+          words, bare here. The briefing this card links to explains the match. */}
       {/* The alliances only when "With … vs …" above could not say them. */}
       {Array.isArray(data.partners) || Array.isArray(data.opponents) ? null : (
         <footer>

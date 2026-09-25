@@ -13,6 +13,7 @@ import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { plainStrategyText } from "../../lib/briefing/plain-text";
+import { matchShortLabel } from "../../lib/matches/no-next-match";
 import { intelTags } from "../../lib/display/match-intel";
 import {
   CommandReadyHeader,
@@ -200,9 +201,7 @@ export function CommandReadyView({
           {next ? (
             <>
               <div className={`edc-match-hero alliance-${next.ourAlliance ?? "tbd"}`}>
-                <strong>
-                  {next.compLevel.toUpperCase()} {next.matchNumber}
-                </strong>
+                <strong>{matchShortLabel(next.compLevel, next.matchNumber)}</strong>
                 <span className="edc-match-when">{formatMyDayWhen(next.scheduledTime) ?? "Time TBD"}</span>
                 <span className={`edc-bumper-cue ${next.ourAlliance ?? ""}`}>
                   {snap?.myDay?.bumperCue ??
@@ -236,50 +235,49 @@ export function CommandReadyView({
                     .join(" · ") || "—"}
                 </b>
               </p>
-              <div className="edc-alliances">
-                <div>
-                  <span>Red</span>
-                  <AllianceChips keys={next.red.teamKeys} ours={snap?.teamKey ?? null} highlight="red" />
+              {/* The Red/Blue rows only repeated "With … vs …" above; they stay for a match
+                  we are not in, where "With" has nothing to say. */}
+              {next.ourAlliance ? null : (
+                <div className="edc-alliances">
+                  <div>
+                    <span>Red</span>
+                    <AllianceChips keys={next.red.teamKeys} ours={snap?.teamKey ?? null} highlight="red" />
+                  </div>
+                  <div>
+                    <span>Blue</span>
+                    <AllianceChips keys={next.blue.teamKeys} ours={snap?.teamKey ?? null} highlight="blue" />
+                  </div>
                 </div>
-                <div>
-                  <span>Blue</span>
-                  <AllianceChips keys={next.blue.teamKeys} ours={snap?.teamKey ?? null} highlight="blue" />
-                </div>
-              </div>
-              {snap?.myDay ? (
+              )}
+              {/* Only what the team has posted. Three "nothing yet" lines under the match
+                  (leave time, room, on-duty mentor) were noise on an event day. */}
+              {snap?.myDay && (snap.myDay.nextTravelLabel || snap.myDay.lodgingLabel || snap.myDay.onDutyLabel) ? (
                 <ul className="edc-myday-strip" aria-label="Hotels and travel">
-                  <li>
-                    <span>Travel</span>
-                    <b>
-                      {snap.myDay.nextTravelLabel ??
-                        "No leave time — open Logistics"}
-                    </b>
-                  </li>
-                  <li>
-                    <span>Room</span>
-                    <b>
-                      {snap.myDay.lodgingLabel ??
-                        "No lodging assigned — mentors publish hotels on Logistics"}
-                    </b>
-                  </li>
+                  {snap.myDay.nextTravelLabel ? (
+                    <li>
+                      <span>Travel</span>
+                      <b>{snap.myDay.nextTravelLabel}</b>
+                    </li>
+                  ) : null}
+                  {snap.myDay.lodgingLabel ? (
+                    <li>
+                      <span>Room</span>
+                      <b>{snap.myDay.lodgingLabel}</b>
+                    </li>
+                  ) : null}
                   {snap.myDay.onDutyLabel ? (
                     <li>
                       <span>On duty</span>
                       <b>{snap.myDay.onDutyLabel}</b>
                     </li>
-                  ) : (
-                    <li>
-                      <span>On duty</span>
-                      <b>No on-duty mentor posted yet</b>
-                    </li>
-                  )}
+                  ) : null}
                 </ul>
               ) : null}
               <footer className="edc-after edc-myday-links">
                 <a href={matchChecklistHref}>Checklist</a>
                 {after ? (
                   <span>
-                    After · {after.compLevel.toUpperCase()} {after.matchNumber}
+                    After · {matchShortLabel(after.compLevel, after.matchNumber)}
                     {after.scheduledTime ? ` · ${countdownLabel(after.scheduledTime)}` : ""}
                   </span>
                 ) : null}
@@ -490,9 +488,7 @@ export function CommandReadyView({
               <div className="edc-coverage-board" role="list">
                 {snap.coverage.liveBoard.slice(0, 24).map((cell) => (
                   <article key={`${cell.matchKey}-${cell.teamKey}`} className={cell.state} role="listitem">
-                    <b>
-                      {cell.compLevel.toUpperCase()} {cell.matchNumber}
-                    </b>
+                    <b>{matchShortLabel(cell.compLevel, cell.matchNumber)}</b>
                     <span>{cell.teamNumber ?? teamLabel(cell.teamKey)}</span>
                     <small>
                       {cell.state.replaceAll("_", " ")}

@@ -224,9 +224,9 @@ async function main() {
     for (const m of matches) {
       await db.query(
         `INSERT INTO matches_ref (match_key, event_key, comp_level, set_number, match_number,
-           red_alliance, blue_alliance, winning_alliance, event_time, predicted_time, actual_time)
+           red_alliance, blue_alliance, winning_alliance, event_time, predicted_time, actual_time, synced_at)
          VALUES ($1, $2, 'qm', 1, $3, $4::jsonb, $5::jsonb, $6, $7::timestamptz, $7::timestamptz,
-                 CASE WHEN $8::boolean THEN $7::timestamptz END)
+                 CASE WHEN $8::boolean THEN $7::timestamptz END, now())
          ON CONFLICT (match_key) DO UPDATE SET
            red_alliance = EXCLUDED.red_alliance,
            blue_alliance = EXCLUDED.blue_alliance,
@@ -238,7 +238,9 @@ async function main() {
            -- played. Upcoming matches with an actual_time counted as played everywhere.
            event_time = EXCLUDED.event_time,
            predicted_time = EXCLUDED.predicted_time,
-           actual_time = EXCLUDED.actual_time`,
+           actual_time = EXCLUDED.actual_time,
+           -- A reseed is a fresh sync; an old stamp made every screen say "may be out of date".
+           synced_at = EXCLUDED.synced_at`,
         [
           m.matchKey,
           EVENT_KEY,
