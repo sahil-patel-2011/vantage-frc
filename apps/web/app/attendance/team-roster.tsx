@@ -39,9 +39,11 @@ export function TeamRoster({ orgId }: { orgId: string }) {
         <h2 id="team-roster-title">
           Team{members ? <small> · {members.length}</small> : null}
         </h2>
+        {/* Roles, invites and removing someone live in Team admin; People said so only through
+            names drawn as underlined blue links. One labelled way in instead. */}
         {canManage ? (
           <Button as="a" variant="secondary" size="sm" href={withOrgHref("/team/admin", orgId)}>
-            Invite someone
+            Manage people and invites
           </Button>
         ) : null}
       </header>
@@ -57,8 +59,7 @@ export function TeamRoster({ orgId }: { orgId: string }) {
                 {member.name.trim().charAt(0).toUpperCase() || "?"}
               </span>
               <span className="team-roster-name">
-                {/* For whoever runs the team, a name opens Team admin, where their access is set. */}
-                {canManage ? <a href={withOrgHref("/team/admin", orgId)}>{member.name}</a> : member.name}
+                {member.name}
                 {member.you ? <small> (you)</small> : null}
               </span>
               <span className={`team-roster-role role-${member.role}`}>{ROLE_LABEL[member.role] ?? member.role}</span>

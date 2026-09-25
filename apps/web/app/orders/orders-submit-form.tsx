@@ -187,11 +187,10 @@ export function SubmitForm({
 
   return (
     <section className="soft-panel">
-      <span className="biz-overline">Add a line</span>
       <h2>Log a purchase</h2>
       <p className="orders-form-lead">
-        For someone buying it: what, why, when, the cost and where from. Mentors approve; pay on the vendor site — never
-        paste card or bank numbers.
+        What, why, when, the cost and where from. A mentor approves it before anyone buys, and payment happens on the
+        vendor&rsquo;s site, never in Vantage.
       </p>
       {/* Two forms reach one list; each says who it is for, so an owner knows where to send students. */}
       <p className="orders-form-lead">
@@ -209,7 +208,7 @@ export function SubmitForm({
             name="justification"
             required
             maxLength={2000}
-            placeholder="Subsystem, event, or spare — never paste card or bank numbers"
+            placeholder="Subsystem, event deadline, or pit spare"
           />
         </label>
         <div className="orders-form-grid">

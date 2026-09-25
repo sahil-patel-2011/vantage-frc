@@ -108,33 +108,6 @@ function OrdersNextActions({
   );
 }
 
-function ApprovalFlowStrip() {
-  return (
-    <section className="soft-panel orders-flow" aria-label="Buy sheet columns">
-      <span className="biz-overline">Buy sheet</span>
-      <h2>What we bought, why, when, cost</h2>
-      <ol className="orders-flow-steps">
-        <li>
-          <strong>What</strong>
-          <span>The part or item you need to buy.</span>
-        </li>
-        <li>
-          <strong>Why</strong>
-          <span>Subsystem, event deadline, or pit spare — so mentors can approve.</span>
-        </li>
-        <li>
-          <strong>When</strong>
-          <span>Needed-by if you set one, otherwise the date it was requested or bought.</span>
-        </li>
-        <li>
-          <strong>Cost</strong>
-          <span>Estimate on this sheet. Pay on the vendor site — never enter card details here.</span>
-        </li>
-      </ol>
-    </section>
-  );
-}
-
 export default function OrdersClient({ embedded = false, seasonYear, orgId: orgIdProp }: OrdersClientProps = {}) {
   const [view, setView] = useState<OrdersView | null>(null);
   const [error, setError] = useState("");
@@ -366,9 +339,10 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
               </select>
             </label>
           ) : null}
-          <ApprovalFlowStrip />
+          {/* What needs doing comes first. The "What / Why / When / Cost" card only explained the
+              form's columns, and inside Business the five count tiles repeated its overview. */}
           <OrdersNextActions actions={nextActions} />
-          {live!.orders.length > 0 ? <MetricsPanel view={live!} /> : null}
+          {!embedded && live!.orders.length > 0 ? <MetricsPanel view={live!} /> : null}
           {live!.orders.length === 0 ? (
             <EmptyState
               soft
@@ -377,26 +351,25 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             />
           ) : null}
           {live!.financeAiEnabled && live!.aiSummary ? <AiSummaryPanel summary={live!.aiSummary} /> : null}
-          {live!.metrics.mineToBuy > 0 ? (
-            <p className="orders-warn" role="status">
-              {live!.metrics.mineToBuy} approved line{live!.metrics.mineToBuy === 1 ? "" : "s"} waiting on you —
-              open the buy link, pay on the vendor site, then mark ordered.
-            </p>
-          ) : null}
           {live!.isAdmin && live!.metrics.pending > 0 ? (
             <p className="orders-info" role="status">
               {live!.metrics.pending} line{live!.metrics.pending === 1 ? "" : "s"} awaiting your approval before a
               buy link is unlocked.
             </p>
           ) : null}
-          <SubmitForm
-            orgId={live!.orgId}
-            seasonYear={season ?? live!.seasonYear}
-            busy={busy}
-            setBusy={setBusy}
-            setError={setError}
-            onCreated={() => load()}
-          />
+          {/* One button to log a purchase; the form was a full page section between the numbers and
+              the lines that needed approving. Open straight away on an empty sheet. */}
+          <details className="orders-add" open={live!.orders.length === 0 || undefined}>
+            <summary className="app-button primary is-primary">Add a purchase</summary>
+            <SubmitForm
+              orgId={live!.orgId}
+              seasonYear={season ?? live!.seasonYear}
+              busy={busy}
+              setBusy={setBusy}
+              setError={setError}
+              onCreated={() => load()}
+            />
+          </details>
           <OrdersList view={live!} busy={busy} mutate={mutate} />
         </>
       )}
@@ -464,19 +437,27 @@ function AiSummaryPanel({ summary }: { summary: NonNullable<LiveView["aiSummary"
 
 function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   const pending = view.orders.filter((o) => o.status === "pending");
-  const active = view.orders.filter((o) => o.status !== "pending" && o.status !== "rejected");
-  const closed = view.orders.filter((o) => o.status === "rejected");
+  const active = view.orders.filter((o) => o.status !== "pending" && o.status !== "rejected" && o.status !== "received");
+  // Done and turned-down lines are history: five rejected test lines, each fully expanded, made
+  // the page 3,400px long below the lines that still needed someone.
+  const closed = view.orders.filter((o) => o.status === "rejected" || o.status === "received");
 
   return (
     <>
+      {/* An empty "Needs approval" card took a screen's height to say nothing; mentors see it when a
+          line is waiting. */}
+      {pending.length === 0 ? (
+        view.isAdmin ? <p className="orders-quiet">Nothing waiting for approval.</p> : null
+      ) : (
       <section className="soft-panel">
-        <span className="biz-overline">Mentor gate</span>
-        <h2>Awaiting approval</h2>
-        <p className="orders-section-lead">
-          Mentors review what, why, when, and cost, then unlock the vendor buy link. Nothing is charged here.
-        </p>
+        <h2>
+          Needs approval{pending.length ? ` (${pending.length})` : ""}
+        </h2>
+        {pending.length ? (
+          <p className="orders-section-lead">A mentor approves a line, which unlocks its buy link.</p>
+        ) : null}
         {pending.length === 0 ? (
-          <p className="app-muted">No lines waiting on mentors.</p>
+          <p className="app-muted">Nothing waiting on a mentor.</p>
         ) : (
           <ul className="orders-list">
             {pending.map((order) => (
@@ -492,15 +473,17 @@ function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
           </ul>
         )}
       </section>
+      )}
 
       <section className="soft-panel">
-        <span className="biz-overline">On the sheet</span>
-        <h2>Bought &amp; in progress</h2>
-        <p className="orders-section-lead">
-          After approval, open the buy link, pay on the vendor site, then mark ordered and received.
-        </p>
+        <h2>
+          To buy and on the way{active.length ? ` (${active.length})` : ""}
+        </h2>
+        {active.length ? (
+          <p className="orders-section-lead">Buy it on the vendor&rsquo;s site, then mark it ordered and received.</p>
+        ) : null}
         {active.length === 0 ? (
-          <p className="app-muted">Approved, bought, and received lines appear here.</p>
+          <p className="app-muted">Approved lines appear here until they arrive.</p>
         ) : (
           <ul className="orders-list">
             {active.map((order) => (
@@ -518,8 +501,11 @@ function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
       </section>
 
       {closed.length > 0 ? (
-        <section className="soft-panel">
-          <h2>Rejected</h2>
+        <details className="soft-panel orders-history">
+          <summary>
+            <h2>History ({closed.length})</h2>
+            <span className="app-muted">Received and turned-down lines</span>
+          </summary>
           <ul className="orders-list">
             {closed.map((order) => (
               <OrderCard
@@ -532,7 +518,7 @@ function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
               />
             ))}
           </ul>
-        </section>
+        </details>
       ) : null}
     </>
   );

@@ -472,3 +472,17 @@
     width: 100%;
   }
 }
+
+/* "Add a purchase" is one button until it is needed; opened, the form sits right under it. */
+.orders-add { margin: 4px 0 12px; }
+.orders-add > summary { list-style: none; width: max-content; cursor: pointer; }
+.orders-add > summary::-webkit-details-marker { display: none; }
+.orders-add[open] > summary { margin-bottom: 10px; }
+/* Received and turned-down lines fold away under one row. */
+.orders-history > summary { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; cursor: pointer; list-style: none; }
+.orders-history > summary::-webkit-details-marker { display: none; }
+.orders-history > summary h2 { margin: 0; font-size: var(--title-3, 17px); }
+.orders-history > summary::before { content: "›"; display: inline-block; transition: transform .15s ease; color: var(--muted); }
+.orders-history[open] > summary::before { transform: rotate(90deg); }
+.orders-history[open] > summary { margin-bottom: 10px; }
+.orders-quiet { margin: 0 2px; color: var(--muted); font-size: 14px; }

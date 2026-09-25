@@ -114,6 +114,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
       data-widget-type={item.type}
       data-widget-x={item.x}
       data-widget-y={item.y}
+      data-widget-h={item.h}
       style={
         {
           transform: `translate3d(${box.left}px, ${box.top}px, 0)`,

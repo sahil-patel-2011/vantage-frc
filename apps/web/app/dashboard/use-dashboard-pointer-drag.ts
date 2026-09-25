@@ -443,9 +443,11 @@ export function useDashboardPointerDrag(input: {
       return;
     }
 
-    setAnnounce(settled.where ? `${settled.label} moved ${settled.where}.` : `${settled.label} stayed where it was.`);
+    // "Moved after My day" while the card snapped back told a screen reader something false.
+    const changed = !layoutsEqual(settled.baseLayout, layoutRef.current);
+    setAnnounce(changed && settled.where ? `${settled.label} moved ${settled.where}.` : `${settled.label} stayed where it was. No change.`);
     endDrag(false);
-    if (!layoutsEqual(settled.baseLayout, layoutRef.current)) record(settled.baseLayout);
+    if (changed) record(settled.baseLayout);
   }
 
   function onDragPointerCancel(event: ReactPointerEvent<HTMLElement>) {

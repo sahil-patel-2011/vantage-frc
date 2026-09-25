@@ -18,8 +18,8 @@
 import {
   DASHBOARD_COLUMNS,
   catalogEntry,
-  findDashboardSlot,
   packDashboardLayout,
+  packKeepingOrder,
   scaleLayoutToCols,
   type DashboardWidgetLayout,
 } from "./catalog";
@@ -46,12 +46,7 @@ export function packInOrder(
   const queue = [...layout].sort(
     (a, b) => (rank.get(a.i) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.i) ?? Number.MAX_SAFE_INTEGER),
   );
-  const placed: DashboardWidgetLayout[] = [];
-  for (const item of queue) {
-    const w = Math.max(1, Math.min(columns, Math.floor(item.w)));
-    const h = Math.max(1, Math.floor(item.h));
-    placed.push({ ...item, ...findDashboardSlot(placed, w, h, columns), w, h });
-  }
+  const placed = packKeepingOrder(queue, columns);
   const byId = new Map(placed.map((item) => [item.i, item]));
   return layout.map((item) => byId.get(item.i) ?? { ...item });
 }

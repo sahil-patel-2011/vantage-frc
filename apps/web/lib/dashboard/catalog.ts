@@ -236,12 +236,14 @@ export function findDashboardSlot(
   width: number,
   height: number,
   columns = DASHBOARD_COLUMNS,
+  /** Only spots at or after this one in reading order (row, then column): see packDashboardLayout. */
+  after?: { x: number; y: number },
 ): { x: number; y: number } {
   const w = Math.max(1, Math.min(columns, Math.floor(width)));
   const h = Math.max(1, Math.floor(height));
   const searchRows = layout.reduce((max, item) => Math.max(max, item.y + item.h), 0) + h + 1;
-  for (let y = 0; y <= searchRows; y += 1) {
-    for (let x = 0; x <= columns - w; x += 1) {
+  for (let y = after?.y ?? 0; y <= searchRows; y += 1) {
+    for (let x = after && y === after.y ? after.x : 0; x <= columns - w; x += 1) {
       const candidate = { x, y, w, h };
       if (!layout.some((item) => dashboardRectsOverlap(candidate, item))) return { x, y };
     }
@@ -251,13 +253,25 @@ export function findDashboardSlot(
 
 /** Packs widgets upward and leftward while preserving their relative visual order. */
 export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  return packKeepingOrder([...layout].sort((a, b) => a.y - b.y || a.x - b.x), DASHBOARD_COLUMNS);
+}
+
+/**
+ * Each card takes the first free spot after the card before it, never a hole above it. With
+ * first-free-spot packing, moving Competition snapshot first on a phone left a hole beside it
+ * (Next match is full width) that My day then filled, so the board read Competition snapshot,
+ * My day, Next match: the card moved and the one after it jumped the queue. Order is what a
+ * person arranges; a hole at the end of a row stays a place they can drop a card into.
+ */
+export function packKeepingOrder(ordered: readonly DashboardWidgetLayout[], columns: number): DashboardWidgetLayout[] {
   const placed: DashboardWidgetLayout[] = [];
-  const ordered = [...layout].sort((a, b) => a.y - b.y || a.x - b.x);
+  let cursor: { x: number; y: number } | undefined;
   for (const item of ordered) {
-    const w = Math.max(1, Math.min(DASHBOARD_COLUMNS, Math.floor(item.w)));
+    const w = Math.max(1, Math.min(columns, Math.floor(item.w)));
     const h = Math.max(1, Math.floor(item.h));
-    const position = findDashboardSlot(placed, w, h);
+    const position = findDashboardSlot(placed, w, h, columns, cursor);
     placed.push({ ...item, ...position, w, h });
+    cursor = { x: position.x + w, y: position.y };
   }
   return placed;
 }

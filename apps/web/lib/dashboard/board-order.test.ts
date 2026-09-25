@@ -155,3 +155,18 @@ describe("scout duty words", () => {
     expect(allianceStation("frc5", ["frc1"], ["frc4"])).toBeNull();
   });
 });
+
+describe("moving a card first keeps the rest in order", () => {
+  it("does not let the card after a full-width one jump into the hole beside the moved card", () => {
+    const saved = [
+      { i: "w-next", type: "next_match", x: 0, y: 0, w: 12, h: 4 },
+      { i: "w-day", type: "my_day", x: 0, y: 4, w: 4, h: 3 },
+      { i: "w-hours", type: "hours_month", x: 4, y: 4, w: 4, h: 3 },
+      { i: "w-comp", type: "competition_snapshot", x: 8, y: 4, w: 4, h: 3 },
+    ] as DashboardWidgetLayout[];
+    const moved = applyOrder(saved, ["w-comp", "w-next", "w-day", "w-hours"]);
+    expect(readingOrder(moved)).toEqual(["w-comp", "w-next", "w-day", "w-hours"]);
+    // Home packs the saved board again; the order survives that too.
+    expect(readingOrder(packDashboardLayout(moved))).toEqual(["w-comp", "w-next", "w-day", "w-hours"]);
+  });
+});

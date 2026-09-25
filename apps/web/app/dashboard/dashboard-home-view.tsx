@@ -495,6 +495,8 @@ export function DashboardHomeView(props: {
   return (
     <main
       className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}${
+        editing && libraryOpen ? " is-library-open" : ""
+      }${
         // A match is coming up: on a phone the Next match card comes before the first-week list
         // and "This week", which pushed it below the fold (dashboard-home.css).
         !editing &&

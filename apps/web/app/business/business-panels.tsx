@@ -235,7 +235,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
         </article>
       </section>
 
-      <section className="biz-grid three">
+      <section className="biz-grid biz-grid-fit">
         {view.budget.monthlySpend.length > 0 ? (
           <article className="app-card"><span className="biz-overline">Orders</span><h2>Committed by month</h2><MonthBars rows={view.budget.monthlySpend} /></article>
         ) : null}
@@ -245,9 +245,8 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
         {view.awards.length > 0 || view.impact.activities > 0 ? (
           <article className="app-card soft-panel"><span className="biz-overline">Outreach</span><h2>Awards and outreach</h2><div className="biz-evidence-stats"><b>{view.awards.length}<small>awards</small></b><b>{view.impact.hours}<small>impact hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><Button variant="secondary" type="button" onClick={() => setTab("evidence")}>Open outreach</Button></article>
         ) : null}
-      </section>
-
-      <section className="biz-grid two">
+        {/* One grid for the smaller cards: two half-empty sections each drew a lone card inside a
+            full-width panel. */}
         {sponsorsAllowed && view.sponsors.length > 0 ? (
           <article className="app-card">
             <span className="biz-overline">Sponsors</span>
