@@ -125,7 +125,13 @@ function EventBoardPreview({ orgId, boardId }: { orgId: string; boardId: string 
         </div>
       )}
       <p className="ebp-foot">
-        {rotation.length ? `Rotates through: ${rotation.map((screen) => SCREEN_WORDS[screen]).join(" → ")}` : "Shows a screen only when there is real data for it"}
+        {/* The stage holds the next match on screen once ours is within 30 minutes; saying it
+            "rotates" then promised a change the TV never made. */}
+        {rotation.length
+          ? rotation.length > 1 && rotation.includes("next_match")
+            ? `Shows ${rotation.map((screen) => SCREEN_WORDS[screen]).join(", then ")}; stays on the next match from 30 minutes before it`
+            : `Shows ${rotation.map((screen) => SCREEN_WORDS[screen]).join(", then ")}`
+          : "Shows a screen only when there is real data for it"}
       </p>
     </div>
   );

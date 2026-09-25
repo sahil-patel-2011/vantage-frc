@@ -250,6 +250,12 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   async function mintToken(choice: PairChoice) {
     if (!canSync || !choice) return;
     const [mode, boardId] = choice.split(":") as ["pit" | "stage", string];
+    // A link for this board was made on this visit and is still on screen: show it again.
+    // Every click used to make another live link ("Event board · Never used" three times).
+    if (minted && minted.boardId === boardId && minted.mode === mode) {
+      say("Here is the TV link you just made.", true);
+      return;
+    }
     const board = boards.find((entry) => entry.id === boardId);
     const label = mode === "stage" ? EVENT_BOARD_NAME : board?.name ?? "Pit TV";
     const r = await fetch("/api/display/boards", {
@@ -260,6 +266,16 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     const d = (await r.json().catch(() => ({}))) as { id?: string; token?: string; error?: string };
     if (r.ok && d.token) {
       setMinted({ id: d.id ?? "", token: d.token, boardId, mode });
+      // Older links for this board that no TV ever opened are turned off, so the list shows
+      // the links actually in use. Links a TV has used are left alone.
+      const stale = tokens.filter((t) => t.boardId === boardId && !t.revokedAt && !t.lastUsedAt && t.id !== d.id);
+      for (const old of stale) {
+        await fetch("/api/display/boards", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, tokenId: old.id }),
+        }).catch(() => undefined);
+      }
       say("TV link ready. Copy it now: it is shown only once.", true);
       await load();
     } else {
@@ -379,6 +395,10 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             />
           )}
 
+          {/* Folded under the recommended event board: the whole editor used to sit open right
+              below it. It opens while a board is being edited. */}
+          <details className="disp-build-fold" open={Boolean(editingId) || undefined}>
+            <summary>Build your own board</summary>
           <section className="disp-build" aria-labelledby="disp-build-title">
             <header className="disp-section-head">
               <h2 id="disp-build-title">Build your own</h2>
@@ -480,6 +500,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               </section>
             </div>
           </section>
+          </details>
 
           {boards.length ? (
             <section className="saved-boards" aria-labelledby="disp-saved-title">

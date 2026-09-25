@@ -1200,3 +1200,24 @@ body.has-app-shell main.display-setup .preset-picker { grid-template-columns: re
   font-weight: 700;
   cursor: pointer;
 }
+
+/* "Build your own board": folded under the event board until wanted. */
+.disp-build-fold > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.disp-build-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.disp-build-fold[open] > summary {
+  margin-bottom: 12px;
+}
