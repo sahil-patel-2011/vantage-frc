@@ -319,7 +319,9 @@ export default function TeamProfileClient() {
 
       {view.status === "failed" ? (
         <p className="tp-error" role="alert">
-          The last build failed: {teamFacingError(view.error, "neither source answered")}.
+          {/* "The last build failed: …." was worker vocabulary with a doubled full stop. */}
+          The team&rsquo;s public record didn&rsquo;t load.{" "}
+          {teamFacingError(view.error, "Neither source answered; try again later").replace(/[.\s]+$/, "")}.
         </p>
       ) : null}
 
