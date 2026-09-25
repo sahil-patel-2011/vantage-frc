@@ -196,3 +196,14 @@
 .onboarding-message.invalid{border-color:color-mix(in srgb,#dc2626 45%,var(--line));background:color-mix(in srgb,#dc2626 8%,var(--surface));color:#991b1b}
 .onboarding-field-error{margin:4px 0 8px;color:#b91c1c;font-size:13px;font-weight:600}
 fieldset[aria-invalid="true"]{border-color:#dc2626}
+
+/* A chosen card says so with a check, not only a faint fill (an owner who skimmed became a Mentor). */
+.onboarding-cards label.selected::after,.onboarding-focus-grid label.selected::after{content:"";position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat}
+.onboarding-cards label.selected,.onboarding-focus-grid label.selected{padding-right:36px}
+.onboarding-focus-grid label{grid-template-columns:1fr;min-height:0}
+.onboarding-focus-grid span{grid-column:1}
+.onboarding-team-confirmed{display:grid;gap:2px;margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface)}
+.onboarding-team-confirmed span{color:var(--muted);font-size:13px}
+.onboarding-role-note label{display:grid;gap:6px;margin-top:8px}
+.onboarding-role-note label>small{color:var(--muted)}
+.onboarding-busy{margin:8px 0 0;color:var(--muted);font-size:13px;text-align:right}

@@ -188,7 +188,15 @@ export function TeamForm({
         onSubmit();
       }}
     >
-      <div className={`onboarding-team-lock${locked ? " locked" : ""}`}>
+      {locked ? (
+        // The invite already set the team: a greyed-out number field asked the owner to check
+        // something they could not change.
+        <p className="onboarding-team-confirmed" role="status">
+          <strong>{lookup.title}</strong>
+          <span>Your invite set the team.</span>
+        </p>
+      ) : (
+      <div className="onboarding-team-lock">
         <label>
           FRC team number <small>{locked ? "" : "Optional"}</small>
           <input
@@ -220,10 +228,11 @@ export function TeamForm({
           </label>
         )}
       </div>
+      )}
 
       <fieldset className="onboarding-focus-grid">
         <legend>What should Vantage put first?</legend>
-        {FOCUS_OPTIONS.map((option, index) => (
+        {FOCUS_OPTIONS.map((option) => (
           <label key={option.value} className={draft.primaryFocus === option.value ? "selected" : undefined}>
             <input
               type="radio"
@@ -235,15 +244,23 @@ export function TeamForm({
                 patch({ primaryFocus: option.value });
               }}
             />
-            <i aria-hidden="true">{String(index + 1).padStart(2, "0")}</i>
             <strong>{option.label}</strong>
             <span>{option.description}</span>
           </label>
         ))}
       </fieldset>
 
+      <details className="onboarding-specialty onboarding-role-note" open={draft.roleDescription.trim() ? true : undefined}>
+        <summary>
+          <span>
+            <strong>Describe your role</strong>
+            <small>Optional</small>
+          </span>
+          <b aria-hidden="true">+</b>
+        </summary>
       <label>
-        Describe your role <small>Optional, 280 characters</small>
+        <span className="sr-only">Describe your role</span>
+        <small>Up to 280 characters</small>
         <textarea
           maxLength={280}
           rows={3}
@@ -252,6 +269,7 @@ export function TeamForm({
           placeholder="Scout stand, drive team operator, CAD lead, pit repair, business outreach…"
         />
       </label>
+      </details>
 
       {isTeamHead ? <FundingFields draft={draft} patch={patch} errorField={errorField} errorMessage={errorMessage} /> : null}
 
@@ -456,6 +474,11 @@ export function PreferencesForm({
                   : "Finish without a team"}
         </button>
       </div>
+      {busy ? (
+        <p className="onboarding-busy" role="status">
+          {owner ? "Setting up your team. The first time can take up to a minute; keep this page open." : "Saving your answers…"}
+        </p>
+      ) : null}
     </form>
   );
 }
