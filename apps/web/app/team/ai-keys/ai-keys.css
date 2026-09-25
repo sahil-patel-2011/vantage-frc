@@ -430,7 +430,7 @@
 
 .ai-keys-page .ai-keys-flash.is-error {
   background: color-mix(in srgb, var(--danger, #b91c1c) 10%, transparent);
-  color: var(--danger, #b91c1c);
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -477,4 +477,45 @@
   margin: 0;
   font-size: 16px;
   font-weight: 650;
+}
+
+/* Model training: one switch, for owners and admins. */
+.ai-training-card h2 {
+  margin: 0 0 6px;
+}
+.ai-training-card > p {
+  margin: 0;
+}
+.ai-training-card label.ai-training-switch {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+.ai-training-card label.ai-training-switch input {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+.ai-training-card label.ai-training-switch span {
+  display: grid;
+  gap: 2px;
+}
+.ai-training-card label.ai-training-switch small {
+  color: var(--muted);
+}
+.ai-training-note {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-weight: 600;
+}
+.ai-training-note.ok {
+  color: var(--positive);
 }

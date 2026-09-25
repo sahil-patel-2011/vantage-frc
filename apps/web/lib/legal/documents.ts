@@ -18,6 +18,10 @@
  * "non-payment", and said Stripe receives nothing today. This takes obligations away and
  * adds none, so LEGAL_DOC_VERSION stays put (no forced re-acceptance).
  *
+ * Revised 2026-09-24: teams can turn model training off (Team → AI keys → Model training,
+ * migration 0691). The AI section and the Terms say so. The version is not moved: this adds a
+ * right and takes nothing away, so re-acceptance would be churn, not consent.
+ *
  * Revised 2026-09-22 to add "Team identities and team numbers"
  * (`#team-identities`): what submitting or claiming a team number represents,
  * the ban on claiming a team you do not represent, the claim statement record,
@@ -128,6 +132,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         "Vantage's AI features are grounded in two things: your own team's data, and public FRC data from The Blue Alliance and Statbotics. They do not read another team's workspace. When there is no real data behind a question, the feature says so and shows a setup or empty state — it does not invent numbers.",
         "We use your team's AI activity to train our own models. Prompts, the context sent with them, model responses, and tool traces from Vantage's AI features may be used by us to train, fine-tune, and evaluate in-house models that improve Vantage. This applies to AI-feature activity across the product. We do not sell this data or share it with advertisers, and third-party model providers still receive your requests only to answer them — the training use described here is ours. If your team brings its own API key, requests made with it are also subject to that provider's own terms, which say their own things about training — worth reading.",
+        "Your team can turn this off. A team owner or admin can switch off model training for the whole team under Team → AI keys → Model training. While it is off, none of that team's AI activity — prompts, context, responses, or tool traces — is used to train, fine-tune, or evaluate our models, and any training we do reads only from activity of teams that have left it on.",
         "When someone on your team uses an AI feature, the prompt and the context it needs are sent to the model provider your team has configured. Out of the box that is a major provider your team selects — Anthropic, OpenAI, or Google — or any OpenAI-compatible endpoint your team points us at. The provider processes the request and returns an answer.",
         "AI use is counted. Every call is recorded in your team's usage log so the spend caps and limits your team sets can be enforced. Those records include which feature was used, the model, and token counts — not a separate copy of your content. Vantage itself charges nothing for AI; a team that brings its own key pays its provider directly.",
         "Bring-your-own keys are encrypted. If your team supplies its own provider API key, it is stored using envelope encryption: a unique data key encrypts the secret, and that data key is itself encrypted by a key-management service. Keys are decrypted only to make a request your team asked for. They are never shown back to you in full and are never included in a data export.",
@@ -332,7 +337,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       id: "team-workspaces",
       heading: "Team workspaces and who controls them",
       paragraphs: [
-        "Your team owns its content. Scouting entries, photos, messages, hours, documents, tasks, CAD records, and financial records belong to the team. You give us permission to store, process, and display that content to run Vantage for your team, and — for activity that goes through Vantage's AI features — to use the prompts, context, responses, and tool traces to train, fine-tune, and evaluate our own in-house models, as described in the Privacy Policy. We do not sell your content.",
+        "Your team owns its content. Scouting entries, photos, messages, hours, documents, tasks, CAD records, and financial records belong to the team. You give us permission to store, process, and display that content to run Vantage for your team, and — for activity that goes through Vantage's AI features — to use the prompts, context, responses, and tool traces to train, fine-tune, and evaluate our own in-house models, as described in the Privacy Policy, unless your team has turned model training off. We do not sell your content.",
         "A member's content stays with the team. When someone leaves the team, they lose access, but what they created remains part of the team's record. That is deliberate: a season's scouting data cannot vanish because a senior graduated.",
         "Your team's rows are separated from every other team's at the database level, so another team cannot open your team in the product. No system is perfectly secure and we do not promise that it is.",
         "What owners and admins can do:",

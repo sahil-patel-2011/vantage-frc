@@ -33,6 +33,7 @@ import {
 } from "./ai-keys-model";
 import { ProviderCard } from "./ai-keys-provider-card";
 import { WebResearchCard } from "./ai-keys-web-research";
+import { AiTrainingCard } from "./ai-training-card";
 
 const GEMINI_FREE = FREE_KEY_PROVIDERS.find((provider) => provider.byokProvider === "google") ?? null;
 
@@ -355,6 +356,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             />
           </section>
           </details>
+
+          {/* The team's say over training on its AI activity: open, not folded (Privacy Policy). */}
+          <AiTrainingCard orgId={orgId} />
 
           {/* Everything a team sets once, or never: how hosting is billed, any-endpoint
               notes, local models, free keys, routing and model policy. The walkthrough
