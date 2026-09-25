@@ -2985,9 +2985,11 @@ body.has-app-shell .messages article small {
 
 /* A card smaller than its content keeps its title and its link: the middle scrolls instead of
    the link being cut off at the bottom edge (Next match at M, Match schedule on a phone). */
-.dash-widget{overflow:hidden}
-.dash-widget > :not(header):not(.dash-widget-link){min-height:0;flex:1 1 auto;overflow:auto;scrollbar-width:thin}
-.dash-widget > .dash-widget-link{flex:none;margin-top:auto}
+/* The card scrolls as one piece: each row shrinking and scrolling on its own sliced Robot
+   readiness's "60%" in half and hid rows with no hint. The link stays on the bottom edge. */
+.dash-widget{overflow:hidden auto;scrollbar-width:thin}
+.dash-widget > :not(header):not(.dash-widget-link){flex:0 0 auto}
+.dash-widget > .dash-widget-link{flex:none;margin-top:auto;position:sticky;bottom:0;z-index:1;align-self:stretch;width:auto;padding-top:6px;background:var(--surface);box-shadow:0 -12px 12px -6px var(--surface)}
 
 /* Countdowns never break across lines ("7 min 19" over "s"); with units they read in the body font. */
 .dash-countdown strong{white-space:nowrap;font:700 24px/1.1 var(--font-source-sans),system-ui;font-variant-numeric:tabular-nums}
@@ -2997,4 +2999,13 @@ body.has-app-shell .messages article small {
 @media (max-width:720px){
   body.has-app-shell.is-scouting-form .soft-island{display:none}
   body.has-app-shell.is-scouting-form{padding-bottom:calc(24px + var(--safe-bottom)) !important}
+}
+
+/* Finger-sized first-week links: "Open Scouting" and "See this week" were 23px tall, "See 2 more
+   steps" 20px. The words stay the same size; the tap area grows around them. */
+.dash-first-week li div > a{display:inline-flex;align-items:center;min-height:44px;margin-block:-10px -8px;align-self:start}
+.dash-first-week-all{display:inline-flex;align-items:center;min-height:44px;margin-block:-8px}
+/* The same for the small links inside Home cards (Open My Day, Add an AI key, My hotel). */
+@media (max-width:720px){
+  .dash-widget .dash-widget-link,.dash-widget .dash-empty-cta{display:inline-flex;align-items:center;min-height:44px}
 }

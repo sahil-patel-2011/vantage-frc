@@ -179,3 +179,4 @@ body.shell-onboarding .soft-notif,
 body.shell-onboarding .soft-org-crumb {
   display: none;
 }
+.soft-topbar-product-arrow { margin-left: .25em; font-size: .9em; opacity: .7; }

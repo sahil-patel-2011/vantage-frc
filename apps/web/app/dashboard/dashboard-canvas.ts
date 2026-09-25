@@ -63,7 +63,7 @@ export const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, IconName>> 
   assembly_manual: "cube",
   sponsor_followups: "bell",
   event_readiness: "pin",
-  weather_venue: "display",
+  weather_venue: "cloud",
 };
 
 const ROLE_LABEL: Record<OrgRole, string> = {

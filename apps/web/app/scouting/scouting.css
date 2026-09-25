@@ -214,3 +214,6 @@
 @media (max-width:720px){
   .product-hub--competition:has(> .product-hub-panel[data-hub-tab="scouting"]) > .hub-bar .hub-tool-strip{display:none}
 }
+
+/* A disabled Save looked exactly like an enabled one (solid blue): only its words said so. */
+.scout-save-button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;filter:saturate(.6)}

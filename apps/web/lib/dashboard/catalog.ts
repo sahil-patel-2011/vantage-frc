@@ -753,9 +753,10 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
     label: "Venue weather",
     description: "Public forecast on event day, only when the event has a location",
     defaultW: 3,
-    defaultH: 2,
+    // Three rows: at two the title and link left no room for the forecast itself.
+    defaultH: 3,
     minW: 3,
-    minH: 2,
+    minH: 3,
     sizes: ["s", "m"],
     emptyWhen: "No event with a location",
     helpArticle: "edit-home",

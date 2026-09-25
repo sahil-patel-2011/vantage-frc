@@ -142,7 +142,7 @@ test.describe("as the team owner", () => {
     const toast = page.getByTestId("dash-toast");
     await page.getByTestId("dash-edit-more").click();
     await page.getByTestId("dash-tidy").click();
-    await expect(toast).toHaveText(/Nothing to tidy\.|Board tidied\. Cards moved to fill the gaps\./);
+    await expect(toast).toHaveText(/Nothing to tidy\.|Board tidied\./);
     await page.getByTestId("dash-edit-more").click();
     await page.getByTestId("dash-tidy").click();
     await expect(toast).toHaveText(/Nothing to tidy\./);

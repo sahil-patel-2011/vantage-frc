@@ -56,7 +56,7 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string }> = {
   assembly_manual: { icon: "clipboard", tone: "var(--tone-teal)" },
   sponsor_followups: { icon: "users", tone: "var(--tone-green)" },
   event_readiness: { icon: "target", tone: "var(--tone-blue)" },
-  weather_venue: { icon: "display", tone: "var(--tone-teal)" },
+  weather_venue: { icon: "cloud", tone: "var(--tone-teal)" },
 };
 
 /** Widget-scoped empty slot — the shared `EmptyState` in `compact` mode, so it drops

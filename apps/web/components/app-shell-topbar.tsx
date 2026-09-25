@@ -187,6 +187,11 @@ export function AppShellTopbar({
         >
           {/* Named as its own app so it is not mistaken for the Scout tab in the bottom bar. */}
           Scouting<span className="soft-topbar-product-suffix"> app</span>
+          {/* An arrow: it opens the separate Scouting app. On a phone "Scouting" alone sat beside
+              the team name like a role badge or a tab. */}
+          <span className="soft-topbar-product-arrow" aria-hidden="true">
+            ↗
+          </span>
         </a>
         <a
           className="soft-icon-btn soft-ask-ai"

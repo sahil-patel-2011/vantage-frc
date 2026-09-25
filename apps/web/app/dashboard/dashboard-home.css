@@ -187,3 +187,10 @@
 .dash-pgrid[data-flow="true"] .dash-widget.is-empty .soft-empty-compact {
   min-height: 0;
 }
+
+@media (max-width: 720px) {
+  .dash-home.match-leads > .dash-first-week,
+  .dash-home.match-leads > .dash-role-strip {
+    order: 1;
+  }
+}

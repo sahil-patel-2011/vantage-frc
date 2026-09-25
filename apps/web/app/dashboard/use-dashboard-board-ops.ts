@@ -208,11 +208,23 @@ export function useDashboardBoardOps(input: {
       setAnnounce("Nothing to tidy. Every card is already as far up and left as it fits.");
       return;
     }
+    // Say what changed: a card grown into a gap is not "moved", and a size chip that went from
+    // M to L without a word looked like a bug.
+    const before = new Map(layoutRef.current.map((item) => [item.i, item]));
+    const grown = result.layout
+      .filter((item) => {
+        const old = before.get(item.i);
+        return old != null && (item.w > old.w || item.h > old.h);
+      })
+      .map((item) => catalogEntry(item.type)?.label ?? item.type);
+    const text = grown.length
+      ? `Board tidied. ${grown.join(" and ")} grew to fill ${grown.length === 1 ? "a gap" : "gaps"}; Undo puts ${grown.length === 1 ? "it" : "them"} back.`
+      : "Board tidied. Cards moved up to fill the gaps.";
     record(layoutRef.current);
     setLayout(result.layout);
     setMessageAction("undo");
-    setMessage("Board tidied. Cards moved to fill the gaps.");
-    setAnnounce("Board tidied. Cards moved to fill the gaps.");
+    setMessage(text);
+    setAnnounce(text);
   }
 
   /**

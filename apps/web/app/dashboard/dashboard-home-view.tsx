@@ -494,7 +494,16 @@ export function DashboardHomeView(props: {
 
   return (
     <main
-      className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}`}
+      className={`dash-home scan-workbench scan-hub--dashboard${editing ? " is-editing" : ""}${
+        // A match is coming up: on a phone the Next match card comes before the first-week list
+        // and "This week", which pushed it below the fold (dashboard-home.css).
+        !editing &&
+        now.title === "Our next match" &&
+        (now.cta === "Open My Day" || now.cta === "Scout a match") &&
+        layout.some((item) => item.type === "next_match")
+          ? " match-leads"
+          : ""
+      }`}
       data-grid={grid.label}
       data-cols={cols}
       data-now-wide={showRoleStrip || showsFirstWeek ? "false" : "true"}

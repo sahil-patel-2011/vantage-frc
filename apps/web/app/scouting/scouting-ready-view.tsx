@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
@@ -211,6 +211,7 @@ export function ScoutingReadyView({
   const recentEntries = data?.recentEntries;
   const scouted = useMemo(() => [...(recentEntries ?? []), ...savedHere], [recentEntries, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
+  const [confirmRunning, setConfirmRunning] = useState(false);
   const scrollToFormPending = useRef(false);
 
   // While a robot's form is open, a phone gives it the whole screen: the floating tab bar sat
@@ -744,17 +745,20 @@ return (
             className="scout-save-button"
             disabled={!canSave}
             onClick={() => {
-              // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block.
-              if (
-                document.documentElement.dataset.scoutTimer === "running" &&
-                !window.confirm("The match is still running. Save it anyway?")
-              ) {
+              // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block. The nudge
+              // was a browser confirm, whose Cancel looked like Save doing nothing on a phone: now
+              // the button asks, and a second tap saves.
+              if (document.documentElement.dataset.scoutTimer === "running" && !confirmRunning) {
+                setConfirmRunning(true);
                 return;
               }
+              setConfirmRunning(false);
               void submit();
             }}
           >
-            {!canSave
+            {confirmRunning && canSave
+              ? "Match still running: tap again to save"
+              : !canSave
               ? type === "match"
                 ? "Pick a robot above to save"
                 : "Type a team number above to save"
@@ -762,6 +766,15 @@ return (
                 ? `Save this ${type}`
                 : "Save on this phone"}
           </Button>
+          {confirmRunning ? (
+            <p className="form-message scout-running-note" role="status">
+              The match clock is still going. Tap Save again to save now, or{" "}
+              <button type="button" className="text-button" onClick={() => setConfirmRunning(false)}>
+                keep scouting
+              </button>
+              .
+            </p>
+          ) : null}
           {message ? (
             <p className="form-message" role="status">
               {message}

@@ -54,6 +54,7 @@ export type ProductNavIcon =
   | "activity"
   | "database"
   | "globe"
+  | "cloud"
   | "menu"
   | "search"
   | "bell"

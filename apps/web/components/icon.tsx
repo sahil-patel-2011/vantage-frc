@@ -147,6 +147,8 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
     </>
   ),
+  // Venue weather had a computer monitor.
+  cloud: <path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.2 4.5 4.5 0 0 0 7 18z" />,
   globe: (
     <>
       <circle cx="12" cy="12" r="9" />
