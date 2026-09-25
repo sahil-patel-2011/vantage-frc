@@ -116,7 +116,7 @@ test.describe("as the team owner", () => {
       .getByTestId("dash-hidden-item")
       .evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).dataset.widgetType));
     expect(hiddenTypes.length).toBeGreaterThan(0);
-    await expect(row.locator("summary")).toContainText(`Hidden right now (${hiddenTypes.length})`);
+    await expect(row.locator("summary")).toContainText(`${hiddenTypes.length} ${hiddenTypes.length === 1 ? "card shows" : "cards show"} up on their own`);
     // None of them is also painted as a card on the board.
     for (const type of hiddenTypes) {
       await expect(page.locator(`[data-testid='dash-grid-item'][data-widget-type='${type}']`)).toHaveCount(0);

@@ -320,3 +320,10 @@
 
 /* Why a card is wider than its size letter, said in the size menu rather than squeezed into the pill. */
 .dash-size-note{margin:0 0 6px;color:var(--muted);font-size:12px;line-height:1.35;max-width:32ch}
+
+/* The lifted copy lives outside the board, so it names the product font and colours itself:
+   on a phone "Qual 31 … Qual 36" showed in a Courier-style fallback with bright blue times. */
+.dash-drag-proxy,.dash-drag-proxy *{font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
+.dash-drag-proxy a{color:var(--tone-ink,var(--ink))}
+/* While a card is being moved, the placement pill is the one hint; the edit hint steps aside. */
+body:has(.dash-snap-hud) .dash-edit-hint{visibility:hidden}

@@ -412,3 +412,11 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
   .dash-sheet-head .dash-sheet-hint-coarse { display: inline; }
 }
 .dash-size-stretched { font-weight: 500; opacity: .75; }
+
+/* Phones: each waiting card is one row, name then its two buttons, instead of Remove wrapping
+   under a long description into a 250px row. */
+@media (max-width:640px){
+  .dash-hidden-row li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center}
+  .dash-hidden-row li small{display:none}
+  .dash-hidden-row li button{min-height:44px;white-space:nowrap}
+}

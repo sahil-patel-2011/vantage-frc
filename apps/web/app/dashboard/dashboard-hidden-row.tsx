@@ -32,10 +32,14 @@ export function DashboardHiddenRow({
   return (
     <details className="dash-hidden-row" data-testid="dash-hidden-row">
       <summary>
-        <span>Hidden right now ({rows.length})</span>
+        {/* Says what they are doing, not that something is wrong: "Hidden right now (5)" on a
+            brand-new board read as five broken cards. */}
+        <span>
+          {rows.length} {rows.length === 1 ? "card shows" : "cards show"} up on their own when there is something
+        </span>
         <small>{listWords(rows.map(labelOf))}</small>
       </summary>
-      <p>These stay on this board and come back on their own. Always show keeps one on Home even when it is empty.</p>
+      <p>They stay on this board and appear on Home when they have news. Always show keeps one there even while it is empty.</p>
       <ul>
         {rows.map((item) => {
           const label = labelOf(item);
