@@ -170,3 +170,8 @@
 .dash-pgrid[data-cols="1"] .dash-size-toggle {
   display: none;
 }
+
+/* The library's one-line note lines up with its title and search box. */
+.dash-sheet-empty-note{padding:0 16px}
+/* Edit mode: dragging a card by its body does not select its text. */
+.dash-grid-item.is-editing{user-select:none;-webkit-user-select:none}

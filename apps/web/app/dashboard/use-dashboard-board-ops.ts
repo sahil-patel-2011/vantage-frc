@@ -164,7 +164,8 @@ export function useDashboardBoardOps(input: {
     }
     const label = entry?.label ?? type;
     setMessageKind("success");
-    setMessageAction(keepWhenEmpty ? "undo" : null);
+    // Every add can be taken back from its own message, dragged in or tapped.
+    setMessageAction("undo");
     setMessage(
       keepWhenEmpty
         ? `${label} added to the board. It stays on Home and fills in as your team uses it.`
@@ -175,7 +176,10 @@ export function useDashboardBoardOps(input: {
         ? `${label} added to the board, set to always show on Home even while it is empty.`
         : `${label} added to the board.`,
     );
-    setLibraryOpen(false);
+    // On a laptop a tapped add keeps the library open for the next one (its row now says it's
+    // on Home); adding three cards took three trips. On a phone the sheet covers the board, so
+    // it closes to show the new card; a card dragged onto the board closes it too.
+    if (drop || typeof window === "undefined" || window.innerWidth < 720) setLibraryOpen(false);
     if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type)).catch(() => {
       setMessageKind("error");
       setMessage("Widget added, but its data could not refresh. Try Refresh card data.");

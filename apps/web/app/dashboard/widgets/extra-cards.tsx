@@ -6,6 +6,7 @@ import {
   venueWeatherCopy,
 } from "../../../lib/dashboard/venue-weather";
 import { LiveCountdown } from "./live-countdown";
+import { matchShortLabel } from "../../../lib/matches/no-next-match";
 
 function asItems(data: Record<string, unknown>, key = "items"): Array<Record<string, unknown>> {
   const raw = data[key];
@@ -193,15 +194,22 @@ export function MatchScheduleLive({ data }: { data: Record<string, unknown> }) {
   return (
     <ul className="dash-checklist">
       {items.map((item) => (
-        <li key={String(item.matchKey)}>
+        // "Qual 31 · in 14 min · Blue": the name people say, a countdown with units (not
+        // "qm 31 … 35:56", which read as a clock time), and our bumper colour.
+        <li key={String(item.matchKey)} className={item.ourAlliance ? `is-${String(item.ourAlliance)}` : undefined}>
           <span>
-            {String(item.compLevel)} {String(item.matchNumber)}
+            {matchShortLabel(String(item.compLevel).toLowerCase(), Number(item.matchNumber))}
           </span>
-          {typeof item.scheduledTime === "string" ? (
-            <small className="dash-notif-preview">
-              <LiveCountdown iso={item.scheduledTime} />
-            </small>
-          ) : null}
+          <small className="dash-notif-preview">
+            {typeof item.scheduledTime === "string" ? (
+              <>
+                in <LiveCountdown iso={item.scheduledTime} />
+              </>
+            ) : (
+              "time not posted"
+            )}
+            {item.ourAlliance === "red" ? " · Red" : item.ourAlliance === "blue" ? " · Blue" : ""}
+          </small>
         </li>
       ))}
     </ul>

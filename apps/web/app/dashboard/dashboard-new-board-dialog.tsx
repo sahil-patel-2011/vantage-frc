@@ -24,7 +24,7 @@ export function DashboardNewBoardDialog({
 }) {
   const [name, setName] = useState(() => suggestBoardName(existingNames));
   return (
-    <Modal open={open} onClose={onClose} title="New board" description="A board is its own arrangement of Home, just for you." className="dash-new-board-dialog">
+    <Modal open={open} onClose={onClose} title="New board" description="A board is its own arrangement of Home, just for you. It starts with the standard cards for your role; change them after." className="dash-new-board-dialog">
       <form
         className="dash-new-board"
         data-testid="dash-new-board-form"

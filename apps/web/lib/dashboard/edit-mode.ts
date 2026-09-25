@@ -351,7 +351,7 @@ export const HIDDEN_ON_HOME_COPY: Record<HiddenOnHomeReason, string> = {
 export const HIDDEN_ON_HOME_SHORT: Record<HiddenOnHomeReason, string> = {
   empty: "Hidden (empty)",
   setup_done: "Hidden (set up)",
-  setup_top: "At the top",
+  setup_top: "Shown during setup",
 };
 
 /**

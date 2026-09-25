@@ -130,7 +130,8 @@ export function HoursThisMonthLive({ data }: { data: Record<string, unknown> }) 
     <div className="dash-metric-grid">
       <div>
         <strong>{String(data.hours ?? "—")}</strong>
-        <span>this month</span>
+        {/* The card is titled "Hours this month"; the caption says the unit, not the title again. */}
+        <span>hours</span>
       </div>
     </div>
   );

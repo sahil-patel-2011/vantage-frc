@@ -574,7 +574,10 @@ async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promis
     client,
     `SELECT /* home-widget:match_schedule */ match_key AS "matchKey", comp_level AS "compLevel",
             match_number AS "matchNumber",
-            COALESCE(predicted_time, event_time)::text AS "scheduledTime"
+            COALESCE(predicted_time, event_time)::text AS "scheduledTime",
+            CASE WHEN $2::text IS NULL THEN NULL
+                 WHEN red_alliance->'teamKeys' ? $2 THEN 'red'
+                 WHEN blue_alliance->'teamKeys' ? $2 THEN 'blue' END AS "ourAlliance"
        FROM matches_ref
       WHERE event_key = $1
         AND ($2::text IS NULL OR red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
@@ -608,7 +611,7 @@ async function batteries(client: PoolClient, ctx: HomeWidgetContext): Promise<Lo
   );
   const active = Number(rows[0]?.active ?? 0);
   const service = Number(rows[0]?.service ?? 0);
-  if (active === 0 && service === 0) return empty("No batteries logged.");
+  if (active === 0 && service === 0) return empty("Log a battery in Pit and whether it's ready shows here.");
   return live({ active, service, href: "/batteries" });
 }
 
@@ -758,7 +761,7 @@ const FALLBACK_MESSAGE: Record<string, string> = {
   team_profile: "Team profile has not been built yet. Open Team profile.",
   alliance_desk: "Alliance selection is not running.",
   match_schedule: "Pick the event you're at to see its schedule.",
-  batteries: "No batteries logged.",
+  batteries: "Log a battery in Pit and whether it's ready shows here.",
   assembly_manual: "No assembly manual yet. Open Assembly manual to start one.",
   sponsor_followups: "No open sponsor follow-ups.",
   event_readiness: "No event on the calendar.",

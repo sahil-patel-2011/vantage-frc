@@ -26,7 +26,7 @@ function confirmOpts(confirm: HomeConfirm | null, board: BoardState | null): Con
     case "reset":
       return {
         title: "Reset this board?",
-        body: "Your cards go back to the standard set for your role. Nothing is saved until you tap Done, and Undo brings your layout back.",
+        body: "Your cards go back to the standard set for your role, which may differ from what you had. Nothing is saved until you tap Done: Undo, or Cancel, puts back the board as it was when you opened Edit.",
         confirmLabel: "Reset board",
         cancelLabel: "Keep my layout",
       };

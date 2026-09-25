@@ -186,7 +186,7 @@ function DashboardEditMenu({
           </button>
           <button type="button" role="menuitem" data-testid="dash-preview" onClick={pick(onPreview)}>
             <strong>Preview</strong>
-            <span>See Home the way everyone else will</span>
+            <span>See Home without the edit controls</span>
           </button>
           {canShareOrg ? (
             <button type="button" role="menuitem" data-testid="dash-save-team" disabled={saving} onClick={pick(onSaveOrg)}>

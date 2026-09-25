@@ -143,7 +143,7 @@ export function DashboardBoardsModal({
                     onClick={() => onSwitch(item.id)}
                   >
                     <strong>{item.name}</strong>
-                    <span>{board?.id === item.id ? "Showing now" : "Tap to open"}</span>
+                    <span>{board?.id === item.id ? "Showing now" : "Open"}</span>
                   </button>
                 )}
                 <div className="dash-boards-actions">

@@ -330,8 +330,8 @@ export function DashboardHomeView(props: {
     enterEditMode();
   };
 
-  // Keep the first card where it was on screen; on a phone (or when the board
-  // starts below the fold) bring it up under the top bar instead.
+  // Keep the first card where it was on screen; when the board starts below the fold,
+  // bring it up under the top bar instead.
   useLayoutEffect(() => {
     // FirstWeekCard renders its own root, so it is dimmed from here.
     document.querySelectorAll<HTMLElement>(".dash-home > .dash-first-week").forEach((node) => {
@@ -349,7 +349,9 @@ export function DashboardHomeView(props: {
     if (before !== null && after !== null && Math.abs(after - before) > 1) window.scrollBy(0, after - before);
     const settled = boardTop();
     if (settled === null) return;
-    if (window.innerWidth < 720 || settled > window.innerHeight - 200 || settled < TOPBAR_PX) {
+    // Only when the board is out of view: on a phone this always scrolled, and the greeting,
+    // the board picker and the event chip left the screen the moment Edit was tapped.
+    if (settled > window.innerHeight - 200 || settled < TOPBAR_PX) {
       gridWrapRef.current?.scrollIntoView({ block: "start" });
     }
     // Measured only on the way in; the board is laid out by then.
