@@ -53,7 +53,9 @@ export async function GET(request: Request) {
       refresh,
     });
     return Response.json(view);
-  } catch {
+  } catch (error) {
+    // Server log only: the member sees the setup card below.
+    console.error("strategy load failed:", error instanceof Error ? error.message : error);
     return Response.json(
       {
         status: "setup_required",
@@ -118,7 +120,9 @@ export async function POST(request: Request) {
       refresh: true,
     });
     return Response.json(view);
-  } catch {
+  } catch (error) {
+    // Server log only: the member sees the setup card below.
+    console.error("strategy load failed:", error instanceof Error ? error.message : error);
     return Response.json({ error: "Could not refresh this match plan from saved rankings." }, { status: 400 });
   }
 }

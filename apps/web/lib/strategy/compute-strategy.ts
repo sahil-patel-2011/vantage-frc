@@ -910,84 +910,93 @@ export async function computeStrategyView(
   };
 
   const scoredAt = new Date().toISOString();
-  await client.query(
-    `INSERT INTO predictions (
-       org_id, match_key, model_version, p_red, p_blue,
-       confidence_low, confidence_high, effective_sample_size,
-       key_factors, features, caveats, created_by, scored_at
-     ) VALUES (
-       $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, $12, $13::timestamptz
-     )
-     ON CONFLICT (org_id, match_key, model_version) DO UPDATE SET
-       p_red = EXCLUDED.p_red,
-       p_blue = EXCLUDED.p_blue,
-       confidence_low = EXCLUDED.confidence_low,
-       confidence_high = EXCLUDED.confidence_high,
-       effective_sample_size = EXCLUDED.effective_sample_size,
-       key_factors = EXCLUDED.key_factors,
-       features = EXCLUDED.features,
-       caveats = EXCLUDED.caveats,
-       scored_at = EXCLUDED.scored_at`,
-    [
-      row.orgId,
-      upcoming.matchKey,
-      prediction.modelVersion,
-      prediction.pRed,
-      prediction.pBlue,
-      prediction.confidenceLow,
-      prediction.confidenceHigh,
-      prediction.effectiveSampleSize,
-      JSON.stringify(prediction.keyFactors),
-      JSON.stringify(features),
-      JSON.stringify(prediction.caveats),
-      input.userId,
-      scoredAt,
-    ],
-  );
+  // Stored for the team (briefing, pit TV, Home) when the viewer may write predictions. A scout
+  // may not (RLS), and the whole view failed for them with "Choose your team": the strategy is
+  // still computed and shown, only not saved.
+  await withSavepoint(
+    client,
+    async () => {
+      await client.query(
+        `INSERT INTO predictions (
+           org_id, match_key, model_version, p_red, p_blue,
+           confidence_low, confidence_high, effective_sample_size,
+           key_factors, features, caveats, created_by, scored_at
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, $12, $13::timestamptz
+         )
+         ON CONFLICT (org_id, match_key, model_version) DO UPDATE SET
+           p_red = EXCLUDED.p_red,
+           p_blue = EXCLUDED.p_blue,
+           confidence_low = EXCLUDED.confidence_low,
+           confidence_high = EXCLUDED.confidence_high,
+           effective_sample_size = EXCLUDED.effective_sample_size,
+           key_factors = EXCLUDED.key_factors,
+           features = EXCLUDED.features,
+           caveats = EXCLUDED.caveats,
+           scored_at = EXCLUDED.scored_at`,
+        [
+          row.orgId,
+          upcoming.matchKey,
+          prediction.modelVersion,
+          prediction.pRed,
+          prediction.pBlue,
+          prediction.confidenceLow,
+          prediction.confidenceHigh,
+          prediction.effectiveSampleSize,
+          JSON.stringify(prediction.keyFactors),
+          JSON.stringify(features),
+          JSON.stringify(prediction.caveats),
+          input.userId,
+          scoredAt,
+        ],
+      );
 
-  const predictionId = await client.query<{ id: string }>(
-    `SELECT id FROM predictions WHERE org_id = $1 AND match_key = $2 AND model_version = $3`,
-    [row.orgId, upcoming.matchKey, prediction.modelVersion],
-  );
+      const predictionId = await client.query<{ id: string }>(
+        `SELECT id FROM predictions WHERE org_id = $1 AND match_key = $2 AND model_version = $3`,
+        [row.orgId, upcoming.matchKey, prediction.modelVersion],
+      );
 
-  await client.query(`DELETE FROM match_strategies WHERE org_id = $1 AND match_key = $2`, [
-    row.orgId,
-    upcoming.matchKey,
-  ]);
-  if (predictionId.rows[0]?.id) {
-    await client.query(
-      `INSERT INTO match_strategies (
-         org_id, match_key, prediction_id, alliance, plan, created_by
-       ) VALUES ($1, $2, $3::uuid, $4, $5::jsonb, $6)`,
-      [
+      await client.query(`DELETE FROM match_strategies WHERE org_id = $1 AND match_key = $2`, [
         row.orgId,
         upcoming.matchKey,
-        predictionId.rows[0].id,
-        ourAlliance,
-        JSON.stringify({
-          playbook,
-          matchup: matchup.considerations,
-          tendencies,
-          scoutProvenance: scoutProvenance.slice(0, 80),
-          operations: operations.map((op) => ({
-            teamKey: op.teamKey,
-            scoutSample: op.scoutSample,
-            reliability: op.reliability,
-            foulRate: op.foulRate,
-            qualityWeight: op.qualityWeight,
-            autoCapability: op.autoCapability,
-            teleopCapability: op.teleopCapability,
-            endgameCapability: op.endgameCapability,
-            defenseLikely: op.defenseLikely,
-            pitNotes: op.pitNotes,
-            scoutEntryIds: op.scoutEntryIds,
-            qualityNotes: op.qualityNotes,
-          })),
-        }),
-        input.userId,
-      ],
-    );
-  }
+      ]);
+      if (predictionId.rows[0]?.id) {
+        await client.query(
+          `INSERT INTO match_strategies (
+             org_id, match_key, prediction_id, alliance, plan, created_by
+           ) VALUES ($1, $2, $3::uuid, $4, $5::jsonb, $6)`,
+          [
+            row.orgId,
+            upcoming.matchKey,
+            predictionId.rows[0].id,
+            ourAlliance,
+            JSON.stringify({
+              playbook,
+              matchup: matchup.considerations,
+              tendencies,
+              scoutProvenance: scoutProvenance.slice(0, 80),
+              operations: operations.map((op) => ({
+                teamKey: op.teamKey,
+                scoutSample: op.scoutSample,
+                reliability: op.reliability,
+                foulRate: op.foulRate,
+                qualityWeight: op.qualityWeight,
+                autoCapability: op.autoCapability,
+                teleopCapability: op.teleopCapability,
+                endgameCapability: op.endgameCapability,
+                defenseLikely: op.defenseLikely,
+                pitNotes: op.pitNotes,
+                scoutEntryIds: op.scoutEntryIds,
+                qualityNotes: op.qualityNotes,
+              })),
+            }),
+            input.userId,
+          ],
+        );
+      }
+    },
+    undefined,
+  );
 
   // Deploys may briefly run before the cross-feature graph migration lands, so
   // this read is optional — under a savepoint, because the plain catch aborted
