@@ -15,6 +15,8 @@ export function matchSpecificPlan(input: {
   partners: string[];
   opponents: string[];
   operations: TeamOperationalSignal[];
+  /** Our alliance's ratings, to pick a defender when scouting cannot. */
+  ourRatings?: Array<{ teamKey: string; rating: number }>;
 }): string[] {
   const num = (teamKey: string) => teamKey.replace(/^frc/i, "");
   const signal = (teamKey: string) => input.operations.find((op) => op.teamKey === teamKey);
@@ -27,6 +29,17 @@ export function matchSpecificPlan(input: {
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
   for (const lever of levers) {
+    const target = lever.id === "defend-top-opponent" ? /^Defend (\S+)/.exec(lever.title)?.[1] : undefined;
+    const defender = target ? pickDefender(input) : null;
+    if (target && defender) {
+      // "Defend 118" left the coach to work out which of our three goes: name one and say why.
+      const others = [input.ourTeamKey, ...input.partners].filter((key) => key !== defender.teamKey).map(num);
+      lines.push(
+        `${num(defender.teamKey)} defends ${target}: ${firstSentence(lever.detail)} (+${round1(lever.gain)}% win chance). ` +
+          `${num(defender.teamKey)} ${defender.reason}; ${others.join(" and ")} keep scoring.`,
+      );
+      continue;
+    }
     lines.push(`${lever.title}: ${firstSentence(lever.detail)} (+${round1(lever.gain)}% win chance)`);
   }
 
@@ -61,6 +74,44 @@ export function matchSpecificPlan(input: {
   }
 
   return lines.slice(0, 4);
+}
+
+/**
+ * Which of our three robots should play defense: one scouting says already defends, else the one
+ * that scores least in teleop, else the lowest rated. Null when nothing tells them apart.
+ */
+function pickDefender(input: {
+  ourTeamKey: string;
+  partners: string[];
+  operations: TeamOperationalSignal[];
+  ourRatings?: Array<{ teamKey: string; rating: number }>;
+}): { teamKey: string; reason: string } | null {
+  const ours = [input.ourTeamKey, ...input.partners];
+  const signal = (teamKey: string) => input.operations.find((op) => op.teamKey === teamKey && op.scoutSample > 0);
+  const teleop = (teamKey: string) => signal(teamKey)?.teleopCapability;
+
+  const defenders = ours.filter((teamKey) => signal(teamKey)?.defenseLikely);
+  if (defenders.length) {
+    const pick = [...defenders].sort((a, b) => (teleop(a) ?? 1) - (teleop(b) ?? 1))[0]!;
+    return { teamKey: pick, reason: "already plays defense in the matches we scouted" };
+  }
+
+  const scored = ours
+    .map((teamKey) => ({ teamKey, teleop: teleop(teamKey) }))
+    .filter((row): row is { teamKey: string; teleop: number } => row.teleop != null)
+    .sort((a, b) => a.teleop - b.teleop);
+  if (scored.length === ours.length && scored.length > 1 && scored[scored.length - 1]!.teleop - scored[0]!.teleop >= 0.1) {
+    return { teamKey: scored[0]!.teamKey, reason: "scores the least of our three in teleop" };
+  }
+
+  const rated = ours
+    .map((teamKey) => ({ teamKey, rating: input.ourRatings?.find((row) => row.teamKey === teamKey)?.rating }))
+    .filter((row): row is { teamKey: string; rating: number } => row.rating != null && row.rating > 0)
+    .sort((a, b) => a.rating - b.rating);
+  if (rated.length === ours.length && rated.length > 1 && rated[rated.length - 1]!.rating - rated[0]!.rating >= 3) {
+    return { teamKey: rated[0]!.teamKey, reason: "adds the fewest points of our three" };
+  }
+  return null;
 }
 
 function firstSentence(text: string): string {

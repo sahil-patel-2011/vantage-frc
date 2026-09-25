@@ -6,7 +6,7 @@ import {
   type DashboardWidgetLayout,
   type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
-import { displayBoard } from "../../lib/dashboard/board-order";
+import { displayBoard, fitPhoneRows } from "../../lib/dashboard/board-order";
 import {
   cellBox,
   layoutBottom,
@@ -37,6 +37,7 @@ import { DashboardHomeView } from "./dashboard-home-view";
 import { DashboardActionsProvider } from "./dashboard-quick-actions";
 import { setupHeroFrom, useFirstWeek } from "./first-week-card";
 import { WidgetsLoadedContext } from "./widgets/widgets-loaded";
+import { usePhoneCardRows } from "./use-phone-card-rows";
 import "./dashboard-dnd.css";
 import "./dash-layout.css";
 
@@ -184,11 +185,21 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     then shown on this screen's columns in the same reading order. Edit mode,
     Preview and Home all go through this, so they always agree.
   */
+  // A phone's edit board sizes each card to what it showed on Home, so editing never clips one.
+  const phoneRows = usePhoneCardRows({
+    canvasNode,
+    active: cols === 1 && !home.editing && !home.previewing,
+    rowHeight: grid.rowHeight,
+    gap,
+  });
   const displayFor = useCallback(
-    (layout: DashboardWidgetLayout[]) => displayBoard(viewFor(layout, true), cols),
-    [viewFor, cols],
+    (layout: DashboardWidgetLayout[]) => fitPhoneRows(displayBoard(viewFor(layout, true), cols), cols, phoneRows),
+    [viewFor, cols, phoneRows],
   );
-  const displayLayout = useMemo(() => displayBoard(viewLayout, cols), [viewLayout, cols]);
+  const displayLayout = useMemo(
+    () => (home.editing ? fitPhoneRows(displayBoard(viewLayout, cols), cols, phoneRows) : displayBoard(viewLayout, cols)),
+    [viewLayout, cols, home.editing, phoneRows],
+  );
 
   useEffect(() => {
     home.displayRef.current = displayLayout;

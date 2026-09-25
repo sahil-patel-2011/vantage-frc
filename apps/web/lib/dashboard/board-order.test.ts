@@ -3,6 +3,7 @@ import {
   applyOrder,
   describePlace,
   displayBoard,
+  fitPhoneRows,
   isHomePacked,
   nudgeOrder,
   packInOrder,
@@ -120,6 +121,25 @@ describe("displayBoard", () => {
     expect(displayBoard(packed, 12).map((item) => at(displayBoard(packed, 12), item.i))).toEqual(
       packed.map((item) => ({ x: item.x, y: item.y })),
     );
+  });
+});
+
+describe("fitPhoneRows", () => {
+  it("grows a phone card to what it needed on Home and restacks the rest below it, in order", () => {
+    const phone = displayBoard(board, 1);
+    const fitted = fitPhoneRows(phone, 1, { n: 5 });
+    expect(readingOrder(fitted)).toEqual(readingOrder(phone));
+    const next = fitted.find((row) => row.i === "n")!;
+    expect(next.h).toBe(5);
+    const second = fitted.find((row) => row.i === readingOrder(fitted)[1])!;
+    expect(second.y).toBe(next.y + next.h);
+  });
+
+  it("never shrinks a card and leaves wider screens alone", () => {
+    const phone = displayBoard(board, 1);
+    expect(fitPhoneRows(phone, 1, { n: 1 }).find((row) => row.i === "n")!.h).toBe(phone.find((row) => row.i === "n")!.h);
+    const wide = displayBoard(board, 12);
+    expect(fitPhoneRows(wide, 12, { n: 9 })).toEqual(wide);
   });
 });
 

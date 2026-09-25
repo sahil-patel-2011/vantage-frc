@@ -90,6 +90,27 @@ export function displayBoard(view: readonly DashboardWidgetLayout[], cols: numbe
   return packInOrder(scaleLayoutToCols([...view], DASHBOARD_COLUMNS, cols), cols, order);
 }
 
+/**
+ * One column, grown to fit: each card at least as many rows as it took to show everything in the
+ * phone's read-only stack, restacked in the same order. Edit mode on a phone used the saved row
+ * count, so Next match lost 64px and its win chance the moment you tapped Edit.
+ */
+export function fitPhoneRows(
+  display: readonly DashboardWidgetLayout[],
+  cols: number,
+  minRows: Readonly<Record<string, number>>,
+): DashboardWidgetLayout[] {
+  if (cols !== 1 || !Object.keys(minRows).length) return [...display];
+  let y = 0;
+  const fitted = new Map<string, DashboardWidgetLayout>();
+  for (const item of [...display].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    const h = Math.max(item.h, minRows[item.i] ?? 0);
+    fitted.set(item.i, { ...item, y, h });
+    y += h;
+  }
+  return display.map((item) => fitted.get(item.i) ?? item);
+}
+
 /** True when Home would lay this board out exactly as it is. */
 export function isHomePacked(layout: readonly DashboardWidgetLayout[]): boolean {
   return samePlaces(layout, packDashboardLayout([...layout]));

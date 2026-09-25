@@ -865,6 +865,7 @@ export async function computeStrategyView(
     partners: ourSide.map((contribution) => contribution.teamKey).filter((teamKey) => teamKey !== leverTeamKey),
     opponents: theirSide.map((contribution) => contribution.teamKey),
     operations,
+    ourRatings: ourSide.map((contribution) => ({ teamKey: contribution.teamKey, rating: contribution.rating })),
   });
   if (specificPlan.length) {
     playbook = { ...playbook, priorities: specificPlan, generalTips: playbook.priorities };
