@@ -81,7 +81,7 @@ test("an event later today shows on the card, and goes when it is removed", asyn
   await expect(page.getByTestId("dash-now")).not.toHaveAttribute("aria-busy", "true", { timeout: 25_000 });
   const before = (await page.getByTestId("dash-now").innerText()).trim();
   test.skip(
-    /You.re up next|You.re scouting next|You.re on duty/i.test(before),
+    /Our next match|You.re up next|You.re scouting next|You.re on duty/i.test(before),
     `something outranks the calendar today: ${before.split("\n")[0]}`,
   );
 
