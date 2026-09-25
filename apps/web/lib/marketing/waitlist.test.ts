@@ -137,3 +137,11 @@ describe("createWaitlistStore", () => {
     expect(error.message).toBe(copy.body);
   });
 });
+
+describe("waitlist messages a visitor can read", () => {
+  it("says what a team number is instead of the validator's words", () => {
+    const parsed = waitlistSchema.safeParse({ email: "a@b.org", teamNumber: 0, termsAccepted: true, privacyAccepted: true });
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues[0]?.message).toBe("Team numbers are digits only, 1 to 99999.");
+  });
+});

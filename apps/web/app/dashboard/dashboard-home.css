@@ -206,7 +206,7 @@
 .dash-next-match.nm .nm-match { font: 800 clamp(30px, 3.4vw, 40px)/1 var(--font-source-sans, system-ui); letter-spacing: -.02em; }
 .dash-next-match.nm .nm-alliance {
   display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px;
-  font: 700 13px/1 var(--font-source-sans, system-ui); color: #fff;
+  font: 700 13px/1 var(--font-source-sans, system-ui); color: #fff; white-space: nowrap;
 }
 .dash-next-match.nm .nm-alliance-red { background: #d43a3a; color: #fff; }
 .dash-next-match.nm .nm-alliance-blue { background: #2563eb; color: #fff; }
@@ -236,6 +236,10 @@
 .dash-next-match.alliance-red .nm-bar > i { background: #d43a3a; }
 @media (max-width: 520px) {
   .nm-sides { grid-template-columns: 1fr; }
+  /* The pill sits under the match name at its own width; it had wrapped to two lines and
+     filled the column. */
+  .dash-next-match.nm .nm-alliance { font-size: 12px; min-height: 24px; padding: 0 10px; }
+  .dash-next-match.nm .nm-clock strong { font-size: 22px; }
 }
 
 /* One card look across Home: calmer borders, a clear title, no oversized empty space. */

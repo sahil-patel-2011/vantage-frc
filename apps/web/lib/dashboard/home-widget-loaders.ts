@@ -1,3 +1,4 @@
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import { withSavepoint } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { allLessonIds } from "../cad-learn/track";
@@ -73,7 +74,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
          FROM matches_ref
         WHERE event_key = $1
           AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
-          AND COALESCE(actual_time, predicted_time, event_time) > now()
+          AND ${matchStillAheadSql()}
         ORDER BY COALESCE(actual_time, predicted_time, event_time)
         LIMIT 1`,
       [ctx.eventKey, teamKey],
@@ -581,7 +582,7 @@ async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promis
        FROM matches_ref
       WHERE event_key = $1
         AND ($2::text IS NULL OR red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
-        AND COALESCE(actual_time, predicted_time, event_time) > now()
+        AND ${matchStillAheadSql()}
       ORDER BY COALESCE(actual_time, predicted_time, event_time)
       LIMIT 6`,
     [ctx.eventKey, teamKey],

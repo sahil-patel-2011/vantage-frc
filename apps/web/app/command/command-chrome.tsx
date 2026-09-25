@@ -205,7 +205,7 @@ export function CommandReadyHeader({
         disabled={!orgId || loading}
         title="Updates on its own. Press to refresh now."
       >
-        {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString() : "—"} · Refresh`}
+        {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"} · Refresh`}
       </button>
       <CopyShareLink orgId={orgId} variant="ghost" />
       {canSetEvent ? (

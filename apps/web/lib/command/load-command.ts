@@ -1,3 +1,4 @@
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
 import { nexusAttributionHref, parseNexusEvent, parseNexusLive } from "@vantage/reference";
@@ -268,7 +269,7 @@ export async function loadEventDayCommand(
          red_alliance->'teamKeys' ? $2
          OR blue_alliance->'teamKeys' ? $2
        )
-       AND COALESCE(actual_time, predicted_time, event_time) > now()
+       AND ${matchStillAheadSql()}
      ORDER BY COALESCE(actual_time, predicted_time, event_time)
      LIMIT 4`,
     [eventKey, teamKey],

@@ -129,7 +129,7 @@ export function WaitlistForm({
     }
     const teamValue = String(fields.get("teamNumber") ?? "").trim();
     if (!teamValue) nextErrors.teamNumber = "Enter your FRC team number, like 6925.";
-    else if (!/^[0-9]{1,5}$/.test(teamValue)) nextErrors.teamNumber = "Team numbers are digits only, 1 to 99999.";
+    else if (!/^[0-9]{1,5}$/.test(teamValue) || Number(teamValue) < 1) nextErrors.teamNumber = "Team numbers are digits only, 1 to 99999.";
     if (normalizeWaitlistPhone(phone) == null) nextErrors.phone = PHONE_ERROR;
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -305,7 +305,7 @@ export function WaitlistForm({
           name="teamNumber"
           type="text"
           inputMode="numeric"
-          pattern="[0-9]{1,5}"
+          pattern="0*[1-9][0-9]{0,4}"
           maxLength={5}
           title="Your FRC team number, 1 to 99999"
           placeholder="e.g. 6925"

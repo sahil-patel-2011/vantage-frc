@@ -6,14 +6,20 @@ import { waitlistUnavailableMessage } from "./waitlist-copy";
 
 export const DISCLOSURE_VERSION = `waitlist-${LEGAL_DOC_VERSION}`;
 
-const email = z.string().trim().toLowerCase().email().max(254).refine(
+const email = z.string().trim().toLowerCase().email("Enter an email address, like you@school.org.").max(254).refine(
   (value) => value.split("@")[1]?.includes("."),
   "Enter a deliverable-looking email address",
 );
 
 export const waitlistSchema = z.object({
   email,
-  teamNumber: z.coerce.number().int().min(1).max(99999),
+  // The server's own words reach the form when the browser check is skipped: "Too small:
+  // expected number to be >=1" read like a crash.
+  teamNumber: z.coerce
+    .number({ message: "Enter your FRC team number, like 6925." })
+    .int("Team numbers are digits only, 1 to 99999.")
+    .min(1, "Team numbers are digits only, 1 to 99999.")
+    .max(99999, "Team numbers are digits only, 1 to 99999."),
   phone: z.string().trim().max(20).optional().default("").refine(
     (value) => value === "" || /^\+[1-9]\d{7,14}$/.test(value),
     "Use a phone number with country code, like +12025550123",

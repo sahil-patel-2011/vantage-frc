@@ -1,3 +1,4 @@
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
 import {
   deriveFoulRisk,
@@ -105,7 +106,7 @@ export async function loadAllianceChemistry(
        FROM matches_ref
        WHERE event_key = $1
          AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
-         AND COALESCE(actual_time, predicted_time, event_time) > now()
+         AND ${matchStillAheadSql()}
        ORDER BY COALESCE(actual_time, predicted_time, event_time)
        LIMIT 1`,
       [row.eventKey, teamKey],

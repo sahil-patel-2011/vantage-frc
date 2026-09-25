@@ -1,3 +1,4 @@
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
 import { readOrgAllowance } from "@vantage/billing";
 import { probeChatModel } from "../ai/capabilities";
@@ -178,7 +179,7 @@ export async function loadDashboardSnapshot(
            red_alliance->'teamKeys' ? $2
            OR blue_alliance->'teamKeys' ? $2
          )
-         AND COALESCE(actual_time, predicted_time, event_time) > now()
+         AND ${matchStillAheadSql()}
        ORDER BY COALESCE(actual_time, predicted_time, event_time)
        LIMIT 1`,
       [eventKey, teamKey],
@@ -493,7 +494,7 @@ export async function loadDashboardSnapshot(
          AND COALESCE(p.model_version, '') !~* 'demo'
          -- Only a match still ahead: after the last one, old odds on Home disagreed with Event
          -- day and the pit TV, which both say nothing is coming.
-         AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now()
+         AND ${matchStillAheadSql("m")}
        ORDER BY
          COALESCE(m.actual_time, m.predicted_time, m.event_time) ASC NULLS LAST,
          p.scored_at DESC

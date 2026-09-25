@@ -1,3 +1,4 @@
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
 import {
@@ -544,7 +545,7 @@ export async function computeStrategyView(
            )
            -- The same "next match" as Home, My Day and the pit TV: the first of ours still
            -- ahead. A six-hour window here opened Strategy on a match scored hours ago.
-           AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now()
+           AND ${matchStillAheadSql("m")}
          ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time)
          LIMIT 1`,
     input.matchKey ? [row.eventKey, input.matchKey] : [row.eventKey, teamKey],

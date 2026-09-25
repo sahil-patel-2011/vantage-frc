@@ -7,6 +7,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { matchStillAheadSql } from "./match-ahead-sql";
 
 export type OurMatchSummary = {
   /** Our matches on the synced schedule (placeholders excluded). */
@@ -67,8 +68,9 @@ export function noNextMatchMessage(summary: OurMatchSummary | null): string {
 }
 
 /** SQL for "this match is over" (see OurMatchSummary.played). A constant, never user input. */
-const OVER = `(winning_alliance IS NOT NULL OR post_result_time IS NOT NULL OR actual_time IS NOT NULL
-               OR COALESCE(predicted_time, event_time) <= now() - interval '3 hours')`;
+// The same rule every "next match" query uses (match-ahead-sql.ts), including "a later qual has
+// a result", so a late event's unplayed match is not counted as played.
+const OVER = `(NOT ${matchStillAheadSql()})`;
 
 /** One read for the summary above, from the shared reference tables. */
 export async function loadOurMatchSummary(client: PoolClient, eventKey: string, teamKey: string): Promise<OurMatchSummary> {

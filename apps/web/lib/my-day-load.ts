@@ -8,6 +8,7 @@ import {
 } from "./my-day";
 import type { ScheduleMatch } from "./schedule-board";
 import { matchLabelFromKey } from "./matches/no-next-match";
+import { withSavepoint } from "@vantage/db";
 
 export type MyDayLodging = {
   hotelName: string;
@@ -308,12 +309,28 @@ export async function loadMyDayView(
   }));
 
   const built = buildMyDayMatches(schedule, { orgId: row.orgId, teamKey });
+  // The feed's last good check counts as a sync: an unchanged schedule answers "not modified"
+  // and its rows keep their old synced_at.
+  // No health to read means: say how old the rows are, never that they are out of date.
+  const feed = await withSavepoint(
+    client,
+    async () => {
+      const health = await client.query<{ lastSuccessAt: string | null }>(
+        `SELECT last_success_at::text AS "lastSuccessAt" FROM data_source_health WHERE source = 'tba' LIMIT 1`,
+      );
+      return { known: health.rows.length > 0, checkedAt: health.rows[0]?.lastSuccessAt ?? null };
+    },
+    { known: false, checkedAt: null as string | null },
+  );
+  const feedKnown = feed.known;
+  const feedCheckedAt = feed.checkedAt;
   const syncedAt =
-    matchesRes.rows
-      .map((r) => r.syncedAt)
+    [...matchesRes.rows.map((r) => r.syncedAt), feedCheckedAt]
       .filter((value): value is string => Boolean(value))
-      .sort()
-      .at(-1) ?? null;
+      .map((value) => ({ value, at: Date.parse(value) }))
+      .filter((entry) => Number.isFinite(entry.at))
+      .sort((a, b) => a.at - b.at)
+      .at(-1)?.value ?? null;
 
   const logistics = await loadMyDayLogistics(client, {
     orgId: row.orgId,
@@ -367,6 +384,7 @@ export async function loadMyDayView(
     freshness: {
       syncedAt,
       label: freshnessLabel(syncedAt),
+      feedKnown,
       matchCount: schedule.length,
       ourMatchCount: built.matches.length,
     },

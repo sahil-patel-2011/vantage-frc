@@ -1,3 +1,4 @@
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
 import { sanitizeItems as sanitizeSopTemplateItems } from "../checklist-library";
 import {
@@ -69,6 +70,8 @@ type ScheduleRow = {
   matchNumber: number;
   predictedTime: string | null;
   actualTime: string | null;
+  /** Not over by the shared rule (match-ahead-sql.ts). */
+  ahead?: boolean;
   redAlliance: unknown;
   blueAlliance: unknown;
 };
@@ -143,7 +146,8 @@ async function loadSchedule(client: PoolClient, eventKeys: string[]): Promise<Sc
       `SELECT match_key AS "matchKey", event_key AS "eventKey", comp_level AS "compLevel",
               match_number AS "matchNumber",
               predicted_time::text AS "predictedTime", actual_time::text AS "actualTime",
-              red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
+              red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
+              ${matchStillAheadSql()} AS "ahead"
        FROM matches_ref
        WHERE event_key = ANY($1::text[])
        ORDER BY COALESCE(actual_time, predicted_time, event_time) NULLS LAST, match_number`,
@@ -163,7 +167,9 @@ function upcomingBumperMatches(
   const upcoming: UpcomingBumperMatch[] = [];
   for (const row of matches) {
     if (row.eventKey !== input.eventKey) continue;
-    if (row.actualTime) continue;
+    // The same "still to come" as every other screen (match-ahead-sql.ts); it skipped only
+    // matches with a start time, so it stayed on a match the field had already passed.
+    if (row.ahead === false || row.actualTime) continue;
     const color = bumperColorFromSchedule(input.teamNumber, row);
     if (!color) continue;
     upcoming.push({

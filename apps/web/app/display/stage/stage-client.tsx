@@ -442,6 +442,16 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
           {fieldLine ? <span className="stage-field-line">{fieldLine}</span> : null}
         </div>
         <span className="stage-kicker">
+          {/* Two or more matches still ahead of ours on the field: the printed time is behind the
+              event, so the board counts matches, not minutes ("LEAVE PIT NOW" showed while the
+              field was two matches away). */}
+          {before != null && before >= 2 ? (
+            <>
+              {`${before} matches before ours`}
+              <b className="stage-queue-cue"> · Stay ready</b>
+            </>
+          ) : (
+            <>
           {countdown ? `${countdown} · ` : ""}
           {clockLabel(match.scheduledTime) ?? "No scheduled time posted"}
           {/* What the pit does now, the same cue the Coach TV gives ("LEAVE PIT NOW", "QUEUE NOW"). */}
@@ -457,6 +467,8 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
                 );
               })()
             : null}
+            </>
+          )}
         </span>
       </div>
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
+import { matchClock } from "../dashboard/widgets/live-countdown";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import { formatEventDayMatchCount } from "../../lib/command/event-day-related";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
@@ -249,7 +250,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const hrefs = commandHrefsFromSnap(snap, orgId || null);
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
-  const countdown = useMemo(() => countdownLabel(next?.scheduledTime), [next?.scheduledTime, tick]);
+  const countdown = useMemo(() => (next?.scheduledTime ? matchClock(next.scheduledTime).value : countdownLabel(null)), [next?.scheduledTime, tick]);
   const liveActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
 
   const eventPicker = (

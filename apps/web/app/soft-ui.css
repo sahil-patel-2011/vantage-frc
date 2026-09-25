@@ -1120,7 +1120,11 @@ button.edc-live:disabled{cursor:default}
   .edc-priority,.edc-secondary,.edc-actions{grid-template-columns:1fr 1fr}
 }
 @media(max-width:650px){
-  .edc-header-actions{justify-content:flex-start}
+  /* The time on its own line, then the two actions side by side at one height: they had
+     spilled into two uneven rows with "Change event" alone under the rest. */
+  .edc-header-actions{justify-content:flex-start;display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-bottom:10px}
+  .edc-header-actions>.edc-live{grid-column:1/-1;justify-self:start;padding:2px 0}
+  .edc-header-actions>:not(.edc-live){width:100%;min-height:40px;justify-content:center;border:1px solid var(--line);background:var(--surface);border-radius:999px}
   .edc-priority,.edc-secondary,.edc-actions,.edc-alliances,.edc-pulse{grid-template-columns:1fr}
   .edc-actions a{min-height:84px}
 }

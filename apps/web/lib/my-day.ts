@@ -56,6 +56,12 @@ export type MyDayFreshness = {
   syncedAt: string | null;
   /** Short relative label for the strip, e.g. "Synced 12m ago". */
   label: string;
+  /**
+   * Whether the schedule feed reports its own health. Without that (no ingest here, or a copy of
+   * the schedule) the age of the rows says nothing about whether they are current: an unchanged
+   * schedule is not rewritten, so it looked "out of date" 20 minutes after every sync.
+   */
+  feedKnown?: boolean;
   matchCount: number;
   ourMatchCount: number;
 };

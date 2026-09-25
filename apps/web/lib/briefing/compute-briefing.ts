@@ -466,13 +466,19 @@ export async function computeBriefingView(
   // is over, the last one, shown as a review. "First match without a score" picked long-past
   // matches whose results never synced and called them "Up next".
   const nowMs = Date.now();
+  // How far the field has got: the highest qual with a posted score. A qual before it is over
+  // even if its own score never synced (lib/matches/match-ahead-sql.ts says the same in SQL).
+  const fieldQual = matches.rows.reduce((max, entry) => {
+    const played = allianceScore(entry.redAlliance) != null && allianceScore(entry.blueAlliance) != null;
+    return entry.compLevel === "qm" && played ? Math.max(max, entry.matchNumber) : max;
+  }, 0);
   const isOver = (entry: (typeof ourRows)[number]) =>
     (entry.redScore != null && entry.blueScore != null) ||
+    (entry.compLevel === "qm" && entry.matchNumber < fieldQual) ||
     (entry.scheduledTime != null && new Date(entry.scheduledTime).getTime() <= nowMs - 3 * 3_600_000);
-  // Still ahead = not over and its time not yet come, the rule Home's next-match card uses, so
-  // the two agree on which match is next. A match only running late comes after those.
-  const ahead = (entry: (typeof ourRows)[number]) =>
-    !isOver(entry) && (entry.scheduledTime == null || new Date(entry.scheduledTime).getTime() > nowMs);
+  // Still ahead = not over, late or not: when the event ran 30 minutes behind, Qual 31 (not yet
+  // played) was skipped for Qual 33 because its printed time had passed.
+  const ahead = (entry: (typeof ourRows)[number]) => !isOver(entry);
   const nextKey = (ourRows.find(ahead) ?? ourRows.find((entry) => !isOver(entry)))?.matchKey ?? null;
   const selected =
     ourRows.find((entry) => entry.matchKey === input.requestedMatch) ??

@@ -5,7 +5,7 @@ import { nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { matchShortLabel } from "../../../lib/matches/no-next-match";
-import { LiveCountdown } from "./live-countdown";
+import { MatchClock } from "./live-countdown";
 
 function allianceTeams(alliance: unknown) {
   if (!alliance || typeof alliance !== "object") return "—";
@@ -55,10 +55,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
             </span>
           ) : null}
         </div>
-        <div className="dash-countdown nm-clock">
-          <span>Starts in</span>
-          <strong>{scheduled ? <LiveCountdown iso={scheduled} /> : "Time not posted"}</strong>
-        </div>
+        <MatchClock iso={scheduled} className="dash-countdown nm-clock" />
       </div>
       {!alliance && typeof data.bumperCue === "string" && data.bumperCue ? (
         <p className="dash-bumper-cue nm-bumpers">{data.bumperCue}</p>

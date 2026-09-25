@@ -20,7 +20,8 @@ export function buildEventFocus(
 ): EventFocusView | null {
   if (view?.status !== "ready" || !view.next) return null;
   const syncedAt = view.freshness.syncedAt ? new Date(view.freshness.syncedAt).getTime() : Number.NaN;
-  const stale = !Number.isFinite(syncedAt) || now - syncedAt > STALE_AFTER_MS;
+  // "May be out of date" only when the feed reports on itself and its last good check is old.
+  const stale = view.freshness.feedKnown === true && (!Number.isFinite(syncedAt) || now - syncedAt > STALE_AFTER_MS);
   const tone: EventFocusTone = !online ? "offline" : stale ? "stale" : "live";
   const freshness = !online
     ? "Offline · saved data"

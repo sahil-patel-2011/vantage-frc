@@ -276,7 +276,7 @@ export function CommandReadyView({
                 {after ? (
                   <span>
                     After · {matchShortLabel(after.compLevel, after.matchNumber)}
-                    {after.scheduledTime ? ` · ${countdownLabel(after.scheduledTime)}` : ""}
+                    {after.scheduledTime && new Date(after.scheduledTime).getTime() > Date.now() ? ` · ${countdownLabel(after.scheduledTime)}` : ""}
                   </span>
                 ) : null}
               </footer>

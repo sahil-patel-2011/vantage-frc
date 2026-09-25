@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildEventFocus } from "./event-focus";
 import type { MyDayView } from "./my-day";
 
-function readyView(syncedAt: string | null = "2026-07-18T15:55:00.000Z"): MyDayView {
+function readyView(syncedAt: string | null = "2026-07-18T15:55:00.000Z", feedKnown = true): MyDayView {
   return {
     status: "ready",
     context: { orgId: "org-1", orgName: "Vantage Robotics", teamNumber: 9999, role: "member", eventKey: "2026test", eventName: "Test Regional" },
@@ -16,7 +16,7 @@ function readyView(syncedAt: string | null = "2026-07-18T15:55:00.000Z"): MyDayV
       links: { command: "/command?orgId=org-1", briefing: "/briefing?orgId=org-1&matchKey=2026test_qm12", checklist: "/match-checklist?orgId=org-1", schedule: "/schedule?orgId=org-1", scoutPartners: [], scoutOpponents: [] },
     },
     matches: [],
-    freshness: { syncedAt, label: syncedAt ? "Synced 5m ago" : "Schedule not synced yet", matchCount: 40, ourMatchCount: 8 },
+    freshness: { syncedAt, label: syncedAt ? "Synced 5m ago" : "Schedule not synced yet", matchCount: 40, ourMatchCount: 8, feedKnown },
     emptyReason: null,
   };
 }
@@ -31,6 +31,12 @@ describe("buildEventFocus", () => {
   it("makes offline and stale evidence explicit", () => {
     expect(buildEventFocus(readyView(), false)?.tone).toBe("offline");
     expect(buildEventFocus(readyView(null), true)?.tone).toBe("stale");
+  });
+
+  it("never calls rows stale when the feed does not report on itself", () => {
+    const later = Date.parse("2026-07-18T17:00:00.000Z");
+    expect(buildEventFocus(readyView(undefined, false), true, later)?.tone).toBe("live");
+    expect(buildEventFocus(readyView(undefined, true), true, later)?.tone).toBe("stale");
   });
 
   it("stays hidden until a real next match exists", () => {

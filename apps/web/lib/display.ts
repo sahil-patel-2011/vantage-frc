@@ -1,5 +1,6 @@
 ﻿// Display / pit-TV kiosk helpers. Never invent match/rank/prediction defaults.
 
+import { matchStillAheadSql } from "./matches/match-ahead-sql";
 import type { NexusQueueSnapshot } from "./command/nexus-queue";
 import { scoutEventLabel } from "./scouting/scouting-related";
 import { isDemoPrediction, predictionWinDisplay } from "./strategy/prediction-display";
@@ -363,7 +364,7 @@ SELECT jsonb_build_object(
         m.red_alliance->'teamKeys' ? ('frc' || o.team_number::text)
         OR m.blue_alliance->'teamKeys' ? ('frc' || o.team_number::text)
       )
-      AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now()
+      AND ${matchStillAheadSql("m")}
     ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time)
     LIMIT 1
   ),
@@ -386,7 +387,7 @@ SELECT jsonb_build_object(
             m2.red_alliance->'teamKeys' ? ('frc' || o.team_number::text)
             OR m2.blue_alliance->'teamKeys' ? ('frc' || o.team_number::text)
           )
-          AND COALESCE(m2.actual_time, m2.predicted_time, m2.event_time) > now()
+          AND ${matchStillAheadSql("m2")}
         ORDER BY COALESCE(m2.actual_time, m2.predicted_time, m2.event_time)
         LIMIT 1
       ) THEN 0 ELSE 1 END,
@@ -693,7 +694,7 @@ SELECT jsonb_build_object(
           m.red_alliance->'teamKeys' ? ('frc' || o.team_number::text)
           OR m.blue_alliance->'teamKeys' ? ('frc' || o.team_number::text)
         )
-        AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now()
+        AND ${matchStillAheadSql("m")}
       ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time)
       LIMIT 6
     ) s

@@ -48,6 +48,13 @@ export function plainStrategyText(text: string | null | undefined): string {
         /Protect (\d+)'s modeled contribution \((\d+)% of alliance rating\)\.?/gi,
         "$1 carries $2% of our alliance's rating: keep them scoring.",
       )
+      // "Scout quality mean weight 49% — Scout 6925a000 downweighted to 45%: Scoring mean 51.3 vs
+      // consensus 5 (Δ 46.3); weight 0.45." showed a student a user id prefix and the model's maths.
+      .replace(/Scout quality mean weight \d+%\s*[—–-]\s*/gi, "")
+      .replace(/Scout [0-9a-f]{6,}\s+downweighted to \d+%:[^;]*(?:;\s*weight\s*[\d.]+)?\.?/gi, "One scout's numbers were far from the others', so they count for less.")
+      .replace(/\s*\(mean quality weight [\d.]+\)/gi, "")
+      .replace(/\bscout trust blend capped at \d+%/gi, "some of our own scouting")
+      .replace(/\bScoring mean [\d.]+ vs consensus [\d.]+\s*\(Δ\s*[-+]?[\d.]+\)(?:;\s*weight\s*[\d.]+)?\.?/gi, "")
       // "Scout quality downweights applied: frc6925 (mean 43%)." said to a student.
       .replace(/Scout quality downweights applied:\s*([^.]*)\./gi, (_all, list: string) => {
         const teams = list.replace(/\s*\(mean \d+%\)/gi, "").replace(/\bfrc/gi, "");
