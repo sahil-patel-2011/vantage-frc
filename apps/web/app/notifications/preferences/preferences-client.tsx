@@ -114,7 +114,11 @@ export default function NotificationPreferencesClient() {
   const viewRef = useRef<PrefsView | null>(null);
   viewRef.current = view;
 
+  // What the switches say now, for saves in flight (see change()).
+  const latest = useRef<{ inApp: InAppPrefs; email: EmailPrefs } | null>(null);
+  const saveChain = useRef<Promise<void>>(Promise.resolve());
   const applyView = useCallback((next: PrefsView) => {
+    latest.current = null;
     const sanitized = { ...next, delivery: studentDelivery(next.delivery) };
     setView(sanitized);
     setInAppPrefs(sanitized.notificationPrefs);
@@ -207,9 +211,23 @@ export default function NotificationPreferencesClient() {
     void load();
   }, [load]);
 
-  async function save() {
+  /*
+    Each switch saves as it changes, the way phone settings do. There was one Save button under
+    19 switches, and leaving the page without pressing it dropped the change without a word.
+    Saves run one after another so a quick second tap never lands before the first.
+  */
+  function change(next: { inApp?: InAppPrefs; email?: EmailPrefs }) {
+    const current = latest.current ?? { inApp: inAppPrefs, email: emailPrefs };
+    const merged = { inApp: next.inApp ?? current.inApp, email: next.email ?? current.email };
+    latest.current = merged;
+    if (next.inApp) setInAppPrefs(next.inApp);
+    if (next.email) setEmailPrefs(next.email);
+    saveChain.current = saveChain.current.then(() => save(merged.inApp, merged.email));
+  }
+
+  async function save(inAppPrefs: InAppPrefs, emailPrefs: EmailPrefs) {
     setBusy(true);
-    setMessage("");
+    setMessage("Saving…");
     setMessageOk(false);
     try {
       // `/api/account` is the single writer for notification_prefs — this page only reads
@@ -226,11 +244,14 @@ export default function NotificationPreferencesClient() {
         emailPrefs?: EmailPrefs;
       };
       if (!response.ok) {
-        setMessage(data.error ?? "Could not save preferences.");
+        setMessage(data.error ?? "Could not save that change. Try the switch again.");
         return;
       }
-      if (data.notificationPrefs) setInAppPrefs(data.notificationPrefs);
-      if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
+      // Only the last save in a quick run writes back, so a reply cannot undo a newer tap.
+      const newest = latest.current;
+      const isNewest = !newest || (newest.inApp === inAppPrefs && newest.email === emailPrefs);
+      if (isNewest && data.notificationPrefs) setInAppPrefs(data.notificationPrefs);
+      if (isNewest && data.emailPrefs) setEmailPrefs(data.emailPrefs);
       const next: PrefsView = {
         status: "live",
         notificationPrefs: data.notificationPrefs ?? inAppPrefs,
@@ -242,6 +263,8 @@ export default function NotificationPreferencesClient() {
       await persistPrefsSnapshot(next);
       setMessage("Saved.");
       setMessageOk(true);
+    } catch {
+      setMessage("Could not save that change. Check the connection and try the switch again.");
     } finally {
       setBusy(false);
     }
@@ -324,7 +347,7 @@ export default function NotificationPreferencesClient() {
                   type="checkbox"
                   checked={inAppPrefs[item.key]}
                   onChange={(event) =>
-                    setInAppPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
+                    change({ inApp: { ...(latest.current?.inApp ?? inAppPrefs), [item.key]: event.target.checked } })
                   }
                 />
               </label>
@@ -361,7 +384,7 @@ export default function NotificationPreferencesClient() {
                   type="checkbox"
                   checked={emailPrefs[item.key]}
                   onChange={(event) =>
-                    setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
+                    change({ email: { ...(latest.current?.email ?? emailPrefs), [item.key]: event.target.checked } })
                   }
                 />
               </label>
@@ -371,14 +394,9 @@ export default function NotificationPreferencesClient() {
       </Panel>
 
       <div className="notif-prefs-save">
-        <Button variant="primary" type="button" disabled={busy} onClick={() => void save()}>
-          {busy ? "Saving…" : "Save settings"}
-        </Button>
-        {message ? (
-          <p className={`notif-prefs-message${messageOk ? " success" : ""}`} role="status">
-            {message}
-          </p>
-        ) : null}
+        <p className={`notif-prefs-message${messageOk ? " success" : ""}`} role="status" aria-busy={busy || undefined}>
+          {message || "Each switch saves as soon as you change it."}
+        </p>
       </div>
     </main>
   );
