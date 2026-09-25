@@ -59,6 +59,8 @@ function AdminClientInner() {
   const [message, setMessage] = useState("");
   const [confirmation, setConfirmation] = useState<ProvisionConfirmation | null>(null);
   const [copied, setCopied] = useState(false);
+  // A fresh owner link per team row, made on request (the first one is never stored).
+  const [ownerLinks, setOwnerLinks] = useState<Record<string, { url?: string; note: string }>>({});
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -130,6 +132,34 @@ function AdminClientInner() {
     setConfirmation(data);
     setForm({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
     await load();
+  }
+
+  async function newOwnerLink(orgId: string) {
+    setOwnerLinks((current) => ({ ...current, [orgId]: { note: "Making a new link…" } }));
+    const response = await fetch("/api/admin/organizations", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "owner_link", orgId }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { inviteUrl?: string; emailSent?: boolean; error?: string };
+    if (!response.ok || !data.inviteUrl) {
+      setOwnerLinks((current) => ({ ...current, [orgId]: { note: data.error ?? "Could not make a new link." } }));
+      return;
+    }
+    let copiedNow = false;
+    try {
+      await navigator.clipboard.writeText(data.inviteUrl);
+      copiedNow = true;
+    } catch {
+      // Clipboard blocked: the link is shown to copy by hand.
+    }
+    setOwnerLinks((current) => ({
+      ...current,
+      [orgId]: {
+        url: data.inviteUrl,
+        note: `${copiedNow ? "Copied a new owner link." : "New owner link below."} The earlier one no longer works.${data.emailSent ? " We emailed it too." : ""}`,
+      },
+    }));
   }
 
   async function copyInviteLink(url: string) {
@@ -213,12 +243,13 @@ function AdminClientInner() {
           {confirmation.owner.mode === "invited" && confirmation.owner.inviteUrl ? (
             <div className="admin-invite-link">
               <label>
-                Owner invite link (shown once)
+                Owner invite link
                 <input readOnly value={confirmation.owner.inviteUrl} onFocus={(event) => event.target.select()} />
               </label>
               <Button variant="primary" type="button" onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}>
                 {copied ? "Copied" : "Copy invite link"}
               </Button>
+              <small className="app-muted">Lost it later? Make a new one from the team&rsquo;s row below.</small>
             </div>
           ) : null}
           <details className="admin-confirmation-details">
@@ -317,7 +348,20 @@ function AdminClientInner() {
                         ? `Owner invite pending · ${org.pendingOwnerEmail}`
                         : "No owner yet"}
                   </small>
+                  {ownerLinks[org.id] ? (
+                    <small role="status">
+                      {ownerLinks[org.id]!.note}
+                      {ownerLinks[org.id]!.url ? (
+                        <input readOnly value={ownerLinks[org.id]!.url} onFocus={(event) => event.target.select()} aria-label="New owner invite link" />
+                      ) : null}
+                    </small>
+                  ) : null}
                 </div>
+                {org.pendingOwnerEmail && !org.ownerEmail ? (
+                  <Button variant="secondary" size="sm" type="button" onClick={() => void newOwnerLink(org.id)}>
+                    New owner link
+                  </Button>
+                ) : null}
               </article>
             ))
           )}

@@ -191,3 +191,57 @@ export async function POST(request: Request) {
     return platformAdminDeniedResponse(error);
   }
 }
+
+/**
+ * A new owner link for a team whose owner has not joined yet. Links are never stored in plain
+ * text, so the one shown at creation cannot be shown again; this makes a fresh one (the old one
+ * stops working) and emails it when email is on. Rotation is allowed by the 0479 platform policy.
+ */
+export async function PATCH(request: Request) {
+  try {
+    const current = await session();
+    const body = (await request.json().catch(() => ({}))) as { action?: unknown; orgId?: unknown };
+    const orgId = typeof body.orgId === "string" ? body.orgId.trim() : "";
+    if (body.action !== "owner_link" || !/^[0-9a-f-]{36}$/i.test(orgId)) {
+      return Response.json({ error: "Pick a team with an owner invite waiting." }, { status: 400 });
+    }
+    const rotated = await withRls({ userId: current.user.id }, async (client) => {
+      await assertPlatformAdmin(client);
+      await assertPlatformPrivilegeMfa(client, { userId: current.user.id, sessionId: current.session.id });
+      const { token, tokenHash } = createInviteToken();
+      const expiresAt = new Date(Date.now() + OWNER_INVITE_HOURS * 3_600_000);
+      const row = await client.query<{ email: string; organization: string }>(
+        `UPDATE invites i SET token_hash = $2, expires_at = $3, last_sent_at = now()
+           FROM organizations o
+          WHERE i.org_id = $1::uuid AND o.id = i.org_id AND i.role = 'owner' AND i.status = 'pending'
+          RETURNING i.email, o.name AS organization`,
+        [orgId, tokenHash, expiresAt],
+      );
+      const invite = row.rows[0];
+      if (!invite) return null;
+      await writeAdminAction(client, {
+        actorUserId: current.user.id,
+        action: "organization.owner_link_reissued",
+        targetOrgId: orgId,
+        payload: {},
+      });
+      return { token, expiresAt, email: invite.email, organization: invite.organization };
+    });
+    if (!rotated) return Response.json({ error: "This team has no owner invite waiting." }, { status: 404 });
+    const delivery = await deliverInviteEmail({
+      email: rotated.email,
+      organization: rotated.organization,
+      role: "owner",
+      token: rotated.token,
+      expiresAt: rotated.expiresAt,
+    });
+    return Response.json({
+      inviteUrl: inviteAcceptUrl(rotated.token),
+      expiresAt: rotated.expiresAt.toISOString(),
+      email: rotated.email,
+      emailSent: delivery.emailSent && delivery.delivery !== "local",
+    });
+  } catch (error) {
+    return platformAdminDeniedResponse(error);
+  }
+}
