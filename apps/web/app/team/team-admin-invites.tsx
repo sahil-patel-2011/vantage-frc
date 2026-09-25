@@ -72,15 +72,27 @@ export function TeamAdminInvitesPanel({
         <div className="team-invite-fields">
           <label>
             Email
+            {/* Text, not type="email": a pasted list of addresses is fine here (one invite each),
+                and the browser's own check rejected the comma with a raw message. */}
             <input
               ref={emailRef}
               required
-              type="email"
+              type="text"
+              inputMode="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text");
+                if (!/[\r\n]/.test(text)) return;
+                // A column pasted from a spreadsheet keeps its line breaks as commas.
+                e.preventDefault();
+                const joined = text.split(/[\r\n]+/).map((line) => line.trim()).filter(Boolean).join(", ");
+                setEmail(email.trim() ? `${email.trim()}, ${joined}` : joined);
+              }}
               placeholder="e.g. teammate@example.com"
             />
+            <small className="app-muted">To invite several people, separate their emails with commas.</small>
           </label>
           <label>
             They are a
@@ -125,6 +137,34 @@ export function TeamAdminInvitesPanel({
               <Button variant="secondary" type="button" onClick={inviteNotice.undo.run}>
                 {inviteNotice.undo.label}
               </Button>
+            ) : null}
+            {inviteNotice.links?.length ? (
+              <div className="team-invite-bulk">
+                <ul>
+                  {inviteNotice.links.map((row) => (
+                    <li key={row.id}>
+                      <span>{row.email}</span>
+                      <Button variant="secondary" size="sm" type="button" onClick={() => onCopyLink(row.id, row.url)}>
+                        {copiedInviteId === row.id ? "Copied" : "Copy link"}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                {inviteNotice.links.length > 1 ? (
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={() =>
+                      onCopyLink(
+                        "all",
+                        inviteNotice.links!.map((row) => `${row.email}: ${row.url}`).join("\n"),
+                      )
+                    }
+                  >
+                    {copiedInviteId === "all" ? "Copied" : "Copy all links"}
+                  </Button>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}

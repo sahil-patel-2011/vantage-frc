@@ -442,3 +442,8 @@
 .team-profile-settings > section + section {
   margin-top: 16px;
 }
+
+/* Several invites at once: one row per person with its link. */
+.team-invite-bulk{display:grid;gap:8px;width:100%}
+.team-invite-bulk ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.team-invite-bulk li{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}

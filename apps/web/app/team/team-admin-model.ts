@@ -82,6 +82,8 @@ export type InviteNotice = {
   link?: { id: string; url: string } | null;
   /** Put back what was just undone (a revoked invite comes back with the same role). */
   undo?: { label: string; run: () => void } | null;
+  /** Several invites made at once: one line per person, each with its link. */
+  links?: Array<{ email: string; id: string; url: string }>;
 };
 
 /** Last IndexedDB copy of Team admin membership — never invented counts. */

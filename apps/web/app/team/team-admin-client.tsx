@@ -322,6 +322,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     if (inviteBusy) return;
     const inviteEmail = again?.email ?? email;
     const inviteRole = again?.role ?? role;
+    // Several addresses pasted at once (commas, spaces, new lines): one invite each, same role,
+    // and every link in one list to copy.
+    const many = again ? [] : inviteEmail.split(/[\s,;]+/).map((entry) => entry.trim()).filter(Boolean);
+    if (many.length > 1) {
+      await sendInvites(many, inviteRole);
+      return;
+    }
     // Inviting an address that already has an invite replaces it; say so when the role changes
     // instead of quietly turning a mentor's invite into a student's.
     const earlier = invites.find(
@@ -366,6 +373,52 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       if (!again) {
         setEmail("");
         // Back to the usual choice, so the next person isn't invited with the last one's role.
+        setRole("scout");
+      }
+      await load();
+    } finally {
+      setInviteBusy(false);
+    }
+  }
+
+  async function sendInvites(emails: string[], inviteRole: string) {
+    setInviteBusy(true);
+    setInviteNotice(null);
+    const made: Array<{ email: string; id: string; url: string }> = [];
+    const failed: string[] = [];
+    let delivery: InviteDeliveryMode | undefined;
+    try {
+      for (const address of emails) {
+        const response = await fetch("/api/organizations/invites", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, email: address, role: inviteRole }),
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          id?: string;
+          inviteUrl?: string;
+          delivery?: InviteDeliveryMode;
+          error?: string;
+        };
+        if (response.ok && data.id && data.inviteUrl) {
+          made.push({ email: address, id: data.id, url: data.inviteUrl });
+          delivery = data.delivery ?? delivery;
+        } else {
+          failed.push(`${address} (${data.error ?? "could not be invited"})`);
+        }
+      }
+      setInviteLinks((current) => ({ ...current, ...Object.fromEntries(made.map((row) => [row.id, row.url])) }));
+      const sent = !inviteEmailIsOff(delivery) && delivery !== "failed";
+      setInviteNotice({
+        tone: failed.length ? "warn" : "ok",
+        message:
+          `${made.length} ${made.length === 1 ? "invite" : "invites"} ready.` +
+          (sent ? " We emailed each of them a link." : " Email is off here, so copy the links below and send them yourself.") +
+          (failed.length ? ` Not invited: ${failed.join("; ")}.` : ""),
+        links: made,
+      });
+      if (made.length) {
+        setEmail("");
         setRole("scout");
       }
       await load();
