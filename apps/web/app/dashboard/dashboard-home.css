@@ -130,6 +130,9 @@
   .dash-home-header > div:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .dash-home-header > div:first-child > * { margin: 0; }
   .dash-home-header .dash-hero-greeting { flex: 1 0 100%; padding-right: 88px; }
+  /* As tall as the Edit button beside it, so the board and event chips start below Edit instead
+     of running under it. */
+  .dash-home-header .dash-hero-greeting { min-height: 44px; display: flex; align-items: center; }
   .dash-home-header .dash-home-actions { position: absolute; top: 0; right: 0; }
 }
 
@@ -159,5 +162,11 @@
 }
 .dash-pgrid[data-flow="true"] > .dash-grid-skeleton,
 .dash-pgrid[data-flow="true"] > .dash-drop-slot {
+  display: none;
+}
+
+/* One column: every size is the full width, so S/M/L/XL changed nothing but height and moved
+   the card. Resizing is a wider-screen tool; on a phone the card keeps its size. */
+.dash-pgrid[data-cols="1"] .dash-size-toggle {
   display: none;
 }

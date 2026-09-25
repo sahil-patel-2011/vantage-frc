@@ -298,7 +298,7 @@ export function useDashboardBoardOps(input: {
           ? board.name
           : activateScope === "org"
             ? "Team board"
-            : "My board";
+            : "My Home"; // the name the chip showed before the first save
       const response = await fetch("/api/dashboards", {
         method: "POST",
         headers: { "content-type": "application/json" },

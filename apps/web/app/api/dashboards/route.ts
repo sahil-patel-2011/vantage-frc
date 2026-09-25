@@ -443,8 +443,8 @@ export async function POST(request: Request) {
         );
         if (!validated.ok) throw new Error(validated.error);
         const name =
-          String(body.name ?? (scope === "org" ? "Team board" : "My board")).trim().slice(0, 80) ||
-          (scope === "org" ? "Team board" : "My board");
+          String(body.name ?? (scope === "org" ? "Team board" : "My Home")).trim().slice(0, 80) ||
+          (scope === "org" ? "Team board" : "My Home");
         const activate = body.activate !== false;
         if (activate) await deactivateForSwitch(client, orgId, session.user.id, scope);
 
