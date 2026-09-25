@@ -110,15 +110,13 @@ export function SignInCodeStep({
         </div>
       ) : null}
 
-      {inviteHelp && !invalid ? (
-        // Folded: most people on this screen were invited and their code is on its way.
-        <details className="signin-invite-help">
-          {/* The fact that matters is in the line itself: an uninvited address waits for a code
-              that never comes, so it must not be hidden behind the fold. */}
-          <summary>No code? Codes only go to emails a team has invited.</summary>
+      {/* Always open, and still there after a wrong code: an address no team invited never gets
+          a code, and a folded note left a new mentor waiting on a timer for one. */}
+      {inviteHelp ? (
+        <div className="signin-invite-help">
           <p>
-            If yours hasn&rsquo;t arrived after a minute, check spam, or ask your team&rsquo;s owner to invite this
-            address. New to Vantage? Join the waitlist and we&rsquo;ll set your team up.
+            <strong>Not invited yet? No code will come.</strong> Codes only go to emails a team has invited. If
+            you were invited and nothing arrives in a minute, check spam.
           </p>
           <a
             className="signin-invite-help-cta"
@@ -127,7 +125,7 @@ export function SignInCodeStep({
           >
             New team? Join the waitlist
           </a>
-        </details>
+        </div>
       ) : null}
     </form>
   );
