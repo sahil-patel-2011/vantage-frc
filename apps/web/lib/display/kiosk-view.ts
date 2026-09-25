@@ -98,9 +98,10 @@ export function kioskWinLine(
         caveats: prediction.caveats,
       })
     : null;
-  const colour = ourColor ? ` · we're ${ourColor.toUpperCase()}` : "";
-  if (!win) return { value: "No prediction yet", detail: `${label}${colour}` };
-  return { value: `${win.label} to win`, detail: `${label}${colour}` };
+  // The next-match panel beside it already says the match and our colour; this says where the
+  // number comes from.
+  if (!win) return { value: "No prediction yet", detail: ourColor ? `For ${label}` : label };
+  return { value: `${win.label} to win`, detail: `${label} · from our saved prediction` };
 }
 
 /** Board layout: the first panel is the hero, the rest stack beside it. */

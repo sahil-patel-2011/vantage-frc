@@ -32,11 +32,14 @@ export function NextMatchHero({
   teamNumber,
   now,
   intel,
+  showTags = true,
 }: {
   match: DisplayNextMatch | null;
   teamNumber: number;
   now: number;
   intel: DisplayMatchIntel | null;
+  /** Off when the board has its own Team intel panel, so the same words are not on screen twice. */
+  showTags?: boolean;
 }) {
   if (!match) {
     return (
@@ -50,15 +53,18 @@ export function NextMatchHero({
   const clock = countdownState(match.scheduledTime, now);
   const sides = kioskSides(match, teamNumber);
   const cueClass = clock.queueNow ? "is-now" : clock.queueSoon ? "is-soon" : clock.leavePit ? "is-leave" : "";
+  const own = String(teamNumber);
   const tagsFor = (team: string) =>
-    intel?.teams.find((row) => row.teamKey.replace(/^frc/i, "") === team)?.tags.join(" · ") ?? "";
+    !showTags ? "" : intel?.teams.find((row) => row.teamKey.replace(/^frc/i, "") === team)?.tags.join(" · ") ?? "";
+  // Our whole alliance in field order, us marked, as the event board lists it ("1323 / 6925 US / 7457").
+  const withUs = sides.ourColor === "red" ? sides.red : sides.ourColor === "blue" ? sides.blue : sides.partners;
   const lineup = (teams: string[], color: "red" | "blue" | null) => (
     <ul className={`kp-lineup${color ? ` is-${color}` : ""}`}>
       {teams.length ? (
         teams.map((team) => (
           <li key={team}>
             <b>{team}</b>
-            {tagsFor(team) ? <small>{tagsFor(team)}</small> : null}
+            {team === own ? <small>US</small> : tagsFor(team) ? <small>{tagsFor(team)}</small> : null}
           </li>
         ))
       ) : (
@@ -93,8 +99,8 @@ export function NextMatchHero({
       {sides.ourColor ? (
         <div className="kp-sides">
           <section>
-            <h3>With us</h3>
-            {lineup(sides.partners, sides.ourColor)}
+            <h3>Our alliance</h3>
+            {lineup(withUs, sides.ourColor)}
           </section>
           <section>
             <h3>Against us</h3>
@@ -124,16 +130,18 @@ export function KioskPanel({
   now,
   intel,
   hero,
+  showTags,
 }: {
   type: string;
   data: DisplaySnapshot;
   now: number;
   intel: DisplayMatchIntel | null;
   hero: boolean;
+  showTags?: boolean;
 }) {
   const teamNumber = data.organization.teamNumber;
   if (type === "next_match" && hero) {
-    return <NextMatchHero match={data.nextMatch} teamNumber={teamNumber} now={now} intel={intel} />;
+    return <NextMatchHero match={data.nextMatch} teamNumber={teamNumber} now={now} intel={intel} showTags={showTags} />;
   }
   const label = isWidgetType(type) ? WIDGET_LABEL[type] : type.replaceAll("_", " ");
   let value = widgetValue(type, data);
@@ -184,6 +192,11 @@ export function KioskPanel({
         const open = data.readiness!.openFailures;
         value = open > 0 ? `${open} open ${open === 1 ? "repair" : "repairs"}` : "All clear";
         detail = open > 0 ? "Robot problems logged and not fixed yet" : "No open robot problems";
+      } else {
+        // Nothing logged for the robot yet. The fallback was the scouting lead's disagreement
+        // count, cut off mid-sentence on the TV ("2 scout disagreements to…").
+        value = "Nothing logged";
+        detail = "Robot problems show here once someone logs one";
       }
       break;
     case "team_intel": {

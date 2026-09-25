@@ -1221,3 +1221,14 @@ body.has-app-shell main.display-setup .preset-picker { grid-template-columns: re
 .disp-build-fold[open] > summary {
   margin-bottom: 12px;
 }
+
+/* Phone: every control on the board editor is a thumb-sized target (arrows, Remove, the
+   add-a-panel chips, Open fullscreen, the ••• menu), not 29–36px. */
+@media (max-width: 720px) {
+  .display-setup button,
+  .display-setup a.app-button,
+  .display-setup [class*="chip"],
+  .display-setup select { min-height: 44px; }
+  .display-setup button { min-width: 44px; }
+  .display-setup .breadcrumbs a { display: inline-flex; align-items: center; min-height: 32px; padding: 0 4px; }
+}

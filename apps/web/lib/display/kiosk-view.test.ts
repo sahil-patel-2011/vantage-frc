@@ -36,7 +36,7 @@ describe("pit TV view", () => {
   });
 
   it("labels the win chance with the match and our colour", () => {
-    expect(kioskWinLine({ nextMatch: match, prediction }, 6925)).toEqual({ value: "28% to win", detail: "Qual 37 · we're RED" });
+    expect(kioskWinLine({ nextMatch: match, prediction }, 6925)).toEqual({ value: "28% to win", detail: "Qual 37 · from our saved prediction" });
   });
 
   it("never shows odds that belong to another match", () => {

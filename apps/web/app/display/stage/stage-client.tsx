@@ -419,7 +419,7 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
       {ourColor ? (
         <div className="stage-sides">
           <section>
-            <h2>With us</h2>
+            <h2>Our alliance</h2>
             {teamList(partners, ourColor)}
           </section>
           <section>

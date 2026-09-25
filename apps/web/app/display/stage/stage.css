@@ -531,8 +531,10 @@
   text-transform: uppercase;
   opacity: 0.9;
 }
-.stage-bumpers.is-red { background: var(--stage-red); }
-.stage-bumpers.is-blue { background: var(--stage-blue); }
+/* Deep colours under the white "WE ARE …": the light sky blue read at about 2.4:1 from across
+   the pit. The same blue and red the Coach TV and event board use. */
+.stage-bumpers.is-red { background: #b91c1c; }
+.stage-bumpers.is-blue { background: #1d4ed8; }
 
 .stage-sides {
   display: grid;
@@ -621,3 +623,6 @@
   .display-stage .stage-lineup li { padding-block: 0.25rem; }
   .display-stage .stage-bumpers { padding-block: 0.35rem; }
 }
+
+/* TVs that overscan crop the edge: keep the win line and corner badge clear of it. */
+.display-stage { padding-bottom: max(clamp(0.75rem, 2vw, 2rem), 4vh); }

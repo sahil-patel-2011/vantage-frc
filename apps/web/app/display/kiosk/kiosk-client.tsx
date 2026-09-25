@@ -195,7 +195,16 @@ export default function KioskClient({
 
       {heroBoard ? (
         <section className={`display-kiosk-hero${rest.length ? "" : " is-single"}`} aria-label="Board panels">
-          {hero ? <KioskPanel type={String(hero.type)} data={data} now={now} intel={intel} hero /> : null}
+          {hero ? (
+            <KioskPanel
+              type={String(hero.type)}
+              data={data}
+              now={now}
+              intel={intel}
+              hero
+              showTags={!rest.some((widget) => String(widget.type) === "team_intel")}
+            />
+          ) : null}
           {rest.length ? (
             <div className="display-kiosk-stack" data-count={rest.length}>
               {rest.map((widget, index) => (
