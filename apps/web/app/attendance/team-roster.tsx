@@ -57,7 +57,8 @@ export function TeamRoster({ orgId }: { orgId: string }) {
                 {member.name.trim().charAt(0).toUpperCase() || "?"}
               </span>
               <span className="team-roster-name">
-                {member.name}
+                {/* For whoever runs the team, a name opens Team admin, where their access is set. */}
+                {canManage ? <a href={withOrgHref("/team/admin", orgId)}>{member.name}</a> : member.name}
                 {member.you ? <small> (you)</small> : null}
               </span>
               <span className={`team-roster-role role-${member.role}`}>{ROLE_LABEL[member.role] ?? member.role}</span>

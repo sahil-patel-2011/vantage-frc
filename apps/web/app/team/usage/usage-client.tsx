@@ -5,8 +5,6 @@ import { AiHubRelated } from "../../../components/ai-hub-related";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
-  AI_USAGE_RELATED_INCLUDE,
-  aiBudgetsRelatedLinks,
   aiUsageNextActions,
   aiUsageShellCopy,
   classifyAiUsageShell,
@@ -140,19 +138,6 @@ function denialReasonLabel(reason: string): string {
     return `${period} ${kind} limit (${scope})`;
   }
   return reason;
-}
-
-function UsageRelatedStrip({ orgId }: { orgId: string }) {
-  const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const links = aiBudgetsRelatedLinks(orgId, { include: [...AI_USAGE_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">
-      <a href={budgetsHref}>Budgets</a>
-      {links.map((link) => (
-        <a key={link.href} href={link.href}>{link.label}</a>
-      ))}
-    </nav>
-  );
 }
 
 function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKind }) {
@@ -342,12 +327,12 @@ export default function UsageClient({ orgId }: { orgId: string }) {
     <main className="intel-app ai-budgets-page ai-usage-page">
       <PageHeader
         breadcrumbs="Ask AI / Usage"
-        title="Where the team's AI spend goes"
+        title="AI usage"
         description="A record of every billed Chat call — the model, the feature, the member, and which key funded it."
       />
 
+      {/* One row of links: a second strip repeated Budgets, Chat and Governance. */}
       <AiHubRelated orgId={orgId} />
-      <UsageRelatedStrip orgId={orgId} />
 
       {message ? (
         <p role="status" className="telemetry-status">
@@ -413,7 +398,8 @@ export default function UsageClient({ orgId }: { orgId: string }) {
             </section>
           ) : null}
 
-          {usage ? (
+          {/* Nothing used yet: the one empty state above says so, not five empty cards. */}
+          {usage && !showEmptyBanner ? (
             <section className="admin-grid">
               <section className="intel-panel">
                 <span className="eyebrow">FUNDING SOURCE · LAST {windowDays}D</span>
@@ -454,7 +440,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
             </section>
           ) : null}
 
-          {usage ? (
+          {usage && !showEmptyBanner ? (
             <section className="admin-grid">
               <section className="intel-panel">
                 <span className="eyebrow">BY MEMBER · ALL TIME</span>

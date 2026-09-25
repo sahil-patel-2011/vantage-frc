@@ -160,8 +160,8 @@ describe("parseAttendanceAction", () => {
 });
 
 describe("defaultSeasonYear", () => {
-  it("rolls to next year after August", () => {
-    expect(defaultSeasonYear(new Date("2025-09-15T12:00:00Z"))).toBe(2026);
+  it("follows the calendar year, like Budget and Business", () => {
+    expect(defaultSeasonYear(new Date("2025-09-15T12:00:00Z"))).toBe(2025);
     expect(defaultSeasonYear(new Date("2026-02-01T12:00:00Z"))).toBe(2026);
   });
 });

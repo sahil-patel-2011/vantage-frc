@@ -11,7 +11,7 @@ test.beforeEach(async ({ context }) => {
 const BANNED = ["Setup required", "Hard cut-off", "Hosted by Vantage", "3D Print Farm", "Inspection copilot"];
 
 const LEAVES = [
-  { path: "/team/usage", heading: /Where the team's AI spend goes|Choose your team|Usage/ },
+  { path: "/team/usage", heading: /AI usage|Where the team's AI spend goes|Choose your team|Usage/ },
   /*
     /team/budgets redirects into the AI hub, which supplies the page's h1 and
     hides the feature's own with display:none — so the page title is not

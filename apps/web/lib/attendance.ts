@@ -191,8 +191,10 @@ function seasonYearValue(value: unknown) {
 }
 
 export function defaultSeasonYear(now = new Date()): number {
-  // FRC season year is the championship year (spring). Fall kickoff rolls forward.
-  return now.getUTCMonth() >= 8 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
+  // The rule Budget and Business use: a season is named for the year it competes in and
+  // kickoff is in January, so it rolls over with the calendar. Rolling in September put
+  // People on an empty "2027" while Business showed 2026.
+  return now.getUTCFullYear();
 }
 
 export type AttendanceAction =

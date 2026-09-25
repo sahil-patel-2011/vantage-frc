@@ -815,7 +815,8 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         </div>
         <div className="att-summary-tile">
           <strong>{summary.uniquePeople}</strong>
-          <span>People</span>
+          {/* Who was marked at a session, not how many are on the team ("0 People" under five names). */}
+          <span>People marked</span>
         </div>
         <div className="att-summary-tile">
           <strong>{summary.totalHours}</strong>
