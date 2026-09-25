@@ -94,7 +94,12 @@ export function composeMatchCopilotCallouts(input: {
       headline: `Plan around ${teamLabel(strongest)}`,
       detail:
         gap != null
-          ? `Highest-EPA opponent at ${strongest.epaTotal.toFixed(1)} (${gap > 0 ? "+" : ""}${gap.toFixed(1)} vs our ${input.ourEpaTotal!.toFixed(1)}). Assign defense/priority accordingly.`
+          ? // "Assign defense/priority accordingly" was the same advice for every match; the gap
+            // says which way it goes.
+            gap > 0
+            ? `Their strongest robot, rated ${strongest.epaTotal.toFixed(1)}, is ${gap.toFixed(1)} above ours. Slowing it down is worth more than extra scoring.`
+            : // No advice here: the game plan's levers say whether defending it pays.
+              `Their strongest robot, rated ${strongest.epaTotal.toFixed(1)}; ours is ${input.ourEpaTotal!.toFixed(1)}.`
           : `Highest-EPA opponent this match at ${strongest.epaTotal.toFixed(1)}.`,
       sourceRefs: [strongest.teamKey],
     });

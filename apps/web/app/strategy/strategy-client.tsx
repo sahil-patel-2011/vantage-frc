@@ -309,7 +309,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           ) : null}
           {view?.status === "live" ? (
             <span className={`app-badge ${view.dataSourceHealth?.degraded ? "setup" : "good"}`}>
-              {view.dataSourceHealth?.usingLastGoodCache ? "Last-good cache" : "Live inputs"}
+              {view.dataSourceHealth?.usingLastGoodCache ? "Last saved data" : "Live"}
             </span>
           ) : null}
         </div>

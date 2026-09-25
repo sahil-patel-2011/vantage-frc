@@ -61,6 +61,12 @@
   justify-content: space-between;
   gap: 12px;
 }
+/* The team number broke across lines on a phone ("11 / 8"). */
+.strategy-pepa-table li > strong {
+  flex: none;
+  min-width: 4ch;
+  white-space: nowrap;
+}
 
 .strategy-private-edge .app-badge {
   margin-right: 6px;
@@ -182,7 +188,8 @@
   padding: 1px 7px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent-ink);
+  /* --accent-ink is the text colour on a filled accent: on the soft tint it was near white. */
+  color: var(--accent);
   font-size: 10px;
   font-style: normal;
   font-weight: 600;

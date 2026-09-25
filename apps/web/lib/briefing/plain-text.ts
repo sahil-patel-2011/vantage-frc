@@ -44,6 +44,19 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/^\s*Includes (\d+) org scout observations as operational adjustments\.?\s*$/i, "Uses $1 observations from our scouts.")
       .replace(/^\s*(\d+) FACT TBA match result\(s\) cited for alliance context\.?\s*$/i, "Uses $1 official match results.")
       .replace(/\bFACT TBA\b/g, "Official result,")
+      .replace(
+        /Protect (\d+)'s modeled contribution \((\d+)% of alliance rating\)\.?/gi,
+        "$1 carries $2% of our alliance's rating: keep them scoring.",
+      )
+      // "Scout quality downweights applied: frc6925 (mean 43%)." said to a student.
+      .replace(/Scout quality downweights applied:\s*([^.]*)\./gi, (_all, list: string) => {
+        const teams = list.replace(/\s*\(mean \d+%\)/gi, "").replace(/\bfrc/gi, "");
+        return `Scouting on ${teams} counts for less: our scouts disagreed about them.`;
+      })
+      .replace(/Video-rescored scout entries:\s*([^.]*)\./gi, (_all, list: string) => {
+        const teams = list.replace(/\s*\(\d+\)/g, "").replace(/\bfrc/gi, "");
+        return `Some scouting on ${teams} was rechecked on video.`;
+      })
       .replace(/\bMODEL:\s*/g, "")
       // Upper-case only: the engine's tag, not the word "model" in a sentence.
       .replace(/\bMODEL\s+[a-z][a-z0-9._-]*\s*[…:·—-]*\s*/g, "")
@@ -57,7 +70,8 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bOrg scout\b/g, "Our scouts'")
       .replace(/\bOrg scouting\b/g, "Our scouting")
       .replace(/\bOrg-private edge from your scouting \+ cached public (?:EPA|rating)\.?/gi, "Only our team sees this: what our scouting says, next to the public rating.")
-      .replace(/\s*Not shared\. Not Statbotics\./gi, " Only our team sees this.")
+      // Always follows the sentence above, which already says it: "Only our team sees this" twice.
+      .replace(/\s*Not shared\. Not Statbotics\./gi, "")
       .replace(/\borg pEPA Monte Carlo prefers\b/gi, "our scouting prefers")
       .replace(/\s*\(\d+% of \d+ trials\)/gi, "")
       .replace(/\s*\(event metrics\)/gi, "")

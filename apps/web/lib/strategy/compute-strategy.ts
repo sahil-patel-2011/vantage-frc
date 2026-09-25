@@ -30,10 +30,12 @@ import type {
   ReferenceAccessInfo,
   StrategyEngineeringContext,
   StrategyGameRulesContext,
+  StrategyPlaybookView,
   StrategyView,
   TbaAccessInfo,
 } from "./types";
 import { computePrivateEdgeView } from "./compute-private-edge";
+import { matchSpecificPlan } from "./match-plan";
 import { projectScoutEntriesForEngine } from "./scout-engine-payload";
 import {
   EMPTY_PREDICTION_COPY,
@@ -829,11 +831,43 @@ export async function computeStrategyView(
   const prediction = predictMatch(predictionInput);
   const allianceBreakdown = buildAllianceWinBreakdown(predictionInput);
 
-  const playbook = buildStrategyPlaybook({
+  let playbook: StrategyPlaybookView = buildStrategyPlaybook({
     prediction,
     ourAlliance,
     opponentFoulRisk: foulForPlaybook,
   });
+
+  const leverTeamKey = `frc${row.teamNumber}`;
+  // What the drive team could actually change. Derived from the same ratings the
+  // prediction above used, so the advice and the number can never disagree.
+  const ourSide = ourAlliance === "red" ? allianceBreakdown.red : allianceBreakdown.blue;
+  const theirSide = ourAlliance === "red" ? allianceBreakdown.blue : allianceBreakdown.red;
+  const levers = winLevers({
+    teamKey: leverTeamKey,
+    currentYear: year,
+    seasons,
+    operational: operations.find((op) => op.teamKey === leverTeamKey),
+    partnerRating: ourSide
+      .filter((contribution) => contribution.teamKey !== leverTeamKey)
+      .reduce((total, contribution) => total + contribution.rating, 0),
+    opponents: theirSide.map((contribution) => ({
+      teamKey: contribution.teamKey,
+      rating: contribution.rating,
+    })),
+    engineId: enginePolicy.engineId,
+  });
+
+  // This match's plan from its own levers and scouting; the engine's fixed lines become tips.
+  const specificPlan = matchSpecificPlan({
+    levers,
+    ourTeamKey: leverTeamKey,
+    partners: ourSide.map((contribution) => contribution.teamKey).filter((teamKey) => teamKey !== leverTeamKey),
+    opponents: theirSide.map((contribution) => contribution.teamKey),
+    operations,
+  });
+  if (specificPlan.length) {
+    playbook = { ...playbook, priorities: specificPlan, generalTips: playbook.priorities };
+  }
 
   const matchup = buildAllianceMatchup({
     red,
@@ -1053,24 +1087,6 @@ export async function computeStrategyView(
     undefined,
   );
 
-  // What the drive team could actually change. Derived from the same ratings the
-  // prediction above used, so the advice and the number can never disagree.
-  const ourSide = ourAlliance === "red" ? allianceBreakdown.red : allianceBreakdown.blue;
-  const theirSide = ourAlliance === "red" ? allianceBreakdown.blue : allianceBreakdown.red;
-  const levers = winLevers({
-    teamKey: ourTeamKey,
-    currentYear: year,
-    seasons,
-    operational: operations.find((op) => op.teamKey === ourTeamKey),
-    partnerRating: ourSide
-      .filter((contribution) => contribution.teamKey !== ourTeamKey)
-      .reduce((total, contribution) => total + contribution.rating, 0),
-    opponents: theirSide.map((contribution) => ({
-      teamKey: contribution.teamKey,
-      rating: contribution.rating,
-    })),
-    engineId: enginePolicy.engineId,
-  });
 
   return {
     status: "live",

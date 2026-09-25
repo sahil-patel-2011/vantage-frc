@@ -249,7 +249,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
       <Panel className="strategy-primary">
         <header>
           <div>
-            <span className="app-badge good">Live inputs</span>
+            <span className="app-badge good">Live</span>
             <h2>{title}</h2>
           </div>
         </header>
@@ -314,7 +314,13 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                 </b>
                 <span>
                   {lever.title}
-                  {lever.isCeiling ? <em className="lever-ceiling">ceiling</em> : null}
+                  {/* The badge sat flush against the words: "Play a clean matchCEILING". */}
+                  {lever.isCeiling ? (
+                    <>
+                      {" "}
+                      <em className="lever-ceiling" title="The most this can add">ceiling</em>
+                    </>
+                  ) : null}
                 </span>
                 <small>{lever.detail}</small>
               </li>
@@ -381,7 +387,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
       <Panel className="strategy-matchup-card">
         <header>
           <h2>Coach notes</h2>
-          <span className="app-badge good">Metrics + scout</span>
+          <span className="app-badge good">Ratings and scouting</span>
         </header>
         <ul className="strategy-considerations">
           {view.matchup.considerations.map((item) => (
@@ -445,17 +451,27 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
 
       <Panel className="playbook-card">
         <header>
-          <h2>Alliance playbook</h2>
-          <span className="app-badge good">From live prediction</span>
+          <h2>Game plan for this match</h2>
+          <span className="app-badge good">{view.playbook.generalTips?.length ? "From this match" : "General"}</span>
         </header>
         <ol>
           {view.playbook.priorities.map((item, index) => (
             <li key={item}>
               <b>{index + 1}</b>
-              <span>{item}</span>
+              <span>{plainStrategyText(item)}</span>
             </li>
           ))}
         </ol>
+        {view.playbook.generalTips?.length ? (
+          <details className="strategy-more">
+            <summary>General tips</summary>
+            <ul>
+              {view.playbook.generalTips.map((tip) => (
+                <li key={tip}>{plainStrategyText(tip)}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
         <h3>Role checkpoints</h3>
         <div className="checkpoint-row">
           {view.playbook.checkpoints.map((item) => (

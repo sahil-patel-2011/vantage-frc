@@ -27,6 +27,8 @@ export type StrategyPlaybookView = {
   title: string;
   winProbability: number;
   priorities: string[];
+  /** The engine's general lines, kept for reference when `priorities` is this match's plan. */
+  generalTips?: string[];
   strengthsToProtect: string[];
   risksToMitigate: string[];
   checkpoints: string[];
