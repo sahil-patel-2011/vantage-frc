@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
 import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -167,6 +168,13 @@ export default function BusinessClient() {
     setTab(readTabFromUrl());
     void load();
   }, [load]);
+
+  // "Open purchase orders" on Money links to ?tab=orders on this same page; the address
+  // changed and the page stayed on Money, because the tab was read only on first load.
+  useFollowUrl(() => {
+    const next = readTabFromUrl();
+    setTab((current) => (current === next ? current : next));
+  });
 
   const live = view?.status === "live" ? view : null;
   const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;

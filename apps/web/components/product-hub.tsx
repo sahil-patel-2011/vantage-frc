@@ -28,6 +28,7 @@ import { fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../lib
 import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { useClientAccessProfile } from "../lib/nav/use-client-access";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
+import { useFollowUrl } from "../lib/nav/use-follow-url";
 
 type ProductHubShellProps = {
   hubId: ProductHubDef["id"];
@@ -191,6 +192,14 @@ export function ProductHubShell({
       cancelled = true;
     };
   }, [hub]);
+
+  // A link to this hub with another ?tab= (Money's "Open purchase orders") changes the address
+  // without remounting the hub, which read the tab only once: the address said Orders while the
+  // page stayed on Money. Follow the address, and Back.
+  useFollowUrl(() => {
+    const next = readTab(hub);
+    setTab((current) => (current === next ? current : next));
+  });
 
   useEffect(() => {
     if (!orgReady) return;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -110,6 +111,12 @@ export default function AccountClient() {
       setTab(requested);
     }
   }, []);
+
+  // Account's own related links ("Notification settings") point at its other tabs.
+  useFollowUrl(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (requested === "profile" || requested === "appearance" || requested === "notifications") setTab(requested);
+  });
 
   function selectTab(next: Tab) {
     setTab(next);
