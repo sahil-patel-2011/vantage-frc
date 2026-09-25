@@ -5,11 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { KitCard, KitStats } from "../../components/ui/kit";
 import {
-  ADMIN_RELATED_INCLUDE,
   adminEmptyCopy,
   adminNextActions,
   adminOrgMetric,
-  adminRelatedLinks,
   classifyAdminShell,
   formatAdminOrgLabel,
   type AdminShellKind,
@@ -30,22 +28,6 @@ type Organization = {
   pendingOwnerEmail: string | null;
   pendingOwnerInviteExpiresAt: string | null;
 };
-
-function AdminRelated({ active }: { active?: "teams" }) {
-  const links = adminRelatedLinks({
-    active,
-    include: [...ADMIN_RELATED_INCLUDE],
-  });
-  return (
-    <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
-      {links.map((link) => (
-        <a key={link.id} href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
 
 function AdminNextActions({ kind }: { kind: AdminShellKind }) {
   const actions = adminNextActions(kind);
@@ -197,12 +179,10 @@ function AdminClientInner() {
   return (
     <main className="module-page admin-control admin-flow-page">
       <PageHeader
-        breadcrumbs="Platform / Global Team Manager"
-        title="Global Team Manager"
+        breadcrumbs="Platform admin / Teams"
+        title="Platform admin"
         description="Create each team and invite its owner by email. The owner then invites everyone else."
-      >
-        <AdminRelated active="teams" />
-      </PageHeader>
+      />
 
       {/* One card, three numbers, each in its own colour. People come back to
           this page for the count and read the captions once, ever — so the
@@ -329,13 +309,13 @@ function AdminClientInner() {
                 <b>#{org.teamNumber}</b>
                 <div>
                   <strong>{org.name}</strong>
+                  {/* Whether the owner is in, not the web address: that is what an admin checks here. */}
                   <small>
-                    {org.slug}
                     {org.ownerEmail
-                      ? ` · ${org.ownerEmail}`
+                      ? `Owner joined · ${org.ownerEmail}`
                       : org.pendingOwnerEmail
-                        ? ` · owner invite pending: ${org.pendingOwnerEmail}`
-                        : " · no owner yet"}
+                        ? `Owner invite pending · ${org.pendingOwnerEmail}`
+                        : "No owner yet"}
                   </small>
                 </div>
               </article>
@@ -343,8 +323,6 @@ function AdminClientInner() {
           )}
         </Panel>
       </section>
-
-      <AdminNextActions kind={shell} />
     </main>
   );
 }

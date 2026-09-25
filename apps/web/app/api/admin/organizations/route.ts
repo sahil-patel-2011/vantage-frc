@@ -22,7 +22,7 @@ import {
   type ProvisionConfirmation,
 } from "../../../../lib/admin-analytics/provisioning";
 
-// Global Team Manager: create org -> seed owner -> invite, end to end.
+// Platform admin: create org -> seed owner -> invite, end to end.
 // - Owner already has a verified account → membership seeded immediately
 //   (createOrganizationAsPlatformAdmin, unchanged).
 // - Owner has no verified account yet → the org is still created and a

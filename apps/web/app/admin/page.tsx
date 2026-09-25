@@ -1,7 +1,7 @@
 import AdminClient from "./admin-client";
 
 export const metadata = {
-  title: "Global Team Manager",
+  title: "Platform admin",
 };
 
 export const dynamic = "force-dynamic";

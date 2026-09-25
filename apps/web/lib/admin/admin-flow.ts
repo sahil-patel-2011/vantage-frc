@@ -146,7 +146,7 @@ export function adminEmptyCopy(kind: AdminShellKind, detail?: string | null): Ad
       title: "Sign in to continue",
       description:
         detail?.trim() ||
-        "Platform admin surfaces require a verified session. Sign in, then open Global Team Manager again.",
+        "Platform admin surfaces require a verified session. Sign in, then open Platform admin again.",
       badge: "Setup required",
     };
   }
@@ -157,7 +157,7 @@ export function adminEmptyCopy(kind: AdminShellKind, detail?: string | null): Ad
       title: "Platform admin access required",
       description:
         detail?.trim() ||
-        "This surface is gated to platform_admins. Org Team Admin under Team is separate and does not unlock Global Team Manager.",
+        "Only platform admins can open this. Team admin, under Team, is a different page.",
       badge: "Forbidden",
     };
   }

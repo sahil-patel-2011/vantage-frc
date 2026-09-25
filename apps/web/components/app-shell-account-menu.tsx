@@ -88,7 +88,7 @@ export function AppShellAccountMenu({
         </a>
         {me.platformAdmin ? (
           <a role="menuitem" href="/admin" onClick={onClose}>
-            Global Team Manager
+            Platform admin
           </a>
         ) : null}
         <button

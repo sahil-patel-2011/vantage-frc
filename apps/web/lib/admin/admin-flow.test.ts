@@ -88,7 +88,7 @@ describe("adminEmptyCopy / adminNextActions", () => {
     expect(adminEmptyCopy("empty").badge).toBe("Empty");
     expect(adminEmptyCopy("setup_required").badge).toBe("setup_required");
     expect(adminEmptyCopy("forbidden").badge).toBe("Forbidden");
-    expect(adminEmptyCopy("forbidden").description).toMatch(/platform_admins/i);
+    expect(adminEmptyCopy("forbidden").description).toMatch(/only platform admins/i);
     expect(adminEmptyCopy("empty").description).not.toMatch(/demo/i);
   });
 

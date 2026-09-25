@@ -421,7 +421,7 @@ export default function AppShell() {
       ...entries,
       {
         id: "platform-admin",
-        label: "Global Team Manager",
+        label: "Platform admin",
         context: "Platform admin",
         href: "/admin",
         kind: "destination" as const,
@@ -496,7 +496,7 @@ export default function AppShell() {
   const crumbHint = breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
   const eventFocus = useMemo(
-    () => (pathname === "/dashboard" ? null : buildEventFocus(myDayGlance, online)),
+    () => (pathname === "/dashboard" || pathname.startsWith("/admin") ? null : buildEventFocus(myDayGlance, online)),
     [myDayGlance, online, pathname],
   );
   const islandTabs = useMemo(

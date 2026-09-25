@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 /**
  * Gate every `/admin` page. Non–platform-admins get a 404 so the surface
- * does not advertise that Global Team Manager / platform settings exist.
+ * does not advertise that Platform admin / platform settings exist.
  */
 export async function requirePlatformAdminPage() {
   const session = await auth.api.getSession({ headers: await headers() });

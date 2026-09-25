@@ -350,6 +350,15 @@ export function AppShellNavPanel({
           <nav className="soft-drawer-flat" aria-label="Hubs">
             {/* Says what this list is and what it is not: the few places you go
                 often, never every screen. Everything else is behind search. */}
+            {/* First for a platform admin: it is the page they came for, and it sat below Build. */}
+            {me.platformAdmin ? (
+              <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={closeNav}>
+                <i>
+                  <Icon name="grid" />
+                </i>
+                <span>Platform admin</span>
+              </a>
+            ) : null}
             {visibleNavGroups.map((group) => {
               const item = group.items[0];
               if (!item || item.state === "planned") return null;
@@ -392,14 +401,6 @@ export function AppShellNavPanel({
                 </div>
               );
             })}
-            {me.platformAdmin ? (
-              <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={closeNav}>
-                <i>
-                  <Icon name="grid" />
-                </i>
-                <span>Platform admin</span>
-              </a>
-            ) : null}
           </nav>
         )}
         {/* Settings, split the way people ask for them: "my stuff" and "the
