@@ -180,7 +180,8 @@ export type OnboardingState = {
 };
 
 export type OnboardingDraftInput =
-  | Pick<OnboardingPayload, "firstName" | "lastName" | "dateOfBirth" | "gender"> & { step: "profile" }
+  | Pick<OnboardingPayload, "firstName" | "lastName" | "dateOfBirth" | "gender"> &
+      Partial<Pick<OnboardingPayload, "teamRole">> & { step: "profile" }
   | Pick<OnboardingPayload, "preferredTeamNumber" | "teamRole" | "crewRole" | "roleDescription" | "primaryFocus"> & { step: "team" }
   | Pick<OnboardingPayload, "displayName" | "themePreference"> & { step: "preferences" };
 
@@ -491,6 +492,12 @@ export async function saveOnboardingProgress(
          onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
       [userId, firstName, lastName, input.dateOfBirth.trim(), input.gender],
     );
+    // The role is picked on the same screen: kept now, so coming back in another tab still has it.
+    // It does not move the saved step on, so the team step is still asked.
+    if (input.teamRole != null) {
+      if (!TEAM_ROLE_OPTIONS.includes(input.teamRole)) throw new Error("Select a valid team role.");
+      await client.query(`UPDATE profiles SET team_role = $2 WHERE user_id = $1`, [userId, input.teamRole]);
+    }
   } else if (input.step === "team") {
     const teamNumber =
       state.lockedTeamNumber ?? parsePreferredTeamNumber(input.preferredTeamNumber);

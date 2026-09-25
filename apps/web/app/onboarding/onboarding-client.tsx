@@ -76,6 +76,7 @@ export default function OnboardingClient() {
     // Answers the server only takes with a later step (role on step one rides with step two;
     // affiliation with Finish), kept for this browser session so "Welcome back" is true after a
     // reload. Session, not local, storage: a shared computer does not hand them to the next person.
+    answersTeam = data.workspaceOrgId ?? null;
     const local = readLocalAnswers();
     setDraft((current) => ({
       ...current,
@@ -230,6 +231,7 @@ export default function OnboardingClient() {
         accessStatus: state?.accessStatus ?? null,
         knownTeamNumber: state?.preferredTeamNumber ?? null,
         adult,
+        owner: state?.workspaceRole === "owner",
       }),
     [draft.teamNumber, draft.noTeam, locked, state, adult],
   );
@@ -271,6 +273,15 @@ export default function OnboardingClient() {
     if (result.error) {
       setMessage(result.error);
       setErrorField(result.errorField);
+      // The message sits at the top of the card, often a screen above Continue: bring it (or
+      // the field it is about) into view, or the press looked like it did nothing.
+      window.requestAnimationFrame(() => {
+        const target =
+          document.querySelector<HTMLElement>("[aria-invalid='true']") ??
+          document.querySelector<HTMLElement>(".onboarding-message.invalid");
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (target && target.matches("input, select, textarea")) target.focus({ preventScroll: true });
+      });
       return;
     }
     setErrorField(null);
@@ -281,8 +292,8 @@ export default function OnboardingClient() {
     const completedStep = step as "profile" | "team";
     setBusy(true);
     setMessage("");
-    // Payload shape is the server's, unchanged: `step: "profile"` is strict and
-    // takes only these four fields, so role/crew ride along with the team step.
+    // `step: "profile"` is strict: the four profile fields plus the role picked on the same
+    // screen. Crew and focus ride along with the team step.
     const body =
       completedStep === "profile"
         ? {
@@ -291,6 +302,8 @@ export default function OnboardingClient() {
             lastName: draft.lastName.trim(),
             dateOfBirth: draft.dateOfBirth,
             gender: draft.gender,
+            // Picked on this screen; saved with it so another tab still has it.
+            teamRole: draft.teamRole,
           }
         : {
             step: "team" as const,
@@ -561,12 +574,20 @@ export default function OnboardingClient() {
   );
 }
 
-const LOCAL_ANSWERS_KEY = "vantage.onboarding.answers";
+/*
+  Answers the server takes only with a later step, kept on this device. With a team (an owner or
+  an invited member) they go in localStorage under that team, so opening onboarding in a new tab
+  gets them back; without one, only for this browser session, so a shared computer does not hand
+  them to the next person.
+*/
+let answersTeam: string | null = null;
+const answersKey = () => `vantage.onboarding.answers${answersTeam ? `:${answersTeam}` : ""}`;
+const answersStore = (): Storage => (answersTeam ? window.localStorage : window.sessionStorage);
 type LocalAnswers = { teamRole?: unknown; crewRole?: unknown; roleDescription?: unknown; teamAffiliation?: unknown };
 
 function readLocalAnswers(): LocalAnswers {
   try {
-    const raw = window.sessionStorage.getItem(LOCAL_ANSWERS_KEY);
+    const raw = answersStore().getItem(answersKey());
     const parsed = raw ? (JSON.parse(raw) as unknown) : null;
     return parsed && typeof parsed === "object" ? (parsed as LocalAnswers) : {};
   } catch {
@@ -576,8 +597,8 @@ function readLocalAnswers(): LocalAnswers {
 
 function saveLocalAnswers(draft: OnboardingDraft) {
   try {
-    window.sessionStorage.setItem(
-      LOCAL_ANSWERS_KEY,
+    answersStore().setItem(
+      answersKey(),
       JSON.stringify({
         teamRole: draft.teamRole,
         crewRole: draft.crewRole,
@@ -592,7 +613,7 @@ function saveLocalAnswers(draft: OnboardingDraft) {
 
 function clearLocalAnswers() {
   try {
-    window.sessionStorage.removeItem(LOCAL_ANSWERS_KEY);
+    answersStore().removeItem(answersKey());
   } catch {
     // Nothing to clear.
   }

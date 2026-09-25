@@ -51,6 +51,7 @@ const draftSchema = z.discriminatedUnion("step", [
     lastName: z.string().trim().min(1).max(60),
     dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     gender: z.enum(["female", "male", "non_binary", "prefer_not_to_say", "other"]),
+    teamRole: role.nullable().optional(),
   }).strict(),
   z.object({
     step: z.literal("team"),

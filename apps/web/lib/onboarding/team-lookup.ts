@@ -71,6 +71,8 @@ export type TeamLookupInput = {
   knownTeamNumber?: number | null;
   /** Adults get the /claim path; students are told to ask a mentor. */
   adult?: boolean;
+  /** The team was set up for this person to own (not an invite to join someone else's). */
+  owner?: boolean;
 };
 
 export const TEAM_NUMBER_MIN = 1;
@@ -155,7 +157,9 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       tone: "good",
       teamNumber: parsed,
       title,
-      body: joined
+      body: input.owner
+        ? "You're the owner. Finishing these steps opens the team for you."
+        : joined
         ? "You are on this team already — you joined through your invite, so the number is set."
         : invited
           ? "This team invited you. Finishing these steps puts you on it."
