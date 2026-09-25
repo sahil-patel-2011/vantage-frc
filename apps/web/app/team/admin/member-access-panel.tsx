@@ -30,7 +30,7 @@ export type AccessMember = {
 
 export type HubAccessRow = { hubId: string; allowedTabIds: string[] };
 
-type Preset = { key: string; name: string; description: string };
+type Preset = { key: string; name: string; description: string; baseRole?: string };
 
 const ROLE_CHOICES: Array<{ id: "scout" | "admin" | "viewer"; label: string; hint: string }> = [
   { id: "scout", label: "Student", hint: "Scouts and uses team tools." },
@@ -360,6 +360,15 @@ export function MemberAccessPanel({
                 ))}
               </select>
             </label>
+            {/* Picking one changed nothing on screen, so the owner saved blind: say what it gives. */}
+            {preset ? (
+              <p className="member-access-preset-note" role="status">
+                {presets.find((entry) => entry.key === preset)?.description}{" "}
+                {presets.find((entry) => entry.key === preset)?.baseRole === "admin"
+                  ? "Saving gives them a mentor's access, including team settings."
+                  : "Saving replaces the sections and powers below with this preset's."}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

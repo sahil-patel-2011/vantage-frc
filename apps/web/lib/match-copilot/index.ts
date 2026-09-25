@@ -143,7 +143,7 @@ export function composeMatchCopilotCallouts(input: {
     candidates.push({
       priority: 2,
       category: "strategy",
-      headline: "Run the stored plan",
+      headline: "Game plan",
       detail: input.strategySummary.slice(0, 240),
       sourceRefs: [],
     });

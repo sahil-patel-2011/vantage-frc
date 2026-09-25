@@ -1233,3 +1233,4 @@ body.has-app-shell main.display-setup .preset-picker { grid-template-columns: re
   .display-setup .breadcrumbs a { display: inline-flex; align-items: center; min-height: 32px; padding: 0 4px; }
 }
 .tv-link-ways { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
+.disp-progress-done { margin: 0; color: var(--muted); font-size: 14px; }

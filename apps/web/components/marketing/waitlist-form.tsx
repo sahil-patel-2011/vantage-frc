@@ -214,21 +214,18 @@ export function WaitlistForm({
         <h3 ref={successRef} tabIndex={-1}>
           You’re on the list.
         </h3>
-        {/* Said to everyone, so the form never reveals which teams already use Vantage. It names
-            the number typed, so someone whose team is already here sees it is about them. */}
-        <p className="waitlist-aside waitlist-aside-box">
-          <strong>
-            {recorded?.team ? `Does team ${recorded.team} already use Vantage?` : "Is your team already on Vantage?"}
-          </strong>{" "}
-          Then there is no need to wait: ask the team&rsquo;s owner or a mentor to invite{" "}
-          {recorded?.email ?? "your email"}, then <a href="/signin">sign in</a>.
-        </p>
         <p>
           {recorded?.email
-            ? `If not, we'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}.`
-            : "If not, we'll email you when your team is set up."}{" "}
-          We set teams up one at a time, usually within a few days. Then you sign in and invite your students and
-          mentors by email. Joining the waitlist does not create a Vantage account.
+            ? `We'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}, usually within a few days.`
+            : "We'll email you when your team is set up, usually within a few days."}{" "}
+          Then you sign in and invite your students and mentors. Joining the waitlist does not create a Vantage account.
+        </p>
+        {/* Said to everyone, so the form never reveals which teams already use Vantage. Second, and
+            short: the outcome comes first, and a mentor whose team is already here still sees it. */}
+        <p className="waitlist-aside waitlist-aside-box">
+          <strong>{recorded?.team ? `Team ${recorded.team} already on Vantage?` : "Team already on Vantage?"}</strong>{" "}
+          Skip the wait: ask its owner or a mentor to invite {recorded?.email ?? "your email"}, then{" "}
+          <a href="/signin">sign in</a>.
         </p>
       </div>
     );

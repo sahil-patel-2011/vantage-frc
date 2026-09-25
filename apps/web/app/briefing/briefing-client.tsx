@@ -304,6 +304,11 @@ export default function BriefingClient() {
     checkpoints: readable(view.plan?.checkpoints ?? []),
   };
   const opponentEvidence = opponentCards.flatMap((card) => card.evidence);
+  // The plan line repeated Game plan's first line a screen lower ("Run the stored plan — Defend
+  // 118"); Game plan says it once, in full.
+  const doNext = view.callouts.filter(
+    (callout) => !(callout.category === "strategy" && /^(Run the stored plan|Game plan)$/i.test(callout.headline)),
+  );
   // Our alliance the way the opponents read: one card per robot (us included) with its standing,
   // what scouting saw and a likely plan. It was two lists, partners twice and us once.
   const allyCards = buildOpponentCards({
@@ -450,11 +455,11 @@ export default function BriefingClient() {
       </section>
 
       {/* "Do this next" is advice for a match still ahead, not for one being reviewed. */}
-      {view.callouts.length > 0 && !view.match.played ? (
+      {doNext.length > 0 && !view.match.played ? (
         <section className="app-card brief-callouts">
           <h2>Do this next</h2>
           <ol>
-            {view.callouts.map((callout) => (
+            {doNext.map((callout) => (
               <li key={`${callout.priority}-${callout.headline}`}>
                 <b>{plainStrategyText(callout.headline)}</b>
                 {callout.detail ? <span> — {plainStrategyText(callout.detail)}</span> : null}

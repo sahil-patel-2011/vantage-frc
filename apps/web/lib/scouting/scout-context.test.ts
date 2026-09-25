@@ -52,6 +52,18 @@ describe("nextScoutTarget", () => {
     expect(next).toMatchObject({ matchKey: "2026gaalb_qm11", teamKey: "frc555", stationLabel: "Blue 2", reason: "assignment" });
   });
 
+  it("skips a robot this scout already has, instead of opening its report to overwrite", () => {
+    const next = nextScoutTarget({
+      matches: schedule,
+      assignments: [],
+      savedMatchKey: "2026gaalb_qm10",
+      savedTeamKey: "frc1323",
+      done: (matchKey, teamKey) => matchKey === "2026gaalb_qm11" && teamKey === "frc254",
+    });
+    // Red 2 (254) is done: the first robot on the same alliance this scout has not done is 111.
+    expect(next).toMatchObject({ matchKey: "2026gaalb_qm11", teamKey: "frc111", stationLabel: "Red 1" });
+  });
+
   it("keeps the same station in the next scheduled match", () => {
     const next = nextScoutTarget({
       matches: schedule,

@@ -28,6 +28,8 @@ type DashboardGridItemProps = {
   /** Why the normal Home leaves this card out, when it does. */
   hiddenNote?: string | null;
   currentSize: WidgetSizeKey;
+  /** Drawn wider than its size to fill the end of a row (display only, like Home). */
+  stretched?: boolean;
   atDefault: boolean;
   payload?: WidgetPayload;
   orgId: string;
@@ -84,6 +86,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   isNew = false,
   hiddenNote = null,
   currentSize,
+  stretched = false,
   atDefault,
   payload,
   orgId,
@@ -164,9 +167,10 @@ export const DashboardGridItem = memo(function DashboardGridItem({
             type="button"
             className="dash-size-toggle"
             data-testid="dash-size-toggle"
-            aria-label={`Change the size of ${label} (now ${WIDGET_SIZE_LABEL[currentSize]})`}
+            aria-label={`Change the size of ${label} (now ${WIDGET_SIZE_LABEL[currentSize]}${stretched ? ", stretched to fill the row" : ""})`}
             aria-expanded={selected}
-            title="Change size"
+            // "S" on a card drawn as wide as an M looked wrong; say why it is wider.
+            title={stretched ? "Change size. Stretched to fill the row; its size is still this." : "Change size"}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.preventDefault();
@@ -174,7 +178,10 @@ export const DashboardGridItem = memo(function DashboardGridItem({
               onSelect?.(selected ? null : item.i);
             }}
           >
-            <span aria-hidden="true">{WIDGET_SIZE_LABEL[currentSize]}</span>
+            <span aria-hidden="true">
+              {WIDGET_SIZE_LABEL[currentSize]}
+              {stretched ? <small className="dash-size-stretched"> · fills row</small> : null}
+            </span>
             <svg viewBox="0 0 12 12" aria-hidden="true">
               <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

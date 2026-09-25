@@ -169,3 +169,4 @@
 .team-invite-past[open] > summary::before {
   transform: rotate(90deg);
 }
+.member-access-preset-note { margin: 6px 0 0; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--ink); font-size: 13px; line-height: 1.4; }

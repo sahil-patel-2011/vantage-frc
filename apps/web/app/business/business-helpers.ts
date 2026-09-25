@@ -62,7 +62,7 @@ export function writeTabToUrl(tab: Tab) {
 }
 
 export function money(cents: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...wholeOrCents(cents) }).format(cents / 100);
 }
 
 export function dollars(cents: number): string {
@@ -97,4 +97,10 @@ export function moneyWhenRecorded(cents: number): string {
 
 export function statusLabel(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** Whole dollars stay short ("$45"); anything else keeps its cents ("$3.50", not "$4"). */
+function wholeOrCents(cents: number): { minimumFractionDigits: number; maximumFractionDigits: number } {
+  const digits = Math.round(cents) % 100 === 0 ? 0 : 2;
+  return { minimumFractionDigits: digits, maximumFractionDigits: digits };
 }

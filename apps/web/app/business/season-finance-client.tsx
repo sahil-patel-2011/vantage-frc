@@ -47,7 +47,7 @@ async function persistSeasonFinanceSnapshot(
 }
 
 function money(cents: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...wholeOrCents(cents) }).format(
     cents / 100,
   );
 }
@@ -965,4 +965,10 @@ function Kpi({
       <small>{detail}</small>
     </article>
   );
+}
+
+/** Whole dollars stay short ("$45"); anything else keeps its cents ("$3.50", not "$4"). */
+function wholeOrCents(cents: number): { minimumFractionDigits: number; maximumFractionDigits: number } {
+  const digits = Math.round(cents) % 100 === 0 ? 0 : 2;
+  return { minimumFractionDigits: digits, maximumFractionDigits: digits };
 }

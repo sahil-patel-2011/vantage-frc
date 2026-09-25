@@ -465,6 +465,18 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
             assignments: data.assignments ?? [],
             savedMatchKey: matchKey,
             savedTeamKey: storedTeam,
+            done: (nextMatch, nextTeam) =>
+              (nextMatch === matchKey && nextTeam === storedTeam) ||
+              savedHere.some((entry) => entry.matchKey === nextMatch && entry.teamKey === nextTeam) ||
+              Boolean(
+                recentEntries?.some(
+                  (entry) =>
+                    entry.type === "match" &&
+                    entry.matchKey === nextMatch &&
+                    entry.teamKey === nextTeam &&
+                    entry.scoutUserId === myUserId,
+                ),
+              ),
           })
         : null;
     if (next) {

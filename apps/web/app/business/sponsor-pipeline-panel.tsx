@@ -28,7 +28,7 @@ type Mutate = (body: Record<string, unknown>) => Promise<void>;
 type Submit = (event: FormEvent<HTMLFormElement>, action: string, moneyFields?: string[]) => Promise<void>;
 
 function money(cents: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...wholeOrCents(cents) }).format(cents / 100);
 }
 
 function today(): string {
@@ -610,4 +610,10 @@ function PipelineCard({
       ) : null}
     </article>
   );
+}
+
+/** Whole dollars stay short ("$45"); anything else keeps its cents ("$3.50", not "$4"). */
+function wholeOrCents(cents: number): { minimumFractionDigits: number; maximumFractionDigits: number } {
+  const digits = Math.round(cents) % 100 === 0 ? 0 : 2;
+  return { minimumFractionDigits: digits, maximumFractionDigits: digits };
 }

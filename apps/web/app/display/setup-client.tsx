@@ -371,11 +371,19 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : (
         <div className="disp-stack">
-          <ol className="disp-progress" aria-label="Pit TV setup steps">
-            <li className={step >= 1 ? "is-done" : undefined}>Pick a board</li>
-            <li className={step >= 2 ? "is-done" : undefined}>Save it</li>
-            <li className={step >= 3 ? "is-done" : undefined}>Open the TV link on the TV</li>
-          </ol>
+          {/* Once a TV link is live the three ticks greeted people who had done nothing yet, as if
+              the page were already finished for them: say it plainly instead. */}
+          {step >= 3 ? (
+            <p className="disp-progress-done" role="status">
+              A TV already shows a board. To add another screen, make a TV link below and name it.
+            </p>
+          ) : (
+            <ol className="disp-progress" aria-label="Pit TV setup steps">
+              <li className={step >= 1 ? "is-done" : undefined}>Pick a board</li>
+              <li className={step >= 2 ? "is-done" : undefined}>Save it</li>
+              <li>Open the TV link on the TV</li>
+            </ol>
+          )}
 
           {!loading && !activeEventKey ? (
             <EmptyState

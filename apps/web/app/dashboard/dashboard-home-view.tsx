@@ -717,6 +717,7 @@ export function DashboardHomeView(props: {
                         isNew={highlightId === item.i}
                         hiddenNote={hiddenReason ? HIDDEN_ON_HOME_COPY[hiddenReason] : null}
                         currentSize={inferWidgetSize(saved)}
+                        stretched={item.w > saved.w}
                         atDefault={!entry || (saved.w === entry.defaultW && saved.h === entry.defaultH)}
                         payload={widgets[item.type]}
                         orgId={orgId}

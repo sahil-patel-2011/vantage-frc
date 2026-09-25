@@ -100,6 +100,8 @@ export function nextScoutTarget(input: {
   assignments: readonly SteppableAssignment[];
   savedMatchKey: string;
   savedTeamKey: string;
+  /** Robots this scout already has a report for: "Next" opened one, and Save would replace it. */
+  done?: (matchKey: string, teamKey: string) => boolean;
 }): NextScoutTarget | null {
   const assigned = nextAssignedTarget(input.assignments, input.savedMatchKey);
   if (assigned) {
@@ -114,20 +116,37 @@ export function nextScoutTarget(input: {
   }
   const schedule = orderedSchedule([...input.matches]);
   const index = schedule.findIndex((match) => match.matchKey === input.savedMatchKey);
-  const next = index >= 0 ? schedule[index + 1] : undefined;
-  if (!next) return null;
+  if (index < 0 || !schedule[index + 1]) return null;
   const slot = robotStation(schedule[index], input.savedTeamKey);
-  const alliance = slot ? next[slot.alliance === "red" ? "redAlliance" : "blueAlliance"]?.teamKeys ?? [] : [];
-  const sameStation = slot ? alliance[slot.station - 1] : undefined;
-  if (slot && sameStation) {
-    return {
-      matchKey: next.matchKey,
-      teamKey: sameStation,
-      matchLabel: matchLabel(next),
-      stationLabel: stationLabel(slot),
-      reason: "station",
-    };
+  const done = input.done ?? (() => false);
+  // The same station in the next match, unless this scout already has that robot; then another
+  // robot in that match they have not done (same alliance first), then the match after.
+  for (const next of schedule.slice(index + 1)) {
+    const own = slot ? next[slot.alliance === "red" ? "redAlliance" : "blueAlliance"]?.teamKeys ?? [] : [];
+    const sameStation = slot ? own[slot.station - 1] : undefined;
+    if (slot && sameStation && !done(next.matchKey, sameStation)) {
+      return {
+        matchKey: next.matchKey,
+        teamKey: sameStation,
+        matchLabel: matchLabel(next),
+        stationLabel: stationLabel(slot),
+        reason: "station",
+      };
+    }
+    if (!slot) break;
+    const other = slot.alliance === "red" ? next.blueAlliance?.teamKeys ?? [] : next.redAlliance?.teamKeys ?? [];
+    const open = [...own, ...other].find((teamKey) => teamKey && !done(next.matchKey, teamKey));
+    if (open) {
+      return {
+        matchKey: next.matchKey,
+        teamKey: open,
+        matchLabel: matchLabel(next),
+        stationLabel: stationLabel(robotStation(next, open)),
+        reason: "station",
+      };
+    }
   }
+  const next = schedule[index + 1]!;
   return { matchKey: next.matchKey, teamKey: "", matchLabel: matchLabel(next), stationLabel: null, reason: "match" };
 }
 

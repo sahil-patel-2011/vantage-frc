@@ -43,7 +43,15 @@ export function MyDayLive({ data }: { data: Record<string, unknown> }) {
           ))}
         </ul>
       ) : null}
-      {nothing ? <p className="app-muted">Nothing on your list today.</p> : null}
+      {/* "Nothing on your list today" eight minutes before Qual 31 read as wrong: the match is
+          on your day, it just leads on the Next match card. Name it, briefly. */}
+      {nothing ? (
+        <p className="app-muted">
+          {typeof data.matchLabel === "string" && data.matchLabel
+            ? `${data.matchLabel}${typeof data.matchAt === "string" && localTime(data.matchAt) ? ` at ${localTime(data.matchAt)}` : ""} is next. Nothing else is on your list today.`
+            : "Nothing on your list today."}
+        </p>
+      ) : null}
       {duties.length ? (
         <ul className="dash-checklist">
           {duties.map((duty) => (

@@ -406,3 +406,4 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
   .dash-sheet-head .dash-hint-pointer { display: none; }
   .dash-sheet-head .dash-sheet-hint-coarse { display: inline; }
 }
+.dash-size-stretched { font-weight: 500; opacity: .75; }
