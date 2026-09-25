@@ -30,9 +30,9 @@ test("Event Day Command still loads after the panel split", async ({ page }) => 
   const unavailable = page.getByRole("heading", { name: /Could not load Command/i });
   if (!(await expectHubReadyOrGate(page, nowNext, empty.or(setup).or(unavailable)))) {
     // GHA has no Postgres: HubOrgGate paints Choose your team. A real empty board
-    // (event linked, no matches) is the only place Check schedule sync belongs.
+    // (event linked, no matches) is the only place See the full schedule belongs.
     if (await empty.isVisible()) {
-      await expect(page.getByRole("link", { name: "Check schedule sync" })).toHaveCount(1);
+      await expect(page.getByRole("link", { name: "See the full schedule" })).toHaveCount(1);
     }
     await page.screenshot({ path: "/opt/cursor/artifacts/command-after-split.png", fullPage: true });
     return;

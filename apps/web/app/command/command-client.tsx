@@ -329,7 +329,17 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   if (shell === "empty") {
     return (
       <>
-        <EventDayShell embedded={embedded} orgId={orgId || null} shell="empty" hasActiveEvent={Boolean(snap?.eventKey)}>
+        <EventDayShell
+          embedded={embedded}
+          orgId={orgId || null}
+          shell="empty"
+          hasActiveEvent={Boolean(snap?.eventKey)}
+          // The same reason Home gives ("Team 9804 isn't on this event's match schedule…"), and
+          // the one fix that helps when it is the wrong event: pick another.
+          error={snap?.message}
+          canSetEvent={snap?.canSetEvent}
+          onSelectEvent={snap?.canSetEvent ? () => setEventOpen(true) : undefined}
+        >
           <p className="edc-freshness" role="status">
             {scoutEventLabel({ eventName: snap?.eventName, eventKey: snap?.eventKey }) ?? "Active event"}
             {" · "}

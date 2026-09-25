@@ -84,7 +84,7 @@ export type BriefingView =
       practice: PracticeReadiness;
       opponentIntel: OpponentIntel[];
       scoutCount: number;
-      ourMatches: Array<{ matchKey: string; label: string }>;
+      ourMatches: Array<{ matchKey: string; label: string; next?: boolean }>;
     }
   | { status: "setup_required"; context: BriefingContext; message: string };
 

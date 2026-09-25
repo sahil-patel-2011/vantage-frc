@@ -207,7 +207,7 @@ async function persistGettingStartedSnapshot(orgHint: string, data: GettingStart
 function GettingStartedRelated({ orgId }: { orgId: string }) {
   return (
     <nav className="product-hub-related" aria-label="Related team tools">
-      <a href={withOrgHref("/start", orgId)}>Your path</a>
+      <a href={withOrgHref("/start", orgId)}>Your first week</a>
       <a href={withOrgHref("/team/knowledge", orgId)}>Playbook</a>
       <a href={withOrgHref("/team/calendar", orgId)}>Calendar</a>
     </nav>
@@ -344,7 +344,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
       <PageHeader
         navPath="/team/getting-started"
         title={view ? `Team setup · ${view.orgName}` : "Team setup"}
-        description="Team setup checklist — invites, knowledge, and budgets. For your personal role path, open Your path."
+        description="Team setup checklist — invites, knowledge, and budgets. For your personal role path, open Your first week."
       >
         <GettingStartedRelated orgId={orgId} />
       </PageHeader>

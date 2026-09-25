@@ -37,9 +37,8 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
       // "Choose your team" was step one for everyone — including a student who
       // had just joined that team from an invite. The team switcher is in the
       // top bar for the few people on two teams; a first day starts with the week.
-      ["see_week", "See this week", "Meetings, build nights and deadlines you are expected at.", "/team/calendar"],
-      ["join_calendar", "Join a subteam calendar", "Pick the crew you practice with so events show up.", "/team/calendar"],
-      ["read_knowledge", "Skim Team Knowledge", "Robot conventions and season notes the AI already reads.", "/team/knowledge"],
+      ["see_week", "See this week", "Meetings, build nights and deadlines. Join your subteam's calendar while you are there.", "/team/calendar"],
+      ["read_knowledge", "Skim Team Knowledge", "Robot conventions and season notes, in one place.", "/team/knowledge"],
       ["try_chat", "Ask the team assistant one real question", "Strategy, packing, or what you should do first.", "/chat"],
     ]),
   },
@@ -183,7 +182,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     checks: checks([
       ["calendar", "Review the team calendar", "When the team meets, and which adults are there.", "/team/calendar"],
       ["logistics", "Open travel plans", "Travel, hotels, and who to call on the day.", "/logistics"],
-      ["briefing", "Read event briefing", "Venue, pits, and alliance notes before you travel.", "/briefing"],
+      ["briefing", "Read the next match's briefing", "The prediction, plan and opponent notes for our next match.", "/briefing"],
       ["budgets", "Set AI limits", "A monthly cap on what the team's AI key can spend.", "/team/budgets"],
     ]),
   },

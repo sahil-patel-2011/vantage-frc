@@ -40,6 +40,7 @@ import {
 } from "../briefing";
 import type { DriverCycle, DriverSession } from "../driver-practice";
 import { scoutEventLabel } from "../scouting/scouting-related";
+import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
 import { composeMatchCopilotCallouts } from "../match-copilot";
 import {
   loadBatteryFleet,
@@ -472,6 +473,7 @@ export async function computeBriefingView(
   // the two agree on which match is next. A match only running late comes after those.
   const ahead = (entry: (typeof ourRows)[number]) =>
     !isOver(entry) && (entry.scheduledTime == null || new Date(entry.scheduledTime).getTime() > nowMs);
+  const nextKey = (ourRows.find(ahead) ?? ourRows.find((entry) => !isOver(entry)))?.matchKey ?? null;
   const selected =
     ourRows.find((entry) => entry.matchKey === input.requestedMatch) ??
     ourRows.find(ahead) ??
@@ -479,11 +481,16 @@ export async function computeBriefingView(
     ourRows[ourRows.length - 1];
   if (!selected) {
     const eventLabel = scoutEventLabel({ eventName: row.eventName, eventKey: row.eventKey });
+    // Home's wording when the schedule is out without us: it is usually the wrong event.
+    const summary = await withSavepoint(client, () => loadOurMatchSummary(client, row.eventKey!, teamKey), null);
+    const notOnSchedule = Boolean(summary && summary.total === 0 && (summary.eventMatches ?? 0) > 0);
     return {
       status: "setup_required",
-      message: eventLabel
-        ? `${eventLabel} has no matches for your team yet.`
-        : "No matches for your team at this event yet.",
+      message: notOnSchedule
+        ? noNextMatchMessage(summary)
+        : eventLabel
+          ? `${eventLabel} has no matches for your team yet.`
+          : "No matches for your team at this event yet.",
       context,
     };
   }
@@ -648,7 +655,8 @@ export async function computeBriefingView(
     scoutCount: scoutCount.rows[0] ? Number(scoutCount.rows[0].count) : 0,
     ourMatches: ourRows.map((entry) => ({
       matchKey: entry.matchKey,
-      label: matchLabel(entry.compLevel, entry.matchNumber),
+      label: `${matchLabel(entry.compLevel, entry.matchNumber)}${entry.matchKey === nextKey ? " · next" : isOver(entry) ? " · played" : ""}`,
+      next: entry.matchKey === nextKey,
     })),
   };
 

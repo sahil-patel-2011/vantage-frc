@@ -79,6 +79,7 @@ export function EventDayShell({
   const copy = eventDayShellCopy(shell);
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const scheduleHref = withOrgHref("/schedule", orgId);
+  const notOnSchedule = /isn't on this event's match schedule/.test(error ?? "");
 
   const related = <EventDayRelatedStrip orgId={orgId} />;
 
@@ -142,13 +143,19 @@ export function EventDayShell({
         className="edc-empty"
         badge={shell === "setup" ? "Needs setup" : copy.badge}
         badgeTone="setup"
-        title={eventDayEmptyTitle({ shell, orgId, hasActiveEvent })}
+        title={
+          shell === "empty" && notOnSchedule ? "Not on this event's schedule" : eventDayEmptyTitle({ shell, orgId, hasActiveEvent })
+        }
         description={error ?? copy.description}
       >
         {shell === "setup" ? primarySetupCta : null}
-        {shell === "empty" ? (
-          <Button as="a" variant="primary" href={scheduleHref}>
-            Check schedule sync
+        {shell === "empty" && notOnSchedule && canSetEvent && onSelectEvent ? (
+          <Button variant="primary" type="button" onClick={onSelectEvent}>
+            Change event
+          </Button>
+        ) : shell === "empty" && !notOnSchedule ? (
+          <Button as="a" variant="secondary" href={scheduleHref}>
+            See the full schedule
           </Button>
         ) : null}
       </EmptyState>

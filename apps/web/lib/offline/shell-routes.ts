@@ -499,7 +499,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/spares")) return "Consumables";
   if (bare.startsWith("/sponsor-tier-calculator")) return "Sponsor Tier Calculator";
   if (bare.startsWith("/standup-digest")) return "Morning standup";
-  if (bare.startsWith("/start")) return "Your path";
+  if (bare.startsWith("/start")) return "Your first week";
   if (bare.startsWith("/subsystems")) return "Subsystem specs";
   if (bare.startsWith("/support")) return "Support";
   if (bare.startsWith("/troubleshoot")) return "Get unstuck";

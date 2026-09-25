@@ -173,7 +173,7 @@ export function shellTitleForPath(pathname: string): string | null {
   if (pathname.startsWith("/admin")) return "Admin";
   if (pathname.startsWith("/docs") || pathname.startsWith("/help")) return "App manual";
   if (pathname === "/support") return "Support";
-  if (pathname === "/start") return "Your path";
+  if (pathname === "/start") return "Your first week";
   if (pathname.startsWith("/security")) return "Security";
   if (pathname.startsWith("/team/security")) return "Team security";
   if (pathname.startsWith("/team/profile") || pathname.startsWith("/team/admin/profile")) return "Team profile";

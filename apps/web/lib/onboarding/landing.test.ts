@@ -48,7 +48,7 @@ describe("role-aware landing", () => {
     expect(view.secondary?.label).toBe("Team setup checklist");
   });
 
-  it("lands a student on Home, with Your path as the secondary", () => {
+  it("lands a student on Home, with Your first week as the secondary", () => {
     const view = landing({
       teamRole: "student",
       crewRole: "programming",
@@ -61,7 +61,7 @@ describe("role-aware landing", () => {
       href: `/dashboard?orgId=${ORG}`,
       label: "Open Home",
     });
-    expect(view.secondary?.label).toBe("Your path this week");
+    expect(view.secondary?.label).toBe("Your first week");
     expect(view.secondary?.href).toContain("/start");
   });
 

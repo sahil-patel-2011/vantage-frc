@@ -301,7 +301,7 @@ function eventDayShellNextActionCandidates(input: {
     return [
       {
         id: "schedule",
-        label: "Check schedule sync",
+        label: "See the full schedule",
         detail: "Confirm posted matches on the full board.",
         href: withOrgHref("/schedule", orgId),
         primary: true,

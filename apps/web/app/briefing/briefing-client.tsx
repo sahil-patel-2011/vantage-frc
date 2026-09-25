@@ -226,7 +226,10 @@ export default function BriefingClient() {
   }
 
   if (view.status === "setup_required") {
-    const setupAction = briefingSetupAction(view.context);
+    const setupAction = briefingSetupAction({
+      ...view.context,
+      notOnSchedule: /isn't on this event's match schedule/.test(view.message),
+    });
     return (
       <main className="module-page brief-page">
         <header className="app-page-header">
@@ -328,7 +331,19 @@ export default function BriefingClient() {
             <h1>Pre-match briefing</h1>
             <label className="brief-picker">
               <span className="visually-hidden">Match</span>
-              <select aria-label="Match" value={view.match.matchKey} onChange={(event) => void load(event.target.value)}>
+              <select
+                aria-label="Match"
+                value={view.match.matchKey}
+                onChange={(event) => {
+                  const key = event.target.value;
+                  // The address follows the pick, so a shared or reloaded link opens this match.
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete("match");
+                  url.searchParams.set("matchKey", key);
+                  window.history.replaceState(window.history.state, "", url);
+                  void load(key);
+                }}
+              >
                 {view.ourMatches.map((entry) => (
                   <option key={entry.matchKey} value={entry.matchKey}>
                     {entry.label}
@@ -367,7 +382,11 @@ export default function BriefingClient() {
 
       <section className="brief-hero">
         <div className="brief-hero-main">
-          <span className="brief-hero-kicker">{view.match.played ? "Played: looking back" : "Up next for the drive team"}</span>
+          <span className="brief-hero-kicker">{view.match.played
+              ? "Played: looking back"
+              : view.ourMatches.find((entry) => entry.matchKey === view.match.matchKey)?.next === false
+                ? "A later match"
+                : "Up next for the drive team"}</span>
           <strong className="brief-hero-match">{matchLabel(view.match.compLevel, view.match.matchNumber)}</strong>
           <span className="brief-hero-sub">
             {fmtMatchTime(view.match.scheduledTime) || "Time TBD"}

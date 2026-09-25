@@ -7,7 +7,7 @@ export type TeamOpsKey =
   | "start" | "practice" | "todos" | "messages" | "calendar" | "attendance" | "knowledge" | "logistics" | "goals" | "batteries" | "fmea" | "admin";
 
 const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path: string) => boolean }> = [
-  { key: "start", href: "/start", label: "Your path", match: (p) => p === "/start" || p.startsWith("/start/") },
+  { key: "start", href: "/start", label: "Your first week", match: (p) => p === "/start" || p.startsWith("/start/") },
   { key: "practice", href: "/team?tab=practice", label: "Practice", match: (p) => p.startsWith("/practice") },
   { key: "todos", href: "/team?tab=todos", label: "Todos", match: (p) => p.startsWith("/todos") || p.startsWith("/tasks") },
   { key: "messages", href: "/team?tab=messages", label: "Team chat", match: (p) => p.startsWith("/messages") },

@@ -1,8 +1,9 @@
-import { readOrgAllowance } from "@vantage/billing";
 import { withSavepoint } from "@vantage/db/savepoint";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withOrgHref } from "../nav/product-nav";
+import { probeChatModel } from "../ai/capabilities";
 import { TEAM_SETUP_TRACK, assignOnboardingTracks } from "./assign";
+import { firstWeekTrackRank } from "./first-week-order";
 import { TRACK_BY_KEY } from "./tracks";
 import type { RoleOnboardingView, StartTrackView, TrackSource } from "./types";
 
@@ -220,10 +221,47 @@ export async function loadRoleOnboarding(
   // setup list (owners and admins have it), and the AI steps while the team has no AI key.
   const hidden = new Set<string>();
   if (assigned.some((track) => track.trackKey === TEAM_SETUP_TRACK)) hidden.add("role_mentor::getting_started");
-  const allowance = await withSavepoint(client, () => readOrgAllowance(client, orgId), null);
-  if (allowance && !allowance.configured) {
+  // "Ask the team assistant" opened Ask AI saying "Off", and "Set AI limits" asked for a cap
+  // on a key the team never added. Same check Ask AI makes (a model the team can reach).
+  const model = await withSavepoint(client, () => probeChatModel(client, { orgId, userId: input.userId }), null);
+  if (!model?.ok) {
     hidden.add("welcome::try_chat");
     hidden.add("role_coach::budgets");
+  }
+  // The briefing is per match: before the team has one at its event it only says so.
+  const hasMatch = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<{ yes: boolean }>(
+          `SELECT EXISTS (
+             SELECT 1 FROM org_active_context c
+               JOIN organizations o ON o.id = c.org_id
+               JOIN matches_ref m ON m.event_key = c.active_event_key AND NOT m.placeholder
+              WHERE c.org_id = $1::uuid AND o.team_number IS NOT NULL
+                AND (m.red_alliance->'teamKeys' ? ('frc' || o.team_number::text)
+                     OR m.blue_alliance->'teamKeys' ? ('frc' || o.team_number::text))
+           ) AS yes`,
+          [orgId],
+        )
+      ).rows[0]?.yes === true,
+    false,
+  );
+  if (!hasMatch) hidden.add("role_coach::briefing");
+  // One page, one step: "See this week", "Join a subteam calendar" and "Review the team
+  // calendar" all opened the calendar. The first list (in first-week order) keeps it.
+  const seenPages = new Set<string>();
+  const ordered = [...assigned].sort(
+    (a, b) => firstWeekTrackRank({ key: a.trackKey, source: a.source }) - firstWeekTrackRank({ key: b.trackKey, source: b.source }),
+  );
+  for (const track of ordered) {
+    for (const check of TRACK_BY_KEY[track.trackKey]?.checks ?? []) {
+      const id = `${track.trackKey}::${check.key}`;
+      const page = check.href?.split(/[?#]/)[0];
+      if (!page || hidden.has(id)) continue;
+      if (seenPages.has(page)) hidden.add(id);
+      else seenPages.add(page);
+    }
   }
   const tracks = buildTracksView(orgId, assigned, tracksResult.rows, checksResult.rows, autoDone, hidden);
   const active = tracks.filter((t) => !t.dismissed);

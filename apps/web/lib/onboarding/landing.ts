@@ -184,7 +184,7 @@ export function buildOnboardingLanding(input: {
   const secondary = input.orgId
     ? {
         href: withOrg(role === "student" ? "/start" : "/team/getting-started", input.orgId),
-        label: role === "student" ? "Your path this week" : "Team setup checklist",
+        label: role === "student" ? "Your first week" : "Team setup checklist",
       }
     : null;
 

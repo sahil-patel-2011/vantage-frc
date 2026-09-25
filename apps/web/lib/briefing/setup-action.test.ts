@@ -21,17 +21,19 @@ describe("briefingSetupAction", () => {
     expect(action.href).toContain(ORG);
   });
 
-  it("sends owners to Team Data once the event is set and the schedule is empty", () => {
+  it("sends owners to Event day, where the event picker is, once the event is set", () => {
     const action = briefingSetupAction({
       orgId: ORG,
       eventKey: "2026custom-x",
       teamNumber: 9999,
       role: "admin",
     });
-    expect(action).toEqual({
-      href: `/team/data?orgId=${ORG}`,
-      label: "Sync Team Data",
-    });
+    expect(action.label).toBe("Open Event day");
+    expect(action.href).toContain("command");
+    expect(action.href).not.toContain("/team/data");
+    expect(briefingSetupAction({ orgId: ORG, eventKey: "2026x", teamNumber: 9, role: "owner", notOnSchedule: true }).label).toBe(
+      "Change event",
+    );
   });
 
   it("sends scouts to Scouting instead of Team Data", () => {

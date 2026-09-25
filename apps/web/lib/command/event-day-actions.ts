@@ -81,7 +81,7 @@ export function eventDayNextActions(
   if (snap?.eventKey && !next) {
     actions.push({
       id: "schedule",
-      label: "Check schedule sync",
+      label: "See the full schedule",
       detail: "No upcoming match on the board yet — refresh after the event posts.",
       href: snap.links.schedule ?? withOrgHref("/schedule", orgId),
       primary: snap.tbaConfigured !== false,

@@ -6,6 +6,7 @@ import { Button, EmptyState, PageHeader } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { RoleOnboardingView, StartTrackView } from "../../lib/role-onboarding";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -41,7 +42,7 @@ async function persistStartSnapshot(orgHint: string, data: RoleOnboardingView): 
     await putFeatureSnapshot("start", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("start", "_", data);
   } catch {
-    // Live Your path already painted; IndexedDB is best-effort.
+    // Live Your first week already painted; IndexedDB is best-effort.
   }
 }
 
@@ -104,7 +105,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
       if (!response.ok || !isStartView(body)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Your path. Showing the last copy on this device.");
+          setError("Could not refresh Your first week. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -121,7 +122,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Your path. Showing the last copy on this device.");
+        setError("Could not refresh Your first week. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -201,11 +202,11 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
   if (!view) {
     return (
       <main className="module-page start-page">
-        <PageHeader navPath="/start" title="Your path" description={failure?.title ?? "Loading onboarding checklists…"}>
+        <PageHeader navPath="/start" title="Your first week" description={failure?.title ?? "Loading onboarding checklists…"}>
           <StartRelated orgId={orgId} />
         </PageHeader>
         <TeamOpsNav orgId={orgId} active="start" />
-        <OfflineBanner feature="Your path" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading…"}
@@ -233,13 +234,13 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
         <main className="module-page start-page">
           <PageHeader
             navPath="/start"
-            title="Your path"
+            title="Your first week"
             description={withWaitlistLink(view.message || "Choose your team to open your path, or join the waitlist.")}
           >
             <StartRelated orgId={orgId} />
           </PageHeader>
           <TeamOpsNav orgId={orgId} active="start" />
-          <OfflineBanner feature="Your path" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="start-warn" role="status">
               {error}
@@ -276,7 +277,10 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
       const doneCount = setup ? setup.doneCount : view.doneCount;
       const totalCount = setup ? setup.totalCount : view.totalCount;
       const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
-      const nextCheck = mainTracks.flatMap((track) => track.checks).find((check) => !check.done);
+      // The same next step Home's "Your first week" card leads with, in the same order.
+      const nextCheck = setup
+        ? setup.checks.find((check) => !check.done)
+        : pickFirstWeek(activeTracks, { limit: 1, member: isMemberRole(view.teamRole), skip: (check) => check.done })[0]?.check;
       const meta = [
         view.teamRole ? `Role: ${sentenceCase(view.teamRole)}` : null,
         view.crewRole ? `Crew: ${sentenceCase(view.crewRole)}` : null,
@@ -290,7 +294,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
         <main className="module-page start-page">
           <PageHeader
             navPath="/start"
-            title={setup ? "Set up your team" : "Your path"}
+            title={setup ? "Set up your team" : "Your first week"}
             description={
               setup
                 ? `Four steps that get ${view.orgName} going for everyone else.`
@@ -300,7 +304,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
             <StartRelated orgId={view.orgId} />
           </PageHeader>
           <TeamOpsNav orgId={view.orgId} active="start" />
-          <OfflineBanner feature="Your path" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="start-warn" role="status">
               {error}

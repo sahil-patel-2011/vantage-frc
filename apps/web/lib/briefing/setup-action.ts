@@ -8,14 +8,17 @@ export type BriefingSetupAction = { href: string; label: string };
  * Where the empty briefing should send this person.
  *
  * No team and no event still go to workspace and Event Day. Once an event is
- * set, a missing schedule is a Team Data job for owners and admins. Scouts
- * stay on Scouting.
+ * set and none of its matches are ours, owners and admins go to Event day, where the event
+ * picker is: usually it is the wrong event. (Team Data is sync plumbing, not a fix they can
+ * make.) Scouts stay on Scouting.
  */
 export function briefingSetupAction(input: {
   orgId?: string | null;
   eventKey?: string | null;
   teamNumber?: number | null;
   role?: string | null;
+  /** The event's schedule is out and the team is not on it. */
+  notOnSchedule?: boolean;
 }): BriefingSetupAction {
   const orgId = input.orgId ?? null;
   if (!orgId) {
@@ -28,7 +31,10 @@ export function briefingSetupAction(input: {
     return { href: withOrgHref("/team", orgId), label: "Open your team" };
   }
   if (strategyCanSync(input.role)) {
-    return { href: withOrgHref("/team/data", orgId), label: "Sync Team Data" };
+    return {
+      href: hubHref("/competition", "command", orgId),
+      label: input.notOnSchedule ? "Change event" : "Open Event day",
+    };
   }
   return { href: hubHref("/competition", "scouting", orgId), label: "Open Scouting" };
 }
