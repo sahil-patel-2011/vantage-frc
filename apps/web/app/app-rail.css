@@ -196,7 +196,9 @@
 }
 .soft-page-head-copy:has(> .soft-topbar-title) > .soft-topbar-team {
   position: relative;
-  min-height: 26px;
+  /* A global rule gives every button a 44px floor with !important; the ::after below keeps
+     that tap area, so the chip itself can be short enough for the title above it. */
+  min-height: 26px !important;
   height: 26px;
   padding-block: 0;
 }

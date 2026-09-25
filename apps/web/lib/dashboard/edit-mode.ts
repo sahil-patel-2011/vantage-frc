@@ -5,6 +5,7 @@
  */
 
 import {
+  fillRowEnds,
   findDashboardSlot,
   homeViewLayout,
   isAlwaysShown,
@@ -188,7 +189,10 @@ export function editBoardLayout(
 ): DashboardWidgetLayout[] {
   // Array order kept (positions from the pack): React moving the dragged card's node mid-drag
   // drops the pointer capture the drag runs on.
-  return packKeepingOrder(sizeForHome(layout.filter((item) => !hidden.has(item.i) || keep.has(item.i)), widgets));
+  // The same narrow-strip fill Home applies, so the editor shows the widths Home will show.
+  return fillRowEnds(
+    packKeepingOrder(sizeForHome(layout.filter((item) => !hidden.has(item.i) || keep.has(item.i)), widgets)),
+  );
 }
 
 /**
@@ -198,8 +202,6 @@ export function editBoardLayout(
  * a row with a gap where "My day" sits empty. Hidden cards come back at the
  * end of the board, which is also where the "Hidden right now" row lists them.
  */
-/** Re-exported: the stretch lives with Home's layout (catalog.ts), where it is display-only. */
-export { fillRowEnds } from "./catalog";
 
 export function layoutForEditing(
   layout: DashboardWidgetLayout[],

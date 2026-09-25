@@ -240,3 +240,32 @@
   margin: 0 0 12px;
   color: var(--muted);
 }
+
+/* "Next: See this week" is the one thing to do; it read as a plain browser link. */
+.start-next {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--start-accent);
+  color: var(--accent-ink, #fff);
+  font: 650 14px/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  text-decoration: none;
+}
+.start-next:hover { filter: brightness(1.05); }
+
+/* Each step's Open link was 30x13px: a full-height target now, same look. */
+.start-check a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  margin: -12px -12px -12px 0;
+  padding: 0 12px;
+  align-self: center;
+}
+@media (max-width: 620px) {
+  .start-next { justify-self: stretch; justify-content: center; }
+}

@@ -528,7 +528,9 @@ export function DashboardHomeView(props: {
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice.
           With a setup step still open, that spot shows the setup step instead; otherwise the
           Next match card leads. A scout's version ("Scout a match") and every other state stay. */}
-      {now.title === "Our next match" && now.cta === "Open My Day" && layout.some((item) => item.type === "next_match") ? (
+      {now.title === "Our next match" &&
+      (now.cta === "Open My Day" || now.cta === "Scout a match") &&
+      layout.some((item) => item.type === "next_match") ? (
         setupHero ? (
           <DashboardNowCard now={{ ...now, quiet: true }} setupHero={setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
         ) : null

@@ -277,6 +277,15 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
       const totalCount = setup ? setup.totalCount : view.totalCount;
       const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
       const nextCheck = mainTracks.flatMap((track) => track.checks).find((check) => !check.done);
+      const meta = [
+        view.teamRole ? `Role: ${sentenceCase(view.teamRole)}` : null,
+        view.crewRole ? `Crew: ${sentenceCase(view.crewRole)}` : null,
+        view.roleDescription ? view.roleDescription : null,
+        view.primaryFocus ? `Focus: ${sentenceCase(view.primaryFocus)}` : null,
+        view.subteamNames.length ? `Subteams: ${view.subteamNames.join(", ")}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
       return (
         <main className="module-page start-page">
           <PageHeader
@@ -297,17 +306,8 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
               {error}
             </p>
           ) : null}
-          <p className="start-meta" role="status">
-            {[
-              view.teamRole ? `Role: ${sentenceCase(view.teamRole)}` : null,
-              view.crewRole ? `Crew: ${sentenceCase(view.crewRole)}` : null,
-              view.roleDescription ? view.roleDescription : null,
-              view.primaryFocus ? `Focus: ${sentenceCase(view.primaryFocus)}` : null,
-              view.subteamNames.length ? `Subteams: ${view.subteamNames.join(", ")}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+          {/* Someone with no role, focus or subteam yet got an empty bordered bar here. */}
+          {meta ? <p className="start-meta">{meta}</p> : null}
           <section className="start-progress" aria-label="Overall progress">
             <strong>
               {pct === 100 ? "All done" : `${doneCount} of ${totalCount} done`}
@@ -406,6 +406,7 @@ function TrackCard({
               type="button"
               disabled={busy}
               aria-pressed={check.done}
+              aria-label={check.done ? `Mark "${check.label}" not done` : `Mark "${check.label}" done`}
               onClick={() =>
                 void onMutate({
                   action: check.done ? "uncheck" : "check",
@@ -420,7 +421,13 @@ function TrackCard({
               <strong>{check.label}</strong>
               <span>{check.detail}</span>
             </div>
-            {check.href ? <a href={check.href}>Open</a> : <span />}
+            {check.href ? (
+              <a href={check.href} aria-label={`Open ${check.label}`}>
+                Open
+              </a>
+            ) : (
+              <span />
+            )}
           </li>
         ))}
       </ul>

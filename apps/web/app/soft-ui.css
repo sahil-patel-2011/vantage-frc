@@ -2992,3 +2992,9 @@ body.has-app-shell .messages article small {
 /* Countdowns never break across lines ("7 min 19" over "s"); with units they read in the body font. */
 .dash-countdown strong{white-space:nowrap;font:700 24px/1.1 var(--font-source-sans),system-ui;font-variant-numeric:tabular-nums}
 .edc-pill{white-space:nowrap}
+
+/* Phone scouting form: no floating tab bar over the counters and Save (the top menu still gets you out). */
+@media (max-width:720px){
+  body.has-app-shell.is-scouting-form .soft-island{display:none}
+  body.has-app-shell.is-scouting-form{padding-bottom:calc(24px + var(--safe-bottom)) !important}
+}

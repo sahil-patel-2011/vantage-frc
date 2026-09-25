@@ -213,6 +213,14 @@ export function ScoutingReadyView({
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const scrollToFormPending = useRef(false);
 
+  // While a robot's form is open, a phone gives it the whole screen: the floating tab bar sat
+  // on its + buttons and Save (soft-ui.css hides the bar under this class). The picker keeps it.
+  const formOpen = Boolean(context);
+  useEffect(() => {
+    document.body.classList.toggle("is-scouting-form", formOpen);
+    return () => document.body.classList.remove("is-scouting-form");
+  }, [formOpen]);
+
   // Tapping a robot tile used to only outline the tile; the form it opened
   // started about 1,300px further down, under the match list, the typed-team
   // box and a card of focus buttons. Now the tap is the start of the form.

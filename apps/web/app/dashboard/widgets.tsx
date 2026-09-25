@@ -68,13 +68,16 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
     case "next_match": {
       const myDayHref =
         typeof data.href === "string" && data.href ? data.href : withOrg("/my-day");
+      // For a scout the card's link is the job ("Scout a match"), so Home needs no second card
+      // for the same match; leads keep the briefing.
+      const scoutHref = withOrg("/competition?tab=scouting");
       return (
         <Shell
           type={type}
           title="Next match"
           payload={payload}
-          href={myDayHref}
-          emptyHint={hint}
+          href={canOpenTeamData ? myDayHref : scoutHref}
+          emptyHint={canOpenTeamData ? hint : { ...hint, liveLabel: "Scout a match" }}
           orgId={orgId}
           lead={canOpenTeamData}
         >
