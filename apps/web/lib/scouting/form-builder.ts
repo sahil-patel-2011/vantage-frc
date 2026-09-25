@@ -830,7 +830,7 @@ export function resolveDraftPublishStatus(args: {
   return {
     kind: "published",
     label: `Published v${published.version}`,
-    detail: "This draft matches the live form scouts use after sync.",
+    detail: "Scouts use this form.",
     version: published.version,
   };
 }
@@ -1204,7 +1204,7 @@ export function formBuilderPublishLabel(input: {
   if (input.busy) return "Publishing…";
   const typeLabel = input.entryType === "pit" ? "pit" : "match";
   if (input.status.kind === "unpublished") return "Publish this form";
-  if (input.status.kind === "draft_changes") return `Publish ${typeLabel} changes`;
+  if (input.status.kind === "draft_changes") return "Publish changes";
   return `Republish ${typeLabel} form`;
 }
 

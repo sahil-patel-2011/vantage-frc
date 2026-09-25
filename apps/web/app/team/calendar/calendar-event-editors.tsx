@@ -40,6 +40,15 @@ import {
  * changing the time field, and someone not watching the form would otherwise
  * never learn it was there.
  */
+/** "Added Tuesday build practice · Tue, Sep 29, 6:00 PM": the form said nothing after Add. */
+function addedNote(title: string, startsAt: string): string {
+  const at = new Date(startsAt);
+  const when = Number.isNaN(at.getTime())
+    ? ""
+    : ` · ${at.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+  return `Added ${title}${when}. It is under Coming up.`;
+}
+
 function ConflictNote({
   events,
   startsAt,
@@ -385,6 +394,7 @@ export function QuickAddForm({
   onDone?: () => void;
 }) {
   const [title, setTitle] = useState("");
+  const [added, setAdded] = useState<string | null>(null);
   const [kind, setKind] = useState<SubteamEventKind>("practice");
   const [startsAt, setStartsAt] = useState(initialStartsAt);
   const [subteamId, setSubteamId] = useState(filterSubteamId ?? "");
@@ -448,7 +458,11 @@ export function QuickAddForm({
           "quick-add",
         ).then((ok) => {
           if (ok) {
+            // Cleared with the title: the time left behind flagged the practice just added as
+            // an overlap with itself.
+            setAdded(addedNote(title.trim(), startsAt));
             setTitle("");
+            setStartsAt(initialStartsAt);
             onDone?.();
           }
         });
@@ -544,6 +558,11 @@ export function QuickAddForm({
       <Button variant="primary" type="submit" disabled={ busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt) }>
         {savingTask ? "Adding…" : entry === "task" ? "Add task" : "Add event"}
       </Button>
+      {added ? (
+        <p className="tc-added" role="status">
+          {added}
+        </p>
+      ) : null}
     </form>
   );
 }
@@ -571,6 +590,7 @@ export function CreateEventForm({
   run: (body: ActionBody, key: string) => Promise<boolean>;
 }) {
   const [title, setTitle] = useState("");
+  const [added, setAdded] = useState<string | null>(null);
   const [kind, setKind] = useState<SubteamEventKind>("practice");
   const [startsAt, setStartsAt] = useState(() => defaultQuickAddStartsAt());
   const [endsAt, setEndsAt] = useState("");
@@ -647,9 +667,12 @@ export function CreateEventForm({
           "create-event",
         ).then((ok) => {
           if (ok) {
+            setAdded(addedNote(title.trim(), startsAtIso));
             setTitle("");
             setNotes("");
             setLocation("");
+            setStartsAt(defaultQuickAddStartsAt());
+            setEndsAt("");
             setRepeat(EMPTY_REPEAT_DRAFT);
           }
         });
@@ -762,6 +785,11 @@ export function CreateEventForm({
       <Button variant="secondary" type="submit" disabled={busy || !title.trim() || !startsAt}>
         {repeat.preset === "none" ? "Add detailed event" : "Add repeating event"}
       </Button>
+      {added ? (
+        <p className="tc-added" role="status">
+          {added}
+        </p>
+      ) : null}
     </form>
   );
 }

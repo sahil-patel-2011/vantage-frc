@@ -899,7 +899,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
               <h2>Coming up</h2>
               {upcoming.length === 0 ? (
-                <p className="tc-muted">Nothing upcoming in this filter.</p>
+                <p className="tc-muted">Nothing scheduled yet.</p>
               ) : (
                 <ul className="tc-upcoming">
                   {upcoming.map((event) => (

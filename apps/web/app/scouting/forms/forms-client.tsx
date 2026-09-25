@@ -41,6 +41,7 @@ import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./f
 import { OptionEditor } from "./forms-option-editor";
 import { PreviewField } from "./forms-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 
 function isSchemasPayload(value: unknown): value is SchemasPayload {
   if (!value || typeof value !== "object") return false;
@@ -273,9 +274,8 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         return;
       }
       setPublished({ id: String(body.id), version: Number(body.version) });
-      setMessage(
-        `Published. Scouts see it the next time they open Scout.`,
-      );
+      // The green card at the top says it once.
+      setMessage("");
       await load();
     } catch {
       setMessage("Network error — try again.");
@@ -368,8 +368,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       >
         <div className="sfb-toolbar">
           <FormBuilderRelatedStrip orgId={orgId} />
-          {/* With nothing published yet, Publish is the empty state's own button below. */}
-          {shell === "empty" ? null : (
+          {/* With nothing published yet, Publish is the empty state's own button below; with
+              nothing changed since, there is nothing to publish ("Republish … version pin"). */}
+          {shell === "empty" || publishStatus.kind === "published" ? null : (
             <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
               {publishLabel}
             </Button>
@@ -378,6 +379,20 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       </PageHeader>
 
       <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+
+      {/* Publishing was confirmed by small blue text beside a "Republish" button, with no way
+          back to the setup list that sent the owner here. */}
+      {published ? (
+        <section className="sfb-published-card" role="status">
+          <div>
+            <strong>Published</strong>
+            <span>Scouts see this form the next time they open Scout.</span>
+          </div>
+          <Button as="a" variant="primary" href={withOrgHref("/dashboard", orgId)}>
+            Back to Home
+          </Button>
+        </section>
+      ) : null}
 
       {shell === "empty" ? (
         <EmptyState
@@ -802,13 +817,11 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               <strong>{publishStatus.label}</strong>
               <span className="app-muted">{publishStatus.detail}</span>
             </p>
-            {publishStatus.kind === "unpublished" ? null : (
+            {publishStatus.kind === "draft_changes" ? (
               <p className="app-muted" style={{ margin: "8px 0" }}>
-                {publishStatus.kind === "draft_changes"
-                  ? "Live scouting keeps the published version until you publish these edits."
-                  : "This draft matches the live form. Republish only if you need a new version pin."}
+                Scouts keep the published form until you publish these changes.
               </p>
-            )}
+            ) : null}
             {currentSchema ? (
               <ul className="sfb-published">
                 <li>
@@ -820,23 +833,21 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                       {currentSchema.definition.fields.length} fields
                     </span>
                   </span>
-                  <Button variant="secondary" type="button" onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
-                    Load
-                  </Button>
+                  {publishStatus.kind === "draft_changes" ? (
+                    <Button variant="secondary" type="button" onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
+                      Undo my changes
+                    </Button>
+                  ) : null}
                 </li>
               </ul>
             ) : shell === "empty" ? null : (
               // The empty state above already says nothing is published; said once.
               <p className="app-muted">No {type} form published yet for this season.</p>
             )}
-            {published ? (
-              <p className="sfb-message" style={{ marginTop: 10 }}>
-                Just published v{published.version}
-              </p>
-            ) : null}
+
             <div className="sfb-publish-actions">
               {/* Nothing published yet: the card at the top has the Publish button, said once. */}
-              {shell === "empty" ? null : (
+              {shell === "empty" || publishStatus.kind === "published" ? null : (
                 <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
                   {publishLabel}
                 </Button>

@@ -219,6 +219,7 @@ export function WaitlistForm({
             ? `We'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}, usually within a few days.`
             : "We'll email you when your team is set up, usually within a few days."}{" "}
           Then you sign in and invite your students and mentors. Joining the waitlist does not create a Vantage account.
+          Signed up before? This only updated your details; there is nothing else to do.
         </p>
         {/* Said to everyone, so the form never reveals which teams already use Vantage. Second, and
             short: the outcome comes first, and a mentor whose team is already here still sees it. */}

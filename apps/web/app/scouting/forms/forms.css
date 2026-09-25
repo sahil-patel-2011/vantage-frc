@@ -630,3 +630,13 @@
 .sfb-add-question > summary::-webkit-details-marker { display: none; }
 .sfb-add-question > summary::before { content: "+ "; color: var(--accent); }
 .sfb-add-question[open] > summary { margin-bottom: 10px; }
+
+/* After a publish: one clear confirmation and the way back to the setup list. */
+.sfb-published-card {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 16px; padding: 14px 18px; border-radius: var(--radius, 16px);
+  border: 1px solid color-mix(in srgb, #16a34a 40%, var(--line)); background: color-mix(in srgb, #16a34a 9%, var(--surface));
+}
+.sfb-published-card > div { display: grid; gap: 2px; }
+.sfb-published-card strong { color: #15803d; font-size: 16px; }
+.sfb-published-card span { color: var(--ink); font-size: 14px; }

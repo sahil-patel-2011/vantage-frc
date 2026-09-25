@@ -83,6 +83,24 @@ export function SignInCodeStep({
         </p>
       ) : null}
 
+      {/* Right under the boxes, not below the timer: an uninvited visitor otherwise waited out
+          the five-minute clock before reading why nothing came. Always open, and still there after a wrong code: an address no team invited never gets
+          a code, and a folded note left a new mentor waiting on a timer for one. */}
+      {inviteHelp ? (
+        <div className="signin-invite-help">
+          <p>
+            <strong>No code after a minute? You&rsquo;re probably not invited yet.</strong> Codes only go to
+            emails a team has invited. If you were invited, check spam.
+          </p>
+          <a
+            className="signin-invite-help-cta"
+            href={inviteHelp.waitlistHref}
+            onClick={() => rememberWaitlistEmail(email)}
+          >
+            New team? Join the waitlist
+          </a>
+        </div>
+      ) : null}
       {showClock ? (
         <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
           {codeExpiryCopy(expired, codeSeconds)}
@@ -122,23 +140,6 @@ export function SignInCodeStep({
         </div>
       ) : null}
 
-      {/* Always open, and still there after a wrong code: an address no team invited never gets
-          a code, and a folded note left a new mentor waiting on a timer for one. */}
-      {inviteHelp ? (
-        <div className="signin-invite-help">
-          <p>
-            <strong>Not invited yet? No code will come.</strong> Codes only go to emails a team has invited. If
-            you were invited and nothing arrives in a minute, check spam.
-          </p>
-          <a
-            className="signin-invite-help-cta"
-            href={inviteHelp.waitlistHref}
-            onClick={() => rememberWaitlistEmail(email)}
-          >
-            New team? Join the waitlist
-          </a>
-        </div>
-      ) : null}
     </form>
   );
 }
@@ -198,6 +199,10 @@ export function SignInNotInvited({
       <a className="signin-submit" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
         Join the waitlist
       </a>
+      {/* A waitlist sign-up from another device is not known here; say what it means. */}
+      <p className="app-muted">
+        Already joined the waitlist? You&rsquo;re all set. We&rsquo;ll email you when your team is set up.
+      </p>
       <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
         Use a different email
       </button>
