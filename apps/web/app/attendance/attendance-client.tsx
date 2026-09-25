@@ -509,6 +509,9 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [seasonYear, setSeasonYear] = useState(defaultSeasonYear);
+  // Until someone picks a season, the server chooses: the latest one the team has attendance
+  // in. People opened on an empty "Season 2027" in September while everything else said 2026.
+  const seasonPicked = useRef(false);
   const [listFilter, setListFilter] = useState<AttendanceListFilter>("all");
   const [query, setQuery] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -526,6 +529,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
     const focusSeason = params.get("seasonYear");
     const yearToLoad = focusSeason && Number.isInteger(Number(focusSeason)) ? Number(focusSeason) : year;
     const seasonHint = String(yearToLoad);
+    const askServer = !focusSeason && !seasonPicked.current;
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<AttendanceView>("attendance", orgHint || "_", seasonHint);
@@ -553,7 +557,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
     try {
       const search = new URLSearchParams();
       if (orgHint) search.set("orgId", orgHint);
-      search.set("seasonYear", seasonHint);
+      if (!askServer) search.set("seasonYear", seasonHint);
       const response = await fetch(`/api/attendance?${search}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
@@ -731,6 +735,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           disabled={busy}
           onChange={(e) => {
             const year = Number(e.target.value);
+            seasonPicked.current = true;
             setSeasonYear(year);
             setSelectedId(null);
             void load(year);

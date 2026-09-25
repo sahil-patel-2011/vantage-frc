@@ -102,7 +102,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
     const seasonParam = url.searchParams.get("seasonYear");
-    const seasonYear = seasonParam ? Number(seasonParam) : defaultSeasonYear();
+    let seasonYear = seasonParam ? Number(seasonParam) : defaultSeasonYear();
     if (!Number.isInteger(seasonYear) || seasonYear < 1992 || seasonYear > 3000) {
       throw new HttpError(400, "Season year is invalid");
     }
@@ -139,14 +139,20 @@ export async function GET(request: Request) {
         } satisfies AttendanceView;
       }
 
-      const [events, seasonRows, members] = await Promise.all([
+      const seasonRows = await client.query<{ seasonYear: number }>(
+        `SELECT DISTINCT season_year AS "seasonYear"
+         FROM attendance_events WHERE org_id = $1
+         ORDER BY season_year DESC`,
+        [row.orgId],
+      );
+      // No season asked for: open on the latest one with attendance when the calendar's season
+      // (which rolls over in September) has none yet.
+      const latest = seasonRows.rows[0]?.seasonYear;
+      if (!seasonParam && latest != null && latest < seasonYear && !seasonRows.rows.some((r) => r.seasonYear === seasonYear)) {
+        seasonYear = latest;
+      }
+      const [events, members] = await Promise.all([
         loadEvents(client, row.orgId, seasonYear),
-        client.query<{ seasonYear: number }>(
-          `SELECT DISTINCT season_year AS "seasonYear"
-           FROM attendance_events WHERE org_id = $1
-           ORDER BY season_year DESC`,
-          [row.orgId],
-        ),
         client.query<{ userId: string; name: string | null }>(
           `SELECT u.id AS "userId", u.name
            FROM memberships m
