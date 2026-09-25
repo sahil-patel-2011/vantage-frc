@@ -335,13 +335,14 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       ) : view?.status === "live" ? (
         <>
           <StrategyMatchPicker orgId={view.orgId} current={view.matchKey} />
+          {/* The chance to win first; the briefing link after it (it pushed the answer off a phone's first screen). */}
+          <LivePanel view={view} />
           <StrategyBriefingCard
             orgId={view.orgId}
             matchKey={view.matchKey}
             compLevel={view.compLevel}
             matchNumber={view.matchNumber}
           />
-          <LivePanel view={view} />
           {embedded ? null : <StrategyNextActionsPanel actions={nextActions} />}
         </>
       ) : null}

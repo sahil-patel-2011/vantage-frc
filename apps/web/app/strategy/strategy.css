@@ -281,3 +281,9 @@
 .strategy-more-panels[open] > summary {
   margin-bottom: 12px;
 }
+
+/* Phone: the match chips are one scrolling row, so the win chance is on the first screen. */
+@media (max-width: 720px) {
+  .strategy-match-picker { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .strategy-match-picker a { flex: none; }
+}
