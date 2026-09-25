@@ -3039,3 +3039,11 @@ body.has-app-shell .soft-drawer-flat .soft-drawer-hub[aria-current="page"]::befo
 /* First-week steps read as links in the product's own style, not underlined browser links. */
 .dash-first-week li div > a{color:var(--ink);font-weight:650;text-decoration:none}
 .dash-first-week li div > a:hover{color:var(--accent)}
+
+/* Next-match bar lined up with the page: the match on the left, its actions on the right, inside
+   the content width (it was a small cluster floating in the middle of a full-width white bar). */
+@media (min-width: 721px){
+  .soft-focus-rail{justify-content:flex-start;padding-inline:max(18px,calc((100vw - 1124px) / 2))}
+  .soft-focus-rail .soft-focus-copy{margin-right:auto}
+  .soft-focus-rail .soft-focus-copy strong{font-size:14px}
+}
