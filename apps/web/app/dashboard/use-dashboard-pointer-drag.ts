@@ -13,6 +13,7 @@ import { applyOrder, describePlace, planDrop, readingOrder } from "../../lib/das
 import {
   DASHBOARD_COLUMNS,
   catalogEntry,
+  packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
   type WidgetCatalogEntry,
@@ -29,7 +30,7 @@ import {
   rowStride,
   type PointerPoint,
 } from "../../lib/dashboard/grid-drag";
-import { layoutsEqual } from "../../lib/dashboard/edit-mode";
+import { boardHasGap, layoutsEqual } from "../../lib/dashboard/edit-mode";
 import {
   type DragActivation,
   type DragSession,
@@ -448,6 +449,12 @@ export function useDashboardPointerDrag(input: {
     setAnnounce(changed && settled.where ? `${settled.label} moved ${settled.where}.` : `${settled.label} stayed where it was. No change.`);
     endDrag(false);
     if (changed) record(settled.baseLayout);
+    // Cards keep the order you set, so moving a small card ahead of a full-width one leaves the
+    // rest of its row empty. Say so and name the one-tap fix, instead of saving a silent hole.
+    if (changed && boardHasGap(packDashboardLayout([...layoutRef.current]), DASHBOARD_COLUMNS)) {
+      setMessageKind("success");
+      setMessage("That left a gap in a row. Drag a card into it, or use ••• › Snap & tidy to fill it.");
+    }
   }
 
   function onDragPointerCancel(event: ReactPointerEvent<HTMLElement>) {

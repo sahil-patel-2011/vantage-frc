@@ -257,6 +257,21 @@ export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardW
 }
 
 /**
+ * First free spot for every card, holes above included: what "Snap & tidy" does when asked.
+ * Home itself keeps the order (packKeepingOrder); tidying is the one time a card may move up
+ * past a wider one to fill a gap, because the person asked for exactly that.
+ */
+export function packFillingGaps(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  const placed: DashboardWidgetLayout[] = [];
+  for (const item of [...layout].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    const w = Math.max(1, Math.min(DASHBOARD_COLUMNS, Math.floor(item.w)));
+    const h = Math.max(1, Math.floor(item.h));
+    placed.push({ ...item, ...findDashboardSlot(placed, w, h), w, h });
+  }
+  return placed;
+}
+
+/**
  * Each card takes the first free spot after the card before it, never a hole above it. With
  * first-free-spot packing, moving Competition snapshot first on a phone left a hole beside it
  * (Next match is full width) that My day then filled, so the board read Competition snapshot,
@@ -825,14 +840,16 @@ export function defaultDashboardLayoutForFocus(focus: string | null | undefined)
   return FOCUS_DASHBOARD_LAYOUTS[key].map((item) => ({ ...item }));
 }
 
+// My day and Hours share the second row half and half: they are the cards a new team always
+// has, and beside a card that is hiding while empty they left a third of the row blank.
 const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
-  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-hours_month", type: "hours_month", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-team_todos", type: "team_todos", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-files_recent", type: "files_recent", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-team_chat", type: "team_chat", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-ask_ai", type: "ask_ai", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-hours_month", type: "hours_month", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_todos", type: "team_todos", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-files_recent", type: "files_recent", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_chat", type: "team_chat", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-ask_ai", type: "ask_ai", x: 0, y: 10, w: 12, h: 3, minW: 3, minH: 2 },
 ];
 
 /*
@@ -842,12 +859,12 @@ const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
 */
 const MENTOR_HOME_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
-  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-hours_month", type: "hours_month", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-ask_ai", type: "ask_ai", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-duties", type: "duties", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-announcements_ack", type: "announcements_ack", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-budget_parts", type: "budget_parts", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-hours_month", type: "hours_month", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-ask_ai", type: "ask_ai", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-duties", type: "duties", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-announcements_ack", type: "announcements_ack", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-budget_parts", type: "budget_parts", x: 0, y: 10, w: 12, h: 3, minW: 3, minH: 2 },
 ];
 
 /** Personal Home for a new student vs a mentor — not the competition-focus board. */

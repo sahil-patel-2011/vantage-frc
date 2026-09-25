@@ -11,6 +11,7 @@ import {
   homeViewLayout,
   isAlwaysShown,
   packDashboardLayout,
+  packFillingGaps,
   sizeForHome,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
@@ -260,7 +261,7 @@ export function tidyBoard(input: {
   // Packed, then any hole no card fits is closed by the card beside or above it growing into
   // it: tidy used to leave the hole and say "No card fits the gap", which was homework.
   const packed = new Map(
-    closeInteriorGaps(packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))), DASHBOARD_COLUMNS).map(
+    closeInteriorGaps(packFillingGaps(layout.filter((item) => visibleIds.has(item.i))), DASHBOARD_COLUMNS).map(
       (item) => [item.i, item],
     ),
   );
@@ -284,7 +285,10 @@ export function closeInteriorGaps(layout: DashboardWidgetLayout[], cols: number)
   const ordered = [...out].sort((a, b) => a.y - b.y || a.x - b.x);
   for (const item of ordered) {
     if (item.y + item.h > lastStart) continue;
-    while (item.x + item.w < cols && free(item.x + item.w, item.y, item.h, item)) item.w += 1;
+    // At most twice its own width: "Hours this month" grown to a full-width row was one number
+    // across 1,100px.
+    const maxWidth = item.w * 2;
+    while (item.w < maxWidth && item.x + item.w < cols && free(item.x + item.w, item.y, item.h, item)) item.w += 1;
   }
   for (const item of ordered) {
     if (item.y + item.h > lastStart) continue;

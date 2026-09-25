@@ -51,7 +51,7 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.locator(".dash-grid")).toBeVisible();
 
   // next_match is a full-width hero (w=12) so a horizontal drag cannot
-  // change its cell. Student Home's second card is a 4-column tile.
+  // change its cell. Student Home's second card is a 6-column tile.
   const snapshot = page.getByTestId("dash-grid-item").nth(1);
   await expect(snapshot).toBeVisible();
   await snapshot.evaluate((node) => node.scrollIntoView({ block: "center" }));
@@ -64,7 +64,8 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   // Measured from where the drag started (the grip's centre), not the grip's
   // corner: the grip's hit area is finger-sized now, so its corner is further
   // from its centre than it was.
-  await page.mouse.move(box!.x + box!.width / 2 + 280, box!.y + box!.height / 2 + 90, { steps: 20 });
+  // Far enough to reach the card beside it: My day and Hours start half width each.
+  await page.mouse.move(box!.x + box!.width / 2 + 640, box!.y + box!.height / 2 + 90, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
   // A lifted copy of the card follows the pointer while its slot shows the target.
   await expect(page.locator(".dash-drag-proxy.is-card .dash-widget-hit")).toHaveCount(1);

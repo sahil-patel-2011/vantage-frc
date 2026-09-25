@@ -25,7 +25,7 @@ import {
   type DashboardWidgetType,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
-import { moveItem, type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-drag";
+import { type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-drag";
 import { boardHasGap, layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
 import { ARROW_DIRECTION } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
@@ -148,8 +148,17 @@ export function useDashboardBoardOps(input: {
     const added = result.layout[result.layout.length - 1];
     // A dropped card takes the cell it was dropped on (where the placeholder showed it); on a tie
     // the card already there used to go first and the new one landed below it.
+    // The drop goes where the pill said ("Placing Match schedule · after Hours this month"): into
+    // the board's reading order at the drop point, packed the Home way. Placing it at the drop
+    // cell and then repacking put a wide card at the start of the row and moved the others.
     if (drop && added) {
-      result.layout = moveItem(result.layout, added.i, { col: added.x, row: added.y }, DASHBOARD_COLUMNS, { bias: "before" });
+      const display = displayFor(layoutRef.current);
+      const others = readingOrder(display);
+      const index = others.filter((id) => {
+        const item = display.find((row) => row.i === id);
+        return item ? item.y < drop.row || (item.y === drop.row && item.x < drop.col) : false;
+      }).length;
+      result.layout = applyOrder(result.layout, [...others.slice(0, index), added.i, ...others.slice(index)]);
     }
     /*
       A card with nothing in it yet is added with "Always show" on. Home hides
