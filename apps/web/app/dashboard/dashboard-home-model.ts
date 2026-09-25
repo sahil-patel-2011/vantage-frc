@@ -151,8 +151,12 @@ export function homeNowAction(input: {
   if (scoutAction && (input.role ?? "").toLowerCase() === "scout") return scoutAction;
   const match = firstString(input.nextMatchLabel);
   if (match) {
+    // A scout with no assigned robot still scouts: their button goes to the form.
+    if ((input.role ?? "").toLowerCase() === "scout") {
+      return { title: "Our next match", detail: match, href: "/competition?tab=scouting", cta: "Scout a match" };
+    }
     return {
-      title: "You’re up next",
+      title: "Our next match",
       detail: match,
       href: "/my-day",
       cta: "Open My Day",

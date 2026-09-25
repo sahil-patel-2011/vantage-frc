@@ -2190,7 +2190,7 @@ body.has-app-shell .product-hub-setup-actions{display:flex;flex-wrap:wrap;gap:8p
 body.has-app-shell.has-event-focus{padding-top:104px!important}
 /* Sticky bars (scouting) sit under the rail, not behind it. */
 body.has-app-shell.has-event-focus{--topbar-h:104px}
-@media(max-width:720px){body.has-app-shell.has-event-focus{--topbar-h:120px}}
+@media(max-width:720px){body.has-app-shell.has-event-focus{--topbar-h:108px}}
 .soft-focus-rail{position:fixed;z-index:68;top:52px;left:0;right:0;min-height:52px;padding:6px 14px;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--ink);background:color-mix(in srgb,var(--surface) 94%,transparent);border-bottom:1px solid var(--line);box-shadow:0 5px 16px rgba(19,32,51,.06);backdrop-filter:blur(14px)}
 .soft-focus-signal{width:8px;height:8px;flex:none;border-radius:var(--radius-pill);background:#16a34a;box-shadow:0 0 0 4px color-mix(in srgb,#16a34a 14%,transparent)}
 .soft-focus-rail.stale .soft-focus-signal{background:#d97706;box-shadow:0 0 0 4px color-mix(in srgb,#d97706 14%,transparent)}
@@ -2200,6 +2200,14 @@ body.has-app-shell.has-event-focus{--topbar-h:104px}
 .soft-focus-collapse{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:var(--radius-xs);color:var(--muted);background:transparent;font-size:20px;cursor:pointer}.soft-focus-collapse:hover{background:var(--bg)}
 .soft-focus-reopen{position:fixed;z-index:69;top:58px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;min-height:32px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--ink);background:var(--surface);box-shadow:var(--shadow);font:700 11px var(--font-source-sans),sans-serif;cursor:pointer}.soft-focus-reopen span{width:7px;height:7px;border-radius:var(--radius-pill);background:#16a34a}.soft-focus-reopen.stale span{background:#d97706}.soft-focus-reopen.offline span{background:#64748b}
 @media(max-width:720px){body.has-app-shell.has-event-focus{padding-top:120px!important}.soft-focus-rail{min-height:68px;padding:7px 42px 7px 10px;display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:4px 9px}.soft-focus-copy{grid-column:2}.soft-focus-rail>small{grid-column:2}.soft-focus-rail nav{grid-column:3;grid-row:1/3}.soft-focus-rail nav a{display:none}.soft-focus-rail nav a.primary{display:inline-flex}.soft-focus-collapse{position:absolute;right:5px;top:17px}}
+/* On a phone the strip is one line: match, bumpers and Brief. The "Synced 5m ago" line only
+   when the data may be stale; top bar and strip together were over a quarter of the screen. */
+@media(max-width:720px){
+  body.has-app-shell.has-event-focus{padding-top:108px!important}
+  .soft-focus-rail{min-height:52px;padding-block:5px}
+  .soft-focus-rail:not(.stale):not(.offline)>small{display:none}
+  .soft-focus-collapse{top:50%;transform:translateY(-50%)}
+}
 
 /* QoL: skip link, outbox pill, command search, venue shortcuts, print chrome */
 .soft-skip-link{

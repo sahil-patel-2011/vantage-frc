@@ -80,7 +80,7 @@ describe("homeNowAction", () => {
   it("picks one next step from real data and stays calm when none exists", () => {
     expect(homeNowAction({ orgId: "" }).cta).toBe("Choose your team");
     expect(homeNowAction({ orgId: "org-1", nextMatchLabel: "Qual 12" })).toEqual({
-      title: "You’re up next",
+      title: "Our next match",
       detail: "Qual 12",
       href: "/my-day",
       cta: "Open My Day",
@@ -106,7 +106,7 @@ describe("homeNowAction", () => {
         b: { type: "team_todos", data: { open: 2 } },
       },
     });
-    expect(now.title).toBe("You’re up next");
+    expect(now.title).toBe("Our next match");
     expect(now.detail).toBe("Qual 7");
     expect(
       homeNowFromWidgets({
@@ -254,7 +254,7 @@ describe("what the calendar puts on the card", () => {
     const event = { title: "Build night", whenLabel: "Today at 6 PM" };
     // A match starting beats it.
     expect(homeNowAction({ orgId: "o", nextMatchLabel: "Qual 12", nextEventToday: event }).title).toBe(
-      "You’re up next",
+      "Our next match",
     );
     // Being in the shop already beats it.
     expect(homeNowAction({ orgId: "o", clockedIn: true, nextEventToday: event }).cta).toBe(
@@ -281,7 +281,11 @@ describe("home now: scouting duty", () => {
     // The in-app scouting form, with the match and the robot already picked.
     expect(action.href).toBe("/competition?tab=scouting&scoutTab=match&matchKey=2026casj_qm34&teamKey=frc148");
     expect(action.quiet).toBeUndefined();
-    expect(homeNowAction({ orgId: "org-1", scoutDuty, nextMatchLabel: "qm 33" }).title).toBe("You’re up next");
+    expect(homeNowAction({ orgId: "org-1", scoutDuty, nextMatchLabel: "qm 33" }).title).toBe("Our next match");
+    // A scout with no robot assigned is still sent to the scouting form, not to My Day.
+    const scoutNoDuty = homeNowAction({ orgId: "org-1", role: "scout", nextMatchLabel: "Qual 33" });
+    expect(scoutNoDuty.cta).toBe("Scout a match");
+    expect(scoutNoDuty.href).toBe("/competition?tab=scouting");
   });
 
   it("puts a scout's next robot first, even before the team's own match", () => {
