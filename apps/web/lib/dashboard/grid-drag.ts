@@ -349,17 +349,22 @@ export function exceedsDragCancelDistance(
 export function edgeAutoScrollDelta(
   clientY: number,
   viewportHeight: number,
-  options?: { zone?: number; maxSpeed?: number },
+  /** top/bottom: fixed chrome (app bar, event strip, bottom tabs) the zones start inside of. */
+  options?: { zone?: number; maxSpeed?: number; top?: number; bottom?: number },
 ): number {
   const zone = Math.max(1, options?.zone ?? 96);
   const maxSpeed = Math.max(1, options?.maxSpeed ?? 18);
+  const top = Math.max(0, options?.top ?? 0);
+  const bottom = Math.max(0, options?.bottom ?? 0);
   if (!Number.isFinite(clientY) || !Number.isFinite(viewportHeight) || viewportHeight <= 0) return 0;
 
-  if (clientY < zone) {
-    const intensity = Math.min(1, (zone - clientY) / zone);
+  // Measured from where the page is visible: with a 56px app bar and a 52px strip, a finger just
+  // under the strip was "in the middle" and the page never scrolled up.
+  if (clientY < top + zone) {
+    const intensity = Math.min(1, (top + zone - clientY) / zone);
     return -Math.ceil(intensity * maxSpeed);
   }
-  const fromBottom = viewportHeight - clientY;
+  const fromBottom = viewportHeight - bottom - clientY;
   if (fromBottom < zone) {
     const intensity = Math.min(1, (zone - fromBottom) / zone);
     return Math.ceil(intensity * maxSpeed);

@@ -316,6 +316,10 @@ describe("gesture helpers", () => {
 
   it("stays still when the viewport is unknown", () => {
     expect(edgeAutoScrollDelta(Number.NaN, 800)).toBe(0);
+    // Zones start inside fixed chrome: just under a 108px app bar + strip scrolls up.
+    expect(edgeAutoScrollDelta(120, 800)).toBe(0);
+    expect(edgeAutoScrollDelta(120, 800, { top: 108 })).toBeLessThan(0);
+    expect(edgeAutoScrollDelta(690, 800, { bottom: 80 })).toBeGreaterThan(0);
     expect(edgeAutoScrollDelta(100, 0)).toBe(0);
   });
 

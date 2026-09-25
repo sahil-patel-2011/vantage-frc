@@ -609,7 +609,10 @@ export function DashboardHomeView(props: {
         >
           {editing ? (
             <p className="dash-edit-hint" data-testid="dash-edit-hint">
-              Drag a card to move it. Use its size button (top right) to resize it, or − to remove it.
+              {/* One column has no size button (every size is full width), so it is not mentioned. */}
+              {cols === 1
+                ? "Drag a card to move it, or tap − to remove it."
+                : "Drag a card to move it. Use its size button (top right) to resize it, or − to remove it."}
             </p>
           ) : null}
           {snapFeedback ? (

@@ -227,7 +227,7 @@ export function useDashboardPointerDrag(input: {
         rafRef.current = null;
         return;
       }
-      const delta = edgeAutoScrollDelta(session.point.y, window.innerHeight);
+      const delta = edgeAutoScrollDelta(session.point.y, window.innerHeight, chromeInsets());
       if (delta !== 0) {
         window.scrollBy(0, delta);
         refreshDragCell();
@@ -481,4 +481,17 @@ export function useDashboardPointerDrag(input: {
     onDragPointerCancel,
     paintProxy,
   };
+}
+
+/** How much of the top and bottom of the screen fixed chrome covers (app bar, event strip, tabs). */
+function chromeInsets(): { top: number; bottom: number } {
+  const bottomOf = (selector: string) => document.querySelector(selector)?.getBoundingClientRect().bottom ?? 0;
+  const top = Math.max(0, bottomOf(".soft-topbar"), bottomOf(".soft-focus-rail"));
+  // The tab bar, or the edit toolbar that replaces it on a phone while editing.
+  const covered = [".soft-island", ".dash-editbar"]
+    .map((selector) => document.querySelector(selector)?.getBoundingClientRect())
+    .filter((rect): rect is DOMRect => Boolean(rect && rect.height > 0 && rect.top > window.innerHeight / 2))
+    .map((rect) => window.innerHeight - rect.top);
+  const bottom = Math.max(0, ...covered);
+  return { top, bottom };
 }
