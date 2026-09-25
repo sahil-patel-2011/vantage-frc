@@ -14,7 +14,11 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import type { DashboardShellKind } from "../../lib/dashboard/dashboard-related";
 import { homeAudienceFromTeamRole } from "../../lib/home-workflows";
-import { fetchProductSession, invalidateProductSession } from "../../lib/nav/product-session";
+import {
+  fetchProductSession,
+  invalidateProductSession,
+  productSessionUnreachable,
+} from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { CONTEXT_REFRESH_MS } from "./dashboard-canvas";
@@ -203,7 +207,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     void fetchProductSession(fromUrl || null)
       .then((data) => {
         if (!data) {
-          setMeFailed(true);
+          // "Not signed in" is an answer; only an unreachable session is "couldn't load".
+          setMeFailed(productSessionUnreachable());
           return;
         }
         setMeFailed(false);

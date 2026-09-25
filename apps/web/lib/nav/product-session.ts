@@ -46,6 +46,16 @@ export function invalidateProductSession() {
   cache = null;
 }
 
+/**
+ * Whether the last session read failed to reach an answer (offline, timed out, or a server
+ * error), as opposed to answering "not signed in" (401). Home must not read the first as
+ * "this person has no team".
+ */
+let lastSessionUnreachable = false;
+export function productSessionUnreachable(): boolean {
+  return lastSessionUnreachable;
+}
+
 export function fetchProductSession(orgId?: string | null): Promise<ProductSession | null> {
   const key = orgId?.trim() ?? "";
   const now = Date.now();
@@ -57,7 +67,10 @@ export function fetchProductSession(orgId?: string | null): Promise<ProductSessi
     cache: "no-store",
     signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
   })
-    .then(async (response) => (response.ok ? ((await response.json()) as ProductSession) : null))
+    .then(async (response) => {
+      lastSessionUnreachable = response.status >= 500;
+      return response.ok ? ((await response.json()) as ProductSession) : null;
+    })
     .then((data) => {
       if (cache?.promise === promise) {
         cache.data = data;
@@ -66,6 +79,7 @@ export function fetchProductSession(orgId?: string | null): Promise<ProductSessi
       return data;
     })
     .catch(() => {
+      lastSessionUnreachable = true;
       if (cache?.promise === promise) cache = null;
       return null;
     });

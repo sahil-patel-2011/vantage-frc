@@ -219,6 +219,18 @@ export function FirstWeekCard({
     </p>
   ) : null;
   if (next.length === 0) return setupNote ? <section className="dash-first-week" aria-label="Team setup">{setupNote}</section> : null;
+  // Right after setup, the celebration stands alone: a second list starting at "4 of 11" read
+  // as the setup starting over. The rest is one quiet link until the next visit.
+  if (setupNote) {
+    return (
+      <section className="dash-first-week is-celebrating" aria-label="Team setup">
+        {setupNote}
+        <a className="dash-first-week-all" href={withOrgHref("/start", orgId)}>
+          {`Next: ${left} more ${left === 1 ? "step" : "steps"} for your first week →`}
+        </a>
+      </section>
+    );
+  }
   // The list shows the next few; the link says how many more there are.
   const more = left - next.length;
 
