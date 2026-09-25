@@ -149,13 +149,14 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
             <Kpi
               label="Awaiting approval"
               value={moneyWhenRecorded(view.budget.requestedCents)}
-              detail={`${pulse.pendingCount} open orders`}
+              // "Open" meant two things side by side ("0 open orders" / "$45 open"): each tile says its own.
+              detail={pulse.pendingCount === 1 ? "1 waiting for a mentor" : `${pulse.pendingCount} waiting for a mentor`}
               tone={pulse.pendingCount ? "warn" : "neutral"}
             />
             <Kpi
               label="Ready to buy"
               value={String(pulse.readyToBuyCount)}
-              detail={pulse.openTotalCents > 0 ? `${money(pulse.openTotalCents)} open` : "No open orders"}
+              detail={pulse.openTotalCents > 0 ? `${money(pulse.openTotalCents)} approved, not bought yet` : "Nothing approved to buy"}
               tone={pulse.readyToBuyCount ? "warn" : "neutral"}
             />
           </>
@@ -299,6 +300,7 @@ type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 export function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const categorySpend = useMemo(() => new Map(view.categories.map((category) => [category.id, view.purchases.filter((purchase) => purchase.categoryId === category.id && ["approved", "ordered", "received"].includes(purchase.status)).reduce((total, purchase) => total + purchase.totalCents, 0)])), [view.categories, view.purchases]);
   const financeAiHref = `/ai?tab=finance&orgId=${encodeURIComponent(view.orgId)}`;
+  const businessOrdersHref = `/business?orgId=${encodeURIComponent(view.orgId)}&tab=orders`;
   const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
   useEffect(() => {
     let cancelled = false;
@@ -350,7 +352,14 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
         </p>
       </article>
       <article className="app-card biz-order-form">
-        <span className="biz-overline">Purchases</span><h2>Request a purchase</h2>
+        {/* One way to ask for something: the buy sheet under Orders. Three forms with three
+            vocabularies read as three processes; the category form stays for the one job only it
+            does (charging a line to a budget category), folded under that name. */}
+        <span className="biz-overline">Purchases</span><h2>Buy something</h2>
+        <p className="app-muted">Purchases go on the buy sheet: a mentor approves, then someone buys it.</p>
+        <Button as="a" variant="primary" href={businessOrdersHref}>Add a purchase</Button>
+        <details className="biz-category-purchase">
+          <summary>Charge a purchase to a budget category instead</summary>
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "submit-purchase", ["unitPrice", "shipping"])}>
           <Field label="Item" wide><input name="itemName" required placeholder="2 × 1 aluminum tube" /></Field>
           <Field label="Vendor"><input name="vendor" defaultValue="Amazon" required /></Field>
@@ -361,8 +370,9 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
           <Field label="Shipping / tax estimate"><input name="shippingDollars" type="number" min="0" step="0.01" defaultValue="0" /></Field>
           <Field label="Needed by"><input name="neededBy" type="date" /></Field>
           <Field label="Why the team needs it" hint="Approvers should understand the outcome, not just the part." wide><textarea name="purpose" required rows={3} placeholder="Needed to finish the elevator rebuild before our first event…" /></Field>
-          <Button type="submit" variant="primary" disabled={busy}>Submit for approval</Button>
+          <Button type="submit" variant="secondary" disabled={busy}>Submit for approval</Button>
         </form>
+        </details>
       </article>
     </section>
 

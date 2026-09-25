@@ -1444,3 +1444,8 @@ body .biz-stack > .biz-sustain.is-quiet { background: none; border: 0; box-shado
 .biz-sustain.is-quiet > summary::-webkit-details-marker { display: none; }
 .biz-sustain.is-quiet > summary::after { content: " ›"; }
 .biz-sustain.is-quiet[open] > summary::after { content: " ⌄"; }
+
+/* The category form, folded under the one job only it does. */
+.biz-category-purchase { margin-top: 12px; }
+.biz-category-purchase > summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+.biz-category-purchase[open] > summary { margin-bottom: 10px; }
