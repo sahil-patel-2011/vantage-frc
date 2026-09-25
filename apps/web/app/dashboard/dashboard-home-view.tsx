@@ -522,11 +522,13 @@ export function DashboardHomeView(props: {
         onEdit={startEditing}
       />
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice.
-          A scout's version ("Scout a match") and every other state still lead the page. */}
-      {!setupHero &&
-      now.title === "Our next match" &&
-      now.cta === "Open My Day" &&
-      layout.some((item) => item.type === "next_match") ? null : (
+          With a setup step still open, that spot shows the setup step instead; otherwise the
+          Next match card leads. A scout's version ("Scout a match") and every other state stay. */}
+      {now.title === "Our next match" && now.cta === "Open My Day" && layout.some((item) => item.type === "next_match") ? (
+        setupHero ? (
+          <DashboardNowCard now={{ ...now, quiet: true }} setupHero={setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
+        ) : null
+      ) : (
         <DashboardNowCard now={now} setupHero={setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
       )}
       {/* Left unwrapped (product-motion.css animates it as a direct child);

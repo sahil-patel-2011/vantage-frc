@@ -210,8 +210,11 @@ describe("home view layout", () => {
   it("keeps custom next-match sizes after leaving edit mode", () => {
     const resized = applyWidgetSize(DEFAULT_DASHBOARD_LAYOUT[0]!, "m");
     const viewed = homeViewLayout([resized], { editing: false, shell: "ready" });
-    expect(viewed[0]?.w).toBe(resized.w);
+    // Alone on its row it is shown to the edge; its height, and the saved width, stay as chosen.
+    expect(viewed[0]?.w).toBe(12);
     expect(viewed[0]?.h).toBe(resized.h);
+    expect(resized.w).toBeLessThan(12);
+    expect(homeViewLayout([resized], { editing: true, shell: "ready" })[0]?.w).toBe(resized.w);
   });
 
   it("leaves the saved board untouched in edit mode", () => {
@@ -253,11 +256,12 @@ describe("widget registry", () => {
     ]);
     expect(mentor.map((item) => item.type)).toEqual([
       "next_match",
+      "my_day",
+      "hours_month",
+      "ask_ai",
       "duties",
-      "budget_parts",
-      "attendance",
-      "outreach_hours",
       "announcements_ack",
+      "budget_parts",
     ]);
     expect(validateDashboardLayout(student, "scout").ok).toBe(true);
     expect(validateDashboardLayout(mentor, "admin").ok).toBe(true);

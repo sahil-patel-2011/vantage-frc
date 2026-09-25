@@ -25,7 +25,7 @@ import {
   type DashboardWidgetType,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
-import { type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-drag";
+import { moveItem, type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-drag";
 import { boardHasGap, layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
 import { ARROW_DIRECTION } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
@@ -146,6 +146,11 @@ export function useDashboardBoardOps(input: {
     }
     const entry = catalogEntry(type);
     const added = result.layout[result.layout.length - 1];
+    // A dropped card takes the cell it was dropped on (where the placeholder showed it); on a tie
+    // the card already there used to go first and the new one landed below it.
+    if (drop && added) {
+      result.layout = moveItem(result.layout, added.i, { col: added.x, row: added.y }, DASHBOARD_COLUMNS, { bias: "before" });
+    }
     /*
       A card with nothing in it yet is added with "Always show" on. Home hides
       empty cards, so a freshly added Batteries card vanished the moment you
@@ -176,10 +181,10 @@ export function useDashboardBoardOps(input: {
         ? `${label} added to the board, set to always show on Home even while it is empty.`
         : `${label} added to the board.`,
     );
-    // On a laptop a tapped add keeps the library open for the next one (its row now says it's
-    // on Home); adding three cards took three trips. On a phone the sheet covers the board, so
-    // it closes to show the new card; a card dragged onto the board closes it too.
-    if (drop || typeof window === "undefined" || window.innerWidth < 720) setLibraryOpen(false);
+    // On a laptop the library stays open for the next card, tapped or dragged (its row now says
+    // it's on Home); adding three cards took three trips. On a phone the sheet covers the board,
+    // so it closes to show the new card.
+    if (typeof window === "undefined" || window.innerWidth < 720) setLibraryOpen(false);
     if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type)).catch(() => {
       setMessageKind("error");
       setMessage("Widget added, but its data could not refresh. Try Refresh card data.");

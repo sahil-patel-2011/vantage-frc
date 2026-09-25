@@ -65,7 +65,10 @@ async function clearProbes(page: import("@playwright/test").Page) {
 
 test("an event later today shows on the card, and goes when it is removed", async ({ page }) => {
   await gotoAsTeam(page, "/dashboard");
-  await expect(page.getByTestId("dash-now")).toBeVisible({ timeout: 25_000 });
+  // With a match coming up, the Next match card leads Home and "What to do now" steps aside;
+  // this card's question has no answer then, the same as when a match outranks it.
+  await expect(page.getByTestId("dash-now").or(page.locator(".dash-widget.hero")).first()).toBeVisible({ timeout: 25_000 });
+  test.skip((await page.getByTestId("dash-now").count()) === 0, "the next match leads Home today");
   await clockOut(page);
   await clearProbes(page);
 
@@ -124,7 +127,10 @@ test("an event later today shows on the card, and goes when it is removed", asyn
 
 test("the card does not reach past today to find something to say", async ({ page }) => {
   await gotoAsTeam(page, "/dashboard");
-  await expect(page.getByTestId("dash-now")).toBeVisible({ timeout: 25_000 });
+  // With a match coming up, the Next match card leads Home and "What to do now" steps aside;
+  // this card's question has no answer then, the same as when a match outranks it.
+  await expect(page.getByTestId("dash-now").or(page.locator(".dash-widget.hero")).first()).toBeVisible({ timeout: 25_000 });
+  test.skip((await page.getByTestId("dash-now").count()) === 0, "the next match leads Home today");
   await clearProbes(page);
 
   // Three days out. The widget behind this loads a whole week, so without a
@@ -147,8 +153,8 @@ test("the card does not reach past today to find something to say", async ({ pag
   test.skip(!made, "the team calendar rejected the event");
 
   await page.reload();
-  await expect(page.getByTestId("dash-now")).toBeVisible({ timeout: 25_000 });
-  await expect(page.getByTestId("dash-now")).not.toContainText(title);
+  await expect(page.getByTestId("dash-now").or(page.locator(".dash-widget.hero")).first()).toBeVisible({ timeout: 25_000 });
+  if (await page.getByTestId("dash-now").count()) await expect(page.getByTestId("dash-now")).not.toContainText(title);
 
   await clearProbes(page);
 });

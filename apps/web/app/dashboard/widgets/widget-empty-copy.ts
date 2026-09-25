@@ -21,6 +21,8 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
     ctaHref: "/briefing",
     ctaLabel: "Pre-match briefing",
     noEmptyCta: true,
+    // The live card links to this match's briefing; "Open" did not say where.
+    liveLabel: "Open briefing",
   },
   recent_result: {
     title: "No scored matches",

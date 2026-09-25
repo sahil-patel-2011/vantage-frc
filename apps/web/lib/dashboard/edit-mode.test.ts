@@ -200,11 +200,10 @@ describe("tidyBoard", () => {
     expect(result).toEqual({ layout, moved: false });
   });
 
-  it("stretches the last card of a row to the edge when nothing else fits beside it", () => {
+  it("never saves a stretched width: a gap at the row end stays room for another card", () => {
     const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 4, 0)];
     const result = tidyBoard({ layout, visibleIds: new Set(["a", "b"]), cols: 12, displayFor: displayAt(12) });
-    expect(result.moved).toBe(true);
-    expect(result.layout.find((item) => item.i === "b")).toMatchObject({ x: 4, w: 8 });
+    expect(result.layout.find((item) => item.i === "b")).toMatchObject({ x: 4, w: 4 });
   });
 
   it("closes a gap left by a dragged card on the full board", () => {

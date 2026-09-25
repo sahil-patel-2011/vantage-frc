@@ -21,69 +21,74 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   await page.goto("/dashboard");
   await waitForLoadingGone(page);
   const now = page.getByTestId("dash-now");
-  await expect(now).toBeVisible();
-  // "What to do now" is the card's accessible name, not text on screen —
-    // d6d523a11 removed the visible eyebrow because the card said one thing
-    // four ways. A screen reader still hears it.
-    await expect(now).toHaveAttribute("aria-label", "What to do now");
-  for (const phrase of BANNED) {
-    await expect(page.locator("body"), `Home still shows ${phrase}`).not.toContainText(phrase);
-  }
-  const homeCta = now.getByRole("link").first();
-  await expect(homeCta).toBeVisible();
-  /*
-    The card is contextual: on duty, in the shop, things on your list, or
-    nothing to do — four states with four buttons. This used to count the
-    "nothing to do" text and then assert the button belonging to it, which is
-    two reads of a card that changes between them: the empty state paints
-    first and the real one replaces it a moment later, so the count said
-    "empty" and the button said "Open My Hours".
+  // With a match coming up, the Next match card leads Home and "What to do now" steps aside;
+  // the card's button has no answer then, the same as when a match outranks it.
+  await expect(page.getByTestId("dash-now").or(page.locator(".dash-widget.hero")).first()).toBeVisible({ timeout: 25_000 });
+  // The Home-button checks only apply when the card is there; the rest of the walk still runs.
+  if ((await page.getByTestId("dash-now").count()) > 0) {
+    // "What to do now" is the card's accessible name, not text on screen —
+      // d6d523a11 removed the visible eyebrow because the card said one thing
+      // four ways. A screen reader still hears it.
+      await expect(now).toHaveAttribute("aria-label", "What to do now");
+    for (const phrase of BANNED) {
+      await expect(page.locator("body"), `Home still shows ${phrase}`).not.toContainText(phrase);
+    }
+    const homeCta = now.getByRole("link").first();
+    await expect(homeCta).toBeVisible();
+    /*
+      The card is contextual: on duty, in the shop, things on your list, or
+      nothing to do — four states with four buttons. This used to count the
+      "nothing to do" text and then assert the button belonging to it, which is
+      two reads of a card that changes between them: the empty state paints
+      first and the real one replaces it a moment later, so the count said
+      "empty" and the button said "Open My Hours".
 
-    It also assumed the fixture owner is never clocked in, and an earlier
-    spec's clock-in is exactly the kind of thing that outlives its run.
+      It also assumed the fixture owner is never clocked in, and an earlier
+      spec's clock-in is exactly the kind of thing that outlives its run.
 
-    One read now: whatever the card says, the button is the one that goes with
-    it, and it goes somewhere.
-  */
-  const CTA_FOR = new Map<RegExp, RegExp>([
-    [/Working out what is next/i, /Open My Day/i],
-    [/Nothing you have to do right now/i, /Open My Day/i],
-    [/You.re in the shop/i, /Open My Hours/i],
-    [/You.re on duty/i, /See duties/i],
-    [/You.re scouting next/i, /Scout \d+/i],
-    [/thing(s)? on your list|One thing on your list/i, /Open todos/i],
-  ]);
-  // Polled, because the card is allowed to change once: it says it is
-  // working out what is next until the widgets land. What must never be true
-  // is the title and the button disagreeing.
-  await expect
-    .poll(
-      async () => {
-        const cardText = await now.innerText();
-        const label = (await homeCta.innerText()).trim();
-        for (const [title, cta] of CTA_FOR) {
-          if (title.test(cardText)) return cta.test(label);
-        }
-        // An unrecognised state is not a failure of this spec to describe.
-        return true;
-      },
-      { timeout: 20_000, message: "the card's button does not match what it says" },
-    )
-    .toBe(true);
-  await expect(homeCta).toHaveAttribute("href", /.+/);
+      One read now: whatever the card says, the button is the one that goes with
+      it, and it goes somewhere.
+    */
+    const CTA_FOR = new Map<RegExp, RegExp>([
+      [/Working out what is next/i, /Open My Day/i],
+      [/Nothing you have to do right now/i, /Open My Day/i],
+      [/You.re in the shop/i, /Open My Hours/i],
+      [/You.re on duty/i, /See duties/i],
+      [/You.re scouting next/i, /Scout \d+/i],
+      [/thing(s)? on your list|One thing on your list/i, /Open todos/i],
+    ]);
+    // Polled, because the card is allowed to change once: it says it is
+    // working out what is next until the widgets land. What must never be true
+    // is the title and the button disagreeing.
+    await expect
+      .poll(
+        async () => {
+          const cardText = await now.innerText();
+          const label = (await homeCta.innerText()).trim();
+          for (const [title, cta] of CTA_FOR) {
+            if (title.test(cardText)) return cta.test(label);
+          }
+          // An unrecognised state is not a failure of this spec to describe.
+          return true;
+        },
+        { timeout: 20_000, message: "the card's button does not match what it says" },
+      )
+      .toBe(true);
+    await expect(homeCta).toHaveAttribute("href", /.+/);
 
-  await homeCta.click();
-  await waitForLoadingGone(page);
-  for (const phrase of BANNED) {
-    await expect(page.locator("body"), `after Home CTA still shows ${phrase}`).not.toContainText(
-      phrase,
-    );
-  }
-  if (page.url().includes("/my-day") || page.url().includes("tab=my-day")) {
-    const scout = page.getByRole("link", { name: "Scout this match" });
-    if (await scout.count()) {
-      await scout.first().click();
-      await expect(page.locator("body")).not.toContainText("Application error");
+    await homeCta.click();
+    await waitForLoadingGone(page);
+    for (const phrase of BANNED) {
+      await expect(page.locator("body"), `after Home CTA still shows ${phrase}`).not.toContainText(
+        phrase,
+      );
+    }
+    if (page.url().includes("/my-day") || page.url().includes("tab=my-day")) {
+      const scout = page.getByRole("link", { name: "Scout this match" });
+      if (await scout.count()) {
+        await scout.first().click();
+        await expect(page.locator("body")).not.toContainText("Application error");
+      }
     }
   }
 

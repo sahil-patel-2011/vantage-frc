@@ -294,8 +294,34 @@ export function homeViewLayout(
   const filled = visible.filter(
     (item) => HOME_ALWAYS_VISIBLE.has(item.type) || isAlwaysShown(item) || statusOf(item) !== "empty",
   );
-  return packDashboardLayout(sizeForHome(filled, widgets));
+  return fillRowEnds(packDashboardLayout(sizeForHome(filled, widgets)));
 }
+
+/**
+ * The last card on a row reaches the right edge when nothing else can use the space beside it.
+ * Sizes are thirds, halves and wholes, so an L next to an M left a strip as tall as the page
+ * that no card fitted, and a student had to do the grid maths to close it.
+ *
+ * Display only: Home (and Preview) stretch the card on screen, the saved width stays what the
+ * person chose. Saving the stretch made every card full width, so M could never sit beside M.
+ */
+export function fillRowEnds(
+  layout: DashboardWidgetLayout[],
+  cols: number = DASHBOARD_COLUMNS,
+): DashboardWidgetLayout[] {
+  const out = layout.map((item) => ({ ...item }));
+  const overlaps = (a: { x: number; y: number; w: number; h: number }, b: DashboardWidgetLayout) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  for (const item of out) {
+    const right = item.x + item.w;
+    if (right >= cols) continue;
+    const gap = { x: right, y: item.y, w: cols - right, h: item.h };
+    if (out.some((other) => other !== item && overlaps(gap, other))) continue;
+    item.w = cols - item.x;
+  }
+  return out;
+}
+
 
 /**
  * The height Home gives each card: its saved size, except an empty Next match,
@@ -780,13 +806,19 @@ const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-ask_ai", type: "ask_ai", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
 ];
 
+/*
+  A lead's Home starts with the cards that have something on day one (the match, their day, hours,
+  Ask AI), then the team cards that fill in as the team uses them. It was only those team cards,
+  so a reset or a new board looked empty: "Next match" and "6 more cards show up here…".
+*/
 const MENTOR_HOME_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
-  { i: "w-duties", type: "duties", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-budget_parts", type: "budget_parts", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-attendance", type: "attendance", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-outreach_hours", type: "outreach_hours", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-hours_month", type: "hours_month", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-ask_ai", type: "ask_ai", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-duties", type: "duties", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-announcements_ack", type: "announcements_ack", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-budget_parts", type: "budget_parts", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
 ];
 
 /** Personal Home for a new student vs a mentor — not the competition-focus board. */

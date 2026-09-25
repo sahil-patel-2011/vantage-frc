@@ -2982,3 +2982,9 @@ body.has-app-shell .messages article small {
 @media (hover: none){.soft-panel-search kbd{display:none}}
 .soft-drawer-more > summary::after{content:"\203A";margin-left:auto;font-size:18px;transition:transform .15s ease}
 .soft-drawer-more[open] > summary::after{transform:rotate(90deg)}
+
+/* A card smaller than its content keeps its title and its link: the middle scrolls instead of
+   the link being cut off at the bottom edge (Next match at M, Match schedule on a phone). */
+.dash-widget{overflow:hidden}
+.dash-widget > :not(header):not(.dash-widget-link){min-height:0;flex:1 1 auto;overflow:auto;scrollbar-width:thin}
+.dash-widget > .dash-widget-link{flex:none;margin-top:auto}

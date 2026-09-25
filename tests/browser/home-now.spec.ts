@@ -12,6 +12,15 @@ test("Home shows one What to do now primary without TBA jargon", async ({ page }
   await page.goto("/dashboard");
   await waitForLoadingGone(page);
   const now = page.getByTestId("dash-now");
+  // With a match coming up and the Next match card on the board, that card leads Home and the
+  // "What to do now" banner steps aside (it said the same match twice).
+  const hero = page.locator(".dash-widget.hero");
+  await expect(now.or(hero).first()).toBeVisible({ timeout: 25_000 });
+  if ((await now.count()) === 0) {
+    await expect(hero).toContainText(/Next match/);
+    await expect(page.getByText("Connect TBA")).toHaveCount(0);
+    return;
+  }
   await expect(now).toBeVisible();
   // "What to do now" is the card's accessible name, not text on the screen.
   // The visible eyebrow was removed on purpose — the card was a label, a

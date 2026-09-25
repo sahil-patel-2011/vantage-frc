@@ -22,11 +22,14 @@ test("student this week can walk Home widgets and remaining Strategy boards", as
 
   await openStudentPage(page, "/dashboard");
   const now = page.getByTestId("dash-now");
-  await expect(now).toBeVisible();
-  // "What to do now" is the card's accessible name, not text on screen —
+  // Either "What to do now" leads, or (a match coming up, Next match on the board) that card does.
+  await expect(now.or(page.locator(".dash-widget.hero")).first()).toBeVisible({ timeout: 25_000 });
+  if (await now.count()) {
+    // "What to do now" is the card's accessible name, not text on screen —
     // d6d523a11 removed the visible eyebrow because the card said one thing
     // four ways. A screen reader still hears it.
     await expect(now).toHaveAttribute("aria-label", "What to do now");
+  }
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Home still shows ${phrase}`).not.toContainText(phrase);
   }
