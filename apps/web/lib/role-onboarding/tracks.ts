@@ -24,7 +24,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
       ["invite", "Invite your team", "Add students and mentors by email. Ticks once you send the first invite.", "/team/admin"],
       ["event", "Pick your event", "Matches, scouting and My Day all follow it.", "/command?pickEvent=1"],
       // The Form builder, not the entry form: "set up" landed on a form ready to fill in.
-      ["scouting", "Set up your scouting form", "Start from this season's template and adjust it.", "/scouting/forms"],
+      ["scouting", "Set up your scouting form", "A ready-made match form is waiting: add what your team counts, then publish it.", "/scouting/forms"],
       ["calendar", "Add your first practice", "So students know when to show up.", "/team/calendar"],
     ]),
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import { scoutOptionLabel } from "../../lib/scouting/option-label";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyCounterStep,
@@ -438,7 +439,7 @@ export function MultiSelectField({ field, value, onChange, label }: FieldProps &
               aria-pressed={on}
               onClick={() => toggle(option)}
             >
-              {option}
+              {scoutOptionLabel(option)}
             </button>
           );
         })}

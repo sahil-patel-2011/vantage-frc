@@ -195,15 +195,7 @@ function validateTeamStep(draft: OnboardingDraft, context: OnboardingStepContext
 }
 
 function validateFinishStep(draft: OnboardingDraft, context: OnboardingStepContext): StepValidation {
-  if (context.isTeamHead) {
-    if (!draft.orgCity.trim() || !draft.orgStateProv.trim()) {
-      return {
-        ok: false,
-        field: "orgCity",
-        message: "Add your team's city and state so sponsors and partners know where you compete from.",
-      };
-    }
-  }
+  // Team location is optional: it can be added later on Team profile.
   if (context.legalNeeded && !(draft.termsAccepted && draft.privacyAccepted)) {
     return {
       ok: false,

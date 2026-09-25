@@ -310,15 +310,16 @@ export function PreferencesForm({
 
       {state.isTeamHead ? (
         <fieldset className="onboarding-team-profile">
-          <legend>Team location</legend>
+          <legend>
+            Team location <small>Optional</small>
+          </legend>
           <p className="onboarding-team-profile-hint">
-            Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this team only.
+            Used in sponsorship one-pagers and grant proposals, this team only. You can add it later on Team profile.
           </p>
           <div className="onboarding-row">
             <label>
               City
               <input
-                required
                 maxLength={120}
                 value={draft.orgCity}
                 onChange={(event) => patch({ orgCity: event.target.value })}
@@ -330,7 +331,6 @@ export function PreferencesForm({
             <label>
               State / province
               <input
-                required
                 maxLength={80}
                 value={draft.orgStateProv}
                 onChange={(event) => patch({ orgStateProv: event.target.value })}

@@ -557,7 +557,9 @@ export async function completeOnboarding(
   }
 
   if (state.isTeamHead && state.lockedOrgId) {
-    const location = normalizeOrgLocationFields(input, { requireLocation: true });
+    // Optional here (a new required field on the "check and send" step surprised owners); a
+    // blank keeps whatever the team already has, and Team profile asks for it later.
+    const location = normalizeOrgLocationFields(input, { requireLocation: false });
     if (!payload.teamAffiliation) {
       throw new Error("Select whether your team is a private school, public school, or community team.");
     }
@@ -578,9 +580,9 @@ export async function completeOnboarding(
     }
     await client.query(
       `UPDATE organizations
-       SET city = $2,
-           state_prov = $3,
-           description = $4,
+       SET city = COALESCE($2, city),
+           state_prov = COALESCE($3, state_prov),
+           description = COALESCE($4, description),
            team_affiliation = $5,
            school_funded = $6,
            outside_grants = $7,

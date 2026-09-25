@@ -1,5 +1,6 @@
 "use client";
 
+import { scoutOptionLabel } from "../../lib/scouting/option-label";
 import { useEffect, useState } from "react";
 import type { SchemaDefinition } from "@vantage/scouting";
 import {
@@ -147,7 +148,7 @@ export function Field({
             <option value="">Select drivetrain…</option>
             {options.map((option) => (
               <option key={option} value={option}>
-                {option.replaceAll("_", " ")}
+                {scoutOptionLabel(option)}
               </option>
             ))}
           </select>
@@ -229,7 +230,7 @@ export function Field({
                   checked={String(value ?? "") === option}
                   onChange={() => onChange(option)}
                 />
-                {option}
+                {scoutOptionLabel(option)}
               </label>
             ))}
           </div>
@@ -259,7 +260,7 @@ export function Field({
             <option value="">Select…</option>
             {field.options?.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {scoutOptionLabel(option)}
               </option>
             ))}
           </select>

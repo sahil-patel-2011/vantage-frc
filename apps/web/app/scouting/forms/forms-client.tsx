@@ -414,14 +414,18 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         ]}
       />
 
-      <div
-        className={`sfb-status sfb-status-${publishStatus.kind}`}
-        role="status"
-        aria-live="polite"
-      >
-        <span className="sfb-status-pill">{publishStatus.label}</span>
-        <small className="app-muted">{publishStatus.detail}</small>
-      </div>
+      {/* Said once: with nothing published the card above already says so, and the page said
+          "not published" three times over. */}
+      {shell === "empty" ? null : (
+        <div
+          className={`sfb-status sfb-status-${publishStatus.kind}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="sfb-status-pill">{publishStatus.label}</span>
+          <small className="app-muted">{publishStatus.detail}</small>
+        </div>
+      )}
 
       {publishBlocked && payload.canManageSchemas ? (
         <p className="sfb-publish-blocked" role="status">
@@ -798,13 +802,13 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               <strong>{publishStatus.label}</strong>
               <span className="app-muted">{publishStatus.detail}</span>
             </p>
-            <p className="app-muted" style={{ margin: "8px 0" }}>
-              {publishStatus.kind === "unpublished"
-                ? "Scouts will not see this form until you publish. Then open Scouting or Coverage."
-                : publishStatus.kind === "draft_changes"
+            {publishStatus.kind === "unpublished" ? null : (
+              <p className="app-muted" style={{ margin: "8px 0" }}>
+                {publishStatus.kind === "draft_changes"
                   ? "Live scouting keeps the published version until you publish these edits."
                   : "This draft matches the live form. Republish only if you need a new version pin."}
-            </p>
+              </p>
+            )}
             {currentSchema ? (
               <ul className="sfb-published">
                 <li>

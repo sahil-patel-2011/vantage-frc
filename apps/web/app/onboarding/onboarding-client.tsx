@@ -463,7 +463,7 @@ export default function OnboardingClient() {
           ? {
               // The owner invite: they are setting the team up, not joining someone else's.
               eyebrow: "YOU'RE THE OWNER",
-              title: `Set up ${teamName ?? "your team"}. Three short steps.`,
+              title: `Set up ${teamName ?? "your team"} in three steps.`,
               sub: "Tell us who you are, then Home walks you through inviting your team.",
             }
           : onTeamAlready
@@ -471,13 +471,13 @@ export default function OnboardingClient() {
               // Someone who just accepted an invite was told their team "still
               // has to let you in" — the one thing that had already happened.
               eyebrow: "WELCOME TO THE TEAM",
-              title: `You're on ${teamName ?? "the team"}. Three short steps.`,
+              title: `You're on ${teamName ?? "the team"}. Three steps to go.`,
               sub: "Tell us who you are and what you do, and Home will open on what to do first.",
             }
           : {
               eyebrow: "WELCOME TO VANTAGE",
               title: "Make Vantage work for you.",
-              sub: "Three short steps. Your team still has to let you in before anything is shared.",
+              sub: "Three steps. Your team still has to let you in before anything is shared.",
             };
 
   return (

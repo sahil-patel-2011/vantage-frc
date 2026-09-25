@@ -1,5 +1,6 @@
 "use client";
 
+import { scoutOptionLabel } from "../../lib/scouting/option-label";
 import { useId, type ReactNode } from "react";
 
 export type ScoutChoiceOption = { value: string; label: string };
@@ -22,8 +23,8 @@ export function segmentedOptions(options: readonly string[] | undefined | null):
 
 /** "none" → "None", "on_stage" → "On stage". The stored value is unchanged. */
 export function plainOption(option: string): string {
-  const text = option.replaceAll("_", " ").trim();
-  return text ? text.charAt(0).toUpperCase() + text.slice(1) : option;
+  const text = scoutOptionLabel(option);
+  return text || option;
 }
 
 /**
