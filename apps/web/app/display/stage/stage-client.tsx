@@ -19,11 +19,13 @@ import {
   DISPLAY_PHASE_LABELS,
   DISPLAY_SCREEN_HOLD_MS,
   bracketRounds,
+  countdownState,
   displayPhase,
   fontScaleLabel,
   formatAlliance,
   matchLabel,
   nextFontScale,
+  queueCue,
   sponsorScrollText,
   stageRotation,
   venueShapeLabel,
@@ -71,6 +73,7 @@ export default function StageClient({
   const [online, setOnline] = useState(true);
   const [now, setNow] = useState(() => Date.now());
   const [tick, setTick] = useState(0);
+  const [peekUntil, setPeekUntil] = useState(0);
   const [scale, setScale] = useState(1);
   const [chromeVisible, setChromeVisible] = useState(true);
   const [intel, setIntel] = useState<DisplayMatchIntel | null>(null);
@@ -180,7 +183,11 @@ export default function StageClient({
   const minutesToNext = nextMatch?.scheduledTime ? (new Date(nextMatch.scheduledTime).getTime() - now) / 60_000 : null;
   const pinNext =
     minutesToNext != null && Number.isFinite(minutesToNext) && minutesToNext <= 30 && minutesToNext >= -10 && rotation.includes("next_match");
-  const screen = pinNext ? "next_match" : rotation.length ? rotation[tick % rotation.length] : null;
+  // While pinned, "Next screen" shows the next one for 15 seconds and comes back (it moved the
+  // dots and changed nothing visible).
+  const peeking = pinNext && peekUntil > now;
+  const holding = pinNext && !peeking;
+  const screen = holding ? "next_match" : rotation.length ? rotation[tick % rotation.length] : null;
   const sponsorText = sponsorScrollText(data?.sponsors ?? []);
 
   const cycleScale = () => {
@@ -232,8 +239,15 @@ export default function StageClient({
           <button type="button" className="stage-btn" onClick={cycleScale} aria-label="Change text size">
             Text {fontScaleLabel(scale)}
           </button>
-          <button type="button" className="stage-btn" onClick={() => setTick((value) => value + 1)}>
-            Next screen
+          <button
+            type="button"
+            className="stage-btn"
+            onClick={() => {
+              if (pinNext) setPeekUntil(Date.now() + 15_000);
+              setTick((value) => value + 1);
+            }}
+          >
+            {pinNext ? "Other screens for 15 s" : "Next screen"}
           </button>
           <button
             type="button"
@@ -263,7 +277,7 @@ export default function StageClient({
         </section>
       )}
 
-      {rotation.length > 1 ? (
+      {rotation.length > 1 && !holding ? (
         <ol className="stage-dots" aria-hidden="true">
           {rotation.map((entry, index) => (
             <li key={entry} className={index === tick % rotation.length ? "is-current" : undefined} />
@@ -407,6 +421,10 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
         <span className="stage-kicker">
           {countdown ? `${countdown} · ` : ""}
           {clockLabel(match.scheduledTime) ?? "No scheduled time posted"}
+          {/* What the pit does now, the same cue the Coach TV gives ("LEAVE PIT NOW", "QUEUE NOW"). */}
+          {match.scheduledTime ? (
+            <b className="stage-queue-cue"> · {queueCue(countdownState(match.scheduledTime, now))}</b>
+          ) : null}
         </span>
       </div>
 

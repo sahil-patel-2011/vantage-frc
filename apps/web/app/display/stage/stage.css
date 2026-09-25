@@ -626,3 +626,17 @@
 
 /* TVs that overscan crop the edge: keep the win line and corner badge clear of it. */
 .display-stage { padding-bottom: max(clamp(0.75rem, 2vw, 2rem), 4vh); }
+
+/* A TV cannot scroll: the big type is capped by the screen's height as well as its width, so the
+   whole next-match screen (match, countdown, colour, both alliances, win line) fits 1280x720,
+   1366x768 and 1920x1080. It was sized by width only and overflowed a 768px-tall screen. */
+.stage-next-head .stage-clock { font-size: calc(clamp(2.2rem, min(13vw, 11vh), 11rem) * var(--stage-scale)); line-height: 0.95; }
+.stage-next-head .stage-kicker { font-size: calc(clamp(0.9rem, min(2.2vw, 3.4vh), 2rem) * var(--stage-scale)); }
+.stage-bumpers { font-size: calc(clamp(1.3rem, min(6vw, 5.5vh), 5rem) * var(--stage-scale)); padding: calc(0.4rem * var(--stage-scale)) calc(1rem * var(--stage-scale)); }
+.stage-bumpers small { display: inline; margin-left: 0.8em; }
+.stage-sides h2 { font-size: calc(clamp(0.85rem, min(2vw, 2.6vh), 1.8rem) * var(--stage-scale)); }
+.stage-lineup strong { font-size: calc(clamp(1.3rem, min(4.6vw, 5vh), 4rem) * var(--stage-scale)); }
+.stage-lineup li { padding-block: calc(0.3rem * var(--stage-scale)); }
+.stage-lineup em { font-size: calc(clamp(0.85rem, min(1.6vw, 2.2vh), 1.5rem) * var(--stage-scale)); }
+.stage-win { font-size: calc(clamp(1.1rem, min(3vw, 4vh), 2.6rem) * var(--stage-scale)); }
+.stage-queue-cue { font-weight: 900; color: var(--stage-accent); }
