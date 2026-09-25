@@ -150,3 +150,23 @@
   .brief-opp-lines{font-size:15px}
 }
 @media print{.brief-more{display:none}}
+
+/* Our autos together: one grid, each robot's route as a coloured trail, its current cell as a
+   chip, and a red cell where two would be at once. */
+.brief-autos-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brief-autos-head h2 { margin: 0; }
+.brief-autos-legend { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.brief-autos-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.brief-autos-grid { display: grid; gap: 4px; margin-bottom: 10px; }
+.brief-autos-cell {
+  position: relative; min-height: 52px; padding: 4px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface);
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 3px;
+}
+.brief-autos-cell > small { position: absolute; right: 5px; bottom: 3px; color: var(--muted); font-size: 10px; }
+.brief-autos-cell.is-clash { border-color: #dc2626; background: color-mix(in srgb, #dc2626 10%, var(--surface)); }
+.brief-autos-trail { position: absolute; left: 4px; bottom: 4px; display: flex; gap: 2px; }
+.brief-autos-trail i { width: 6px; height: 6px; border-radius: 50%; opacity: 0.55; }
+.brief-autos-cell b { color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.brief-autos-conflicts { margin: 10px 0 0; padding-left: 18px; color: #b91c1c; font-weight: 600; font-size: 14px; }
+.brief-autos-note { font-size: 12px; margin: 8px 0 0; }

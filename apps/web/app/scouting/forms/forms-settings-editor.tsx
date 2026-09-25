@@ -186,7 +186,7 @@ export function StudioSettingsEditor({
     );
   }
 
-  if (question.kind === "field_position") {
+  if (question.kind === "field_position" || question.kind === "auto_path") {
     return (
       <div className="sfb-settings">
         <FormRow

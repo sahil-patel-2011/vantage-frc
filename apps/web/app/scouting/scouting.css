@@ -226,3 +226,6 @@
 }
 .scout-lead-tools-body > .scout-activity + .scout-activity { border-top: 1px solid var(--line) !important; }
 .scout-lead-tools-body > .scout-activity h2 { font-size: 16px; margin-bottom: 4px; }
+
+/* The scout's route input: the stop number on the cell. */
+.scout-auto-path .scout-auto-path-stop { font-size: 13px; }

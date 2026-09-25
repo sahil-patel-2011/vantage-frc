@@ -27,6 +27,7 @@ export const VANTAGE_FIELD_TYPES = [
   "slider",
   "section_header",
   "field_position",
+  "auto_path",
 ] as const;
 
 export type VantageFieldType = (typeof VANTAGE_FIELD_TYPES)[number];

@@ -35,7 +35,7 @@ test("AI keys still loads after the panel split", async ({ page }) => {
   // Second choices fold behind one line each; opening them shows the forms.
   await mine.click();
   await expect(page.getByRole("region", { name: "My personal AI keys" })).toBeVisible();
-  const paid = page.getByRole("heading", { name: /Use a paid key instead|Your team's AI keys/ });
+  const paid = page.getByRole("heading", { name: /Use a different key|Your team's AI keys/ });
   if (!(await page.getByRole("region", { name: "Provider API keys" }).isVisible())) await paid.click();
   await expect(page.getByRole("region", { name: "Provider API keys" })).toBeVisible();
   await expect(page.getByRole("tab")).toHaveCount(0);

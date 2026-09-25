@@ -12,7 +12,8 @@ test("Strategy hub still loads after the panel split", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Strategy" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const live = page.getByRole("heading", { name: "Coach notes" });
+  // Coach notes fold under "Details for leads"; the game plan is what a loaded match shows first.
+  const live = page.getByRole("heading", { name: "Game plan for this match" });
   const empty = page.getByRole("heading", { name: "No match ahead" });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team|Choose your team and event/i });
   const unavailable = page.getByRole("heading", { name: /Could not load strategy/i });

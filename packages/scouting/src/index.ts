@@ -29,7 +29,9 @@ export type FormBuilderFieldType =
   | "multi_select"
   | "slider"
   | "section_header"
-  | "field_position";
+  | "field_position"
+  /** The route a robot drove in autonomous: grid cells in the order it reached them. */
+  | "auto_path";
 
 /** Runtime + builder field types. Legacy boolean/text/select remain supported. */
 export type FieldType =
@@ -89,7 +91,8 @@ export type FieldWidget =
   | "multi_select"
   | "slider"
   | "section"
-  | "field_position";
+  | "field_position"
+  | "auto_path";
 
 export type FieldDefinition = {
   key: string;
@@ -460,6 +463,37 @@ export function toggleFieldPositionCell(
     : [...current, cell].sort((a, b) => a - b);
 }
 
+/* ------------------------------- auto path ------------------------------- */
+
+/** Autonomous is 15 seconds: a dozen stops is more than any real route. */
+export const AUTO_PATH_MAX_STOPS = 12;
+
+/**
+ * An auto route as stored: grid cells in the order the robot reached them. A robot may come
+ * back to a cell (out to a game piece and back to score), but the same cell twice in a row is
+ * a double tap and is dropped.
+ */
+export function normalizeAutoPath(value: unknown, config: FieldPositionConfig): number[] {
+  if (!Array.isArray(value)) return [];
+  const out: number[] = [];
+  for (const raw of value) {
+    const cell = wholeNumber(raw);
+    if (cell == null || !isFieldPositionCellAllowed(cell, config)) continue;
+    if (out[out.length - 1] === cell) continue;
+    out.push(cell);
+    if (out.length >= AUTO_PATH_MAX_STOPS) break;
+  }
+  return out;
+}
+
+/** The next stop on a route, or the route unchanged when the tap is not a new stop. */
+export function appendAutoPathStop(value: unknown, cell: number, config: FieldPositionConfig): number[] {
+  const current = normalizeAutoPath(value, config);
+  if (!isFieldPositionCellAllowed(cell, config)) return current;
+  if (current[current.length - 1] === cell || current.length >= AUTO_PATH_MAX_STOPS) return current;
+  return [...current, cell];
+}
+
 /* ----------------------- form reset behavior ----------------------------- */
 
 /**
@@ -637,6 +671,7 @@ const STUDIO_FIELD_TYPES: ReadonlySet<string> = new Set([
   "multi_select",
   "slider",
   "field_position",
+  "auto_path",
 ]);
 
 /**
@@ -770,6 +805,33 @@ function validateStudioFieldValue(field: FieldDefinition, value: unknown): strin
       errors.push(`${label} must be between ${config.min} and ${config.max}`);
     } else if (!isSliderValueAligned(numeric, config)) {
       errors.push(`${label} must land on a step of ${config.step}`);
+    }
+    return errors;
+  }
+
+  // auto_path — ordered grid cells, same rule as field_position: indices only.
+  if (field.type === "auto_path") {
+    const pathConfig = fieldPositionConfig(field);
+    if (!Array.isArray(value)) {
+      errors.push(`${label} must be a list of grid cells`);
+      return errors;
+    }
+    if (value.length > AUTO_PATH_MAX_STOPS) {
+      errors.push(`${label} can have at most ${AUTO_PATH_MAX_STOPS} stops`);
+      return errors;
+    }
+    let previous: number | null = null;
+    for (const cell of value) {
+      const numeric = wholeNumber(cell);
+      if (numeric == null || !isFieldPositionCellAllowed(numeric, pathConfig)) {
+        errors.push(`${label} has a cell outside the ${pathConfig.gridCols}×${pathConfig.gridRows} grid`);
+        break;
+      }
+      if (numeric === previous) {
+        errors.push(`${label} repeats the same cell twice in a row`);
+        break;
+      }
+      previous = numeric;
     }
     return errors;
   }
@@ -960,7 +1022,8 @@ export function detectDisagreements(
       field.type === "robot_image" ||
       field.type === "section_header" ||
       field.type === "timer" ||
-      field.type === "field_position"
+      field.type === "field_position" ||
+      field.type === "auto_path"
     ) {
       continue;
     }

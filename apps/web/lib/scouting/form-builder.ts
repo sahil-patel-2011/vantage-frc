@@ -94,6 +94,11 @@ export const ANSWER_KIND_OPTIONS: Array<{
     label: "Field position",
     hint: "Tap a labeled grid cell; stores cell numbers only, never game art",
   },
+  {
+    kind: "auto_path",
+    label: "Auto route",
+    hint: "Tap the grid in the order the robot drove in autonomous; the briefing plays the alliance's routes together",
+  },
 ];
 
 /** Studio kinds whose entry UI is tap-first (big targets, eyes on the match). */
@@ -103,6 +108,7 @@ export const BIG_TARGET_ANSWER_KINDS: readonly AnswerKind[] = [
   "timer",
   "rating",
   "field_position",
+  "auto_path",
 ];
 
 export const DRIVETRAIN_OPTIONS_TEXT = DEFAULT_DRIVETRAIN_OPTIONS.join(", ");
@@ -213,6 +219,7 @@ export function defaultSettingsForKind(kind: AnswerKind): DraftFieldSettings {
     case "slider":
       return { sliderMin: 0, sliderMax: 10, sliderStep: 1 };
     case "field_position":
+    case "auto_path":
       return { gridCols: 6, gridRows: 3 };
     default:
       return {};
@@ -341,7 +348,8 @@ export function isStudioAnswerKind(kind: AnswerKind): boolean {
     kind === "multi_select" ||
     kind === "slider" ||
     kind === "section" ||
-    kind === "field_position"
+    kind === "field_position" ||
+    kind === "auto_path"
   );
 }
 
@@ -353,7 +361,8 @@ export function needsSettingsEditor(kind: AnswerKind): boolean {
     kind === "timer" ||
     kind === "rating" ||
     kind === "slider" ||
-    kind === "field_position"
+    kind === "field_position" ||
+    kind === "auto_path"
   );
 }
 
@@ -373,6 +382,7 @@ export function kindToFieldType(kind: AnswerKind): FieldType {
   if (kind === "slider") return "slider";
   if (kind === "section") return "section_header";
   if (kind === "field_position") return "field_position";
+  if (kind === "auto_path") return "auto_path";
   return "short_answer";
 }
 
@@ -386,6 +396,7 @@ export function fieldToAnswerKind(field: FieldDefinition): AnswerKind {
   if (field.type === "slider") return "slider";
   if (field.type === "section_header") return "section";
   if (field.type === "field_position") return "field_position";
+  if (field.type === "auto_path") return "auto_path";
   if (field.type === "number") return "number";
   if (field.type === "boolean") return "yesno";
   if (field.type === "drivetrain_type") return "drivetrain";
@@ -432,7 +443,8 @@ export function settingsFromField(field: FieldDefinition): DraftFieldSettings {
         sliderMaxLabel: config.maxLabel ?? "",
       };
     }
-    case "field_position": {
+    case "field_position":
+    case "auto_path": {
       const config = fieldPositionConfig(field);
       return { gridCols: config.gridCols, gridRows: config.gridRows };
     }
@@ -524,7 +536,7 @@ export function studioConfigForQuestion(
     }
     return config;
   }
-  if (type === "field_position") {
+  if (type === "field_position" || type === "auto_path") {
     const cols = Number(settings.gridCols ?? 6);
     const rows = Number(settings.gridRows ?? 3);
     config.gridCols = Math.min(
@@ -1278,7 +1290,7 @@ export function studioQuestionErrors(question: DraftQuestion, position: number):
       errors.push(`Question ${n} slider step must be positive and no wider than the range.`);
     }
   }
-  if (question.kind === "field_position") {
+  if (question.kind === "field_position" || question.kind === "auto_path") {
     const cols = Number(settings.gridCols ?? 6);
     const rows = Number(settings.gridRows ?? 3);
     const inRange = (value: number) =>

@@ -1,5 +1,6 @@
 "use client";
 
+import { AllianceAutoRoutes } from "./alliance-auto-routes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { plainStrategyText, readablePlanChip } from "../../lib/briefing/plain-text";
 import { ourSideRange } from "../../lib/strategy/our-side-range";
@@ -467,6 +468,11 @@ export default function BriefingClient() {
             ))}
           </ol>
         </section>
+      ) : null}
+
+      {/* Our three autonomous routes played together, before the match only. */}
+      {!view.match.played && ourKeys.length ? (
+        <AllianceAutoRoutes orgId={orgId} eventKey={view.context.eventKey} teamKeys={ourKeys} />
       ) : null}
 
       <section className="app-card brief-opponents" aria-labelledby="brief-opp-title">

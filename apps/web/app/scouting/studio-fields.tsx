@@ -6,6 +6,8 @@ import {
   applyCounterStep,
   applyMultiCounterStep,
   accumulateTimerLaps,
+  appendAutoPathStop,
+  AUTO_PATH_MAX_STOPS,
   counterConfig,
   fieldPositionCellLabel,
   fieldPositionCellCount,
@@ -15,6 +17,7 @@ import {
   multiCounterConfig,
   multiCounterTotal,
   multiCounterValueOf,
+  normalizeAutoPath,
   normalizeFieldPositionCells,
   normalizeTimerLaps,
   ratingConfig,
@@ -577,6 +580,89 @@ export function FieldPositionField({
   );
 }
 
+/**
+ * The route a robot drove in autonomous. Tap the grid in the order it went: each stop is
+ * numbered on the cell, "Undo last stop" takes one back. Stored as the ordered cell numbers
+ * only, like Field position. The pre-match briefing plays our alliance's routes together.
+ */
+export function AutoPathField({
+  field,
+  value,
+  onChange,
+  label,
+}: FieldProps & { label: string }) {
+  const config = useMemo(() => fieldPositionConfig(field), [field]);
+  const route = normalizeAutoPath(value, config);
+  const cells = Array.from({ length: fieldPositionCellCount(config) }, (_, index) => index);
+  const stopsAt = (cell: number) =>
+    route.map((stop, index) => (stop === cell ? index + 1 : null)).filter((n): n is number => n != null);
+
+  return (
+    <StudioShell
+      label={label}
+      hint={field.helpText ?? "Tap the cells in the order the robot drove. Tap Undo if you tap the wrong one."}
+      headline={
+        <output className="scout-studio-readout small" aria-live="polite">
+          {route.length
+            ? route.map((cell) => fieldPositionCellLabel(cell, config)).join(" → ")
+            : "no route yet"}
+        </output>
+      }
+    >
+      <div className="scout-field-grid-scroll">
+        <div
+          className="scout-field-grid scout-auto-path"
+          role="group"
+          aria-label={`${label}: tap the route in order`}
+          style={{
+            gridTemplateColumns: `repeat(${config.gridCols}, minmax(44px, 1fr))`,
+            gridTemplateRows: `repeat(${config.gridRows}, minmax(48px, 1fr))`,
+          }}
+        >
+          {cells.map((cell) => {
+            const allowed = isFieldPositionCellAllowed(cell, config);
+            const stops = stopsAt(cell);
+            const cellLabel = fieldPositionCellLabel(cell, config);
+            const full = route.length >= AUTO_PATH_MAX_STOPS;
+            return (
+              <button
+                key={cell}
+                type="button"
+                className={`scout-field-cell${stops.length ? " on" : ""}`}
+                disabled={!allowed || full}
+                aria-label={`Cell ${cellLabel}${stops.length ? `, stop ${stops.join(" and ")}` : ""}`}
+                onClick={() => {
+                  const next = appendAutoPathStop(value, cell, config);
+                  onChange(next.length ? next : undefined);
+                }}
+              >
+                {stops.length ? <b className="scout-auto-path-stop">{stops.join("·")}</b> : cellLabel}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {route.length ? (
+        <div className="scout-studio-actions">
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => {
+              const next = route.slice(0, -1);
+              onChange(next.length ? next : undefined);
+            }}
+          >
+            Undo last stop
+          </button>
+          <button type="button" className="text-button" onClick={() => onChange(undefined)}>
+            Clear route
+          </button>
+        </div>
+      ) : null}
+    </StudioShell>
+  );
+}
+
 /** True when `field` should render through a studio control. */
 export function isStudioField(field: FieldDefinition): boolean {
   return (
@@ -587,7 +673,8 @@ export function isStudioField(field: FieldDefinition): boolean {
     field.type === "multi_select" ||
     field.type === "slider" ||
     field.type === "section_header" ||
-    field.type === "field_position"
+    field.type === "field_position" ||
+    field.type === "auto_path"
   );
 }
 
@@ -615,6 +702,8 @@ export function StudioField({
       return <SliderField field={field} value={value} onChange={onChange} label={label} />;
     case "field_position":
       return <FieldPositionField field={field} value={value} onChange={onChange} label={label} />;
+    case "auto_path":
+      return <AutoPathField field={field} value={value} onChange={onChange} label={label} />;
     default:
       return null;
   }
