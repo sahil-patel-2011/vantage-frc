@@ -74,8 +74,8 @@ export function HomeShowcase() {
             <h2 id="lux-app-frames">What your scouting turns into.</h2>
             <p>
               Scouting is its own app for event days — scout, look up a team, plan a match, build the pick list — on
-              the same sign-in and data as the rest of Vantage. These are drawings of its real screens: your
-              event&rsquo;s numbers fill them in, and anything nobody scouted stays blank instead of guessed.
+              the same sign-in and data as the rest of Vantage. Below is how its screens are laid out: your
+              event&rsquo;s numbers fill them in, and anything nobody scouted says so instead of being guessed.
             </p>
             <p>
               Add it to a phone&rsquo;s home screen and it opens on your next assigned robot. One tap before the

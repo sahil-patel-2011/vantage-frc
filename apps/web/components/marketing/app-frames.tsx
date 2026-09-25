@@ -54,45 +54,72 @@ export function HeroProductPanel() {
 
       <div className="mk-mock-body">
         <div className="mk-mock-main">
-          <article className="mk-mock-card">
+          {/* Drawn like the real Next match card (bumper pill, alliance chips, win bar, game plan)
+              rather than a list of labels; roles stand in for team numbers and the bar has no
+              figure, because any number here would be made up. */}
+          <article className="mk-mock-card mk-hero-next">
             <header>
               <strong>Next match</strong>
               <span>Event day</span>
             </header>
-            <dl className="mk-mock-rows">
-              <div>
-                <dt>Your next qual</dt>
-                <dd>Countdown to queue</dd>
-              </div>
-              <div>
-                <dt>Red bumpers</dt>
-                <dd>Partners and opponents listed</dd>
-              </div>
-              <div>
-                <dt>Their likely plan</dt>
-                <dd>From your own scouting</dd>
-              </div>
-            </dl>
+            <div className="mk-hero-match">
+              <b>Your next qual</b>
+              <em>Queue soon</em>
+            </div>
+            <span className="mk-hero-bumper">Switch to blue bumpers</span>
+            <div className="mk-hero-side is-us">
+              <small>With us</small>
+              <span>
+                <i>Us</i>
+                <i>Partner</i>
+                <i>Partner</i>
+              </span>
+            </div>
+            <div className="mk-hero-side is-them">
+              <small>Against</small>
+              <span>
+                <i>Opponent</i>
+                <i>Opponent</i>
+                <i>Opponent</i>
+              </span>
+            </div>
+            <span className="mk-hero-win" role="presentation">
+              <i />
+            </span>
+            <p className="mk-hero-win-label">Chance we win, from your scouting</p>
+            <p className="mk-hero-plan">
+              <strong>Game plan</strong>
+              <span>One partner defends their top scorer; we keep cycling.</span>
+            </p>
           </article>
-          <article className="mk-mock-card">
+          <article className="mk-mock-card mk-hero-todo">
             <header>
               <strong>What to do now</strong>
               <span>For you</span>
             </header>
-            <dl className="mk-mock-rows">
-              <div>
-                <dt>Scout this match</dt>
-                <dd>Your next robot, one tap</dd>
-              </div>
-              <div>
-                <dt>Pit TV</dt>
-                <dd>Next match on the pit screen</dd>
-              </div>
-              <div>
-                <dt>Ask AI</dt>
-                <dd>On your own key, if you want it</dd>
-              </div>
-            </dl>
+            <ul>
+              <li>
+                <span>
+                  <strong>Scout the next open match</strong>
+                  <small>Your next robot, one tap</small>
+                </span>
+                <b>Start</b>
+              </li>
+              <li>
+                <span>
+                  <strong>Pre-match briefing</strong>
+                  <small>Their likely plan: cycles fast, goes for the endgame</small>
+                </span>
+                <b>Open</b>
+              </li>
+              <li>
+                <span>
+                  <strong>Pit TV</strong>
+                  <small>Next match on the pit screen</small>
+                </span>
+                <b>Show</b>
+              </li>
+            </ul>
           </article>
         </div>
         <div className="mk-mock-rail">
@@ -148,13 +175,22 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
                   <span>Best first</span>
                 </header>
                 <ul className="mk-shape-roster">
-                  {[92, 81, 74, 63, 55].map((width, index) => (
+                  {/* What scouting says about each robot, in the words the app uses. */}
+                  {(
+                    [
+                      [92, "cycles fast, goes for the endgame"],
+                      [81, "strong auto, steady teleop"],
+                      [74, "plays defense"],
+                      [63, "not scouted yet"],
+                      [55, "endgame is hit or miss"],
+                    ] as const
+                  ).map(([width, words], index) => (
                     <li key={width}>
                       <b>{index + 1}</b>
                       <span className="mk-shape-bar">
                         <i style={{ width: `${width}%` }} />
                       </span>
-                      <em>{index === 3 ? "not scouted" : "scouted"}</em>
+                      <em>{words}</em>
                     </li>
                   ))}
                 </ul>
