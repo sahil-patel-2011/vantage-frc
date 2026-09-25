@@ -166,9 +166,12 @@ export function panelSubLinks(group: ProductNavGroup): Array<{ href: string; lab
   }
   const hub = NAV_HUBS.find((entry) => entry.label === group.label);
   if (!hub) return [];
-  return hubPrimaryTabs(hub)
+  const tabs = hubPrimaryTabs(hub)
     .filter((tab) => tab.id !== hub.defaultTab)
     .map((tab) => ({ href: `${hub.href}?tab=${tab.id}`, label: tab.label }));
+  // The pit TV had no menu entry: it lived as a chip under Robot check, and a drive coach looking
+  // for "TV" under Competition found nothing.
+  return hub.id === "competition" ? [...tabs, { href: "/display", label: "Pit TV" }] : tabs;
 }
 
 /** Quiet chrome destinations — Cmd+K / footer, never drawer accordion dumps. */

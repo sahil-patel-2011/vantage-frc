@@ -529,7 +529,14 @@ export async function computeBriefingView(
     strategySections = refreshed
       ? refreshed
       : { ...strategySections, prediction: null };
-  } else if (!strategySections.prediction) {
+  } else if (
+    !strategySections.prediction ||
+    // Before the match, a copy more than two minutes old is worked out again: Strategy computes
+    // live, and the two screens showed different win chances and plan lines for one match.
+    (!match.played &&
+      (strategySections.prediction.scoredAt == null ||
+        Date.now() - new Date(strategySections.prediction.scoredAt).getTime() > 2 * 60_000))
+  ) {
     const computed = await computeStrategyFallback(client, {
       userId: input.userId,
       orgId: row.orgId,

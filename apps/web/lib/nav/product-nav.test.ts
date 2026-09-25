@@ -81,11 +81,13 @@ describe("product-nav", () => {
       PRODUCT_NAV_GROUPS.map((group) => [group.label, panelSubLinks(group)]),
     );
     expect(byLabel.Home).toEqual([]);
-    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Robot check"]);
+    // Plus the pit TV, which had no menu entry at all.
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Robot check", "Pit TV"]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
       "/competition?tab=scouting",
       "/competition?tab=strategy",
       "/competition?tab=match-checklist",
+      "/display",
     ]);
     expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Work", "Playbook"]);
     expect(byLabel.Business?.map((entry) => entry.label)).toEqual([

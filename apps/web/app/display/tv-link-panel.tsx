@@ -74,10 +74,23 @@ export function TvLinkPanel({
       <div className="tv-link-main">
         <strong>TV link ready. Copy it now: it is shown only once.</strong>
         <p className="app-muted">
-          Open it in the TV&rsquo;s browser (or on the laptop plugged into the TV), then press the board&rsquo;s
-          Fullscreen button. It
-          shows {eventMode ? "the event board" : `"${boardName ?? "this board"}" exactly as you built it`}.
+          It shows {eventMode ? "the event board" : `"${boardName ?? "this board"}" exactly as you built it`}. Nobody types
+          this link on a TV remote; pick the way that matches your setup:
         </p>
+        {/* A 43-character token cannot be typed with a remote; say how each usual setup gets it there. */}
+        <ol className="tv-link-ways">
+          <li>
+            <strong>Laptop plugged into the TV (HDMI):</strong> copy the link, open it on that laptop, then press the
+            board&rsquo;s Fullscreen button.
+          </li>
+          <li>
+            <strong>Smart TV, Chromecast or Fire stick:</strong> scan the QR code with a phone, open the link, then cast
+            that tab or screen to the TV.
+          </li>
+          <li>
+            <strong>Mini PC or Raspberry Pi on the TV:</strong> use the start-up command under Other ways to show it.
+          </li>
+        </ol>
         <code className="tv-link-url">{yourBoard}</code>
         <div className="display-actions">
           <Button variant="primary" type="button" onClick={() => copy(yourBoard, "TV link copied.")}>
@@ -121,7 +134,7 @@ export function TvLinkPanel({
         <figure className="tv-link-qr">
           {/* A data URL made in the browser; next/image adds nothing for it. */}
           <img src={qr} alt="QR code for the TV link" width={220} height={220} />
-          <figcaption>Scan with a phone or tablet that is driving the TV.</figcaption>
+          <figcaption>Scan with the phone or tablet you will cast to the TV.</figcaption>
         </figure>
       ) : null}
     </div>
