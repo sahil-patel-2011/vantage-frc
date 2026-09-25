@@ -195,9 +195,16 @@ describe("tidyBoard", () => {
   });
 
   it("does not claim a move when the board is already tidy", () => {
+    const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 4, 0), card("c", "team_todos", 8, 0)];
+    const result = tidyBoard({ layout, visibleIds: new Set(["a", "b", "c"]), cols: 12, displayFor: displayAt(12) });
+    expect(result).toEqual({ layout, moved: false });
+  });
+
+  it("stretches the last card of a row to the edge when nothing else fits beside it", () => {
     const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 4, 0)];
     const result = tidyBoard({ layout, visibleIds: new Set(["a", "b"]), cols: 12, displayFor: displayAt(12) });
-    expect(result).toEqual({ layout, moved: false });
+    expect(result.moved).toBe(true);
+    expect(result.layout.find((item) => item.i === "b")).toMatchObject({ x: 4, w: 8 });
   });
 
   it("closes a gap left by a dragged card on the full board", () => {

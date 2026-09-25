@@ -5,6 +5,7 @@
  */
 
 import {
+  DASHBOARD_COLUMNS,
   findDashboardSlot,
   homeViewLayout,
   isAlwaysShown,
@@ -198,11 +199,33 @@ export function editBoardLayout(
  * a row with a gap where "My day" sits empty. Hidden cards come back at the
  * end of the board, which is also where the "Hidden right now" row lists them.
  */
+/**
+ * The last card on a row reaches the right edge when nothing else can use the space beside it.
+ * Sizes are thirds, halves and wholes, so an L next to an M left a strip as tall as the page
+ * that no card fitted, and a student had to do the grid maths to close it.
+ */
+export function fillRowEnds(
+  layout: DashboardWidgetLayout[],
+  cols: number = DASHBOARD_COLUMNS,
+): DashboardWidgetLayout[] {
+  const out = layout.map((item) => ({ ...item }));
+  const overlaps = (a: { x: number; y: number; w: number; h: number }, b: DashboardWidgetLayout) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  for (const item of out) {
+    const right = item.x + item.w;
+    if (right >= cols) continue;
+    const gap = { x: right, y: item.y, w: cols - right, h: item.h };
+    if (out.some((other) => other !== item && overlaps(gap, other))) continue;
+    item.w = cols - item.x;
+  }
+  return out;
+}
+
 export function layoutForEditing(
   layout: DashboardWidgetLayout[],
   hidden: ReadonlyMap<string, unknown>,
 ): DashboardWidgetLayout[] {
-  const shown = packDashboardLayout(layout.filter((item) => !hidden.has(item.i)));
+  const shown = fillRowEnds(packDashboardLayout(layout.filter((item) => !hidden.has(item.i))));
   const bottom = shown.reduce((max, item) => Math.max(max, item.y + item.h), 0);
   const tucked = packDashboardLayout(layout.filter((item) => hidden.has(item.i))).map((item) => ({
     ...item,
@@ -252,7 +275,7 @@ export function tidyBoard(input: {
   // Always the saved 12-column board, never the scaled-down view written back: a tablet
   // view cannot be scaled back up without changing card widths on the desktop board.
   const packed = new Map(
-    packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))).map((item) => [item.i, item]),
+    fillRowEnds(packDashboardLayout(layout.filter((item) => visibleIds.has(item.i)))).map((item) => [item.i, item]),
   );
   const next = layout.map((item) => packed.get(item.i) ?? item);
   // Judged on screen: a saved-board change nobody can see is not "moved".
