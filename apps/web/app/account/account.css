@@ -462,3 +462,6 @@
 .appearance-more--card[open] {
   padding-bottom: 16px;
 }
+
+/* The profile form's select looks like its inputs (it was an unstyled 23px box on desktop too). */
+.account-form select{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font:inherit}

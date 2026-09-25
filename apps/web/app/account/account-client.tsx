@@ -119,6 +119,12 @@ export default function AccountClient() {
   });
 
   function selectTab(next: Tab) {
+    // The switches live on one screen; the tab goes there instead of showing a page that
+    // only linked to it.
+    if (next === "notifications") {
+      window.location.assign("/notifications/preferences");
+      return;
+    }
     setTab(next);
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);

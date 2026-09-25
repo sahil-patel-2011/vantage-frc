@@ -206,10 +206,18 @@ export function MemberAccessPanel({
     });
   }
 
+  /*
+    A tick means "they can open this page". Nothing stored means every page, so every box shows
+    ticked; unticking one limits them to the rest, and ticking them all back stores nothing again.
+    (It used to show every page unticked under "Everything is open".)
+  */
   function toggleTab(hubId: ClientHubId, tabId: string) {
     setHubs((current) => {
-      const list = current.tabs[hubId] ?? [];
-      const next = list.includes(tabId) ? list.filter((id) => id !== tabId) : [...list, tabId];
+      const all = tabsForHub(hubId).map((tab) => tab.id);
+      const list = current.tabs[hubId]?.length ? current.tabs[hubId]! : all;
+      let next = list.includes(tabId) ? list.filter((id) => id !== tabId) : [...list, tabId];
+      if (next.length === 0) next = list; // at least one page stays open
+      if (all.every((id) => next.includes(id))) next = [];
       return { ...current, tabs: { ...current.tabs, [hubId]: next } };
     });
   }
@@ -369,17 +377,17 @@ export function MemberAccessPanel({
                     {open && tabs.length ? (
                       tabsOpenFor === hubId || chosen.length ? (
                         <div className="member-access-tabs">
+                          <small className="app-muted">Untick a page to hide it from them.</small>
                           {tabs.map((tab) => (
                             <label key={tab.id}>
                               <input
                                 type="checkbox"
-                                checked={chosen.includes(tab.id)}
+                                checked={chosen.length === 0 || chosen.includes(tab.id)}
                                 onChange={() => toggleTab(hubId, tab.id)}
                               />{" "}
                               {tab.label}
                             </label>
                           ))}
-                          <small className="app-muted">Tick pages to allow only those. None ticked means every page.</small>
                         </div>
                       ) : (
                         <button type="button" className="text-button" onClick={() => setTabsOpenFor(hubId)}>

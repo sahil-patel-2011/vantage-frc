@@ -58,7 +58,7 @@ export const ANY_ENDPOINT_HEADLINE =
   "If it speaks the OpenAI API, Vantage can use it.";
 
 export const ANY_ENDPOINT_BODY =
-  "Vantage talks the OpenAI chat-completions protocol, so anything with a base URL works: OpenAI, OpenRouter, Google AI Studio, Groq, Mistral, Cerebras, or a model running on a laptop in your shop through Ollama or LM Studio. Point it at whichever you have.";
+  "Anything that works like OpenAI's service works here, given its base URL (the address it answers on): OpenAI, OpenRouter, Google AI Studio, Groq, Mistral, Cerebras, or a model you run yourself with Ollama or LM Studio.";
 
 /**
  * The feature-parity promise. This is the part teams most often assume is

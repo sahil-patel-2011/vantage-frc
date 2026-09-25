@@ -12,7 +12,6 @@ import {
   ANY_ENDPOINT_HEADLINE,
   ANY_ENDPOINT_POINTS,
   describeMemberKey,
-  ENDPOINT_EXAMPLES,
   MEMBER_KEY_BASE_URL_HINT,
   MEMBER_KEY_BODY,
   MEMBER_KEY_HEADLINE,
@@ -377,9 +376,8 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             <span className="eyebrow">{billing.title}</span>
             <p>{billing.body}</p>
             <p className="app-muted">
-              Track your-key call estimates on{" "}
-              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>Your keys usage</a>
-              .
+              See what the team&apos;s key has been used for on{" "}
+              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>AI usage</a>.
             </p>
           </section>
 
@@ -400,17 +398,6 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 <li key={point}>{point}</li>
               ))}
             </ul>
-            <details className="ai-keys-any-examples">
-              <summary>Where does each one go?</summary>
-              <ul>
-                {ENDPOINT_EXAMPLES.map((example) => (
-                  <li key={example.id}>
-                    <strong>{example.name}</strong>
-                    <span className="app-muted"> — {example.howToUse}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
           </section>
 
           <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
@@ -449,14 +436,14 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                   <input
                     type="url"
                     required
-                    placeholder="http://localhost:11434/v1"
+                    placeholder="https://my-model-server.example.org/v1"
                     value={localDraft.baseUrl}
                     disabled={busyLocal}
                     onChange={(e) => setLocalDraft((prev) => ({ ...prev, baseUrl: e.target.value }))}
                   />
                 </label>
                 <label>
-                  Default model id
+                  Model name
                   <input
                     required
                     placeholder="llama3.2"

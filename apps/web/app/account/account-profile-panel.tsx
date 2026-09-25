@@ -111,7 +111,8 @@ export function AccountProfilePanel({
           />
         </label>
         <label>
-          Your role on the team
+          {/* Not the access level ("Owner" at the top): that is set on Team admin. */}
+          How you help the team
           <select value={teamRole} onChange={(event) => onTeamRoleChange(event.target.value)}>
             {teamRole ? null : <option value="">Choose one</option>}
             <option value="student">Student</option>
@@ -122,7 +123,8 @@ export function AccountProfilePanel({
           </select>
         </label>
         <p className="app-muted">
-          Mentors, coaches and parents count as adults for the team&rsquo;s chat safety rules.
+          Your access (owner, mentor, student) is set on Team admin. Mentors, coaches and parents count as adults
+          for the team&rsquo;s chat safety rules; your date of birth is used the same way and nobody on the team sees it.
         </p>
         <label>
           Sign-in email
