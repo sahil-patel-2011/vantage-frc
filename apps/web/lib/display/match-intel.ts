@@ -8,8 +8,28 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { normalizePlanTendencies } from "../briefing/plan-sections";
 import { plainStrategyText } from "../briefing/plain-text";
+import { planWords } from "../briefing/opponent-cards";
 
-export type DisplayTeamIntel = { teamKey: string; tags: string[] };
+export type DisplayTeamIntel = {
+  teamKey: string;
+  tags: string[];
+  /** "cycles fast, goes for the endgame", from the robot's scouted strengths; partners too. */
+  plan?: string | null;
+};
+
+/** What the TV says under a robot: its likely plan, else its tags. */
+export function intelWords(row: DisplayTeamIntel | undefined): string {
+  if (!row) return "";
+  return row.plan || row.tags.join(" · ");
+}
+
+type RobotStrengths = {
+  teamKey: string;
+  autoCapability?: unknown;
+  teleopCapability?: unknown;
+  endgameCapability?: unknown;
+  defenseLikely?: unknown;
+};
 
 export type DisplayMatchIntel = {
   matchKey: string;
@@ -71,7 +91,7 @@ export function intelTags(labels: readonly string[]): string[] {
 type RawIntel = {
   matchKey?: string;
   prediction?: { pRed?: number | null; pBlue?: number | null } | null;
-  plan?: { alliance?: string | null; tendencies?: unknown; priorities?: unknown } | null;
+  plan?: { alliance?: string | null; tendencies?: unknown; priorities?: unknown; operations?: unknown } | null;
 } | null;
 
 /** The function's / query's JSON → what the TV draws. */
@@ -83,9 +103,20 @@ export function toDisplayMatchIntel(raw: RawIntel, ownTeamKey: string | null, sc
   const ourColor = onRed ? "red" : onBlue ? "blue" : planColor;
   const p = ourColor === "red" ? raw.prediction?.pRed : ourColor === "blue" ? raw.prediction?.pBlue : null;
   const ourWinPct = typeof p === "number" && Number.isFinite(p) ? Math.round(p * 100) : null;
-  const teams = normalizePlanTendencies({ tendencies: raw.plan?.tendencies ?? [] })
-    .map((row) => ({ teamKey: row.teamKey, tags: intelTags(row.labels) }))
-    .filter((row) => row.tags.length > 0);
+  const tendencies = normalizePlanTendencies({ tendencies: raw.plan?.tendencies ?? [] });
+  const strengths = (Array.isArray(raw.plan?.operations) ? raw.plan!.operations : []) as RobotStrengths[];
+  const keys = [...new Set([...tendencies.map((row) => row.teamKey), ...strengths.map((row) => row.teamKey)])];
+  const teams = keys
+    .map((teamKey) => {
+      const labels = tendencies.find((row) => row.teamKey === teamKey)?.labels ?? [];
+      const ops = strengths.find((row) => row.teamKey === teamKey);
+      return {
+        teamKey,
+        tags: intelTags(labels),
+        plan: planWords(ops as Parameters<typeof planWords>[0], labels),
+      };
+    })
+    .filter((row) => row.tags.length > 0 || Boolean(row.plan));
   const plan = (Array.isArray(raw.plan?.priorities) ? raw.plan!.priorities : [])
     .filter((item): item is string => typeof item === "string")
     .map(planHeadline)
@@ -105,6 +136,7 @@ export function publicMatchIntel(raw: unknown): RawIntel {
   const p = value.prediction;
   const tendencies = Array.isArray(value.plan?.tendencies) ? (value.plan!.tendencies as unknown[]) : [];
   const priorities = Array.isArray(value.plan?.priorities) ? (value.plan!.priorities as unknown[]) : [];
+  const operations = Array.isArray(value.plan?.operations) ? (value.plan!.operations as unknown[]) : [];
   return {
     matchKey: value.matchKey,
     prediction:
@@ -119,6 +151,17 @@ export function publicMatchIntel(raw: unknown): RawIntel {
               teamKey: row.teamKey as string,
               labels: Array.isArray(row.labels) ? row.labels.filter((label): label is string => typeof label === "string").slice(0, 6) : [],
               evidence: [],
+            })),
+          // Strengths only: the capability words and whether it defends, never ids or notes.
+          operations: operations
+            .map((row) => row as RobotStrengths)
+            .filter((row) => typeof row?.teamKey === "string")
+            .map((row) => ({
+              teamKey: row.teamKey,
+              autoCapability: row.autoCapability ?? null,
+              teleopCapability: row.teleopCapability ?? null,
+              endgameCapability: row.endgameCapability ?? null,
+              defenseLikely: row.defenseLikely === true,
             })),
           // Only the short instruction leaves the server, never the reasoning behind it.
           priorities: priorities
@@ -144,7 +187,8 @@ export async function loadDisplayMatchIntel(client: PoolClient, orgId: string, m
                    ORDER BY p.scored_at DESC LIMIT 1),
                 'plan', (
                   SELECT jsonb_build_object('alliance', s.alliance, 'tendencies', COALESCE(s.plan -> 'tendencies', '[]'::jsonb),
-                                            'priorities', COALESCE(s.plan -> 'playbook' -> 'priorities', '[]'::jsonb))
+                                            'priorities', COALESCE(s.plan -> 'playbook' -> 'priorities', '[]'::jsonb),
+                                            'operations', COALESCE(s.plan -> 'operations', '[]'::jsonb))
                     FROM match_strategies s
                    WHERE s.org_id = $1::uuid AND s.match_key = $2::text
                    ORDER BY s.updated_at DESC LIMIT 1)

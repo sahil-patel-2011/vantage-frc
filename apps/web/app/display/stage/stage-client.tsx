@@ -33,7 +33,7 @@ import {
   type DisplayStageScreen,
 } from "../../../lib/display";
 import { kioskBrandLine } from "../../../lib/display/kiosk-view";
-import { type DisplayMatchIntel, toDisplayMatchIntel } from "../../../lib/display/match-intel";
+import { type DisplayMatchIntel, intelWords, toDisplayMatchIntel } from "../../../lib/display/match-intel";
 
 const SCALE_STORAGE_KEY = "vantage.display.stage.scale";
 
@@ -406,7 +406,9 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
   const ourColor: "red" | "blue" | null = red.includes(ownKey) ? "red" : blue.includes(ownKey) ? "blue" : null;
   const partners = ourColor === "red" ? red : ourColor === "blue" ? blue : [];
   const opponents = ourColor === "red" ? blue : ourColor === "blue" ? red : [];
-  const tagsFor = (teamKey: string) => intel?.teams.find((row) => row.teamKey === teamKey)?.tags ?? [];
+  // The robot's likely plan ("cycles fast, goes for the endgame"), partners included; one-word
+  // tags only when the plan cannot say more.
+  const wordsFor = (teamKey: string) => intelWords(intel?.teams.find((row) => row.teamKey === teamKey));
   // Where the field is: the first unplayed qual and its printed time (data.field), or, from a
   // feed without it, the count of played quals. Quals only; playoff order is not a simple count.
   const progress = data.progress;
@@ -429,7 +431,7 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
         <li key={key} className={key === ownKey ? "is-ours" : undefined}>
           <strong>{key.replace(/^frc/i, "")}</strong>
           {key === ownKey ? <span className="stage-us">Us</span> : null}
-          {tagsFor(key).length ? <em>{tagsFor(key).join(" · ")}</em> : null}
+          {wordsFor(key) ? <em>{wordsFor(key)}</em> : null}
         </li>
       ))}
     </ul>

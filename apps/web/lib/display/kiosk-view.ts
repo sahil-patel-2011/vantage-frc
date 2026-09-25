@@ -8,7 +8,7 @@
 
 import { matchLabel, stripFrc, type DisplayNextMatch, type DisplaySnapshot } from "../display";
 import { predictionWinDisplay } from "../strategy/prediction-display";
-import type { DisplayMatchIntel } from "./match-intel";
+import { intelWords, type DisplayMatchIntel } from "./match-intel";
 
 /**
  * "Team 6925 · Peachtree District Championship". The header used to read
@@ -70,7 +70,8 @@ export function kioskOpponentIntel(
   const out: KioskIntelLine[] = [];
   for (const team of opponents) {
     const row = intel.teams.find((entry) => stripFrc(entry.teamKey) === team);
-    if (row?.tags.length) out.push({ team, words: row.tags.join(" · ") });
+    const words = intelWords(row);
+    if (words) out.push({ team, words });
   }
   return out;
 }

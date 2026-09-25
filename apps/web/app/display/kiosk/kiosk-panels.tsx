@@ -13,7 +13,7 @@ import {
   type DisplayNextMatch,
   type DisplaySnapshot,
 } from "../../../lib/display";
-import type { DisplayMatchIntel } from "../../../lib/display/match-intel";
+import { intelWords, type DisplayMatchIntel } from "../../../lib/display/match-intel";
 import { kioskOpponentIntel, kioskSides, kioskWinLine } from "../../../lib/display/kiosk-view";
 import { WIDGET_LABEL, isWidgetType } from "../../../lib/display/widget-layout";
 
@@ -59,7 +59,7 @@ export function NextMatchHero({
   const cueClass = clock.queueNow ? "is-now" : clock.queueSoon ? "is-soon" : clock.leavePit ? "is-leave" : "";
   const own = String(teamNumber);
   const tagsFor = (team: string) =>
-    !showTags ? "" : intel?.teams.find((row) => row.teamKey.replace(/^frc/i, "") === team)?.tags.join(" · ") ?? "";
+    !showTags ? "" : intelWords(intel?.teams.find((row) => row.teamKey.replace(/^frc/i, "") === team));
   // Our whole alliance in field order, us marked, as the event board lists it ("1323 / 6925 US / 7457").
   const withUs = sides.ourColor === "red" ? sides.red : sides.ourColor === "blue" ? sides.blue : sides.partners;
   const lineup = (teams: string[], color: "red" | "blue" | null) => (

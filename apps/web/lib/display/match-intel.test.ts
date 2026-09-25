@@ -41,7 +41,7 @@ describe("pit TV match intel", () => {
       null,
       null,
     );
-    expect(intel?.teams).toEqual([{ teamKey: "frc118", tags: ["Plays defense"] }]);
+    expect(intel?.teams).toEqual([{ teamKey: "frc118", tags: ["Plays defense"], plan: "may defend" }]);
     expect(intel?.ourWinPct).toBeNull();
   });
 
@@ -65,7 +65,7 @@ describe("what a TV link can read", () => {
     expect(out).toEqual({
       matchKey: "2026abc_qm12",
       prediction: { pRed: 0.6, pBlue: 0.4 },
-      plan: { alliance: "red", tendencies: [{ teamKey: "frc118", labels: ["defense-capable"], evidence: [] }], priorities: [] },
+      plan: { alliance: "red", tendencies: [{ teamKey: "frc118", labels: ["defense-capable"], evidence: [] }], operations: [], priorities: [] },
     });
     expect(JSON.stringify(out)).not.toMatch(/ba297aa2|scoredAt|updatedAt/);
   });
@@ -86,5 +86,24 @@ describe("the TV's game plan line", () => {
     });
     expect(raw?.plan?.priorities).toEqual(["Defend 118"]);
     expect(toDisplayMatchIntel(raw, "frc6925", null)?.plan).toEqual(["Defend 118"]);
+  });
+});
+
+describe("a plan line for every robot on the TV", () => {
+  it("says what a partner does from its scouted strengths, with no tags needed", () => {
+    const intel = toDisplayMatchIntel(
+      {
+        matchKey: "m",
+        prediction: null,
+        plan: {
+          alliance: "red",
+          tendencies: [],
+          operations: [{ teamKey: "frc254", teleopCapability: 0.84, endgameCapability: 0.6, defenseLikely: false }],
+        },
+      },
+      "frc6925",
+      schedule,
+    );
+    expect(intel?.teams).toEqual([{ teamKey: "frc254", tags: [], plan: "cycles fast, usually climbs" }]);
   });
 });

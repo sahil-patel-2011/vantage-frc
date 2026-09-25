@@ -77,6 +77,12 @@ function roughLine(row: BriefingScoutedTeam | undefined, labels: string[]): stri
   return [first!.charAt(0).toUpperCase() + first!.slice(1), ...rest].join(" · ");
 }
 
+/** "cycles fast, goes for the endgame": the briefing's likely plan without its label (the TV). */
+export function planWords(row: Pick<BriefingScoutedTeam, "autoCapability" | "teleopCapability" | "endgameCapability" | "defenseLikely"> | undefined, labels: string[] = []): string | null {
+  const tag = planTag(row as BriefingScoutedTeam | undefined, labels);
+  return tag ? tag.replace(/^Likely plan: /, "") : null;
+}
+
 function planTag(row: BriefingScoutedTeam | undefined, labels: string[]): string | null {
   const parts: string[] = [];
   const teleop = capabilityLabel(row?.teleopCapability ?? null);
