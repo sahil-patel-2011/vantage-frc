@@ -388,3 +388,11 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
   min-height:40px;padding:0 10px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:var(--radius-xs);
   background:var(--surface);color:inherit;font:600 14px var(--font-source-sans),system-ui;
 }
+
+/* More visible edit controls: a 28px remove dot with a red edge, and a grip with an accent
+   outline, so "what can I grab / remove" reads at a glance (they were faint grey pills). */
+.dash-remove-badge::before{width:28px;height:28px;right:6px;bottom:6px;border-color:color-mix(in srgb,var(--critical-fill,#b91c1c) 55%,var(--line))}
+.dash-remove-badge>span{right:14px;bottom:19px;width:12px}
+.dash-card-grip::before{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+/* The edit toolbar floats over the page: room below the last row so it never covers a card. */
+.dash-home.is-editing{padding-bottom:calc(110px + var(--safe-bottom,0px))}
