@@ -94,6 +94,9 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bScout (auto|teleop|endgame) capability\b/g, (_all, part: string) => `${part[0]!.toUpperCase()}${part.slice(1)}`)
       .replace(/\bScout teleop\/cycles noted for\b/g, "Teleop cycles noted for")
       .replace(/\bScout reliability\b/g, "Reliability")
+      // "Defense noted in scout payloads: Team 1323": the database's word for a report.
+      .replace(/\bDefense noted in scout payloads:\s*/gi, "Scouts saw defense from ")
+      .replace(/\bscout payloads?\b/gi, "scout reports")
       .replace(/\bacross ([\d.]+) observations\b/gi, (_all, n: string) => `across ${Math.round(Number(n))} matches`)
       .replace(/\s*Influenced by\.?(?=\s|$)/gi, "")
       .replace(/\s*\(capped\)/gi, "")

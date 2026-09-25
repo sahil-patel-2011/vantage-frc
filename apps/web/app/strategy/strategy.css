@@ -320,3 +320,6 @@
 .strategy-primary { row-gap: 10px !important; }
 .strategy-primary .mini-probability { margin: 0 0 4px !important; }
 .strategy-primary .strategy-alliance-row { margin: 6px 0 4px; }
+
+/* Leads' details fold under one line after the plan. */
+.strategy-lead-details > summary, .strategy-levers > summary { cursor: pointer; font-weight: 700; }

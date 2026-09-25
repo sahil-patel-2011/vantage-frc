@@ -247,6 +247,15 @@ export function ScoutingReadyView({
     window.requestAnimationFrame(scrollToForm);
   }, [matchKey, teamKey, scrollToForm]);
 
+  // The robot picked for you on arrival: selected, but the page stays where it is.
+  const autoPickRobot = useCallback(
+    (nextMatch: string, nextTeam: string) => {
+      setMatchKey(nextMatch);
+      setTeamKey(nextTeam);
+    },
+    [setMatchKey, setTeamKey],
+  );
+
   const backToPicker = useCallback(() => {
     document
       .getElementById("scout-robot-picker")
@@ -575,6 +584,7 @@ return (
                   matchKey={matchKey}
                   teamKey={teamKey}
                   onPick={pickRobot}
+                  onAutoPick={autoPickRobot}
                 />
               ) : null}
               {data?.matches?.length ? (

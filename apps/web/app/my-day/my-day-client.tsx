@@ -84,6 +84,16 @@ function ScoutChips({
   );
 }
 
+/** The Scouting tab without a match picks the next match and robot that still need a scout. */
+function nextOpenScoutHref(href: string): string {
+  const [path, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  params.delete("matchKey");
+  params.delete("teamKey");
+  const rest = params.toString();
+  return rest ? `${path}?${rest}` : path!;
+}
+
 function MatchHero({ match }: { match: MyDayMatch; orgId?: string | null }) {
   return (
     <section className={`myday-hero alliance-${match.alliance}`} aria-live="polite">
@@ -94,8 +104,10 @@ function MatchHero({ match }: { match: MyDayMatch; orgId?: string | null }) {
       <ScoutChips label="With" chips={match.links.scoutPartners} />
       <ScoutChips label="Vs" chips={match.links.scoutOpponents} />
       <nav className="myday-hero-links" aria-label="Match links">
-        <a className="myday-link primary" href={match.links.scouting}>
-          Scout this match
+        {/* Our own match is usually scouted by the time it is next ("✓ Done" on all six robots),
+            so the button opens the next match that still needs a scout. */}
+        <a className="myday-link primary" href={nextOpenScoutHref(match.links.scouting)}>
+          Scout the next open match
         </a>
         {/* Event day, Schedule and Strategy are the hub's own tabs; five more buttons here
             buried the one that matters. */}

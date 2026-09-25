@@ -11,6 +11,7 @@ import {
   orderedSchedule,
   scheduleIsOver,
 } from "../../lib/scouting/next-match";
+import { fetchProductSession } from "../../lib/nav/product-session";
 
 /**
  * The match a scout is about to watch, with its six robots as big buttons.
@@ -26,6 +27,7 @@ export function NextMatchCard({
   matchKey,
   teamKey,
   onPick,
+  onAutoPick,
 }: {
   matches: ScheduleMatch[];
   scouted: ScoutedEntry[];
@@ -33,6 +35,8 @@ export function NextMatchCard({
   matchKey: string;
   teamKey: string;
   onPick: (matchKey: string, teamKey: string) => void;
+  /** Selects without scrolling the page to the form; falls back to onPick. */
+  onAutoPick?: (matchKey: string, teamKey: string) => void;
 }) {
   const schedule = useMemo(() => orderedSchedule(matches), [matches]);
   const start = useMemo(() => nextMatchIndex(schedule, scouted, assignments), [schedule, scouted, assignments]);
@@ -49,6 +53,46 @@ export function NextMatchCard({
   }, [start, matchKey]);
 
   const card = matchCard(schedule, index, scouted, assignments);
+
+  // Our own team number, to leave our robot for last: the drive team is busy playing it.
+  const [ownTeamKey, setOwnTeamKey] = useState<string | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void fetchProductSession().then((session) => {
+      if (!active) return;
+      if (session?.teamNumber) setOwnTeamKey(`frc${session.teamNumber}`);
+      setSessionChecked(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // "Scout this match — your next robot, one tap" opened on six tiles with none picked. With
+  // nothing picked yet, the next robot is picked for you: yours first, then one nobody has
+  // scouted, other teams before ours. Tap a different tile to change it.
+  // Only our own robot left in a match: the next match with another team open comes first
+  // (the save flow skips ours the same way), then ours.
+  const autoPick = useMemo(() => {
+    if (matchKey || start < 0 || !sessionChecked) return null;
+    let ownFallback: { matchKey: string; teamKey: string } | null = null;
+    for (let at = start; at < Math.min(schedule.length, start + 6); at += 1) {
+      const candidate = matchCard(schedule, at, scouted, assignments);
+      if (!candidate?.robots.length) continue;
+      const mine = candidate.robots.find((robot) => robot.assignedToYou && !robot.scouted);
+      if (mine) return { matchKey: candidate.match.matchKey, teamKey: mine.teamKey };
+      const open = candidate.robots.filter((robot) => !robot.scouted);
+      const other = open.find((robot) => robot.teamKey !== ownTeamKey);
+      if (other) return { matchKey: candidate.match.matchKey, teamKey: other.teamKey };
+      if (!ownFallback && open[0]) ownFallback = { matchKey: candidate.match.matchKey, teamKey: open[0].teamKey };
+    }
+    return ownFallback;
+  }, [matchKey, start, schedule, scouted, assignments, ownTeamKey, sessionChecked]);
+  useEffect(() => {
+    if (autoPick) (onAutoPick ?? onPick)(autoPick.matchKey, autoPick.teamKey);
+  }, [autoPick, onPick, onAutoPick]);
+
   if (!card) return null;
 
   const step = (delta: number) => setIndex((current) => Math.min(Math.max(current + delta, 0), schedule.length - 1));

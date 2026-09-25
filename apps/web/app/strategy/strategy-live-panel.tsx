@@ -306,7 +306,10 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             </div>
           ))}
         </div>
-        <h3>What would move this</h3>
+        {/* The game plan below is what to do; this is how much each thing is worth. It was a
+            third telling of the same match ahead of the plan itself. */}
+        <details className="strategy-more strategy-levers">
+          <summary>What would change the win chance</summary>
         <p className="app-muted lever-note">
           Each line re-runs the rating model with one measured number changed. A
           lever only appears when we have actually measured the thing behind it.
@@ -341,6 +344,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         ) : (
           <p className="app-muted">{NO_LEVERS_COPY}</p>
         )}
+        </details>
         <details className="strategy-more">
           <summary>How this was worked out</summary>
         <h3>Key factors</h3>
@@ -396,6 +400,41 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         </details>
       </Panel>
 
+      <Panel className="playbook-card">
+        <header>
+          <h2>Game plan for this match</h2>
+          <span className="app-badge good">{view.playbook.generalTips?.length ? "From this match" : "General"}</span>
+        </header>
+        <ol>
+          {view.playbook.priorities.map((item, index) => (
+            <li key={item}>
+              <b>{index + 1}</b>
+              <span>{plainStrategyText(item)}</span>
+            </li>
+          ))}
+        </ol>
+        {view.playbook.generalTips?.length ? (
+          <details className="strategy-more">
+            <summary>General tips</summary>
+            <ul>
+              {view.playbook.generalTips.map((tip) => (
+                <li key={tip}>{plainStrategyText(tip)}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+        <h3>Role checkpoints</h3>
+        <div className="checkpoint-row">
+          {view.playbook.checkpoints.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </Panel>
+
+      {/* The ratings arithmetic, opponent tendencies and which scouting was used: for the
+          strategy lead. A scout opening Strategy met five screens of it before the plan. */}
+      <details className="strategy-more strategy-lead-details">
+        <summary>Details for leads: coach notes, opponent tendencies, scouting used</summary>
       <Panel className="strategy-matchup-card">
         <header>
           <h2>Coach notes</h2>
@@ -460,37 +499,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
           </details>
         ) : null}
       </Panel>
-
-      <Panel className="playbook-card">
-        <header>
-          <h2>Game plan for this match</h2>
-          <span className="app-badge good">{view.playbook.generalTips?.length ? "From this match" : "General"}</span>
-        </header>
-        <ol>
-          {view.playbook.priorities.map((item, index) => (
-            <li key={item}>
-              <b>{index + 1}</b>
-              <span>{plainStrategyText(item)}</span>
-            </li>
-          ))}
-        </ol>
-        {view.playbook.generalTips?.length ? (
-          <details className="strategy-more">
-            <summary>General tips</summary>
-            <ul>
-              {view.playbook.generalTips.map((tip) => (
-                <li key={tip}>{plainStrategyText(tip)}</li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-        <h3>Role checkpoints</h3>
-        <div className="checkpoint-row">
-          {view.playbook.checkpoints.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </Panel>
+      </details>
 
       <PrivateEdgePanel view={view} />
 

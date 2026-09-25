@@ -69,10 +69,10 @@ test.describe("student-week GUI path", () => {
     await expect(page).toHaveURL(/\/(dashboard|workspace|signin|invite|onboarding|my-day|hours|team|command|competition|scouting)|[?&]tab=(my-day|hours)/);
   });
 
-  test("My Day Scout this match is a real click or Needs setup", async ({ page }) => {
+  test("My Day Scout the next open match is a real click or Needs setup", async ({ page }) => {
     await openStudent(page, "/my-day");
     await expectNoBanned(page, "My Day");
-    const scout = page.getByRole("link", { name: "Scout this match" });
+    const scout = page.getByRole("link", { name: "Scout the next open match" });
     const setup = page.getByRole("heading", { name: /Choose your team|Needs setup/i }).or(
       page.getByRole("link", { name: /Choose your team|Set the event you’re at|Set active event/i }),
     );

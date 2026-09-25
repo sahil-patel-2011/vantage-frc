@@ -84,7 +84,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
       );
     }
     if (page.url().includes("/my-day") || page.url().includes("tab=my-day")) {
-      const scout = page.getByRole("link", { name: "Scout this match" });
+      const scout = page.getByRole("link", { name: "Scout the next open match" });
       if (await scout.count()) {
         await scout.first().click();
         await expect(page.locator("body")).not.toContainText("Application error");
