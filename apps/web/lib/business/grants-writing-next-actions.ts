@@ -75,7 +75,7 @@ export function grantsWritingNextActions(ctx: GrantsWritingNextActionContext): G
 
   actions.push({
     id: "sponsors",
-    label: "Open sponsor CRM",
+    label: "Open Sponsors",
     detail: "Pair grant asks with recorded sponsor cash in the same season goal.",
     href: hubHref("/business", "sponsors", orgId),
   });

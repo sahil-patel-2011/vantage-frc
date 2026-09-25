@@ -35,7 +35,7 @@ const SURFACES = [
     path: "/team/slack",
     heading: "Slack",
     crumb: "Team / Slack",
-    ready: "Connect Slack",
+    ready: "Connect a Slack channel",
   },
   {
     path: "/team/ai-keys",

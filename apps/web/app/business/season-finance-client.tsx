@@ -422,24 +422,40 @@ function LiveDesk({
         </div>
       </section>
 
-      <section className="biz-kpis" aria-label="Season cash plan">
-        <Kpi label="Planned income" value={hasPlan ? money(rollup.plannedIncomeCents) : "—"} detail="Funding lines, or fundraising goals if none yet" />
-        <Kpi label="Received" value={money(rollup.receivedIncomeCents)} detail={`${money(rollup.fundingReceivedCents)} on this desk + sponsors / grants / fundraisers`} tone="good" />
-        <Kpi
-          label="Still to raise"
-          value={rollup.plannedSpendCents > 0 ? money(rollup.remainingToRaiseCents) : "—"}
-          detail={rollup.plannedSpendCents > 0 ? "Season budget minus money received" : "Set a season budget to see this"}
-          tone={rollup.remainingToRaiseCents > 0 ? "warn" : "neutral"}
-        />
-        <Kpi label="Planned spend" value={rollup.plannedSpendCents > 0 ? money(rollup.plannedSpendCents) : "—"} detail={view.operatingBudgetCents > 0 ? "Your season budget" : rollup.plannedSpendCents > 0 ? "Category plans — no season budget set" : "Set a season budget to see this"} />
-        <Kpi label="Spent" value={money(rollup.actualSpendCents)} detail={`${money(rollup.purchaseLogCents)} receipts + orders + season costs`} />
-        <Kpi
-          label="Cash position"
-          value={money(rollup.cashPositionCents)}
-          detail="Received minus spent from logged rows only"
-          tone={rollup.cashPositionCents < 0 ? "danger" : "blue"}
-        />
+      {/* Three numbers a mentor asks for; six tiles repeated each other ("Planned spend" was
+          the season budget, "Still to raise" the same figure again). The rest fold below. */}
+      <section className="biz-kpis" aria-label="Season money">
+        <Kpi label="Received" value={money(rollup.receivedIncomeCents)} detail="Sponsors, grants, fundraisers and the money added below" tone="good" />
+        <Kpi label="Spent" value={money(rollup.actualSpendCents)} detail="Receipts, orders and season costs" />
+        {rollup.plannedSpendCents > 0 ? (
+          <Kpi
+            label="Left in budget"
+            value={money(rollup.plannedSpendCents - rollup.actualSpendCents)}
+            detail={`Of a ${money(rollup.plannedSpendCents)} season budget`}
+            tone={rollup.plannedSpendCents - rollup.actualSpendCents < 0 ? "danger" : "blue"}
+          />
+        ) : (
+          <Kpi
+            label="Money on hand"
+            value={money(rollup.cashPositionCents)}
+            detail="Received minus spent. Set a season budget to track what is left."
+            tone={rollup.cashPositionCents < 0 ? "danger" : "blue"}
+          />
+        )}
       </section>
+      <details className="season-finance-more">
+        <summary>More numbers</summary>
+        <section className="biz-kpis" aria-label="Season plan">
+          <Kpi label="Planned income" value={hasPlan ? money(rollup.plannedIncomeCents) : "—"} detail="The money in below, or fundraising goals if none yet" />
+          <Kpi
+            label="Still to raise"
+            value={rollup.plannedSpendCents > 0 ? money(rollup.remainingToRaiseCents) : "—"}
+            detail={rollup.plannedSpendCents > 0 ? "Season budget minus money received" : "Set a season budget to see this"}
+            tone={rollup.remainingToRaiseCents > 0 ? "warn" : "neutral"}
+          />
+          <Kpi label="Money on hand" value={money(rollup.cashPositionCents)} detail="Received minus spent" tone={rollup.cashPositionCents < 0 ? "danger" : "blue"} />
+        </section>
+      </details>
 
       <section className="biz-grid two">
         <details className="app-card season-finance-fold">
@@ -481,8 +497,8 @@ function LiveDesk({
             </li>
           </ul>
           <p className="app-muted" style={{ margin: "10px 0 0", fontSize: 12 }}>
-            Use funding lines for school funds, student fees, and deposits that are not already in Sponsors, Grants, or
-            Fundraisers.
+            Add school funds, student fees and other money here. Sponsor money, grants and fundraisers are counted from
+            their own pages.
           </p>
           <div style={{ marginTop: 16 }}>
             <span className="biz-overline">Per-sponsor recorded contributions</span>
@@ -516,19 +532,21 @@ function LiveDesk({
         <article className="app-card">
           <header className="biz-card-head">
             <div>
-              <span className="biz-overline">Funding sources</span>
-              <h2>School, fees, grants, sponsors, fundraisers</h2>
+              <span className="biz-overline">Other money in</span>
+              <h2>School funds, fees and other income</h2>
             </div>
             <span className="biz-count">{view.funding.length}</span>
           </header>
           {view.canManageFinance ? (
             <details className="season-finance-add" id="add-funding">
-              <summary>Add a funding source</summary>
+              <summary>Add money in</summary>
             <form className="biz-form-grid" onSubmit={(event) => void onFunding(event)}>
               <label className="biz-field">
                 <span>Kind</span>
                 <select name="kind" defaultValue="school" required>
-                  {FUNDING_KINDS.map((kind) => (
+                  {/* Sponsor cash, grants and fundraisers have their own pages and are already
+                      counted; offering them here invited entering the same money twice. */}
+                  {FUNDING_KINDS.filter((kind) => kind !== "grant" && kind !== "sponsor" && kind !== "fundraiser").map((kind) => (
                     <option key={kind} value={kind}>
                       {FUNDING_KIND_LABELS[kind]}
                     </option>
@@ -812,7 +830,7 @@ function BalancePanel({ orgId }: { orgId: string }) {
           <span className="biz-overline">Balance</span>
           <h2>Where the money actually stands</h2>
           <p className="app-muted finance-balance-note">
-            Derived from recorded income and spend only — ledger, sponsor cash, fundraisers, funding lines,
+            Counted from recorded money only: money in and out, sponsor cash, fundraisers, other income,
             grants, orders, receipts, and paid season costs. Nothing is estimated.
           </p>
         </div>
@@ -866,11 +884,11 @@ function BalancePanel({ orgId }: { orgId: string }) {
           {balance.ledger.length ? (
             <div className="finance-balance-activity">
               <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <h3 style={{ margin: 0 }}>The ledger</h3>
+                <h3 style={{ margin: 0 }}>Every entry</h3>
                 <ExportButton
                   rows={balance.ledger}
                   columns={LEDGER_CSV_COLUMNS}
-                  feature="Money ledger"
+                  feature="Money in and out"
                   orgId={orgId}
                   size="sm"
                   provenance="Every recorded money movement on the unified ledger, newest first — mirrored orders, receipts, season costs, and manual entries, deduplicated by source."

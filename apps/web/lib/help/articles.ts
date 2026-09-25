@@ -1148,7 +1148,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "One season money plan",
         body: [
           "Business → Money rolls planned vs received income against planned vs actual spend for the selected season.",
-          "Add funding lines for school/district money, student fees, and deposits that are not already in Sponsors, Grants, or Fundraisers.",
+          "Under Other money in, add school or district funds, student fees and other income. Sponsor money, grants and fundraisers are counted from their own pages.",
         ],
       },
       {

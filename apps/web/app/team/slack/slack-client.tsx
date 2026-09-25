@@ -3,8 +3,6 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
-import { slackNextActions, slackRelatedLinks } from "../../../lib/slack-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -182,9 +180,9 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
     }
     setStatus(
       action === "save"
-        ? "Slack connection saved."
+        ? "Saved. Press Send test to check it."
         : action === "test"
-          ? "Test message posted to Slack."
+          ? "Test message sent. Check the channel in Slack."
           : action === "disconnect"
             ? "Slack disconnected."
             : action === "set-bridge"
@@ -210,14 +208,6 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
     });
   }
 
-  const actions = slackNextActions({
-    orgId,
-    configured: view?.configured,
-    hasWebhook: view?.hasWebhook,
-    chatBridgeEnabled: view?.chatBridgeEnabled,
-    inboundReady: view?.inboundReady,
-  });
-  const related = slackRelatedLinks(orgId);
   const failure = fetchFailed
     ? loadFailureCopy(
         classifyLoadFailure({
@@ -235,20 +225,115 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       )
     : null;
 
+  const channelName = view?.channelLabel || view?.workspaceName || "your Slack channel";
+
+  // Laid out like Discord: one card with numbered steps and one field. The page had three rows
+  // of links, a "Slack is optional" card whose only button left, and a bare 23px input.
+  const connectForm = view ? (
+    <form className="team-discord-connect" onSubmit={onSave}>
+      <ol className="team-discord-steps">
+        <li>
+          In Slack, open{" "}
+          <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer">
+            api.slack.com/apps
+          </a>{" "}
+          and press <strong>Create New App → From scratch</strong>. Pick your team&apos;s workspace.
+        </li>
+        <li>
+          Choose <strong>Incoming Webhooks</strong>, turn it on, press <strong>Add New Webhook</strong> and pick the
+          channel.
+        </li>
+        <li>Copy the webhook URL, paste it below and press Save.</li>
+      </ol>
+      <label>
+        Channel webhook link
+        <input
+          type="url"
+          autoComplete="off"
+          value={form.webhookUrl}
+          onChange={(event) => setForm({ ...form, webhookUrl: event.target.value })}
+          placeholder={view.hasWebhook ? "Saved — paste a new link to change it" : "e.g. https://hooks.slack.com/services/…"}
+          required={!view.hasWebhook}
+        />
+      </label>
+      <label>
+        Channel name (optional)
+        <input
+          value={form.channelLabel}
+          onChange={(event) => setForm({ ...form, channelLabel: event.target.value })}
+          placeholder="e.g. #team-chat"
+        />
+      </label>
+      <details className="team-discord-advanced">
+        <summary>More options</summary>
+        <label className="soft-form-row check-field">
+          <input
+            type="checkbox"
+            checked={form.chatBridgeEnabled}
+            onChange={(event) => setForm({ ...form, chatBridgeEnabled: event.target.checked })}
+          />
+          Copy team chat to Slack, and Slack replies back to team chat
+        </label>
+        <p className="app-muted">
+          Replies from Slack need a little more from whoever made the Slack app: the ids and signing secret below, and
+          Event Subscriptions pointed at <code className="slack-events-url">{view.eventsUrl ?? "…"}</code> with{" "}
+          <code>message.channels</code>.
+        </p>
+        <label>
+          Workspace id (starts with T)
+          <input
+            value={form.workspaceId}
+            onChange={(event) => setForm({ ...form, workspaceId: event.target.value })}
+            placeholder="e.g. T012ABCDEF"
+          />
+        </label>
+        <label>
+          Channel id (starts with C)
+          <input
+            value={form.channelId}
+            onChange={(event) => setForm({ ...form, channelId: event.target.value })}
+            placeholder="e.g. C012ABCDEF"
+          />
+        </label>
+        <label>
+          Signing secret
+          <input
+            type="password"
+            autoComplete="off"
+            value={form.signingSecret}
+            onChange={(event) => setForm({ ...form, signingSecret: event.target.value })}
+            placeholder={view.hasSigningSecret ? "Saved — paste to replace" : "From the Slack app's Basic Information"}
+          />
+        </label>
+        {view.bridgePostLabel ? <p className="app-muted">Copied so far: {view.bridgePostLabel}</p> : null}
+      </details>
+      <div className="team-discord-actions">
+        <Button variant={view.configured ? "secondary" : "primary"} type="submit" disabled={busy}>
+          {busy ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </form>
+  ) : null;
+
   return (
     <main className="module-page team-discord-page">
       <PageHeader
         breadcrumbs="Team / Slack"
         title="Slack"
-        description="Keep Vantage team chat and Slack on the same thread. Messages stay on this team only."
-      />
-      <TeamOpsNav active="admin" />
+        description="Post team announcements and chat to a Slack channel."
+      >
+        <nav className="team-admin-settings-links" aria-label="Related team tools">
+          <a href={withOrgHref("/connectors", orgId)}>‹ Connectors</a>
+          <a href={withOrgHref("/team?tab=messages", orgId)}>Team chat</a>
+        </nav>
+      </PageHeader>
       <OfflineBanner feature="Slack" fromCache={fromCache} cachedAt={cachedAt} />
-      <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
-        {related.map((link) => (
-          <a key={link.id} href={link.href}>{link.label}</a>
-        ))}
-      </nav>
+
+      {status ? (
+        <p className={ok ? "team-discord-status ok" : "team-discord-status err"} role="status">
+          {status}
+        </p>
+      ) : null}
 
       {failure && !view ? (
         <EmptyState
@@ -280,116 +365,48 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
 
       {!view && !fetchFailed ? <p className="app-muted">Loading Slack settings…</p> : null}
 
-      {view?.empty ? (
-        <EmptyState
-          title="Slack is optional"
-          description={view.emptyReason ?? "Team chat in Vantage works on its own. Connect Slack if you want both sides synced."}
-          badge="Not connected"
-          badgeTone="setup"
-        >
-          <Button as="a" variant="primary" href={withOrgHref("/team?tab=messages", orgId)}>
-            Open team chat
-          </Button>
-        </EmptyState>
+      {view?.configured ? (
+        <section className="app-card soft-panel team-discord-panel">
+          <h2>
+            {view.canPost && view.enabled
+              ? `Posting to ${channelName}`
+              : view.canPost
+                ? `Connected to ${channelName} — posting is paused`
+                : `Saved, but Slack can't post to ${channelName} yet`}
+          </h2>
+          {!view.canPost ? <p className="app-muted">Paste the channel&apos;s webhook link below to finish.</p> : null}
+          <div className="team-discord-actions">
+            <Button variant="secondary" type="button" disabled={busy || !view.hasWebhook} onClick={() => void run("test")}>
+              Send test
+            </Button>
+            <Button
+              variant="ghost"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (window.confirm("Disconnect Slack? Vantage stops posting to the channel.")) void run("disconnect");
+              }}
+            >
+              Disconnect
+            </Button>
+          </div>
+        </section>
       ) : null}
 
-      {view ? (
-        <>
-      <form className="app-card team-discord-panel" onSubmit={onSave}>
-        <h2>Connect Slack</h2>
-        <label>
-          Incoming webhook URL
-          <input
-            type="password"
-            autoComplete="off"
-            value={form.webhookUrl}
-            onChange={(event) => setForm({ ...form, webhookUrl: event.target.value })}
-            placeholder={view.hasWebhook ? "Saved — paste to replace" : "https://hooks.slack.com/services/…"}
-          />
-        </label>
-        <label className="account-check">
-          <input
-            type="checkbox"
-            checked={form.chatBridgeEnabled}
-            onChange={(event) => setForm({ ...form, chatBridgeEnabled: event.target.checked })}
-          />
-          Sync team chat both ways
-        </label>
-        <details className="slack-advanced">
-          <summary>Two-way chat setup (for whoever set up your Slack app)</summary>
-        <label>
-          Workspace id (T…)
-          <input
-            value={form.workspaceId}
-            onChange={(event) => setForm({ ...form, workspaceId: event.target.value })}
-            placeholder="T012ABCDEF"
-          />
-        </label>
-        <label>
-          Channel id (C…)
-          <input
-            value={form.channelId}
-            onChange={(event) => setForm({ ...form, channelId: event.target.value })}
-            placeholder="C012ABCDEF"
-          />
-        </label>
-        <label>
-          Channel label
-          <input
-            value={form.channelLabel}
-            onChange={(event) => setForm({ ...form, channelLabel: event.target.value })}
-            placeholder="#team-chat"
-          />
-        </label>
-        <label>
-          Slack app signing secret (only needed for replies from Slack to reach Vantage)
-          <input
-            type="password"
-            autoComplete="off"
-            value={form.signingSecret}
-            onChange={(event) => setForm({ ...form, signingSecret: event.target.value })}
-            placeholder={view.hasSigningSecret ? "Saved — paste to replace" : "Slack app signing secret"}
-          />
-        </label>
-        <p className="app-muted">
-          In your Slack app, set Event Subscriptions to{" "}
-          <code className="slack-events-url">{view.eventsUrl ?? "…"}</code> and subscribe to{" "}
-          <code>message.channels</code>.
-          {!view.inboundReady ? " Replies from Slack also need the signing secret above." : null}
-        </p>
+      {view?.configured ? (
+        <details className="app-card soft-panel team-discord-panel team-discord-change" open={!view.canPost}>
+          <summary>Change channel or settings</summary>
+          {connectForm}
         </details>
-        <div className="team-discord-actions">
-          <Button variant="primary" type="submit" disabled={busy}>
-            Save Slack
-          </Button>
-          <Button variant="secondary" type="button" disabled={busy || !view.hasWebhook} onClick={() => void run("test")}>
-            Send test
-          </Button>
-          <Button variant="secondary" type="button" disabled={busy || !view.configured} onClick={() => void run("disconnect")}>
-            Disconnect
-          </Button>
-        </div>
-        {view.bridgePostLabel ? <p className="app-muted">Bridge: {view.bridgePostLabel}</p> : null}
-        {status ? <p className={ok ? "team-discord-status ok" : "team-discord-status err"}>{status}</p> : null}
-      </form>
-
-      <section className="team-discord-next-actions app-card soft-panel" aria-label="Next actions">
-        <header>
-          <h2>Next actions</h2>
-          <p>Each one opens the page where you finish the work.</p>
-        </header>
-        <ol>
-          {actions.map((action) => (
-            <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-            </li>
-          ))}
-        </ol>
-      </section>
-        </>
+      ) : view ? (
+        <section className="app-card soft-panel team-discord-panel">
+          <h2>Connect a Slack channel</h2>
+          <p className="app-muted">
+            Optional: team chat works without it. Takes about two minutes, and you need to be able to add apps to your
+            Slack workspace.
+          </p>
+          {connectForm}
+        </section>
       ) : null}
     </main>
   );

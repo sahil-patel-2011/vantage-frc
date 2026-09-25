@@ -95,7 +95,7 @@ export function ordersNextActions(ctx: OrdersNextActionContext): OrdersNextActio
 
   actions.push({
     id: "sponsors",
-    label: "Open sponsor CRM",
+    label: "Open Sponsors",
     detail: "Sponsor cash you actually recorded funds the purchases mentors approve.",
     href: hubHref("/business", "sponsors", orgId),
     primary: actions.length === 0,

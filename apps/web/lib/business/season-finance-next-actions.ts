@@ -49,7 +49,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
   if (fundingCount === 0) {
     actions.push({
       id: "first-funding",
-      label: ctx.canManageFinance ? "Add school funds, fees, or expected grants" : "Ask a finance lead to add funding lines",
+      label: ctx.canManageFinance ? "Add school funds, fees or other money in" : "Ask a finance lead to add school funds and fees",
       detail: "Planned vs received stays blank until someone logs a real source.",
       href: ctx.canManageFinance ? `${financeHref}#add-funding` : financeHref,
       primary: true,
@@ -93,7 +93,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
 
   actions.push({
     id: "sponsors",
-    label: "Open sponsor CRM",
+    label: "Open Sponsors",
     detail: "Cash already logged as sponsor contributions rolls into this desk — do not re-enter those deposits.",
     href: hubHref("/business", "sponsors", orgId),
   });
