@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { DataSourceDegradedBanner } from "../../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { TeamDataRelated } from "../../../components/team-data-related";
-import { EmptyState, Panel, Button } from "../../../components/ui";
+import { EmptyState, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -16,8 +16,6 @@ import {
   classifyTeamDataShell,
   isTbaConfigured,
   referenceCount,
-  teamDataNextActions,
-  type TeamDataNextAction,
   type TeamDataShellKind,
 } from "../../../lib/team-data/team-data-related";
 
@@ -40,6 +38,14 @@ const ROW_NAMES: Record<string, string> = {
   matches_ref: "Matches at your event",
   team_event_metrics: "Team stats at your event",
 };
+
+/** Housekeeping counts a team never acts on; they stay on the platform admin's pages. */
+const HIDDEN_ROWS = new Set(["ai_artifacts", "cad_jobs", "export_jobs", "live_alerts", "display_boards"]);
+
+/** Rows worth showing a team: something they recorded, and not zero. */
+function shownRows(rows: InventoryRow[]): InventoryRow[] {
+  return rows.filter((row) => row.count > 0 && !HIDDEN_ROWS.has(row.label));
+}
 
 function rowName(label: string): string {
   const known = ROW_NAMES[label];
@@ -80,28 +86,6 @@ async function persistTeamDataSnapshot(orgId: string, data: TeamDataSnapshot): P
   }
 }
 
-function TeamDataNextActionsPanel({ actions }: { actions: TeamDataNextAction[] }) {
-  if (actions.length === 0) return null;
-  return (
-    <Panel className="team-data-next-actions edc-next-actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </Panel>
-  );
-}
-
 /**
  * The one place a team puts in its Blue Alliance key.
  *
@@ -136,17 +120,16 @@ function TbaKeyPanel({
   message: string;
   ok: boolean;
 }) {
-  return (
-    <section className="app-card soft-panel team-data-panel">
-      <h2>Blue Alliance key</h2>
+  const body = (
+    <>
       <p className="app-muted">
         {required
-          ? "Nothing syncs until this workspace can reach The Blue Alliance. Create a key at thebluealliance.com → Account → Read API Keys and paste it here. It is encrypted on save and never shown again."
-          : "This workspace is already syncing on the site-wide key. Your own key is kept as a standby and used when the shared one is under pressure. Encrypted on save and never shown again."}
+          ? "Event data comes from The Blue Alliance. Make a free read key at thebluealliance.com → Account → Read API Keys and paste it here. It is kept encrypted and never shown again."
+          : "Vantage already gets your event data. Adding your team's own Blue Alliance key keeps it coming if the shared connection is busy. It is kept encrypted and never shown again."}
       </p>
       <form className="team-data-key-form" onSubmit={onSubmit}>
         <label>
-          TBA Read API v3 key
+          Blue Alliance read key
           <input
             type="password"
             autoComplete="off"
@@ -157,7 +140,7 @@ function TbaKeyPanel({
           />
         </label>
         <Button variant="secondary" type="submit" disabled={busy || !value.trim()}>
-          Encrypt and save
+          Save key
         </Button>
       </form>
       {message ? (
@@ -194,11 +177,22 @@ function TbaKeyPanel({
           people come to this panel hunting for a second field and do not find
           one. Statbotics genuinely has no key — saying so stops the hunt. */}
       <p className="app-muted team-data-statbotics">
-        <strong>Statbotics needs no key.</strong> Its API is open, so EPA and
-        ranking data arrive without anything to configure. This one key is all
-        your team has to supply.
+        <strong>Team ratings need no key.</strong> They come from Statbotics,
+        which is open to everyone.
       </p>
+    </>
+  );
+  // Required: the panel leads. Optional: one folded line, so a working team isn't asked for a key.
+  return required ? (
+    <section className="app-card soft-panel team-data-panel">
+      <h2>Blue Alliance key</h2>
+      {body}
     </section>
+  ) : (
+    <details className="app-card soft-panel team-data-panel team-data-key-fold">
+      <summary>Use your own Blue Alliance key (optional)</summary>
+      {body}
+    </details>
   );
 }
 
@@ -481,6 +475,11 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       dataSourceHealth?.sources.find((source) => source.source === "tba")?.status ??
       (typeof health?.status === "string" ? health.status : null),
   });
+  const tbaSuccess = dataSourceHealth?.sources.find((source) => source.source === "tba")?.lastSuccessAt ?? null;
+  const lastRefreshed =
+    tbaSuccess && !Number.isNaN(Date.parse(tbaSuccess))
+      ? new Date(tbaSuccess).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })
+      : null;
   const matchCount = referenceCount(reference, "matches_ref");
   const metricCount = referenceCount(reference, "team_event_metrics");
   const shell = classifyTeamDataShell({
@@ -490,15 +489,6 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     orgId,
     hasActiveEvent: loading ? undefined : hasActiveEvent,
     tbaConfigured: loading ? undefined : tbaConfigured,
-    matchCount,
-    metricCount,
-  });
-
-  const nextActions = teamDataNextActions({
-    orgId,
-    shell,
-    hasActiveEvent,
-    tbaConfigured,
     matchCount,
     metricCount,
   });
@@ -591,8 +581,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">Team / Live data</span>
           <h1>Team Data</h1>
           <p>
-            Inventory counts for your team, shared cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy use this shared Team Data copy.
+            What your team has recorded, and the official event data that Schedule, Event day and Strategy
+            use.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -638,11 +628,11 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <p className="app-muted">
             Active event: <strong>{activeEventLabel}</strong>
           </p>
-          {inventory.length === 0 ? (
-            <p className="app-muted">Nothing on this team yet — counts appear once your team adds data.</p>
+          {shownRows(inventory).length === 0 ? (
+            <p className="app-muted">Nothing recorded yet. Counts appear once your team scouts or adds research.</p>
           ) : (
             <ul className="team-data-inventory">
-              {inventory.map((row) => (
+              {shownRows(inventory).map((row) => (
                 <li key={row.label}>
                   <span>{rowName(row.label)}</span>
                   <strong>{row.count.toLocaleString()}</strong>
@@ -667,13 +657,18 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
 
         <aside className="team-data-side">
           <section className="app-card soft-panel team-data-panel">
-            <h2>Sync active event</h2>
+            <h2>Event data</h2>
+            {/* One status line and one button: "platform key", "fallback credential" and an
+                ingestion telemetry block were hosting words on a team's page. */}
             <p className="app-muted">
-              Refreshes match and team data for the event selected on Event Day. Uses the platform key with
-              your fallback credential when configured.
+              {lastRefreshed
+                ? `Up to date for ${activeEventLabel} · last refreshed ${lastRefreshed}.`
+                : hasActiveEvent
+                  ? `Matches, teams and rankings for ${activeEventLabel}.`
+                  : "Pick your event on Event day first."}
             </p>
             <Button variant="primary" type="button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>
-              {busy ? "Working…" : "Sync active event"}
+              {busy ? "Refreshing…" : "Refresh now"}
             </Button>
           </section>
 
@@ -691,44 +686,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             ok={ok}
           />
 
-          <section className="app-card soft-panel team-data-panel">
-            <h2>Ingestion health</h2>
-            {dataSourceHealth ? (
-              <ul className="team-data-inventory">
-                <li>
-                  <span>Mode</span>
-                  <strong>{dataSourceHealth.mode}</strong>
-                </li>
-                <li>
-                  <span>Last saved copy</span>
-                  <strong>
-                    {dataSourceHealth.usingLastGoodCache
-                      ? "in use"
-                      : dataSourceHealth.cacheHasRows
-                        ? "ready"
-                        : "empty"}
-                  </strong>
-                </li>
-                {dataSourceHealth.sources.map((source) => (
-                  <li key={source.source}>
-                    <span>
-                      {source.source.toUpperCase()}
-                      {source.etagResources ? ` · ${source.etagResources} saved copies` : ""}
-                      {source.erroredResources ? ` · ${source.erroredResources} cursor errors` : ""}
-                    </span>
-                    <strong>{source.status}</strong>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="app-muted">No health telemetry yet — sync once to populate real TBA status.</p>
-            )}
-            <pre className="team-data-health">{health ? JSON.stringify(health, null, 2) : "No health telemetry yet."}</pre>
-          </section>
         </aside>
       </div>
 
-      {shell === "ready" ? <TeamDataNextActionsPanel actions={nextActions} /> : null}
+      {/* No "Next actions" list here: it repeated the Schedule, Event Day and Strategy links above. */}
     </main>
   );
 }

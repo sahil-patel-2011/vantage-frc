@@ -264,7 +264,7 @@ describe("form-builder", () => {
     });
     expect(
       formBuilderPublishLabel({ busy: false, entryType: "match", status: unpublished }),
-    ).toBe("Publish match form");
+    ).toBe("Publish this form");
     expect(
       formBuilderPublishLabel({ busy: true, entryType: "pit", status: unpublished }),
     ).toBe("Publishing…");

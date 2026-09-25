@@ -1027,9 +1027,11 @@ export function formBuilderShellCopy(
       return {
         kind,
         badge: "Not published",
-        title: `No ${typeLabel} form published yet`,
+        // Home promised "a ready-made form is waiting"; this page opened on "No form published
+        // yet" and "Draft questions stay local". It says what is here and the one thing to do.
+        title: `Your ${typeLabel} form is ready to publish`,
         description:
-          `Draft questions stay local until you publish a ${typeLabel} form. Scouts and Coverage stay blank until a real version exists.`,
+          `It starts with the questions most teams ask. Publish it as it is, or change the questions below first. Scouts see it once it is published.`,
       };
     default:
       return {
@@ -1201,7 +1203,7 @@ export function formBuilderPublishLabel(input: {
 }): string {
   if (input.busy) return "Publishing…";
   const typeLabel = input.entryType === "pit" ? "pit" : "match";
-  if (input.status.kind === "unpublished") return `Publish ${typeLabel} form`;
+  if (input.status.kind === "unpublished") return "Publish this form";
   if (input.status.kind === "draft_changes") return `Publish ${typeLabel} changes`;
   return `Republish ${typeLabel} form`;
 }

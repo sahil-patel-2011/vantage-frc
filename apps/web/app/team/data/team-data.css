@@ -39,3 +39,9 @@
 .team-data-statbotics strong {
   color: var(--ink);
 }
+
+/* The optional key is one folded line on a team whose data already flows. */
+.team-data-key-fold > summary { cursor: pointer; font-weight: 700; list-style: none; }
+.team-data-key-fold > summary::-webkit-details-marker { display: none; }
+.team-data-key-fold > summary::after { content: " ›"; color: var(--muted); }
+.team-data-key-fold[open] > summary { margin-bottom: 10px; }

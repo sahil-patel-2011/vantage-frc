@@ -274,7 +274,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       }
       setPublished({ id: String(body.id), version: Number(body.version) });
       setMessage(
-        `Published ${type} form v${body.version}. Open Scouting after sync — Coverage stays blank until real entries exist.`,
+        `Published. Scouts see it the next time they open Scout.`,
       );
       await load();
     } catch {
@@ -835,18 +835,23 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               </p>
             ) : null}
             <div className="sfb-publish-actions">
-              <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
-                {publishLabel}
-              </Button>
+              {/* Nothing published yet: the card at the top has the Publish button, said once. */}
+              {shell === "empty" ? null : (
+                <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
+                  {publishLabel}
+                </Button>
+              )}
               <Button as="a" variant="secondary" href={scoutingHref}>
                 Open Scouting
               </Button>
             </div>
           </Panel>
-          <Panel>
-            <h2>Answer types</h2>
+          {/* Sixteen answer types were a catalogue on the first screen; they are what "Add a
+              question" opens. */}
+          <details className="app-card soft-panel sfb-add-question">
+            <summary>Add a question</summary>
             <p className="app-muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
-              Tap one to add a question of that type, then give it a label.
+              Pick the kind of answer, then give the question a label.
             </p>
             <ul className="sfb-palette">
               {ANSWER_KIND_OPTIONS.map((option) => (
@@ -871,7 +876,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 </li>
               ))}
             </ul>
-          </Panel>
+          </details>
           <FormBuilderNextActionsPanel actions={readyActions} />
         </aside>
       </div>

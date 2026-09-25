@@ -117,6 +117,9 @@ async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<str
   for (const key of ["invite", "event", "scouting", "calendar"] as const) {
     if (row[key]) done.add(`${TEAM_SETUP_TRACK}::${key}`);
   }
+  // The same step in the mentor list: an owner who had just invited a student and a mentor saw
+  // "Invite your team ✓" and then, in "Your first week", "Invite mentors and students" unticked.
+  if (row.invite) done.add("role_mentor::invite");
   return done;
 }
 

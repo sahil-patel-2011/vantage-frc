@@ -624,3 +624,9 @@
 .sfb-more { border-top: 1px solid var(--line); padding-top: 8px; }
 .sfb-more > summary { min-height: 40px; display: flex; align-items: center; color: var(--muted); font-weight: 600; cursor: pointer; }
 .sfb-more[open] > summary { margin-bottom: 8px; }
+
+/* "Add a question" folds the answer-type catalogue away until someone wants a new question. */
+.sfb-add-question > summary { cursor: pointer; font-weight: 700; font-size: var(--title-3, 17px); list-style: none; }
+.sfb-add-question > summary::-webkit-details-marker { display: none; }
+.sfb-add-question > summary::before { content: "+ "; color: var(--accent); }
+.sfb-add-question[open] > summary { margin-bottom: 10px; }
