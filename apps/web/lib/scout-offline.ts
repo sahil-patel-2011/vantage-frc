@@ -462,7 +462,25 @@ async function pushEntryBatch(orgId: string, batch: SyncEntry[]): Promise<Outbox
   return parseOutboxChunkBody(await response.json().catch(() => ({})));
 }
 
-async function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
+/**
+ * One drain at a time. The scouting page and the app frame's outbox pill both drain when signal
+ * returns; running together they sent the same entry twice and the second came back "rejected"
+ * for an entry that had been saved. A second caller in this tab joins the drain in flight, and
+ * navigator.locks keeps two tabs of the app from draining at once.
+ */
+let drainInFlight: Promise<Omit<SyncOutboxResult, "attempts">> | null = null;
+
+function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
+  if (drainInFlight) return drainInFlight;
+  const run = () => drainOutboxNow(orgId);
+  const locks = typeof navigator !== "undefined" ? (navigator as Navigator & { locks?: LockManager }).locks : undefined;
+  drainInFlight = (locks ? locks.request("vantage-scout-outbox", run) : run()).finally(() => {
+    drainInFlight = null;
+  });
+  return drainInFlight;
+}
+
+async function drainOutboxNow(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
   const objectStore = await store("readonly", OUTBOX);
   const all = await requestValue<SyncEntry[]>(objectStore.getAll());
   const { allowed: entries } = partitionByOrgId(all, orgId);

@@ -127,6 +127,20 @@ export async function POST(request: Request) {
             await client.query("RELEASE SAVEPOINT scout_sync_entry");
           } catch (error) {
             await client.query("ROLLBACK TO SAVEPOINT scout_sync_entry");
+            // The same entry arriving twice at once (two tabs, or the page and the app frame both
+            // draining the outbox when signal returns): the other request has just committed it.
+            // Read it again and answer "duplicate"; it used to come back "Entry rejected" for an
+            // entry that was saved, and the scout was asked to retry or discard it.
+            if ((error as { code?: string } | null)?.code === "23505") {
+              await client.query("SAVEPOINT scout_sync_entry");
+              try {
+                acks.push(await repository.syncEntry(body.orgId!, session.user.id, entry));
+                await client.query("RELEASE SAVEPOINT scout_sync_entry");
+                continue;
+              } catch {
+                await client.query("ROLLBACK TO SAVEPOINT scout_sync_entry");
+              }
+            }
             failures.push({
               clientId: typeof entry?.clientId === "string" ? entry.clientId : "",
               reason: publicErrorMessage(error, "Entry rejected"),

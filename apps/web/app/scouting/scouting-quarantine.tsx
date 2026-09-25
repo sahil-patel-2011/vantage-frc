@@ -3,16 +3,17 @@
 import { Button, Panel } from "../../components/ui";
 import { mediaKindLabel } from "../../lib/scouting/media-downscale";
 import type { QuarantinedItem } from "../../lib/scout-offline";
+import { matchLabelFromKey } from "../../lib/matches/no-next-match";
 
 export function quarantineItemLabel(item: QuarantinedItem): string {
   if (item.kind === "entry") {
     const entry = item.entry;
-    return `${entry.type === "pit" ? "Pit" : "Match"} entry · ${entry.teamKey}${
-      entry.matchKey ? ` · ${entry.matchKey}` : ""
+    return `${entry.type === "pit" ? "Pit" : "Match"} entry · Team ${entry.teamKey.replace(/^frc/i, "")}${
+      entry.matchKey ? ` · ${matchLabelFromKey(entry.matchKey)}` : ""
     }`;
   }
   const teamKey = typeof item.metadata.teamKey === "string" ? item.metadata.teamKey : "";
-  return `${mediaKindLabel(item.metadata.kind)}${teamKey ? ` · ${teamKey}` : ""}`;
+  return `${mediaKindLabel(item.metadata.kind)}${teamKey ? ` · Team ${teamKey.replace(/^frc/i, "")}` : ""}`;
 }
 
 /** "N entries need attention" — permanently rejected items with Retry/Discard. */
