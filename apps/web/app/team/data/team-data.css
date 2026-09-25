@@ -1,6 +1,9 @@
 /* Soft-UI Team Data / TBA sync — .team-data-* + --soft-* tokens. Never DEMO metrics. */
 .team-data-page{display:grid;gap:16px}
 .team-data-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.team-data-header-actions>.app-button{flex:0 0 auto;width:auto}
+/* After the settings chip row, which every settings page puts right under its description. */
+.app-page-header>.team-data-header-actions{order:6}
 .team-data-related{display:flex;flex-wrap:wrap;gap:8px}
 .team-data-inline-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px}
 .team-data-next-actions{margin:0}

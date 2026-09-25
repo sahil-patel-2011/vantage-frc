@@ -8,3 +8,21 @@
 .team-settings-nav a:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
 .team-settings-nav a.is-current { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 @media (pointer: coarse) { .team-settings-nav a { min-height: 44px; } }
+
+/*
+  The same place on every settings page: its own row under the title and description, starting
+  at the left. It sat to the right of the title on Team admin, AI keys and Connectors, and wrapped
+  under the description on Team security, Team profile and Team data, depending on how long the
+  title was and what else shared the header.
+*/
+.app-page-header:has(.team-settings-nav) { align-items: flex-start; }
+.app-page-header > .app-page-actions:has(> .team-settings-nav) { order: 5; width: 100%; justify-content: flex-start; align-items: center; }
+.app-page-header > .team-settings-nav { order: 5; width: 100%; margin: 0; }
+.app-page-header > .app-page-actions > .team-settings-nav { order: -1; flex: 1 0 100%; margin: 0; }
+/* Where the header is a row, the chip row breaks onto its own line. (Under 800px the header is a
+   column already, and a 100% basis there is a height: it pushed the row off the right edge.) */
+@media (min-width: 801px) {
+  .app-page-header:has(.team-settings-nav) { flex-wrap: wrap; }
+  .app-page-header > .app-page-actions:has(> .team-settings-nav),
+  .app-page-header > .team-settings-nav { flex: 1 0 100%; }
+}

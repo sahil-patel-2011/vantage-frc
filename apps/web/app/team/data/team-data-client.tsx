@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DataSourceDegradedBanner } from "../../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { TeamDataRelated } from "../../../components/team-data-related";
 import { EmptyState, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -12,7 +11,6 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/fea
 import type { DataSourceHealthView } from "../../../lib/reference-health";
 import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import {
-  TEAM_DATA_RELATED_INCLUDE,
   classifyTeamDataShell,
   isTbaConfigured,
   referenceCount,
@@ -227,10 +225,9 @@ function TeamDataShell({
         <div>
           <span className="breadcrumbs">{teamSettingsBreadcrumb("data")}</span>
           <h1>Team data</h1>
-          {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
           <p>{description}</p>
         </div>
-        <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
+        {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
       </header>
       {children}
       <EmptyState
@@ -583,14 +580,14 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <div>
           <span className="breadcrumbs">{teamSettingsBreadcrumb("data")}</span>
           <h1>Team data</h1>
-          {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
           <p>
             What your team has recorded, and the official event data that Schedule, Event day and Strategy
             use.
           </p>
         </div>
+        {/* A settings page: the Schedule / Event day / Strategy links were a second nav above the
+            chip row. */}
         <div className="team-data-header-actions">
-          <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
           <Button as="a" variant="secondary" href={exportHref}>
             Export Center
           </Button>
@@ -598,6 +595,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             PDF inventory
           </Button>
         </div>
+        {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
       </header>
 
       <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
