@@ -211,3 +211,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* On a phone a page's own title needs the room: "Pre-match briefing" and "Notifications"
+   were cut to about 100px beside the Scouting pill. The pill steps aside on titled pages;
+   it stays on Home and the hubs, where the bar shows the team instead. */
+@media (max-width: 480px) {
+  .soft-topbar:has(.soft-page-head-copy > p.soft-topbar-title) .soft-topbar-product {
+    display: none;
+  }
+}
