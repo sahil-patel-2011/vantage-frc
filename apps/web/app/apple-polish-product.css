@@ -278,3 +278,9 @@ html[data-theme="dark"] body.has-app-shell .soft-island-editor > section {
   border-color: var(--line);
   background: var(--surface);
 }
+
+/* On a phone the top bar sits over dense content scrolling right under it; see-through, a
+   page's chips showed through its title. Solid there unless the person chose the clear look. */
+@media (max-width: 720px) {
+  html:not([data-clarity="clear"]) body.has-app-shell .soft-topbar { background-color: var(--bg); }
+}

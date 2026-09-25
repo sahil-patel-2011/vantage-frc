@@ -244,8 +244,8 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
               </div>
               <small id="brand-accent-help" className="app-muted">
                 {draftHexValid
-                  ? "Six-digit hex, e.g. #17457f. Leave blank for the stock Vantage blue."
-                  : "That is not a hex colour — try #17457f."}
+                  ? "Pick a colour, or type one like #17457f. Leave it blank for Vantage blue."
+                  : "That isn't a colour code. Pick one, or type it like #17457f."}
               </small>
             </div>
 
@@ -259,7 +259,10 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                   <span className="brand-preview-text" style={{ color: previewAccent.light.accent }}>
                     Accent text
                   </span>
-                  <small>Light · {previewAccent.light.guard.ratio.toFixed(1)}:1</small>
+                  {/* Readable or not, in words; the ratio is in the title for anyone who wants it. */}
+                  <small title={`Contrast ${previewAccent.light.guard.ratio.toFixed(1)}:1`}>
+                    Light · {previewAccent.light.guard.ratio >= 4.5 ? "easy to read" : "hard to read"}
+                  </small>
                 </div>
                 <div className="brand-preview" data-preview-theme="dark">
                   <span className="brand-preview-chip" style={{ background: previewAccent.dark.brand, color: previewAccent.dark.brandInk }}>
@@ -268,7 +271,9 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                   <span className="brand-preview-text" style={{ color: previewAccent.dark.accent }}>
                     Accent text
                   </span>
-                  <small>Dark · {previewAccent.dark.guard.ratio.toFixed(1)}:1</small>
+                  <small title={`Contrast ${previewAccent.dark.guard.ratio.toFixed(1)}:1`}>
+                    Dark · {previewAccent.dark.guard.ratio >= 4.5 ? "easy to read" : "hard to read"}
+                  </small>
                 </div>
               </div>
             </div>

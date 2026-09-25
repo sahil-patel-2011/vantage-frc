@@ -1,7 +1,8 @@
-import { EmptyState, PageHeader, Button } from "../../../../components/ui";
+import { PageHeader } from "../../../../components/ui";
 import { TeamBrandingPanel } from "../../../../lib/branding/team-branding-panel";
 import { withOrgHref } from "../../../../lib/nav/product-nav";
 import { TeamProfilePanel } from "../../team-profile-panel";
+import { ResolveTeamProfile } from "./resolve-team";
 import "../../team-admin.css";
 
 export const metadata = {
@@ -20,11 +21,7 @@ export default async function TeamProfileSettingsPage({
     return (
       <main className="module-page team-admin-page soft-gate">
         <PageHeader breadcrumbs="Team / Admin / Profile" title="Team profile" />
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="Pick the team whose profile you want to change.">
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-        </EmptyState>
+        <ResolveTeamProfile />
       </main>
     );
   }

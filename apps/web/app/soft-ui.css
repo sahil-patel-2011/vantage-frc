@@ -2377,7 +2377,7 @@ html[data-motion="reduced"] *::after{
 .brand-preview-chip{padding:5px 10px;border-radius:var(--radius-xs);font:700 12px var(--font-source-sans),ui-sans-serif}
 .brand-preview-text{font:700 14px var(--font-source-sans),ui-sans-serif}
 .brand-flags{display:grid;gap:8px}
-.brand-check{display:flex;align-items:flex-start;gap:11px;min-height:44px;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer}
+.brand-check,.soft-panel .brand-check{display:flex;align-items:flex-start;gap:11px;min-height:44px;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer}
 .brand-check input{width:20px;height:20px;margin-top:2px;flex:none}
 .brand-check span{display:grid;gap:3px}
 .brand-check small{color:var(--muted);font-size:12px;line-height:1.45}
