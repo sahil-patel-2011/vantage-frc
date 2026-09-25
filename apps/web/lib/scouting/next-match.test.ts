@@ -28,6 +28,21 @@ describe("next match for a scout", () => {
     expect(nextMatchIndex(schedule, [{ matchKey: "2027test_qm2", teamKey: "frc13" }], [])).toBe(2);
   });
 
+  it("with match times, starts at the first match not yet played that still needs a robot", () => {
+    const now = Date.parse("2026-09-24T20:00:00Z");
+    const at = (minutes: number) => new Date(now + minutes * 60_000).toISOString();
+    const timed = [
+      { ...qual(1, [1, 2, 3], [4, 5, 6]), matchTime: at(-60) },
+      { ...qual(2, [13, 14, 15], [16, 17, 18]), matchTime: at(10) },
+      { ...qual(3, [7, 8, 9], [10, 11, 12]), matchTime: at(30) },
+    ];
+    // One stray entry on Qual 3 no longer skips Qual 2, which is still to play.
+    expect(nextMatchIndex(timed, [{ matchKey: "2027test_qm3", teamKey: "frc7" }], [], now)).toBe(1);
+    // Every robot in Qual 2 scouted: on to Qual 3.
+    const all2 = [13, 14, 15, 16, 17, 18].map((t) => ({ matchKey: "2027test_qm2", teamKey: `frc${t}` }));
+    expect(nextMatchIndex(timed, all2, [], now)).toBe(2);
+  });
+
   it("prefers your next assignment from there on", () => {
     const assignments = [{ matchKey: "2027test_qm1", teamKey: "frc2" }, { matchKey: "2027test_sf1m1", teamKey: "frc9" }];
     // Qual 1 is behind the team's latest scouting (Qual 2), so the next assignment wins.

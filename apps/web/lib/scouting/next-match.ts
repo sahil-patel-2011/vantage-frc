@@ -75,14 +75,10 @@ export function nextMatchIndex(
   schedule: ScheduleMatch[],
   scouted: ScoutedEntry[],
   assignments: Assignment[],
+  now: number = Date.now(),
 ): number {
   if (!schedule.length) return -1;
-  const scoutedMatches = new Set(scouted.map((entry) => entry.matchKey).filter(Boolean));
-  let latest = -1;
-  schedule.forEach((match, index) => {
-    if (scoutedMatches.has(match.matchKey)) latest = index;
-  });
-  const from = Math.min(latest + 1, schedule.length - 1);
+  const from = startIndex(schedule, scouted, now);
   const mine = new Set(assignments.map((assignment) => assignment.matchKey));
   if (mine.size) {
     for (let index = from; index < schedule.length; index++) {
@@ -90,6 +86,33 @@ export function nextMatchIndex(
     }
   }
   return from;
+}
+
+/**
+ * Where a scout starts. With match times: the first match not yet over (its time at most five
+ * minutes ago, or ahead) that still has a robot nobody scouted. Starting one past the latest match
+ * with any entry sent every scout to Qual 34 because of one stray entry on Qual 33, while Qual 31
+ * to 33 were still to play. Without times (an offseason event typed in by hand), the old rule:
+ * one past the latest match with scouting.
+ */
+function startIndex(schedule: ScheduleMatch[], scouted: ScoutedEntry[], now: number): number {
+  const timed = schedule.some((match) => match.matchTime && Number.isFinite(Date.parse(match.matchTime)));
+  if (timed) {
+    const done = new Set(scouted.map((entry) => `${entry.matchKey}|${entry.teamKey}`));
+    for (let index = 0; index < schedule.length; index++) {
+      const match = schedule[index]!;
+      const time = match.matchTime ? Date.parse(match.matchTime) : NaN;
+      if (Number.isFinite(time) && time < now - 5 * 60 * 1000) continue;
+      const robots = [...(match.redAlliance?.teamKeys ?? []), ...(match.blueAlliance?.teamKeys ?? [])];
+      if (robots.length === 0 || robots.some((team) => !done.has(`${match.matchKey}|${team}`))) return index;
+    }
+  }
+  const scoutedMatches = new Set(scouted.map((entry) => entry.matchKey).filter(Boolean));
+  let latest = -1;
+  schedule.forEach((match, index) => {
+    if (scoutedMatches.has(match.matchKey)) latest = index;
+  });
+  return Math.min(latest + 1, schedule.length - 1);
 }
 
 export function matchCard(

@@ -65,7 +65,11 @@ export function NextMatchCard({
           ‹
         </button>
         <div>
-          <strong>{card.label}</strong>
+          <strong>
+            {card.label}
+            {/* When it is, so a scout knows how long they have. */}
+            {matchClock(card.match.matchTime) ? <span className="next-match-time"> · {matchClock(card.match.matchTime)}</span> : null}
+          </strong>
           <small>
             {index === start
               ? over
@@ -125,4 +129,10 @@ export function NextMatchCard({
       )}
     </section>
   );
+}
+
+function matchClock(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const time = new Date(iso);
+  return Number.isNaN(time.getTime()) ? null : time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }

@@ -8,7 +8,7 @@ describe("quarantineItemLabel", () => {
       kind: "entry",
       entry: { type: "pit", teamKey: "frc6925", matchKey: null },
     } as QuarantinedItem;
-    expect(quarantineItemLabel(item)).toBe("Pit entry · frc6925");
+    expect(quarantineItemLabel(item)).toBe("Pit entry · Team 6925");
   });
 
   it("names a match entry with the match key", () => {
@@ -16,6 +16,6 @@ describe("quarantineItemLabel", () => {
       kind: "entry",
       entry: { type: "match", teamKey: "frc6925", matchKey: "2026e2ewx_qm1" },
     } as QuarantinedItem;
-    expect(quarantineItemLabel(item)).toBe("Match entry · frc6925 · 2026e2ewx_qm1");
+    expect(quarantineItemLabel(item)).toBe("Match entry · Team 6925 · Qual 1");
   });
 });
