@@ -256,7 +256,7 @@ describe("loadMyKit", () => {
     const onboarding = view.sections.find((section) => section.id === "onboarding")!;
     expect(onboarding.rows).toHaveLength(1);
     expect(onboarding.rows[0]!.id).toBe("track:welcome");
-    expect(onboarding.rows[0]!.detail).toBe("2 of 4 steps done");
+    expect(onboarding.rows[0]!.detail).toBe("2 of 3 steps done");
   });
 
   it("ignores a scout accuracy snapshot whose score is not a number", async () => {
