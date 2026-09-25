@@ -631,9 +631,13 @@ export function PickListWorkbench({
         </div>
         <div className="strategy-pick-actions">
           <PickDeskRelatedStrip orgId={desk.orgId} />
-          <Button variant="primary" type="button" onClick={saveList} disabled={saving}>
-            {saving ? "Locking…" : "Lock this list"}
-          </Button>
+          {/* Only people who can save one see Lock; a scout pressing it got "Owner or admin role
+              required". */}
+          {desk.canEdit ? (
+            <Button variant="primary" type="button" onClick={saveList} disabled={saving}>
+              {saving ? "Locking…" : "Lock this list"}
+            </Button>
+          ) : null}
         </div>
       </header>
 
@@ -679,7 +683,7 @@ export function PickListWorkbench({
         )}
         {!desk.canEdit ? (
           <p className="telemetry-status" role="status">
-            Read-only for your role. Owners/admins can save durable pick lists.
+            Mentors and captains set the pick list. You can look through it here.
           </p>
         ) : null}
         {status ? (
@@ -710,20 +714,24 @@ export function PickListWorkbench({
                   <ConsistencyChip candidate={candidate} />
                     </div>
                     <div className="strategy-pick-row-actions">
-                      <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
-                        ↑
-                      </button>
-                      <button type="button" onClick={() => shiftRank(entry.teamKey, 1)} aria-label="Move down">
-                        ↓
-                      </button>
-                      {TIERS.filter((item) => item.id !== tier.id).map((item) => (
-                        <button key={item.id} type="button" onClick={() => moveEntry(entry.teamKey, item.id)}>
-                          {item.id[0]!.toUpperCase()}
-                        </button>
-                      ))}
-                      <button type="button" onClick={() => removeEntry(entry.teamKey)}>
-                        Remove
-                      </button>
+                      {desk.canEdit ? (
+                        <>
+                          <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
+                            ↑
+                          </button>
+                          <button type="button" onClick={() => shiftRank(entry.teamKey, 1)} aria-label="Move down">
+                            ↓
+                          </button>
+                          {TIERS.filter((item) => item.id !== tier.id).map((item) => (
+                            <button key={item.id} type="button" onClick={() => moveEntry(entry.teamKey, item.id)}>
+                              {item.id[0]!.toUpperCase()}
+                            </button>
+                          ))}
+                          <button type="button" onClick={() => removeEntry(entry.teamKey)}>
+                            Remove
+                          </button>
+                        </>
+                      ) : null}
                       {desk.positionHeatByTeam?.[entry.teamKey]?.length ? (
                         <button
                           type="button"
