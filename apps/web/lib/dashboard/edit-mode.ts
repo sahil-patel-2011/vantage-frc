@@ -5,7 +5,6 @@
  */
 
 import {
-  DASHBOARD_COLUMNS,
   findDashboardSlot,
   homeViewLayout,
   isAlwaysShown,
