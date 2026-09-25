@@ -333,6 +333,7 @@ export async function acceptOrganizationInvite(
   );
   const orgId = result.rows[0]!.orgId;
   await audit(client, { orgId, actorUserId, action: "invite.accepted" });
+  await notifyInviteAccepted(client, orgId, actorUserId);
   return orgId;
 }
 
@@ -345,7 +346,58 @@ export async function acceptMyOrganizationInvite(client: PoolClient, actorUserId
   const result = await client.query<{ orgId: string }>(`SELECT accept_my_org_invite($1::uuid) AS "orgId"`, [orgId]);
   const joined = result.rows[0]!.orgId;
   await audit(client, { orgId: joined, actorUserId, action: "invite.accepted", metadata: { via: "verified_email" } });
+  await notifyInviteAccepted(client, joined, actorUserId);
   return joined;
+}
+
+const JOINED_ROLE_WORDS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Mentor or coach",
+  scout: "Student",
+  viewer: "Parent or guest",
+};
+
+/**
+ * Tell the team's owners and admins that someone they invited has joined ("Sam Student joined
+ * as Student"). A new owner invited a student and a mentor and heard nothing when they came in.
+ * Written by the joiner under migration 0693's narrow policy; inside a savepoint, so joining
+ * never fails because the notice could not be written (before 0693, or with prefs off).
+ */
+export async function notifyInviteAccepted(client: PoolClient, orgId: string, userId: string): Promise<number> {
+  await client.query("SAVEPOINT invite_accepted_notify");
+  try {
+    const joiner = await client.query<{ name: string | null; role: string | null }>(
+      `SELECT COALESCE(NULLIF(trim(concat_ws(' ', p.first_name, p.last_name)), ''), NULLIF(p.display_name, '')) AS name,
+              m.role::text AS role
+         FROM memberships m
+         LEFT JOIN profiles p ON p.user_id = m.user_id
+        WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid`,
+      [orgId, userId],
+    );
+    const row = joiner.rows[0];
+    const leads = await client.query<{ userId: string }>(
+      `SELECT user_id::text AS "userId" FROM memberships
+        WHERE org_id = $1::uuid AND role = ANY('{owner,admin}'::org_role[]) AND user_id <> $2::uuid`,
+      [orgId, userId],
+    );
+    const who = row?.name?.trim() || "Someone you invited";
+    const as = row?.role ? JOINED_ROLE_WORDS[row.role] ?? row.role : null;
+    let sent = 0;
+    for (const lead of leads.rows) {
+      const { emitted } = await emitPreferredNotification(client, {
+        userId: lead.userId,
+        orgId,
+        type: "invite_accepted",
+        payload: { userId, title: `${who} joined${as ? ` as ${as}` : ""}`, body: "They're on the team now." },
+      });
+      if (emitted) sent += 1;
+    }
+    await client.query("RELEASE SAVEPOINT invite_accepted_notify");
+    return sent;
+  } catch {
+    await client.query("ROLLBACK TO SAVEPOINT invite_accepted_notify");
+    return 0;
+  }
 }
 
 export async function listOrganizationInvites(client: PoolClient, orgId: string) {

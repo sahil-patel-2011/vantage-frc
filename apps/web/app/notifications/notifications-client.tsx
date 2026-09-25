@@ -17,6 +17,7 @@ import {
 } from "../../lib/notifications";
 import "../product-hub.css";
 import "./notifications.css";
+import { inboxText, inboxWhen } from "../../lib/notifications/inbox-words";
 
 type NotifItem = {
   id: string;
@@ -326,14 +327,15 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
               phone screen two at a time (Open + Mark as read on every ~165px card). */}
           {groupRepeats(items).map(({ item, repeats }) => {
             const unread = !item.readAt;
-            const title = item.href ? <a href={item.href}>{item.title}</a> : item.title;
+            const titleText = inboxText(item.title);
+            const title = item.href ? <a href={item.href}>{titleText}</a> : titleText;
             return (
               <li key={item.id} className={unread ? "unread" : undefined}>
                 <div className="notif-row-main">
                   <strong>{title}</strong>
-                  {item.body ? <p>{item.body}</p> : null}
+                  {item.body ? <p>{inboxText(item.body)}</p> : null}
                   <small>
-                    {notificationTypeLabel(item.type)} · {new Date(item.createdAt).toLocaleString()}
+                    {notificationTypeLabel(item.type)} · {inboxWhen(item.createdAt)}
                     {repeats.length ? ` · ${repeats.length} more like this` : ""}
                   </small>
                 </div>
