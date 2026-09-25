@@ -138,7 +138,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     return (
       <fieldset className="theme-setting">
         <legend>Appearance</legend>
-        <p>Choose Light, Dark, or System (follows your device). Change lives in Account settings — not the top bar.</p>
+        <p>Choose Light, Dark, or System (follows your device).</p>
         <div role="radiogroup" aria-label="Color theme">
           {(["light", "dark", "system"] as const).map((option) => (
             <button

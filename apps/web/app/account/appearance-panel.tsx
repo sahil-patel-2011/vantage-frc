@@ -328,6 +328,10 @@ export default function AppearancePanel() {
         </div>
       </section>
 
+      {/* Theme, team colour and density are what most people change. Glass, motion, the
+          cockpit options and the bottom island made this tab about 5,000px tall. */}
+      <details className="appearance-more">
+        <summary>More display settings</summary>
       <section className="appearance-group" aria-labelledby="appearance-clarity-title">
         <h3 id="appearance-clarity-title">Glass</h3>
         <p>
@@ -576,6 +580,7 @@ export default function AppearancePanel() {
           </p>
         ) : null}
       </section>
+      </details>
     </div>
   );
 }

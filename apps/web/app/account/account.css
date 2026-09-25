@@ -438,3 +438,27 @@
 
 /* "Profile saved." right beside the button that saved it. */
 .account-actions .account-saved{align-self:center;color:var(--good, #15803d);font-weight:600;font-size:14px}
+
+/* Folded display settings: a full-width row that opens like a disclosure. */
+.appearance-more > summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 4px;
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+.appearance-more[open] > summary {
+  margin-bottom: 8px;
+}
+.appearance-more--card {
+  margin-top: 16px;
+  padding: 4px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.appearance-more--card[open] {
+  padding-bottom: 16px;
+}

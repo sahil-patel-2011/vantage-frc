@@ -520,7 +520,13 @@ export default function AccountClient() {
 
           {/* Lives beside appearance because it is the same kind of setting: a
               per-person, per-machine choice about how Vantage behaves here. */}
-          {tab === "appearance" ? <LocalModelPanel /> : null}
+          {tab === "appearance" ? (
+            // A per-device option most people never need; folded, not 500px under Appearance.
+            <details className="appearance-more appearance-more--card">
+              <summary>Run a model on this computer</summary>
+              <LocalModelPanel />
+            </details>
+          ) : null}
 
           {tab === "notifications" ? (
             <AccountNotificationsPanel
