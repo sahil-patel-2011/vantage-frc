@@ -3,11 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
-import { KitCard, KitStats } from "../../components/ui/kit";
 import {
   adminEmptyCopy,
   adminNextActions,
-  adminOrgMetric,
   classifyAdminShell,
   formatAdminOrgLabel,
   type AdminShellKind,
@@ -62,6 +60,7 @@ function AdminClientInner() {
   // A fresh owner link per team row, made on request (the first one is never stored).
   const [ownerLinks, setOwnerLinks] = useState<Record<string, { url?: string; note: string }>>({});
   const [confirmOwnerLink, setConfirmOwnerLink] = useState<string | null>(null);
+  const [teamQuery, setTeamQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -220,17 +219,8 @@ function AdminClientInner() {
           number is the large thing and the caption is the small one. */}
       {/* One number. "Closed / Membership" and "Admin only / Provisioning" never changed and
           pushed the Create a team form to the fold. */}
-      <KitCard aria-label="Provisioning summary">
-        <KitStats
-          items={[
-            {
-              value: adminOrgMetric(organizations.length, true),
-              label: "Teams provisioned",
-              tone: "blue",
-            },
-          ]}
-        />
-      </KitCard>
+      {/* The count lives in the list heading ("Teams (27)"); alone in a full-width card it pushed
+          Create a team down. */}
 
       {confirmation ? (
         <Panel className="admin-provision-confirmation" aria-label="Team created">
@@ -328,7 +318,18 @@ function AdminClientInner() {
           {message ? <p className="auth-message">{message}</p> : null}
         </Panel>
         <Panel>
-          <span className="eyebrow">Provisioned teams</span>
+          <div className="admin-teams-head">
+            <h2>Teams ({organizations.length})</h2>
+            {organizations.length > 6 ? (
+              <input
+                type="search"
+                value={teamQuery}
+                onChange={(event) => setTeamQuery(event.target.value)}
+                placeholder="Find a team by number, name or owner"
+                aria-label="Find a team"
+              />
+            ) : null}
+          </div>
           {shell === "empty" ? (
             <EmptyState soft title={copy.title} description={copy.description}>
               <Button as="a" variant="secondary" href="/admin/waitlist">
@@ -336,7 +337,19 @@ function AdminClientInner() {
               </Button>
             </EmptyState>
           ) : (
-            organizations.map((org) => (
+            // The team just made comes first; then whatever matches the search.
+            [...organizations]
+              .sort((a, b) =>
+                confirmation ? Number(b.teamNumber === confirmation.teamNumber) - Number(a.teamNumber === confirmation.teamNumber) : 0,
+              )
+              .filter((org) => {
+                const q = teamQuery.trim().toLowerCase();
+                if (!q) return true;
+                return [String(org.teamNumber), org.name, org.ownerEmail ?? "", org.pendingOwnerEmail ?? ""].some((part) =>
+                  part.toLowerCase().includes(q),
+                );
+              })
+              .map((org) => (
               <article className="admin-org" key={org.id} title={formatAdminOrgLabel(org)}>
                 <b>#{org.teamNumber}</b>
                 <div>

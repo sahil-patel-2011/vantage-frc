@@ -188,3 +188,8 @@
 .admin-owner-link-row { display: flex; gap: 8px; align-items: center; width: 100%; }
 .admin-owner-link-row input { flex: 1; min-width: 0; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
 .admin-owner-link-btn { white-space: nowrap; }
+
+/* Teams list: the count in the heading and a search once the list is long. */
+.admin-teams-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.admin-teams-head h2 { margin: 0; font-size: 17px; }
+.admin-teams-head input { flex: 1 1 220px; max-width: 320px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }

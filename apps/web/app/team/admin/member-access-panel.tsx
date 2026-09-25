@@ -347,34 +347,34 @@ export function MemberAccessPanel({
           ) : null}
         </fieldset>
 
-        {limited && presets.length > 0 ? (
-          <div className="member-access-preset">
-            <label>
-              <span>Start from a preset (applied when you save)</span>
-              <select value={preset} onChange={(event) => setPreset(event.target.value)} disabled={busy}>
-                <option value="">Choose a preset…</option>
-                {presets.map((entry) => (
-                  <option key={entry.key} value={entry.key}>
-                    {entry.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {/* Picking one changed nothing on screen, so the owner saved blind: say what it gives. */}
-            {preset ? (
-              <p className="member-access-preset-note" role="status">
-                {presets.find((entry) => entry.key === preset)?.description}{" "}
-                {presets.find((entry) => entry.key === preset)?.baseRole === "admin"
-                  ? "Saving gives them a mentor's access, including team settings."
-                  : "Saving replaces the sections and powers below with this preset's."}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
         {limited ? (
           <details className="member-access-advanced">
             <summary>Advanced: sections, extra powers{budgetKnown ? " and budget" : ""}</summary>
+            {/* A job preset is the advanced way in: before Advanced it read as a second kind of role next to Student / Mentor / Parent. */}
+            {presets.length > 0 ? (
+              <div className="member-access-preset">
+                <label>
+                  <span>Fill in from a job (Drive coach, Scout…)</span>
+                  <select value={preset} onChange={(event) => setPreset(event.target.value)} disabled={busy}>
+                    <option value="">Choose a preset…</option>
+                    {presets.map((entry) => (
+                      <option key={entry.key} value={entry.key}>
+                        {entry.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {/* Picking one changed nothing on screen, so the owner saved blind: say what it gives. */}
+                {preset ? (
+                  <p className="member-access-preset-note" role="status">
+                    {presets.find((entry) => entry.key === preset)?.description}{" "}
+                    {presets.find((entry) => entry.key === preset)?.baseRole === "admin"
+                      ? "Saving gives them a mentor's access, including team settings."
+                      : "Saving replaces the sections and powers below with this preset's."}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <section aria-labelledby={`hubs-${member.userId}`}>
               <h3 id={`hubs-${member.userId}`}>Sections they can open</h3>
