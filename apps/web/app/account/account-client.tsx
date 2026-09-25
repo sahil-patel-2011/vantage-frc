@@ -407,7 +407,8 @@ export default function AccountClient() {
         <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
       </KitCard>
 
-      {message ? (
+      {/* On Profile a success shows beside Save (savedNote); here too it said it twice. */}
+      {message && !(messageOk && tab === "profile") ? (
         <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
           {message}
         </p>

@@ -33,6 +33,9 @@ export function layoutToolStrip<T extends ToolStripEntry>(
   activeId: string,
   visibleCount = 3,
 ): ToolStripLayout<T> {
+  // Everything fits: keep the order as written. Pulling the active chip to the front made the
+  // row reshuffle on every tap, so the one you meant to press next had moved.
+  if (items.length <= visibleCount) return { visible: [...items], hidden: [], hiddenCount: 0 };
   const rank = (item: T): number => {
     if (item.id === activeId) return 0;
     if (item.featured) return 1;
