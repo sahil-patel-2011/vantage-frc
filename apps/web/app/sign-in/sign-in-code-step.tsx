@@ -1,6 +1,7 @@
 "use client";
 
-import type { FormEvent, RefObject } from "react";
+import { useEffect, useState, type FormEvent, type RefObject } from "react";
+import { waitlistJoinedFor, type WaitlistJoined } from "../../lib/marketing/waitlist-joined";
 import type { SignInChannel } from "../../lib/sign-in";
 import { codeExpiryCopy, resendLabel, verifySubmitLabel, type SignInBusy } from "./sign-in-model";
 import { CodeInput } from "./sign-in-chrome";
@@ -112,10 +113,12 @@ export function SignInCodeStep({
       {inviteHelp && !invalid ? (
         // Folded: most people on this screen were invited and their code is on its way.
         <details className="signin-invite-help">
-          <summary>No code?</summary>
+          {/* The fact that matters is in the line itself: an uninvited address waits for a code
+              that never comes, so it must not be hidden behind the fold. */}
+          <summary>No code? Codes only go to emails a team has invited.</summary>
           <p>
-            We only send codes to emails a team has invited. If yours hasn&rsquo;t arrived after a minute, check spam,
-            or ask your team&rsquo;s owner to invite this address.
+            If yours hasn&rsquo;t arrived after a minute, check spam, or ask your team&rsquo;s owner to invite this
+            address. New to Vantage? Join the waitlist and we&rsquo;ll set your team up.
           </p>
           <a
             className="signin-invite-help-cta"
@@ -156,6 +159,26 @@ export function SignInNotInvited({
   waitlistHref: string;
   onUseAnotherEmail: () => void;
 }) {
+  // Joined from this browser already: say so, instead of asking them to join again.
+  const [joined, setJoined] = useState<WaitlistJoined | null>(null);
+  useEffect(() => setJoined(waitlistJoinedFor(email)), [email]);
+  if (joined) {
+    return (
+      <div className="signin-not-invited" role="status">
+        <p>
+          You&rsquo;re on the waitlist{joined.team ? ` for team ${joined.team}` : ""}. We&rsquo;ll email{" "}
+          <strong>{email}</strong> when your team is set up; there&rsquo;s nothing else to do until then.
+        </p>
+        <p className="app-muted">Already on a team that uses Vantage? Ask its owner or a mentor to invite this address.</p>
+        <a className="signin-submit" href="/">
+          Back to the home page
+        </a>
+        <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
+          Use a different email
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="signin-not-invited" role="status">
       <p>

@@ -5,6 +5,7 @@ import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 import { track } from "../../lib/marketing/analytics";
 import { waitlistUnavailableCopy } from "../../lib/marketing/waitlist-copy";
+import { rememberWaitlistJoined } from "../../lib/marketing/waitlist-joined";
 
 type FormState = "idle" | "sending" | "success" | "error" | "unavailable";
 
@@ -130,7 +131,9 @@ export function WaitlistForm({
       if (!response.ok || !result?.ok) {
         throw new Error(result?.message ?? "Submission failed");
       }
-      setRecorded({ email: String(form.get("email") ?? "").trim(), team: String(form.get("teamNumber") ?? "").trim() });
+      const joined = { email: String(form.get("email") ?? "").trim(), team: String(form.get("teamNumber") ?? "").trim() };
+      setRecorded(joined);
+      rememberWaitlistJoined(joined);
       setState("success");
       setMessage("You're on the list. We'll email you when your team is set up.");
       track("waitlist_success");
