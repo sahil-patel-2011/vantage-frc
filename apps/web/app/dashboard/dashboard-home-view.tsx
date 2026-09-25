@@ -759,7 +759,9 @@ export function DashboardHomeView(props: {
           />
           {/* Under the cards, not between the hero and them: a count of what is waiting,
               named on hover, instead of a caption that read like a stray line. */}
-          {emptyLabels.length ? (
+          {/* Only while editing, where it helps decide what to keep: on Home it was one more grey
+              line about cards nobody asked to see. */}
+          {emptyLabels.length && editing ? (
             <p className="dash-empty-summary" role="status" title={`Empty right now: ${emptyLabels.join(", ")}`}>
               {emptyLabels.length === 1
                 ? `${emptyLabels[0]} shows up here once it has something in it.`

@@ -30,46 +30,71 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
   const low = range?.low ?? null;
   const high = range?.high ?? null;
 
+  const label =
+    typeof data.compLevel === "string" && Number.isFinite(Number(data.matchNumber))
+      ? matchShortLabel(data.compLevel.toLowerCase(), Number(data.matchNumber))
+      : `Match ${String(data.matchNumber ?? "")}`.trim();
+  const partners = Array.isArray(data.partners) ? data.partners.map(String) : null;
+  const opponents = Array.isArray(data.opponents) ? data.opponents.map(String) : null;
+
+  // Laid out like a scoreboard: which match and how long until it, our colour as a filled
+  // pill, who is with and against us as chips, and the win chance as a bar. It was a column of
+  // small grey lines with the countdown floating alone on the right.
   return (
-    <div className={`dash-next-match${alliance ? ` alliance-${alliance}` : ""}`}>
-      <div>
-        {/* "Qual 31", the name people say, not "QM" over "31". */}
-        <strong>
-          {typeof data.compLevel === "string" && Number.isFinite(Number(data.matchNumber))
-            ? matchShortLabel(data.compLevel.toLowerCase(), Number(data.matchNumber))
-            : `Match ${String(data.matchNumber ?? "")}`.trim()}
-        </strong>
+    <div className={`dash-next-match nm${alliance ? ` alliance-${alliance}` : ""}`}>
+      <div className="nm-top">
+        <div className="nm-title">
+          {/* "Qual 31", the name people say, not "QM" over "31". */}
+          <strong className="nm-match">{label}</strong>
+          {/* One filled pill says both our colour and the job ("Switch to BLUE bumpers"). */}
+          {alliance ? (
+            <span className={`nm-alliance nm-alliance-${alliance}`}>
+              {typeof data.bumperCue === "string" && data.bumperCue
+                ? data.bumperCue
+                : `${alliance === "red" ? "Red" : "Blue"} alliance`}
+            </span>
+          ) : null}
+        </div>
+        <div className="dash-countdown nm-clock">
+          <span>Starts in</span>
+          <strong>{scheduled ? <LiveCountdown iso={scheduled} /> : "Time not posted"}</strong>
+        </div>
       </div>
-      <div className="dash-countdown">
-        <span>Starts in</span>
-        <strong>{scheduled ? <LiveCountdown iso={scheduled} /> : "Time not posted"}</strong>
-      </div>
-      {typeof data.bumperCue === "string" && data.bumperCue ? (
-        <p className="dash-bumper-cue">{data.bumperCue}</p>
+      {!alliance && typeof data.bumperCue === "string" && data.bumperCue ? (
+        <p className="dash-bumper-cue nm-bumpers">{data.bumperCue}</p>
       ) : null}
-      {Array.isArray(data.partners) || Array.isArray(data.opponents) ? (
-        <p className="dash-match-sides">
-          With{" "}
-          {Array.isArray(data.partners) && data.partners.length
-            ? data.partners.map(String).join(" · ")
-            : "—"}
-          <em>
-            {" "}
-            vs{" "}
-            {Array.isArray(data.opponents) && data.opponents.length
-              ? data.opponents.map(String).join(" · ")
-              : "—"}
-          </em>
-        </p>
+      {partners || opponents ? (
+        <div className="dash-match-sides nm-sides">
+          <div className="nm-side">
+            <span>With us</span>
+            <div className="nm-teams">
+              {partners && partners.length ? partners.map((team) => <b key={team}>{team}</b>) : <b>—</b>}
+            </div>
+          </div>
+          <div className="nm-side nm-against">
+            <span>Against</span>
+            <div className="nm-teams">
+              {opponents && opponents.length ? opponents.map((team) => <b key={team}>{team}</b>) : <b>—</b>}
+            </div>
+          </div>
+        </div>
       ) : null}
       {win ? (
-        <p className="app-muted">
-          {win.label} chance we win
-          {low != null && high != null
-            ? // No-break around the dash: "64–" and "85%" landed on two lines.
-              ` · typical range ${Math.round(low * 100)}\u2060–\u2060${Math.round(high * 100)}%`
-            : ""}
-        </p>
+        <div className="nm-win" aria-label={`${win.label} chance we win`}>
+          <div className="nm-win-head">
+            <strong>{win.label}</strong>
+            <span>
+              chance we win
+              {low != null && high != null
+                ? // No-break around the dash: "64–" and "85%" landed on two lines.
+                  ` · usually ${Math.round(low * 100)}\u2060–\u2060${Math.round(high * 100)}%`
+                : ""}
+            </span>
+          </div>
+          <div className="nm-bar" aria-hidden="true">
+            <i style={{ width: `${Math.max(2, Math.min(100, win.percent))}%` }} />
+          </div>
+        </div>
       ) : (
         <p className="app-muted">No win chance for this match yet.</p>
       )}

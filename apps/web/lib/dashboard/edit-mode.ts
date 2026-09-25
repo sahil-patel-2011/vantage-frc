@@ -397,7 +397,14 @@ export function hiddenOnHome(
     const setupCard = item.type === "onboarding_checklist" || item.type === "quick_actions";
     // While the owner's setup steps are the hero at the top, the setup card is not "done":
     // it is hidden because the same steps are already on screen.
-    hidden.set(item.i, setupCard && input.teamSetupCard ? "setup_top" : status === "empty" ? "empty" : "setup_done");
+    hidden.set(
+      item.i,
+      setupCard && input.teamSetupCard
+        ? "setup_top"
+        : status === "empty" || (item.type === "ask_ai" && status === "setup_required")
+          ? "empty"
+          : "setup_done",
+    );
   }
   return hidden;
 }

@@ -3009,3 +3009,33 @@ body.has-app-shell .messages article small {
 @media (max-width:720px){
   .dash-widget .dash-widget-link,.dash-widget .dash-empty-cta{display:inline-flex;align-items:center;min-height:44px}
 }
+
+/* ---- Drawer, cleaned up (2026-09-25) ----
+   One border on the search field (the input drew its own box inside the field's), sections as
+   one flat list split by hairlines instead of a stack of bordered cards, and Platform admin in
+   the same ink as every other row (it was grey, and read as switched off). */
+body.has-app-shell .soft-panel-search input{
+  border:0!important;background:transparent!important;box-shadow:none!important;
+  padding:0!important;border-radius:0!important;min-height:0;height:100%;
+}
+body.has-app-shell .soft-panel-search{box-shadow:none;background:var(--surface)}
+body.has-app-shell .soft-drawer-flat .soft-nav-group{
+  padding:4px 0;border:0;border-radius:0;background:transparent;
+}
+body.has-app-shell .soft-drawer-flat .soft-nav-group + .soft-nav-group{
+  margin-top:4px;padding-top:8px;border-top:1px solid var(--line-soft,rgba(0,0,0,.06));
+}
+body.has-app-shell .soft-drawer-flat .soft-drawer-platform{
+  color:var(--ink);font-weight:600;
+}
+body.has-app-shell .soft-drawer-logo{width:28px;height:28px;flex:none;display:block}
+html[data-theme="dark"] body.has-app-shell .soft-drawer-logo{content:url("/vantage-mark-dark.svg")}
+/* The current page: a soft fill, no outline box and edge bar on top of it. */
+body.has-app-shell .soft-drawer-flat .soft-drawer-hub[aria-current="page"]{
+  border-color:transparent!important;box-shadow:none!important;
+  background:color-mix(in srgb,var(--accent) 9%,transparent)!important;
+}
+body.has-app-shell .soft-drawer-flat .soft-drawer-hub[aria-current="page"]::before{display:none!important}
+/* First-week steps read as links in the product's own style, not underlined browser links. */
+.dash-first-week li div > a{color:var(--ink);font-weight:650;text-decoration:none}
+.dash-first-week li div > a:hover{color:var(--accent)}

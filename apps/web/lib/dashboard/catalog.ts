@@ -89,10 +89,16 @@ export type WidgetCatalogEntry = {
 };
 
 /** Widgets that stay on Home even with no live row — they are the empty-state CTA. */
+// Ask AI is not in it any more: with no AI key it filled a third of a row to say "AI is off"
+// on every visit. It comes back when AI works, or when someone pins it with Always show.
 export const HOME_ALWAYS_VISIBLE: ReadonlySet<DashboardWidgetType> = new Set([
   "next_match",
-  "ask_ai",
 ]);
+
+/** A card with nothing to show right now: empty, or Ask AI while the team has no AI. */
+function isQuietCard(type: DashboardWidgetType, status: string | undefined): boolean {
+  return status === "empty" || (type === "ask_ai" && status === "setup_required");
+}
 
 export function widgetRegistryMeta(entry: WidgetCatalogEntry): {
   sizes: WidgetSizeKey[];
@@ -292,7 +298,7 @@ export function homeViewLayout(
   // the page names them in one line (emptyHomeWidgets). Edit mode still shows every card.
   // Next match is the exception: it is the top of Home and says when the next match is.
   const filled = visible.filter(
-    (item) => HOME_ALWAYS_VISIBLE.has(item.type) || isAlwaysShown(item) || statusOf(item) !== "empty",
+    (item) => HOME_ALWAYS_VISIBLE.has(item.type) || isAlwaysShown(item) || !isQuietCard(item.type, statusOf(item)),
   );
   return fillRowEnds(packDashboardLayout(sizeForHome(filled, widgets)));
 }
@@ -352,7 +358,9 @@ export function emptyHomeWidgets(
   return layout
     .filter(
       (item) =>
-        !HOME_ALWAYS_VISIBLE.has(item.type) && !isAlwaysShown(item) && (rows[item.i] ?? rows[item.type])?.status === "empty",
+        !HOME_ALWAYS_VISIBLE.has(item.type) &&
+        !isAlwaysShown(item) &&
+        isQuietCard(item.type, (rows[item.i] ?? rows[item.type])?.status),
     )
     .map((item) => catalogEntry(item.type)?.label ?? item.type);
 }

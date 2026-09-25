@@ -194,3 +194,69 @@
     order: 1;
   }
 }
+
+/* ===== Home, redesigned (2026-09-25) =====
+   Tighter spacing, one card look, and a Next match card laid out like a scoreboard. */
+
+/* Header to board: the board started ~70px under the chips. */
+body.has-app-shell .dash-home .dash-grid-wrap { margin-top: 4px; }
+
+/* The Next match hero. */
+.dash-next-match.nm { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.nm-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.nm-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.dash-next-match.nm .nm-match { font: 800 clamp(30px, 3.4vw, 40px)/1 var(--font-source-sans, system-ui); letter-spacing: -.02em; }
+.dash-next-match.nm .nm-alliance {
+  display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px;
+  font: 700 13px/1 var(--font-source-sans, system-ui); color: #fff;
+}
+.dash-next-match.nm .nm-alliance-red { background: #d43a3a; color: #fff; }
+.dash-next-match.nm .nm-alliance-blue { background: #2563eb; color: #fff; }
+.dash-next-match.nm .nm-clock { text-align: right; display: grid; gap: 2px; }
+.dash-next-match.nm .nm-clock > span { color: var(--muted); font: 700 11px/1 var(--font-source-sans, system-ui); letter-spacing: .06em; text-transform: uppercase; }
+.dash-next-match.nm .nm-clock strong { font: 800 clamp(26px, 2.8vw, 34px)/1.05 var(--font-source-sans, system-ui); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dash-next-match.nm .nm-bumpers { margin: 0; font: 700 15px/1.3 var(--font-source-sans, system-ui); }
+.nm-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.nm-side { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.nm-side > span { color: var(--muted); font: 700 11px/1 var(--font-source-sans, system-ui); letter-spacing: .06em; text-transform: uppercase; }
+.nm-teams { display: flex; flex-wrap: wrap; gap: 6px; }
+.dash-next-match.nm .nm-teams b {
+  display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--line); font: 700 15px/1 var(--font-source-sans, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.dash-next-match.alliance-red .nm-side:not(.nm-against) { box-shadow: inset 3px 0 0 #d43a3a; }
+.dash-next-match.alliance-blue .nm-side:not(.nm-against) { box-shadow: inset 3px 0 0 #2563eb; }
+.dash-next-match.alliance-red .nm-against { box-shadow: inset 3px 0 0 #2563eb; }
+.dash-next-match.alliance-blue .nm-against { box-shadow: inset 3px 0 0 #d43a3a; }
+.nm-win { display: grid; gap: 6px; }
+.nm-win-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dash-next-match.nm .nm-win-head strong { font: 800 22px/1 var(--font-source-sans, system-ui); display: inline; }
+.nm-win-head span { color: var(--muted); font-size: 14px; }
+.nm-bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; }
+.nm-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.dash-next-match.alliance-red .nm-bar > i { background: #d43a3a; }
+@media (max-width: 520px) {
+  .nm-sides { grid-template-columns: 1fr; }
+}
+
+/* One card look across Home: calmer borders, a clear title, no oversized empty space. */
+body.has-app-shell .dash-home .dash-widget.app-card {
+  border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  padding: 16px 18px;
+  gap: 10px;
+}
+body.has-app-shell .dash-home .dash-widget .dash-widget-title,
+body.has-app-shell .dash-home .dash-widget > header h2,
+body.has-app-shell .dash-home .dash-widget > header h3 {
+  font: 700 15px/1.25 var(--font-source-sans, system-ui);
+  letter-spacing: -.005em;
+}
+/* A number card's number is the point: large, with its unit quiet beside it. */
+body.has-app-shell .dash-home .dash-stat-row strong,
+body.has-app-shell .dash-home .dash-widget .dash-big-number {
+  font: 800 30px/1 var(--font-source-sans, system-ui);
+  font-variant-numeric: tabular-nums;
+}

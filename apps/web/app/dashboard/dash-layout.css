@@ -83,3 +83,13 @@
   font-size: 14px;
   line-height: 1.45;
 }
+
+/* Empty areas ("now", "cue") still cost a row gap each, which left a 66px empty band between
+   the header and the board. Rows take no gap; each block brings its own space below. */
+@media (min-width: 1000px) {
+  body.has-app-shell .dash-home.scan-workbench { row-gap: 0; }
+  .dash-home.scan-workbench > .dash-home-header,
+  .dash-home.scan-workbench > .dash-now,
+  .dash-home.scan-workbench > .dash-role-strip,
+  .dash-home.scan-workbench > .dash-ready-cue { margin-bottom: 16px; }
+}

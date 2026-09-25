@@ -141,7 +141,8 @@ export function AppShellNavPanel({
       >
         <div className="soft-drawer-head">
           <div className="soft-drawer-brand">
-            <span className="mark">v</span>
+            {/* The real mark, not a lowercase "v" in a yellow circle. */}
+            <img className="soft-drawer-logo" src="/vantage-mark.svg" alt="" width={28} height={28} />
             <div>
               <strong>Vantage</strong>
             </div>

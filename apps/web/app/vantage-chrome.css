@@ -180,3 +180,11 @@ body.shell-onboarding .soft-org-crumb {
   display: none;
 }
 .soft-topbar-product-arrow { margin-left: .25em; font-size: .9em; opacity: .7; }
+
+/* Small phones: "Team 6925" was cut to "Team 692…" beside the Scouting pill. The team label
+   keeps its width and the pill gives up some padding instead. */
+@media (max-width: 430px) {
+  body.has-app-shell .soft-page-head-copy:has(> .soft-topbar-org) { flex: none; }
+  body.has-app-shell .soft-topbar-product { padding-inline: 8px !important; font-size: 13px; }
+  body.has-app-shell .soft-topbar-actions { gap: 0 !important; }
+}
