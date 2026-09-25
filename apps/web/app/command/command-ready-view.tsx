@@ -342,9 +342,11 @@ export function CommandReadyView({
               <div>
                 <h2>Scout next</h2>
                 <p>
-                  {snap
-                    ? `${snap.coverage.upcomingUnscouted} gap${snap.coverage.upcomingUnscouted === 1 ? "" : "s"} in upcoming alliances`
-                    : "Coverage queue"}
+                  {/* Counts the list below. It said "0 gaps in upcoming alliances" over a list of
+                      eight robots missing pit scouting. */}
+                  {snap?.scoutQueue.length
+                    ? `${snap.scoutQueue.length} ${snap.scoutQueue.length === 1 ? "robot" : "robots"} still to scout`
+                    : "Nothing waiting"}
                 </p>
               </div>
             </div>

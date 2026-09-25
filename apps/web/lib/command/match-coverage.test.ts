@@ -27,6 +27,6 @@ describe("event day match coverage", () => {
         missing: 1,
         sample: board.filter((cell) => cell.state === "missing"),
       }),
-    ).toContain("QM 12 · 1");
+    ).toBe("1 robot still needs scouting at this event: Qual 12 · 1.");
   });
 });

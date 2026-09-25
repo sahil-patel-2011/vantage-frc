@@ -1,3 +1,4 @@
+import { matchLabelFromKey, matchShortLabel } from "../matches/no-next-match";
 /** Pure match-row coverage helpers for Event Day Command (CD #5 / #8). */
 
 export type CoverageState = "missing" | "assigned" | "covered" | "double_covered";
@@ -89,14 +90,16 @@ export function coverageGapMessage(input: {
       const team = row.teamKey.replace(/^frc/i, "");
       const match =
         row.compLevel && row.matchNumber != null
-          ? `${row.compLevel.toUpperCase()} ${row.matchNumber}`
-          : row.matchKey;
+          ? matchShortLabel(row.compLevel.toLowerCase(), row.matchNumber)
+          : matchLabelFromKey(row.matchKey);
       return `${match} · ${team}`;
     })
     .join("; ");
+  // "at this event": the raw key ("2026gacmp") meant nothing to the people reading it.
+  void input.eventKey;
   const head =
     input.missing === 1
-      ? `1 scouting row is uncovered at ${input.eventKey}`
-      : `${input.missing} scouting rows are uncovered at ${input.eventKey}`;
+      ? "1 robot still needs scouting at this event"
+      : `${input.missing} robots still need scouting at this event`;
   return sample ? `${head}: ${sample}.` : `${head}.`;
 }
