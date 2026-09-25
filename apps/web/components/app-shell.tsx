@@ -494,7 +494,11 @@ export default function AppShell() {
         : orgLabelFor(me, orgId);
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
   const crumbHint = breadcrumbForPath(pathname);
-  const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
+  // Not on Home: Home leads with its own next-match card, and the strip made it three times.
+  const eventFocus = useMemo(
+    () => (pathname === "/dashboard" ? null : buildEventFocus(myDayGlance, online)),
+    [myDayGlance, online, pathname],
+  );
   const islandTabs = useMemo(
     () => resolveIslandTabs(islandHrefs).filter((tab) => navHrefAllowed(tab.href)),
     [islandHrefs, navHrefAllowed],
