@@ -237,8 +237,8 @@ describe("tidyBoard", () => {
 describe("suggestBoardName", () => {
   it("suggests Match day, then numbers it", () => {
     expect(suggestBoardName([])).toBe("Match day");
-    expect(suggestBoardName(["match day"])).toBe("Match day 2");
-    expect(suggestBoardName(["Match day", "Match day 2"])).toBe("Match day 3");
+    expect(suggestBoardName(["match day"])).toBe("New board");
+    expect(suggestBoardName(["Match day", "New board"])).toBe("New board 2");
   });
 });
 

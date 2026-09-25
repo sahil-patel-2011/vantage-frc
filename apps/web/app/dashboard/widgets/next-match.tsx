@@ -66,7 +66,8 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
         <p className="app-muted">
           {win.label} chance we win
           {low != null && high != null
-            ? ` · typical range ${Math.round(low * 100)}–${Math.round(high * 100)}%`
+            ? // No-break around the dash: "64–" and "85%" landed on two lines.
+              ` · typical range ${Math.round(low * 100)}\u2060–\u2060${Math.round(high * 100)}%`
             : ""}
         </p>
       ) : (

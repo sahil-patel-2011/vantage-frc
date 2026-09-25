@@ -74,7 +74,8 @@ export function TvLinkPanel({
       <div className="tv-link-main">
         <strong>TV link ready. Copy it now: it is shown only once.</strong>
         <p className="app-muted">
-          Open it in the TV&rsquo;s browser (or on the laptop plugged into the TV) and press F11 for full screen. It
+          Open it in the TV&rsquo;s browser (or on the laptop plugged into the TV), then press the board&rsquo;s
+          Fullscreen button. It
           shows {eventMode ? "the event board" : `"${boardName ?? "this board"}" exactly as you built it`}.
         </p>
         <code className="tv-link-url">{yourBoard}</code>

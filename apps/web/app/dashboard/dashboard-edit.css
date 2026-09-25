@@ -396,3 +396,10 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 .dash-card-grip::before{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 /* The edit toolbar floats over the page: room below the last row so it never covers a card. */
 .dash-home.is-editing{padding-bottom:calc(110px + var(--safe-bottom,0px))}
+
+/* The library's hint for the device in hand: tap on a phone, click or drag on a computer. */
+.dash-hint-touch { display: none; }
+@media (max-width: 720px) {
+  .dash-hint-pointer { display: none; }
+  .dash-hint-touch { display: inline; }
+}

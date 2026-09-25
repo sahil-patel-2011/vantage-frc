@@ -136,7 +136,12 @@ export function buildOpponentCards(input: {
 
     const evidence: string[] = [];
     if (row) evidence.push(`${team}: ${row.scoutSample} scouting ${row.scoutSample === 1 ? "entry" : "entries"}`);
-    for (const line of tendency?.evidence ?? []) evidence.push(`${team}: ${plainStrategyText(line)}`);
+    for (const line of tendency?.evidence ?? []) {
+      // A line the plain-words pass empties (an engine label) left a bare "3005:".
+      const plain = plainStrategyText(line).trim();
+      // The team number was said twice: "118: Team 118 event record 5-1-0".
+      if (plain) evidence.push(`${team}: ${plain.replace(new RegExp(`^Team ${team}\\s+`), "")}`);
+    }
     if (book) {
       for (const entry of book.tendencies) {
         evidence.push(`${team}: ${entry.field} about ${Math.round(entry.average * 10) / 10} over ${entry.sampleSize} matches`);

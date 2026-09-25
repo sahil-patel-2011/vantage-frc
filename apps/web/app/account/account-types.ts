@@ -121,7 +121,7 @@ export const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail:
   },
   { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when the schedule is synced." },
   { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your team." },
-  { key: "syncFailures", title: "Sync failures", detail: "Tell me when team data stops updating." },
+  { key: "syncFailures", title: "Team data stops updating", detail: "Tell me when match times or scores stop coming in." },
   { key: "productUpdates", title: "In-app product notes", detail: "Release notes and product updates in the inbox (on by default)." },
   {
     key: "sponsorReminders",
@@ -131,15 +131,15 @@ export const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail:
   {
     key: "teamChat",
     title: "Team chat",
-    detail: "Inbox when someone posts in Team chat (including Slack-bridged messages) or mentions you.",
+    detail: "When someone posts in Team chat, or mentions you. Includes messages copied in from Slack.",
   },
 ];
 
 export const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string }[] = [
   {
     key: "productUpdates",
-    title: "Product updates / changelog",
-    detail: "Release-note emails when a staged release targets your plan. On by default — opt out anytime.",
+    title: "What's new in Vantage",
+    detail: "An email when Vantage gets something new. On by default; turn it off anytime.",
   },
   {
     key: "coachAssignments",

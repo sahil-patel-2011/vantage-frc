@@ -143,7 +143,8 @@ export function DashboardBoardsModal({
                     onClick={() => onSwitch(item.id)}
                   >
                     <strong>{item.name}</strong>
-                    <span>{board?.id === item.id ? "Showing now" : "Open"}</span>
+                    {/* "Open" read as a status (the board is open); it is what tapping does. */}
+                    <span>{board?.id === item.id ? "Showing now" : "Switch to this board"}</span>
                   </button>
                 )}
                 <div className="dash-boards-actions">

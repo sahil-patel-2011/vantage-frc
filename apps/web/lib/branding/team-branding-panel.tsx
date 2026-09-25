@@ -301,13 +301,16 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
             <label className="brand-check">
               <input
                 type="checkbox"
-                disabled={!view.canEdit || busy}
-                checked={showLogo}
+                // Ticked beside "No logo yet" it promised something nothing could show.
+                disabled={!view.canEdit || busy || !view.logo.present}
+                checked={showLogo && view.logo.present}
                 onChange={(event) => setShowLogo(event.target.checked)}
               />
               <span>
                 <strong>Show the logo next to the team name</strong>
-                <small>Applies wherever this team is identified in-app.</small>
+                <small>
+                  {view.logo.present ? "Applies wherever this team is identified in-app." : "Add a logo first."}
+                </small>
               </span>
             </label>
           </div>

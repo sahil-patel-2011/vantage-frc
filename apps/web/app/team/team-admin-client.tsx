@@ -33,6 +33,7 @@ import {
 import { TeamAdminPeople } from "./team-admin-people";
 import { TeamAdminProvidersPanel } from "./team-admin-providers";
 import { formatInviteRole } from "../../lib/invite/invite-flow";
+import { likelyEmailTypo } from "../../lib/team/email-typo";
 import "./team-access-requests.css";
 import "./team-admin.css";
 
@@ -120,6 +121,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [inviteNotice, setInviteNotice] = useState<InviteNotice | null>(null);
+  // The address a "did you mean" was shown for: pressing Send again with it sends it anyway.
+  const [typoWarnedFor, setTypoWarnedFor] = useState<string | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<InviteDeliveryMode | null>(null);
   const [providers, setProviders] = useState<CustomProvider[]>([]);
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
@@ -335,6 +338,20 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         message: `${notEmails.map((entry) => `"${entry}"`).join(", ")} ${
           notEmails.length === 1 ? "isn't a full email address" : "aren't full email addresses"
         }, like name@school.org.`,
+      });
+      return;
+    }
+    const typos = (many.length ? many : [inviteEmail.trim()])
+      .map((entry) => ({ entry, fix: likelyEmailTypo(entry) }))
+      .filter((row): row is { entry: string; fix: string } => row.fix != null);
+    const typoKey = typos.map((row) => row.entry.toLowerCase()).join(",");
+    if (!again && typos.length && typoWarnedFor !== typoKey) {
+      setTypoWarnedFor(typoKey);
+      setInviteNotice({
+        tone: "error",
+        message: `Check ${typos.map((row) => `"${row.entry}"`).join(", ")}: did you mean ${typos
+          .map((row) => row.fix)
+          .join(", ")}? Press Send again to use it as typed.`,
       });
       return;
     }

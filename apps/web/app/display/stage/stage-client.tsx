@@ -247,7 +247,7 @@ export default function StageClient({
               setTick((value) => value + 1);
             }}
           >
-            {pinNext ? "Other screens for 15 s" : "Next screen"}
+            {pinNext ? "Show rankings and more" : "Next screen"}
           </button>
           <button
             type="button"
@@ -542,7 +542,8 @@ function RankingsScreen({ data, selection }: { data: DisplayStagePayload; select
           <tr>
             <th scope="col">Rank</th>
             <th scope="col">Team</th>
-            <th scope="col">W-L-T</th>
+            {/* Ties are shown only when there are any, so the heading says what is there. */}
+            <th scope="col">{rows.some((row) => row.ties) ? "W-L-T" : "Record"}</th>
           </tr>
         </thead>
         <tbody>

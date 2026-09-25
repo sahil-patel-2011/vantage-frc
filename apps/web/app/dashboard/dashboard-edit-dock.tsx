@@ -233,7 +233,8 @@ export function DashboardPreviewDock({
         data-testid="dash-preview-save"
         onClick={onSave}
       >
-        {saving ? "Saving…" : "Save"}
+        {/* The same word as the edit bar's button: one action had two names. */}
+        {saving ? "Saving…" : "Done"}
       </button>
     </div>
   );

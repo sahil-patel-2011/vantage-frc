@@ -406,6 +406,9 @@ export function hiddenOnHome(
 export function suggestBoardName(existingNames: readonly string[], base = "Match day"): string {
   const taken = new Set(existingNames.map((name) => name.trim().toLowerCase()));
   if (!taken.has(base.toLowerCase())) return base;
+  // With a Match day board already there, the next one is usually for something else:
+  // "Match day 2" was prefilled for someone who wanted a general board.
+  if (base === "Match day") return suggestBoardName(existingNames, "New board");
   for (let n = 2; n < 100; n += 1) {
     const candidate = `${base} ${n}`;
     if (!taken.has(candidate.toLowerCase())) return candidate;

@@ -134,7 +134,8 @@
 .brief-opp-lines{margin:0;padding:0;list-style:none;display:grid;gap:3px;color:var(--ink);font-size:14px}
 .brief-opp-none{margin:0;color:var(--muted);font-size:13px}
 .brief-opp-none a{color:var(--accent);font-weight:600}
-.brief-opp-plan{justify-self:start;padding:3px 10px;border-radius:var(--radius-pill);border:1px solid var(--accent);color:var(--accent);font-size:12px;font-weight:700}
+/* A label, not a button: the outlined pill invited a tap that did nothing. */
+.brief-opp-plan{justify-self:start;padding:0;color:var(--ink);font-size:13px;font-weight:650}
 .brief-opp-notes{margin:0;padding:8px 0 0;list-style:none;display:grid;gap:3px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 .brief-why-head{margin:6px 0 0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 

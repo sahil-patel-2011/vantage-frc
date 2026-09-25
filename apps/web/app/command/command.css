@@ -57,3 +57,15 @@
 }
 .edc-empty-actions button.dash-empty-cta:hover { text-decoration: none; filter: brightness(1.05); }
 .edc-empty-actions .dash-empty-cta.secondary { min-height: 44px; }
+
+/* Finger-sized row actions: "Pit visit" was 40x17 and "Checklist" 52x18 on a phone. The text
+   stays the same size; the tap area grows around it. */
+.edc-queue li > a,
+.edc-myday-links > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding-inline: 8px;
+  margin-block: -8px;
+}

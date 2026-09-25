@@ -49,35 +49,35 @@ const EXCLUSIONS = [
 /** "scouting_match_entries.csv" -> "Scouting match entries": the file name is not a title. */
 /** What each dataset is called on this page: the words a team uses, not the table's name. */
 const DATASET_NAMES: Record<string, { title: string; detail?: string }> = {
-  "scouting-match": { title: "Match scouting" },
+  "scouting-match": { title: "Match scouting", detail: "Every match scouting entry, with what each scout recorded." },
   "scouting-purple-standard": { title: "Match scouting, shared format", detail: "The same entries in the column layout other FRC scouting tools read." },
-  "scouting-pit": { title: "Pit scouting" },
-  "scouting-disagreements": { title: "Scout disagreements" },
-  "reference-teams": { title: "Teams at events" },
-  "reference-events": { title: "Events" },
-  "reference-matches": { title: "Match schedule and results" },
-  "reference-metrics": { title: "Team ratings" },
-  research: { title: "Research notes" },
-  "pick-lists": { title: "Pick lists" },
-  "accounting-ledger": { title: "Money in and out" },
-  "grant-artifacts": { title: "Grant drafts" },
-  "award-artifacts": { title: "Award drafts" },
-  "sponsor-artifacts": { title: "Sponsor documents" },
-  displays: { title: "Pit TV boards" },
-  "live-alerts": { title: "Alerts" },
-  "ai-artifacts": { title: "Things Ask AI made" },
-  "cad-jobs": { title: "CAD requests" },
-  "cad-artifacts": { title: "CAD files and notes" },
-  "cad-team-profile": { title: "CAD settings" },
+  "scouting-pit": { title: "Pit scouting", detail: "Every pit visit: drivetrain, mechanisms, notes." },
+  "scouting-disagreements": { title: "Scout disagreements", detail: "Where two scouts recorded different things, and how it was settled." },
+  "reference-teams": { title: "Teams at events", detail: "Team names, numbers and locations for the events you follow." },
+  "reference-events": { title: "Events", detail: "Event names, dates and places." },
+  "reference-matches": { title: "Match schedule and results", detail: "Official schedule and scores." },
+  "reference-metrics": { title: "Team ratings", detail: "Public team ratings, with where each came from." },
+  research: { title: "Research notes", detail: "What the team found out, with sources and how sure it is." },
+  "pick-lists": { title: "Pick lists", detail: "Pick lists and strategy notes." },
+  "accounting-ledger": { title: "Money in and out", detail: "Every money entry, with where it came from. Donated items are marked as estimates." },
+  "grant-artifacts": { title: "Grant drafts", detail: "Grants applied for, amounts won and the report text." },
+  "award-artifacts": { title: "Award drafts", detail: "Award entries, their text, links and results." },
+  "sponsor-artifacts": { title: "Sponsor documents", detail: "Sponsor asks, what they gave, thank-yous and renewal letters." },
+  displays: { title: "Pit TV boards", detail: "How each TV board is set up. TV links are not included." },
+  "live-alerts": { title: "Alerts", detail: "The team's alerts and what raised them." },
+  "ai-artifacts": { title: "Things Ask AI made", detail: "Briefs and drafts, with their versions." },
+  "cad-jobs": { title: "CAD requests", detail: "What was asked of the CAD helper. No passwords or keys." },
+  "cad-artifacts": { title: "CAD files and notes", detail: "Parts lists, briefs and versions from CAD work." },
+  "cad-team-profile": { title: "CAD settings", detail: "The team's own CAD standards." },
   "feature-context-links": { title: "Links between records", detail: "Which strategy notes, CAD parts and parts orders point at each other." },
-  "ai-team-conversations": { title: "Team Ask AI chats" },
-  "ai-team-memory": { title: "What Ask AI remembers for the team" },
-  "ai-team-artifacts": { title: "Team Ask AI files" },
-  "ai-private-conversations": { title: "Your Ask AI chats" },
-  "ai-private-memory": { title: "What Ask AI remembers for you" },
-  usage: { title: "AI usage" },
+  "ai-team-conversations": { title: "Team Ask AI chats", detail: "Chats someone chose to share with the team." },
+  "ai-team-memory": { title: "What Ask AI remembers for the team", detail: "Only what the team chose to keep." },
+  "ai-team-artifacts": { title: "Team Ask AI files", detail: "Files Ask AI made for the team." },
+  "ai-private-conversations": { title: "Your Ask AI chats", detail: "Your own private chats. Nobody else's." },
+  "ai-private-memory": { title: "What Ask AI remembers for you", detail: "Only yours." },
+  usage: { title: "AI usage", detail: "Every AI call and what it cost." },
   wallet: { title: "AI spending record", detail: "What the team's AI use cost, line by line." },
-  membership: { title: "Members and invites" },
+  membership: { title: "Members and invites", detail: "Who is on the team and who is invited. Invite links are not included." },
 };
 
 function datasetTitle(fileName: string, id?: string): string {
@@ -324,7 +324,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
         <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
         <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
-        {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Live TBA data</a> : null}
+        {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a> : null}
       </nav>
 
       {message ? (
