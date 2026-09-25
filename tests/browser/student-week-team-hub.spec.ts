@@ -66,7 +66,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
   }
   const adminPrimary = page
     .getByRole("link", { name: /Choose your team|Invite an exact email|Sign in again/i })
-    .or(page.getByRole("button", { name: /Send invite|Retry/i }));
+    .or(page.getByRole("button", { name: /Send invite|Create invite|Retry/i }));
   await expect(adminPrimary.first()).toBeVisible({ timeout: 12_000 });
   await expect(page.getByText(/waitlist/i).first()).toBeVisible();
 
@@ -83,7 +83,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
         );
       }
       await expect(page.getByRole("heading", { name: "Invite someone" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Send invite" })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^(Send|Create) invite$/ })).toBeVisible();
     }
   }
 

@@ -173,10 +173,10 @@ test.describe("student-week GUI path", () => {
       // default 5s failed a page that was only still loading.
       await expect(page.getByRole("heading", { name: "Invite someone" })).toBeVisible({ timeout: 25_000 });
       const form = page.locator("#invite-form");
-      await expect(form.getByRole("button", { name: "Send invite" })).toBeVisible();
+      await expect(form.getByRole("button", { name: /^(Send|Create) invite$/ })).toBeVisible();
       const probeEmail = `gui-verify-${Date.now()}@example.com`;
       await form.getByLabel("Email").fill(probeEmail);
-      await form.getByRole("button", { name: "Send invite" }).click();
+      await form.getByRole("button", { name: /^(Send|Create) invite$/ }).click();
       await expect(page.locator("body")).not.toContainText("Application error");
 
       /*

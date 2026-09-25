@@ -166,6 +166,7 @@ export async function POST(request: Request) {
       confirmation.owner.inviteUrl = inviteAcceptUrl(created.inviteToken);
       confirmation.owner.inviteExpiresAt = created.inviteExpiresAt.toISOString();
       confirmation.owner.emailSent = delivery.emailSent;
+      confirmation.owner.delivery = delivery.delivery;
     }
     // The team's spreadsheet in the VantageFRC folder, made now so it is there on day one.
     // After the response, and never fatal: a slow Google cannot hold up or undo the team.

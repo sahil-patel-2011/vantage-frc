@@ -167,7 +167,7 @@ export async function createOrganizationInvite(
   if (existing.rowCount) throw new Error("This email is already a member");
   const { token, tokenHash } = createInviteToken();
   const expiresAt = new Date(
-    Date.now() + Math.min(Math.max(input.expiresInHours ?? 72, 1), 168) * 3_600_000,
+    Date.now() + Math.min(Math.max(input.expiresInHours ?? 168, 1), 168) * 3_600_000,
   );
 
   const pending = await client.query<{ id: string }>(
@@ -237,7 +237,7 @@ export async function resendOrganizationInvite(
     organization: string;
     expiresAt: Date;
   }>(
-    `UPDATE invites i SET token_hash=$1,expires_at=now()+interval '72 hours',
+    `UPDATE invites i SET token_hash=$1,expires_at=now()+interval '168 hours',
        last_sent_at=now()
      FROM organizations o WHERE i.id=$2 AND i.org_id=$3 AND i.org_id=o.id
        AND i.status='pending' AND has_org_capability(i.org_id,'manage_members'::org_capability)

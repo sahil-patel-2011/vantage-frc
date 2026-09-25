@@ -9,7 +9,9 @@ function expiryWords(expiresAt: string): string {
   const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
   if (!Number.isFinite(days)) return "";
   if (days <= 0) return "expires today";
-  return days === 1 ? "expires tomorrow" : `expires in ${days} days`;
+  if (days === 1) return "expires tomorrow";
+  // The date, the way the owner invite from platform admin reads ("expires Oct 1").
+  return `expires ${new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
 /**
@@ -18,6 +20,7 @@ function expiryWords(expiresAt: string): string {
  */
 export function TeamAdminInvitesPanel({
   deliveryBanner,
+  emailOff,
   tip,
   email,
   setEmail,
@@ -35,6 +38,8 @@ export function TeamAdminInvitesPanel({
   onAct,
 }: {
   deliveryBanner: ReturnType<typeof inviteDeliveryBanner>;
+  /** No email goes out from here: the buttons say "Create" and there is nothing to resend. */
+  emailOff: boolean;
   tip: string | null;
   email: string;
   setEmail: (value: string) => void;
@@ -52,7 +57,10 @@ export function TeamAdminInvitesPanel({
   onAct: (inviteId: string, action: "resend" | "revoke" | "copy") => void;
 }) {
   const pending = invites.filter((invite) => invite.status === "pending");
-  const past = invites.filter((invite) => invite.status !== "pending");
+  // The accepted owner invite is how the team was set up, not someone the team invited.
+  const past = invites.filter(
+    (invite) => invite.status !== "pending" && !(invite.status === "accepted" && invite.role === "owner"),
+  );
   const noticeLink = inviteNotice?.link ? inviteNotice.link : null;
   return (
     <section className="team-invite-section" id="invite" aria-labelledby="invite-title">
@@ -92,7 +100,7 @@ export function TeamAdminInvitesPanel({
             </small>
           </label>
           <Button variant="primary" type="submit" disabled={inviteBusy}>
-            {inviteBusy ? "Sending…" : "Send invite"}
+            {inviteBusy ? (emailOff ? "Creating…" : "Sending…") : emailOff ? "Create invite" : "Send invite"}
           </Button>
         </div>
         {deliveryBanner && !inviteNotice ? (
@@ -141,20 +149,22 @@ export function TeamAdminInvitesPanel({
                   <button
                     type="button"
                     aria-label={`Copy the invite link for ${inviteRow.email}`}
-                    title={link ? undefined : "Makes a fresh link (and sends the email again)"}
+                    title={link ? undefined : emailOff ? "Makes a fresh link" : "Makes a fresh link (and sends the email again)"}
                     disabled={acting}
                     onClick={() => (link ? onCopyLink(inviteRow.id, link) : onAct(inviteRow.id, "copy"))}
                   >
                     {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
                   </button>
-                  <button
-                    type="button"
-                    aria-label={`Resend the invite to ${inviteRow.email}`}
-                    disabled={acting}
-                    onClick={() => onAct(inviteRow.id, "resend")}
-                  >
-                    {acting ? "Working…" : "Resend"}
-                  </button>
+                  {emailOff ? null : (
+                    <button
+                      type="button"
+                      aria-label={`Resend the invite to ${inviteRow.email}`}
+                      disabled={acting}
+                      onClick={() => onAct(inviteRow.id, "resend")}
+                    >
+                      {acting ? "Working…" : "Resend"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     aria-label={`Revoke the invite to ${inviteRow.email}`}

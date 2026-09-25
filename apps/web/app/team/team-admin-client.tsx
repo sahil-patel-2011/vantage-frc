@@ -14,6 +14,7 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { classifyTeamAdminShell, teamAdminShellCopy } from "../../lib/team/team-admin-related";
 import {
   inviteDeliveryBanner,
+  inviteEmailIsOff,
   inviteSendResultCopy,
   type InviteDeliveryMode,
 } from "../../lib/team/team-invites";
@@ -422,7 +423,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         }
         setInviteNotice({
           tone: result.tone,
-          message: `${action === "copy" || !data.emailSent ? "New link for" : "Invite emailed again to"} ${target?.email ?? "them"}. ${result.message}`,
+          message: `${action === "copy" || !data.emailSent || inviteEmailIsOff(data.delivery) ? "New link for" : "Invite emailed again to"} ${target?.email ?? "them"}. ${result.message}`,
           link,
         });
       }
@@ -571,6 +572,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
       <TeamAdminInvitesPanel
         deliveryBanner={deliveryBanner}
+        emailOff={inviteEmailIsOff(deliveryMode)}
         tip={tenureTip(adminTenure)}
         email={email}
         setEmail={setEmail}

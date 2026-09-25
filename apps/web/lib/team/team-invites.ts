@@ -2,6 +2,11 @@ import { formatInviteRole } from "../invite/invite-flow";
 
 export type InviteDeliveryMode = "resend" | "local" | "unconfigured" | "failed";
 
+/** No real email leaves this server (none set up, or a local one that only logs). */
+export function inviteEmailIsOff(mode: InviteDeliveryMode | null | undefined): boolean {
+  return mode === "local" || mode === "unconfigured";
+}
+
 export type InviteRowStatus = "pending" | "accepted" | "expired" | "revoked" | "unknown";
 
 export function normalizeInviteRowStatus(status: string | null | undefined): InviteRowStatus {

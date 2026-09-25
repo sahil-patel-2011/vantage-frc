@@ -70,6 +70,8 @@ export type ProvisionConfirmation = {
     inviteUrl?: string;
     inviteExpiresAt?: string;
     emailSent?: boolean;
+    /** "local" logs the email instead of sending it, so it does not count as sent. */
+    delivery?: string;
   };
 };
 
@@ -83,7 +85,7 @@ export function confirmationLines(confirmation: ProvisionConfirmation): string[]
     ? ` It expires ${new Date(owner.inviteExpiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.`
     : "";
   return [
-    owner.emailSent
+    owner.emailSent && owner.delivery !== "local" && owner.delivery !== "unconfigured"
       ? `We emailed an owner invite to ${owner.email}.${expires}`
       : `Email isn't set up here, so copy the invite link below and send it to ${owner.email}.${expires}`,
   ];
