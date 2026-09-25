@@ -298,8 +298,9 @@ export default function PartRequestsClient() {
       <Panel>
         <h2>Ask for a part</h2>
         <p className="app-muted">
-          Anyone on the team can ask — you do not need budget access. Your request is your own
-          row; nobody else can file one in your name.
+          Anyone on the team can ask — you do not need budget access, and the vendor is optional. Your
+          request is your own row; nobody else can file one in your name. It lands on the same list as the
+          purchases mentors log on Orders.
         </p>
         <form
           id="pr-ask"

@@ -190,8 +190,13 @@ export function SubmitForm({
       <span className="biz-overline">Add a line</span>
       <h2>Log a purchase</h2>
       <p className="orders-form-lead">
-        What, why, when you need it, and the cost. Mentors approve; pay on the vendor site — never paste card or bank
-        numbers.
+        For someone buying it: what, why, when, the cost and where from. Mentors approve; pay on the vendor site — never
+        paste card or bank numbers.
+      </p>
+      {/* Two forms reach one list; each says who it is for, so an owner knows where to send students. */}
+      <p className="orders-form-lead">
+        Students asking for a part use <a href={`/part-requests?orgId=${encodeURIComponent(orgId)}`}>Part requests</a> instead: vendor optional, and it lands
+        on this same list.
       </p>
       <form className="orders-form" onSubmit={onSubmit}>
         <label>

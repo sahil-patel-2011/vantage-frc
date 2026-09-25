@@ -57,7 +57,8 @@ export const STARTER_ROLE_PROFILES: readonly RoleProfileInput[] = [
     key: "team-lead",
     name: "Team lead",
     description:
-      "A student captain: runs the calendar, people and the playbook, and can invite members. No billing, no API keys.",
+      // Says what the access really is: "No billing, no API keys" was not true of admin access.
+      "A student captain with a mentor's access: runs the calendar, people and the playbook, invites members and can change team settings.",
     baseRole: "admin",
   },
   {

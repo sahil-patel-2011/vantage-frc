@@ -305,9 +305,11 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <li key={profile.key}>
               <div className="rpf-item-head">
                 <strong>{profile.name}</strong>
-                <span className="rpf-badge">{BASE_ROLE_COPY[profile.baseRole].label}</span>
+                {/* The access it gives, not a kind of person: "Mentor or coach" on a student
+                    captain's preset read as a contradiction. */}
+                <span className="rpf-badge">Access: {BASE_ROLE_COPY[profile.baseRole].label}</span>
               </div>
-              {profile.description ? <p className="rpf-desc">{profile.description}</p> : null}
+              {profile.description ? <p className="rpf-desc">{currentStarterCopy(profile.description)}</p> : null}
               <p className="rpf-grants">{profileSummary(profile)}</p>
               {canEdit ? (
               <div className="rpf-item-actions">
@@ -369,4 +371,11 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
       ) : null}
     </Card>
   );
+}
+
+/** Teams seeded before the starter wording was corrected keep the old text in their rows. */
+function currentStarterCopy(description: string): string {
+  return description === "A student captain: runs the calendar, people and the playbook, and can invite members. No billing, no API keys."
+    ? "A student captain with a mentor's access: runs the calendar, people and the playbook, invites members and can change team settings."
+    : description;
 }

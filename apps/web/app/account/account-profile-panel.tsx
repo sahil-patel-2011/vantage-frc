@@ -57,21 +57,19 @@ export function AccountProfilePanel({
   onVerifyPhoneOtp: () => void;
   onSignOut: () => void;
 }) {
-  const initial = (displayName.trim()?.[0] ?? account.email?.trim()?.[0] ?? "?").toUpperCase();
-
   return (
     <Panel className="account-panel">
-      <div className="account-identity">
-        {account.image ? (
+      {/* The page's header already shows the avatar, name and email; a second copy here drew an
+          empty blue circle under the first. Only a real photo is worth showing again. */}
+      {account.image ? (
+        <div className="account-identity">
           <img className="soft-avatar lg" src={account.image} alt="" />
-        ) : (
-          <span className="soft-avatar lg">{initial}</span>
-        )}
-        <div>
-          <strong>{displayName || "Signed-in user"}</strong>
-          <span>{account.email ?? "—"}</span>
+          <div>
+            <strong>{displayName || "Signed-in user"}</strong>
+            <span>{account.email ?? "—"}</span>
+          </div>
         </div>
-      </div>
+      ) : null}
       <form className="account-form" onSubmit={(event) => void onSave(event)}>
         <label>
           Display name

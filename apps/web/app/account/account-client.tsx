@@ -395,23 +395,6 @@ export default function AccountClient() {
         ) : null}
       </section>
 
-      <SettingsBar role={org.role} orgId={org.orgId} />
-
-      {/* One place for money and help. AI spending and usage only for the people who can
-          change them. */}
-      <KitEyebrow>{canManageTeam ? "AI and help" : "Help"}</KitEyebrow>
-      <KitCard>
-        {canManageTeam ? (
-          <>
-            <KitRow icon="bolt" tone="amber" title="AI limits" subtitle="A monthly limit or pause for your team's AI key" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
-            <KitRow icon="stats" tone="teal" title="AI usage" subtitle="What your team's AI key has been used for" href={withOrgHref("/team/usage", orgId || null)} />
-          </>
-        ) : null}
-        {!orgId ? (
-          <KitRow icon="users" tone="blue" title="You're not on a team yet" subtitle="See what's next" href="/onboarding" />
-        ) : null}
-        <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
-      </KitCard>
 
       {/* On Profile a success shows beside Save (savedNote); here too it said it twice. */}
       {message && !(messageOk && tab === "profile") ? (
@@ -469,7 +452,6 @@ export default function AccountClient() {
 
       {account ? (
         <>
-          <OrgContextCard org={org} />
 
 
           {/* The one section switcher. `SettingsBar` used to render the same
@@ -549,6 +531,27 @@ export default function AccountClient() {
           ) : null}
         </>
       ) : null}
+
+      {/* Team settings and help come after your own profile: the menu promises "your profile,
+          sign-in and notifications", and the form started 1,100px down under team rows. */}
+      {account ? <OrgContextCard org={org} /> : null}
+      <SettingsBar role={org.role} orgId={org.orgId} />
+
+      {/* One place for money and help. AI spending and usage only for the people who can
+          change them. */}
+      <KitEyebrow>{canManageTeam ? "AI and help" : "Help"}</KitEyebrow>
+      <KitCard>
+        {canManageTeam ? (
+          <>
+            <KitRow icon="bolt" tone="amber" title="AI limits" subtitle="A monthly limit or pause for your team's AI key" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
+            <KitRow icon="stats" tone="teal" title="AI usage" subtitle="What your team's AI key has been used for" href={withOrgHref("/team/usage", orgId || null)} />
+          </>
+        ) : null}
+        {!orgId ? (
+          <KitRow icon="users" tone="blue" title="You're not on a team yet" subtitle="See what's next" href="/onboarding" />
+        ) : null}
+        <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
+      </KitCard>
 
       {/* The three things people come to this page to do that are not a
           toggle. One card, one shape each, chevrons so they read as somewhere

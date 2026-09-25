@@ -426,13 +426,15 @@ function LiveDesk({
           the season budget, "Still to raise" the same figure again). The rest fold below. */}
       <section className="biz-kpis" aria-label="Season money">
         <Kpi label="Received" value={money(rollup.receivedIncomeCents)} detail="Sponsors, grants, fundraisers and the money added below" tone="good" />
-        <Kpi label="Spent" value={money(rollup.actualSpendCents)} detail="Receipts, orders and season costs" />
+        {/* Committed, like Season budget, Part requests and the Business overview: an approved
+            $45 order counted there and not here, so the pages showed different amounts left. */}
+        <Kpi label="Committed" value={money(rollup.committedSpendCents)} detail="Receipts, approved orders and paid season costs" />
         {rollup.plannedSpendCents > 0 ? (
           <Kpi
             label="Left in budget"
-            value={money(rollup.plannedSpendCents - rollup.actualSpendCents)}
+            value={money(rollup.plannedSpendCents - rollup.committedSpendCents)}
             detail={`Of a ${money(rollup.plannedSpendCents)} season budget`}
-            tone={rollup.plannedSpendCents - rollup.actualSpendCents < 0 ? "danger" : "blue"}
+            tone={rollup.plannedSpendCents - rollup.committedSpendCents < 0 ? "danger" : "blue"}
           />
         ) : (
           <Kpi
