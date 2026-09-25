@@ -14,7 +14,7 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import type { DashboardShellKind } from "../../lib/dashboard/dashboard-related";
 import { homeAudienceFromTeamRole } from "../../lib/home-workflows";
-import { fetchProductSession } from "../../lib/nav/product-session";
+import { fetchProductSession, invalidateProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { CONTEXT_REFRESH_MS } from "./dashboard-canvas";
@@ -55,6 +55,16 @@ export function useDashboardHomeState(initialOrgId = "") {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
+  // The account call failed or timed out: unknown, not "no team". Home used to answer a slow
+  // /api/me with "Choose your team" and the waitlist card to a team's own owner.
+  const [meFailed, setMeFailed] = useState(false);
+  const [meAttempt, setMeAttempt] = useState(0);
+  const retryMe = useCallback(() => {
+    invalidateProductSession();
+    setMeFailed(false);
+    setMeLoaded(false);
+    setMeAttempt((n) => n + 1);
+  }, []);
   /*
     The team's real board (mode=home, or the copy saved on this device) has
     arrived. Until then Home is one neutral skeleton: it used to paint the
@@ -192,7 +202,11 @@ export function useDashboardHomeState(initialOrgId = "") {
     const fromUrl = readOrgIdFromSearch(window.location.search) ?? initialOrgId;
     void fetchProductSession(fromUrl || null)
       .then((data) => {
-        if (!data) return;
+        if (!data) {
+          setMeFailed(true);
+          return;
+        }
+        setMeFailed(false);
         const nextOrg = typeof data.orgId === "string" && data.orgId ? data.orgId : fromUrl;
         setMe({
           userId: typeof data.userId === "string" ? data.userId : undefined,
@@ -210,14 +224,14 @@ export function useDashboardHomeState(initialOrgId = "") {
         }
         if (nextOrg && !readOrgIdFromSearch(window.location.search)) persistOrgIdInUrl(nextOrg);
       })
-      .catch(() => undefined)
+      .catch(() => setMeFailed(true))
       .finally(() => setMeLoaded(true));
-  }, [initialOrgId]);
+  }, [initialOrgId, meAttempt]);
 
   useEffect(() => {
     // Not "no team" until the session says so: before it arrives the org is simply unknown,
     // and painting the built-in board then is what flashed "My Home" at every signed-in member.
-    if (orgId || !meLoaded) return;
+    if (orgId || !meLoaded || meFailed) return;
     const fallback = defaultDashboardLayoutForAudience(homeAudienceFromTeamRole(me.teamRole));
     setLayout(fallback);
     setBoard({
@@ -229,7 +243,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     });
     setBoardLoaded(true);
     setWidgetsLoaded(true);
-  }, [orgId, meLoaded, me.teamRole]);
+  }, [orgId, meLoaded, meFailed, me.teamRole]);
 
   const loadedOrgRef = useRef<string | null>(null);
   useEffect(() => {
@@ -365,6 +379,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     fromCache,
     cachedAt,
     meLoaded,
+    meFailed,
+    retryMe,
     boardLoaded,
     widgetsLoaded,
     pendingCustomize,

@@ -262,3 +262,6 @@ body.has-app-shell .dash-home .dash-widget .dash-big-number {
   font: 800 30px/1 var(--font-source-sans, system-ui);
   font-variant-numeric: tabular-nums;
 }
+
+/* The account call failed: one line and a retry, in place of a guessed "no team" card. */
+.dash-session-failed { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 12px; color: var(--ink); font-size: 14px; }

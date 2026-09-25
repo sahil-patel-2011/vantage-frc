@@ -78,7 +78,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const nextMatchData =
     nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
   const dashShell = classifyDashboardShell({
-    loaded: home.meLoaded || Boolean(home.orgId && home.updatedAt),
+    loaded: (home.meLoaded && !home.meFailed) || Boolean(home.orgId && home.updatedAt),
     orgId: home.orgId || null,
     setupRequired,
     tbaConfigured,
@@ -391,6 +391,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       message={home.message}
       messageKind={home.messageKind}
       messageAction={home.messageAction}
+      onRetrySession={home.meFailed && !home.orgId ? home.retryMe : null}
       announce={home.announce}
       updatedAt={home.updatedAt}
       fromCache={home.fromCache}

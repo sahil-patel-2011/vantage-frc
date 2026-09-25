@@ -136,6 +136,8 @@ export function DashboardHomeView(props: {
   message: string;
   messageKind: "success" | "error";
   messageAction: "undo" | null;
+  /** Set when the account call failed: Home says so and offers a retry, never "no team". */
+  onRetrySession?: (() => void) | null;
   announce: string;
   updatedAt: string | null;
   fromCache: boolean;
@@ -241,6 +243,7 @@ export function DashboardHomeView(props: {
     message,
     messageKind,
     messageAction,
+    onRetrySession,
     announce,
     updatedAt,
     fromCache,
@@ -591,6 +594,15 @@ export function DashboardHomeView(props: {
       {inlineError ? (
         <p className="telemetry-status" role="status">
           {message}
+        </p>
+      ) : null}
+
+      {onRetrySession ? (
+        <p className="dash-session-failed" role="alert">
+          Couldn&rsquo;t load your team just now.{" "}
+          <button type="button" className="app-button secondary" onClick={onRetrySession}>
+            Try again
+          </button>
         </p>
       ) : null}
 
