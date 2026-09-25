@@ -274,10 +274,18 @@ function Kpi({ label, value, detail, tone, href }: { label: string; value: strin
   return <article className={`biz-kpi ${tone}`}><span>{label}</span><strong>{value}</strong><small>{href ? <a href={href}>{detail}</a> : detail}</small></article>;
 }
 
+/** "2026-09" as "Sep 2026". */
+function monthName(month: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) return month;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
 function MonthBars({ rows }: { rows: BusinessView["budget"]["monthlySpend"] }) {
   const max = Math.max(1, ...rows.map((row) => row.cents));
   if (!rows.length) return <p className="biz-empty-inline">Ordered purchases will appear here by month.</p>;
-  return <div className="biz-month-bars">{rows.map((row) => <div key={row.month}><span>{row.month}</span><i><b style={{ width: `${Math.max(4, percent(row.cents, max))}%` }} /></i><strong>{money(row.cents)}</strong></div>)}</div>;
+  return <div className="biz-month-bars">{rows.map((row) => <div key={row.month}><span>{monthName(row.month)}</span><i><b style={{ width: `${Math.max(4, percent(row.cents, max))}%` }} /></i><strong>{money(row.cents)}</strong></div>)}</div>;
 }
 
 type Submit = (event: FormEvent<HTMLFormElement>, action: string, dollarFields?: string[]) => Promise<void>;

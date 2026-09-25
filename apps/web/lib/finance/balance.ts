@@ -174,7 +174,10 @@ export const UNIFIED_LEDGER_SQL = `
          OR EXISTS (SELECT 1 FROM purchase_requests p
                     WHERE p.org_id = t.org_id
                       AND p.id = COALESCE(t.source_id, t.purchase_request_id)
-                      AND p.status IN ('approved', 'ordered', 'received', 'reimbursed')))
+                      -- Money out once it is bought, the same as Money's "Spent": an approved line
+                      -- that nobody has ordered yet is committed, not spent. Counting it here put
+                      -- "Balance -$45" beside "Spent $0" on the same page.
+                      AND p.status IN ('ordered', 'received', 'reimbursed')))
     AND (t.source_kind <> 'purchase_log'
          OR EXISTS (SELECT 1 FROM finance_purchase_log l
                     WHERE l.org_id = t.org_id AND l.id = t.source_id))

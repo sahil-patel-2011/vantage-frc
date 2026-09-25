@@ -63,7 +63,12 @@ function usd(value: number): string {
 }
 
 function formatWhen(iso: string): string {
-  const date = new Date(iso.includes("T") ? iso : `${iso}T00:00:00`);
+  // A date alone, an ISO time, or Postgres's text form ("2026-09-24 22:00:07.39-04"), which the
+  // browser cannot parse and which used to show up raw on every order line.
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(iso)
+    ? `${iso}T00:00:00`
+    : iso.replace(" ", "T").replace(/([+-]\d{2})$/, "$1:00");
+  const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
