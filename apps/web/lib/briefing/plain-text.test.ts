@@ -68,10 +68,10 @@ describe("the prediction model's own words", () => {
     );
     expect(
       plainStrategyText("Alliance rating margin -17.1 from sources statbotics, event 2026gacmp, 58 weighted team-matches"),
-    ).toBe("Alliance rating margin -17.1 from 58 matches of data");
+    ).toBe("The gap between the alliance ratings from 58 matches of data");
     expect(plainStrategyText("Scout reliability 89% (n=7.6).")).toBe("Reliability 89%.");
     expect(plainStrategyText("Logistic win model on alliance rating margin -17.1 via engine strategy-engine-max-v1 (depth 3).")).toBe(
-      "Logistic win model on alliance rating margin -17.1.",
+      "Win chance worked out from the gap between the alliance ratings.",
     );
   });
 });

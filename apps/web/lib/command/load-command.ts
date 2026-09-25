@@ -531,6 +531,7 @@ export async function loadEventDayCommand(
       modelVersion: strategy.prediction.modelVersion,
       pOur,
       pOpp,
+      ourAlliance: strategy.ourAlliance === "red" || strategy.ourAlliance === "blue" ? strategy.ourAlliance : null,
       confidenceLow: strategy.prediction.confidenceLow,
       confidenceHigh: strategy.prediction.confidenceHigh,
       caveats: strategy.prediction.caveats,

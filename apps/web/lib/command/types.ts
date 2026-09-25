@@ -110,6 +110,8 @@ export type CommandSnapshot = {
     modelVersion: string | null;
     pOur: number | null;
     pOpp: number | null;
+    /** Our colour in this match, for turning the stored (red-side) range into ours. */
+    ourAlliance?: "red" | "blue" | null;
     confidenceLow: number | null;
     confidenceHigh: number | null;
     caveats: string[];

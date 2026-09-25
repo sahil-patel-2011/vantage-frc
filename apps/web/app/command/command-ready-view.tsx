@@ -1,5 +1,6 @@
 "use client";
 
+import { ourSideRange } from "../../lib/strategy/our-side-range";
 import type { ReactNode } from "react";
 import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
@@ -413,17 +414,16 @@ export function CommandReadyView({
                 </strong>
                 <span>Our win probability</span>
               </div>
-              <p className="edc-muted">
-                Opp{" "}
-                {predictionWinDisplay({
-                  winProbability: snap.prediction.pOpp,
-                  modelVersion: snap.prediction.modelVersion,
-                  caveats: snap.prediction.caveats,
-                })?.label ?? "—"}
-                {snap.prediction.confidenceLow != null && snap.prediction.confidenceHigh != null
-                  ? ` · likely ${pct(snap.prediction.confidenceLow)}–${pct(snap.prediction.confidenceHigh)}`
-                  : ""}
-              </p>
+              {/* Our side only, the way Strategy says it; "Opp 25% · likely 15–35%" beside our 75%
+                  gave the opponent's range for our number. */}
+              {(() => {
+                const range = ourSideRange(snap.prediction.confidenceLow, snap.prediction.confidenceHigh, snap.prediction.ourAlliance ?? null);
+                return range ? (
+                  <p className="edc-muted">
+                    Likely between {pct(range.low)} and {pct(range.high)}
+                  </p>
+                ) : null;
+              })()}
               <ul className="edc-factors">
                 {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
                   <li key={factor.name}>

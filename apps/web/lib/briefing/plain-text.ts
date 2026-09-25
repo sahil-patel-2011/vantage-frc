@@ -62,6 +62,14 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\s*\(\d+% of \d+ trials\)/gi, "")
       .replace(/\s*\(event metrics\)/gi, "")
       .replace(/\bAlliance rating totals\b/g, "Alliance ratings")
+      // A margin is signed from red's side, so it read "-17.7" for the alliance that was ahead;
+      // the two ratings say it without a sign. Drop the number, keep the words.
+      .replace(/\s*\(margin [+-]?\d+(?:\.\d+)?\)/gi, "")
+      .replace(/\bLogistic win model on alliance rating margin [+-]?\d+(?:\.\d+)?/gi, "Win chance worked out from the gap between the alliance ratings")
+      .replace(/\bAlliance rating margin [+-]?\d+(?:\.\d+)?/g, "The gap between the alliance ratings")
+      .replace(/\bWeighted (auto(?:nomous)?|teleop|endgame) rating margin [+-]?\d+(?:\.\d+)?/gi, (_all, part: string) =>
+        `The ${part.toLowerCase().startsWith("auto") ? "autonomous" : part.toLowerCase()} ratings gap`,
+      )
       .replace(/\bScout (auto|teleop|endgame) capability\b/g, (_all, part: string) => `${part[0]!.toUpperCase()}${part.slice(1)}`)
       .replace(/\bScout teleop\/cycles noted for\b/g, "Teleop cycles noted for")
       .replace(/\bScout reliability\b/g, "Reliability")
