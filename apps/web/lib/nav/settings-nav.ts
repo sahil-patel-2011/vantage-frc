@@ -54,20 +54,15 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     requiredRole: "member",
   },
   // Team — owner/admin only. AI keys stay one chip (Claude Code is the no-key Ask AI path).
-  { id: "team-admin", label: "Team admin", href: "/team/admin", icon: "gear", scope: "team", requiredRole: "owner-admin" },
+  // The same pages, names and order as the Team settings chip row (lib/nav/team-settings-nav.ts),
+  // each with its own icon: Connectors and AI keys shared the bolt.
+  { id: "team-admin", label: "Team admin", href: "/team/admin", icon: "users", scope: "team", requiredRole: "owner-admin" },
+  { id: "team-profile", label: "Team profile", href: "/team/admin/profile", icon: "pin", scope: "team", requiredRole: "owner-admin" },
   {
     id: "member-access",
     label: "Team security",
     href: "/team/security",
-    icon: "users",
-    scope: "team",
-    requiredRole: "owner-admin",
-  },
-  {
-    id: "chat",
-    label: "Chat",
-    href: "/messages?settings=1",
-    icon: "users",
+    icon: "shield",
     scope: "team",
     requiredRole: "owner-admin",
   },
@@ -75,10 +70,19 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     id: "team-ai-keys",
     label: "AI keys",
     href: "/team/ai-keys",
-    icon: "bolt",
+    icon: "sparkles",
     scope: "team",
     requiredRole: "owner-admin",
   },
+  {
+    id: "chat",
+    label: "Chat safety",
+    href: "/messages/moderation",
+    icon: "chat",
+    scope: "team",
+    requiredRole: "owner-admin",
+  },
+  { id: "team-data", label: "Team data", href: "/team/data", icon: "database", scope: "team", requiredRole: "owner-admin" },
   { id: "data-export", label: "Data export", href: "/exports", icon: "grid", scope: "team", requiredRole: "owner-admin" },
 ];
 

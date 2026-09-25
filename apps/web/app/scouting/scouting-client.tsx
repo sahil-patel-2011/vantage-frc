@@ -121,6 +121,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
   const type = tab === "pit" ? "pit" : "match";
+  // Switching between Match and Pit starts the new form without a team: the Pit form opened on
+  // "1678", the robot the match picker had chosen, which no one picked in the pits. A team named
+  // in the link (a pit chip) is kept.
+  const previousType = useRef(type);
+  useEffect(() => {
+    if (previousType.current === type) return;
+    previousType.current = type;
+    if (type === "pit" && !searchParams.get("teamKey")) setTeamKey("");
+  }, [type, searchParams]);
 
   const refreshCounts = useCallback(async () => {
     setCounts(await pendingCounts());

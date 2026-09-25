@@ -212,7 +212,7 @@ export function TeamAdminInvitesPanel({
                       : link
                         ? "Copy link"
                         : confirmNewLink === inviteRow.id
-                          ? "Make it? The old link stops working"
+                          ? "Tap again to replace the old link"
                           : "Get a new link"}
                   </button>
                   {emailOff ? null : (

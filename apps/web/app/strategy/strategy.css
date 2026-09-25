@@ -323,3 +323,8 @@
 
 /* Leads' details fold under one line after the plan. */
 .strategy-lead-details > summary, .strategy-levers > summary { cursor: pointer; font-weight: 700; }
+
+/* One column, in reading order: win chance, game plan, leads' details, our scouting. The old
+   two-column areas left the folded details floating alone above ~900px of empty right column. */
+.strategy-live-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; }
+.strategy-live-grid > * { grid-area: auto; grid-column: 1 / -1; }

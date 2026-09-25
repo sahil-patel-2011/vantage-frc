@@ -120,11 +120,13 @@ describe("activeSettingsId", () => {
     expect(activeSettingsId(owner, "/team/ai-keys", "?orgId=abc")).toBe("team-ai-keys");
     expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBeNull();
     expect(activeSettingsId(owner, "/team/budgets")).toBeNull();
-    expect(activeSettingsId(owner, "/messages", "?settings=1")).toBe("chat");
+    // Chat safety is its own page now, the same one the Team settings chip opens.
+    expect(activeSettingsId(owner, "/messages/moderation")).toBe("chat");
   });
 
   it("longest path prefix wins and non-settings paths return null", () => {
     expect(activeSettingsId(owner, "/team/admin/anything")).toBe("team-admin");
+    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-profile");
     expect(activeSettingsId(owner, "/dashboard")).toBeNull();
   });
 });

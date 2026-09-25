@@ -391,7 +391,7 @@ function AdminClientInner() {
                       void newOwnerLink(org.id);
                     }}
                   >
-                    {confirmOwnerLink === org.id ? "Make it? The old link stops working" : "Get a new owner link"}
+                    {confirmOwnerLink === org.id ? "Tap again to replace the old link" : "Get a new owner link"}
                   </Button>
                 ) : null}
               </article>

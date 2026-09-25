@@ -47,7 +47,9 @@ const ROW_DETAIL: Record<string, string> = {
   connectors: "Onshape, Google and other tools linked to the team",
   "team-admin": "Invite people and choose what each can do",
   "member-access": "How everyone on the team signs in",
-  chat: "Channels and moderation",
+  chat: "Reports and the private-message rules",
+  "team-profile": "Location, colour and logo",
+  "team-data": "What the team has recorded, and event data",
   "team-ai-keys": "The team's AI key, limits and model training",
   "data-export": "Download the team's data",
 };
@@ -58,6 +60,8 @@ const ROW_TONES: Record<string, KitTone> = {
   "team-admin": "blue",
   "member-access": "amber",
   chat: "cyan",
+  "team-profile": "teal",
+  "team-data": "blue",
   "team-ai-keys": "violet",
   "data-export": "green",
 };

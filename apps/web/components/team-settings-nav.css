@@ -1,4 +1,4 @@
-.team-settings-nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 4px 0 16px; padding-bottom: 2px; }
+.team-settings-nav { position: relative; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 4px 0 16px; padding-bottom: 2px; }
 .team-settings-nav::-webkit-scrollbar { display: none; }
 .team-settings-nav a {
   flex: none; display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px;

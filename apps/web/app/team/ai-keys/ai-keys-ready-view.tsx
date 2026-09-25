@@ -189,7 +189,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 </div>
               </form>
               <p className="app-muted">
-                Already pay for OpenAI, Anthropic or OpenRouter? Open &ldquo;Use a paid key instead&rdquo; below.
+                Already pay for OpenAI, Anthropic or OpenRouter, or run a model in your shop? Open &ldquo;Use a different key&rdquo; below.
                 Keys are encrypted and never shown again.
               </p>
             </section>

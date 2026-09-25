@@ -226,8 +226,9 @@
   position: relative;
 }
 .next-match-robot.is-selected::after {
-  content: "✓";
-  position: absolute; top: 4px; right: 6px;
+  /* On the tile's corner, outside the number: inside it covered the last digit ("161✓"). */
+  content: "●";
+  position: absolute; top: -8px; right: -8px; box-shadow: 0 0 0 2px var(--ink);
   width: 20px; height: 20px; border-radius: 50%;
   display: grid; place-items: center;
   background: #fff; color: var(--ink); font-size: 12px; font-weight: 800;
