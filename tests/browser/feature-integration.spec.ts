@@ -68,7 +68,7 @@ test.describe("one control per destination", () => {
     // list was not. Each must appear exactly once: they used to appear three
     // times, in the page header, a "more links" row and the membership panel.
     // Team admin is people and invites; other settings are one row of links.
-    for (const label of ["Team profile", "Sign-in rules", "AI keys", "Connectors", "Notifications"]) {
+    for (const label of ["Team profile", "Team security", "AI keys", "Connectors"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
     // None, not one. This page has a team — that is why the related links
