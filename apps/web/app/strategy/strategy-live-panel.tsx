@@ -11,6 +11,8 @@ import {
 } from "../../lib/strategy/strategy-related";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import type { StrategyView } from "../../lib/strategy/types";
+import { plainMatchKey, plainStrategyText } from "../../lib/briefing/plain-text";
+import { intelTags } from "../../lib/display/match-intel";
 
 function TeamChip({
   teamKey,
@@ -208,7 +210,7 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
             {edge.evidence.slice(0, 8).map((card) => (
               <li key={card.entryId}>
                 {teamNum(card.teamKey)}
-                {card.matchKey ? ` · ${card.matchKey}` : ""} — {card.note ?? "photo/voice attached"}
+                {card.matchKey ? ` · ${plainMatchKey(card.matchKey)}` : ""} — {card.note ?? "photo/voice attached"}
                 {card.mediaCount ? ` · ${card.mediaCount} media` : ""}
               </li>
             ))}
@@ -230,7 +232,6 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
     ]);
   }, [view.prediction, whatIfOn]);
 
-  const sourceLabel = Array.from(new Set(view.sources.map((item) => item.source))).join(" · ") || "no linked source";
   const title =
     view.compLevel === "qm"
       ? `Qualification ${view.matchNumber}`
@@ -274,19 +275,11 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             <span className="app-badge good">Live inputs</span>
             <h2>{title}</h2>
           </div>
-          <small title={`Plan ${view.engine.planCode} · depth ${view.engine.depth}`}>
-            {view.engine.label}
-          </small>
         </header>
+        {/* Engine id, plan code, product version and data vendors were a log line to a drive
+            coach. What they need: which side we are and our chance. */}
         <p className="app-muted strategy-provenance">
-          <span className="app-badge good">Engine</span> {view.engine.id} · plan{" "}
-          {view.engine.planCode.replace(/_/g, " ")}
-          {view.engine.thisSeasonOnly ? " · this-season rules" : " · multi-season weights"}
-          {view.productVersion ? ` · product ${view.productVersion}` : ""}
-        </p>
-        <p className="app-muted strategy-provenance">
-          Sources: {sourceLabel} · you are{" "}
-          {view.ourAlliance.toUpperCase()} ({ourWinDisplay?.label ?? "—"} win)
+          We are {view.ourAlliance.toUpperCase()} · {ourWinDisplay?.label ?? "—"} chance to win
           {view.eventName ? ` · ${view.eventName}` : ""}
         </p>
         <div className="strategy-probability">
@@ -294,11 +287,11 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
           <span>Red alliance</span>
           {redWinDisplay ? (
             <small>
-              {Math.round(view.prediction.confidenceLow * 100)}–{Math.round(view.prediction.confidenceHigh * 100)}%
-              confidence · sample {Math.round(view.prediction.effectiveSampleSize)}
+              Likely between {Math.round(view.prediction.confidenceLow * 100)}% and{" "}
+              {Math.round(view.prediction.confidenceHigh * 100)}%
             </small>
           ) : (
-            <small>No grounded prediction — recompute after match results are connected.</small>
+            <small>No win chance yet for this match.</small>
           )}
         </div>
         {redWinDisplay ? (
@@ -358,31 +351,21 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
           {view.prediction.keyFactors.map((factor) => (
             <li key={`${factor.kind}-${factor.name}`}>
               <b>{Math.round(factor.impact * 10) / 10}</b>
-              <span>
-                <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
-              </span>
-              <small>{factor.evidence}</small>
+              <span>{plainStrategyText(factor.name)}</span>
+              <small>{plainStrategyText(factor.evidence)}</small>
             </li>
           ))}
         </ul>
-        {view.prediction.caveats.map((item) => (
-          <p className="app-muted" key={item}>
-            {item}
-          </p>
-        ))}
-        {view.prediction.reasoningSteps?.length ? (
-          <div className="strategy-reasoning">
-            <h3>Reasoning depth</h3>
-            <ol>
-              {view.prediction.reasoningSteps.map((step) => (
-                <li key={step.step}>
-                  <strong>{step.title}</strong>
-                  <small>{step.detail}</small>
-                </li>
-              ))}
-            </ol>
-          </div>
-        ) : null}
+        {/* Caveats in plain words; the engine's own step-by-step ("Logistic win model on
+            alliance rating margin 28.5552 via engine …") is not shown to a drive coach. */}
+        {view.prediction.caveats
+          .map((item) => plainStrategyText(item))
+          .filter(Boolean)
+          .map((item) => (
+            <p className="app-muted" key={item}>
+              {item}
+            </p>
+          ))}
         <button type="button" className="text-button" onClick={() => setShowDeep((open) => !open)}>
           {showDeep ? "Hide contribution & citations" : "Alliance contribution & citations"}
         </button>
@@ -403,7 +386,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                 {view.allianceBreakdown.citations.map((citation) => (
                   <li key={citation.matchKey}>
                     <span className="app-badge good">Event</span>
-                    <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
+                    <span>{plainStrategyText(citation.summary.replace(/^FACT\s*/, ""))}</span>
                   </li>
                 ))}
               </ul>
@@ -419,7 +402,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         </header>
         <ul className="strategy-considerations">
           {view.matchup.considerations.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item}>{plainStrategyText(item)}</li>
           ))}
         </ul>
         <h3>Opponent tendencies</h3>
@@ -430,14 +413,15 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             {view.tendencies.map((item) => (
               <li key={item.teamKey}>
                 <strong>{item.teamKey.replace(/^frc/, "")}</strong>
-                {item.labels.length ? (
+                {/* "scout-auto-capable", "reliability-risk": the engine's labels in words. */}
+                {intelTags(item.labels).length ? (
                   <span className="strategy-labels">
-                    {item.labels.map((label) => (
+                    {intelTags(item.labels).map((label) => (
                       <em key={label}>{label}</em>
                     ))}
                   </span>
                 ) : null}
-                <small>{item.evidence.join(" ")}</small>
+                <small>{plainStrategyText(item.evidence.join(" "))}</small>
               </li>
             ))}
           </ul>

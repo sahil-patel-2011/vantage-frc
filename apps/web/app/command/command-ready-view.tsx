@@ -12,6 +12,8 @@ import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
+import { plainStrategyText } from "../../lib/briefing/plain-text";
+import { intelTags } from "../../lib/display/match-intel";
 import {
   CommandReadyHeader,
   EventDayNextActionsPanel,
@@ -419,18 +421,20 @@ export function CommandReadyView({
                   caveats: snap.prediction.caveats,
                 })?.label ?? "—"}
                 {snap.prediction.confidenceLow != null && snap.prediction.confidenceHigh != null
-                  ? ` · band ${pct(snap.prediction.confidenceLow)}–${pct(snap.prediction.confidenceHigh)}`
+                  ? ` · likely ${pct(snap.prediction.confidenceLow)}–${pct(snap.prediction.confidenceHigh)}`
                   : ""}
               </p>
               <ul className="edc-factors">
                 {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
                   <li key={factor.name}>
-                    <strong>{factor.name}</strong>
-                    <span>{factor.evidence}</span>
+                    <strong>{plainStrategyText(factor.name)}</strong>
+                    <span>{plainStrategyText(factor.evidence)}</span>
                   </li>
                 ))}
               </ul>
-              {snap.prediction.caveats[0] ? <p className="edc-caveat">{snap.prediction.caveats[0]}</p> : null}
+              {plainStrategyText(snap.prediction.caveats[0]) ? (
+                <p className="edc-caveat">{plainStrategyText(snap.prediction.caveats[0])}</p>
+              ) : null}
               <button
                 type="button"
                 className="edc-link"
@@ -527,7 +531,7 @@ export function CommandReadyView({
               </span>
               <div>
                 <h2>Drive coach briefs</h2>
-                <p>Opponent tendencies + scout capabilities (cited)</p>
+                <p>What our opponents tend to do, from scouting</p>
               </div>
             </div>
           </header>
@@ -537,19 +541,24 @@ export function CommandReadyView({
                 <li key={brief.teamKey}>
                   <div className="edc-brief-head">
                     <strong>{brief.teamNumber ?? teamLabel(brief.teamKey)}</strong>
+                    {/* The engine's labels ("scout-auto-capable", "pit-noted") in words. */}
                     <div className="edc-tags">
-                      {brief.labels.map((label) => (
+                      {intelTags(brief.labels).map((label) => (
                         <span key={label}>{label}</span>
                       ))}
                     </div>
                   </div>
                   {brief.capabilities.length ? (
-                    <p className="edc-caps">{brief.capabilities.join(" · ")}</p>
+                    <p className="edc-caps">{plainStrategyText(brief.capabilities.join(" · "))}</p>
                   ) : null}
                   <ul>
-                    {brief.evidence.slice(0, 3).map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
+                    {brief.evidence
+                      .slice(0, 3)
+                      .map((line) => plainStrategyText(line))
+                      .filter(Boolean)
+                      .map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
                   </ul>
                 </li>
               ))}
@@ -581,8 +590,8 @@ export function CommandReadyView({
                   <strong>
                     {flag.teamNumber ?? teamLabel(flag.teamKey)} · {flag.title}
                   </strong>
-                  <span>{flag.detail}</span>
-                  <small>{flag.evidence}</small>
+                  <span>{plainStrategyText(flag.detail)}</span>
+                  <small>{plainStrategyText(flag.evidence)}</small>
                 </li>
               ))}
             </ul>
