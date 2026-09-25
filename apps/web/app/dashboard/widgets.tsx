@@ -76,6 +76,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           href={myDayHref}
           emptyHint={hint}
           orgId={orgId}
+          lead={canOpenTeamData}
         >
           {payload?.status === "live" ? <NextMatchLive data={data} /> : null}
         </Shell>

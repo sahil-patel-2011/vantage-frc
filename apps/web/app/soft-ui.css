@@ -2968,3 +2968,8 @@ body.has-app-shell .messages article > span,
 body.has-app-shell .messages article small {
   font: 500 12px var(--font-source-sans, system-ui), system-ui, sans-serif;
 }
+/* Team chip: the number stays whole, the name after it gives way (and is dropped on a phone). */
+.soft-topbar-team > span{display:flex;min-width:0}
+.soft-topbar-team-num{flex:none;font-weight:inherit}
+.soft-topbar-team-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:520px){.soft-topbar-team-name{display:none}}

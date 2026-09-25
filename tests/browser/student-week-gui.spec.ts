@@ -178,6 +178,9 @@ test.describe("student-week GUI path", () => {
       await form.getByLabel("Email").fill(probeEmail);
       await form.getByRole("button", { name: /^(Send|Create) invite$/ }).click();
       await expect(page.locator("body")).not.toContainText("Application error");
+      // Wait for the invite to exist before taking it back out; the teardown below ran before
+      // the create finished and found nothing to revoke, so every run left one behind.
+      await expect(form.getByRole("status")).toContainText(probeEmail, { timeout: 20_000 }).catch(() => undefined);
 
       /*
         Take it back out. This sends a real invite, and without a revoke the

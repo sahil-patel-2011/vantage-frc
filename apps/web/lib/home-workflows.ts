@@ -83,9 +83,10 @@ export function buildMentorHomeStrip(input: MentorHomeStripInput): HomeStripItem
       detail:
         input.needsAssignment > 0
           ? `${input.needsAssignment} open dut${input.needsAssignment === 1 ? "y" : "ies"}`
-          : "All upcoming duties assigned",
+          : "Nothing waiting for a person",
       href: withOrgHref("/duties", orgId),
-      tone: input.needsAssignment > 0 ? "warn" : "ok",
+      // Neutral, not green: zero open duties is also what a team with no duties yet looks like.
+      tone: input.needsAssignment > 0 ? "warn" : "neutral",
     },
     {
       key: "lodging_gaps",
@@ -93,9 +94,9 @@ export function buildMentorHomeStrip(input: MentorHomeStripInput): HomeStripItem
       detail:
         input.lodgingGaps > 0
           ? `${input.lodgingGaps} room${input.lodgingGaps === 1 ? "" : "s"} without an occupant`
-          : "No open room slots",
+          : "No empty room slots",
       href: withOrgHref("/logistics", orgId),
-      tone: input.lodgingGaps > 0 ? "warn" : "ok",
+      tone: input.lodgingGaps > 0 ? "warn" : "neutral",
     },
     {
       key: "unsigned_checklists",
@@ -103,9 +104,9 @@ export function buildMentorHomeStrip(input: MentorHomeStripInput): HomeStripItem
       detail:
         input.unsignedChecklists > 0
           ? `${input.unsignedChecklists} member check${input.unsignedChecklists === 1 ? "" : "s"} still open`
-          : "Travel checklists clear",
+          : "No member checks open",
       href: withOrgHref("/logistics", orgId),
-      tone: input.unsignedChecklists > 0 ? "warn" : "ok",
+      tone: input.unsignedChecklists > 0 ? "warn" : "neutral",
     },
   ];
 

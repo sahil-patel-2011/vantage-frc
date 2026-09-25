@@ -78,8 +78,8 @@ export function inviteDeliveryBanner(mode: InviteDeliveryMode | null | undefined
   if (mode === "unconfigured" || mode === "local") {
     return {
       tone: "info",
-      title: "Invites do not email from this server",
-      detail: "After you send, copy the link and share it yourself.",
+      title: "Email is off here",
+      detail: "Create the invite, then copy its link and send it to them yourself.",
     };
   }
   return null;

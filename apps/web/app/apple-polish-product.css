@@ -199,8 +199,8 @@ body.has-app-shell .soft-drawer,
 body.has-app-shell .soft-account-pop,
 body.has-app-shell .soft-island-editor > section {
   border-color: rgba(29, 29, 31, .1);
-  background: rgba(255, 255, 255, .94);
-  backdrop-filter: saturate(180%) blur(28px);
+  /* Solid: menu text over page text read as one jumble at 94%. */
+  background: #fff;
 }
 
 body.has-app-shell .app-badge {

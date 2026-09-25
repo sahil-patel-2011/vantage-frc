@@ -33,7 +33,11 @@ function TeamChip({
       aria-label={`${label} — switch team`}
       title="Switch or join a team"
     >
-      <span>{label}</span>
+      {/* The number never truncates; only the name after it does ("Team 957…" hid the number). */}
+      <span>
+        <b className="soft-topbar-team-num">{label.split(" · ")[0]}</b>
+        {label.includes(" · ") ? <span className="soft-topbar-team-name"> · {label.split(" · ").slice(1).join(" · ")}</span> : null}
+      </span>
       <Icon name="chevron" />
     </button>
   );

@@ -332,6 +332,13 @@ test.describe("with real sessions", () => {
       const chaseAfter = await posted.locator(".ann-outstanding").innerText();
       expect(chaseAfter.length, "outstanding list did not shrink").toBeLessThan(chaseBefore.length);
     }
+
+    // Take it back out: every run left a "Bus at 6:15 (…)" on the fixture team's Home.
+    const listed = await api(owner.context, withOrg("/api/announcements"));
+    const rows = (listed.json.announcements ?? []) as Array<{ id: string; title: string }>;
+    for (const row of rows.filter((entry) => entry.title === title)) {
+      await api(owner.context, withOrg("/api/announcements"), { action: "delete", announcementId: row.id });
+    }
   });
 
   /**

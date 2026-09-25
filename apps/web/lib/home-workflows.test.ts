@@ -33,7 +33,7 @@ describe("home-workflows", () => {
     ]);
     expect(strip[0]!.tone).toBe("warn");
     expect(strip[0]!.href).toContain("orgId=org-1");
-    expect(strip[1]!.tone).toBe("ok");
+    expect(strip[1]!.tone).toBe("neutral");
     expect(strip[2]!.tone).toBe("warn");
     expect(strip[3]!.href).toContain("/competition?tab=command");
   });

@@ -67,27 +67,37 @@ function WidgetEmptyState({
   message,
   href,
   orgId,
+  lead,
 }: {
   type: string;
   hint: EmptyHint;
   message?: string;
   href?: string;
   orgId: string;
+  lead?: boolean;
 }) {
   const withOrg = (path: string) =>
     orgId ? `${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : path;
   // Every match played: the next useful look is where the team finished, not a dead card.
   const eventOver = type === "next_match" && /are played/.test(message ?? "");
-  const ctaHref = eventOver
+  // Not on this event's schedule: usually the wrong event. A lead can change it from here;
+  // everyone else is told who does, instead of being asked to check something they can't change.
+  const wrongEvent = type === "next_match" && /isn't on this event's match schedule/.test(message ?? "");
+  const description = wrongEvent && !lead
+    ? (message ?? "").replace(/Check that it's the event you're at\.?/, "Your team lead picks the event.")
+    : studentWidgetDescription(message, hint);
+  const ctaHref = wrongEvent
+    ? lead ? withOrg("/command?pickEvent=1") : undefined
+    : eventOver
     ? withOrg("/rankings")
     : hint.noEmptyCta
       ? undefined
       : hint.ctaHref
         ? withOrg(hint.ctaHref)
         : href;
-  const ctaLabel = eventOver ? "See the rankings" : hint.ctaLabel;
+  const ctaLabel = wrongEvent ? "Change event" : eventOver ? "See the rankings" : hint.ctaLabel;
   return (
-    <EmptyState compact title={eventOver ? "Our matches here are done" : hint.title} description={studentWidgetDescription(message, hint)}>
+    <EmptyState compact title={eventOver ? "Our matches here are done" : hint.title} description={description}>
       {ctaHref && ctaLabel ? (
         <a className="dash-empty-cta" href={ctaHref}>
           {ctaLabel} →
@@ -106,6 +116,7 @@ export function WidgetShell({
   emptyHint,
   orgId,
   preferChildren,
+  lead,
 }: {
   type: string;
   title: string;
@@ -115,6 +126,8 @@ export function WidgetShell({
   emptyHint: EmptyHint;
   orgId: string;
   preferChildren?: boolean;
+  /** Owner or admin: may change what the card depends on (the team's event). */
+  lead?: boolean;
 }) {
   const widgetsLoaded = useContext(WidgetsLoadedContext);
   const status = payload?.status ?? "setup_required";
@@ -160,7 +173,7 @@ export function WidgetShell({
       ) : useChildren ? (
         children
       ) : (
-        <WidgetEmptyState type={type} hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
+        <WidgetEmptyState type={type} hint={emptyHint} message={payload?.message} href={href} orgId={orgId} lead={lead} />
       )}
       {href && showLive ? (
         <a className="dash-widget-link" href={href}>

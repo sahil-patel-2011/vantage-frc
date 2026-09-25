@@ -155,6 +155,16 @@
   }
 }
 
+/* On a phone the bars sit over dense content scrolling right under them, and a see-through
+   top bar showed a page's chips through its title. Solid there, unless the person chose the
+   clear look. */
+@media (max-width: 720px) {
+  :root:not([data-clarity="clear"]) {
+    --material: var(--bg);
+    --material-thick: var(--bg);
+  }
+}
+
 /* -------------------------------------------------------- reduced motion --
    Two paths express this: the OS setting, and the in-app preference for the
    JavaScript-driven animations a media query cannot reach. Both zero the
