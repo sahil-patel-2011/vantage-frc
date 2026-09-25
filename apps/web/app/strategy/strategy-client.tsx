@@ -28,6 +28,7 @@ import {
 import { LivePanel } from "./strategy-live-panel";
 import { URL_CHANGE_EVENT } from "../../lib/nav/url-change";
 import "./strategy.css";
+import { StrategyMatchPicker } from "./strategy-match-picker";
 
 export default function StrategyClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<StrategyView | null>(null);
@@ -48,6 +49,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     setUrlOrgId(new URLSearchParams(window.location.search).get("orgId"));
   }, []);
 
+  const loadedMatchKeyRef = useRef("");
+  const loadStrategyRef = useRef<(() => void) | null>(null);
+
   // "Pick desk" links here from the hub's own tool strip, which does not remount this page:
   // follow the view named in the address when it changes.
   useEffect(() => {
@@ -55,6 +59,8 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       const params = new URLSearchParams(window.location.search);
       const requested = params.get("sub") ?? (params.get("tab") === "picks" ? "picks" : null);
       if (requested === "picks") setTab("picks");
+      // A match chip changes ?matchKey= on this same page: load that match.
+      if ((params.get("matchKey") ?? "") !== loadedMatchKeyRef.current) loadStrategyRef.current?.();
     };
     window.addEventListener(URL_CHANGE_EVENT, follow);
     window.addEventListener("popstate", follow);
@@ -68,6 +74,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     void (async () => {
       const params = new URLSearchParams(window.location.search);
       const orgId = params.get("orgId");
+      // The match named in the address (a chip, the briefing's link); otherwise our next one.
+      const requestedMatch = params.get("matchKey") ?? "";
+      loadedMatchKeyRef.current = requestedMatch;
       const cacheOrg = orgId?.trim() || "_";
       // Embedded in the competition hub, `tab` is spent on the hub's own tab
       // ("strategy"), so the pick desk arrives as `sub`. Standalone, it is
@@ -90,7 +99,10 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       setFetchFailed(false);
       setError("");
       try {
-        const response = await fetch(`/api/strategy${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
+        const query = new URLSearchParams();
+        if (orgId) query.set("orgId", orgId);
+        if (requestedMatch) query.set("matchKey", requestedMatch);
+        const response = await fetch(`/api/strategy${query.size ? `?${query.toString()}` : ""}`, {
           cache: "no-store",
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
@@ -159,6 +171,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   }, []);
 
   useEffect(() => {
+    loadStrategyRef.current = loadStrategy;
     loadStrategy();
   }, [loadStrategy]);
 
@@ -321,6 +334,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         <PickListWorkbench orgId={orgId} embedded />
       ) : view?.status === "live" ? (
         <>
+          <StrategyMatchPicker orgId={view.orgId} current={view.matchKey} />
           <StrategyBriefingCard
             orgId={view.orgId}
             matchKey={view.matchKey}

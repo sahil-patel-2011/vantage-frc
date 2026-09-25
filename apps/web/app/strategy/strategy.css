@@ -228,3 +228,33 @@
 .strategy-briefing-card h2 { margin: 0; font-size: 1.2rem; }
 .strategy-briefing-card p { margin: 0; color: var(--muted); line-height: 1.4; }
 .strategy-briefing-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+/* Our matches ahead: one row of chips above the plan, the current one marked. */
+.strategy-match-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.strategy-match-picker a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.strategy-match-picker a[aria-current="page"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+@media (pointer: coarse) {
+  .strategy-match-picker a {
+    min-height: 44px;
+  }
+}
