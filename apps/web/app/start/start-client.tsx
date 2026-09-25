@@ -302,7 +302,10 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
                 : `First steps for ${view.orgName}, picked from your role and subteams.`
             }
           >
-            <StartRelated orgId={view.orgId} member={isMemberRole(view.teamRole)} />
+            <StartRelated
+              orgId={view.orgId}
+              member={isMemberRole(view.teamRole) || (view.orgRole != null && view.orgRole !== "owner" && view.orgRole !== "admin")}
+            />
           </PageHeader>
           <TeamOpsNav orgId={view.orgId} active="start" />
           <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />

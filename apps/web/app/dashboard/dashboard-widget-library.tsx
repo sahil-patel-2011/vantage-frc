@@ -98,7 +98,6 @@ export function DashboardWidgetLibrary({
             <p>
               {/* On a phone the sheet covers the board, so dragging onto it is not a thing. */}
               <span className="dash-sheet-hint-fine dash-hint-pointer">Click one to add it, or drag it onto the board.</span>
-              <span className="dash-sheet-hint-fine dash-hint-touch">Tap one to add it.</span>
               <span className="dash-sheet-hint-coarse">Tap one to add it to your board.</span>
             </p>
           </div>

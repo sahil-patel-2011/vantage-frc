@@ -351,7 +351,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         tone: "error",
         message: `Check ${typos.map((row) => `"${row.entry}"`).join(", ")}: did you mean ${typos
           .map((row) => row.fix)
-          .join(", ")}? Press Send again to use it as typed.`,
+          .join(", ")}? Press Create invite again to use it as typed.`,
       });
       return;
     }

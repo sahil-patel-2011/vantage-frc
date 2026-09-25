@@ -125,6 +125,10 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 @keyframes dash-toast-in{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%)}}
 @media (max-width:720px){
   .dash-toast.is-editing{bottom:calc(72px + var(--safe-bottom,0px))}
+  /* Full width on a phone: shrink-to-fit squeezed "Robot readiness added to the board." into
+     four one-word lines beside Undo. */
+  .dash-toast{width:calc(100vw - 32px)}
+  .dash-toast>span{flex:1 1 auto;min-width:0}
 }
 
 /* ---- Cards in edit mode ---- */
@@ -398,8 +402,7 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 .dash-home.is-editing{padding-bottom:calc(110px + var(--safe-bottom,0px))}
 
 /* The library's hint for the device in hand: tap on a phone, click or drag on a computer. */
-.dash-hint-touch { display: none; }
 @media (max-width: 720px) {
-  .dash-hint-pointer { display: none; }
-  .dash-hint-touch { display: inline; }
+  .dash-sheet-head .dash-hint-pointer { display: none; }
+  .dash-sheet-head .dash-sheet-hint-coarse { display: inline; }
 }

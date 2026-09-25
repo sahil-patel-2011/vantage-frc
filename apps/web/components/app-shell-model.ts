@@ -64,11 +64,9 @@ const HUB_ROOT_PATHS = new Set([
 const BRAND_LIKE_NAME = /^(vantage|team\s*\d+)/i;
 
 export function formatMembershipLabel(row: MembershipOption): string {
-  const team =
-    row.teamNumber != null && Number.isFinite(row.teamNumber) ? `Team ${row.teamNumber}` : null;
-  const name = row.orgName?.trim() || null;
-  const parts = [team, name].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Your team";
+  // Same rule as the top bar: "Team 6925 · Team 6925" when the name only repeats the number.
+  const teamNumber = row.teamNumber != null && Number.isFinite(row.teamNumber) ? row.teamNumber : null;
+  return teamLabelFor(teamNumber, row.orgName) ?? "Your team";
 }
 
 export function formatRolePlanCue(role?: string | null, planCode?: string | null, paidOrg?: boolean): string {

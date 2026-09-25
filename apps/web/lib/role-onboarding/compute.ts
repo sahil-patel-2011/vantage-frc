@@ -272,6 +272,7 @@ export async function loadRoleOnboarding(
     status: "live",
     orgId,
     orgName: ctx.orgName,
+    orgRole: ctx.orgRole,
     teamRole: ctx.teamRole,
     crewRole: ctx.crewRole,
     roleDescription: ctx.roleDescription,

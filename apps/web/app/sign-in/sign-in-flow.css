@@ -432,3 +432,7 @@
   color: var(--ink); font-weight: 650;
 }
 .signin-waitlist .signin-waitlist-btn:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }
+
+/* The code clock and resend timer were ~11px low-contrast grey on separate lines. */
+p.signin-expiry { font-size: 14px; color: var(--ink-2, var(--ink)); opacity: .85; margin: 4px 0 0; }
+.signin-footer-modes .signin-link { font-size: 14px; }

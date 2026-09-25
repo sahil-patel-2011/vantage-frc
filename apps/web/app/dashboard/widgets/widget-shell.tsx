@@ -86,7 +86,11 @@ function WidgetEmptyState({
   const description = wrongEvent && !lead
     ? (message ?? "").replace(/Check that it's the event you're at\.?/, "Your team lead picks the event.")
     : studentWidgetDescription(message, hint);
-  const ctaHref = wrongEvent
+  // A member can't add the team's key: no "Add an AI key" button, only who does it.
+  const askLead = type === "ask_ai" && /Ask an owner or mentor/.test(message ?? "");
+  const ctaHref = askLead
+    ? undefined
+    : wrongEvent
     ? lead ? withOrg("/command?pickEvent=1") : undefined
     : eventOver
     ? withOrg("/rankings")

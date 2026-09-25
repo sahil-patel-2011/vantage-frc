@@ -61,6 +61,8 @@ export type RoleOnboardingView =
       status: "live";
       orgId: string;
       orgName: string;
+      /** owner / admin / scout / viewer: who can reach team setup and security. */
+      orgRole?: string | null;
       teamRole: string | null;
       crewRole: string | null;
       roleDescription: string | null;

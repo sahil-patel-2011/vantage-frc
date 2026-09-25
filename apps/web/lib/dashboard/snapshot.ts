@@ -1218,7 +1218,8 @@ export async function loadDashboardSnapshot(
         { href: "/ai?tab=chat", aiOff: true },
         owner
           ? "Add your team's AI key (a free one works) and Ask AI turns on for everyone."
-          : "Your team hasn't turned on AI yet. You can add your own key to use it yourself.",
+          : // Not "add your own key": that asked a 16-year-old to make and paste an API key on day one.
+            "Ask AI isn't turned on yet. Ask an owner or mentor to add the team's key (a free one works).",
       );
     }
   }
