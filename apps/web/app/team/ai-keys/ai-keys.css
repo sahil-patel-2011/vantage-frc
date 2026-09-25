@@ -524,3 +524,10 @@
 .ai-keys-page .ai-keys-field-error{margin:6px 0 0;color:var(--danger);font-size:13px;font-weight:600}
 /* Room below the last Save on a phone, so the floating dock never sits on it. */
 @media (max-width:720px){.ai-keys-page{padding-bottom:calc(120px + env(safe-area-inset-bottom))}}
+
+/* Each checkbox row is its own 44px tap target on a phone, not a 13px box. */
+@media (pointer: coarse) {
+  .ai-keys-page .check-field { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+  .ai-keys-page .check-field input[type="checkbox"] { width: 22px; height: 22px; flex: none; }
+  .ai-keys-page .related-strip a, .ai-keys-page .ai-keys-related a { min-height: 44px; display: inline-flex; align-items: center; }
+}

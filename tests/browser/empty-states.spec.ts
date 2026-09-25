@@ -27,7 +27,7 @@ const NO_ORG_ROUTES = [
   { path: "/team/knowledge/history", crumb: "Knowledge / History", heading: "Knowledge history" },
   { path: "/team/posture", crumb: "Team / Posture", heading: "Security posture" },
   { path: "/team/prompts", crumb: "Team / Prompts", heading: "Prompts" },
-  { path: "/team/security", crumb: "Team settings / Sign-in & security", heading: "Team security" },
+  { path: "/team/security", crumb: "Team settings / Team security", heading: "Team security" },
   { path: "/team/security/exports", crumb: "Security / Exports", heading: "Export audit" },
 ];
 

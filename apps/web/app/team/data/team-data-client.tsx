@@ -19,6 +19,7 @@ import {
   type TeamDataShellKind,
 } from "../../../lib/team-data/team-data-related";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
+import { TeamSettingsNav } from "../../../components/team-settings-nav";
 
 type InventoryRow = { label: string; count: number };
 
@@ -225,7 +226,8 @@ function TeamDataShell({
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">{teamSettingsBreadcrumb("data")}</span>
-          <h1>Team Data</h1>
+          <h1>Team data</h1>
+          {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
           <p>{description}</p>
         </div>
         <TeamDataRelated orgId={orgId} include={[...TEAM_DATA_RELATED_INCLUDE]} />
@@ -580,7 +582,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">{teamSettingsBreadcrumb("data")}</span>
-          <h1>Team Data</h1>
+          <h1>Team data</h1>
+          {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
           <p>
             What your team has recorded, and the official event data that Schedule, Event day and Strategy
             use.

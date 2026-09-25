@@ -50,8 +50,14 @@ export const ENDPOINT_EXAMPLES: EndpointExample[] = [
  * providers — it names examples and then says "any", because an enumeration is
  * read as the allowlist and teams conclude their endpoint is not welcome.
  */
+// The lead is what an owner needs first; "OpenAI-compatible endpoint" and "LM Studio" in it read
+// as engineering, so the any-server promise moved to the other-keys title below.
 export const PAGE_DESCRIPTION =
-  "Vantage is free, and AI runs on your own key. A free Google Gemini key is enough to start; any OpenAI-compatible endpoint works too, including Ollama or LM Studio in your shop. Every AI feature runs through the key you add.";
+  "AI runs on your team's own key, and every AI feature runs through it. A free Google Gemini key takes about two minutes.";
+
+/** The one place for every other key: paid providers and a server in your own shop. */
+export const OTHER_KEYS_TITLE =
+  "Use a different key: OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible server (Ollama, LM Studio)";
 
 /** The headline promise. One sentence, no hedging. */
 export const ANY_ENDPOINT_HEADLINE =

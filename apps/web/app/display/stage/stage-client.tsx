@@ -457,10 +457,10 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
           ) : (
             <>
           {/* Ours is on the field next: "NOW · 4:17 PM · QUEUE NOW" said now three times. */}
+          {/* Ours is next: the countdown stays (the Coach TV and the preview show it too), with the
+              scheduled time beside it; past it, just the scheduled time. */}
           {clock.queueNow
-            ? clockLabel(match.scheduledTime)
-              ? `Printed for ${clockLabel(match.scheduledTime)}`
-              : ""
+            ? `${countdown && countdown !== "now" ? `${countdown} · ` : ""}${clockLabel(match.scheduledTime) ? `Scheduled ${clockLabel(match.scheduledTime)}` : ""}`
             : `${countdown ? `${countdown} · ` : ""}${clockLabel(clock.expectedTime ?? match.scheduledTime) ?? "No scheduled time posted"}`}
           {/* What the pit does now, the same cue the Coach TV gives ("LEAVE PIT NOW", "QUEUE NOW").
               Time to move: the cue becomes a filled amber label, not the same yellow words. */}

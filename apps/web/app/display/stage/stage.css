@@ -663,3 +663,26 @@
 /* The agreed game plan under the bumper band. */
 .stage-next .stage-plan, .stage-plan { margin: 0.2em 0 0; font-weight: 800; font-size: calc(1.9rem * var(--stage-scale, 1)); line-height: 1.2; color: #fde68a; }
 .stage-plan span { font-size: 0.6em; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-right: 0.4em; }
+
+/* The controls float over the header instead of wrapping into a row of their own: once they
+   auto-hid, that row stayed as an empty band and pushed the win line off a 720p screen. */
+@media (min-width: 481px) {
+  .stage-head { position: relative; }
+  .stage-controls {
+    position: absolute; top: 0; right: 0; z-index: 2;
+    padding: 0.25rem; border-radius: 12px; background: var(--stage-bg, #050608);
+  }
+  .display-stage:not(.is-chrome):not(.loading):not(.error) .stage-controls { pointer-events: none; }
+}
+
+/* 720p pit laptops and TVs: the next-match screen fits without scrolling. */
+@media (max-height: 800px) and (min-width: 481px) {
+  .stage-clock { font-size: calc(clamp(2.6rem, 11vh, 7rem) * var(--stage-scale)); }
+  .stage-bumpers { font-size: calc(clamp(1.6rem, 7vh, 3.4rem) * var(--stage-scale)); padding-block: calc(0.35rem * var(--stage-scale)); }
+  .stage-lineup strong { font-size: calc(clamp(1.4rem, 5.4vh, 2.8rem) * var(--stage-scale)); }
+  .stage-lineup li { padding-block: calc(0.25rem * var(--stage-scale)); }
+  .stage-lineup em { font-size: calc(clamp(0.85rem, 2vh, 1.1rem) * var(--stage-scale)); }
+  .stage-sides h2 { font-size: calc(clamp(0.85rem, 2.2vh, 1.2rem) * var(--stage-scale)); margin-bottom: 0.15rem; }
+  .stage-win { font-size: calc(clamp(1.1rem, 4vh, 2rem) * var(--stage-scale)); }
+  .stage-next .stage-plan, .stage-plan { font-size: calc(clamp(1rem, 3.4vh, 1.6rem) * var(--stage-scale)); }
+}

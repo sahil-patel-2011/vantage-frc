@@ -11,6 +11,7 @@ import {
   MEMBER_KEY_BODY,
   memberKeyEndpointHost,
   memberKeyFields,
+  OTHER_KEYS_TITLE,
   PAGE_DESCRIPTION,
   QUALITY_NOTICE_BODY,
   REQUIRED_ENDPOINT_IDS,
@@ -53,12 +54,12 @@ describe("ENDPOINT_EXAMPLES", () => {
 });
 
 describe("PAGE_DESCRIPTION", () => {
-  it("says 'any', so the examples it lists cannot be read as the allowlist", () => {
-    expect(PAGE_DESCRIPTION.toLowerCase()).toContain("any openai-compatible");
+  it("says 'any' where the other keys are offered, so the examples are not the allowlist", () => {
+    expect(OTHER_KEYS_TITLE.toLowerCase()).toContain("any openai-compatible");
   });
 
   it("names a local runner, which is the case teams assume is excluded", () => {
-    const text = PAGE_DESCRIPTION.toLowerCase();
+    const text = OTHER_KEYS_TITLE.toLowerCase();
     expect(text.includes("ollama") || text.includes("lm studio")).toBe(true);
   });
 

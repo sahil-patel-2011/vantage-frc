@@ -98,7 +98,14 @@ export function ActionMenu({
         close(true);
       }
     };
-    const onReflow = () => close(false);
+    // Only a real move strands the menu. Focusing the first item scrolled the page a pixel,
+    // and "close on any scroll" shut the menu 50 ms after a mouse click opened it.
+    const start = triggerRef.current?.getBoundingClientRect();
+    const onReflow = () => {
+      const now = triggerRef.current?.getBoundingClientRect();
+      if (start && now && Math.abs(now.top - start.top) < 24 && Math.abs(now.left - start.left) < 24) return;
+      close(false);
+    };
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("scroll", onReflow, true);
@@ -122,7 +129,7 @@ export function ActionMenu({
     const nodes = items();
     if (!nodes.length) return;
     const index = focusOnOpen.current === -1 ? nodes.length - 1 : Math.min(focusOnOpen.current, nodes.length - 1);
-    nodes[index]?.focus();
+    nodes[index]?.focus({ preventScroll: true });
   }, [open, items]);
 
   const moveFocus = (delta: number | "first" | "last") => {

@@ -69,7 +69,7 @@ test.describe("one control per destination", () => {
     // times, in the page header, a "more links" row and the membership panel.
     // Team admin is people and invites; other settings are one row of links.
     // The shared Team settings row names them the same on every settings page.
-    for (const label of ["Team profile", "Sign-in & security", "AI keys", "Connectors"]) {
+    for (const label of ["Team profile", "Team security", "AI keys", "Connectors"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
     // None, not one. This page has a team — that is why the related links

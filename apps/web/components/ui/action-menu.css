@@ -211,3 +211,8 @@
     transform: none;
   }
 }
+
+/* Row actions (New link, Revoke, Access…) at a thumb's size on touch screens. */
+@media (pointer: coarse) {
+  .vam-btn { min-height: 44px; }
+}

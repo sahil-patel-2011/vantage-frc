@@ -17,6 +17,7 @@ import {
   MEMBER_KEY_HEADLINE,
   MEMBER_KEY_MODEL_HINT,
   memberKeyFields,
+  OTHER_KEYS_TITLE,
 } from "./ai-keys-copy";
 import { ShellPanel } from "./ai-keys-chrome";
 import {
@@ -199,7 +200,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           <details className="ai-keys-fold" open={!showStart}>
             <summary>
               <h2 className="ai-keys-fold-title">
-                {showStart ? "Use a paid key instead (OpenAI, Anthropic, OpenRouter)" : "Your team's AI keys"}
+                {showStart ? OTHER_KEYS_TITLE : "Your team's AI keys"}
               </h2>
             </summary>
           <section className="ai-keys-grid" aria-label="Provider API keys">
