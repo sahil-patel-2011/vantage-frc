@@ -17,8 +17,9 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   next_match: {
     title: "No upcoming match",
     body: "This fills in when the team’s event has a schedule.",
-    ctaHref: "/my-day",
-    ctaLabel: "Open My Day",
+    // The briefing for this match. "Open My Day" was already on the now line and the My day card.
+    ctaHref: "/briefing",
+    ctaLabel: "Pre-match briefing",
     noEmptyCta: true,
   },
   recent_result: {

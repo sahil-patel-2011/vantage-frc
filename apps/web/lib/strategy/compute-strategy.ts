@@ -540,7 +540,9 @@ export async function computeStrategyView(
              m.red_alliance->'teamKeys' ? $2
              OR m.blue_alliance->'teamKeys' ? $2
            )
-           AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now() - interval '6 hours'
+           -- The same "next match" as Home, My Day and the pit TV: the first of ours still
+           -- ahead. A six-hour window here opened Strategy on a match scored hours ago.
+           AND COALESCE(m.actual_time, m.predicted_time, m.event_time) > now()
          ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time)
          LIMIT 1`,
     input.matchKey ? [row.eventKey, input.matchKey] : [row.eventKey, teamKey],

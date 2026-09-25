@@ -107,11 +107,11 @@ export function ourMatches(matches: ScheduleMatch[], teamKey: string): ScheduleM
   return matches.filter((match) => allianceOf(match, teamKey) != null);
 }
 
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-
 /**
- * First match containing the team that has no scores yet and is not stale
- * (scheduled time missing, unparsable, or newer than six hours ago).
+ * First match containing the team that has no scores yet and whose time is still ahead (or not
+ * posted). The same rule as every "next match" query (`time > now()`): with a six-hour window
+ * here, My Day and the top strip kept a match due 77 minutes earlier as "next" while Home, the
+ * pit TV and Strategy had moved on to the one after it.
  */
 export function nextOurMatch(matches: ScheduleMatch[], teamKey: string, now: number = Date.now()): ScheduleMatch | null {
   for (const match of matches) {
@@ -119,7 +119,7 @@ export function nextOurMatch(matches: ScheduleMatch[], teamKey: string, now: num
     if (isScored(match)) continue;
     if (match.scheduledTime != null) {
       const time = new Date(match.scheduledTime).getTime();
-      if (!Number.isNaN(time) && time < now - SIX_HOURS_MS) continue;
+      if (!Number.isNaN(time) && time <= now) continue;
     }
     return match;
   }

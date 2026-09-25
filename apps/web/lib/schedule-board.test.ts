@@ -91,13 +91,14 @@ describe("nextOurMatch", () => {
     expect(nextOurMatch(list, US)).toBeNull();
   });
 
-  it("skips stale unscored matches older than six hours but keeps recent and untimed ones", () => {
+  it("skips unscored matches whose time has passed but keeps ahead and untimed ones", () => {
     const now = Date.parse("2026-03-14T18:00:00Z");
     const stale = match({ matchKey: "m1", scheduledTime: "2026-03-14T10:00:00Z" });
-    const recent = match({ matchKey: "m2", scheduledTime: "2026-03-14T13:30:00Z" });
-    const untimed = match({ matchKey: "m3" });
-    expect(nextOurMatch([stale, recent, untimed], US, now)?.matchKey).toBe("m2");
-    expect(nextOurMatch([stale, untimed], US, now)?.matchKey).toBe("m3");
+    const late = match({ matchKey: "m2", scheduledTime: "2026-03-14T17:00:00Z" });
+    const ahead = match({ matchKey: "m3", scheduledTime: "2026-03-14T18:20:00Z" });
+    const untimed = match({ matchKey: "m4" });
+    expect(nextOurMatch([stale, late, ahead, untimed], US, now)?.matchKey).toBe("m3");
+    expect(nextOurMatch([stale, late, untimed], US, now)?.matchKey).toBe("m4");
   });
 });
 

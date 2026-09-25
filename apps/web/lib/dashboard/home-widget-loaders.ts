@@ -2,7 +2,7 @@ import { withSavepoint } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { allLessonIds } from "../cad-learn/track";
 import { matchKeyLabel } from "../scouting/scout-breakdown";
-import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
+import { loadOurMatchSummary, matchShortLabel, noNextMatchMessage } from "../matches/no-next-match";
 import type { DashboardWidgetType } from "./catalog";
 
 type WidgetDataStatus = "live" | "empty" | "setup_required";
@@ -83,7 +83,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
       const red = row.redAlliance?.teamKeys ?? [];
       const blue = row.blueAlliance?.teamKeys ?? [];
       const alliance = red.includes(teamKey) ? "red" : blue.includes(teamKey) ? "blue" : null;
-      matchLabel = `${row.compLevel} ${row.matchNumber}`;
+      matchLabel = matchShortLabel(row.compLevel, row.matchNumber); // "Qual 35", not "qm 35"
       matchAt = row.scheduledTime;
       bumperCue =
         alliance === "red" ? "Switch to RED bumpers" : alliance === "blue" ? "Switch to BLUE bumpers" : null;

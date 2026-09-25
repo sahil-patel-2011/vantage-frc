@@ -204,8 +204,11 @@ async function main() {
     // ---- reference data ---------------------------------------------------
     await db.query(
       `INSERT INTO events_ref (event_key, year, name, start_date, end_date, city, state_prov, country, event_type)
-       VALUES ($1, $2, $3, DATE '2026-03-19', DATE '2026-03-22', 'Macon', 'GA', 'USA', 2)
-       ON CONFLICT (event_key) DO UPDATE SET name = EXCLUDED.name`,
+       VALUES ($1, $2, $3, current_date - 1, current_date + 1, 'Macon', 'GA', 'USA', 2)
+       -- The matches are placed around now, so the event's days are too: fixed March dates
+       -- made a live event look over to everything that reads the end date.
+       ON CONFLICT (event_key) DO UPDATE SET name = EXCLUDED.name,
+         start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date`,
       [EVENT_KEY, YEAR, EVENT_NAME],
     );
 
@@ -221,8 +224,9 @@ async function main() {
     for (const m of matches) {
       await db.query(
         `INSERT INTO matches_ref (match_key, event_key, comp_level, set_number, match_number,
-           red_alliance, blue_alliance, winning_alliance, actual_time)
-         VALUES ($1, $2, 'qm', 1, $3, $4::jsonb, $5::jsonb, $6, $7::timestamptz)
+           red_alliance, blue_alliance, winning_alliance, event_time, predicted_time, actual_time)
+         VALUES ($1, $2, 'qm', 1, $3, $4::jsonb, $5::jsonb, $6, $7::timestamptz, $7::timestamptz,
+                 CASE WHEN $8::boolean THEN $7::timestamptz END)
          ON CONFLICT (match_key) DO UPDATE SET
            red_alliance = EXCLUDED.red_alliance,
            blue_alliance = EXCLUDED.blue_alliance,
@@ -230,6 +234,10 @@ async function main() {
            -- Without this the times from the first run survive every later
            -- one, so a reseed that moves a match into the future silently
            -- leaves it in the past. Idempotent has to mean every column.
+           -- Like TBA: every match has its scheduled time; actual_time only once it is
+           -- played. Upcoming matches with an actual_time counted as played everywhere.
+           event_time = EXCLUDED.event_time,
+           predicted_time = EXCLUDED.predicted_time,
            actual_time = EXCLUDED.actual_time`,
         [
           m.matchKey,
@@ -243,6 +251,7 @@ async function main() {
           ),
           m.winner,
           m.played ? playedAt(m.number) : upcomingAt(m.number),
+          m.played,
         ],
       );
     }

@@ -2,40 +2,48 @@
 
 import { useEffect, useState } from "react";
 import { DEV_SETUP_DONE_KEY } from "../../../lib/dev-setup/track";
-import { LiveCountdown } from "./live-countdown";
+
+function localTime(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
 
 function asItems(data: Record<string, unknown>, key = "items"): Array<Record<string, unknown>> {
   const raw = data[key];
   return Array.isArray(raw) ? (raw as Array<Record<string, unknown>>) : [];
 }
 
+/**
+ * Your own day: the robot you scout next, today's events and your duties. The team's next
+ * match is the Next match card's and the "now" line's; this card repeated it a third time.
+ */
 export function MyDayLive({ data }: { data: Record<string, unknown> }) {
   const events = asItems(data, "events");
   const duties = asItems(data, "duties");
+  const scout = data.scoutDuty as { teamKey?: unknown; matchLabel?: unknown; station?: unknown } | null | undefined;
+  const scoutLine =
+    scout && typeof scout.teamKey === "string"
+      ? [scout.teamKey.replace(/^frc/, ""), scout.matchLabel, scout.station].filter(Boolean).join(" · ")
+      : null;
+  const nothing = !scoutLine && events.length === 0 && duties.length === 0;
   return (
     <div>
-      {typeof data.matchLabel === "string" && data.matchLabel ? (
+      {scoutLine ? (
         <p>
-          Next: <strong>{data.matchLabel}</strong>
-          {typeof data.matchAt === "string" ? (
-            <>
-              {" "}
-              in <LiveCountdown iso={data.matchAt} />
-            </>
-          ) : null}
+          You scout <strong>{scoutLine}</strong>
         </p>
       ) : null}
-      {typeof data.bumperCue === "string" && data.bumperCue ? <p className="dash-bumper-cue">{data.bumperCue}</p> : null}
       {events.length ? (
         <ul className="dash-checklist">
           {events.map((event) => (
             <li key={String(event.startsAt) + String(event.title)}>
               <span>{String(event.title)}</span>
-              <small className="dash-notif-preview">{String(event.startsAt).slice(11, 16)} UTC</small>
+              <small className="dash-notif-preview">{localTime(String(event.startsAt))}</small>
             </li>
           ))}
         </ul>
       ) : null}
+      {nothing ? <p className="app-muted">Nothing on your list today.</p> : null}
       {duties.length ? (
         <ul className="dash-checklist">
           {duties.map((duty) => (

@@ -82,7 +82,7 @@ describe("home widget loaders", () => {
       stamp,
     );
     expect(live.status).toBe("live");
-    expect(live.data?.matchLabel).toBe("qm 12");
+    expect(live.data?.matchLabel).toBe("Qual 12");
     expect(live.data?.bumperCue).toBe("Switch to RED bumpers");
 
     const empty = await loadHomeWidget(fakeClient({}), "my_day", ctx, stamp);
