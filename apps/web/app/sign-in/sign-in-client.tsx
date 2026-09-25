@@ -1,5 +1,6 @@
 "use client";
 
+import { useWaitlistHref } from "../../lib/products/use-waitlist-href";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type FormEvent } from "react";
 import {
   DEFAULT_CODE_TTL_SECONDS,
@@ -573,7 +574,7 @@ export default function SignInClient({
   const hint = invitedOnlyHint(flow);
   const working = busy !== "idle";
   const notInvited = flow.step !== "identity" && flow.failure?.kind === "not_authorized";
-  const waitlistHref = "/#waitlist";
+  const waitlistHref = useWaitlistHref();
 
   if (probe.state === "active") {
     return (

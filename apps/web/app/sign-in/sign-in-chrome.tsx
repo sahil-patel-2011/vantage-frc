@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode, type RefObject } from "react";
 import { VantageLogo } from "../../components/brand";
+import { useWaitlistHref } from "../../lib/products/use-waitlist-href";
 import {
   OTP_LENGTH,
   activeDigitIndex,
@@ -53,9 +54,10 @@ export function SetupShell({ copy }: { copy: SignInSetupCopy }) {
 }
 
 export function AccessFooter() {
+  const waitlistHref = useWaitlistHref();
   return (
     <p className="signin-waitlist">
-      New to Vantage? <a href="/#waitlist">Join the waitlist</a>
+      New to Vantage? <a href={waitlistHref}>Join the waitlist</a>
     </p>
   );
 }

@@ -761,3 +761,5 @@ html:has(.marketing-lux){scroll-padding-top:76px}
 @media (max-width: 720px) {
   .lux-hero-note a, footer a { display: inline-block; padding: 12px 2px; }
 }
+/* Focused on an error, a field clears the sticky header instead of hiding under it. */
+.waitlist-form input{scroll-margin-top:110px}

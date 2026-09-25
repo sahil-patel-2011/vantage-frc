@@ -30,8 +30,10 @@ export function WaitlistSection() {
     <section className="lux-waitlist" id="waitlist">
       <div>
         <p className="lux-eyebrow">Closed membership</p>
-        <h2>{copy.title}</h2>
-        <p>{copy.body}</p>
+        {/* Once joined, the card's "You're on the list." is the one headline; this said "Thanks for
+            joining." above it. */}
+        {stage === "joined" ? <h2 className="sr-only">Waitlist</h2> : <h2>{copy.title}</h2>}
+        {stage === "joined" ? null : <p>{copy.body}</p>}
         {stage === "joined" ? null : <MarketingInvitedNote />}
       </div>
       <WaitlistForm idPrefix="hero" onStageChange={setStage} />

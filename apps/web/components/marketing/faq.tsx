@@ -26,7 +26,7 @@ const faqs = [
   },
   {
     q: "We already scout with an app or a spreadsheet. Why switch?",
-    a: "Scouting is where the season's decisions start, not where they end. In Vantage the same scout rows feed team lookup, match predictions, the pick list and the drive team's briefing — next to the calendar, the build and the budget, so nothing gets copied between apps.",
+    a: "Scouting is where the season's decisions start, not where they end. In Vantage the same scouting entries feed team lookup, match predictions, the pick list and the drive team's briefing — next to the calendar, the build and the budget, so nothing gets copied between apps.",
   },
   {
     q: "Does scouting work offline?",
@@ -42,7 +42,7 @@ const faqs = [
   },
   {
     q: "Is team data private?",
-    a: "Yes. Access is invite-only, each team sees only its own rows, and a member's personal files are private even from mentors. You can export everything at any time. One thing to know: what goes through Vantage's AI features (the prompt, the context sent with it and the answer) may be used to improve Vantage's own models, unless your team turns that off. An owner or admin can switch it off for the whole team in one place. It is never sold. The Privacy Policy has the details.",
+    a: "Yes. Access is invite-only, each team sees only its own data, and a member's personal files are private even from mentors. You can export everything at any time. One thing to know: what goes through Vantage's AI features (the prompt, the context sent with it and the answer) may be used to improve Vantage's own models, unless your team turns that off. An owner or admin can switch it off for the whole team in one place. It is never sold. The Privacy Policy has the details.",
   },
 ];
 

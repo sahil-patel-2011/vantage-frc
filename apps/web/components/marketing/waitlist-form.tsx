@@ -118,18 +118,27 @@ export function WaitlistForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fields = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const fields = new FormData(formElement);
     const nextErrors: FieldErrors = {};
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(fields.get("email") ?? "").trim())) {
-      nextErrors.email = "Enter the email you want us to write to.";
+    const emailValue = String(fields.get("email") ?? "").trim();
+    if (!emailValue) nextErrors.email = "Enter the email you want us to write to.";
+    else if (!emailValue.includes("@")) nextErrors.email = "That email is missing the @ and the part after it.";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailValue)) {
+      nextErrors.email = "That email is missing the part after the dot, like .com or .org.";
     }
-    if (!/^[0-9]{1,5}$/.test(String(fields.get("teamNumber") ?? "").trim())) {
-      nextErrors.teamNumber = "Enter your FRC team number, 1 to 99999.";
-    }
+    const teamValue = String(fields.get("teamNumber") ?? "").trim();
+    if (!teamValue) nextErrors.teamNumber = "Enter your FRC team number, like 6925.";
+    else if (!/^[0-9]{1,5}$/.test(teamValue)) nextErrors.teamNumber = "Team numbers are digits only, 1 to 99999.";
     if (normalizeWaitlistPhone(phone) == null) nextErrors.phone = PHONE_ERROR;
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       setState("idle");
+      // The first field to fix gets focus and comes into view (on a phone the email error was
+      // above the screen while the team-number one showed).
+      window.requestAnimationFrame(() => {
+        formElement.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus();
+      });
       return;
     }
     // Terms and Privacy are two separate agreements; neither one stands in for

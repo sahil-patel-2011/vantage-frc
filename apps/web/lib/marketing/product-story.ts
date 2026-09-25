@@ -153,7 +153,7 @@ export const MARKETING_TRUST = [
   {
     icon: "lock" as const,
     title: "Invite-only, your data is yours",
-    copy: "Owners invite exact emails. Each team sees only its own rows. Personal files are private even from mentors. Export everything, any time.",
+    copy: "Owners invite exact emails. Each team sees only its own data. Personal files are private even from mentors. Export everything, any time.",
   },
   {
     icon: "wifi" as const,
