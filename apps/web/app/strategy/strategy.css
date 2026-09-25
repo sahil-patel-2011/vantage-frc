@@ -258,3 +258,26 @@
     min-height: 44px;
   }
 }
+
+/* Our side's colour on the win-chance bar. */
+.mini-probability.is-blue i {
+  background: #2563eb;
+}
+.mini-probability.is-red i {
+  background: #dc2626;
+}
+/* "How this was worked out" and "More: …" folds. */
+.strategy-more > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+}
+.strategy-more-panels {
+  grid-column: 1 / -1;
+}
+.strategy-more-panels[open] > summary {
+  margin-bottom: 12px;
+}

@@ -26,7 +26,7 @@ describe("strategy text in a drive coach's words", () => {
 describe("engine evidence with bare entry ids", () => {
   it("drops '(entries …)' too", () => {
     expect(plainStrategyText("Scout auto capability ~74% (entries ba297aa2, 9201adc8, e0601f64). Next")).toBe(
-      "Scout auto capability ~74%. Next",
+      "Auto ~74%. Next",
     );
   });
 });
@@ -69,7 +69,7 @@ describe("the prediction model's own words", () => {
     expect(
       plainStrategyText("Alliance rating margin -17.1 from sources statbotics, event 2026gacmp, 58 weighted team-matches"),
     ).toBe("Alliance rating margin -17.1 from 58 matches of data");
-    expect(plainStrategyText("Scout reliability 89% (n=7.6).")).toBe("Scout reliability 89%.");
+    expect(plainStrategyText("Scout reliability 89% (n=7.6).")).toBe("Reliability 89%.");
     expect(plainStrategyText("Logistic win model on alliance rating margin -17.1 via engine strategy-engine-max-v1 (depth 3).")).toBe(
       "Logistic win model on alliance rating margin -17.1.",
     );

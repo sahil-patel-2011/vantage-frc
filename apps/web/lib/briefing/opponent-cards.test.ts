@@ -31,7 +31,7 @@ describe("opponent cards", () => {
     expect(card!.likelyPlan).toBe("Likely plan: cycles fast, usually climbs");
     // The statistics move to "How we got this", off the card.
     expect(card!.lines.join(" ")).not.toMatch(/n=|reliability/);
-    expect(card!.evidence.join(" ")).toMatch(/Scout reliability 89%/);
+    expect(card!.evidence.join(" ")).toMatch(/Reliability 89%/);
   });
 
   it("says a team may defend when scouting saw it", () => {

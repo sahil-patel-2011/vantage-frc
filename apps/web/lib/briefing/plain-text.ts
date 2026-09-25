@@ -22,6 +22,7 @@ export function plainStrategyText(text: string | null | undefined): string {
   return (
     text
       // Internal row ids are proof for engineers, not for a drive coach.
+      .replace(/\s*Scout provenance entry ids?:[^\n]*/gi, "")
       .replace(/\s*\(?\b(?:scout )?entr(?:y|ies):?\s*(?:[0-9a-f]{6,}(?:\s*,\s*|\s+))*[0-9a-f]{6,}\)?/gi, "")
       .replace(/\b\d{4}[a-z0-9]+_(?:qm|ef|qf|sf|f)\d+(?:m\d+)?\b/gi, (key) => plainMatchKey(key))
       .replace(/\bfrc(\d{1,5})\b/gi, "Team $1")
@@ -54,6 +55,18 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\s*\(n=[\d.]+\)/gi, "")
       .replace(/\bevent\s+\d{4}[a-z0-9]+\b/gi, "this event")
       .replace(/\bOrg scout\b/g, "Our scouts'")
+      .replace(/\bOrg scouting\b/g, "Our scouting")
+      .replace(/\bOrg-private edge from your scouting \+ cached public EPA\.?/gi, "What our scouting says, next to the public rating.")
+      .replace(/\s*Not shared\. Not Statbotics\./gi, " Only our team sees this.")
+      .replace(/\borg pEPA Monte Carlo prefers\b/gi, "our scouting prefers")
+      .replace(/\s*\(\d+% of \d+ trials\)/gi, "")
+      .replace(/\s*\(event metrics\)/gi, "")
+      .replace(/\bAlliance rating totals\b/g, "Alliance ratings")
+      .replace(/\bScout (auto|teleop|endgame) capability\b/g, (_all, part: string) => `${part[0]!.toUpperCase()}${part.slice(1)}`)
+      .replace(/\bScout teleop\/cycles noted for\b/g, "Teleop cycles noted for")
+      .replace(/\bScout reliability\b/g, "Reliability")
+      .replace(/\bacross ([\d.]+) observations\b/gi, (_all, n: string) => `across ${Math.round(Number(n))} matches`)
+      .replace(/\s*Influenced by\.?(?=\s|$)/gi, "")
       .replace(/\s*\(capped\)/gi, "")
       .replace(/\bofficial TBA\b/gi, "official")
       .replace(/\bTBA\b/g, "official")

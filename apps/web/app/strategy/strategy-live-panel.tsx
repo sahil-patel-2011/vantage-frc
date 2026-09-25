@@ -18,12 +18,12 @@ function TeamChip({
   teamKey,
   epa,
   record,
-  source,
+  source: _source,
   scoutSample,
   reliability,
-  autoCapability,
-  teleopCapability,
-  qualityWeight,
+  autoCapability: _autoCapability,
+  teleopCapability: _teleopCapability,
+  qualityWeight: _qualityWeight,
 }: {
   teamKey: string;
   epa: number | null;
@@ -35,27 +35,16 @@ function TeamChip({
   teleopCapability?: number | null;
   qualityWeight?: number | null;
 }) {
-  const scoutBits = [
-    scoutSample && scoutSample > 0 ? `scout n=${scoutSample}` : null,
-    reliability != null ? `rel ${Math.round(reliability)}%` : null,
-    autoCapability != null && autoCapability >= 0.35
-      ? `auto ${Math.round(autoCapability * 100)}%`
-      : null,
-    teleopCapability != null && teleopCapability >= 0.35
-      ? `tele ${Math.round(teleopCapability * 100)}%`
-      : null,
-    qualityWeight != null && qualityWeight < 0.95
-      ? `q ${Math.round(qualityWeight * 100)}%`
-      : null,
-  ].filter(Boolean);
   return (
     <li>
       <strong>{teamKey.replace(/^frc/, "")}</strong>
       <span>{epa != null ? `Rating ${epa.toFixed(1)}` : "Rating —"}</span>
+      {/* Record and how often we scouted them. "scout n=5.3 · rel 100% · q 88%" was the model's
+          shorthand; the full numbers are on the robot's own page. */}
       <small>
-        {record ?? "no record"}
-        {source ? ` · ${source}` : ""}
-        {scoutBits.length ? ` · ${scoutBits.join(" · ")}` : ""}
+        {record ?? "No record yet"}
+        {scoutSample && scoutSample > 0 ? ` · scouted ${Math.round(scoutSample)}×` : ""}
+        {reliability != null && reliability < 80 ? ` · broke down in ${100 - Math.round(reliability)}%` : ""}
       </small>
     </li>
   );
@@ -133,7 +122,7 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
           {edge.status === "live" ? "From your notes" : "Needs scouting"}
         </span>
       </header>
-      <p className="app-muted">{edge.message}</p>
+      <p className="app-muted">{plainStrategyText(edge.message)}</p>
       {edge.pepa.length ? (
         <ul className="strategy-pepa-table">
           {edge.pepa.map((row) => (
@@ -142,7 +131,8 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
               <span>
                 Our scouting {row.pepa.toFixed(1)}{" "}
                 <small>
-                  public {row.publicEpa.toFixed(1)} · scouted {row.scoutSample} matches
+                  public rating {row.publicEpa.toFixed(1)} · scouted {Math.round(row.scoutSample)}{" "}
+                  {Math.round(row.scoutSample) === 1 ? "match" : "matches"}
                 </small>
               </span>
             </li>
@@ -174,18 +164,16 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
       ) : null}
       {edge.opponentProfiles.map((profile) => (
         <p key={profile.teamKey} className="app-muted">
-          {profile.headlines.join(" · ")}
+          {plainStrategyText(profile.headlines.join(" · "))}
         </p>
       ))}
       {edge.counterPick && !edge.counterPick.skipped ? (
         <p>
-          <strong>Counter-pick:</strong> {edge.counterPick.reason}
-          {edge.counterPick.winRate != null
-            ? ` (${Math.round(edge.counterPick.winRate * 100)}% of ${edge.counterPick.trials} trials)`
-            : ""}
+          {/* The simulation's trial count is the engine's business; the pick is the coach's. */}
+          <strong>Counter-pick:</strong> {plainStrategyText(edge.counterPick.reason)}
         </p>
       ) : null}
-      {!edge.digitalTwin.skipped ? <p>{edge.digitalTwin.headline}</p> : null}
+      {!edge.digitalTwin.skipped ? <p>{plainStrategyText(edge.digitalTwin.headline)}</p> : null}
       {edge.pitAlerts.map((line) => (
         <p key={line}>
           <span className="app-badge danger">PIT</span> {line}
@@ -242,12 +230,6 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
     modelVersion: view.prediction.modelVersion,
     caveats: view.prediction.caveats,
   });
-  const redWinDisplay = predictionWinDisplay({
-    pRed: view.prediction.pRed,
-    alliance: "red",
-    modelVersion: view.prediction.modelVersion,
-    caveats: view.prediction.caveats,
-  });
   const cadHref = withOrgHref(
     `/cad?matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`,
     view.orgId,
@@ -278,25 +260,25 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         </header>
         {/* Engine id, plan code, product version and data vendors were a log line to a drive
             coach. What they need: which side we are and our chance. */}
-        <p className="app-muted strategy-provenance">
-          We are {view.ourAlliance.toUpperCase()} · {ourWinDisplay?.label ?? "—"} chance to win
-          {view.eventName ? ` · ${view.eventName}` : ""}
-        </p>
+        {view.eventName ? <p className="app-muted strategy-provenance">{view.eventName}</p> : null}
+        {/* Our chance is the big number: it showed Red's 25% in large type while we were Blue at
+            75%, which a coach read as bad news. The range is flipped to our side too. */}
         <div className="strategy-probability">
-          <strong>{redWinDisplay?.label ?? "—"}</strong>
-          <span>Red alliance</span>
-          {redWinDisplay ? (
+          <strong>{ourWinDisplay?.label ?? "—"}</strong>
+          <span>Our chance to win · we are {view.ourAlliance.toUpperCase()}</span>
+          {ourWinDisplay ? (
             <small>
-              Likely between {Math.round(view.prediction.confidenceLow * 100)}% and{" "}
-              {Math.round(view.prediction.confidenceHigh * 100)}%
+              Likely between{" "}
+              {Math.round((view.ourAlliance === "red" ? view.prediction.confidenceLow : 1 - view.prediction.confidenceHigh) * 100)}% and{" "}
+              {Math.round((view.ourAlliance === "red" ? view.prediction.confidenceHigh : 1 - view.prediction.confidenceLow) * 100)}%
             </small>
           ) : (
             <small>No win chance yet for this match.</small>
           )}
         </div>
-        {redWinDisplay ? (
-          <div className="mini-probability">
-            <i style={{ width: `${redWinDisplay.percent}%` }} />
+        {ourWinDisplay ? (
+          <div className={`mini-probability is-${view.ourAlliance}`}>
+            <i style={{ width: `${ourWinDisplay.percent}%` }} />
           </div>
         ) : null}
         <div className="strategy-alliance-row">
@@ -346,9 +328,14 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         ) : (
           <p className="app-muted">{NO_LEVERS_COPY}</p>
         )}
+        <details className="strategy-more">
+          <summary>How this was worked out</summary>
         <h3>Key factors</h3>
         <ul className="factor-table">
-          {view.prediction.keyFactors.map((factor) => (
+          {view.prediction.keyFactors
+            // "Without that match" attributions are the model checking itself, not a reason.
+            .filter((factor) => !/without that match/i.test(plainStrategyText(factor.name)))
+            .map((factor) => (
             <li key={`${factor.kind}-${factor.name}`}>
               <b>{Math.round(factor.impact * 10) / 10}</b>
               <span>{plainStrategyText(factor.name)}</span>
@@ -393,6 +380,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             )}
           </div>
         ) : null}
+        </details>
       </Panel>
 
       <Panel className="strategy-matchup-card">
@@ -503,6 +491,10 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
 
       <PrivateEdgePanel view={view} />
 
+      {/* CAD, rules and assumptions are for later or for someone else; before a match they were
+          three more screens of scrolling. */}
+      <details className="strategy-more strategy-more-panels">
+        <summary>More: CAD for this match, game rules, what-if</summary>
       <Panel className="strategy-engineering-card">
         <header>
           <div>
@@ -648,6 +640,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
           </>
         ) : null}
       </Panel>
+      </details>
     </section>
   );
 }
