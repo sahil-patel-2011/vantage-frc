@@ -315,7 +315,11 @@ export default function ConnectorsClient() {
               </div>
 
               <p className="connector-detail">{connector.detail}</p>
-              <p className="app-muted connector-scope">{connectorScopeNote(connector.scope, audience)}</p>
+              {/* The header already says team connectors are set up once for everyone; repeated on
+                  Discord, Slack and Claude Code it was noise. Only the exceptions are said. */}
+              {connector.scope === "team" && canManage ? null : (
+                <p className="app-muted connector-scope">{connectorScopeNote(connector.scope, audience)}</p>
+              )}
 
               {connector.missingEnv.length > 0 ? (
                 <ul className="connector-env">

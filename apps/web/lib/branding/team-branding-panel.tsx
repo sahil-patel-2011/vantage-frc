@@ -230,7 +230,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                   type="text"
                   inputMode="text"
                   spellCheck={false}
-                  placeholder={DEFAULT_ACCENT.light}
+                  placeholder="Vantage blue"
                   maxLength={7}
                   aria-invalid={!draftHexValid}
                   aria-describedby="brand-accent-help"
@@ -243,9 +243,13 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                 </Button>
               </div>
               <small id="brand-accent-help" className="app-muted">
-                {draftHexValid
-                  ? "Pick a colour, or type one like #17457f. Leave it blank for Vantage blue."
-                  : "That isn't a colour code. Pick one, or type it like #17457f."}
+                {/* With nothing chosen the swatch showed a dark blue and "#17457f" as if the team had
+                    picked it; Account said no colour was chosen. Say which it is. */}
+                {!accentDraft.trim()
+                  ? "No team colour chosen: Vantage blue (the default) is used. Pick one, or type one like #17457f."
+                  : draftHexValid
+                    ? "Pick a colour, or type one like #17457f. Clear it for Vantage blue."
+                    : "That isn't a colour code. Pick one, or type it like #17457f."}
               </small>
             </div>
 
@@ -289,8 +293,8 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
             <label className="brand-check">
               <input
                 type="checkbox"
-                disabled={!view.canEdit || busy}
-                checked={applyAccent}
+                disabled={!view.canEdit || busy || !accentDraft.trim()}
+                checked={applyAccent && Boolean(accentDraft.trim())}
                 onChange={(event) => setApplyAccent(event.target.checked)}
               />
               <span>
