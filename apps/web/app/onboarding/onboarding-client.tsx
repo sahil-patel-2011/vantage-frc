@@ -59,7 +59,11 @@ export default function OnboardingClient() {
   const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error" | "setup_required">("loading");
 
   const patch = useCallback((next: Partial<OnboardingDraft>) => {
-    setDraft((current) => ({ ...current, ...next }));
+    setDraft((current) => {
+      const merged = { ...current, ...next };
+      saveLocalAnswers(merged);
+      return merged;
+    });
   }, []);
 
   // Answers saved in an earlier visit, noted once on arrival. "Progress restored" used to show
@@ -69,6 +73,10 @@ export default function OnboardingClient() {
   const hydrate = useCallback((data: OnboardingState) => {
     setState(data);
     setRestoredFrom((current) => (current === undefined ? data.savedAt ?? null : current));
+    // Answers the server only takes with a later step (role on step one rides with step two;
+    // affiliation with Finish), kept for this browser session so "Welcome back" is true after a
+    // reload. Session, not local, storage: a shared computer does not hand them to the next person.
+    const local = readLocalAnswers();
     setDraft((current) => ({
       ...current,
       firstName: data.firstName ?? current.firstName,
@@ -79,11 +87,13 @@ export default function OnboardingClient() {
       // of pre-picking Student for everyone.
       teamRole: isRole(data.teamRole)
         ? data.teamRole
-        : data.isTeamHead || data.workspaceRole === "owner" || data.workspaceRole === "admin"
-          ? "mentor"
-          : current.teamRole,
-      crewRole: isCrew(data.crewRole) ? data.crewRole : current.crewRole,
-      roleDescription: data.roleDescription ?? current.roleDescription,
+        : typeof local.teamRole === "string" && isRole(local.teamRole)
+          ? local.teamRole
+          : data.isTeamHead || data.workspaceRole === "owner" || data.workspaceRole === "admin"
+            ? "mentor"
+            : current.teamRole,
+      crewRole: isCrew(data.crewRole) ? data.crewRole : typeof local.crewRole === "string" && isCrew(local.crewRole) ? local.crewRole : current.crewRole,
+      roleDescription: data.roleDescription ?? (typeof local.roleDescription === "string" ? local.roleDescription : current.roleDescription),
       teamNumber: String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? current.teamNumber ?? ""),
       noTeam: data.complete && !data.lockedTeamNumber && data.preferredTeamNumber == null ? true : current.noTeam,
       primaryFocus: data.primaryFocus ?? current.primaryFocus,
@@ -92,7 +102,13 @@ export default function OnboardingClient() {
       orgCity: data.orgCity ?? current.orgCity,
       orgStateProv: data.orgStateProv ?? current.orgStateProv,
       orgDescription: data.orgDescription ?? current.orgDescription,
-      teamAffiliation: data.orgTeamAffiliation ?? current.teamAffiliation,
+      teamAffiliation:
+        data.orgTeamAffiliation ??
+        (local.teamAffiliation === "private_school" ||
+        local.teamAffiliation === "public_school" ||
+        local.teamAffiliation === "community"
+          ? local.teamAffiliation
+          : current.teamAffiliation),
       fundingModel:
         data.orgFundingModel && isFundingModel(data.orgFundingModel)
           ? data.orgFundingModel
@@ -354,6 +370,7 @@ export default function OnboardingClient() {
         setMessage(data.error ?? "Could not submit your access request.");
         return;
       }
+      clearLocalAnswers();
       hydrate(data);
       routeCompleteState(data, true);
     } finally {
@@ -542,4 +559,41 @@ export default function OnboardingClient() {
       </section>
     </main>
   );
+}
+
+const LOCAL_ANSWERS_KEY = "vantage.onboarding.answers";
+type LocalAnswers = { teamRole?: unknown; crewRole?: unknown; roleDescription?: unknown; teamAffiliation?: unknown };
+
+function readLocalAnswers(): LocalAnswers {
+  try {
+    const raw = window.sessionStorage.getItem(LOCAL_ANSWERS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    return parsed && typeof parsed === "object" ? (parsed as LocalAnswers) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalAnswers(draft: OnboardingDraft) {
+  try {
+    window.sessionStorage.setItem(
+      LOCAL_ANSWERS_KEY,
+      JSON.stringify({
+        teamRole: draft.teamRole,
+        crewRole: draft.crewRole,
+        roleDescription: draft.roleDescription,
+        teamAffiliation: draft.teamAffiliation,
+      }),
+    );
+  } catch {
+    // Private mode: nothing kept, the server's answers still load.
+  }
+}
+
+function clearLocalAnswers() {
+  try {
+    window.sessionStorage.removeItem(LOCAL_ANSWERS_KEY);
+  } catch {
+    // Nothing to clear.
+  }
 }
