@@ -43,6 +43,9 @@ async function persistAuthPolicySnapshot(orgId: string, data: AuthPolicy): Promi
 export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState<AuthPolicy>(DEFAULT_POLICY);
   const [message, setMessage] = useState("");
+  // The save result, shown beside Save: at the top of the page it was above the screen
+  // (y = -225), so an error looked like nothing happening.
+  const [saveNote, setSaveNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -139,6 +142,11 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    if (!policy.allowEmailOtp && !policy.allowPassword && !policy.allowGoogle) {
+      setSaveNote({ ok: false, text: "Keep at least one way to sign in ticked, or nobody can get in." });
+      return;
+    }
+    setSaveNote(null);
     const response = await fetch("/api/organizations/auth-policy", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -146,7 +154,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json()) as { error?: string };
-    setMessage(response.ok ? "Saved." : (data.error ?? "Could not save."));
+    setSaveNote(response.ok ? { ok: true, text: "Saved." } : { ok: false, text: data.error ?? "Could not save." });
     if (response.ok) await persistAuthPolicySnapshot(orgId, policy);
   }
 
@@ -236,6 +244,11 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         <Button variant="primary" type="submit">
           Save sign-in rules
         </Button>
+        {saveNote ? (
+          <p role={saveNote.ok ? "status" : "alert"} className={`telemetry-status${saveNote.ok ? " success" : ""}`}>
+            {saveNote.text}
+          </p>
+        ) : null}
       </Panel>
       ) : (
         <EmptyState
