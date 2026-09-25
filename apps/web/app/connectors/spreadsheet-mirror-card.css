@@ -82,6 +82,21 @@
   font-weight: 600;
   color: var(--ink);
 }
+/* Closed, "Connect Google Sheets" is the copy's button, not a line of small text. */
+.mirror-card .apps-script-connect:not([open]) > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+  list-style: none;
+}
+.mirror-card .apps-script-connect:not([open]) > summary::-webkit-details-marker {
+  display: none;
+}
 
 .mirror-card .mirror-copy-actions {
   display: flex;

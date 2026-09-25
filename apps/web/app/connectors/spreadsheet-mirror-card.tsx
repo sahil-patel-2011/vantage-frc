@@ -271,12 +271,6 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                         <dt>Last synced</dt>
                         <dd>{copy.lastSyncAt ? relativeTime(copy.lastSyncAt) : "Never"}</dd>
                       </div>
-                      <div>
-                        <dt>Content</dt>
-                        <dd>
-                          <code title="Two copies with the same code hold the same data">{copy.lastSyncHash ? copy.lastSyncHash.slice(0, 8) : "—"}</code>
-                        </dd>
-                      </div>
                       {copy.viaAppsScript ? (
                         <div>
                           <dt>Through</dt>
@@ -326,9 +320,10 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
                     </>
                   ) : null}
                   {copy.copy === "google" && !copy.connected && status.canManage ? (
+                    // Folded: the steps are a few minutes of setup, not the first thing on the page.
                     <AppsScriptConnect
                       orgId={orgId}
-                      open={!status.providers.google.oauthOffered}
+                      open={false}
                       onConnected={(text) => {
                         setMessage({ ok: true, text });
                         void load();
