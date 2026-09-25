@@ -73,9 +73,8 @@ export default function OnboardingClient() {
   const hydrate = useCallback((data: OnboardingState) => {
     setState(data);
     setRestoredFrom((current) => (current === undefined ? data.savedAt ?? null : current));
-    // Answers the server only takes with a later step (role on step one rides with step two;
-    // affiliation with Finish), kept for this browser session so "Welcome back" is true after a
-    // reload. Session, not local, storage: a shared computer does not hand them to the next person.
+    // Answers the server only takes with a later step (crew with step two, affiliation with
+    // Finish), kept on this device so "Welcome back" is true in a new tab (see answersStore).
     answersTeam = data.workspaceOrgId ?? null;
     const local = readLocalAnswers();
     setDraft((current) => ({
@@ -114,10 +113,13 @@ export default function OnboardingClient() {
         data.orgFundingModel && isFundingModel(data.orgFundingModel)
           ? data.orgFundingModel
           : current.fundingModel ||
-            fundingModelFromFlags({
-              schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
-              sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
-            }),
+            // Only from answers the team already gave; a new team starts unpicked, like Affiliation.
+            (data.orgSchoolFunded != null || data.orgSponsorsAllowed != null
+              ? fundingModelFromFlags({
+                  schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
+                  sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
+                })
+              : ""),
       schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
       outsideGrants: data.orgOutsideGrants ?? current.outsideGrants,
       sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
@@ -448,7 +450,9 @@ export default function OnboardingClient() {
   const teamName = state?.lockedOrgName || state?.workspaceOrgName || null;
   const headerCopy =
     step === "done"
-      ? { eyebrow: "ALL SET", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
+      ? state?.workspaceRole === "owner" || state?.workspaceRole === "admin"
+        ? { eyebrow: "ALL SET", title: "You're in. Now bring your team.", sub: "Four steps make Vantage useful for everyone else. Start by inviting people." }
+        : { eyebrow: "ALL SET", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
       : step === "pending"
         ? {
             eyebrow: "WAITING ON YOUR TEAM",

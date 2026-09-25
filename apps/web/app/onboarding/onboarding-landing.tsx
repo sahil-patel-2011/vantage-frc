@@ -13,6 +13,7 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
     orgId: state.workspaceOrgId,
     orgName: state.workspaceOrgName,
     platformAdmin: state.platformAdmin,
+    orgRole: state.workspaceRole,
   });
 
   // Keys are a team leader's job; students and parents are not asked about them.
@@ -31,7 +32,9 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
           <a href={`/team/ai-keys?orgId=${encodeURIComponent(state.workspaceOrgId)}`}>Add one any time</a>.
         </p>
       ) : null}
-      <h2 className="onboarding-landing-next">Good first steps</h2>
+      <h2 className="onboarding-landing-next">
+        {landing.firstFiveMinutes[0]?.key.startsWith("team_setup:") ? "Team setup" : "Good first steps"}
+      </h2>
       <ol className="onboarding-landing-list">
         {landing.firstFiveMinutes.map((link, index) => (
           <li key={link.key}>
@@ -40,7 +43,6 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
               <div>
                 <strong>{link.label}</strong>
                 <span>{link.detail}</span>
-                <em>{link.reason}</em>
               </div>
             </a>
           </li>
@@ -48,7 +50,7 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
       </ol>
       {landing.secondary ? (
         <div className="onboarding-pending-actions">
-          <a className="signin-link" href={landing.secondary.href}>{landing.secondary.label}</a>
+          <a className="signin-link onboarding-landing-more" href={landing.secondary.href}>{landing.secondary.label}</a>
         </div>
       ) : null}
     </div>

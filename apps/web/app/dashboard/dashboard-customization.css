@@ -34,3 +34,6 @@
 /* "See every step" was the only raw browser link on Home; match "Open My Day". */
 .dash-home .dash-first-week-all { color: var(--accent); font-weight: 600; text-decoration: none; }
 .dash-home .dash-first-week-all:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* One day after the last setup step: a plain "set up" note above the first-week list. */
+.dash-setup-done{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--positive) 10%,var(--surface));color:var(--ink);font-size:14px;line-height:1.4}
+.dash-setup-done b{display:grid;place-items:center;flex:0 0 22px;height:22px;border-radius:999px;background:var(--positive);color:var(--surface);font-size:13px}

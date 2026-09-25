@@ -13,9 +13,10 @@
 
 // Leaf imports on purpose: `lib/role-onboarding/index.ts` re-exports compute.ts,
 // which is Node-only DB code. This module is bundled into the client.
-import { assignOnboardingTracks } from "../role-onboarding/assign";
+import { TEAM_SETUP_TRACK, assignOnboardingTracks } from "../role-onboarding/assign";
 import { TRACK_BY_KEY } from "../role-onboarding/tracks";
 import { onboardingHubLinks } from "../onboarding-workflow";
+import { LEAD_ONLY_PATHS, firstWeekTrackRank, isMemberRole, pickFirstWeek } from "../role-onboarding/first-week-order";
 import type { OnboardingCrew, OnboardingFocus, OnboardingRole } from "./step-model";
 
 export type LandingLink = {
@@ -39,32 +40,15 @@ export type OnboardingLanding = {
 };
 
 export const FIRST_FIVE_LIMIT = 5;
-/** Students and parents get a shorter first list. */
+/** Students and parents get a shorter first list: the three Home's "Your first week" opens on. */
 export const MEMBER_FIRST_LIMIT = 3;
-/** Lead jobs a student or parent is not sent to on day one. */
-const LEAD_ONLY_PATHS = ["/scouting/lineup", "/scouting?scoutTab=conflicts", "/command", "/team/admin", "/team/security"];
 
-/**
- * Specificity rank: a crew/subteam path beats a focus path beats a role path
- * beats the generic welcome tour. This is what makes a scout's landing
- * scouting-first rather than "open your workspace".
- */
-const SPECIALTY_TRACKS = new Set([
-  "mechanical",
-  "electrical",
-  "programming",
-  "cad",
-  "drive_team",
-  "scouting",
-  "business",
-  "safety",
-]);
+/** Where each team-setup step's button goes; Home's setup card uses the same places. */
+const SETUP_HREF: Record<string, string> = { invite: "/team/admin?invite=1" };
 
+/** Kept for callers that rank tracks by key; the shared first-week order uses the same rule. */
 export function landingTrackRank(trackKey: string): number {
-  if (SPECIALTY_TRACKS.has(trackKey)) return 0;
-  if (trackKey.startsWith("focus_")) return 1;
-  if (trackKey.startsWith("role_")) return 2;
-  return 3; // welcome
+  return firstWeekTrackRank({ key: trackKey, source: "" });
 }
 
 function withOrg(href: string, orgId: string | null): string {
@@ -89,7 +73,7 @@ const ROLE_HEADLINE: Record<OnboardingRole, string> = {
 const ROLE_SUMMARY: Record<OnboardingRole, string> = {
   student: "Your first steps: pulled from your role and crew, not a generic tour.",
   mentor: "Your first steps: team setup, invites, and the checks that unblock students.",
-  coach: "Your first steps: the calendar, travel plans, and AI limits.",
+  coach: "Your first steps: the calendar, travel plans and the event briefing.",
   parent: "Your first steps: announcements, logistics, and how student time is tracked.",
   other: "Your first steps: pulled from your role and focus.",
 };
@@ -102,6 +86,8 @@ export function buildOnboardingLanding(input: {
   orgId: string | null;
   orgName?: string | null;
   platformAdmin?: boolean;
+  /** Team membership role (owner, admin, scout, viewer). Owners and admins land on team setup. */
+  orgRole?: string | null;
 }): OnboardingLanding {
   const role = (
     ["student", "mentor", "coach", "parent", "other"].includes(String(input.teamRole))
@@ -110,6 +96,7 @@ export function buildOnboardingLanding(input: {
   ) as OnboardingRole;
 
   const assigned = assignOnboardingTracks({
+    orgRole: input.orgRole ?? null,
     teamRole: input.teamRole ?? null,
     crewRole: input.crewRole ?? null,
     roleDescription: input.roleDescription ?? null,
@@ -118,44 +105,56 @@ export function buildOnboardingLanding(input: {
   });
 
   const ordered = [...assigned].sort(
-    (a, b) => landingTrackRank(a.trackKey) - landingTrackRank(b.trackKey),
+    (a, b) => firstWeekTrackRank({ key: a.trackKey, source: a.source }) - firstWeekTrackRank({ key: b.trackKey, source: b.source }),
   );
   const trackKeys = ordered.map((track) => track.trackKey);
+  const orgRole = String(input.orgRole ?? "").toLowerCase();
+  const runsTeam = Boolean(input.orgId) && (orgRole === "owner" || orgRole === "admin");
 
-  // A student or parent who just joined gets a short list of things they do themselves.
-  // Assigning quals, resolving conflicts and running Event Day Command are a lead's jobs.
-  const member = role === "student" || role === "parent";
-  const limit = member ? MEMBER_FIRST_LIMIT : FIRST_FIVE_LIMIT;
-  const allowed = (href: string) => !member || !LEAD_ONLY_PATHS.some((path) => href.startsWith(path));
-  // Filtered before the round-robin, so a scout's first link is still their own track's.
-  const checksOf = (trackKey: string) =>
-    (TRACK_BY_KEY[trackKey]?.checks ?? []).filter((check) => check.href && allowed(check.href));
-
-  // Round-robin one check per track so the list spans paths instead of dumping
-  // four links from whichever track happened to sort first.
-  const links: LandingLink[] = [];
-  const seen = new Set<string>();
-  const depth = Math.max(
-    0,
-    ...ordered.map((track) => checksOf(track.trackKey).length),
-  );
-  for (let round = 0; round < depth && links.length < limit; round += 1) {
-    for (const track of ordered) {
-      if (links.length >= limit) break;
-      const check = checksOf(track.trackKey)[round];
-      if (!check?.href) continue;
-      const key = basePath(check.href);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      links.push({
-        key: `${track.trackKey}:${check.key}`,
-        href: withOrg(check.href, input.orgId),
+  // Someone who runs the team lands on the same four setup steps Home's setup card shows,
+  // with inviting people first: the header promised that, and a list of pages to open
+  // (Event day, My Day) led an empty team to empty screens.
+  if (runsTeam) {
+    const setup = TRACK_BY_KEY[TEAM_SETUP_TRACK]?.checks ?? [];
+    return {
+      eyebrow: "YOU'RE IN",
+      headline: "You're in. Four steps get the team going.",
+      summary: input.orgName
+        ? `Home keeps these steps for ${input.orgName} until they're done.`
+        : "Home keeps these steps until they're done.",
+      primary: { href: withOrg("/team/admin?invite=1", input.orgId), label: "Invite your team" },
+      secondary: { href: withOrg("/dashboard", input.orgId), label: "Open Home" },
+      trackKeys,
+      firstFiveMinutes: setup.map((check) => ({
+        key: `${TEAM_SETUP_TRACK}:${check.key}`,
+        href: withOrg(SETUP_HREF[check.key] ?? check.href ?? "/dashboard", input.orgId),
         label: check.label,
-        detail: check.detail,
-        reason: track.reason,
-      });
-    }
+        detail: check.detail.replace(/\s*Ticks once[^.]*\.\s*$/i, "").trim(),
+        reason: "Team setup",
+      })),
+    };
   }
+
+  // A student or parent who just joined gets a short list of things they do themselves;
+  // assigning quals and running Event day are a lead's jobs. The list is the one Home's
+  // "Your first week" opens on (same order, same filter).
+  const member = isMemberRole(role);
+  const limit = member ? MEMBER_FIRST_LIMIT : FIRST_FIVE_LIMIT;
+  const tracks = ordered.map((track) => ({
+    key: track.trackKey,
+    source: track.source,
+    reason: track.reason,
+    checks: (TRACK_BY_KEY[track.trackKey]?.checks ?? []).filter((check) => check.href),
+  }));
+  const links: LandingLink[] = pickFirstWeek(tracks, { limit, member }).map(({ track, check }) => ({
+    key: `${track.key}:${check.key}`,
+    href: withOrg(check.href!, input.orgId),
+    label: check.label,
+    detail: check.detail,
+    reason: track.reason,
+  }));
+  const seen = new Set(links.map((link) => basePath(link.href)));
+  const allowed = (href: string) => !member || !LEAD_ONLY_PATHS.some((path) => href.startsWith(path));
 
   // Fill from the org-wide setup path when the profile was too sparse to
   // produce five (e.g. no crew and no focus yet).

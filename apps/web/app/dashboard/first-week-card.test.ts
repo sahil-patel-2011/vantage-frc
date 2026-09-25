@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { nextFirstWeekChecks, setupHeroFrom } from "./first-week-card";
 import type { RoleOnboardingView } from "../../lib/role-onboarding/types";
 
-const check = (key: string, done = false) => ({ key, label: key, detail: "", href: "/x", done, completedAt: null });
+const check = (key: string, done = false) => ({ key, label: key, detail: "", href: `/${key}`, done, completedAt: null });
 const track = (key: string, checks: ReturnType<typeof check>[], dismissed = false) => ({
   key,
   title: key,

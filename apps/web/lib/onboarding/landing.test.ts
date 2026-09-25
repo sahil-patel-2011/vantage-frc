@@ -142,4 +142,25 @@ describe("role-aware landing", () => {
     expect(view.headline).toBe("You're in. Here's where to start.");
     expect(view.eyebrow).toBe("YOU'RE IN");
   });
+
+  it("lands an owner on the four team setup steps, inviting people first", () => {
+    const view = landing({
+      teamRole: "coach",
+      crewRole: null,
+      primaryFocus: "competition",
+      orgId: ORG,
+      orgName: "Walk Nine Robotics",
+      orgRole: "owner",
+    });
+    expect(view.firstFiveMinutes.map((link) => link.label)).toEqual([
+      "Invite your team",
+      "Pick your event",
+      "Set up your scouting form",
+      "Add your first practice",
+    ]);
+    expect(view.primary.label).toBe("Invite your team");
+    expect(view.primary.href).toContain("/team/admin?invite=1");
+    expect(view.secondary?.label).toBe("Open Home");
+    expect(view.summary).not.toMatch(/AI limits/);
+  });
 });

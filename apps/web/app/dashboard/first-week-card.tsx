@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { RoleOnboardingView, StartCheckView, StartTrackView } from "../../lib/role-onboarding/types";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
 
 type NextCheck = { track: StartTrackView; check: StartCheckView };
 
@@ -17,32 +18,14 @@ const SHOWN = 3;
  * steps were never seen again. This card carries them until they are done or
  * dismissed, then disappears for good.
  */
-const SOURCE_ORDER: Record<string, number> = { subteam: 0, focus: 1, role: 2, manual: 3, welcome: 4 };
-
-/** The team's own setup (owners and admins) comes before anyone's personal path. */
-function sourceRank(track: StartTrackView): number {
-  return track.key === "team_setup" ? -1 : (SOURCE_ORDER[track.source] ?? 5);
-}
-
 export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHOWN): NextCheck[] {
   if (!view || view.status !== "live") return [];
-  // The person's own crew and focus first — a programming student's first
-  // step is their track, not the generic welcome — then one step from each
-  // list in turn, the way onboarding's "first five minutes" reads.
-  const queues = view.tracks
-    .filter((track) => !track.dismissed)
-    .sort((a, b) => sourceRank(a) - sourceRank(b))
-    .map((track) => ({ track, checks: track.checks.filter((check) => !check.done) }));
-  const out: NextCheck[] = [];
-  while (out.length < limit && queues.some((queue) => queue.checks.length > 0)) {
-    for (const queue of queues) {
-      const check = queue.checks.shift();
-      if (!check) continue;
-      out.push({ track: queue.track, check });
-      if (out.length >= limit) break;
-    }
-  }
-  return out;
+  // The same order the onboarding done screen used (lib/role-onboarding/first-week-order.ts):
+  // crew and focus first, one step from each list in turn.
+  return pickFirstWeek(
+    view.tracks.filter((track) => !track.dismissed),
+    { limit, member: isMemberRole(view.teamRole), skip: (check) => check.done },
+  );
 }
 
 /**
@@ -90,6 +73,39 @@ export function useFirstWeek(orgId: string) {
   );
 
   return { view, loaded: !orgId || loadedFor === orgId, busy, post };
+}
+
+const SETUP_DONE_SHOWN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * True for a day after this device saw the team's last setup step get done. The setup card
+ * used to just vanish after "3 of 4 done", with nothing saying setup was finished.
+ */
+function useJustSetUp(orgId: string, view: RoleOnboardingView | null): boolean {
+  const setup = view?.status === "live" ? view.tracks.find((track) => track.key === "team_setup") : undefined;
+  const state = !setup ? null : setup.doneCount >= setup.totalCount ? "done" : "open";
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!state || !orgId) return;
+    const key = `vantage.team-setup:${orgId}`;
+    let show = false;
+    try {
+      const seen = window.localStorage.getItem(key);
+      if (state === "open") {
+        window.localStorage.setItem(key, "open");
+      } else if (seen === "open") {
+        window.localStorage.setItem(key, String(Date.now()));
+        show = true;
+      } else if (seen && Date.now() - Number(seen) < SETUP_DONE_SHOWN_MS) {
+        show = true;
+      }
+    } catch {
+      // No storage: no note, nothing else changes.
+    }
+    const frame = window.requestAnimationFrame(() => setShown(show));
+    return () => window.cancelAnimationFrame(frame);
+  }, [orgId, state]);
+  return shown;
 }
 
 export type SetupHero = {
@@ -188,16 +204,26 @@ export function FirstWeekCard({
   busy: string | null;
   post: (payload: Record<string, unknown>, key: string) => Promise<void>;
 }) {
+  const justSetUp = useJustSetUp(orgId, view);
   if (!view || view.status !== "live" || view.totalCount === 0) return null;
   if (setupHeroFrom(view)) return null;
   const left = view.totalCount - view.doneCount;
   const next = nextFirstWeekChecks(view);
-  if (next.length === 0) return null;
+  const setupNote = justSetUp ? (
+    <p className="dash-setup-done" role="status">
+      <b aria-hidden="true">✓</b>
+      <span>
+        <strong>Your team is set up.</strong> Everyone you invite now lands on a Home that works.
+      </span>
+    </p>
+  ) : null;
+  if (next.length === 0) return setupNote ? <section className="dash-first-week" aria-label="Team setup">{setupNote}</section> : null;
   // The list shows the next few; the link says how many more there are.
   const more = left - next.length;
 
   return (
     <section className="dash-first-week" aria-label="Your first week">
+      {setupNote}
       <header>
         <strong>Your first week</strong>
         <span>{`${view.doneCount} of ${view.totalCount} done · ${left} to go`}</span>

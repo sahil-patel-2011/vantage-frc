@@ -188,3 +188,6 @@
   margin: 12px 0 4px;
   font-size: 1rem;
 }
+/* The way to Home (or the setup checklist) under the list: a real link, not faint grey text. */
+.onboarding-pending-actions .onboarding-landing-more{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.onboarding-required{margin-left:6px;color:var(--muted);font-weight:500;font-size:12px}

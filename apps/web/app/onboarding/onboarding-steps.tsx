@@ -118,10 +118,10 @@ export function ProfileForm({
       <fieldset className="onboarding-account-fields">
         <legend>Only you can see this</legend>
         <p className="onboarding-team-profile-hint">
-          Birthday and gender stay on your account. Teammates and team leaders never see them. We ask so student accounts stay safe.
+          Both are required, and both stay on your account: teammates and team leaders never see them. Your birthday tells Vantage whether this is a student account, which gets extra protections.
         </p>
         <label>
-          Date of birth
+          <span>Date of birth <small className="onboarding-required">Required</small></span>
           <input
             required
             type="date"
@@ -132,7 +132,7 @@ export function ProfileForm({
           />
         </label>
         <label>
-          Gender
+          <span>Gender <small className="onboarding-required">Required</small></span>
           <select
             required
             value={draft.gender}
@@ -288,6 +288,8 @@ export function PreferencesForm({
   onBack: () => void;
   onSubmit: () => void;
 }) {
+  // The owner the platform set this team up for is not joining someone else's team.
+  const owner = state.workspaceRole === "owner" && (lookup.invited || lookup.joined);
   return (
     <form
       className="onboarding-form"
@@ -407,7 +409,9 @@ export function PreferencesForm({
         <b aria-hidden="true">✓</b>
         <p>
           <strong>
-            {lookup.joined
+            {owner
+              ? `You're the owner of ${lookup.title}.`
+              : lookup.joined
               ? "You are already on this team."
               : lookup.invited
                 ? `You're joining ${lookup.title}.`
@@ -416,7 +420,9 @@ export function PreferencesForm({
                   : "Finish without a team"}
           </strong>
           <span>
-            {lookup.joined
+            {owner
+              ? " Finishing opens the team. Home then walks you through inviting everyone."
+              : lookup.joined
               ? " Finishing saves your profile and opens Home on what to do first."
               : lookup.invited
                 ? " The team invited this email, so finishing puts you straight on it."
@@ -432,7 +438,9 @@ export function PreferencesForm({
         <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>
           {busy
             ? "Submitting…"
-            : lookup.joined
+            : owner
+              ? "Finish and open the team"
+              : lookup.joined
               ? "Finish and open Home"
               : lookup.invited
                 ? `Join ${lookup.title}`
