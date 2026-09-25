@@ -2,6 +2,7 @@ import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { teamAdminShellCopy, teamAdminSetupSteps } from "../../../lib/team/team-admin-related";
 import TeamAdminClient from "../team-admin-client";
 import "../team-admin.css";
+import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 export const metadata = {
   title: "Team admin",
@@ -25,7 +26,7 @@ export default async function TeamAdminPage({
     return (
       <main className="module-page team-admin-page soft-gate">
         <PageHeader
-          breadcrumbs="Team / Admin"
+          breadcrumbs={teamSettingsBreadcrumb("people")}
           title="Team admin"
           description="Invite people and choose what each person can open. People without an invite go to the waitlist."
         />

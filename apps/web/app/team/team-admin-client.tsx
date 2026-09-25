@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, ConfirmDialog, EmptyState, Modal, PageHeader } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   clearFeatureSnapshot,
   getFeatureSnapshot,
@@ -36,6 +35,8 @@ import { formatInviteRole } from "../../lib/invite/invite-flow";
 import { likelyEmailTypo } from "../../lib/team/email-typo";
 import "./team-access-requests.css";
 import "./team-admin.css";
+import { TeamSettingsNav } from "../../components/team-settings-nav";
+import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
 
 function isTeamAdminSnapshot(value: unknown): value is TeamAdminSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -76,27 +77,6 @@ function wantsInvite(): boolean {
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash.replace(/^#/, "");
   return params.get("invite") === "1" || hash === "invite" || hash === "invite-form";
-}
-
-/** Settings that used to be a 13-tile grid on this page — one quiet row of links now. */
-function TeamSettingsLinks({ orgId }: { orgId: string | null }) {
-  const links = [
-    { href: withOrgHref("/team/admin/profile", orgId), label: "Team profile" },
-    // Named the way each page titles itself. Notifications left: they are your own, under Account.
-    { href: withOrgHref("/team/security", orgId), label: "Team security" },
-    { href: withOrgHref("/team/ai-keys", orgId), label: "AI keys" },
-    { href: withOrgHref("/connectors", orgId), label: "Connectors" },
-    { href: withOrgHref("/messages/moderation", orgId), label: "Chat moderation" },
-  ];
-  return (
-    <nav className="team-admin-settings-links" aria-label="Team settings">
-      {links.map((link) => (
-        <a key={link.label} href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
 }
 
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
@@ -602,11 +582,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
   const header = (
     <PageHeader
-      breadcrumbs="Team / Admin"
+      breadcrumbs={teamSettingsBreadcrumb("people")}
       title="Team admin"
       description="Invite people and choose what each person can open."
     >
-      <TeamSettingsLinks orgId={orgId} />
+      <TeamSettingsNav orgId={orgId} current="people" />
     </PageHeader>
   );
 

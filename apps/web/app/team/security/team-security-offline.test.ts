@@ -21,7 +21,8 @@ describe("Team security last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Team security"/);
     expect(src).not.toMatch(/>API keys</);
-    expect(src).toMatch(/canManage \? <a href=\{withOrgHref\("\/team\/admin", orgId\)\}>Team admin<\/a>/);
+    // The shared Team settings row, for the people who can open those pages.
+    expect(src).toMatch(/canManage \? <TeamSettingsNav orgId=\{orgId\} current="security" \/>/);
     expect(src).toMatch(/Owners and admins set sign-in methods/);
     expect(src).toMatch(/canEditPolicy/);
   });

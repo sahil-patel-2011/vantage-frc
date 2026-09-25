@@ -2,6 +2,7 @@ import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import AuthPolicyClient from "./policy-client";
 import "../team-admin.css";
 import "./security.css";
+import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 export const metadata = {
   title: "Team security",
@@ -17,7 +18,7 @@ export default async function TeamSecurityPage({
     return (
       <main className="module-page">
         <PageHeader
-          breadcrumbs="Team / Security"
+          breadcrumbs={teamSettingsBreadcrumb("security")}
           title="Team security"
           description="Sign-in rules are set per team. Choose your team to open them."
         />

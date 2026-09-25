@@ -22,6 +22,8 @@ import SpreadsheetMirrorCard from "./spreadsheet-mirror-card";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./connectors.css";
+import { TeamSettingsNav } from "../../components/team-settings-nav";
+import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
 
 type ConnectorsView = {
   orgId: string | null;
@@ -263,10 +265,12 @@ export default function ConnectorsClient() {
   return (
     <main className="module-page connectors-page">
       <PageHeader
-        breadcrumbs="Settings / Connectors"
+        breadcrumbs={canManage ? teamSettingsBreadcrumb("connectors") : "Account / Connectors"}
         title="Connectors"
         description={connectorsPageDescription({ canManage, summary: view.summary })}
-      />
+      >
+        {canManage ? <TeamSettingsNav orgId={orgId} current="connectors" /> : null}
+      </PageHeader>
       <OfflineBanner feature="Connectors" fromCache={fromCache} cachedAt={cachedAt} />
 
       {view.degraded ? (

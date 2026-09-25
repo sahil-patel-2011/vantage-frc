@@ -5,7 +5,6 @@ import { AiAgentStatus } from "../../../components/ai-agent-status";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
 import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
-import { hubHref } from "../../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import {
@@ -28,6 +27,8 @@ import {
 } from "./ai-keys-model";
 import { AiKeysReadyView } from "./ai-keys-ready-view";
 import "./ai-keys.css";
+import { TeamSettingsNav } from "../../../components/team-settings-nav";
+import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 function isAiKeysPayload(value: unknown): value is Payload {
   if (!value || typeof value !== "object") return false;
@@ -505,21 +506,16 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   );
   if (payload?.localConnector?.configured) configuredProviders.add("openai-compatible");
 
-  const aiHubHref = hubHref("/ai", "chat", orgId);
 
   return (
     <main className="module-page ai-keys-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={aiHubHref}>AI</a>
-            {" / AI keys"}
-          </>
-        }
+        breadcrumbs={teamSettingsBreadcrumb("ai")}
         navPath="/team/ai-keys"
         title="AI keys"
         description={PAGE_DESCRIPTION}
       >
+        <TeamSettingsNav orgId={orgId} current="ai" />
       </PageHeader>
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}

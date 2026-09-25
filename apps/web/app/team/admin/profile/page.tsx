@@ -4,6 +4,8 @@ import { withOrgHref } from "../../../../lib/nav/product-nav";
 import { TeamProfilePanel } from "../../team-profile-panel";
 import { ResolveTeamProfile } from "./resolve-team";
 import "../../team-admin.css";
+import { TeamSettingsNav } from "../../../../components/team-settings-nav";
+import { teamSettingsBreadcrumb } from "../../../../lib/nav/team-settings-nav";
 
 export const metadata = {
   title: "Team profile",
@@ -20,7 +22,7 @@ export default async function TeamProfileSettingsPage({
   if (!orgId) {
     return (
       <main className="module-page team-admin-page soft-gate">
-        <PageHeader breadcrumbs="Team / Admin / Profile" title="Team profile" />
+        <PageHeader breadcrumbs={teamSettingsBreadcrumb("profile")} title="Team profile" />
         <ResolveTeamProfile />
       </main>
     );
@@ -28,14 +30,14 @@ export default async function TeamProfileSettingsPage({
   return (
     <main className="module-page team-admin-page team-profile-settings">
       <PageHeader
-        breadcrumbs="Team / Admin / Profile"
+        breadcrumbs={teamSettingsBreadcrumb("profile")}
         title="Team profile"
         description="Where your team is, what it does, and its colours and logo."
       >
-        <nav className="team-admin-settings-links" aria-label="Team settings">
-          <a href={withOrgHref("/team/admin", orgId)}>‹ Team admin</a>
-          <a href={withOrgHref("/team/background", orgId)}>History and numbers for sponsors</a>
-        </nav>
+        <TeamSettingsNav orgId={orgId} current="profile" />
+        <p className="app-muted" style={{ margin: 0 }}>
+          <a href={withOrgHref("/team/background", orgId)}>History and numbers for sponsors →</a>
+        </p>
       </PageHeader>
       <TeamProfilePanel orgId={orgId} />
       <TeamBrandingPanel orgId={orgId} />

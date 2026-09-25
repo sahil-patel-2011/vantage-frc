@@ -18,6 +18,7 @@ import {
   referenceCount,
   type TeamDataShellKind,
 } from "../../../lib/team-data/team-data-related";
+import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 type InventoryRow = { label: string; count: number };
 
@@ -223,7 +224,7 @@ function TeamDataShell({
     <main className="module-page team-data-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Team / Live data</span>
+          <span className="breadcrumbs">{teamSettingsBreadcrumb("data")}</span>
           <h1>Team Data</h1>
           <p>{description}</p>
         </div>
@@ -578,7 +579,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     <main className="module-page team-data-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Team / Live data</span>
+          <span className="breadcrumbs">{teamSettingsBreadcrumb("data")}</span>
           <h1>Team Data</h1>
           <p>
             What your team has recorded, and the official event data that Schedule, Event day and Strategy

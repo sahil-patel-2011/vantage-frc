@@ -8,6 +8,8 @@ import { fetchProductSession } from "../../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { strategyCanSync } from "../../../lib/strategy/strategy-related";
+import { TeamSettingsNav } from "../../../components/team-settings-nav";
+import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 type AuthPolicy = {
   allowPassword: boolean;
@@ -161,15 +163,14 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   return (
     <main className="module-page team-security-page">
       <PageHeader
-        breadcrumbs="Settings / Team security"
+        breadcrumbs={teamSettingsBreadcrumb("security")}
         title="Team security"
         description="Choose how people sign in to your team. What each person can open is set on Team admin."
       >
-        <nav className="team-admin-settings-links" aria-label="Related settings">
-          {canManage ? <a href={withOrgHref("/team/admin", orgId)}>Team admin</a> : null}
-          <a href={`/team/ai-keys?orgId=${orgId}`}>AI keys</a>
-          <a href="/security">Your own two-step sign-in</a>
-        </nav>
+        {canManage ? <TeamSettingsNav orgId={orgId} current="security" /> : null}
+        <p className="app-muted" style={{ margin: 0 }}>
+          Your own sign-in is under <a href="/security">Account → Security</a>.
+        </p>
       </PageHeader>
       <OfflineBanner feature="Team security" fromCache={fromCache} cachedAt={cachedAt} />
 
