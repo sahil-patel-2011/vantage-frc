@@ -609,6 +609,11 @@ export function AutoPathField({
         </output>
       }
     >
+      {/* Which end is ours: 18 bare cells did not say where the robot starts from. */}
+      <p className="scout-auto-path-ends" aria-hidden="true">
+        <span>← Our driver stations (column A)</span>
+        <span>Far side →</span>
+      </p>
       <div className="scout-field-grid-scroll">
         <div
           className="scout-field-grid scout-auto-path"

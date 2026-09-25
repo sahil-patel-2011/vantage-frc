@@ -170,3 +170,7 @@
 .brief-autos-cell b { color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 999px; font-variant-numeric: tabular-nums; }
 .brief-autos-conflicts { margin: 10px 0 0; padding-left: 18px; color: #b91c1c; font-weight: 600; font-size: 14px; }
 .brief-autos-note { font-size: 12px; margin: 8px 0 0; }
+.brief-autos-ends { display: flex; justify-content: space-between; gap: 8px; margin: 6px 0 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.brief-autos-clock { font-variant-numeric: tabular-nums; color: var(--ink); }
+.brief-autos-cell.is-near { border-color: #d97706; background: color-mix(in srgb, #d97706 9%, var(--surface)); }
+.brief-autos-near { margin: 8px 0 0; padding-left: 18px; color: #b45309; font-weight: 600; font-size: 14px; }

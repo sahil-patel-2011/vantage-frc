@@ -211,6 +211,15 @@ export function ScoutingReadyView({
   // showed "Back to next" on the match Save had moved to.
   const recentEntries = data?.recentEntries;
   const scouted = useMemo(() => [...(recentEntries ?? []), ...savedHere], [recentEntries, savedHere]);
+  // Matches this scout already watched, so reopening the tab does not send them back to one.
+  const myMatchKeys = useMemo(() => {
+    const me = data?.scoutIdentity?.userId ?? null;
+    const keys = new Set<string>(savedHere.map((entry) => entry.matchKey));
+    for (const entry of recentEntries ?? []) {
+      if (me && entry.scoutUserId === me && entry.matchKey) keys.add(entry.matchKey);
+    }
+    return [...keys];
+  }, [data?.scoutIdentity?.userId, recentEntries, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
   const scrollToFormPending = useRef(false);
@@ -586,6 +595,7 @@ return (
                   teamKey={teamKey}
                   onPick={pickRobot}
                   onAutoPick={autoPickRobot}
+                  myMatchKeys={myMatchKeys}
                 />
               ) : null}
               {data?.matches?.length ? (

@@ -100,6 +100,46 @@ export function autoRouteConflicts(routes: readonly AutoRoute[], samples = 30): 
   return out;
 }
 
+export type AutoRouteNearMiss = {
+  teams: [string, string];
+  cell: number;
+  cellLabel: string;
+  /** Seconds between the two robots being in that cell. */
+  secondsApart: number;
+};
+
+/**
+ * Two robots through the same cell a few seconds apart: not a crash by the evenly spread timing,
+ * but close enough that a slower auto turns it into one ("1323 and 6925 both pass through B2,
+ * about 4 s apart"). Pairs and cells already reported as conflicts are left out.
+ */
+export function autoRouteNearMisses(
+  routes: readonly AutoRoute[],
+  conflicts: readonly AutoRouteConflict[] = autoRouteConflicts(routes),
+  withinSeconds = 5,
+): AutoRouteNearMiss[] {
+  const clash = new Set(conflicts.map((conflict) => `${conflict.teams.join("|")}|${conflict.cell}`));
+  const when = (route: readonly number[], cell: number) =>
+    route.map((stop, index) => (stop === cell ? (route.length > 1 ? index / (route.length - 1) : 0) * 15 : null)).filter((t): t is number => t != null);
+  const out: AutoRouteNearMiss[] = [];
+  for (let a = 0; a < routes.length; a += 1) {
+    for (let b = a + 1; b < routes.length; b += 1) {
+      const left = routes[a]!;
+      const right = routes[b]!;
+      if (left.grid.gridCols !== right.grid.gridCols || left.grid.gridRows !== right.grid.gridRows) continue;
+      for (const cell of new Set(left.route.filter((stop) => right.route.includes(stop)))) {
+        if (clash.has(`${left.teamKey}|${right.teamKey}|${cell}`)) continue;
+        let best = Infinity;
+        for (const x of when(left.route, cell)) for (const y of when(right.route, cell)) best = Math.min(best, Math.abs(x - y));
+        if (best <= withinSeconds) {
+          out.push({ teams: [left.teamKey, right.teamKey], cell, cellLabel: fieldPositionCellLabel(cell, left.grid), secondsApart: Math.max(1, Math.round(best)) });
+        }
+      }
+    }
+  }
+  return out;
+}
+
 /** "About 5 s in": a point in autonomous said the way a drive coach would. */
 export function secondsIntoAuto(at: number): string {
   return `about ${Math.round(at * 15)} s in`;

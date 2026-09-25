@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fieldPositionCellLabel } from "@vantage/scouting";
-import { cellAt, secondsIntoAuto, type AutoRoute, type AutoRouteConflict } from "../../lib/strategy/auto-paths";
+import { cellAt, secondsIntoAuto, type AutoRoute, type AutoRouteConflict, type AutoRouteNearMiss } from "../../lib/strategy/auto-paths";
 
 const COLORS = ["#2563eb", "#d97706", "#059669"];
 const AUTO_MS = 6000;
@@ -21,7 +21,7 @@ export function AllianceAutoRoutes({
   eventKey: string | null | undefined;
   teamKeys: string[];
 }) {
-  const [data, setData] = useState<{ routes: AutoRoute[]; conflicts: AutoRouteConflict[] } | null>(null);
+  const [data, setData] = useState<{ routes: AutoRoute[]; conflicts: AutoRouteConflict[]; nearMisses: AutoRouteNearMiss[] } | null>(null);
   const [playing, setPlaying] = useState(false);
   const [at, setAt] = useState(1);
   const teamsParam = teamKeys.join(",");
@@ -33,7 +33,9 @@ export function AllianceAutoRoutes({
     void fetch(`/api/strategy/auto-routes?${params}`, { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((body) => {
-        if (active && body && Array.isArray(body.routes)) setData({ routes: body.routes, conflicts: body.conflicts ?? [] });
+        if (active && body && Array.isArray(body.routes)) {
+          setData({ routes: body.routes, conflicts: body.conflicts ?? [], nearMisses: body.nearMisses ?? [] });
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -87,6 +89,12 @@ export function AllianceAutoRoutes({
           </li>
         ))}
       </ul>
+      {/* Which end is which: a bare A1–F3 grid said nothing about where our drivers stand. */}
+      <p className="brief-autos-ends" aria-hidden="true">
+        <span>← Our driver stations (column A)</span>
+        <span className="brief-autos-clock">{playing || at < 1 ? `0:${String(Math.round(at * 15)).padStart(2, "0")} of 0:15` : ""}</span>
+        <span>Far side →</span>
+      </p>
       <div
         className="brief-autos-grid"
         role="img"
@@ -97,7 +105,10 @@ export function AllianceAutoRoutes({
           const here = routes.filter((route) => cellAt(route.route, at) === cell);
           const trail = routes.filter((route) => route.route.includes(cell));
           return (
-            <div key={cell} className={`brief-autos-cell${here.length > 1 ? " is-clash" : ""}`}>
+            <div
+              key={cell}
+              className={`brief-autos-cell${here.length > 1 ? " is-clash" : ""}${data.nearMisses.some((miss) => miss.cell === cell) ? " is-near" : ""}`}
+            >
               <small>{fieldPositionCellLabel(cell, grid)}</small>
               <span className="brief-autos-trail">
                 {trail.map((route) => (
@@ -122,9 +133,19 @@ export function AllianceAutoRoutes({
             </li>
           ))}
         </ul>
-      ) : (
+      ) : data.nearMisses.length ? null : (
         <p className="app-muted">No two routes cross at the same moment.</p>
       )}
+      {data.nearMisses.length ? (
+        <ul className="brief-autos-near">
+          {data.nearMisses.map((miss) => (
+            <li key={`${miss.teams.join("-")}-${miss.cell}`}>
+              {miss.teams.map((team) => team.replace(/^frc/, "")).join(" and ")} both pass through {miss.cellLabel}, about{" "}
+              {miss.secondsApart} s apart.
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <p className="app-muted brief-autos-note">
         From each robot&rsquo;s latest scouted route at this event. Timing is spread evenly across the 15 seconds, so treat a
         meeting as likely, not certain.

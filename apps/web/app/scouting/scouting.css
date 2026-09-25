@@ -239,3 +239,4 @@
 .pit-progress button { min-height: 44px; min-width: 64px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; cursor: pointer; }
 .pit-progress button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
 .pit-progress-more { align-self: center; color: var(--muted); font-size: 13px; }
+.scout-auto-path-ends { display: flex; justify-content: space-between; margin: 0 0 4px; color: var(--muted); font-size: 12px; font-weight: 600; }

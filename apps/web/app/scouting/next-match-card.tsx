@@ -28,6 +28,7 @@ export function NextMatchCard({
   teamKey,
   onPick,
   onAutoPick,
+  myMatchKeys = [],
 }: {
   matches: ScheduleMatch[];
   scouted: ScoutedEntry[];
@@ -37,9 +38,15 @@ export function NextMatchCard({
   onPick: (matchKey: string, teamKey: string) => void;
   /** Selects without scrolling the page to the form; falls back to onPick. */
   onAutoPick?: (matchKey: string, teamKey: string) => void;
+  /** Matches this scout already has a report for: reopening skips them, as the save flow does. */
+  myMatchKeys?: readonly string[];
 }) {
   const schedule = useMemo(() => orderedSchedule(matches), [matches]);
-  const start = useMemo(() => nextMatchIndex(schedule, scouted, assignments), [schedule, scouted, assignments]);
+  const baseStart = useMemo(() => nextMatchIndex(schedule, scouted, assignments), [schedule, scouted, assignments]);
+  // The match picked for you is "Next to scout". It was labelled "Match 34 of 36 · Go to Qual 33",
+  // which read as "you are on the wrong match" when Qual 33 only had our own robot left.
+  const [autoStart, setAutoStart] = useState<number | null>(null);
+  const start = autoStart ?? baseStart;
   const [index, setIndex] = useState(start);
 
   // Follow a pick made elsewhere (the full list, a QR handoff, "next match" after saving).
@@ -75,11 +82,12 @@ export function NextMatchCard({
   // Only our own robot left in a match: the next match with another team open comes first
   // (the save flow skips ours the same way), then ours.
   const autoPick = useMemo(() => {
-    if (matchKey || start < 0 || !sessionChecked) return null;
+    if (matchKey || baseStart < 0 || !sessionChecked) return null;
+    const watched = new Set(myMatchKeys);
     let ownFallback: { matchKey: string; teamKey: string } | null = null;
-    for (let at = start; at < Math.min(schedule.length, start + 6); at += 1) {
+    for (let at = baseStart; at < Math.min(schedule.length, baseStart + 6); at += 1) {
       const candidate = matchCard(schedule, at, scouted, assignments);
-      if (!candidate?.robots.length) continue;
+      if (!candidate?.robots.length || watched.has(candidate.match.matchKey)) continue;
       const mine = candidate.robots.find((robot) => robot.assignedToYou && !robot.scouted);
       if (mine) return { matchKey: candidate.match.matchKey, teamKey: mine.teamKey };
       const open = candidate.robots.filter((robot) => !robot.scouted);
@@ -88,10 +96,13 @@ export function NextMatchCard({
       if (!ownFallback && open[0]) ownFallback = { matchKey: candidate.match.matchKey, teamKey: open[0].teamKey };
     }
     return ownFallback;
-  }, [matchKey, start, schedule, scouted, assignments, ownTeamKey, sessionChecked]);
+  }, [matchKey, baseStart, schedule, scouted, assignments, ownTeamKey, sessionChecked, myMatchKeys]);
   useEffect(() => {
-    if (autoPick) (onAutoPick ?? onPick)(autoPick.matchKey, autoPick.teamKey);
-  }, [autoPick, onPick, onAutoPick]);
+    if (!autoPick) return;
+    const at = schedule.findIndex((match) => match.matchKey === autoPick.matchKey);
+    if (at >= 0) setAutoStart(at);
+    (onAutoPick ?? onPick)(autoPick.matchKey, autoPick.teamKey);
+  }, [autoPick, onPick, onAutoPick, schedule]);
 
   if (!card) return null;
 

@@ -38,3 +38,17 @@ describe("alliance auto routes", () => {
     expect(secondsIntoAuto(conflicts[0]!.at)).toMatch(/about \d+ s in/);
   });
 });
+
+describe("near misses", () => {
+  it("warns when two robots use the same cell a few seconds apart", async () => {
+    const { autoRouteNearMisses } = await import("./auto-paths");
+    const grid = { gridCols: 6, gridRows: 3 };
+    const misses = autoRouteNearMisses([
+      { teamKey: "frc1323", route: [0, 7, 8, 7], matchKey: null, grid },
+      { teamKey: "frc6925", route: [12, 13, 7, 2], matchKey: null, grid },
+    ]);
+    expect(misses).toHaveLength(1);
+    expect(misses[0]).toMatchObject({ teams: ["frc1323", "frc6925"], cellLabel: "B2" });
+    expect(misses[0]!.secondsApart).toBeLessThanOrEqual(5);
+  });
+});

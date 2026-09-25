@@ -4,7 +4,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { autoRouteConflicts, loadAllianceAutoRoutes } from "../../../../lib/strategy/auto-paths";
+import { autoRouteConflicts, autoRouteNearMisses, loadAllianceAutoRoutes } from "../../../../lib/strategy/auto-paths";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -31,7 +31,8 @@ export async function GET(request: Request) {
     const routes = await withRls({ userId: session.user.id, orgId }, (client) =>
       loadAllianceAutoRoutes(client, { orgId, eventKey, teamKeys }),
     );
-    return Response.json({ routes, conflicts: autoRouteConflicts(routes) });
+    const conflicts = autoRouteConflicts(routes);
+    return Response.json({ routes, conflicts, nearMisses: autoRouteNearMisses(routes, conflicts) });
   } catch (error) {
     return Response.json({ error: publicErrorMessage(error, "Auto routes unavailable") }, { status: 400 });
   }
