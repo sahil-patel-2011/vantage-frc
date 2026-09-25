@@ -384,8 +384,15 @@ function countdownLabel(scheduled: string | null, now: number): string | null {
   if (!scheduled) return null;
   const at = new Date(scheduled).getTime();
   if (!Number.isFinite(at)) return null;
-  const minutes = Math.round((at - now) / 60_000);
-  if (minutes <= 0) return "now";
+  const ms = at - now;
+  if (ms <= 0) return "now";
+  // The last five minutes count in seconds: "in 4 min" read the same for a whole minute of
+  // walking to the queue.
+  if (ms < 5 * 60_000) {
+    const seconds = Math.ceil(ms / 1000);
+    return `in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+  const minutes = Math.round(ms / 60_000);
   if (minutes < 60) return `in ${minutes} min`;
   return `in ${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }
@@ -401,6 +408,17 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
   const opponents = ourColor === "red" ? blue : ourColor === "blue" ? red : [];
   const tagsFor = (teamKey: string) => intel?.teams.find((row) => row.teamKey === teamKey)?.tags ?? [];
   const countdown = countdownLabel(match.scheduledTime, now);
+  // Where the field is, from the synced count of played quals: the countdown alone could not say
+  // whether the event was on time. Quals only; playoff order is not a simple count.
+  const progress = data.progress;
+  const onField = progress && progress.qualsTotal > 0 && progress.qualsPlayed < progress.qualsTotal ? progress.qualsPlayed + 1 : null;
+  const before = onField != null && match.compLevel === "qm" ? match.matchNumber - onField : null;
+  const fieldLine =
+    onField == null || before == null || before < 0
+      ? null
+      : before === 0
+        ? `Up next on the field · ${progress!.qualsPlayed} of ${progress!.qualsTotal} quals played`
+        : `On the field next: Qual ${onField} · ${before} ${before === 1 ? "match" : "matches"} before ours`;
 
   const teamList = (keys: string[], color: "red" | "blue") => (
     <ul className={`stage-lineup is-${color}`}>
@@ -417,7 +435,12 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
   return (
     <div className="stage-next">
       <div className="stage-next-head">
-        <strong className="stage-clock">{matchLabel(match.compLevel, match.matchNumber)}</strong>
+        {/* The field line sits beside the match name, where the row was empty: under it, it
+            pushed the win line off a 720p screen. */}
+        <div className="stage-next-title">
+          <strong className="stage-clock">{matchLabel(match.compLevel, match.matchNumber)}</strong>
+          {fieldLine ? <span className="stage-field-line">{fieldLine}</span> : null}
+        </div>
         <span className="stage-kicker">
           {countdown ? `${countdown} · ` : ""}
           {clockLabel(match.scheduledTime) ?? "No scheduled time posted"}

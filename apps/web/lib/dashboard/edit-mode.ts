@@ -5,6 +5,7 @@
  */
 
 import {
+  DASHBOARD_COLUMNS,
   fillRowEnds,
   findDashboardSlot,
   homeViewLayout,
@@ -256,13 +257,42 @@ export function tidyBoard(input: {
   const before = displayFor(layout);
   // Always the saved 12-column board, never the scaled-down view written back: a tablet
   // view cannot be scaled back up without changing card widths on the desktop board.
+  // Packed, then any hole no card fits is closed by the card beside or above it growing into
+  // it: tidy used to leave the hole and say "No card fits the gap", which was homework.
   const packed = new Map(
-    packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))).map((item) => [item.i, item]),
+    closeInteriorGaps(packDashboardLayout(layout.filter((item) => visibleIds.has(item.i))), DASHBOARD_COLUMNS).map(
+      (item) => [item.i, item],
+    ),
   );
   const next = layout.map((item) => packed.get(item.i) ?? item);
   // Judged on screen: a saved-board change nobody can see is not "moved".
   const moved = !samePositions(before, displayFor(next));
   return moved ? { layout: next, moved } : { layout, moved: false };
+}
+
+/**
+ * Grows cards into the holes packing could not fill: a card with empty columns to its right
+ * widens into them, then a card with empty rows under it grows down. Only holes above the last
+ * row count; the space after the last cards stays free for the next card.
+ */
+export function closeInteriorGaps(layout: DashboardWidgetLayout[], cols: number): DashboardWidgetLayout[] {
+  if (layout.length === 0) return layout;
+  const out = layout.map((item) => ({ ...item }));
+  const lastStart = Math.max(...out.map((item) => item.y));
+  const free = (x: number, y: number, h: number, self: DashboardWidgetLayout) =>
+    out.every((other) => other === self || !(x >= other.x && x < other.x + other.w && y < other.y + other.h && other.y < y + h));
+  const ordered = [...out].sort((a, b) => a.y - b.y || a.x - b.x);
+  for (const item of ordered) {
+    if (item.y + item.h > lastStart) continue;
+    while (item.x + item.w < cols && free(item.x + item.w, item.y, item.h, item)) item.w += 1;
+  }
+  for (const item of ordered) {
+    if (item.y + item.h > lastStart) continue;
+    const rowFree = (row: number) =>
+      out.every((other) => other === item || !(row >= other.y && row < other.y + other.h && other.x < item.x + item.w && item.x < other.x + other.w));
+    while (item.y + item.h < lastStart && rowFree(item.y + item.h)) item.h += 1;
+  }
+  return out;
 }
 
 /**

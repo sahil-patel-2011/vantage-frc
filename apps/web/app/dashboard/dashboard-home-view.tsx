@@ -620,8 +620,10 @@ export function DashboardHomeView(props: {
           {editing ? (
             <p className="dash-edit-hint" data-testid="dash-edit-hint">
               {/* One column has no size button (every size is full width), so it is not mentioned. */}
+              {/* One board for every screen: a phone move used to rearrange the computer's Home
+                  without a word. */}
               {cols === 1
-                ? "Drag a card to move it, or tap − to remove it."
+                ? "Drag to move, − to remove. A computer shows the same order."
                 : "Drag a card to move it. Use its size button (top right) to resize it, or − to remove it."}
             </p>
           ) : null}

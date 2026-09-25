@@ -643,3 +643,19 @@
 .stage-queue-cue.is-urgent { display: inline-block; margin-left: 0.4em; padding: 0.05em 0.45em; border-radius: 10px; background: #f59e0b; color: #111; animation: stage-cue-pulse 1.6s ease-in-out infinite; }
 @keyframes stage-cue-pulse { 50% { opacity: 0.75; } }
 @media (prefers-reduced-motion: reduce) { .stage-queue-cue.is-urgent { animation: none; } }
+
+/* Where the field is: "On the field next: Qual 29 · 2 matches before ours". */
+.stage-next-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1.2em;
+}
+.stage-field-line {
+  margin: 0;
+  white-space: nowrap;
+  color: #9fb0b8;
+  font-size: calc(clamp(0.85rem, min(1.9vw, 3vh), 1.7rem) * var(--stage-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}

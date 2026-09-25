@@ -206,6 +206,25 @@ describe("tidyBoard", () => {
     expect(result.layout.find((item) => item.i === "b")).toMatchObject({ x: 4, w: 4 });
   });
 
+  it("closes a hole no card fits by growing the card beside it", () => {
+    // Row 0: three 4-wide cards. Row 3: two, then an empty third. Row 6: an 8-wide card that
+    // cannot fit the 4-wide hole. Tidy used to leave it and say "No card fits the gap".
+    const layout = [
+      card("a", "my_day", 0, 0),
+      card("b", "hours_month", 4, 0),
+      card("c", "team_todos", 8, 0),
+      card("d", "duties", 0, 3),
+      card("e", "announcements_ack", 4, 3),
+      { ...card("f", "budget_parts", 0, 6), w: 8 },
+    ];
+    const display = (next: DashboardWidgetLayout[]) => packDashboardLayout(next);
+    const ids = new Set(layout.map((item) => item.i));
+    const result = tidyBoard({ layout, visibleIds: ids, cols: 12, displayFor: display });
+    expect(result.moved).toBe(true);
+    expect(result.layout.find((item) => item.i === "e")).toMatchObject({ x: 4, w: 8 });
+    expect(boardHasGap(display(result.layout), 12)).toBe(false);
+  });
+
   it("closes a gap left by a dragged card on the full board", () => {
     const layout = [card("a", "my_day", 0, 0), card("b", "hours_month", 8, 0)];
     const display = (next: DashboardWidgetLayout[]) => compactLayout(next, 12);
