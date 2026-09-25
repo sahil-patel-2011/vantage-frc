@@ -16,7 +16,9 @@ describe("Account last snapshot stays on the phone", () => {
 
   it("keeps one EmptyState primary on a failed load", () => {
     const src = readFileSync(join(DIR, "account-client.tsx"), "utf8");
-    const fail = src.slice(src.indexOf("fetchFailed && !account"));
+    const start = src.indexOf("fetchFailed && !account");
+    // Just the failed-load block; the help card (with its Support row) sits later on the page.
+    const fail = src.slice(start, src.indexOf("{account ? (", start));
     expect(fail).not.toMatch(/href="\/support"/);
     expect(src).not.toMatch(/<NextActions[\s\S]*orgId=\{null\}/);
   });
