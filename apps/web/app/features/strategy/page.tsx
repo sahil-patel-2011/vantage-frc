@@ -19,7 +19,7 @@ const assistantJobs = [
 const scoutFeeds = [
   { title: "Competition · Strategy", copy: "Playbooks from your scouting plus public facts — empty until someone scouts." },
   { title: "Alliance selection", copy: "A shared board for all eight alliances, with your scouting behind every pick and a flag when it disagrees with the official results." },
-  { title: "Pick clock & pairwise", copy: "A pick timer and quick \"A beats B\" comparisons to settle close calls." },
+  { title: "Settle close picks", copy: "Compare two robots head to head, with a timer for the pick itself." },
   { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
   { title: "Event day and My Day", copy: "Your next match, the pit queue and your bumper colour, in one place." },
   { title: "Ask AI", copy: "Answers show where they came from: public match data, ratings or your scouts. Missing numbers stay blank." },
@@ -67,7 +67,7 @@ export default function StrategyFeaturePage() {
           <div className="lux-content">
             <header>
               <span className="section-id">WHERE IT SHOWS UP</span>
-              <h2 id="scout-feed-title">Same scout feed across hubs.</h2>
+              <h2 id="scout-feed-title">Everything here uses the same scouting data.</h2>
             </header>
             <div className="supporting-status-grid">
               {scoutFeeds.map((item) => (

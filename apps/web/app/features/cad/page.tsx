@@ -67,7 +67,7 @@ export default function CadFeaturePage() {
           <div>
             <h2>Related.</h2>
             <p>
-              <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/code">Code Coach</a> ·{" "}
+              <a href="/features/strategy">Strategy & Ask AI</a> · <a href="/features/code">Code Coach</a> ·{" "}
               <a href="/pricing">Cost</a>
             </p>
           </div>

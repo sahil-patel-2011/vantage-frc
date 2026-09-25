@@ -9,6 +9,25 @@ import { rememberWaitlistJoined } from "../../lib/marketing/waitlist-joined";
 
 type FormState = "idle" | "sending" | "success" | "error" | "unavailable";
 
+type FieldErrors = { email?: string; teamNumber?: string; phone?: string };
+
+/**
+ * "+1 202 555 0123", or a plain ten-digit US number, which gets the +1 added. Null for
+ * something that isn't a phone number, so the field can say so as soon as you leave it.
+ */
+export function normalizeWaitlistPhone(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (!/^\+?[0-9 ()\-.]{7,22}$/.test(trimmed)) return null;
+  const digits = trimmed.replace(/\D/g, "");
+  if (trimmed.startsWith("+")) return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return null;
+}
+
+const PHONE_ERROR = "That doesn't look like a phone number. Try +1 202 555 0123.";
+
 type WaitlistResponse = {
   ok?: boolean;
   status?: string;
@@ -39,6 +58,8 @@ export function WaitlistForm({
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [phone, setPhone] = useState("");
+  // Said under the field that needs it, not as the browser's own bubble or a line above the button.
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   // Two different people land here: a mentor who wants their team set up, and someone whose
   // team already uses Vantage (who needs an invite from their team, not a months-long list).
   const [intent, setIntent] = useState<"setup" | "member">("setup");
@@ -97,6 +118,20 @@ export function WaitlistForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const nextErrors: FieldErrors = {};
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(fields.get("email") ?? "").trim())) {
+      nextErrors.email = "Enter the email you want us to write to.";
+    }
+    if (!/^[0-9]{1,5}$/.test(String(fields.get("teamNumber") ?? "").trim())) {
+      nextErrors.teamNumber = "Enter your FRC team number, 1 to 99999.";
+    }
+    if (normalizeWaitlistPhone(phone) == null) nextErrors.phone = PHONE_ERROR;
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      setState("idle");
+      return;
+    }
     // Terms and Privacy are two separate agreements; neither one stands in for
     // the other, so the form will not submit until both are ticked.
     if (!legalConsentComplete(consent)) {
@@ -116,7 +151,7 @@ export function WaitlistForm({
         body: JSON.stringify({
           email: form.get("email"),
           teamNumber: form.get("teamNumber"),
-          phone: form.get("phone"),
+          phone: normalizeWaitlistPhone(phone) || form.get("phone"),
           smsConsent: phoneProvided && form.get("smsConsent") === "on",
           termsAccepted,
           privacyAccepted,
@@ -170,18 +205,17 @@ export function WaitlistForm({
         <h3 ref={successRef} tabIndex={-1}>
           You’re on the list.
         </h3>
-        {/* Said to everyone, so the form never reveals which teams already use Vantage; first,
-            because for someone whose team is already on it, the wait is pointless. */}
-        <p>
-          <strong>Is your team already on Vantage?</strong> You don&rsquo;t need to wait: ask its owner or a mentor to
-          invite this email, then <a href="/signin">sign in</a>.
-        </p>
         <p>
           {recorded?.email
-            ? `Otherwise we'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}.`
-            : "Otherwise we'll email you when your team is set up."}{" "}
-          We set teams up one at a time. Then you sign in and invite your students and mentors by email. Joining the
-          waitlist does not create a Vantage account.
+            ? `We'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}.`
+            : "We'll email you when your team is set up."}{" "}
+          We set teams up one at a time, usually within a few days. Then you sign in and invite your students and
+          mentors by email.
+        </p>
+        {/* Said to everyone, so the form never reveals which teams already use Vantage. */}
+        <p className="waitlist-aside">
+          Already on a team that uses Vantage? No need to wait: ask its owner or a mentor to invite this email, then{" "}
+          <a href="/signin">sign in</a>.
         </p>
       </div>
     );
@@ -222,6 +256,7 @@ export function WaitlistForm({
       onSubmit={submit}
       aria-label="Join the Vantage waitlist"
       data-testid="waitlist-form"
+      noValidate
     >
       {choice}
       <div className="field">
@@ -234,8 +269,15 @@ export function WaitlistForm({
           type="email"
           autoComplete="email"
           required
+          aria-invalid={fieldErrors.email ? true : undefined}
+          aria-describedby={fieldErrors.email ? `${prefix}-email-error` : undefined}
           disabled={state === "sending"}
         />
+        {fieldErrors.email ? (
+          <small id={`${prefix}-email-error`} className="field-error" role="alert">
+            {fieldErrors.email}
+          </small>
+        ) : null}
       </div>
 
       <div className="field">
@@ -249,10 +291,16 @@ export function WaitlistForm({
           maxLength={5}
           title="Your FRC team number, 1 to 99999"
           placeholder="e.g. 6925"
-          aria-describedby={`${prefix}-teamNumber-hint`}
+          aria-describedby={fieldErrors.teamNumber ? `${prefix}-teamNumber-error` : `${prefix}-teamNumber-hint`}
+          aria-invalid={fieldErrors.teamNumber ? true : undefined}
           required
           disabled={state === "sending"}
         />
+        {fieldErrors.teamNumber ? (
+          <small id={`${prefix}-teamNumber-error`} className="field-error" role="alert">
+            {fieldErrors.teamNumber}
+          </small>
+        ) : null}
         <small id={`${prefix}-teamNumber-hint`} className="field-hint">
           New team still waiting on a number? Email <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a> and
           we&rsquo;ll add you.
@@ -268,11 +316,22 @@ export function WaitlistForm({
           name="phone"
           type="tel"
           autoComplete="tel"
-          placeholder="Optional — for launch texts"
+          placeholder="+1 202 555 0123"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          onChange={(event) => {
+            setPhone(event.target.value);
+            if (fieldErrors.phone) setFieldErrors((current) => ({ ...current, phone: undefined }));
+          }}
+          onBlur={() =>
+            setFieldErrors((current) => ({ ...current, phone: normalizeWaitlistPhone(phone) == null ? PHONE_ERROR : undefined }))
+          }
+          aria-invalid={fieldErrors.phone ? true : undefined}
+          aria-describedby={`${prefix}-phone-hint`}
           disabled={state === "sending"}
         />
+        <small id={`${prefix}-phone-hint`} className={fieldErrors.phone ? "field-error" : "field-hint"} role={fieldErrors.phone ? "alert" : undefined}>
+          {fieldErrors.phone ?? "Only for launch texts. A US number without +1 is fine."}
+        </small>
       </div>
 
       <div className="honeypot" aria-hidden="true">

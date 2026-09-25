@@ -658,6 +658,7 @@ export default function SignInClient({
             codeRef={codeRef}
             emailAvailable={emailAvailable}
             invalid={Boolean(flow.failure)}
+            failureMessage={flow.failure?.message ?? null}
             expired={expired}
             showClock={showCodeClock(flow.failure?.kind)}
             showResend={showCodeResend(flow.failure?.kind)}
@@ -682,7 +683,8 @@ export default function SignInClient({
       </div>
 
       <SignInStatusBlock
-        failure={notInvited ? null : (flow.failure?.message ?? null)}
+        // On the code step the reason sits under the boxes instead (SignInCodeStep).
+        failure={notInvited || flow.step === "code" ? null : (flow.failure?.message ?? null)}
         notice={flow.notice}
         oauthMessage={oauthMessage}
         inviteHint={hint}

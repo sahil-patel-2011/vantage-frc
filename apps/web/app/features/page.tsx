@@ -21,8 +21,8 @@ export default function FeaturesPage() {
           <p className="lux-kicker">Product</p>
           <h1>What you open after sign-in.</h1>
           <p>
-            Four workspaces — Team, Build, Competition and Business — the same software mentors and students
-            use on a build night. Related tools sit as tabs inside each one, and search finds any of them by name.
+            On a phone, four tabs: Home, Matches, Scout and Stats. On a laptop, four workspaces: Team, Build,
+            Competition and Business, with related tools as tabs inside each. Search finds any tool by name.
           </p>
           <MarketingRouteActions
             companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
@@ -60,7 +60,7 @@ export default function FeaturesPage() {
               </ul>
             </div>
             <p className="mk-related-links">
-              Deep dives: <a href="/features/strategy">Strategy &amp; Assistant</a>
+              Deep dives: <a href="/features/strategy">Strategy &amp; Ask AI</a>
               {" · "}
               <a href="/features/cad">CAD agent</a>
               {" · "}

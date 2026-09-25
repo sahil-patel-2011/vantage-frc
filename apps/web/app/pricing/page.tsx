@@ -6,7 +6,7 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Cost — Vantage",
   description:
-    "Vantage is free for every FRC team, with every feature included. AI runs on your team's own key, a free key, or a model on a shop computer. Access is invite-only while we bring teams on.",
+    "Vantage is free for every FRC team, with every feature included. AI runs on your team's own key; a free Google Gemini key works. Access is invite-only while we bring teams on.",
   path: "/pricing",
 });
 
@@ -17,7 +17,7 @@ export const metadata: Metadata = marketingPageMetadata({
 const STEPS = [
   {
     title: "Get a key",
-    body: "Any of OpenAI, Anthropic, Google AI Studio or OpenRouter. Google AI Studio, OpenRouter and Groq have free tiers.",
+    body: "OpenAI, Anthropic, Google AI Studio or OpenRouter, or any service that works like OpenAI's, such as Groq. Google AI Studio, OpenRouter and Groq have free tiers.",
   },
   {
     title: "Paste it once",

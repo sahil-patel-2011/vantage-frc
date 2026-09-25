@@ -34,7 +34,7 @@ const roles = [
   },
   {
     title: "Every member",
-    copy: "Everyone starts on Home, Matches, Scout and Stats; the menu and search find the rest. Team chat is private to your roster.",
+    copy: "On a phone, four tabs: Home, Matches, Scout and Stats. On a laptop, four workspaces: Team, Build, Competition and Business. Team chat is private to your roster.",
   },
 ] as const;
 

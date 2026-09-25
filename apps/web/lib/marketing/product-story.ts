@@ -58,7 +58,7 @@ export const MARKETING_HUBS = [
       "Learn CAD: Onshape from the first sketch, a video tutor, then a graded part a lead can check",
       "Rookie training: a programming track and a mechanical track, paced week by week from official docs",
       "Programming setup: Git, VS Code, WPILib and PathPlanner with real download links, plus the GitHub Student Pack walk-through",
-      "CAD vault with Onshape links, change radar, and design reviews",
+      "Onshape links, a record of what changed in CAD, and design reviews",
       "The assembly manual: your Onshape assembly turned into a step-by-step build book with parts, cuts and drill sizes",
     ],
   },

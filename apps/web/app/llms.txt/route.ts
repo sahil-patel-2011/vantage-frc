@@ -39,7 +39,7 @@ const body = `# Vantage
 ## Key URLs
 - Home: ${CANONICAL}/
 - Product map: ${CANONICAL}/features
-- Strategy & Assistant: ${CANONICAL}/features/strategy
+- Strategy & Ask AI: ${CANONICAL}/features/strategy
 - CAD agent: ${CANONICAL}/features/cad
 - Code Coach: ${CANONICAL}/features/code
 - How it works: ${CANONICAL}/workflow

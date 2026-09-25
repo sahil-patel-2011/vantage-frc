@@ -14,6 +14,7 @@ export function SignInCodeStep({
   codeRef,
   emailAvailable,
   invalid,
+  failureMessage,
   expired,
   showClock,
   showResend,
@@ -38,6 +39,8 @@ export function SignInCodeStep({
   codeRef: RefObject<HTMLInputElement | null>;
   emailAvailable: boolean;
   invalid: boolean;
+  /** Why the last code failed, shown right under the boxes. */
+  failureMessage?: string | null;
   expired: boolean;
   showClock: boolean;
   showResend: boolean;
@@ -74,6 +77,11 @@ export function SignInCodeStep({
         inputRef={codeRef}
         onChange={onCodeChange}
       />
+      {failureMessage ? (
+        <p className="signin-code-error" role="alert">
+          {failureMessage}
+        </p>
+      ) : null}
 
       {showClock ? (
         <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
@@ -81,9 +89,13 @@ export function SignInCodeStep({
         </p>
       ) : null}
 
-      <button className="signin-submit" disabled={!submitReady || working}>
-        {verifySubmitLabel(busy)}
-      </button>
+      {/* The code sends itself once six digits are in, so a grey "Verify" waiting beside the
+          boxes looked broken. It shows when there is a full code it hasn't tried. */}
+      {submitReady || busy !== "idle" ? (
+        <button className="signin-submit" disabled={!submitReady || working}>
+          {verifySubmitLabel(busy)}
+        </button>
+      ) : null}
 
       {showResend || channel === "email-2fa" ? (
         <div className="signin-footer-modes">

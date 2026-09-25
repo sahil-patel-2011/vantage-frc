@@ -413,3 +413,11 @@
   margin: 4px 0 12px;
   color: var(--muted);
 }
+
+/* A wrong or expired code says so right under the boxes. */
+.signin-code-error{margin:8px 0 0;color:var(--danger);font-size:14px;font-weight:600;text-align:center}
+
+/* Phone: every link here is a thumb-sized target, not an 18px line of text. */
+@media (max-width: 720px) {
+  .signin-link, .signin-footer a, .signin-invite-help-cta { min-height: 44px; display: inline-flex; align-items: center; }
+}

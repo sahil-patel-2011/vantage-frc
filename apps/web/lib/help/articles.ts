@@ -1494,7 +1494,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "plans-and-pricing",
     title: "What Vantage costs: free, with your own AI key",
     summary:
-      "Vantage is free for every team with every feature included. AI runs on your team's own key, a free key, or a model on a shop computer.",
+      "Vantage is free for every team with every feature included. AI runs on your team's own key; a free Google Gemini key works.",
     category: "billing-plans",
     keywords: ["pricing", "plans", "free", "cost", "upgrade", "trial", "own key", "byok", "api key"],
     relatedHref: "/pricing",

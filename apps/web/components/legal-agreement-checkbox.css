@@ -73,3 +73,9 @@
     margin-top: 2px;
   }
 }
+
+/* Phone: the whole consent row is the tap area, at least 44px tall. */
+@media (max-width: 720px) {
+  .legal-consent-row { min-height: 44px; align-items: center; }
+  .legal-consent-row input[type="checkbox"] { width: 24px; height: 24px; }
+}

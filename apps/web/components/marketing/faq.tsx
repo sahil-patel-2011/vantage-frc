@@ -18,7 +18,7 @@ const faqs = [
   },
   {
     q: "Where is everything?",
-    a: "Four places: Team (calendar, chat, people, work, playbook), Build (kickoff, CAD, code, robot), Competition (event day, scouting, strategy, pit) and Business (money, sponsors, grants, outreach). Search finds any tool by name.",
+    a: "On a phone, four tabs: Home, Matches, Scout and Stats. On a laptop, four workspaces: Team (calendar, chat, people, work), Build (kickoff, CAD, code, robot), Competition (event day, scouting, strategy, robot check) and Business (money, sponsors, grants, outreach). Search finds any tool by name.",
   },
   {
     q: "Do we have to use AI?",
@@ -38,7 +38,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "Nothing. Every feature is free for every team, with no plans and no card. AI runs on your team's own key (or a free one, or a model on a shop computer), so the provider bills you directly and you set the limit. Or use no AI at all.",
+    a: "Nothing. Every feature is free for every team, with no plans and no card. AI runs on your team's own key (a free Google Gemini key works), so the provider bills you directly and you set the limit. Or use no AI at all.",
   },
   {
     q: "Is team data private?",

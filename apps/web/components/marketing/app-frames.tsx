@@ -12,7 +12,8 @@ function AppChrome({ title, crumbs }: { title: string; crumbs: string }) {
         <i />
         <i />
       </span>
-      <strong>Vantage · {title}</strong>
+      {/* The screen's own name only: "Vantage · Res…" beside a breadcrumb pill clipped at desktop width. */}
+      <strong>{title}</strong>
       <b>{crumbs}</b>
     </div>
   );
@@ -138,7 +139,7 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
     case "lookup":
       return (
         <div className="mk-mock mk-app-frame" aria-hidden="true">
-          <AppChrome title="Research" crumbs="Competition / Team lookup" />
+          <AppChrome title="Team lookup" crumbs="Competition" />
           <div className="mk-mock-body">
             <div className="mk-mock-main">
               <article className="mk-mock-card">
@@ -186,7 +187,7 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
     case "predict":
       return (
         <div className="mk-mock mk-app-frame" aria-hidden="true">
-          <AppChrome title="Match Simulator" crumbs="Competition / Strategy" />
+          <AppChrome title="Match prediction" crumbs="Competition" />
           <div className="mk-mock-body">
             <div className="mk-mock-main">
               <article className="mk-mock-card">
@@ -224,7 +225,7 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
     case "picklist":
       return (
         <div className="mk-mock mk-app-frame" aria-hidden="true">
-          <AppChrome title="Pick list" crumbs="Competition / Pick list" />
+          <AppChrome title="Pick list" crumbs="Competition" />
           <div className="mk-mock-body">
             <div className="mk-mock-main">
               <article className="mk-mock-card">

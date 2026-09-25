@@ -751,3 +751,13 @@ html:has(.marketing-lux){scroll-padding-top:76px}
   .marketing-lux .lux-phone-summary p{margin:0;font-size:17px;line-height:1.5;color:var(--m-ink)}
   .marketing-lux .lux-phone-summary a{display:inline-block;margin-top:8px;font-weight:600;color:var(--m-blue)}
 }
+
+/* Waitlist: a field says what is wrong with it, under it, in red with a red edge. */
+.waitlist-form .field-error{display:block;margin-top:6px;color:var(--danger);font-size:13px;font-weight:600}
+.waitlist-form input[aria-invalid="true"]{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
+.waitlist-confirmation .waitlist-aside{font-size:14px;color:var(--muted)}
+
+/* Phone: inline links in the hero note and footer get room for a thumb. */
+@media (max-width: 720px) {
+  .lux-hero-note a, footer a { display: inline-block; padding: 12px 2px; }
+}
