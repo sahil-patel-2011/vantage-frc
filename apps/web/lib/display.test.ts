@@ -70,7 +70,7 @@ describe("display helpers", () => {
     expect(queueCue(five)).toBe("QUEUE SOON");
 
     const past = countdownState("2026-03-15T11:59:00.000Z", now);
-    expect(past.label).toBe("QUEUE NOW");
+    expect(past.label).toBe("Now");
     expect(past.queueNow).toBe(true);
     expect(queueCue(past)).toBe("QUEUE NOW");
   });

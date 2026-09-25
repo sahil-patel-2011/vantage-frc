@@ -7,6 +7,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { normalizePlanTendencies } from "../briefing/plan-sections";
+import { plainStrategyText } from "../briefing/plain-text";
 
 export type DisplayTeamIntel = { teamKey: string; tags: string[] };
 
@@ -16,7 +17,22 @@ export type DisplayMatchIntel = {
   ourWinPct: number | null;
   ourColor: "red" | "blue" | null;
   teams: DisplayTeamIntel[];
+  /** The saved game plan's top priorities, short enough to read across a pit ("Defend 118"). */
+  plan: string[];
 };
+
+/**
+ * "Defend 118: 118 is 43% of the opposing alliance (+10% win chance)" → "Defend 118". The TV has
+ * room for the instruction, not the reasoning; the briefing keeps the rest.
+ */
+export function planHeadline(text: string): string | null {
+  const plain = plainStrategyText(text)
+    .replace(/\s*\([+-]?[\d.]+% win chance\)/gi, "")
+    .trim();
+  if (!plain) return null;
+  const head = plain.split(/:\s/)[0]!.replace(/[.\s]+$/, "").trim();
+  return head.length > 60 ? `${head.slice(0, 57).trimEnd()}…` : head;
+}
 
 /** Plain words a pit crew can read from across the pit. Labels without a phrase are dropped. */
 const TAG_WORDS: Record<string, string> = {
@@ -55,7 +71,7 @@ export function intelTags(labels: readonly string[]): string[] {
 type RawIntel = {
   matchKey?: string;
   prediction?: { pRed?: number | null; pBlue?: number | null } | null;
-  plan?: { alliance?: string | null; tendencies?: unknown } | null;
+  plan?: { alliance?: string | null; tendencies?: unknown; priorities?: unknown } | null;
 } | null;
 
 /** The function's / query's JSON → what the TV draws. */
@@ -70,7 +86,12 @@ export function toDisplayMatchIntel(raw: RawIntel, ownTeamKey: string | null, sc
   const teams = normalizePlanTendencies({ tendencies: raw.plan?.tendencies ?? [] })
     .map((row) => ({ teamKey: row.teamKey, tags: intelTags(row.labels) }))
     .filter((row) => row.tags.length > 0);
-  return { matchKey: raw.matchKey, ourWinPct, ourColor, teams };
+  const plan = (Array.isArray(raw.plan?.priorities) ? raw.plan!.priorities : [])
+    .filter((item): item is string => typeof item === "string")
+    .map(planHeadline)
+    .filter((item): item is string => Boolean(item))
+    .slice(0, 2);
+  return { matchKey: raw.matchKey, ourWinPct, ourColor, teams, plan };
 }
 
 /**
@@ -83,6 +104,7 @@ export function publicMatchIntel(raw: unknown): RawIntel {
   if (!value?.matchKey) return null;
   const p = value.prediction;
   const tendencies = Array.isArray(value.plan?.tendencies) ? (value.plan!.tendencies as unknown[]) : [];
+  const priorities = Array.isArray(value.plan?.priorities) ? (value.plan!.priorities as unknown[]) : [];
   return {
     matchKey: value.matchKey,
     prediction:
@@ -98,6 +120,12 @@ export function publicMatchIntel(raw: unknown): RawIntel {
               labels: Array.isArray(row.labels) ? row.labels.filter((label): label is string => typeof label === "string").slice(0, 6) : [],
               evidence: [],
             })),
+          // Only the short instruction leaves the server, never the reasoning behind it.
+          priorities: priorities
+            .filter((item): item is string => typeof item === "string")
+            .map(planHeadline)
+            .filter((item): item is string => Boolean(item))
+            .slice(0, 2),
         }
       : null,
   };
@@ -115,7 +143,8 @@ export async function loadDisplayMatchIntel(client: PoolClient, orgId: string, m
                    WHERE p.org_id = $1::uuid AND p.match_key = $2::text
                    ORDER BY p.scored_at DESC LIMIT 1),
                 'plan', (
-                  SELECT jsonb_build_object('alliance', s.alliance, 'tendencies', COALESCE(s.plan -> 'tendencies', '[]'::jsonb))
+                  SELECT jsonb_build_object('alliance', s.alliance, 'tendencies', COALESCE(s.plan -> 'tendencies', '[]'::jsonb),
+                                            'priorities', COALESCE(s.plan -> 'playbook' -> 'priorities', '[]'::jsonb))
                     FROM match_strategies s
                    WHERE s.org_id = $1::uuid AND s.match_key = $2::text
                    ORDER BY s.updated_at DESC LIMIT 1)

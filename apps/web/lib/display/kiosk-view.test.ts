@@ -36,7 +36,7 @@ describe("pit TV view", () => {
   });
 
   it("labels the win chance with the match and our colour", () => {
-    expect(kioskWinLine({ nextMatch: match, prediction }, 6925)).toEqual({ value: "28% to win", detail: "Qual 37 · from our saved prediction" });
+    expect(kioskWinLine({ nextMatch: match, prediction }, 6925)).toEqual({ value: "28% to win", detail: "Qual 37 · Vantage prediction" });
   });
 
   it("never shows odds that belong to another match", () => {
@@ -46,7 +46,7 @@ describe("pit TV view", () => {
   });
 
   it("lists only opponents that were scouted", () => {
-    const intel = { matchKey: "2026gacmp_qm37", ourWinPct: 28, ourColor: "red" as const, teams: [{ teamKey: "frc254", tags: ["Physical", "Strong endgame"] }] };
+    const intel = { matchKey: "2026gacmp_qm37", ourWinPct: 28, ourColor: "red" as const, teams: [{ teamKey: "frc254", tags: ["Physical", "Strong endgame"] }], plan: [] };
     expect(kioskOpponentIntel(intel, ["1678", "1323", "254"])).toEqual([{ team: "254", words: "Physical · Strong endgame" }]);
     expect(kioskOpponentIntel(null, ["254"])).toEqual([]);
   });

@@ -659,3 +659,7 @@
   font-weight: 600;
   letter-spacing: 0.01em;
 }
+
+/* The agreed game plan under the bumper band. */
+.stage-next .stage-plan, .stage-plan { margin: 0.2em 0 0; font-weight: 800; font-size: calc(1.9rem * var(--stage-scale, 1)); line-height: 1.2; color: #fde68a; }
+.stage-plan span { font-size: 0.6em; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-right: 0.4em; }

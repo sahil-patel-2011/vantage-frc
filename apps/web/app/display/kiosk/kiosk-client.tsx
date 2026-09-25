@@ -4,7 +4,7 @@ import "../../product-styles";
 import { useCallback, useEffect, useState } from "react";
 import {
   PRESET_WIDGETS,
-  countdownState,
+  fieldAwareClock,
   hasEventCommandSignal,
   hasReadinessSignal,
   hasScoutingCoverageSignal,
@@ -139,7 +139,7 @@ export default function KioskClient({
   // Only odds for the match that is actually next; the snapshot can fall back to an old one.
   const prediction =
     data.prediction && data.nextMatch && data.prediction.matchKey === data.nextMatch.matchKey ? data.prediction : null;
-  const clock = countdownState(match?.scheduledTime, now);
+  const clock = fieldAwareClock(match, data.field, now);
   const eventName = data.activeEvent?.name ?? null;
   const readiness = data.readiness;
   // A team-built board and the "Next match" preset share one layout: panel 1 large on the
@@ -157,6 +157,9 @@ export default function KioskClient({
     const type = String(widget.type);
     if (!data.nextMatch && (type === "next_match" || type === "prediction" || type === "team_intel")) return false;
     if (type === "strategy" && !data.strategyHeadline?.trim()) return false;
+    // "Alerts: Nothing logged" took a third of the side column to say nothing; it comes back the
+    // moment someone logs a robot problem. Kept when it is the only other panel on the board.
+    if (type === "alerts" && !hasReadinessSignal(data.readiness) && split.rest.length > 1) return false;
     return true;
   });
 

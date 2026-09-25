@@ -89,8 +89,12 @@ export type DisplaySnapshot = {
   readiness: DisplayReadiness | null;
   scouting: DisplayScouting;
   strategyHeadline: string | null;
+  field?: DisplayField | null;
   updatedAt: string;
 };
+
+/** The first qualification match still to be played and its printed time. */
+export type DisplayField = { matchNumber: number; scheduledTime: string | null };
 
 export const PRESET_WIDGETS: Record<string, DisplayWidgetType[]> = {
   next_match: ["next_match", "alerts"],
@@ -171,7 +175,9 @@ export function countdownState(scheduledTime: string | null | undefined, nowMs: 
   const target = new Date(scheduledTime).getTime();
   if (Number.isNaN(target)) return { label: "-", remainingMs: null, leavePit: false, queueSoon: false, queueNow: false };
   const remainingMs = target - nowMs;
-  if (remainingMs <= 0) return { label: "QUEUE NOW", remainingMs, leavePit: true, queueSoon: true, queueNow: true };
+  // "Now", not "QUEUE NOW": the cue beside the clock already says QUEUE NOW, and the two together
+  // squeezed the match name on the Coach TV to "Qual ...".
+  if (remainingMs <= 0) return { label: "Now", remainingMs, leavePit: true, queueSoon: true, queueNow: true };
   const minutes = Math.floor(remainingMs / 60_000);
   const seconds = Math.floor((remainingMs % 60_000) / 1000);
   // With units: from across the pit "17:15" read as a time of day (5:15 PM), not 17 minutes.
@@ -195,6 +201,60 @@ export function queueCue(clock: CountdownState): string {
   if (clock.queueSoon) return "QUEUE SOON";
   if (clock.leavePit) return "LEAVE PIT NOW";
   return "STAY READY";
+}
+
+export type FieldClock = CountdownState & {
+  /** Qualification matches the field still has to play before ours; null when not known. */
+  before: number | null;
+  /** Whole minutes the field is behind its printed schedule, when that is five or more. */
+  lateMinutes: number | null;
+  /** Our match's time with the field's delay added, for the "about 3:51 PM" line. */
+  expectedTime: string | null;
+  /** "Field on Qual 31 · 2 matches before ours", or null when the field is not known. */
+  fieldLine: string | null;
+};
+
+/**
+ * The countdown from where the field actually is, not from the printed schedule alone.
+ *
+ * With the event 30 minutes behind, the TV said "IN 9 MIN · LEAVE PIT NOW" while the field was two
+ * matches away from ours. The field's delay is how far past its printed time the first unplayed
+ * qual is; our match is expected that much after its own printed time. Two or more matches
+ * away is never "leave the pit"; our match next on the field is always "queue now".
+ */
+export function fieldAwareClock(
+  match: { compLevel: string; matchNumber: number; scheduledTime: string | null } | null | undefined,
+  field: DisplayField | null | undefined,
+  nowMs: number,
+): FieldClock {
+  const scheduledMs = match?.scheduledTime ? new Date(match.scheduledTime).getTime() : Number.NaN;
+  const fieldMs = field?.scheduledTime ? new Date(field.scheduledTime).getTime() : Number.NaN;
+  const before =
+    match && field && match.compLevel === "qm" && match.matchNumber >= field.matchNumber
+      ? match.matchNumber - field.matchNumber
+      : null;
+  const delayMs = before != null && Number.isFinite(fieldMs) ? Math.max(0, nowMs - fieldMs) : 0;
+  const expectedMs = Number.isFinite(scheduledMs) ? scheduledMs + delayMs : Number.NaN;
+  const expectedTime = Number.isFinite(expectedMs) ? new Date(expectedMs).toISOString() : null;
+  const lateMinutes = delayMs >= 5 * 60_000 ? Math.round(delayMs / 60_000) : null;
+  const base = countdownState(expectedTime ?? match?.scheduledTime, nowMs);
+  const fieldLine =
+    before == null || !field
+      ? null
+      : before === 0
+        ? `Ours is next on the field`
+        : `Field on Qual ${field.matchNumber} · ${before} ${before === 1 ? "match" : "matches"} before ours`;
+  if (before === 0) {
+    return { ...base, label: base.remainingMs != null && base.remainingMs > 0 ? base.label : "Now", leavePit: true, queueSoon: true, queueNow: true, before, lateMinutes, expectedTime, fieldLine };
+  }
+  if (before != null && before >= 2) {
+    // Minutes are a guess this far out; the cue never tells the pit to move.
+    return { ...base, leavePit: false, queueSoon: false, queueNow: false, before, lateMinutes, expectedTime, fieldLine };
+  }
+  if (before === 1) {
+    return { ...base, leavePit: true, queueNow: false, before, lateMinutes, expectedTime, fieldLine };
+  }
+  return { ...base, before, lateMinutes, expectedTime, fieldLine };
 }
 
 /** Our bumper color from the TBA alliance lists — never guessed. */
@@ -424,6 +484,13 @@ SELECT jsonb_build_object(
     FROM strategy_playbooks sp WHERE sp.org_id = o.id
     ORDER BY sp.updated_at DESC NULLS LAST, sp.created_at DESC LIMIT 1
   ),
+  'field', (
+    SELECT jsonb_build_object('matchNumber', fm.match_number, 'scheduledTime', COALESCE(fm.predicted_time, fm.event_time))
+    FROM matches_ref fm
+    WHERE fm.event_key = c.active_event_key AND fm.comp_level = 'qm' AND ${matchStillAheadSql("fm")}
+    ORDER BY fm.match_number
+    LIMIT 1
+  ),
   'updatedAt', now()
 ) AS snapshot
 FROM display_boards b
@@ -513,6 +580,7 @@ export type DisplayStageSnapshot = {
   playoffMatches: DisplayPlayoffRow[];
   sponsors: DisplaySponsorRow[];
   nexus: DisplayStageNexus | null;
+  field?: DisplayField | null;
   updatedAt: string;
 };
 
@@ -749,6 +817,13 @@ SELECT jsonb_build_object(
   'nexus', (
     SELECT jsonb_build_object('live', ns.live, 'pits', ns.pits, 'map', ns.map, 'syncedAt', ns.synced_at)
     FROM nexus_event_snapshots ns WHERE ns.event_key = c.active_event_key
+  ),
+  'field', (
+    SELECT jsonb_build_object('matchNumber', fm.match_number, 'scheduledTime', COALESCE(fm.predicted_time, fm.event_time))
+    FROM matches_ref fm
+    WHERE fm.event_key = c.active_event_key AND fm.comp_level = 'qm' AND ${matchStillAheadSql("fm")}
+    ORDER BY fm.match_number
+    LIMIT 1
   ),
   'updatedAt', now()
 ) AS stage

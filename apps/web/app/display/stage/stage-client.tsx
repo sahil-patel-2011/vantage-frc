@@ -19,8 +19,8 @@ import {
   DISPLAY_PHASE_LABELS,
   DISPLAY_SCREEN_HOLD_MS,
   bracketRounds,
-  countdownState,
   displayPhase,
+  fieldAwareClock,
   fontScaleLabel,
   formatAlliance,
   matchLabel,
@@ -407,18 +407,21 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
   const partners = ourColor === "red" ? red : ourColor === "blue" ? blue : [];
   const opponents = ourColor === "red" ? blue : ourColor === "blue" ? red : [];
   const tagsFor = (teamKey: string) => intel?.teams.find((row) => row.teamKey === teamKey)?.tags ?? [];
-  const countdown = countdownLabel(match.scheduledTime, now);
-  // Where the field is, from the synced count of played quals: the countdown alone could not say
-  // whether the event was on time. Quals only; playoff order is not a simple count.
+  // Where the field is: the first unplayed qual and its printed time (data.field), or, from a
+  // feed without it, the count of played quals. Quals only; playoff order is not a simple count.
   const progress = data.progress;
-  const onField = progress && progress.qualsTotal > 0 && progress.qualsPlayed < progress.qualsTotal ? progress.qualsPlayed + 1 : null;
-  const before = onField != null && match.compLevel === "qm" ? match.matchNumber - onField : null;
-  const fieldLine =
-    onField == null || before == null || before < 0
-      ? null
-      : before === 0
-        ? `Up next on the field · ${progress!.qualsPlayed} of ${progress!.qualsTotal} quals played`
-        : `On the field next: Qual ${onField} · ${before} ${before === 1 ? "match" : "matches"} before ours`;
+  const field =
+    data.field ??
+    (progress && progress.qualsTotal > 0 && progress.qualsPlayed < progress.qualsTotal
+      ? { matchNumber: progress.qualsPlayed + 1, scheduledTime: null }
+      : null);
+  // The countdown runs to our printed time plus however late the field is.
+  const clock = fieldAwareClock(match, field, now);
+  const before = clock.before;
+  const countdown = countdownLabel(clock.expectedTime ?? match.scheduledTime, now);
+  const fieldLine = clock.fieldLine
+    ? `${clock.fieldLine}${clock.lateMinutes ? ` · running ${clock.lateMinutes} min late` : ""}`
+    : null;
 
   const teamList = (keys: string[], color: "red" | "blue") => (
     <ul className={`stage-lineup is-${color}`}>
@@ -448,25 +451,25 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
           {before != null && before >= 2 ? (
             <>
               {`${before} matches before ours`}
+              {clock.expectedTime && clockLabel(clock.expectedTime) ? ` · about ${clockLabel(clock.expectedTime)}` : ""}
               <b className="stage-queue-cue"> · Stay ready</b>
             </>
           ) : (
             <>
-          {countdown ? `${countdown} · ` : ""}
-          {clockLabel(match.scheduledTime) ?? "No scheduled time posted"}
-          {/* What the pit does now, the same cue the Coach TV gives ("LEAVE PIT NOW", "QUEUE NOW"). */}
-          {match.scheduledTime
-            ? (() => {
-                const clock = countdownState(match.scheduledTime, now);
-                // Time to move: the cue becomes a filled amber label, not the same yellow words.
-                return (
-                  <b className={`stage-queue-cue${clock.leavePit ? " is-urgent" : ""}`}>
-                    {clock.leavePit ? " " : " · "}
-                    {queueCue(clock)}
-                  </b>
-                );
-              })()
-            : null}
+          {/* Ours is on the field next: "NOW · 4:17 PM · QUEUE NOW" said now three times. */}
+          {clock.queueNow
+            ? clockLabel(match.scheduledTime)
+              ? `Printed for ${clockLabel(match.scheduledTime)}`
+              : ""
+            : `${countdown ? `${countdown} · ` : ""}${clockLabel(clock.expectedTime ?? match.scheduledTime) ?? "No scheduled time posted"}`}
+          {/* What the pit does now, the same cue the Coach TV gives ("LEAVE PIT NOW", "QUEUE NOW").
+              Time to move: the cue becomes a filled amber label, not the same yellow words. */}
+          {match.scheduledTime || before === 0 ? (
+            <b className={`stage-queue-cue${clock.leavePit ? " is-urgent" : ""}`}>
+              {clock.leavePit ? " " : " · "}
+              {queueCue(clock)}
+            </b>
+          ) : null}
             </>
           )}
         </span>
@@ -475,6 +478,14 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
       {ourColor ? (
         <p className={`stage-bumpers is-${ourColor}`}>
           WE ARE {ourColor.toUpperCase()} <small>{ourColor === "red" ? "Red" : "Blue"} bumpers on</small>
+        </p>
+      ) : null}
+
+      {/* The plan the drive team agreed, in its instruction form; one-word tags alone did not say
+          what to do. */}
+      {intel?.plan.length ? (
+        <p className="stage-plan">
+          <span>Game plan</span> {intel.plan.join(" · ")}
         </p>
       ) : null}
 
@@ -498,7 +509,7 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
 
       {intel?.ourWinPct != null ? (
         <p className="stage-win">
-          {intel.ourWinPct}% chance to win <small>from the team&rsquo;s saved prediction</small>
+          {intel.ourWinPct}% chance to win <small>Vantage prediction</small>
         </p>
       ) : null}
     </div>

@@ -91,6 +91,20 @@ function teamNum(teamKey: string) {
   return teamKey.replace(/^frc/i, "");
 }
 
+const INFLUENCE_WORDS: Record<string, string> = {
+  reliability: "reliability",
+  foul_rate: "fouls",
+  auto_capability: "autonomous",
+  teleop_capability: "teleop scoring",
+  endgame_capability: "endgame",
+  defense: "defense",
+  pit_note: "pit note",
+  quality_downweight: "counts for less (far from the other scouts)",
+  excluded_low_confidence: "left out (scout marked it unsure)",
+  video_rescore: "rechecked on video",
+  tba_conflict_excluded: "left out (official results disagree)",
+};
+
 export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
   const edge = view.privateEdge;
   if (!edge) {
@@ -249,7 +263,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
       <Panel className="strategy-primary">
         <header>
           <div>
-            <span className="app-badge good">Live</span>
+            {/* A green "Live" chip on a match not yet played read as "on the field now". */}
             <h2>{title}</h2>
           </div>
         </header>
@@ -308,7 +322,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                 <b>
                   {lever.gain > 0 ? "+" : ""}
                   {lever.gain}
-                  <i>% win</i>
+                  <i>% win chance</i>
                 </b>
                 <span>
                   {lever.title}
@@ -316,7 +330,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                   {lever.isCeiling ? (
                     <>
                       {" "}
-                      <em className="lever-ceiling" title="The most this can add">ceiling</em>
+                      <em className="lever-ceiling" title="The most this can add">best case</em>
                     </>
                   ) : null}
                 </span>
@@ -416,9 +430,9 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         {/* Pick-list ranks are on the Pick lists tab; this view is one match. */}
         {view.scoutProvenance.length > 0 || view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
           <details className="strategy-provenance-details">
-            <summary>Scout provenance & pit notes</summary>
+            <summary>Which scouting was used</summary>
             {view.scoutProvenance.length === 0 ? (
-              <p className="app-muted">No org scout entries influenced this prediction yet.</p>
+              <p className="app-muted">None of our scouting has gone into this prediction yet.</p>
             ) : (
               <ul className="strategy-scout-provenance">
                 {view.scoutProvenance.slice(0, 12).map((ref) => (
@@ -428,9 +442,9 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
                       <span className="app-badge setup">VIDEO</span>
                     ) : null}
                     <span>
-                      {ref.entryType} · {ref.influence}
-                      {ref.influence === "tba_conflict_excluded" ? " (results contradicted — excluded)" : ""}
-                      {ref.videoAtSeconds != null ? ` @${ref.videoAtSeconds}s` : ""}
+                      {/* "match · quality_downweight" was the engine's own enum. */}
+                      {ref.entryType === "pit" ? "Pit visit" : "Match scouting"} · {INFLUENCE_WORDS[ref.influence] ?? "Used in the prediction"}
+                      {ref.videoAtSeconds != null ? ` · at ${ref.videoAtSeconds}s in the video` : ""}
                     </span>
                   </li>
                 ))}

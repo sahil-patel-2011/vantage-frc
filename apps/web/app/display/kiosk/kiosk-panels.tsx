@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  countdownState,
+  fieldAwareClock,
   hasReadinessSignal,
   kioskNextMatchEmptyCopy,
   matchLabel,
@@ -9,6 +9,7 @@ import {
   rankLabel,
   recordLabel,
   widgetValue,
+  type DisplayField,
   type DisplayNextMatch,
   type DisplaySnapshot,
 } from "../../../lib/display";
@@ -29,12 +30,15 @@ function timeLabel(value: string | null): string | null {
  */
 export function NextMatchHero({
   match,
+  field,
   teamNumber,
   now,
   intel,
   showTags = true,
 }: {
   match: DisplayNextMatch | null;
+  /** Where the field is; the countdown runs from there, not from the printed time alone. */
+  field?: DisplayField | null;
   teamNumber: number;
   now: number;
   intel: DisplayMatchIntel | null;
@@ -50,7 +54,7 @@ export function NextMatchHero({
       </article>
     );
   }
-  const clock = countdownState(match.scheduledTime, now);
+  const clock = fieldAwareClock(match, field, now);
   const sides = kioskSides(match, teamNumber);
   const cueClass = clock.queueNow ? "is-now" : clock.queueSoon ? "is-soon" : clock.leavePit ? "is-leave" : "";
   const own = String(teamNumber);
@@ -83,10 +87,17 @@ export function NextMatchHero({
           <span className="kp-label">Next match</span>
           <strong className="kp-hero-title">{matchLabel(match.compLevel, match.matchNumber)}</strong>
           <span className="kp-sub">{timeLabel(match.scheduledTime) ?? "No time posted yet"}</span>
+          {/* The Coach TV had no idea where the field was: "13 min · LEAVE PIT NOW" two matches out. */}
+          {clock.fieldLine ? (
+            <span className="kp-sub kp-field">
+              {clock.fieldLine}
+              {clock.lateMinutes ? ` · running ${clock.lateMinutes} min late` : ""}
+            </span>
+          ) : null}
         </div>
         <div className="kp-clock">
           <strong className={clock.queueSoon ? "is-soon" : undefined}>{clock.label}</strong>
-          {clock.remainingMs != null ? <em className={cueClass}>{queueCue(clock)}</em> : null}
+          {clock.remainingMs != null || clock.queueNow ? <em className={cueClass}>{queueCue(clock)}</em> : null}
         </div>
       </div>
       {sides.ourColor ? (
@@ -96,6 +107,11 @@ export function NextMatchHero({
       ) : (
         <p className="kp-bumper">Bumper colour not posted</p>
       )}
+      {intel?.plan.length ? (
+        <p className="kp-plan">
+          <span>Game plan</span> {intel.plan.join(" · ")}
+        </p>
+      ) : null}
       {sides.ourColor ? (
         <div className="kp-sides">
           <section>
@@ -141,7 +157,7 @@ export function KioskPanel({
 }) {
   const teamNumber = data.organization.teamNumber;
   if (type === "next_match" && hero) {
-    return <NextMatchHero match={data.nextMatch} teamNumber={teamNumber} now={now} intel={intel} showTags={showTags} />;
+    return <NextMatchHero match={data.nextMatch} field={data.field} teamNumber={teamNumber} now={now} intel={intel} showTags={showTags} />;
   }
   const label = isWidgetType(type) ? WIDGET_LABEL[type] : type.replaceAll("_", " ");
   let value = widgetValue(type, data);
@@ -154,7 +170,7 @@ export function KioskPanel({
       const match = data.nextMatch;
       if (!match) value = "No match ahead";
       if (match) {
-        const clock = countdownState(match.scheduledTime, now);
+        const clock = fieldAwareClock(match, data.field, now);
         const sides = kioskSides(match, teamNumber);
         value = `${matchLabel(match.compLevel, match.matchNumber)} · ${clock.label}`;
         detail = sides.ourColor ? `We are ${sides.ourColor.toUpperCase()} · ${queueCue(clock)}` : queueCue(clock);

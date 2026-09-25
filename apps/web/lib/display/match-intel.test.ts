@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { intelTags, toDisplayMatchIntel } from "./match-intel";
+import { intelTags, planHeadline, publicMatchIntel, toDisplayMatchIntel } from "./match-intel";
 
 const schedule = { red: ["frc6925", "frc254", "frc1678"], blue: ["frc118", "frc971", "frc2056"] };
 
@@ -65,8 +65,26 @@ describe("what a TV link can read", () => {
     expect(out).toEqual({
       matchKey: "2026abc_qm12",
       prediction: { pRed: 0.6, pBlue: 0.4 },
-      plan: { alliance: "red", tendencies: [{ teamKey: "frc118", labels: ["defense-capable"], evidence: [] }] },
+      plan: { alliance: "red", tendencies: [{ teamKey: "frc118", labels: ["defense-capable"], evidence: [] }], priorities: [] },
     });
     expect(JSON.stringify(out)).not.toMatch(/ba297aa2|scoredAt|updatedAt/);
+  });
+});
+
+describe("the TV's game plan line", () => {
+  it("keeps the instruction and drops the reasoning", () => {
+    expect(planHeadline("Defend 118: 118 is 43% of the opposing alliance (+10% win chance)")).toBe("Defend 118");
+    expect(planHeadline("Play a clean match: scouting has you at 2 penalty points per match (+1.3% win chance)")).toBe("Play a clean match");
+    expect(planHeadline("")).toBeNull();
+  });
+
+  it("sends only the short lines to a TV", () => {
+    const raw = publicMatchIntel({
+      matchKey: "2026gacmp_qm31",
+      prediction: null,
+      plan: { alliance: "blue", tendencies: [], priorities: ["Defend 118: 118 is 43% of the opposing alliance (+10% win chance)", 7] },
+    });
+    expect(raw?.plan?.priorities).toEqual(["Defend 118"]);
+    expect(toDisplayMatchIntel(raw, "frc6925", null)?.plan).toEqual(["Defend 118"]);
   });
 });

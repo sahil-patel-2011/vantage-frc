@@ -101,7 +101,10 @@ export function kioskWinLine(
   // The next-match panel beside it already says the match and our colour; this says where the
   // number comes from.
   if (!win) return { value: "No prediction yet", detail: ourColor ? `For ${label}` : label };
-  return { value: `${win.label} to win`, detail: `${label} · from our saved prediction` };
+  const at = prediction?.scoredAt ? new Date(prediction.scoredAt) : null;
+  const updated =
+    at && !Number.isNaN(at.getTime()) ? ` · updated ${at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "";
+  return { value: `${win.label} to win`, detail: `${label} · Vantage prediction${updated}` };
 }
 
 /** Board layout: the first panel is the hero, the rest stack beside it. */

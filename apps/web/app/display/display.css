@@ -1234,3 +1234,10 @@ body.has-app-shell main.display-setup .preset-picker { grid-template-columns: re
 }
 .tv-link-ways { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
 .disp-progress-done { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Where the field is, under the printed time: the one line that says whether to move yet. */
+.kp-hero .kp-sub.kp-field { opacity: 0.95; color: #fcd34d; font-weight: 700; }
+
+/* The agreed game plan under the bumper band, read from across the pit. */
+.kp-plan { margin: 0; font-weight: 800; font-size: clamp(0.9rem, min(5cqh, 2.8cqw), 2.2rem); line-height: 1.2; color: #fde68a; }
+.kp-plan span { font-size: 0.6em; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; margin-right: 0.4em; color: #fff; }
