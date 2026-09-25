@@ -42,6 +42,7 @@ import { ScoutSaveConfirmation } from "./scout-save-confirmation";
 import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
 import "./scout-flow.css";
+import { PitProgress } from "./pit-progress";
 
 const CONFIDENCE_OPTIONS = [
   { value: "high", label: "Sure" },
@@ -614,7 +615,10 @@ return (
               )}
             </div>
           ) : (
-            <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
+            <>
+              <PitProgress orgId={orgId} teamKey={teamKey} onTeamKey={setTeamKey} />
+              <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
+            </>
           )}
 
           {type === "match" && context ? (

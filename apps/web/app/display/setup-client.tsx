@@ -62,6 +62,12 @@ function boardSummary(board: Board): string {
   return panels.length ? panels.join(" · ") : "No panels";
 }
 
+/** Most recently used first, then newest made: the links a pit is actually using lead. */
+function linksByUse<T extends { lastUsedAt?: string | null; createdAt?: string | null }>(tokens: T[]): T[] {
+  const at = (value?: string | null) => (value ? Date.parse(value) || 0 : 0);
+  return [...tokens].sort((a, b) => at(b.lastUsedAt) - at(a.lastUsedAt) || at(b.createdAt) - at(a.createdAt));
+}
+
 export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [boards, setBoards] = useState<Board[]>([]);
   const [tokens, setTokens] = useState<TokenRow[]>([]);
@@ -79,6 +85,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [minted, setMinted] = useState<MintedToken | null>(null);
+  const [showOlderLinks, setShowOlderLinks] = useState(false);
   const [pairChoice, setPairChoice] = useState<PairChoice>("");
   const [canSync, setCanSync] = useState(false);
 
@@ -612,7 +619,9 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
 
             {activeTokens.length ? (
               <div className="token-list">
-                {activeTokens.map((token) => {
+                {/* The three most recently used; the rest fold away. Every link ever made was a
+                    14-row list of "Turn off" buttons. */}
+                {(showOlderLinks ? linksByUse(activeTokens) : linksByUse(activeTokens).slice(0, 3)).map((token) => {
                   // An event-board link rides on a saved board but shows the event board, so it
                   // must not say it shows that board ("Event board · Shows 'Coach TV'").
                   const eventLink = token.label === EVENT_BOARD_NAME || (eventCarrier != null && token.boardId === eventCarrier.id);
@@ -631,7 +640,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                         </small>
                       </div>
                       {canSync ? (
-                        <button type="button" onClick={() => void revokeToken(token.id, title)}>
+                        <button type="button" className="text-button" onClick={() => void revokeToken(token.id, title)}>
                           Turn off
                         </button>
                       ) : (
@@ -640,6 +649,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                     </div>
                   );
                 })}
+                {activeTokens.length > 3 && !showOlderLinks ? (
+                  <button type="button" className="text-button" onClick={() => setShowOlderLinks(true)}>
+                    Older links ({activeTokens.length - 3})
+                  </button>
+                ) : null}
               </div>
             ) : (
               <p className="display-empty">

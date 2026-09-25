@@ -198,7 +198,15 @@ export default function MessagesClient({
   // 450px down with the tabs and the channel name off screen.
   const scrollListToBottom = useCallback((behavior: ScrollBehavior) => {
     const node = messagesRef.current;
-    if (node) node.scrollTo({ top: node.scrollHeight, behavior });
+    if (!node) return;
+    if (node.scrollHeight > node.clientHeight + 1) {
+      node.scrollTo({ top: node.scrollHeight, behavior });
+      return;
+    }
+    // On a phone the list is not its own scroll box and the page scrolls instead: the thread
+    // opened on its oldest message with the newest (and the one just sent) off-screen below.
+    const bottom = node.getBoundingClientRect().bottom;
+    if (bottom > window.innerHeight) window.scrollTo({ top: window.scrollY + bottom - window.innerHeight + 140, behavior });
   }, []);
 
   const scrollToBottom = useCallback(() => {

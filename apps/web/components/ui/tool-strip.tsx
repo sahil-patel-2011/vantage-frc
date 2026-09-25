@@ -211,7 +211,9 @@ export function ToolStrip({
             aria-controls={overflowId}
             onClick={() => setExpanded((current) => !current)}
           >
-            {expanded ? "Fewer tools" : `More tools (${hidden.length})`}
+            {/* No count: it changed with the tab and the screen width (8, 10, 21, 23), which read as
+                tools appearing and disappearing. */}
+            {expanded ? "Fewer tools" : "More tools"}
           </button>
         ) : null}
       </nav>
