@@ -436,3 +436,6 @@
 /* The code clock and resend timer were ~11px low-contrast grey on separate lines. */
 p.signin-expiry { font-size: 14px; color: var(--ink-2, var(--ink)); opacity: .85; margin: 4px 0 0; }
 .signin-footer-modes .signin-link { font-size: 14px; }
+
+/* A network rate limit: a calm status with a live countdown, not a red error on the boxes. */
+.signin-code-wait { margin: 8px 0 0; color: var(--muted); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }

@@ -15,6 +15,8 @@ export function SignInCodeStep({
   emailAvailable,
   invalid,
   failureMessage,
+  failureKind,
+  retryAfterSeconds,
   expired,
   showClock,
   showResend,
@@ -41,6 +43,8 @@ export function SignInCodeStep({
   invalid: boolean;
   /** Why the last code failed, shown right under the boxes. */
   failureMessage?: string | null;
+  failureKind?: string | null;
+  retryAfterSeconds?: number | null;
   expired: boolean;
   showClock: boolean;
   showResend: boolean;
@@ -77,10 +81,19 @@ export function SignInCodeStep({
         inputRef={codeRef}
         onChange={onCodeChange}
       />
-      {failureMessage ? (
+      {failureKind === "rate_limited" && retryAfterSeconds != null ? (
+        // Counts down live: "Wait 58 seconds" still said 58 a minute later.
+        <RateLimitNote key={failureMessage ?? ""} seconds={retryAfterSeconds} />
+      ) : failureMessage ? (
         <p className="signin-code-error" role="alert">
           {failureMessage}
         </p>
+      ) : null}
+      {/* A used-up or expired code: the one thing that works is a new code, so it is the button. */}
+      {(failureKind === "too_many_attempts" || failureKind === "expired") && showResend ? (
+        <button type="button" className="signin-submit" disabled={!resendReady || working || !emailAvailable} onClick={onResend}>
+          {resendReady ? "Send a new code" : resendLabel({ ready: resendReady, busy, seconds: resendSeconds })}
+        </button>
       ) : null}
 
       {/* Right under the boxes, not below the timer: an uninvited visitor otherwise waited out
@@ -101,7 +114,7 @@ export function SignInCodeStep({
           </a>
         </div>
       ) : null}
-      {showClock ? (
+      {showClock && failureKind !== "too_many_attempts" && failureKind !== "expired" ? (
         <p className={expired ? "signin-expiry expired" : "signin-expiry"}>
           {codeExpiryCopy(expired, codeSeconds)}
         </p>
@@ -207,5 +220,22 @@ export function SignInNotInvited({
         Use a different email
       </button>
     </div>
+  );
+}
+
+/** "Too many tries from this network. Try again in 0:47", counting down to "Try again now". */
+function RateLimitNote({ seconds }: { seconds: number }) {
+  const [left, setLeft] = useState(Math.max(0, Math.round(seconds)));
+  useEffect(() => {
+    if (left <= 0) return;
+    const timer = window.setTimeout(() => setLeft((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [left]);
+  return (
+    <p className="signin-code-wait" role="status" aria-live="polite">
+      {left > 0
+        ? `Too many tries from this network just now. Try again in 0:${String(left).padStart(2, "0")}.`
+        : "Try again now."}
+    </p>
   );
 }

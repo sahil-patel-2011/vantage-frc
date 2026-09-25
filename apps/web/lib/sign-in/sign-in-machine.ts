@@ -309,7 +309,7 @@ type FailureInput = {
 // message does not ask to "check the six digits" that are no longer there.
 const WRONG_CODE_MESSAGE = "That code doesn’t match. Type the six digits from your newest email again.";
 const EXPIRED_MESSAGE = "That code expired. Send a new one to continue.";
-const LOCKED_MESSAGE = "Too many attempts on that code. Send a new one to continue.";
+const LOCKED_MESSAGE = "That code is used up after too many tries. Send a new one.";
 const NETWORK_MESSAGE =
   "Couldn’t reach Vantage. Check your connection — your code is still here when you retry.";
 

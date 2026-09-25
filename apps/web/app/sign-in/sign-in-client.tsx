@@ -658,8 +658,11 @@ export default function SignInClient({
             code={flow.code}
             codeRef={codeRef}
             emailAvailable={emailAvailable}
-            invalid={Boolean(flow.failure)}
+            // A rate limit is not a wrong code: the boxes stay neutral, not red.
+            invalid={Boolean(flow.failure) && flow.failure?.kind !== "rate_limited"}
             failureMessage={flow.failure?.message ?? null}
+            failureKind={flow.failure?.kind ?? null}
+            retryAfterSeconds={flow.failure?.retryAfterSeconds ?? null}
             expired={expired}
             showClock={showCodeClock(flow.failure?.kind)}
             showResend={showCodeResend(flow.failure?.kind)}

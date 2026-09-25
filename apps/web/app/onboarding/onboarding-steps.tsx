@@ -440,8 +440,11 @@ export function PreferencesForm({
       <div className="onboarding-actions">
         <button type="button" className="signin-link" onClick={onBack}>Back</button>
         <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>
+          {/* Says what is happening while the team opens (it could take a while with no sign). */}
           {busy
-            ? "Submitting…"
+            ? owner || lookup.joined || lookup.invited
+              ? "Opening your team…"
+              : "Sending…"
             : owner
               ? "Finish and open the team"
               : lookup.joined
