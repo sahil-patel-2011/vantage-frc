@@ -69,7 +69,8 @@ function Headline({ summary }: { summary: BudgetSummary }) {
         label="Season budget"
         value={summary.totalBudgetUsd == null ? "Not set" : money(summary.totalBudgetUsd)}
       />
-      <StatTile label="Recorded spend" value={money(summary.recordedSpendUsd)} />
+      {/* Approved requests count from approval: "committed", the word Business and Orders use. */}
+      <StatTile label="Committed" value={money(summary.recordedSpendUsd)} />
       <StatTile
         label="Remaining"
         value={remaining}
@@ -460,7 +461,8 @@ export default function BudgetClient() {
       </Panel>
 
       <Panel>
-        <h2>What has actually been spent</h2>
+        <h2>Committed so far</h2>
+        <p className="app-muted">Approved part requests count from the moment they are approved; paid event fees too.</p>
         {view.spendBySource.length === 0 ? (
           <EmptyState
             compact

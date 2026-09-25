@@ -148,12 +148,18 @@ export function TeamAdminInvitesPanel({
                 <div className="team-invite-row-actions">
                   <button
                     type="button"
-                    aria-label={`Copy the invite link for ${inviteRow.email}`}
-                    title={link ? undefined : emailOff ? "Makes a fresh link" : "Makes a fresh link (and sends the email again)"}
+                    aria-label={link ? `Copy the invite link for ${inviteRow.email}` : `Make a new invite link for ${inviteRow.email}`}
+                    title={
+                      link
+                        ? undefined
+                        : `Makes a new link${emailOff ? "" : " and emails it"}. The link you sent before stops working.`
+                    }
                     disabled={acting}
                     onClick={() => (link ? onCopyLink(inviteRow.id, link) : onAct(inviteRow.id, "copy"))}
                   >
-                    {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
+                    {/* Links are kept only as long as this page is open (never stored in plain text), so
+                        after a reload the button makes a new one and says so. */}
+                    {copiedInviteId === inviteRow.id ? "Copied" : link ? "Copy link" : "New link"}
                   </button>
                   {emailOff ? null : (
                     <button

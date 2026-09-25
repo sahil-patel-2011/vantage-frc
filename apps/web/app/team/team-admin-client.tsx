@@ -81,10 +81,10 @@ function wantsInvite(): boolean {
 function TeamSettingsLinks({ orgId }: { orgId: string | null }) {
   const links = [
     { href: withOrgHref("/team/admin/profile", orgId), label: "Team profile" },
-    { href: withOrgHref("/team/security", orgId), label: "Sign-in rules" },
+    // Named the way each page titles itself. Notifications left: they are your own, under Account.
+    { href: withOrgHref("/team/security", orgId), label: "Team security" },
     { href: withOrgHref("/team/ai-keys", orgId), label: "AI keys" },
     { href: withOrgHref("/connectors", orgId), label: "Connectors" },
-    { href: "/notifications/preferences", label: "Notifications" },
     { href: withOrgHref("/messages/moderation", orgId), label: "Chat moderation" },
   ];
   return (
@@ -423,7 +423,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         }
         setInviteNotice({
           tone: result.tone,
-          message: `${action === "copy" || !data.emailSent || inviteEmailIsOff(data.delivery) ? "New link for" : "Invite emailed again to"} ${target?.email ?? "them"}. ${result.message}`,
+          message: `${action === "copy" || !data.emailSent || inviteEmailIsOff(data.delivery) ? "New link for" : "Invite emailed again to"} ${target?.email ?? "them"}. The earlier link no longer works. ${result.message}`,
           link,
         });
       }
@@ -443,7 +443,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     setMessage(
       response.ok
         ? decision === "approved"
-          ? "Approved. We emailed them a sign-in link."
+          ? inviteEmailIsOff(deliveryMode)
+            ? "Approved. Email is off here, so let them know they can sign in now."
+            : "Approved. We emailed them a sign-in link."
           : "Request declined."
         : data.error,
     );
@@ -462,7 +464,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       const data = await response.json();
       setMessage(
         response.ok
-          ? `Password reset email sent to ${member.email}. They choose the new password themselves.`
+          ? inviteEmailIsOff(deliveryMode)
+            ? `Email is off here, so no reset email reached ${member.email}. Once email is on they can use "Forgot password" on the sign-in page.`
+            : `Password reset email sent to ${member.email}. They choose the new password themselves.`
           : data.error ?? "Could not send the password reset email.",
       );
     } finally {

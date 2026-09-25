@@ -66,8 +66,13 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
   const planCents = view.budget.seasonBudgetCents ?? view.budget.totalBudgetCents;
   const receivedCents = view.budget.sponsorIncomeCents + view.budget.grantIncomeCents;
   const base = planCents > 0 ? planCents : receivedCents;
-  const utilization = base > 0 ? percent(view.budget.committedCents, base) : null;
-  const submitted = view.purchases.filter((purchase) => purchase.status === "submitted");
+  // Under 1% says so ("0.4%") instead of rounding a real $45 down to "0%".
+  const utilizationExact = base > 0 ? (view.budget.committedCents / base) * 100 : null;
+  const utilization =
+    utilizationExact == null ? null : utilizationExact > 0 && utilizationExact < 1 ? Math.round(utilizationExact * 10) / 10 : percent(view.budget.committedCents, base);
+  // Waiting on someone: requests to review, and approved lines nobody has bought yet (Orders
+  // showed "1 approved line waiting on you" while this said "Nothing waiting").
+  const submitted = view.purchases.filter((purchase) => purchase.status === "submitted" || purchase.status === "approved");
   const followUps = sponsorsAllowed
     ? view.sponsors.filter((sponsor) => sponsorHealth(sponsor) !== "healthy")
     : [];
@@ -191,8 +196,9 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           <header><div><span className="biz-overline">Money</span><h2>Spending so far</h2></div><strong>{utilization == null ? "—" : `${utilization}%`}</strong></header>
           <div className="biz-progress"><i style={{ width: `${utilization ?? 0}%` }} /></div>
           <div className="biz-split-metrics">
-            <div><span>Approved + ordered</span><strong>{moneyWhenRecorded(view.budget.committedCents)}</strong></div>
-            <div><span>Actually ordered</span><strong>{moneyWhenRecorded(view.budget.spentCents)}</strong></div>
+            {/* The same two words as Budget and Orders: committed = approved or bought, spent = bought. */}
+            <div><span>Committed</span><strong>{moneyWhenRecorded(view.budget.committedCents)}</strong></div>
+            <div><span>Spent</span><strong>{moneyWhenRecorded(view.budget.spentCents)}</strong></div>
             <div><span>Raised so far</span><strong>{moneyWhenRecorded(progress.actualCents)}</strong></div>
           </div>
           {/* The one filled button on Overview. The season budget itself is set on /budget. */}
@@ -209,7 +215,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
         <article className="app-card">
           <header className="biz-card-head"><div><span className="biz-overline">To do</span><h2>Needs attention</h2></div><span className="biz-count">{submitted.length + reminders.length + followUps.length + grantDeadlines.length}</span></header>
           <ul className="biz-action-list">
-            {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">Purchase</ToneBadge><div><strong>{purchase.itemName}</strong><span>{money(purchase.totalCents)} requested by {purchase.requestedByName}</span></div><a href={`${ordersHref}&orderId=${encodeURIComponent(purchase.id)}`}>Review</a></li>)}
+            {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">{purchase.status === "approved" ? "To buy" : "Purchase"}</ToneBadge><div><strong>{purchase.itemName}</strong><span>{purchase.status === "approved" ? `${money(purchase.totalCents)} approved, not bought yet` : `${money(purchase.totalCents)} requested by ${purchase.requestedByName}`}</span></div><a href={`${ordersHref}&orderId=${encodeURIComponent(purchase.id)}`}>{purchase.status === "approved" ? "Buy" : "Review"}</a></li>)}
             {reminders.map((reminder) => (
               <li key={`${reminder.kind}-${reminder.sponsorId}`}>
                 <ToneBadge tone={reminder.kind === "thank_you" ? "good" : reminder.kind === "renewal" ? "blue" : "danger"}>
