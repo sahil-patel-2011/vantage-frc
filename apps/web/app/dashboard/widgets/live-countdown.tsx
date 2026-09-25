@@ -19,7 +19,9 @@ export function countdownLabel(iso: string | null | undefined) {
     return `${d} ${d === 1 ? "day" : "days"}${rest ? ` ${rest} hr` : ""}`;
   }
   if (h > 0) return `${h} hr ${m} min`;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  // With units, as on the TV: "35:56" read as a time of day. Seconds only in the last ten minutes.
+  if (m >= 10) return `${m} min`;
+  return m > 0 ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`;
 }
 
 const countdownListeners = new Set<() => void>();

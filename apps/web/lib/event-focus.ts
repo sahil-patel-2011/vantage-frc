@@ -37,7 +37,7 @@ export function buildEventFocus(
     actions: [
       { label: "Brief", href: view.next.links.briefing, emphasis: "primary" },
       { label: "Checklist", href: view.next.links.checklist, emphasis: "secondary" },
-      { label: "Command", href: view.next.links.command, emphasis: "secondary" },
+      { label: "Event day", href: view.next.links.command, emphasis: "secondary" },
     ],
   };
 }

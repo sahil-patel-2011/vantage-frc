@@ -25,7 +25,7 @@ describe("buildEventFocus", () => {
   it("creates direct cross-module handoffs for the next match", () => {
     const focus = buildEventFocus(readyView(), true, Date.parse("2026-07-18T16:00:00.000Z"));
     expect(focus).toMatchObject({ id: "2026test_qm12", tone: "live", title: "Next · Qualification 12", detail: "Switch to BLUE bumpers · 12:10 PM" });
-    expect(focus?.actions.map((action) => action.label)).toEqual(["Brief", "Checklist", "Command"]);
+    expect(focus?.actions.map((action) => action.label)).toEqual(["Brief", "Checklist", "Event day"]);
   });
 
   it("makes offline and stale evidence explicit", () => {

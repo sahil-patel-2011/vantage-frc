@@ -468,8 +468,13 @@ export async function computeBriefingView(
   const isOver = (entry: (typeof ourRows)[number]) =>
     (entry.redScore != null && entry.blueScore != null) ||
     (entry.scheduledTime != null && new Date(entry.scheduledTime).getTime() <= nowMs - 3 * 3_600_000);
+  // Still ahead = not over and its time not yet come, the rule Home's next-match card uses, so
+  // the two agree on which match is next. A match only running late comes after those.
+  const ahead = (entry: (typeof ourRows)[number]) =>
+    !isOver(entry) && (entry.scheduledTime == null || new Date(entry.scheduledTime).getTime() > nowMs);
   const selected =
     ourRows.find((entry) => entry.matchKey === input.requestedMatch) ??
+    ourRows.find(ahead) ??
     ourRows.find((entry) => !isOver(entry)) ??
     ourRows[ourRows.length - 1];
   if (!selected) {

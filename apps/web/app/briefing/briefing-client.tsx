@@ -7,11 +7,9 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
 import { briefingChecklist, matchLabel, type BriefingPrediction } from "../../lib/briefing";
 import { buildOpponentCards } from "../../lib/briefing/opponent-cards";
-import { capabilityLabel } from "../../lib/briefing/plan-sections";
 import { briefingPartnerSyncHref, briefingSetupAction } from "../../lib/briefing/setup-action";
 import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
-import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
-import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
+import type { FullBriefingView } from "../../lib/briefing/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { fmtMatchTime, stripFrc } from "../../lib/schedule-board";
@@ -24,6 +22,7 @@ import {
 import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { AddMoreLine, EmptyHint, OpponentCards, Section, withOrg } from "./briefing-parts";
+import { LiveCountdown } from "../dashboard/widgets/live-countdown";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -76,62 +75,6 @@ function fmtSeconds(value: number | null): string {
 
 function fmtRate(value: number | null): string {
   return value == null ? "—" : `${value}%`;
-}
-
-function fmtEpa(value: number | null): string {
-  return value == null ? "—" : value.toFixed(1);
-}
-
-/** One scouted-capability row: "254 · 7 entries · auto strong · endgame developing". */
-function ScoutedRow({ row }: { row: BriefingScoutedTeam }) {
-  const caps: Array<[string, number | null]> = [
-    ["auto", row.autoCapability],
-    ["teleop", row.teleopCapability],
-    ["endgame", row.endgameCapability],
-  ];
-  return (
-    <li>
-      <p className="brief-review-head">
-        <b>{stripFrc(row.teamKey)}</b>
-        <span className="brief-chip">
-          {row.scoutSample} {row.scoutSample === 1 ? "entry" : "entries"}
-        </span>
-        {caps.map(([name, value]) => {
-          const label = capabilityLabel(value);
-          return label && label !== "not shown" ? (
-            <span key={name} className={`brief-chip ${label === "strong" ? "positive" : ""}`}>
-              {name} {label}
-            </span>
-          ) : null;
-        })}
-        {row.defenseLikely ? <span className="brief-chip critical">plays defense</span> : null}
-        {row.foulRate != null && row.foulRate >= 0.5 ? (
-          <span className="brief-chip critical">fouls {row.foulRate.toFixed(1)}/match</span>
-        ) : null}
-      </p>
-      {row.pitNotes.length > 0 ? <p className="app-muted brief-no-notes">{row.pitNotes.join(" · ")}</p> : null}
-    </li>
-  );
-}
-
-/** Rating line for a lineup, rendered only when a team has any real metric. */
-function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
-  const withData = teams.filter((team) => team.epaTotal != null || team.rank != null);
-  if (!withData.length) return null;
-  return (
-    <ul className="brief-epa-list">
-      {withData.map((team) => (
-        <li key={team.teamKey}>
-          <b>{team.teamNumber || stripFrc(team.teamKey)}</b>
-          {team.nickname && team.nickname !== `Team ${team.teamNumber || stripFrc(team.teamKey)}` ? (
-            <span className="brief-epa-nick">{team.nickname}</span>
-          ) : null}
-          <span className="brief-chip">Rating {fmtEpa(team.epaTotal)}</span>
-          {team.rank != null ? <span className="brief-chip">rank {team.rank}</span> : null}
-        </li>
-      ))}
-    </ul>
-  );
 }
 
 export default function BriefingClient() {
@@ -358,6 +301,17 @@ export default function BriefingClient() {
     checkpoints: readable(view.plan?.checkpoints ?? []),
   };
   const opponentEvidence = opponentCards.flatMap((card) => card.evidence);
+  // Our alliance the way the opponents read: one card per robot (us included) with its standing,
+  // what scouting saw and a likely plan. It was two lists, partners twice and us once.
+  const allyCards = buildOpponentCards({
+    opponentKeys: ourKeys,
+    opponentTeams: view.allyTeams,
+    scouted: view.alliesScouted,
+    tendencies: view.tendencies,
+    watchNotes: [],
+    counterBooks: [],
+    defensePlans: [],
+  }).map((card) => (teamKey && card.team === stripFrc(teamKey) ? { ...card, nickname: "Us" } : card));
   const factors = view.prediction?.keyFactors.slice(0, 3) ?? [];
   // The engine's provenance labels read as empty once put in plain words; drop those.
   const caveats = (view.prediction?.caveats ?? []).map(plainStrategyText).filter(Boolean);
@@ -415,19 +369,26 @@ export default function BriefingClient() {
         <div className="brief-hero-main">
           <span className="brief-hero-kicker">{view.match.played ? "Played: looking back" : "Up next for the drive team"}</span>
           <strong className="brief-hero-match">{matchLabel(view.match.compLevel, view.match.matchNumber)}</strong>
-          <span className="brief-hero-sub">{fmtMatchTime(view.match.scheduledTime) || "Time TBD"}</span>
+          <span className="brief-hero-sub">
+            {fmtMatchTime(view.match.scheduledTime) || "Time TBD"}
+            {/* How long, not only when: Home and the TV count down; the briefing only gave the clock time. */}
+            {!view.match.played && view.match.scheduledTime ? (
+              new Date(view.match.scheduledTime).getTime() > Date.now() ? (
+                <>
+                  {" · in "}
+                  <LiveCountdown iso={view.match.scheduledTime} />
+                </>
+              ) : (
+                " · starting now"
+              )
+            ) : null}
+          </span>
           <div className="brief-hero-teams">
             {side ? <span className={`brief-alliance-chip ${side}`}>{side === "red" ? "Red alliance" : "Blue alliance"}</span> : null}
             <span className="brief-hero-lineup">
               With {partners.length ? partners.join(" · ") : "—"}
               <em> vs {opponents.length ? opponents.join(" · ") : "—"}</em>
             </span>
-            <span className="brief-chip">
-              {view.scoutCount > 0
-                ? `${view.scoutCount} ${view.scoutCount === 1 ? "scout" : "scouts"} assigned`
-                : "No scouts assigned"}
-            </span>
-            {view.ourEpaTotal != null ? <span className="brief-chip">our rating {fmtEpa(view.ourEpaTotal)}</span> : null}
           </div>
         </div>
         {/* A played match leads with how it went, not with odds for something already decided. */}
@@ -620,26 +581,9 @@ export default function BriefingClient() {
           )}
         </Section>
 
-        <Section
-          title="Our alliance — scouted"
-          badge={view.alliesScouted.length ? `${view.alliesScouted.length} robots` : null}
-        >
-          {view.alliesScouted.length > 0 || view.allyTeams.some((team) => team.epaTotal != null || team.rank != null) ? (
-            <>
-              <EpaList teams={view.allyTeams} />
-              {view.alliesScouted.length > 0 ? (
-                <ul className="brief-reviews">
-                  {view.alliesScouted.map((row) => (
-                    <ScoutedRow key={row.teamKey} row={row} />
-                  ))}
-                </ul>
-              ) : (
-                <EmptyHint>
-                  No scout entries for our alliance yet —{" "}
-                  <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>
-                </EmptyHint>
-              )}
-            </>
+        <Section title="Our alliance">
+          {allyCards.some((card) => card.lines.length > 0 || card.standing) ? (
+            <OpponentCards cards={allyCards} orgId={orgId} />
           ) : (
             <EmptyHint>
               No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>{partnerSyncHref ? (
