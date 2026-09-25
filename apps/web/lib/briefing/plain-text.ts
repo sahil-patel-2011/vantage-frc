@@ -56,7 +56,7 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\bevent\s+\d{4}[a-z0-9]+\b/gi, "this event")
       .replace(/\bOrg scout\b/g, "Our scouts'")
       .replace(/\bOrg scouting\b/g, "Our scouting")
-      .replace(/\bOrg-private edge from your scouting \+ cached public EPA\.?/gi, "What our scouting says, next to the public rating.")
+      .replace(/\bOrg-private edge from your scouting \+ cached public (?:EPA|rating)\.?/gi, "Only our team sees this: what our scouting says, next to the public rating.")
       .replace(/\s*Not shared\. Not Statbotics\./gi, " Only our team sees this.")
       .replace(/\borg pEPA Monte Carlo prefers\b/gi, "our scouting prefers")
       .replace(/\s*\(\d+% of \d+ trials\)/gi, "")

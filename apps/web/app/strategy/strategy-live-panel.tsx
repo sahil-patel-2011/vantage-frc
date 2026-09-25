@@ -150,8 +150,9 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
         </p>
       ) : null}
       {edge.differentials.length ? (
-        <>
-          <h3>Why we win / lose</h3>
+        // Folded: nine rows of it made Matchup one long page saying the same things again.
+        <details className="strategy-more">
+          <summary>Why we win or lose ({edge.differentials.length})</summary>
           <ul className="factor-table">
             {edge.differentials.map((row) => (
               <li key={`${row.field}-${row.headline}`}>
@@ -160,19 +161,13 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
               </li>
             ))}
           </ul>
-        </>
+        </details>
       ) : null}
       {edge.opponentProfiles.map((profile) => (
         <p key={profile.teamKey} className="app-muted">
           {plainStrategyText(profile.headlines.join(" · "))}
         </p>
       ))}
-      {edge.counterPick && !edge.counterPick.skipped ? (
-        <p>
-          {/* The simulation's trial count is the engine's business; the pick is the coach's. */}
-          <strong>Counter-pick:</strong> {plainStrategyText(edge.counterPick.reason)}
-        </p>
-      ) : null}
       {!edge.digitalTwin.skipped ? <p>{plainStrategyText(edge.digitalTwin.headline)}</p> : null}
       {edge.pitAlerts.map((line) => (
         <p key={line}>
@@ -414,27 +409,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             ))}
           </ul>
         )}
-        {view.pickListHints.length > 0 ? (
-          <>
-            <h3>Pick-list inputs</h3>
-            <ul className="strategy-pick-hints">
-              {view.pickListHints.map((hint) => (
-                <li key={`${hint.listName}-${hint.teamKey}-${hint.rank}`}>
-                  <b>#{hint.rank}</b>
-                  <span>
-                    {hint.teamKey.replace(/^frc/, "")} · {hint.listName}
-                    {hint.tier ? ` · ${hint.tier}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="app-muted">
-            No pick ranks yet. Use the Pick lists tab or{" "}
-            <a href={withOrgHref("/intel", view.orgId)}>Research</a>.
-          </p>
-        )}
+        {/* Pick-list ranks are on the Pick lists tab; this view is one match. */}
         {view.scoutProvenance.length > 0 || view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
           <details className="strategy-provenance-details">
             <summary>Scout provenance & pit notes</summary>
