@@ -29,6 +29,7 @@ import { githubSetupStatus, loadGitHubConnection } from "../../../lib/github";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
 import { normalizePhoneE164, normalizeRecoveryEmail, phoneOtpSetupStatus } from "../../../lib/account/phone-otp";
 import { isValidSlackWebhook, slackSetupStatus } from "../../../lib/slack";
+import { LIVE_NOTIFICATION_SQL } from "../../../lib/notifications/live-sql";
 
 const prefsSchema = z.object({
   matchAlerts: z.boolean().optional(),
@@ -382,7 +383,7 @@ export async function GET() {
       );
       const unread = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM notifications
-         WHERE user_id=$1 AND read_at IS NULL`,
+         WHERE user_id=$1 AND read_at IS NULL AND ${LIVE_NOTIFICATION_SQL}`,
         [session.user.id],
       );
       const emailPrefs = await getUserEmailPreferences(client, session.user.id);

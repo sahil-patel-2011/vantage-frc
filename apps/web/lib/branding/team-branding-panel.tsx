@@ -1,5 +1,5 @@
 "use client";
-import { MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../media-availability";
+import { MEDIA_ENABLED } from "../media-availability";
 import { Button } from "../../components/ui";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -331,7 +331,12 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
                 </small>
               </div>
             </div>
-            {!MEDIA_ENABLED ? <p className="app-muted">{MEDIA_PAUSED_MESSAGE}</p> : null}
+            {/* Said for this card: what is off, what still works, and that Save is for the colour. */}
+            {!MEDIA_ENABLED ? (
+              <p className="app-muted">
+                Logo uploads are off for now. The team colour above still works: change it and press Save branding.
+              </p>
+            ) : null}
             {view.canEdit && MEDIA_ENABLED ? (
               <div className="brand-logo-actions">
                 <input

@@ -18,6 +18,7 @@ import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
 import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
+import { LIVE_NOTIFICATION_SQL } from "../notifications/live-sql";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -619,7 +620,7 @@ export async function loadDashboardSnapshot(
     }>(
       `SELECT id, type, payload, created_at::text AS "createdAt", read_at::text AS "readAt"
        FROM notifications
-       WHERE user_id = $1 AND (org_id IS NULL OR org_id = $2)
+       WHERE user_id = $1 AND (org_id IS NULL OR org_id = $2) AND ${LIVE_NOTIFICATION_SQL}
        ORDER BY created_at DESC
        LIMIT 8`,
       [input.userId, input.orgId],

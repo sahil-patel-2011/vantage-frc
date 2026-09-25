@@ -3,6 +3,7 @@ import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
+import { LIVE_NOTIFICATION_SQL } from "../../../lib/notifications/live-sql";
 
 export async function GET(request: Request) {
   try {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
         `SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=$1::uuid) AS "platformAdmin",
                 (SELECT created_at::text FROM users WHERE id=$1::uuid) AS "createdAt",
                 (SELECT count(*)::text FROM notifications
-                 WHERE user_id=$1::uuid AND read_at IS NULL) AS "unreadCount",
+                 WHERE user_id=$1::uuid AND read_at IS NULL AND ${LIVE_NOTIFICATION_SQL}) AS "unreadCount",
                 p.first_name AS "firstName",
                 p.display_name AS "displayName",
                 p.preferred_team_number AS "preferredTeamNumber",

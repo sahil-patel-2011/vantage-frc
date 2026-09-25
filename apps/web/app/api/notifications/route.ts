@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { LIVE_NOTIFICATION_SQL } from "../../../lib/notifications/live-sql";
 
 type NotificationRow = {
   id: string;
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
          WHERE user_id = $1
            AND ($2::uuid IS NULL OR org_id IS NULL OR org_id = $2::uuid)
            AND ($3::text = 'all' OR read_at IS NULL)
+           AND ${LIVE_NOTIFICATION_SQL}
          ORDER BY created_at DESC
          LIMIT $4`,
         [session.user.id, orgId, filter, limit],
@@ -46,7 +48,8 @@ export async function GET(request: Request) {
       const unread = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM notifications
          WHERE user_id = $1 AND read_at IS NULL
-           AND ($2::uuid IS NULL OR org_id IS NULL OR org_id = $2::uuid)`,
+           AND ($2::uuid IS NULL OR org_id IS NULL OR org_id = $2::uuid)
+           AND ${LIVE_NOTIFICATION_SQL}`,
         [session.user.id, orgId],
       );
 
