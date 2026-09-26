@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { DEFAULT_STATIONS, describeUnfilled, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
+import { DEFAULT_STATIONS, describeUnfilled, planMatchLabel, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -526,7 +526,7 @@ function PlansPanel({
               style={{ display: "flex", justifyContent: "space-between", gap: 8 }}
             >
               <span>
-                {row.matchLabel ?? `Match ${row.match}`} · {row.station}
+                {planMatchLabel(row.matchLabel, row.match)} · {row.station}
                 {row.role === "backup" ? " (backup)" : ""}
                 {row.teamNumber != null ? ` · ${row.teamNumber}` : ""}
                 {row.breakAfterMinutes != null ? ` · ${row.breakAfterMinutes}m break` : ""}
@@ -561,7 +561,7 @@ function PlansPanel({
               <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", display: "grid", gap: 4 }}>
                 {sheet.rows.map((row, index) => (
                   <li key={`${row.match}-${row.station}-${index}`}>
-                    {row.matchLabel ?? `Match ${row.match}`} · {row.station}
+                    {planMatchLabel(row.matchLabel, row.match)} · {row.station}
                     {row.role === "backup" ? " (backup)" : ""}
                     {row.teamNumber != null ? ` · team ${row.teamNumber}` : ""}
                     {row.breakAfterMinutes != null ? ` · then ${row.breakAfterMinutes}m break` : ""}

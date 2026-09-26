@@ -92,7 +92,7 @@ export function overlayScheduleOnRotation(
       matchKey: slot.matchKey,
       teamKey: slot.teamKey,
       teamNumber: slot.teamNumber,
-      matchLabel: `QM ${slot.matchNumber}`,
+      matchLabel: `Qual ${slot.matchNumber}`,
       scheduledAt: slot.scheduledAt ?? undefined,
       breakAfterMinutes: gap != null && gap >= NATURAL_BREAK_MINUTES ? Math.round(gap) : undefined,
     };
@@ -156,6 +156,13 @@ function csvCell(value: string | number | null | undefined): string {
   return text;
 }
 
+/** "QM 4" (how older saved plans spelled it) reads "Qual 4"; anything else is kept. */
+export function planMatchLabel(label: string | null | undefined, match: number): string {
+  if (!label) return `Match ${match}`;
+  const qm = /^QM\s*(\d+)$/i.exec(label.trim());
+  return qm ? `Qual ${qm[1]}` : label;
+}
+
 /** Print/CSV sheet CD teams tape to each scouting tablet. */
 export type TabletSheet = {
   scoutId: string;
@@ -187,7 +194,7 @@ export function planToCsv(input: { label: string; assignments: ShiftBalancerAssi
     lines.push(
       [
         input.label,
-        row.matchLabel ?? row.match,
+        planMatchLabel(row.matchLabel, row.match),
         row.matchKey ?? "",
         row.role === "backup" ? `${row.station} (backup)` : row.station,
         row.teamNumber ?? "",
@@ -375,7 +382,7 @@ export function summarizePlan(input: {
   for (const assignment of primaries) {
     filledByMatch.set(assignment.match, (filledByMatch.get(assignment.match) ?? 0) + 1);
     if (assignment.matchLabel && !labelByMatch.has(assignment.match)) {
-      labelByMatch.set(assignment.match, assignment.matchLabel);
+      labelByMatch.set(assignment.match, planMatchLabel(assignment.matchLabel, assignment.match));
     }
   }
   const totalMatches = Math.max(0, Math.round(input.matchCount));

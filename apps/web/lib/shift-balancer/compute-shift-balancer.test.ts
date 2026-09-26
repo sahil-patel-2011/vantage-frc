@@ -174,9 +174,9 @@ describe("overlayScheduleOnRotation", () => {
       { matchKey: "2026casj_qm12", matchNumber: 12, station: "Red 1", teamKey: "frc973", teamNumber: 973 },
       { matchKey: "2026casj_qm12", matchNumber: 12, station: "Blue 1", teamKey: "frc118", teamNumber: 118 },
     ]);
-    expect(overlaid[0]).toMatchObject({ matchLabel: "QM 10", teamNumber: 254, matchKey: "2026casj_qm10" });
+    expect(overlaid[0]).toMatchObject({ matchLabel: "Qual 10", teamNumber: 254, matchKey: "2026casj_qm10" });
     expect(overlaid.find((row) => row.match === 2 && row.station === "Blue 1")).toMatchObject({
-      matchLabel: "QM 12",
+      matchLabel: "Qual 12",
       teamNumber: 118,
     });
   });
@@ -230,7 +230,7 @@ describe("planToCsv and tablet sheets", () => {
     ];
     const csv = planToCsv({ label: "Quals", assignments });
     expect(csv).toContain("Plan,Match,Match key,Station,Team,Scout,Scheduled,Break after (min)");
-    expect(csv).toContain("Quals,QM 1,,Red 1,254,Ada,,");
+    expect(csv).toContain("Quals,Qual 1,,Red 1,254,Ada,,");
     expect(csv.split("\n").filter(Boolean)).toHaveLength(4);
     const sheets = tabletSheetsByScout(assignments);
     expect(sheets.map((sheet) => sheet.scoutName)).toEqual(["Ada", "Bo"]);
