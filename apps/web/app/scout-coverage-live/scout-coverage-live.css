@@ -99,3 +99,4 @@
   }
   .scout-coverage-live-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+#missed-assignments details > summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}

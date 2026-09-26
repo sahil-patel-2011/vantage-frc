@@ -421,8 +421,8 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       </section>
 
       {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
-      <MissedAssignments view={view} orgId={orgId} />
       <CoverageGaps view={view} busy={busy} mutate={mutate} loaded={loaded} />
+      <MissedAssignments view={view} orgId={orgId} />
       <NudgeLog view={view} busy={busy} mutate={mutate} />
     </main>
   );
@@ -541,22 +541,44 @@ function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | nu
   const missed = view.missed;
   if (!missed) return null;
   const summary = summarizeMissed(missed);
-  const recent = [...missed].reverse().slice(0, 30);
+  // Robots nobody scouted come first: those are the gaps. A missed shift where
+  // someone else scouted the robot is a talk with the scout, not lost data.
+  const newestFirst = [...missed].reverse();
+  const lost = newestFirst.filter((row) => !row.robotScouted).slice(0, 30);
+  const covered = newestFirst.filter((row) => row.robotScouted).slice(0, 30);
+  const renderRow = (row: (typeof missed)[number]) => (
+    <li key={`${row.matchKey}::${row.teamKey}::${row.userId}`}>
+      <div>
+        <div className="scout-coverage-live-row-meta">
+          <Badge tone={row.robotScouted ? "setup" : "danger"}>
+            {row.robotScouted ? "Someone else scouted it" : "Nobody scouted it"}
+          </Badge>
+          <strong>
+            {row.matchLabel} · Team {row.teamKey.replace(/^frc/i, "")}
+          </strong>
+        </div>
+        <small>
+          {row.name}
+          {row.role === "backup" ? " (backup)" : ""}
+        </small>
+      </div>
+    </li>
+  );
   return (
     <Panel className="scout-coverage-live-panel" id="missed-assignments">
       <header>
-        <h2>Assigned but not submitted</h2>
+        <h2>Assigned, but no report</h2>
         <p className="app-muted">
-          Played matches (results posted) where the assigned scout has no entry for their robot. A backup is
-          listed only when the primary missed too.
+          Played matches where the assigned scout sent no report for their robot. A backup is listed only when the
+          main scout missed too.
         </p>
       </header>
       {missed.length === 0 ? (
-        <p className="app-muted">Every assigned scout in a played match has submitted.</p>
+        <p className="app-muted">Every assigned scout in a played match sent a report.</p>
       ) : (
         <>
           <p className="app-muted">
-            {summary.total} missed · {summary.uncovered} with no entry from anyone
+            {summary.total} missed · {summary.uncovered} {summary.uncovered === 1 ? "robot" : "robots"} nobody scouted
             {summary.byScout.length
               ? ` · most: ${summary.byScout
                   .slice(0, 3)
@@ -564,26 +586,15 @@ function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | nu
                   .join(", ")}`
               : ""}
           </p>
-          <ul className="scout-coverage-live-list">
-            {recent.map((row) => (
-              <li key={`${row.matchKey}::${row.teamKey}::${row.userId}`}>
-                <div>
-                  <div className="scout-coverage-live-row-meta">
-                    <Badge tone={row.robotScouted ? "setup" : "danger"}>
-                      {row.robotScouted ? "Someone else covered it" : "No entry from anyone"}
-                    </Badge>
-                    <strong>
-                      {row.matchLabel} · Team {row.teamKey.replace(/^frc/i, "")}
-                    </strong>
-                  </div>
-                  <small>
-                    {row.name}
-                    {row.role === "backup" ? " (backup)" : ""}
-                  </small>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {lost.length ? <ul className="scout-coverage-live-list">{lost.map(renderRow)}</ul> : null}
+          {covered.length ? (
+            <details>
+              <summary>
+                {covered.length} more where someone else scouted the robot
+              </summary>
+              <ul className="scout-coverage-live-list">{covered.map(renderRow)}</ul>
+            </details>
+          ) : null}
           <p className="app-muted">
             <a href={withOrgHref("/schedule", orgId ?? null)}>See them on the match timeline</a>
           </p>

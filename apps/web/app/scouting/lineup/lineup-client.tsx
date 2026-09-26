@@ -655,7 +655,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
 
         <div className="lineup-panel">
           <header>
-            <h2>Double scouted</h2>
+            <h2>Scouted twice</h2>
             <p className="app-muted">More than one scout saved a report for this robot.</p>
           </header>
           {view.live.doubleSlots.length ? (
