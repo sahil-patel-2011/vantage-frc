@@ -34,6 +34,16 @@
   display:grid;gap:8px;margin:12px 0;font-size:13px;color:var(--muted);
 }
 .scout-qr-manual textarea{width:100%;resize:vertical;min-height:84px}
+.scout-qr-manual input{width:100%;min-height:44px;font:600 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase}
+.scout-qr-title{margin:0 0 6px;font-size:18px}
+.scout-qr-lede{margin:0 0 12px;color:var(--ink)}
+.scout-qr-note{margin:10px 0 0}
+.scout-qr-short{margin:12px 0}
+.scout-qr-more{margin-top:12px}
+.scout-qr-more summary{display:flex;align-items:center;min-height:44px;cursor:pointer;color:var(--muted)}
+.scout-qr-more .app-muted{margin:4px 0 10px}
+.scout-qr-viewport[hidden]{display:none}
+.scout-qr-actions > *{min-height:44px}
 .scout-qr-message{margin:0 0 12px}
 .scout-qr-next-actions{margin-top:4px}
 @media (max-width:800px){

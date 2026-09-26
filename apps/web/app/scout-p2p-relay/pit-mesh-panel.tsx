@@ -108,6 +108,7 @@ export function PitMeshPanel({
         records: envelope.records as ScoutQrRecord[],
         schemaId: envelope.records[0]?.schemaId ?? "p2p",
         type: envelope.records[0]?.type === "pit" ? "pit" : "match",
+        orgId,
       });
       const counts = p2pMergeLedgerCounts(merged);
       setStatus(

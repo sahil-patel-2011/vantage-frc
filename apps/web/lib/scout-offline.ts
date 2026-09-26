@@ -213,8 +213,11 @@ export async function mergeRecordsIntoOutbox(input: {
   records: ScoutQrRecord[];
   schemaId: string;
   type: "match" | "pit";
+  /** The team this phone syncs for. Rows without it were never sent. */
+  orgId: string;
 }): Promise<OfflineMergeResult & { entries: SyncEntry[] }> {
-  if (!input.records.length) throw new Error("QR payload did not contain scout entries");
+  if (!input.records.length) throw new Error("That code had no scouting in it.");
+  if (!input.orgId) throw new Error("Choose your team before taking a teammate's matches.");
   const incoming = importedToSyncEntries(input);
   const existing = await listPendingEntries();
   const merged = mergeOfflineHandoff(existing, incoming);
@@ -231,7 +234,7 @@ export async function mergeQrHandoffIntoOutbox(input: {
   const decoded = decodeScoutQrContent(input.content);
   if (decoded.kind === "handoff") {
     if (!navigator.onLine) {
-      throw new Error("Short-code handoff needs a network redeem. Ask for an embedded QR while offline.");
+      throw new Error("A typed code needs signal. With no signal, scan your teammate's QR code instead.");
     }
     const response = await fetch(
       `/api/scouting/handoff?orgId=${encodeURIComponent(input.orgId)}&code=${encodeURIComponent(decoded.code)}`,
@@ -240,11 +243,12 @@ export async function mergeQrHandoffIntoOutbox(input: {
       error?: string;
       records?: ScoutQrRecord[];
     };
-    if (!response.ok) throw new Error(body.error ?? "Could not redeem handoff code");
+    if (!response.ok) throw new Error(body.error ?? "That code didn't work. Check the 8 letters, or scan the QR code.");
     const merged = await mergeRecordsIntoOutbox({
       records: body.records ?? [],
       schemaId: input.schemaId,
       type: input.type,
+      orgId: input.orgId,
     });
     return { ...merged, mode: "handoff" };
   }
@@ -252,6 +256,7 @@ export async function mergeQrHandoffIntoOutbox(input: {
     records: decoded.records,
     schemaId: input.schemaId,
     type: input.type,
+    orgId: input.orgId,
   });
   return { ...merged, mode: decoded.kind };
 }
@@ -342,20 +347,83 @@ export type QuarantinedItem = QuarantinedEntry | QuarantinedMedia;
  * Move a permanently rejected entry out of the sync loop so the rest of the
  * outbox keeps flowing. Nothing is deleted — the scout decides Retry/Discard.
  */
-export async function quarantineEntry(entry: SyncEntry, reason: string): Promise<void> {
-  const quarantineStore = await store("readwrite", ENTRY_QUARANTINE);
-  await requestValue(
-    quarantineStore.put({
-      kind: "entry",
-      clientId: entry.clientId,
-      orgId: entry.orgId ?? null,
-      reason,
-      quarantinedAt: new Date().toISOString(),
-      entry,
-    } satisfies QuarantinedEntry),
-  );
-  const outbox = await store("readwrite", OUTBOX);
-  await requestValue(outbox.delete(entry.clientId));
+export async function quarantineEntry(entry: SyncEntry, reason: string): Promise<boolean> {
+  // One transaction: set aside only the version the server saw. A corrected copy saved under the
+  // same id while the upload was in flight stays queued and goes on the next pass.
+  const db = await openDatabase();
+  const transaction = db.transaction([OUTBOX, ENTRY_QUARANTINE], "readwrite");
+  const done = transactionDone(transaction);
+  const outbox = transaction.objectStore(OUTBOX);
+  const current = await requestValue<SyncEntry | undefined>(outbox.get(entry.clientId));
+  if (current && !sameOutboxVersion(current, entry)) {
+    await done;
+    return false;
+  }
+  transaction.objectStore(ENTRY_QUARANTINE).put({
+    kind: "entry",
+    clientId: entry.clientId,
+    orgId: entry.orgId ?? null,
+    reason,
+    quarantinedAt: new Date().toISOString(),
+    entry,
+  } satisfies QuarantinedEntry);
+  if (current) outbox.delete(entry.clientId);
+  await done;
+  return true;
+}
+
+/** Same saved version of an entry: what was sent is still what is queued. */
+export function sameOutboxVersion(
+  a: Pick<SyncEntry, "updatedAt" | "payload">,
+  b: Pick<SyncEntry, "updatedAt" | "payload">,
+): boolean {
+  return a.updatedAt === b.updatedAt && JSON.stringify(a.payload) === JSON.stringify(b.payload);
+}
+
+function transactionDone(transaction: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
+/**
+ * Remove an uploaded entry, unless the scout saved a newer copy under the same id while it was
+ * uploading ("Fix it" on slow Wi-Fi): deleting by id alone threw the correction away.
+ */
+async function removeIfUnchanged(sent: SyncEntry): Promise<boolean> {
+  const db = await openDatabase();
+  const transaction = db.transaction(OUTBOX, "readwrite");
+  const done = transactionDone(transaction);
+  const outbox = transaction.objectStore(OUTBOX);
+  const current = await requestValue<SyncEntry | undefined>(outbox.get(sent.clientId));
+  const unchanged = !current || sameOutboxVersion(current, sent);
+  if (current && unchanged) outbox.delete(sent.clientId);
+  await done;
+  return unchanged;
+}
+
+/**
+ * Entries handed over by QR before handoffs were stamped with a team carry no team, and the
+ * outbox (which only sends a team's own rows) kept them forever. A phone that has only ever
+ * held one team's scouting gives them that team; a shared phone leaves them alone.
+ */
+async function adoptUnstampedEntries(orgId: string): Promise<void> {
+  const db = await openDatabase();
+  const read = db.transaction([OUTBOX, CACHE], "readonly");
+  const [rows, cached] = await Promise.all([
+    requestValue<SyncEntry[]>(read.objectStore(OUTBOX).getAll()),
+    requestValue<Array<{ orgId: string }>>(read.objectStore(CACHE).getAll()),
+  ]);
+  const unstamped = rows.filter((row) => !row.orgId);
+  if (!unstamped.length) return;
+  const teams = new Set(cached.map((row) => row.orgId));
+  if (teams.size !== 1 || !teams.has(orgId)) return;
+  const write = db.transaction(OUTBOX, "readwrite");
+  const done = transactionDone(write);
+  for (const row of unstamped) write.objectStore(OUTBOX).put({ ...row, orgId });
+  await done;
 }
 
 export async function quarantineMedia(item: MediaOutboxItem, reason: string): Promise<void> {
@@ -481,23 +549,30 @@ function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts
 }
 
 async function drainOutboxNow(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
-  const objectStore = await store("readonly", OUTBOX);
-  const all = await requestValue<SyncEntry[]>(objectStore.getAll());
-  const { allowed: entries } = partitionByOrgId(all, orgId);
-  if (!entries.length) return { count: 0, validations: [], quarantined: 0 };
-  const drain = await drainOutboxChunks(entries, (batch) => pushEntryBatch(orgId, batch));
+  await adoptUnstampedEntries(orgId).catch(() => undefined);
   const validations: SyncValidation[] = [];
-  for (const { entry, acknowledgement } of drain.accepted) {
-    validations.push(...((acknowledgement.validations ?? []) as SyncValidation[]));
-    const deleteStore = await store("readwrite", OUTBOX);
-    await requestValue(deleteStore.delete(entry.clientId));
-  }
+  let count = 0;
   let quarantined = 0;
-  for (const { entry, reason } of [...drain.rejected, ...drain.isolated]) {
-    await quarantineEntry(entry, reason);
-    quarantined += 1;
+  // A copy saved while a pass was uploading is left queued by that pass; the next pass sends it.
+  for (let pass = 0; pass < 3; pass += 1) {
+    const objectStore = await store("readonly", OUTBOX);
+    const all = await requestValue<SyncEntry[]>(objectStore.getAll());
+    const { allowed: entries } = partitionByOrgId(all, orgId);
+    if (!entries.length) break;
+    const drain = await drainOutboxChunks(entries, (batch) => pushEntryBatch(orgId, batch));
+    let changedDuringUpload = false;
+    for (const { entry, acknowledgement } of drain.accepted) {
+      validations.push(...((acknowledgement.validations ?? []) as SyncValidation[]));
+      if (await removeIfUnchanged(entry)) count += 1;
+      else changedDuringUpload = true;
+    }
+    for (const { entry, reason } of [...drain.rejected, ...drain.isolated]) {
+      if (await quarantineEntry(entry, reason)) quarantined += 1;
+      else changedDuringUpload = true;
+    }
+    if (!changedDuringUpload) break;
   }
-  return { count: drain.accepted.length, validations, quarantined };
+  return { count, validations, quarantined };
 }
 
 /**

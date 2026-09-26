@@ -29,8 +29,12 @@ export type ScoutQrDecode =
   | { kind: "handoff"; code: string }
   | { kind: "json"; records: ScoutQrRecord[]; rawJson: string };
 
+/**
+ * TextEncoder + btoa run in browsers and in Node 16+. Buffer's "base64url" is Node-only: the
+ * browser bundle ships a Buffer polyfill without it, and "Show handoff QR" failed with
+ * "Unknown encoding: base64url" on the one screen made for a phone with no signal.
+ */
 function utf8ToBase64Url(text: string): string {
-  if (typeof Buffer !== "undefined") return Buffer.from(text, "utf8").toString("base64url");
   const bytes = new TextEncoder().encode(text);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -39,10 +43,19 @@ function utf8ToBase64Url(text: string): string {
 
 function base64UrlToUtf8(encoded: string): string {
   const cleaned = encoded.replace(/^vantage:\/\//, "").replace(/^scout\//, "");
-  if (typeof Buffer !== "undefined") return Buffer.from(cleaned, "base64url").toString("utf8");
   const padded = cleaned.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((cleaned.length + 3) % 4);
   const binary = atob(padded);
   return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
+}
+
+/** Short stable hash (FNV-1a, 32-bit, base 36) — an id, not a security boundary. */
+function fnv1a(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(36);
 }
 
 function normalizeRecord(raw: unknown, index: number): ScoutQrRecord {
@@ -65,7 +78,14 @@ function normalizeRecord(raw: unknown, index: number): ScoutQrRecord {
   // CD #4 — QR rows may carry legacy free-text scout names; strip before queue/sync.
   const payload = lockScoutPayload(rawPayload).payload;
   return {
-    clientId: String(row.clientId ?? row.client_id ?? `qr-${index}-${eventKey}-${teamKey}`),
+    // A row from another app may carry no id. The fallback names the match and the answers, so
+    // scanning the same code twice is one entry, while two robots' rows never share an id (it was
+    // `qr-${index}-…`, and a later scan of the same team in another match replaced the first).
+    clientId: String(
+      row.clientId ??
+        row.client_id ??
+        `qr-${eventKey}-${matchKey ?? "pit"}-${teamKey}-${fnv1a(JSON.stringify(payload))}`,
+    ),
     eventKey,
     matchKey,
     teamKey,
@@ -203,8 +223,14 @@ export function importedToSyncEntries(input: {
   records: ScoutQrRecord[];
   schemaId: string;
   type: "match" | "pit";
+  /**
+   * The receiving phone's team. The outbox only sends rows stamped with the team it syncs for,
+   * so an unstamped handoff sat on the phone forever while the screen said it would send.
+   */
+  orgId?: string;
 }): import("./index").SyncEntry[] {
   return input.records.map((record) => ({
+    ...(input.orgId ? { orgId: input.orgId } : {}),
     clientId: record.clientId,
     type: record.type ?? input.type,
     eventKey: record.eventKey,
@@ -236,7 +262,8 @@ export function mergeOfflineHandoff(
       rows.set(entry.clientId, entry);
       accepted += 1;
     } else if (Date.parse(entry.updatedAt) > Date.parse(current.updatedAt)) {
-      rows.set(entry.clientId, entry);
+      // Keep the team stamp of the row being replaced when the newer copy has none.
+      rows.set(entry.clientId, entry.orgId || !current.orgId ? entry : { ...entry, orgId: current.orgId });
       replaced += 1;
     } else {
       ignored += 1;
