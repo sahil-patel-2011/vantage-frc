@@ -185,7 +185,7 @@ function PhaseDonut({ profile }: { profile: ScoutedTeamProfile }) {
           </path>
         ))}
         <text className="sdc-donut-center" x={50} y={48} textAnchor="middle">
-          {profile.shrunkTotal.toFixed(1)}
+          {profile.meanTotal.toFixed(1)}
         </text>
         <text className="sdc-donut-sub" x={50} y={60} textAnchor="middle">
           per match

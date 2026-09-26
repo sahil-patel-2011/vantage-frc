@@ -54,6 +54,11 @@ export type ScoutedRatingsResult =
        */
       rows: ScoutedMatchRow[];
       basis: "phase" | "total";
+      /**
+       * "formula": points from the team's own value formula. "recorded": the
+       * points the scouts typed in themselves (no formula yet).
+       */
+      source?: "formula" | "recorded";
     }
   | { ok: false; reason: string; needsFormula: true };
 
@@ -136,7 +141,9 @@ export function scoutedRowsFromEntries(
     // ("totalPoints: 59"). Those are not a guess about what an action is
     // worth; they are the number the scout wrote down, so use them as written.
     const direct = directPointRows(entries);
-    if (direct) return { ok: true, ratings: ratingsFromScouting(direct), rows: direct, basis: "total" };
+    if (direct) {
+      return { ok: true, ratings: ratingsFromScouting(direct), rows: direct, basis: "total", source: "recorded" };
+    }
     return {
       ok: false,
       needsFormula: true,
@@ -168,7 +175,13 @@ export function scoutedRowsFromEntries(
     return { ...base, teleop: evaluateFormula(total!, payload) };
   });
 
-  return { ok: true, ratings: ratingsFromScouting(rows), rows, basis: hasPhases ? "phase" : "total" };
+  return {
+    ok: true,
+    ratings: ratingsFromScouting(rows),
+    rows,
+    basis: hasPhases ? "phase" : "total",
+    source: "formula",
+  };
 }
 
 const DIRECT_TOTAL_KEYS = ["totalPoints", "total_points", "points", "score"] as const;

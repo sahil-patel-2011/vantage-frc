@@ -62,7 +62,7 @@ export function ScoutingTeamDetail({
         </div>
         <div className="std-head-right">
           <div className="std-score">
-            <strong>{profile.shrunkTotal.toFixed(1)}</strong>
+            <strong>{profile.meanTotal.toFixed(1)}</strong>
             <small>points per match</small>
           </div>
           <button

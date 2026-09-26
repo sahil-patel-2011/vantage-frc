@@ -32,15 +32,15 @@ export function ScoutingFieldChart({
   onSelect: (teamKey: string) => void;
 }) {
   const sorted = useMemo(
-    () => [...profiles].sort((a, b) => b.shrunkTotal - a.shrunkTotal),
+    () => [...profiles].sort((a, b) => b.meanTotal - a.meanTotal),
     [profiles],
   );
 
   if (sorted.length < 2) return null;
 
-  const max = Math.max(...sorted.map((p) => p.shrunkTotal), 1);
+  const max = Math.max(...sorted.map((p) => p.meanTotal), 1);
   const fieldAvg =
-    sorted.reduce((sum, p) => sum + p.shrunkTotal, 0) / sorted.length;
+    sorted.reduce((sum, p) => sum + p.meanTotal, 0) / sorted.length;
   const avgPct = (fieldAvg / max) * 100;
 
   return (
@@ -51,7 +51,7 @@ export function ScoutingFieldChart({
       <div className="sfc-bars" role="list">
         {sorted.map((profile) => {
           const number = teamNumber(profile.teamKey);
-          const pct = (profile.shrunkTotal / max) * 100;
+          const pct = (profile.meanTotal / max) * 100;
           const isSelected = profile.teamKey === selectedKey;
           const isCompared = compareKeys.includes(profile.teamKey);
           return (
@@ -63,7 +63,7 @@ export function ScoutingFieldChart({
               data-compared={isCompared ? "true" : undefined}
               role="listitem"
               onClick={() => onSelect(profile.teamKey)}
-              title={`Team ${number}: ${profile.shrunkTotal.toFixed(1)} per match`}
+              title={`Team ${number}: ${profile.meanTotal.toFixed(1)} a match`}
             >
               <span className="sfc-bar-label">{number}</span>
               <span className="sfc-bar-track">
@@ -72,7 +72,7 @@ export function ScoutingFieldChart({
                   style={{ width: `${Math.max(pct, 2).toFixed(1)}%` }}
                 />
               </span>
-              <span className="sfc-bar-value">{profile.shrunkTotal.toFixed(1)}</span>
+              <span className="sfc-bar-value">{profile.meanTotal.toFixed(1)}</span>
             </button>
           );
         })}

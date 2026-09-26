@@ -65,6 +65,12 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+/** How a points number reads on screen: one decimal, and "41" rather than "41.0". */
+function points(value: number): string {
+  const one = Math.round(value * 10) / 10;
+  return Number.isInteger(one) ? String(one) : one.toFixed(1);
+}
+
 /**
  * Later half against earlier half.
  *
@@ -108,9 +114,9 @@ function trendFor(
   const direction: TrendDirection = delta > threshold ? "up" : delta < -threshold ? "down" : "flat";
   const note =
     direction === "up"
-      ? `Scoring ${Math.abs(delta)} more per match than they were early on`
+      ? `Scoring ${points(Math.abs(delta))} more per match than they were early on`
       : direction === "down"
-        ? `Scoring ${Math.abs(delta)} less per match than they were early on`
+        ? `Scoring ${points(Math.abs(delta))} less per match than they were early on`
         : "Scoring about the same as they were early on";
   return { delta, direction, note };
 }
@@ -152,15 +158,15 @@ function headlineFor(profile: Omit<ScoutedTeamProfile, "headline">): string {
     return `${number} — ${profile.trend.note.toLowerCase()}`;
   }
   if (profile.consistency?.consistency === "boom-or-bust") {
-    return `${number} — averages ${Math.round(profile.meanTotal)}, but swings a long way match to match`;
+    return `${number} — averages ${points(profile.meanTotal)}, but swings a long way match to match`;
   }
   if (
     (profile.consistency?.consistency === "metronome" || profile.consistency?.consistency === "steady") &&
     profile.matches >= MIN_MATCHES_FOR_TREND
   ) {
-    return `${number} — ${Math.round(profile.meanTotal)} a match, and does it every match`;
+    return `${number} — ${points(profile.meanTotal)} a match, and does it every match`;
   }
-  return `${number} — ${Math.round(profile.meanTotal)} a match across ${profile.matches} scouted`;
+  return `${number} — ${points(profile.meanTotal)} a match across ${profile.matches} scouted`;
 }
 
 /**

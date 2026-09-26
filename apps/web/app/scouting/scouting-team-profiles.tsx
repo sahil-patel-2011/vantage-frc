@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CONSISTENCY_LABEL,
+  MIN_MATCHES_TO_STAND_ALONE,
   pickListRowsFromScouting,
   rankByWeightedZScores,
   type ScoutedTeamProfile,
@@ -194,7 +195,11 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         <div>
           <h2>{view.profiles.length} robots watched</h2>
           <p>
-            {view.basis === "phase" ? "Points by phase, from your own formulas." : "Points from your own total formula."}
+            {view.basis === "phase"
+              ? "Points by phase, from your own formulas."
+              : view.basis === "recorded"
+                ? "Points your scouts recorded, averaged per match."
+                : "Points from your own total formula."}
             {view.thin > 0
               ? ` ${view.thin} ${view.thin === 1 ? "robot has" : "robots have"} too few matches to rank yet.`
               : ""}
@@ -350,8 +355,11 @@ function ProfileRow({
       <button type="button" className="stp-row-main" aria-pressed={active} onClick={onSelect}>
         <span className="stp-team">{number}</span>
         <span className="stp-score">
-          <strong>{profile.shrunkTotal.toFixed(1)}</strong>
-          <small>per match</small>
+          {/* The plain average of the matches watched, the same number as the
+              sentence below and the Pick desk. The cautious (shrunk) figure
+              only orders the list. */}
+          <strong>{profile.meanTotal.toFixed(1)}</strong>
+          <small>{profile.matches < MIN_MATCHES_TO_STAND_ALONE ? `a match · only ${profile.matches}, ranked cautiously` : "a match"}</small>
         </span>
         <Sparkline series={profile.series} label={`${number}'s scored total, match by match`} />
         <span className="stp-tags">

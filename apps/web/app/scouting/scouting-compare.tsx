@@ -49,13 +49,13 @@ export function ScoutingCompare({
   );
   const rangeFloor = Math.min(
     0,
-    ...profiles.map((profile) => profile.consistency?.floor ?? profile.shrunkTotal),
+    ...profiles.map((profile) => profile.consistency?.floor ?? profile.meanTotal),
   );
   const rangeCeiling = Math.max(
     1,
-    ...profiles.map((profile) => profile.consistency?.ceiling ?? profile.shrunkTotal),
+    ...profiles.map((profile) => profile.consistency?.ceiling ?? profile.meanTotal),
   );
-  const best = profiles.reduce((top, profile) => (profile.shrunkTotal > top.shrunkTotal ? profile : top));
+  const best = profiles.reduce((top, profile) => (profile.meanTotal > top.meanTotal ? profile : top));
   const alliance = allianceMath(profiles);
 
   return (
@@ -70,15 +70,15 @@ export function ScoutingCompare({
       <div className="scmp-grid" style={{ "--scmp-cols": profiles.length } as React.CSSProperties}>
         {profiles.map((profile, index) => {
           const consistency = profile.consistency?.consistency ?? "unknown";
-          const floor = profile.consistency?.floor ?? profile.shrunkTotal;
-          const ceiling = profile.consistency?.ceiling ?? profile.shrunkTotal;
+          const floor = profile.consistency?.floor ?? profile.meanTotal;
+          const ceiling = profile.consistency?.ceiling ?? profile.meanTotal;
           const span = rangeCeiling - rangeFloor || 1;
           return (
             <article key={profile.teamKey} className="scmp-card" data-slot={index + 1}>
               <header>
                 <span className="scmp-team">{teamNumberLabel(profile.teamKey)}</span>
                 <span className="scmp-total">
-                  <strong>{profile.shrunkTotal.toFixed(1)}</strong>
+                  <strong>{profile.meanTotal.toFixed(1)}</strong>
                   <small>per match</small>
                 </span>
                 <button

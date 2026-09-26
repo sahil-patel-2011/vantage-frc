@@ -64,7 +64,7 @@ export function ScoutingSplitCompare({
   );
 
   const metrics: MetricRow[] = [
-    { label: "Avg / match", left: left.shrunkTotal, right: right.shrunkTotal, higherIsBetter: true },
+    { label: "Avg / match", left: left.meanTotal, right: right.meanTotal, higherIsBetter: true },
     { label: "Matches", left: left.matches, right: right.matches, higherIsBetter: true },
     { label: "Auto", left: left.meanAuto, right: right.meanAuto, higherIsBetter: true },
     { label: "Teleop", left: left.meanTeleop, right: right.meanTeleop, higherIsBetter: true },
@@ -78,8 +78,8 @@ export function ScoutingSplitCompare({
     metrics.push({ label: "Field percentile", left: left.percentile, right: right.percentile, higherIsBetter: true });
   }
 
-  const leftWins = left.shrunkTotal >= right.shrunkTotal;
-  const gap = Math.abs(left.shrunkTotal - right.shrunkTotal);
+  const leftWins = left.meanTotal >= right.meanTotal;
+  const gap = Math.abs(left.meanTotal - right.meanTotal);
 
   return (
     <section className="ssv" aria-label="Split comparison">
@@ -98,7 +98,7 @@ export function ScoutingSplitCompare({
         <div className="ssv-banner" data-side="left">
           <span className="ssv-banner-team">{teamNumberLabel(left.teamKey)}</span>
           <span className="ssv-banner-score">
-            <strong>{left.shrunkTotal.toFixed(1)}</strong>
+            <strong>{left.meanTotal.toFixed(1)}</strong>
             <small>per match</small>
           </span>
           <span className="ssv-banner-tag">{CONSISTENCY_LABEL[left.consistency?.consistency ?? "unknown"]}</span>
@@ -107,7 +107,7 @@ export function ScoutingSplitCompare({
         <div className="ssv-banner" data-side="right">
           <span className="ssv-banner-team">{teamNumberLabel(right.teamKey)}</span>
           <span className="ssv-banner-score">
-            <strong>{right.shrunkTotal.toFixed(1)}</strong>
+            <strong>{right.meanTotal.toFixed(1)}</strong>
             <small>per match</small>
           </span>
           <span className="ssv-banner-tag">{CONSISTENCY_LABEL[right.consistency?.consistency ?? "unknown"]}</span>

@@ -20,7 +20,7 @@ export function ScoutingDashboardSummary({ profiles }: { profiles: ScoutedTeamPr
 
   const matches = profiles.reduce((sum, profile) => sum + profile.matches, 0);
   const fieldAverage =
-    profiles.reduce((sum, profile) => sum + profile.shrunkTotal, 0) / profiles.length;
+    profiles.reduce((sum, profile) => sum + profile.meanTotal, 0) / profiles.length;
   const top = profiles.reduce((best, profile) =>
     profile.shrunkTotal > best.shrunkTotal ? profile : best,
   );
@@ -28,9 +28,9 @@ export function ScoutingDashboardSummary({ profiles }: { profiles: ScoutedTeamPr
   const risky = profiles.filter((profile) => profile.disabledRate > 0.1).length;
 
   const stats: Array<{ label: string; value: string; note: string }> = [
-    { label: "Robots watched", value: String(profiles.length), note: `${matches} matches recorded` },
+    { label: "Robots watched", value: String(profiles.length), note: `${matches} robot-matches scouted` },
     { label: "Field average", value: fieldAverage.toFixed(1), note: "points per match" },
-    { label: "Top robot", value: teamNumber(top.teamKey), note: `${top.shrunkTotal.toFixed(1)} per match` },
+    { label: "Top robot", value: teamNumber(top.teamKey), note: `${top.meanTotal.toFixed(1)} a match` },
     { label: "Improving", value: String(rising), note: "trending up late" },
     { label: "Reliability risk", value: String(risky), note: "broke down in 10%+ of matches" },
   ];

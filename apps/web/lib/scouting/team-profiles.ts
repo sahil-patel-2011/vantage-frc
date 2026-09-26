@@ -45,8 +45,11 @@ export type TeamProfilesView =
        * produces, which is the only order there is at an off-season event.
        */
       weighted: { teamKey: string; score: number | null }[];
-      /** How the points were derived, for the screen to say so. */
-      basis: "phase" | "total";
+      /**
+       * How the points were derived, for the screen to say so: the team's
+       * phase formulas, its one total formula, or the points scouts recorded.
+       */
+      basis: "phase" | "total" | "recorded";
       /** Teams seen, but not enough times to rank yet. */
       thin: number;
     }
@@ -143,7 +146,7 @@ export async function loadTeamProfiles(
     profiles,
     pickOrder,
     weighted,
-    basis: converted.basis,
+    basis: converted.source === "recorded" ? "recorded" : converted.basis,
     thin: profiles.filter((profile) => profile.matches < MIN_MATCHES_TO_STAND_ALONE).length,
   };
 }
