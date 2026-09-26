@@ -123,17 +123,40 @@ export async function computeTrajectoryView(
     );
   }
 
-  const eventResult = await client.query<{ districtKey: string | null; year: number | null }>(
-    `SELECT district_key AS "districtKey", year FROM events_ref WHERE event_key = $1`,
+  const eventResult = await client.query<{ districtKey: string | null; year: number | null; eventType: number | null }>(
+    `SELECT district_key AS "districtKey", year, event_type AS "eventType" FROM events_ref WHERE event_key = $1`,
     [activeEventKey],
   );
   const districtKey = eventResult.rows[0]?.districtKey ?? null;
   const seasonYear = eventResult.rows[0]?.year ?? new Date().getUTCFullYear();
   if (!districtKey) {
-    return setupRequiredView(
-      "Your active event isn't a district event — the trajectory simulator only projects district points.",
-      org.orgId,
-    );
+    // TBA event types 1, 2 and 5 are district events, championships and their divisions: one
+    // with no district saved has not synced it yet, which is not the same as "not a district
+    // event" (said of a District Championship).
+    const districtType = [1, 2, 5].includes(Number(eventResult.rows[0]?.eventType));
+    if (districtType) {
+      const canSync = strategyCanSync(org.role);
+      return syncOrScoutView(
+        org.orgId,
+        canSync,
+        canSync
+          ? "This event's district hasn't synced yet. Sync Team Data, then open this page again."
+          : "This event's district hasn't synced yet. An owner or admin syncs it from Team Data.",
+      );
+    }
+    return {
+      status: "setup_required",
+      message: "District points only count at district events, and your team's current event isn't one.",
+      steps: [
+        {
+          id: "active-event",
+          label: "Change event",
+          detail: "Pick the district event you are going to.",
+          href: withOrgHref("/command", org.orgId),
+        },
+      ],
+      orgId: org.orgId,
+    };
   }
 
   const teamResult = await client.query<{ teamKey: string }>(

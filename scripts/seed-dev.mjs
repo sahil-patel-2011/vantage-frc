@@ -203,12 +203,14 @@ async function main() {
 
     // ---- reference data ---------------------------------------------------
     await db.query(
-      `INSERT INTO events_ref (event_key, year, name, start_date, end_date, city, state_prov, country, event_type)
-       VALUES ($1, $2, $3, current_date - 1, current_date + 1, 'Macon', 'GA', 'USA', 2)
+      // A District Championship belongs to its district, as TBA records it: without the key,
+      // District advancement said the Peachtree District Championship "isn't a district event".
+      `INSERT INTO events_ref (event_key, year, name, start_date, end_date, city, state_prov, country, event_type, district_key)
+       VALUES ($1, $2, $3, current_date - 1, current_date + 1, 'Macon', 'GA', 'USA', 2, $2::text || 'pch')
        -- The matches are placed around now, so the event's days are too: fixed March dates
        -- made a live event look over to everything that reads the end date.
        ON CONFLICT (event_key) DO UPDATE SET name = EXCLUDED.name,
-         start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date`,
+         start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date, district_key = EXCLUDED.district_key`,
       [EVENT_KEY, YEAR, EVENT_NAME],
     );
 

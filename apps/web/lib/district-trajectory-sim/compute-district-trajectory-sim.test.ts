@@ -122,6 +122,32 @@ describe("computeTrajectoryView", () => {
     }
   });
 
+  it("asks for a sync, not 'isn't a district event', when a District Championship has no district saved", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254, role: "owner" }] };
+      if (sql.includes("FROM org_active_context")) return { rows: [{ activeEventKey: "2026gacmp" }] };
+      if (sql.includes("FROM events_ref WHERE event_key")) return { rows: [{ districtKey: null, year: 2026, eventType: 2 }] };
+      throw new Error(`unexpected query: ${sql}`);
+    });
+    const view = await computeTrajectoryView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("setup_required");
+    if (view.status !== "setup_required") return;
+    expect(view.message).toMatch(/district hasn't synced yet/);
+    expect(view.steps[0]?.label).toBe("Sync Team Data");
+  });
+
+  it("offers Change event, not 'Choose your team', at a regional", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254, role: "owner" }] };
+      if (sql.includes("FROM org_active_context")) return { rows: [{ activeEventKey: "2026casd" }] };
+      if (sql.includes("FROM events_ref WHERE event_key")) return { rows: [{ districtKey: null, year: 2026, eventType: 0 }] };
+      throw new Error(`unexpected query: ${sql}`);
+    });
+    const view = await computeTrajectoryView(client, { userId: USER, requestedOrg: ORG });
+    if (view.status !== "setup_required") throw new Error("expected setup_required");
+    expect(view.steps.map((step) => step.label)).toEqual(["Change event"]);
+  });
+
   it("keeps Team Data for an owner when district ratings are missing", async () => {
     const client = makeClient((sql) => {
       if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 254, role: "owner" }] };
