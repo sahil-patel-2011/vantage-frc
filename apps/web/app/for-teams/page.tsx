@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HeroProductPanel } from "../../components/marketing/app-frames";
 import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 import { MARKETING_SEASON, MARKETING_STUDENT_PATH } from "../../lib/marketing/product-story";
@@ -43,7 +44,7 @@ export default function ForTeamsPage() {
     <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="lux-route-hero">
+        <header className="lux-route-hero has-visual">
           <p className="lux-kicker">For teams</p>
           <h1>Built for the whole FRC team.</h1>
           <p>
@@ -51,6 +52,10 @@ export default function ForTeamsPage() {
             run the shop — one login, no extra help required.
           </p>
           <MarketingRouteActions signIn />
+          {/* The right half of the first screen was empty on a laptop: show the product there. */}
+          <div className="lux-route-hero-visual" aria-hidden="true">
+            <HeroProductPanel />
+          </div>
         </header>
 
         <section className="lux-pillars" aria-labelledby="day-one-title">

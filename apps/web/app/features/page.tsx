@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HeroProductPanel } from "../../components/marketing/app-frames";
 import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { ProductHubCatalog } from "../../components/marketing/product-glances";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
@@ -17,7 +18,7 @@ export default function FeaturesPage() {
     <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="lux-route-hero">
+        <header className="lux-route-hero has-visual">
           <p className="lux-kicker">Product</p>
           <h1>What you open after sign-in.</h1>
           <p>
@@ -34,6 +35,10 @@ export default function FeaturesPage() {
               </a>
             ))}
           </nav>
+          {/* The right half of the first screen was empty on a laptop: show the product there. */}
+          <div className="lux-route-hero-visual" aria-hidden="true">
+            <HeroProductPanel />
+          </div>
         </header>
 
         <section className="lux-showcase" aria-labelledby="product-show-title">

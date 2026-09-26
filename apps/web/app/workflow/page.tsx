@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ProductFrame } from "../../components/marketing/app-frames";
 import { MarketingRouteActions, SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
 import { MARKETING_SEASON } from "../../lib/marketing/product-story";
@@ -55,7 +56,7 @@ export default function WorkflowPage() {
     <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="lux-route-hero">
+        <header className="lux-route-hero has-visual">
           <p className="lux-kicker">How it works</p>
           <h1>One team. One event. Then the rest of the season.</h1>
           <p>
@@ -65,6 +66,10 @@ export default function WorkflowPage() {
           <MarketingRouteActions
             companion={{ href: "/features", label: "All features", variant: "secondary" }}
           />
+          {/* The right half of the first screen was empty on a laptop: show the product there. */}
+          <div className="lux-route-hero-visual" aria-hidden="true">
+            <ProductFrame id="lookup" />
+          </div>
         </header>
 
         <section className="flow-map lux-content" aria-label="How Vantage works">
