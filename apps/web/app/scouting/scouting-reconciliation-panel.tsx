@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { matchLabelFromKey } from "../../lib/matches/no-next-match";
 import type {
   DistributeByShareResult,
   ReconcileAlliance,
@@ -32,6 +33,14 @@ const teamLabel = (teamKey: string) => teamKey.replace(/^frc/i, "") || teamKey;
 const pct = (value: number | null) =>
   value == null ? "—" : `${value > 0 ? "+" : ""}${Math.round(value * 100)}%`;
 const points = (value: number | null) => (value == null ? "—" : String(Math.round(value * 10) / 10));
+
+const FLAG_WORDS: Record<string, string> = {
+  ok: "close",
+  review: "check",
+  partial: "not every robot scouted",
+  no_scouting: "not scouted",
+  no_official: "no official score yet",
+};
 
 function entriesHref(orgId: string, matchKey: string, teamKey: string) {
   // scoutTab pins the destination so the link always lands on the match form
@@ -63,9 +72,8 @@ function AllianceBlock({
       <p>{alliance.message}</p>
       {alliance.officialFoulPoints ? (
         <p>
-          Official total {points(alliance.officialTotal)} includes{" "}
-          {points(alliance.officialFoulPoints)} foul points the opponent gave away — those are not
-          compared, because no robot here scored them.
+          The official {points(alliance.officialTotal)} includes {points(alliance.officialFoulPoints)} foul
+          points the other alliance gave away. Those are left out, because no robot here scored them.
         </p>
       ) : null}
       <ul className="recon-robots">
@@ -83,21 +91,21 @@ function AllianceBlock({
                   : `scouted ${points(robot.estimate)}${
                       robot.scoutCount > 1 ? ` · median of ${robot.scoutCount}` : ""
                     }`}
-                {share ? ` · official share ${points(share.points)}` : ""}
+                {share ? ` · share of the official score ${points(share.points)}` : ""}
               </span>
               {robot.entryIds.length ? (
                 <a href={entriesHref(orgId, matchKey, robot.teamKey)}>
-                  {robot.entryIds.length} entr{robot.entryIds.length === 1 ? "y" : "ies"}
+                  {robot.entryIds.length} {robot.entryIds.length === 1 ? "report" : "reports"}
                 </a>
               ) : (
-                <span>no entries</span>
+                <span>no reports</span>
               )}
             </li>
           );
         })}
       </ul>
       {distribution.status === "unavailable" ? (
-        <p>Distribute-by-share unavailable — {distribution.reason}</p>
+        <p>Can&apos;t split the official score by robot: {distribution.reason}</p>
       ) : null}
     </div>
   );
@@ -166,7 +174,7 @@ export default function ScoutingReconciliationPanel({
       <Panel>
         <span className="eyebrow">RECONCILIATION</span>
         <h2>Scouted vs official</h2>
-        <p className="app-muted">Comparing scouted totals to the official score breakdowns…</p>
+        <p className="app-muted">Comparing what your scouts recorded to the official scores…</p>
       </Panel>
     );
   }
@@ -186,12 +194,21 @@ export default function ScoutingReconciliationPanel({
   }
 
   const threshold = Math.round(view.reviewDeltaPct * 100);
+  const finalScoresOnly = view.matches.some(
+    (match) => match.red.officialSource === "alliance_score" || match.blue.officialSource === "alliance_score",
+  );
 
   return (
     <Panel>
       <span className="eyebrow">RECONCILIATION</span>
       <h2>Scouted vs official</h2>
       <div className="recon">
+        {finalScoresOnly ? (
+          <p className="app-muted">
+            This event posts only each alliance&apos;s final score, so foul points are still inside the official
+            number. Expect your scouts&apos; totals to read a little under it.
+          </p>
+        ) : null}
         <section className="recon-kpis">
           <article>
             <span>Flagged matches</span>
@@ -201,7 +218,7 @@ export default function ScoutingReconciliationPanel({
           <article>
             <span>Alliances compared</span>
             <strong>{view.summary.comparedAlliances}</strong>
-            <small>fully scouted + official</small>
+            <small>all 3 robots scouted</small>
           </article>
           <article>
             <span>Average gap</span>
@@ -210,21 +227,21 @@ export default function ScoutingReconciliationPanel({
                 ? "—"
                 : `${Math.round(view.summary.meanAbsDeltaPct * 100)}%`}
             </strong>
-            <small>{view.scoutedEntries} entries</small>
+            <small>{view.scoutedEntries} reports</small>
           </article>
           <article>
-            <span>No breakdown</span>
+            <span>No official score</span>
             <strong>{view.summary.matchesWithoutBreakdown}</strong>
-            <small>TBA has not published</small>
+            <small>not posted yet</small>
           </article>
         </section>
 
         {!view.summary.comparedAlliances ? (
           <EmptyState
             title="No alliance is comparable yet"
-            description={`Reconciliation needs all three robots on an alliance scouted with a scoring number AND a cached TBA score breakdown for that match. ${view.summary.matchesWithoutScouting} played match${
-              view.summary.matchesWithoutScouting === 1 ? "" : "es"
-            } have no scouted numbers at all.`}
+            description={`An alliance is compared once all three of its robots have a scouted point number and the match has an official score. ${view.summary.matchesWithoutScouting} played match${
+              view.summary.matchesWithoutScouting === 1 ? " has" : "es have"
+            } no scouted numbers at all.`}
           />
         ) : null}
 
@@ -243,15 +260,13 @@ export default function ScoutingReconciliationPanel({
           {visible.map((match) => (
             <article className="recon-match" key={match.matchKey}>
               <header>
-                <h3>
-                  {match.compLevel.toUpperCase()} {match.matchNumber}
-                </h3>
+                <h3>{matchLabelFromKey(match.matchKey)}</h3>
                 <span className={`recon-chip ${match.needsReview ? "review" : "ok"}`}>
                   {match.needsReview
                     ? `review · ${pct(match.worstDeltaPct)}`
                     : match.worstDeltaPct != null
                       ? `within ${threshold}%`
-                      : match.flag.replaceAll("_", " ")}
+                      : (FLAG_WORDS[match.flag] ?? "")}
                 </span>
               </header>
               <AllianceBlock

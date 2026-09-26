@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       const eventKey = eventOverride ?? context.rows[0]?.eventKey ?? null;
       if (!eventKey) {
         return setupRequired(
-          "Set an active TBA event in Event Day — reconciliation compares your scouting to that event's official score breakdowns.",
+          "Pick your event on Event day. This compares your scouting to that event's official scores.",
         );
       }
 
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       if (!matches.rows.length) {
         return {
           ...setupRequired(
-            "No played qualification match is cached for this event yet — reconciliation starts once TBA publishes results.",
+            "No qualification match has an official result yet. This starts once results are posted.",
           ),
           eventKey,
         };
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
     // No database (or schema not migrated yet): honest setup state, never a crash.
     return Response.json(
       setupRequired(
-        "Reconciliation needs the team database. Confirm the team is provisioned, then set an active event in Event Day.",
+        "Scouted vs official could not load right now. Try again in a moment.",
       ),
       { status: 200, headers: { "Cache-Control": "private, no-store" } },
     );

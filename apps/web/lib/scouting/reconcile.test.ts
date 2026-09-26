@@ -322,3 +322,48 @@ describe("distributeByShare", () => {
     expect(distributeByShare(120, [{ teamKey: "frc1", estimate: -5 }]).status).toBe("unavailable");
   });
 });
+
+describe("events that post only the final alliance score", () => {
+  it("compares against the alliance score and says fouls are still in it", () => {
+    const match = reconcileMatch(
+      {
+        matchKey: "2026gacmp_qm1",
+        matchNumber: 1,
+        compLevel: "qm",
+        redAlliance: { score: 60, teamKeys: ["frc1", "frc2", "frc3"] },
+        blueAlliance: { score: -1, teamKeys: ["frc4", "frc5", "frc6"] },
+        scoreBreakdown: null,
+      },
+      [
+        { entryId: "a", matchKey: "2026gacmp_qm1", teamKey: "frc1", payload: { totalPoints: 20 } },
+        { entryId: "b", matchKey: "2026gacmp_qm1", teamKey: "frc2", payload: { totalPoints: 20 } },
+        { entryId: "c", matchKey: "2026gacmp_qm1", teamKey: "frc3", payload: { totalPoints: 18 } },
+      ],
+    );
+    expect(match.red.officialSource).toBe("alliance_score");
+    expect(match.red.officialTotal).toBe(60);
+    expect(match.red.officialScoringTotal).toBe(60);
+    expect(match.red.flag).toBe("ok");
+    expect(match.red.message).toContain("fouls not removed");
+    // -1 is "not played", never a score of -1.
+    expect(match.blue.officialSource).toBeNull();
+    expect(match.blue.flag).toBe("no_official");
+    expect(match.blue.message).toBe("No official score for this alliance yet.");
+  });
+
+  it("prefers the breakdown when the event posts one", () => {
+    const match = reconcileMatch(
+      {
+        matchKey: "m",
+        matchNumber: 1,
+        compLevel: "qm",
+        redAlliance: { score: 70, teamKeys: ["frc1"] },
+        blueAlliance: { score: 10, teamKeys: ["frc4"] },
+        scoreBreakdown: { red: { totalPoints: 70, foulPoints: 10 }, blue: { totalPoints: 10 } },
+      },
+      [{ entryId: "a", matchKey: "m", teamKey: "frc1", payload: { totalPoints: 60 } }],
+    );
+    expect(match.red.officialSource).toBe("breakdown");
+    expect(match.red.officialScoringTotal).toBe(60);
+  });
+});

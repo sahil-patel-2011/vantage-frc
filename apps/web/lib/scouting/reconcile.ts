@@ -2,8 +2,9 @@
  * Scouted-vs-TBA reconciliation.
  *
  * Sums what our scouts recorded for each robot on an alliance and checks the
- * alliance sum against the official total TBA published in the cached
- * `matches_ref.score_breakdown`. A large gap means the form, the scouts, or our
+ * alliance sum against the official total: the score breakdown when the event
+ * posts one (foul points removed), otherwise the alliance's final score (fouls
+ * still in it, and said so). A large gap means the form, the scouts, or our
  * reading of the game manual is off — strategy night wants that surfaced, not
  * smoothed over.
  *
@@ -11,7 +12,8 @@
  *  - a robot nobody scouted has a null estimate and is never treated as zero;
  *  - an alliance we only partially scouted is flagged "partial", never compared
  *    to the official total as if it were complete;
- *  - a match with no cached score breakdown is "no_official", never assumed;
+ *  - a match with neither a breakdown nor a final alliance score is
+ *    "no_official", never assumed;
  *  - distribute-by-share refuses to split when there is no scouted signal to
  *    split by, and says why.
  */
@@ -70,8 +72,17 @@ export type ReconcileRobot = {
 
 export type ReconcileFlag = "ok" | "review" | "partial" | "no_scouting" | "no_official";
 
+/** Where the official number came from. */
+export type OfficialSource = "breakdown" | "alliance_score";
+
 export type ReconcileAlliance = {
   side: ReconcileSide;
+  /**
+   * "breakdown": the posted score breakdown, foul points removed.
+   * "alliance_score": only the final alliance score was posted, so fouls are
+   * still in it. Null when neither exists.
+   */
+  officialSource: OfficialSource | null;
   teamKeys: string[];
   robots: ReconcileRobot[];
   scoutedRobots: number;
@@ -149,6 +160,13 @@ export function allianceTeamKeys(value: unknown): string[] {
     if (Array.isArray(list)) return list.filter((item): item is string => typeof item === "string");
   }
   return [];
+}
+
+/** The final score stored with the alliance (`{ score, teamKeys }`). TBA uses -1 for "not played". */
+export function allianceFinalScore(value: unknown): number | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const score = numeric((value as Record<string, unknown>).score);
+  return score != null && score >= 0 ? score : null;
 }
 
 export function officialAllianceTotal(
@@ -256,6 +274,7 @@ function reconcileAlliance(
   officialTotal: number | null,
   officialFoulPoints: number | null,
   roles?: ScoutFieldRoleMap,
+  officialSource: OfficialSource | null = officialTotal == null ? null : "breakdown",
 ): ReconcileAlliance {
   const robots = teamKeys.map((teamKey) =>
     robotEstimate(teamKey, entriesByTeam.get(teamKey) ?? [], roles),
@@ -282,13 +301,17 @@ function reconcileAlliance(
         : delta / Math.abs(officialScoringTotal);
 
   const foulNote =
-    officialFoulPoints ? ` (${officialTotal} official less ${officialFoulPoints} foul)` : "";
+    officialSource === "alliance_score"
+      ? " (final score; fouls not removed)"
+      : officialFoulPoints
+        ? ` (${officialTotal} official less ${officialFoulPoints} foul)`
+        : "";
 
   let flag: ReconcileFlag;
   let message: string;
   if (officialTotal == null) {
     flag = "no_official";
-    message = "TBA has published no score breakdown for this alliance yet.";
+    message = "No official score for this alliance yet.";
   } else if (!scouted.length) {
     flag = "no_scouting";
     message = "No scout entry on this alliance carries a scoring number.";
@@ -298,24 +321,25 @@ function reconcileAlliance(
       .filter((robot) => robot.estimate == null)
       .map((robot) => teamLabel(robot.teamKey))
       .join(", ");
-    message = `Only ${scouted.length} of ${teamKeys.length} robots scouted (missing ${missing}) — a partial sum is not comparable to the official total.`;
+    message = `Only ${scouted.length} of ${teamKeys.length} robots scouted (missing ${missing}), so this alliance can't be compared to the official score.`;
   } else if (deltaPct == null) {
     flag = "partial";
     message = "The official robot-scored total is zero, so a percentage gap cannot be computed.";
   } else if (Math.abs(deltaPct) >= REVIEW_DELTA_PCT) {
     flag = "review";
-    message = `Scouted ${ourTotal} vs official ${officialScoringTotal}${foulNote} — ${(
-      deltaPct * 100
+    message = `Scouted ${ourTotal} vs official ${officialScoringTotal}${foulNote}: ${Math.abs(
+      deltaPct * 100,
     ).toFixed(0)}% ${delta! > 0 ? "over" : "under"}.`;
   } else {
     flag = "ok";
-    message = `Scouted ${ourTotal} vs official ${officialScoringTotal}${foulNote} — within ${Math.round(
+    message = `Scouted ${ourTotal} vs official ${officialScoringTotal}${foulNote}: within ${Math.round(
       REVIEW_DELTA_PCT * 100,
     )}%.`;
   }
 
   return {
     side,
+    officialSource,
     teamKeys,
     robots,
     scoutedRobots: scouted.length,
@@ -355,22 +379,23 @@ export function reconcileMatch(
     if (list) list.push(entry);
     else entriesByTeam.set(entry.teamKey, [entry]);
   }
-  const red = reconcileAlliance(
-    "red",
-    allianceTeamKeys(match.redAlliance),
-    entriesByTeam,
-    officialAllianceTotal(match.scoreBreakdown, "red"),
-    officialAllianceFoulPoints(match.scoreBreakdown, "red"),
-    roles,
-  );
-  const blue = reconcileAlliance(
-    "blue",
-    allianceTeamKeys(match.blueAlliance),
-    entriesByTeam,
-    officialAllianceTotal(match.scoreBreakdown, "blue"),
-    officialAllianceFoulPoints(match.scoreBreakdown, "blue"),
-    roles,
-  );
+  const side = (which: ReconcileSide, alliance: unknown) => {
+    const fromBreakdown = officialAllianceTotal(match.scoreBreakdown, which);
+    // Many events post only the final alliance score. Compare against it
+    // rather than calling every played match "no official score".
+    const finalScore = fromBreakdown == null ? allianceFinalScore(alliance) : null;
+    return reconcileAlliance(
+      which,
+      allianceTeamKeys(alliance),
+      entriesByTeam,
+      fromBreakdown ?? finalScore,
+      fromBreakdown != null ? officialAllianceFoulPoints(match.scoreBreakdown, which) : null,
+      roles,
+      fromBreakdown != null ? "breakdown" : finalScore != null ? "alliance_score" : null,
+    );
+  };
+  const red = side("red", match.redAlliance);
+  const blue = side("blue", match.blueAlliance);
   const comparable = [red, blue].filter(
     (alliance) => alliance.deltaPct != null && alliance.flag !== "partial",
   );
@@ -486,7 +511,7 @@ export function distributeByShare(
   robots: Array<{ teamKey: string; estimate: number | null }>,
 ): DistributeByShareResult {
   if (officialTotal == null || !Number.isFinite(officialTotal)) {
-    return { status: "unavailable", reason: "No official alliance total is cached for this match." };
+    return { status: "unavailable", reason: "No official alliance score for this match yet." };
   }
   if (!robots.length) {
     return { status: "unavailable", reason: "No robots on this alliance to distribute across." };
