@@ -10,8 +10,9 @@ export function OnboardingLoadShell({
   onRetry,
 }: {
   copy: OnboardingLoadCopy;
-  membershipTitle: string;
-  membershipBody: string;
+  /** Only once the saved state is known: while loading, "No team number yet" was shown to owners who have one. */
+  membershipTitle?: string | null;
+  membershipBody?: string | null;
   onRetry: () => void;
 }) {
   return (
@@ -33,10 +34,12 @@ export function OnboardingLoadShell({
               {copy.badge}
             </span>
           ) : null}
-          <p className="onboarding-membership-blurb">
-            <strong>{membershipTitle}</strong>
-            <span>{membershipBody}</span>
-          </p>
+          {membershipTitle ? (
+            <p className="onboarding-membership-blurb">
+              <strong>{membershipTitle}</strong>
+              <span>{membershipBody}</span>
+            </p>
+          ) : null}
           {copy.kind === "error" || copy.kind === "setup_required" ? (
             <div className="onboarding-pending-actions">
               {copy.kind === "error" ? (

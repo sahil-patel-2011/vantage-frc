@@ -77,6 +77,13 @@ const ROLE_WORDS: Record<string, string> = {
   viewer: "Parent or guest",
 };
 
+/** The role in the words the invite and Team admin use ("scout" → "Student"). */
+export function roleWord(role?: string | null): string {
+  const raw = role?.trim() ?? "";
+  if (!raw) return "Member";
+  return ROLE_WORDS[raw.toLowerCase()] ?? raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
 export function formatRolePlanCue(role?: string | null, planCode?: string | null, paidOrg?: boolean): string {
   const raw = role?.trim() ?? "";
   const roleLabel = raw ? ROLE_WORDS[raw.toLowerCase()] ?? raw.charAt(0).toUpperCase() + raw.slice(1) : null;

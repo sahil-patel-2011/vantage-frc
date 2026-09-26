@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMembershipLabel, type Me, type MembershipOption } from "./app-shell-model";
+import { formatMembershipLabel, roleWord, type Me, type MembershipOption } from "./app-shell-model";
 
 export function AppShellAccountMenu({
   open,
@@ -63,7 +63,7 @@ export function AppShellAccountMenu({
               >
                 {formatMembershipLabel(row)}
                 <small>
-                  {row.role ?? "member"}
+                  {roleWord(row.role)}
                   {recentOrgIds[0] === row.orgId && row.orgId !== orgId ? " · recent" : ""}
                 </small>
               </a>

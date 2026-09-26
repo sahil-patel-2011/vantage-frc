@@ -47,7 +47,7 @@ export function ProductHubCatalog() {
   );
 }
 
-const islandApps = ["Home", "Matches", "Scout", "Stats"] as const;
+const islandApps = ["Home", "Event day", "Scout", "Stats"] as const;
 const drawerPillars = ["Home", "Competition", "Team", "Logistics", "Business", "Build"] as const;
 const competitionTabs = ["Event day", "Scouting", "Strategy", "Robot check"] as const;
 
@@ -120,7 +120,7 @@ export function HeroProductVisual() {
 
         <nav className="hero-soft-island">
           {islandApps.map((app) => (
-            <span key={app} className={app === "Matches" ? "is-active" : undefined}>
+            <span key={app} className={app === "Event day" ? "is-active" : undefined}>
               {app}
             </span>
           ))}

@@ -48,7 +48,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Fabrication, mechanisms, and bring-up with the build crew.",
     source: "subteam",
     checks: checks([
-      ["mech_track", "Start the mechanical track", "Week one is shop safety and tools — paced weeks from Team 6925.", "/learn/6925#mechanical"],
+      ["mech_track", "Start the mechanical track", "Paced weeks, with each step checked: week one is shop safety and tools.", "/learn/6925#mechanical"],
       ["read_blueprint", "Review the robot blueprint", "Understand current mechanism priorities.", "/robot"],
       ["check_inventory", "Check inventory / BOM", "Know what parts you already have before ordering.", "/inventory"],
       ["log_fmea", "Log a failure or risk", "Capture what breaks so the next iteration is safer.", "/fmea"],
@@ -72,7 +72,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Robot code, versions, and software bring-up.",
     source: "subteam",
     checks: checks([
-      ["prog_track", "Start the programming track", "Week one is your laptop and a first deploy — paced weeks from Team 6925.", "/learn/6925#programming"],
+      ["prog_track", "Start the programming track", "Paced weeks, with each step checked: week one is your laptop and a first deploy.", "/learn/6925#programming"],
       ["open_code", "Open Code", "Find the team repo and current season branch context.", "/code"],
       ["software_versions", "Check software versions", "WPILib / vendordep alignment before you flash.", "/software-versions"],
       ["github_link", "Confirm GitHub is connected", "AI code context needs an org GitHub link.", "/team"],

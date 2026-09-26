@@ -47,6 +47,17 @@ export default function OnboardingClient() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [step, setStep] = useState<OnboardingFlowStep>("profile");
+  // Continue kept the scroll position, so step 2 opened at the bottom of its last block and the
+  // person never saw that a new step started. Every step change starts at the heading.
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0 });
+    document.getElementById("onboarding-title")?.focus({ preventScroll: true });
+  }, [step]);
   const [draft, setDraft] = useState<OnboardingDraft>(() => emptyOnboardingDraft());
   /** True once the person picked a focus themselves — stops the role default overriding them. */
   const focusTouched = useRef(false);
@@ -447,8 +458,8 @@ export default function OnboardingClient() {
     return (
       <OnboardingLoadShell
         copy={copy}
-        membershipTitle={membershipNote.title}
-        membershipBody={membershipNote.body}
+        membershipTitle={state ? membershipNote.title : null}
+        membershipBody={state ? membershipNote.body : null}
         onRetry={() => loadSession()}
       />
     );
@@ -499,7 +510,7 @@ export default function OnboardingClient() {
         <header className="onboarding-flow-header">
           <div className="onboarding-brand"><VantageLogo /></div>
           <span>{headerCopy.eyebrow}</span>
-          <h1 id="onboarding-title">{headerCopy.title}</h1>
+          <h1 id="onboarding-title" tabIndex={-1}>{headerCopy.title}</h1>
           <p className="onboarding-sub">{headerCopy.sub}</p>
         </header>
 
