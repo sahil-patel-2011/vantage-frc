@@ -39,7 +39,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/fea
 import { FormBuilderNextActionsPanel, FormBuilderRelatedStrip, FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { OptionEditor } from "./forms-option-editor";
-import { PreviewField } from "./forms-preview";
+import { FormsTabletPreview } from "./forms-tablet-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
@@ -522,23 +522,15 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       ) : null}
 
       <div className="sfb-layout">
-        <Panel as="section" className={mode === "preview" ? "sfb-preview" : undefined}>
+        <Panel as="section" className={mode === "preview" ? "sfb-tablet-panel" : undefined}>
           {mode === "preview" ? (
             <>
-              <h2>{title || "Untitled form"}</h2>
-              <p className="app-muted">Tablet preview — answers are not saved here.</p>
-              <div className="sfb-identity-lock" role="status">
-                <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
-                <strong>Signed-in member</strong>
-                {/* The preview shows what the scout sees, from the same source
-                    as the live form, so the two cannot drift apart. */}
-                <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
-              </div>
-              <div className="sfb-preview-fields">
-                {questions.map((question) => (
-                  <PreviewField key={question.id} question={question} />
-                ))}
-              </div>
+              <h2>What scouts see</h2>
+              <p className="app-muted">
+                The same buttons and steppers as the scout form on a phone. Scouts also pick the match and robot
+                first.
+              </p>
+              <FormsTabletPreview title={title || "Untitled form"} questions={questions} />
             </>
           ) : (
             <>
