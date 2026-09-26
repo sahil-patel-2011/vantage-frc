@@ -3,6 +3,7 @@ import {
   CONFIDENT_MATCHES,
   MIN_MATCHES_TO_STAND_ALONE,
   canStandAlone,
+  implausibleScoutRows,
   ratingsByTeam,
   ratingsFromScouting,
   type ScoutedMatchRow,
@@ -107,14 +108,14 @@ describe("ratingsFromScouting", () => {
     // the event. Every pick list built off that number is wrong.
     const rows = [
       ...field(10),
-      row({ teamKey: "frcNEW", matchKey: "qm1", teleop: 200 }),
+      row({ teamKey: "frcNEW", matchKey: "qm1", teleop: 150 }),
     ];
     const byTeam = ratingsByTeam(ratingsFromScouting(rows));
 
     const rookie = byTeam.get("frcNEW")!;
     const established = byTeam.get("frc111")!;
 
-    expect(rookie.meanTotal).toBe(200);
+    expect(rookie.meanTotal).toBe(150);
     expect(rookie.matches).toBe(1);
     expect(established.matches).toBe(10);
 
@@ -233,5 +234,27 @@ describe("the spread a prediction needs", () => {
       })),
     )[0]!;
     expect(flat.matchSd).toBe(0);
+  });
+});
+
+describe("implausibleScoutRows", () => {
+  const field = Array.from({ length: 14 }, (_, i) => ({
+    teamKey: `frc${100 + (i % 7)}`,
+    matchKey: `qm${i + 1}`,
+    auto: 6,
+    teleop: 14 + (i % 5),
+    endgame: 4,
+  }));
+  it("leaves a typo out of the averages and keeps an elite robot", () => {
+    const typo = { teamKey: "frc217", matchKey: "qm20", auto: 8, teleop: 1800, endgame: 10 };
+    const elite = { teamKey: "frc254", matchKey: "qm21", auto: 20, teleop: 50, endgame: 12 };
+    const rows = [...field, typo, elite];
+    expect(implausibleScoutRows(rows)).toEqual([typo]);
+    const rated = ratingsFromScouting(rows);
+    expect(rated.find((row) => row.teamKey === "frc217")).toBeUndefined();
+    expect(rated.find((row) => row.teamKey === "frc254")).toBeDefined();
+  });
+  it("does not judge a thin field", () => {
+    expect(implausibleScoutRows(field.slice(0, 5).concat([{ teamKey: "frc1", matchKey: "x", teleop: 999 }]))).toEqual([]);
   });
 });

@@ -144,15 +144,40 @@ function phaseTotal(row: ScoutedMatchRow): number {
   return (row.auto ?? 0) + (row.teleop ?? 0) + (row.endgame ?? 0);
 }
 
+/** Fewer rows than this and the field median is not a fair yardstick for "impossible". */
+export const MIN_ROWS_FOR_PLAUSIBILITY = 12;
+
+function rowTotal(row: ScoutedMatchRow): number {
+  return row.disabled ? 0 : (row.auto ?? 0) + (row.teleop ?? 0) + (row.endgame ?? 0);
+}
+
+/**
+ * Entries no robot could have scored: more than six times the field's median entry and at least
+ * 80 points above it. One typo ("1818" for "18") made a robot "386 a match", topped every pick
+ * list and moved the win chance of every match it played. These are left out of every average
+ * and returned so a lead can open and fix them. A genuinely elite robot sits at two to three
+ * times the median, well inside the line.
+ */
+export function implausibleScoutRows(rows: readonly ScoutedMatchRow[]): ScoutedMatchRow[] {
+  const totals = rows.filter((row) => row.teamKey && rowHasSignal(row) && !row.disabled).map(rowTotal).sort((a, b) => a - b);
+  if (totals.length < MIN_ROWS_FOR_PLAUSIBILITY) return [];
+  const median = totals[Math.floor(totals.length / 2)]!;
+  const limit = Math.max(median * 6, median + 80);
+  return rows.filter((row) => row.teamKey && rowHasSignal(row) && rowTotal(row) > limit);
+}
+
 /**
  * Per-team ratings from scouted rows, shrunk toward the field.
  *
  * Teams with no usable rows are left out entirely rather than returned as
- * zeroes — a team nobody scouted is unknown, not bad.
+ * zeroes — a team nobody scouted is unknown, not bad. Implausible entries
+ * (implausibleScoutRows) are left out.
  */
 export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTeamRating[] {
+  const implausible = new Set(implausibleScoutRows(rows));
   const byTeam = new Map<string, ScoutedMatchRow[]>();
   for (const row of rows) {
+    if (implausible.has(row)) continue;
     if (!row.teamKey || !rowHasSignal(row)) continue;
     const list = byTeam.get(row.teamKey);
     if (list) list.push(row);

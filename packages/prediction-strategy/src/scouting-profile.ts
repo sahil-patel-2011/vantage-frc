@@ -25,6 +25,7 @@ import {
   MIN_MATCHES_TO_STAND_ALONE,
   type ScoutedMatchRow,
   type ScoutedTeamRating,
+  implausibleScoutRows,
   ratingsFromScouting,
 } from "./scouting-rating";
 
@@ -178,8 +179,9 @@ export function profilesFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedT
   // keeping the first row per (team, match) in input order.
   const seriesByTeam = new Map<string, number[]>();
   const seenMatch = new Map<string, Set<string>>();
+  const implausible = new Set(implausibleScoutRows(rows));
   for (const row of rows) {
-    if (!row.teamKey) continue;
+    if (!row.teamKey || implausible.has(row)) continue;
     const hasSignal = row.disabled || row.auto != null || row.teleop != null || row.endgame != null;
     if (!hasSignal) continue;
     const seen = seenMatch.get(row.teamKey) ?? new Set<string>();
