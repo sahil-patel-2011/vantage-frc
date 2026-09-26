@@ -60,7 +60,9 @@
     border-top:1px solid var(--line);
   }
   .scouting-tabs a{padding:10px 10px;font-size:13px;min-height:44px;display:grid;place-items:center}
-  .scouting-main{padding-bottom:88px}
+  /* Room for the fixed tab bar and the phone's home indicator, so the last button on a page
+     is never under the bar. */
+  .scouting-main{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -158,3 +160,8 @@
 .scout-home-storage{color:var(--muted);font-size:13px}
 .scout-home-storage > summary{display:inline-flex;align-items:center;min-height:44px;cursor:pointer;font-weight:600}
 .scout-home-storage .scout-home-facts{margin-top:6px}
+
+/* --- Teams tab: the data-source controls, folded under the team card --- */
+.intel-source-more{margin-top:16px;border:1px solid var(--line);border-radius:var(--radius,14px);background:var(--surface)}
+.intel-source-more > summary{display:flex;align-items:center;min-height:48px;padding:0 14px;cursor:pointer;font-weight:600;color:var(--ink)}
+.intel-source-more > .lovat-source-picker{margin:0 12px 12px}

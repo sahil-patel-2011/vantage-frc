@@ -113,7 +113,7 @@ export function analyticsSourceDetail(settings: AnalyticsSourceSettings): string
     case "own":
       return "Only this team's scout rows. Event ratings still use the whole field.";
     case "all":
-      return "Every team with real rows at this event.";
+      return "Every team with data at this event.";
     case "selected":
       return settings.teamKeys.length
         ? `${settings.teamKeys.length} team${settings.teamKeys.length === 1 ? "" : "s"} you picked.`

@@ -72,23 +72,39 @@ export function ScoutingHome() {
   const [preparing, setPreparing] = useState(false);
   const [readyNote, setReadyNote] = useState<string | null>(null);
   const [duty, setDuty] = useState<NextDuty | null>(null);
+  const [ownTeamNumber, setOwnTeamNumber] = useState<number | null>(null);
 
-  // The person's own next robot, from the same bootstrap the entry form loads.
+  // The person's own next robot, from the same bootstrap the entry form loads. "Already filed"
+  // is every robot the team has scouted at the event (not only the latest 30 entries), so Home
+  // no longer sends a scout to a robot they have already scouted.
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
-    void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`)
+    void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
-      .then((data: { assignments?: DutyAssignment[]; matches?: DutyMatch[]; recentEntries?: DutyEntry[] } | null) => {
-        if (cancelled || !data) return;
-        setDuty(
-          nextScoutingDuty({
-            assignments: data.assignments ?? [],
-            matches: data.matches ?? [],
-            entries: data.recentEntries ?? [],
-          }),
-        );
-      })
+      .then(
+        (
+          data: {
+            assignments?: DutyAssignment[];
+            matches?: DutyMatch[];
+            recentEntries?: DutyEntry[];
+            scouted?: Array<{ matchKey: string; teamKey: string }>;
+            teamNumber?: number | null;
+          } | null,
+        ) => {
+          if (cancelled || !data) return;
+          setOwnTeamNumber(typeof data.teamNumber === "number" ? data.teamNumber : null);
+          setDuty(
+            nextScoutingDuty({
+              assignments: data.assignments ?? [],
+              matches: data.matches ?? [],
+              entries: data.scouted
+                ? data.scouted.map((row) => ({ type: "match", matchKey: row.matchKey, teamKey: row.teamKey }))
+                : (data.recentEntries ?? []),
+            }),
+          );
+        },
+      )
       .catch(() => undefined);
     return () => {
       cancelled = true;
@@ -216,9 +232,12 @@ export function ScoutingHome() {
   const teams = roster?.roster ?? [];
   const unscouted = teams.filter((team) => team.scouted === 0);
   const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? null;
-  // Pit coverage only means something once the roster says whether it knows.
+  // Pit coverage only means something once the roster says whether it knows. Our own robot is
+  // not a pit visit: it counts as visited, and it is not a chip to tap.
   const pitKnown = teams.some((team) => typeof team.pitScouted === "number");
-  const pitMissing = teams.filter((team) => (team.pitScouted ?? 0) === 0);
+  const isOurs = (team: { teamNumber: number }) => ownTeamNumber != null && team.teamNumber === ownTeamNumber;
+  const pitMissing = teams.filter((team) => (team.pitScouted ?? 0) === 0 && !isOurs(team));
+  const PIT_CHIPS = 16;
   const pitHref = (teamNumber: number) =>
     `${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit&teamKey=frc${teamNumber}`;
 
@@ -379,7 +398,7 @@ export function ScoutingHome() {
           </span>
           {pitMissing.length > 0 ? (
             <ul>
-              {pitMissing.slice(0, 16).map((team) => (
+              {pitMissing.slice(0, PIT_CHIPS).map((team) => (
                 <li key={team.teamNumber}>
                   <a href={pitHref(team.teamNumber)} aria-label={`Pit scout team ${team.teamNumber}`}>
                     <strong>{team.teamNumber}</strong>
@@ -387,6 +406,17 @@ export function ScoutingHome() {
                   </a>
                 </li>
               ))}
+              {pitMissing.length > PIT_CHIPS ? (
+                <li>
+                  <a
+                    href={`${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit`}
+                    aria-label={`${pitMissing.length - PIT_CHIPS} more teams to visit: open Pit scouting`}
+                  >
+                    <strong>+{pitMissing.length - PIT_CHIPS}</strong>
+                    <span>more</span>
+                  </a>
+                </li>
+              ) : null}
             </ul>
           ) : (
             <p className="scout-home-kept">Every team at this event has a pit report.</p>

@@ -101,7 +101,11 @@ async function persistIntelSnapshot(orgHint: string, data: IntelBoardView): Prom
   }
 }
 
-export default function IntelClient() {
+/**
+ * `variant="scouting"` is Scouting's Teams tab: titled "Teams", what our scouts saw first, and the
+ * data-source controls folded under the team card instead of between the search and the team.
+ */
+export default function IntelClient({ variant = "vantage" }: { variant?: "vantage" | "scouting" } = {}) {
   const [orgId, setOrgId] = useState("");
   const [orgReady, setOrgReady] = useState(false);
 
@@ -127,10 +131,23 @@ export default function IntelClient() {
   if (!orgId) {
     return <IntelShell orgId={null} shell="setup" />;
   }
-  return <IntelLive orgId={orgId} />;
+  return <IntelLive orgId={orgId} variant={variant} />;
 }
 
-function IntelLive({ orgId }: { orgId: string }) {
+/** The open team in the address, so Back, reload and a shared link keep it. */
+function rememberTeamInUrl(teamNumber: number | null) {
+  try {
+    const url = new URL(window.location.href);
+    if (teamNumber) url.searchParams.set("team", String(teamNumber));
+    else url.searchParams.delete("team");
+    window.history.replaceState(window.history.state, "", url);
+  } catch {
+    // Some embedded browsers refuse history writes; the page still works.
+  }
+}
+
+function IntelLive({ orgId, variant }: { orgId: string; variant: "vantage" | "scouting" }) {
+  const scouting = variant === "scouting";
   const motion = useAppleMotion();
   const source = useAnalyticsSource(orgId);
   const [query, setQuery] = useState("");
@@ -348,6 +365,7 @@ function IntelLive({ orgId }: { orgId: string }) {
       }
       const next = boardFromTeamResponse(data, viewRef.current?.activeEvent ?? null)!;
       void saveTeamResponse(orgId, teamNumber, data);
+      rememberTeamInUrl(teamNumber);
       setView(next);
       setSummary("");
       setComparison(null);
@@ -546,9 +564,13 @@ function IntelLive({ orgId }: { orgId: string }) {
   return (
     <main className={`module-page intel-page ${motion.classNames.page}`}>
       <PageHeader
-        breadcrumbs="Competition / Research"
-        title="Research"
-        description={INTEL_PAGE_DESCRIPTION}
+        breadcrumbs={scouting ? "Scouting / Teams" : "Competition / Research"}
+        title={scouting ? "Teams" : "Research"}
+        description={
+          scouting
+            ? "Every team at your event: what our scouts saw first, then season numbers."
+            : INTEL_PAGE_DESCRIPTION
+        }
       >
         <IntelRelatedStrip orgId={orgId} teamNumber={view?.intel.team.teamNumber ?? null} />
       </PageHeader>
@@ -591,20 +613,24 @@ function IntelLive({ orgId }: { orgId: string }) {
                 setResults([]);
                 setSummary("");
                 setComparison(null);
+                rememberTeamInUrl(null);
               }}
             >
               ← All {roster.length} teams at your event
             </button>
           ) : null}
-          <DataSourcePicker
-            settings={source.settings}
-            ownTeamKey={null}
-            busy={source.busy}
-            onMode={source.setMode}
-            onTeams={source.setTeams}
-            onEvents={source.setEvents}
-          />
+          {scouting ? null : (
+            <DataSourcePicker
+              settings={source.settings}
+              ownTeamKey={null}
+              busy={source.busy}
+              onMode={source.setMode}
+              onTeams={source.setTeams}
+              onEvents={source.setEvents}
+            />
+          )}
           <IntelReadyView
+            scoutingFirst={scouting}
             intel={view.intel}
             similar={view.similar}
             summary={summary}
@@ -634,6 +660,19 @@ function IntelLive({ orgId }: { orgId: string }) {
             onSavePick={() => void savePick()}
             onSelectSimilar={(teamNumber) => void select(teamNumber)}
           />
+          {scouting ? (
+            <details className="intel-source-more">
+              <summary>Compare against other teams or events</summary>
+              <DataSourcePicker
+                settings={source.settings}
+                ownTeamKey={null}
+                busy={source.busy}
+                onMode={source.setMode}
+                onTeams={source.setTeams}
+                onEvents={source.setEvents}
+              />
+            </details>
+          ) : null}
         </>
       ) : null}
     </main>

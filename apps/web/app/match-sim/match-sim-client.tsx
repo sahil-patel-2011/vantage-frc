@@ -36,6 +36,28 @@ function allianceLabel(color: AllianceColor): string {
   return color === "red" ? "Red" : "Blue";
 }
 
+/** "frc1678" → "1678". */
+function teamNumber(teamKey: string): string {
+  return teamKey.replace(/^frc/i, "");
+}
+
+/**
+ * One row per matchup: running the same six robots again saved another copy, so the list read
+ * "Q33, Q33, Q33". The newest copy of each is kept.
+ */
+function latestDistinctRuns(runs: MatchSimRun[]): MatchSimRun[] {
+  const seen = new Set<string>();
+  const newestFirst = [...runs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const kept = new Set<string>();
+  for (const run of newestFirst) {
+    const key = [run.eventKey ?? "", run.matchKey ?? "", [...run.redTeamKeys].sort().join(","), [...run.blueTeamKeys].sort().join(",")].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.add(run.id);
+  }
+  return runs.filter((run) => kept.has(run.id));
+}
+
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
@@ -331,7 +353,9 @@ function SimulateForm({
         </FormRow>
       </FormGrid>
       <details className="match-sim-more">
-        <summary>More: another event, a match, a name</summary>
+        <summary style={{ minHeight: 44, display: "flex", alignItems: "center", cursor: "pointer" }}>
+          More: another event, a match, a name
+        </summary>
         <FormGrid min={160}>
           <FormRow label={form.eventKey.trim() ? "Event" : "Another event (optional)"}>
             {form.eventKey.trim() ? (
@@ -393,7 +417,7 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
             {result.finalMargin > 0 ? `Red +${result.finalMargin}` : result.finalMargin < 0 ? `Blue +${Math.abs(result.finalMargin)}` : "Even"}
           </small>
         </div>
-        <Button variant="secondary" size="sm" type="button" onClick={() => setFlipped((value) => !value)}>
+        <Button variant="secondary" type="button" style={{ minHeight: 44 }} onClick={() => setFlipped((value) => !value)}>
           Flip red / blue
         </Button>
       </header>
@@ -510,7 +534,7 @@ function SavedRuns({
     <Panel>
       <h2 style={{ marginTop: 0 }}>Saved simulations</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.runs.map((run: MatchSimRun) => (
+        {latestDistinctRuns(view.runs).map((run: MatchSimRun) => (
           <li key={run.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
             <button
               type="button"
@@ -520,13 +544,15 @@ function SavedRuns({
             >
               <strong>{run.label}</strong>
               <small className="app-muted" style={{ display: "block" }}>
-                Red {run.redTeamKeys.join(", ")} vs Blue {run.blueTeamKeys.join(", ")} · margin{" "}
+                Red {run.redTeamKeys.map(teamNumber).join(" · ")} vs Blue {run.blueTeamKeys.map(teamNumber).join(" · ")} · margin{" "}
                 {run.result.finalMargin > 0 ? `Red +${run.result.finalMargin}` : run.result.finalMargin < 0 ? `Blue +${Math.abs(run.result.finalMargin)}` : "Even"}
               </small>
             </button>
             <button
               type="button"
               className="text-button"
+              style={{ minHeight: 44, minWidth: 44, padding: "0 10px", flex: "0 0 auto" }}
+              aria-label={`Delete the simulation ${run.label}`}
               disabled={busy}
               onClick={() => {
                 if (window.confirm(`Delete "${run.label}"?`)) {

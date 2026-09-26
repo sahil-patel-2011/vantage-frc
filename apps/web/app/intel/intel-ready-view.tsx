@@ -207,6 +207,7 @@ export function IntelReadyView({
   lookupNote,
   onSaveNote,
   onSelectSimilar,
+  scoutingFirst = false,
 }: {
   intel: IntelDetail;
   similar: Array<IntelSearchTeam & { epaTotal: number }>;
@@ -229,6 +230,8 @@ export function IntelReadyView({
   onPickNameChange: (value: string) => void;
   onSavePick: () => void;
   onSelectSimilar: (teamNumber: number) => void;
+  /** Scouting's Teams tab: what our scouts saw comes first, above season numbers. */
+  scoutingFirst?: boolean;
   fieldRatings?: EventRatingRow[];
   lookupNote?: LookupNote | null;
   onSaveNote?: (body: string) => void;
@@ -295,6 +298,8 @@ export function IntelReadyView({
         </Panel>
       ) : null}
 
+      {scoutingFirst ? <IntelScoutBreakdown breakdown={breakdown} /> : null}
+
       <IntelLookupBoard
         teamKey={intel.team.teamKey}
         event={eventRow}
@@ -306,7 +311,7 @@ export function IntelReadyView({
         history={intel.trajectory.map((point) => point.epa)}
       />
 
-      <IntelScoutBreakdown breakdown={breakdown} />
+      {scoutingFirst ? null : <IntelScoutBreakdown breakdown={breakdown} />}
 
       {lookupNote && onSaveNote ? (
         <IntelLookupNotes note={lookupNote} busy={submitting} onSave={onSaveNote} />
