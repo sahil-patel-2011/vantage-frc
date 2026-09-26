@@ -133,3 +133,21 @@ describe("interoperable scouting fallback", () => {
     expect(assignments.map(({ userId }) => userId)).toEqual(["u1", "u2", "u1"]);
   });
 });
+
+describe("number answers stay inside their limits", () => {
+  it("refuses a negative count, and honours a form's own min, max and whole-number limits", () => {
+    expect(validatePayload(schema, { auto: -12 })).toEqual(["Auto pieces can't be below zero"]);
+    expect(validatePayload(schema, { auto: 4 })).toEqual([]);
+    const bounded: SchemaDefinition = {
+      title: "Bounded",
+      fields: [
+        { key: "fuel", label: "Fuel", type: "number", config: { min: 0, max: 100, integer: true } },
+        { key: "margin", label: "Margin", type: "number", config: { min: -50 } },
+      ],
+    };
+    expect(validatePayload(bounded, { fuel: 1818 })).toEqual(["Fuel must be at most 100"]);
+    expect(validatePayload(bounded, { fuel: 4.5 })).toEqual(["Fuel must be a whole number"]);
+    expect(validatePayload(bounded, { margin: -10 })).toEqual([]);
+    expect(validatePayload(bounded, { margin: -60 })).toEqual(["Margin must be at least -50"]);
+  });
+});

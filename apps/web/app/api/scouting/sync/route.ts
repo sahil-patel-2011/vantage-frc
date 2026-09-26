@@ -15,6 +15,12 @@ import {
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import {
+  MISSING_REFERENCE_REASON,
+  isMissingReferenceError,
+  isTransientDbError,
+  resolveSyncTarget,
+} from "../../../../lib/scouting/sync-guards";
 
 /**
  * After an entry mints, stamp scout_media.entry_id from payload refs and the entry_client tag.
@@ -100,7 +106,10 @@ export async function POST(request: Request) {
           const repository = new ScoutingRepository(client);
           const results = [];
           for (const entry of body.entries!) {
-            results.push(await repository.syncEntry(body.orgId!, session.user.id, entry));
+            const target = await resolveSyncTarget(client, { orgId: body.orgId!, userId: session.user.id, entry });
+            if (target.kind === "refuse") throw new Error(target.reason);
+            const ack = await repository.syncEntry(body.orgId!, session.user.id, target.entry);
+            results.push({ ...ack, clientId: entry.clientId });
           }
           const linked = await stampLinkedMediaAfterMint(client, body.orgId!, results, body.entries!);
           return { acknowledgements: results, mediaLinked: linked };
@@ -118,12 +127,24 @@ export async function POST(request: Request) {
         const repository = new ScoutingRepository(client);
         const acks: SyncAcknowledgement[] = [];
         const failures: SyncRejection[] = [];
+        // One report per scout per robot, and never across robots (lib/scouting/sync-guards.ts).
+        // The acknowledgement always carries the id the phone sent, so its outbox row clears.
+        const fileOne = async (entry: SyncEntry): Promise<SyncAcknowledgement | SyncRejection> => {
+          const target = await resolveSyncTarget(client, { orgId: body.orgId!, userId: session.user.id, entry });
+          if (target.kind === "refuse") return { clientId: entry.clientId, reason: target.reason };
+          const ack = await repository.syncEntry(body.orgId!, session.user.id, target.entry);
+          return { ...ack, clientId: entry.clientId };
+        };
+        const settle = (outcome: SyncAcknowledgement | SyncRejection) => {
+          if ("reason" in outcome) failures.push(outcome);
+          else acks.push(outcome);
+        };
         for (const entry of body.entries!) {
           // Savepoint per entry so one invalid payload cannot poison the
           // withRls transaction and wedge every good entry behind it.
           await client.query("SAVEPOINT scout_sync_entry");
           try {
-            acks.push(await repository.syncEntry(body.orgId!, session.user.id, entry));
+            settle(await fileOne(entry));
             await client.query("RELEASE SAVEPOINT scout_sync_entry");
           } catch (error) {
             await client.query("ROLLBACK TO SAVEPOINT scout_sync_entry");
@@ -134,16 +155,22 @@ export async function POST(request: Request) {
             if ((error as { code?: string } | null)?.code === "23505") {
               await client.query("SAVEPOINT scout_sync_entry");
               try {
-                acks.push(await repository.syncEntry(body.orgId!, session.user.id, entry));
+                settle(await fileOne(entry));
                 await client.query("RELEASE SAVEPOINT scout_sync_entry");
                 continue;
               } catch {
                 await client.query("ROLLBACK TO SAVEPOINT scout_sync_entry");
               }
             }
+            // A lost race, a deadlock or a timeout is not the scout's mistake: leave the entry
+            // unanswered so the phone keeps it queued and sends it again, instead of setting it
+            // aside as "rejected".
+            if (isTransientDbError(error)) continue;
             failures.push({
               clientId: typeof entry?.clientId === "string" ? entry.clientId : "",
-              reason: publicErrorMessage(error, "Entry rejected"),
+              reason: isMissingReferenceError(error)
+                ? MISSING_REFERENCE_REASON
+                : publicErrorMessage(error, "Entry rejected"),
             });
           }
         }

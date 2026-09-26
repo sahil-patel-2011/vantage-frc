@@ -863,6 +863,21 @@ function validateStudioFieldValue(field: FieldDefinition, value: unknown): strin
   return errors;
 }
 
+/**
+ * A plain number answer outside its form's limits. config.min / config.max when the form sets
+ * them; otherwise never below zero, because scouting numbers are counts, points and seasons: a
+ * typed "-12" lowered a robot's average everywhere. config.integer asks for whole numbers.
+ */
+function numberRangeError(field: FieldDefinition, value: number): string | null {
+  const config = configOf(field);
+  const min = typeof config.min === "number" && Number.isFinite(config.min) ? config.min : 0;
+  const max = typeof config.max === "number" && Number.isFinite(config.max) ? config.max : null;
+  if (value < min) return min === 0 ? `${field.label} can't be below zero` : `${field.label} must be at least ${min}`;
+  if (max != null && value > max) return `${field.label} must be at most ${max}`;
+  if (config.integer === true && !Number.isInteger(value)) return `${field.label} must be a whole number`;
+  return null;
+}
+
 export function validatePayload(
   schema: SchemaDefinition,
   payload: Record<string, unknown>,
@@ -900,6 +915,8 @@ export function validatePayload(
     }
     if (field.type === "number" && (typeof value !== "number" || !Number.isFinite(value))) {
       errors.push(`${field.label} must be a number`);
+    } else if (field.type === "number" && numberRangeError(field, value as number)) {
+      errors.push(numberRangeError(field, value as number)!);
     } else if (field.type === "boolean" && typeof value !== "boolean") {
       errors.push(`${field.label} must be true or false`);
     } else if (field.type === "robot_image") {

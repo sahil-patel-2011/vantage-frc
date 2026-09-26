@@ -174,9 +174,12 @@ export async function applyDisagreementResolution(
     status: input.status,
   });
   for (const adjustment of adjustments) {
+    // updated_at is the scout's own save time, which the sync uses to keep the newest edit. A lead's
+    // review stamping it made a correction the scout saved earlier, but synced later, lose to the
+    // review and vanish without a word. The review's time is on the disagreement and its audit.
     await client.query(
       `UPDATE match_scout_entries
-       SET confidence = $1::scout_confidence, updated_at = now()
+       SET confidence = $1::scout_confidence
        WHERE id = $2::uuid AND org_id = $3::uuid`,
       [adjustment.confidence, adjustment.entryId, input.orgId],
     );
