@@ -80,10 +80,14 @@ async function fetchPracticeMatches(client: PoolClient): Promise<PracticeMatch[]
   const result = await client.query<PracticeMatchRow>(
     `SELECT match_key AS "matchKey", event_key AS "eventKey", comp_level AS "compLevel",
             match_number AS "matchNumber", winning_alliance AS "winningAlliance",
-            NULLIF(score_breakdown -> 'red' ->> 'totalPoints', '')::int AS "redScore",
-            NULLIF(score_breakdown -> 'blue' ->> 'totalPoints', '')::int AS "blueScore"
+            -- The alliance score TBA posts with every result; the breakdown can be missing or
+            -- late, and requiring it left "no historical match data" beside 30 played quals.
+            COALESCE(NULLIF(score_breakdown -> 'red' ->> 'totalPoints', '')::int,
+                     NULLIF(red_alliance ->> 'score', '')::int) AS "redScore",
+            COALESCE(NULLIF(score_breakdown -> 'blue' ->> 'totalPoints', '')::int,
+                     NULLIF(blue_alliance ->> 'score', '')::int) AS "blueScore"
      FROM matches_ref
-     WHERE score_breakdown IS NOT NULL
+     WHERE (score_breakdown IS NOT NULL OR (red_alliance ? 'score' AND blue_alliance ? 'score'))
        AND winning_alliance IS NOT NULL
        AND winning_alliance <> ''
      ORDER BY random()
@@ -137,8 +141,10 @@ async function fetchAttempts(client: PoolClient, orgId: string): Promise<Trainin
             m.match_number AS "matchNumber", a.predicted_winner AS "predictedWinner",
             a.predicted_red_score AS "predictedRedScore", a.predicted_blue_score AS "predictedBlueScore",
             m.winning_alliance AS "actualWinningAlliance",
-            NULLIF(m.score_breakdown -> 'red' ->> 'totalPoints', '')::int AS "actualRedScore",
-            NULLIF(m.score_breakdown -> 'blue' ->> 'totalPoints', '')::int AS "actualBlueScore",
+            COALESCE(NULLIF(m.score_breakdown -> 'red' ->> 'totalPoints', '')::int,
+                     NULLIF(m.red_alliance ->> 'score', '')::int) AS "actualRedScore",
+            COALESCE(NULLIF(m.score_breakdown -> 'blue' ->> 'totalPoints', '')::int,
+                     NULLIF(m.blue_alliance ->> 'score', '')::int) AS "actualBlueScore",
             a.notes, a.duration_seconds AS "durationSeconds", a.accuracy_score AS "accuracyScore",
             a.submitted_at::text AS "submittedAt"
      FROM scout_training_attempts a
@@ -175,8 +181,8 @@ export async function computeScoutTrainingView(
     return {
       status: "setup_required",
       message: canSync
-        ? "No historical match data is synced yet, so there is nothing to practice-scout against. Sync Team Data after a completed event is in the cache."
-        : "No historical match data is synced yet, so there is nothing to practice-scout against. An owner or admin syncs completed matches. You can still scout.",
+        ? "No played matches are saved yet, so there is nothing to practise on. Sync Team Data once an event has results."
+        : "No played matches are saved yet, so there is nothing to practise on. An owner or admin syncs results. You can still scout.",
       steps: canSync
         ? [
             {
@@ -232,8 +238,10 @@ export async function submitAttempt(
     blueScore: number | null;
   }>(
     `SELECT winning_alliance AS "winningAlliance",
-            NULLIF(score_breakdown -> 'red' ->> 'totalPoints', '')::int AS "redScore",
-            NULLIF(score_breakdown -> 'blue' ->> 'totalPoints', '')::int AS "blueScore"
+            COALESCE(NULLIF(score_breakdown -> 'red' ->> 'totalPoints', '')::int,
+                     NULLIF(red_alliance ->> 'score', '')::int) AS "redScore",
+            COALESCE(NULLIF(score_breakdown -> 'blue' ->> 'totalPoints', '')::int,
+                     NULLIF(blue_alliance ->> 'score', '')::int) AS "blueScore"
      FROM matches_ref WHERE match_key = $1`,
     [input.matchKey],
   );
