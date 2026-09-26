@@ -2,7 +2,12 @@ export * from "./types";
 
 import type { Alliance, CoverageCell, CoverageStatus, CoverageSummary } from "./types";
 
-export const DEFAULT_THIN_THRESHOLD = 2;
+/**
+ * One entry per robot per match counts as covered: at 2 the board read "0% covered" while every
+ * played robot had an entry, and disagreed with Trust & coverage. Double-scouting is a choice a
+ * lead can still set here.
+ */
+export const DEFAULT_THIN_THRESHOLD = 1;
 
 /** Classifies a match/team's raw scouting-entry count against the org's "thin" threshold. */
 export function coverageStatusFor(entryCount: number, thinThreshold: number): CoverageStatus {
