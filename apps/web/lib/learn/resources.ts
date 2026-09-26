@@ -13,6 +13,14 @@ export type LearnResourceCard = {
 
 export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
   {
+    id: "guided",
+    title: "Checked step by step",
+    description:
+      "Your first Onshape part and Team 6925's programming and mechanical weeks, one step at a time. Vantage checks each step (your Part Studio in Onshape, your build output, your pull request) before it counts.",
+    href: "/learn/guided",
+    primary: "Start a checked track",
+  },
+  {
     id: "dev-setup",
     title: "Programming setup",
     description: "Laptop setup for FRC: Git, VS Code, WPILib, PathPlanner, and GitHub.",

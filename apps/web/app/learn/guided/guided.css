@@ -1,0 +1,59 @@
+/* Guided tracks: a numbered list of steps, the current one open, each ending in a check. */
+.guided-page { display: grid; gap: 16px; max-width: 880px; }
+.guided-meta { color: var(--muted); font-size: 13px; }
+
+.guided-track-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.guided-track-list a {
+  display: grid; gap: 6px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px);
+  background: var(--surface); color: var(--ink); text-decoration: none;
+}
+.guided-track-list a:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.guided-track-list strong { font-size: 16px; }
+.guided-track-list span { color: var(--muted); line-height: 1.5; }
+.guided-track-list small { color: var(--muted); font-size: 12px; }
+
+.guided-progress { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.guided-bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.guided-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.3s ease; }
+
+.guided-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.guided-step { border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
+.guided-step.is-open { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.guided-step-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px;
+  border: 0; background: none; color: var(--ink); text-align: left; cursor: pointer;
+}
+.guided-step-head b {
+  flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--surface-2); font-size: 13px;
+}
+.guided-step.is-done .guided-step-head b { background: var(--accent); color: var(--accent-ink, #fff); }
+.guided-step-head span { display: grid; gap: 2px; }
+.guided-step-head strong { font-size: 15px; }
+.guided-step-head small { color: var(--muted); font-size: 12px; }
+
+.guided-step-body { display: grid; gap: 12px; padding: 0 16px 16px 58px; }
+.guided-why { margin: 0; color: var(--muted); line-height: 1.5; }
+.guided-do { margin: 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.5; }
+.guided-links { margin: 0; font-size: 13px; }
+.guided-check { display: grid; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.guided-checked-by { margin: 0; font-size: 14px; line-height: 1.5; }
+.guided-input { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.guided-input input, .guided-input textarea {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font: 400 14px/1.4 var(--font-sans, inherit);
+}
+.guided-input textarea { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; }
+.guided-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.guided-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.guided-ok { color: var(--success, #15803d); font-weight: 600; }
+.guided-result { padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; }
+.guided-result p { margin: 0; }
+.guided-result.is-pass { background: color-mix(in srgb, #16a34a 12%, transparent); }
+.guided-result.is-fail { background: color-mix(in srgb, #f59e0b 14%, transparent); }
+.guided-result details { margin-top: 6px; font-size: 13px; color: var(--muted); }
+.guided-finished { padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+@media (max-width: 640px) {
+  .guided-step-body { padding: 0 14px 14px; }
+}

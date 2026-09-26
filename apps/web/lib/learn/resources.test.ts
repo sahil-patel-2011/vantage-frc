@@ -3,9 +3,9 @@ import { expectPlainCopy } from "../ui/copy-assertions";
 import { LEARN_PAGE_DESCRIPTION, LEARN_RESOURCE_CARDS } from "./resources";
 
 describe("learn resource cards", () => {
-  it("covers code setup, Onshape, drawings, and the team lab", () => {
+  it("leads with the checked tracks, then code setup, Onshape, drawings, and the team lab", () => {
     const ids = LEARN_RESOURCE_CARDS.map((card) => card.id);
-    expect(ids).toEqual(["dev-setup", "cad-learn", "drawings", "team-6925"]);
+    expect(ids).toEqual(["guided", "dev-setup", "cad-learn", "drawings", "team-6925"]);
     expect(LEARN_RESOURCE_CARDS.find((card) => card.id === "drawings")?.href).toBe("/cad-learn#drawings");
   });
 

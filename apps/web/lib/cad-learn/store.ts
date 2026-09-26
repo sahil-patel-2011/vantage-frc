@@ -70,6 +70,7 @@ export async function readMyProgress(
             completed_at::text AS "completedAt"
        FROM cad_learn_progress
       WHERE org_id = $1::uuid AND user_id = $2::uuid
+        AND lesson_id NOT LIKE 'guided:%'
       ORDER BY lesson_id`,
     [orgId, userId],
   );
@@ -112,6 +113,8 @@ export async function readTeamProgress(client: PoolClient, orgId: string): Promi
        FROM cad_learn_progress p
        JOIN users u ON u.id = p.user_id
       WHERE p.org_id = $1::uuid
+        -- Guided tracks share the table under their own prefix; the CAD track's counts leave them out.
+        AND p.lesson_id NOT LIKE 'guided:%'
       GROUP BY p.user_id, u.name, u.email
       ORDER BY "displayName"`,
     [orgId],

@@ -71,7 +71,9 @@ export function Team6925Lab() {
               <p>{track.blurb}</p>
               <p className="lab-lead">
                 {weeks.length} weeks, about {Math.round(trackMinutes(track.id) / 60)} hours if you do every week in
-                order.
+                order.{" "}
+                {/* The same weeks, one at a time, each checked before it counts. */}
+                <a href={`/learn/guided/frc6925-${track.id}`}>Do these weeks with checks →</a>
               </p>
               <ol className="lab-week-index" aria-label={`${track.title} weeks`}>
                 {weeks.map((week) => (
