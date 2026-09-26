@@ -8,6 +8,6 @@ describe("leftover Shift balancer error student copy", () => {
   it("uses student chrome", () => {
     const src = readFileSync(join(WEB, "lib/shift-balancer/compute-shift-balancer.ts"), "utf8");
     expect(src).not.toContain("Sync TBA or pick an event on Command.");
-    expect(src).toContain("Sync Team Data or pick an event on Event day.");
+    expect(src).toContain("Pick the event you are at on Event day, or sync Team data.");
   });
 });

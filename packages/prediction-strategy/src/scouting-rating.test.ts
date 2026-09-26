@@ -255,6 +255,6 @@ describe("implausibleScoutRows", () => {
     expect(rated.find((row) => row.teamKey === "frc254")).toBeDefined();
   });
   it("does not judge a thin field", () => {
-    expect(implausibleScoutRows(field.slice(0, 5).concat([{ teamKey: "frc1", matchKey: "x", teleop: 999 }]))).toEqual([]);
+    expect(implausibleScoutRows([...field.slice(0, 5), { teamKey: "frc1", matchKey: "x", teleop: 999 }])).toEqual([]);
   });
 });
