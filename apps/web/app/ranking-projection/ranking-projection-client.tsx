@@ -149,6 +149,23 @@ function BestPathPlanner({
                 : "no official rank"}
             </small>
           </article>
+          {(() => {
+            // The rest of quals played out many times: odds, not one guess.
+            const odds = whatIf.seedOdds?.teams.find((row) => row.teamKey === teamKey);
+            if (!odds || !whatIf.seedOdds) return null;
+            const pct = Math.round(odds.captainChance * 100);
+            return (
+              <article data-testid="bp-captain-odds">
+                <span>Chance to captain</span>
+                <strong>{pct < 1 && odds.captainChance > 0 ? "<1%" : `${pct}%`}</strong>
+                <small>
+                  {odds.bestLikelySeed === odds.worstLikelySeed
+                    ? `seed ${odds.medianSeed} in almost every finish`
+                    : `usually seed ${odds.bestLikelySeed}–${odds.worstLikelySeed}`}
+                </small>
+              </article>
+            );
+          })()}
           <article>
             <span>Projected RP</span>
             <strong>{ours ? ours.projectedRankingPoints : "—"}</strong>
@@ -168,6 +185,16 @@ function BestPathPlanner({
 
         <ul className="bp-caveats">
           <li>Ranking points: {whatIf.rules.label}.</li>
+          {whatIf.seedOdds ? (
+            <li>
+              Chance to captain plays the rest of quals {whatIf.seedOdds.iterations.toLocaleString()} times from each
+              match&apos;s win chance and counts how often we finish in the top {whatIf.seedOdds.captains}
+              {whatIf.seedOdds.unpredictedMatches
+                ? `; ${whatIf.seedOdds.unpredictedMatches} match${whatIf.seedOdds.unpredictedMatches === 1 ? " has" : "es have"} no prediction and count as a coin flip`
+                : ""}
+              .
+            </li>
+          ) : null}
           {whatIf.caveats.map((caveat) => (
             <li key={caveat}>{caveat}</li>
           ))}

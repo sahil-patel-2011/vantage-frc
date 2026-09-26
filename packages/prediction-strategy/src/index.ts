@@ -615,3 +615,6 @@ export {
   type BuiltinPicklistMetricId,
   type FormMetricId,
 } from "./zscore-picklist";
+
+export * from "./event-opr";
+export * from "./seed-odds";

@@ -45,6 +45,8 @@ const PUBLIC_PREFIXES = [
   "/api/recovery",
   "/api/invites/preview",
   "/api/waitlist",
+  // Uptime monitor: says only whether the database answers.
+  "/api/health",
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",
   "/api/display/snapshot",

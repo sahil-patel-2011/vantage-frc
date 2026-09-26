@@ -2,6 +2,7 @@ import { IntelResearchRepository } from "@vantage/intel-research/repository";
 import { intelErrorResponse, intelSession, withIntelRequest } from "../../../../lib/intel-auth";
 import type { EventRatingRow } from "../../../../lib/intel/lovat-lookup";
 import { canEditLookupNotes, parseLookupNote } from "../../../../lib/intel/lookup-notes";
+import { loadEventOpr } from "../../../../lib/opr/alliance-results";
 
 export async function GET(request: Request) {
   try {
@@ -55,12 +56,23 @@ export async function GET(request: Request) {
           } catch {
             // Keep the empty note — the table is setup-required on some deploys.
           }
+          // Offensive rating straight from this event's official scores when the synced one is
+          // missing (it often is early in an event), weighting recent matches more.
+          let fieldRatings = field.rows;
+          if (activeEvent?.eventKey && fieldRatings.some((row) => row.opr == null)) {
+            try {
+              const opr = new Map((await loadEventOpr(client, activeEvent.eventKey)).map((row) => [row.teamKey, row.total]));
+              fieldRatings = fieldRatings.map((row) => (row.opr == null && opr.has(row.teamKey) ? { ...row, opr: opr.get(row.teamKey)! } : row));
+            } catch {
+              // Keep the synced numbers as they are.
+            }
+          }
           return {
             team: intel,
             scoutObservations: observations,
             similarTeams,
             activeEvent,
-            fieldRatings: field.rows,
+            fieldRatings,
             lookupNote,
           };
         }

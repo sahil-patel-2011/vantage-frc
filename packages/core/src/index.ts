@@ -57,11 +57,17 @@ function googleSocialProvider(callbackOrigin: string | null) {
   } as const;
 }
 
+/**
+ * Sign-in codes. Guessing is stopped per code (five tries, then it is thrown away, and it expires
+ * in five minutes), not per network: the request limit below is per IP address, and a classroom
+ * signs in from one school address. At five a minute the sixth student in a room saw "Too many
+ * tries" on their first press, so it is sized for a room of about thirty.
+ */
 export const OTP_POLICY = {
   expiresInSeconds: 300,
   allowedAttempts: 5,
   requestWindowSeconds: 60,
-  requestLimit: 5,
+  requestLimit: 40,
 } as const;
 
 function buildAuth() {
@@ -239,7 +245,8 @@ function buildAuth() {
   rateLimit: {
     enabled: true,
     window: 60,
-    max: 20,
+    // Per IP address and path: a team signing in together shares one school network.
+    max: 60,
   },
   // Cookie defaults: HttpOnly + SameSite=Lax; Secure when serving over HTTPS / production.
   // CSRF / Origin checks stay enabled (Better Auth defaults); trustedOrigins is the allowlist.

@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
+import { allianceWinProbability, seedOdds, type TeamSeedOdds } from "@vantage/prediction-strategy";
 import {
   buildRemainingMatches,
   buildStandings,
@@ -36,6 +37,16 @@ export type RankingProjectionWhatIf = {
   unpredictedMatches: number;
   /** Honest caveats to print next to the projection. Never suppressed. */
   caveats: string[];
+  /**
+   * The rest of quals played out 10,000 times from each match's win chance: every team's odds of
+   * finishing as an alliance captain and its likely seed range. Null when no quals are left.
+   */
+  seedOdds: {
+    iterations: number;
+    captains: number;
+    teams: TeamSeedOdds[];
+    unpredictedMatches: number;
+  } | null;
 };
 
 export type RankingProjectionView =
@@ -190,6 +201,27 @@ async function loadWhatIf(
     "Projected ties fall back to the current official rank — Vantage does not model this season's sort-order tiebreakers.",
   );
 
+  const odds = remaining.length
+    ? seedOdds({
+        standings: standings.map((row) => ({
+          teamKey: row.teamKey,
+          rankingPoints: row.rankingPoints,
+          played: row.played,
+          currentRank: row.currentRank,
+        })),
+        remaining: remaining.map((match) => ({
+          matchKey: match.matchKey,
+          red: match.red,
+          blue: match.blue,
+          redWinProbability:
+            match.redRating != null && match.blueRating != null
+              ? allianceWinProbability(match.redRating, match.blueRating)
+              : null,
+        })),
+        rules,
+      })
+    : null;
+
   return {
     whatIf: {
       rules,
@@ -199,6 +231,9 @@ async function loadWhatIf(
       excludedTeams,
       unpredictedMatches,
       caveats,
+      seedOdds: odds
+        ? { iterations: odds.iterations, captains: odds.captains, teams: odds.teams, unpredictedMatches: odds.unpredictedMatches }
+        : null,
     },
     message: remaining.length ? null : "Every qualification match is played — this is the final seed order.",
   };

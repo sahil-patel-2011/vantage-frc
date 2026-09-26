@@ -53,6 +53,7 @@ export const RECOMMENDED_VARS = [
 
 /** Fully optional integrations — absence is a designed setup-required state. */
 export const OPTIONAL_VARS = [
+  { name: "ERROR_WEBHOOK_URL", breaks: "Server errors are only in Vercel's runtime logs; nobody is pinged when one happens." },
   { name: "DATABASE_BILLING_URL", breaks: "Stripe webhook uses the pooled URL instead of a least-privilege role." },
   { name: "DATABASE_DISPLAY_URL", breaks: "Pit-TV snapshots use the pooled URL instead of execute-only." },
   { name: "DATABASE_ALLIANCE_BOARD_URL", breaks: "Alliance-board share links use the pooled URL." },
