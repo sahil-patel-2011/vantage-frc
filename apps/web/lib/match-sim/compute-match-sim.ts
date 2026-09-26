@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { populationStdDev, predictUnscoredMatch } from "@vantage/prediction-strategy";
 import { computeAllianceCapability, computeMatchSimResult } from ".";
 import type {
@@ -126,7 +127,15 @@ export async function resolveTeamCapabilities(
 
 export async function simulateMatch(
   client: PoolClient,
-  input: { redTeamKeys: string[]; blueTeamKeys: string[]; eventKey: string | null; year?: number | null },
+  input: {
+    redTeamKeys: string[];
+    blueTeamKeys: string[];
+    eventKey: string | null;
+    year?: number | null;
+    /** A scheduled match picked from the list: its saved prediction is the win chance shown. */
+    orgId?: string | null;
+    matchKey?: string | null;
+  },
 ): Promise<MatchSimResult> {
   const year = input.year && input.year > 2000 ? input.year : currentYear();
   const [redTeams, blueTeams] = await Promise.all([
@@ -136,7 +145,32 @@ export async function simulateMatch(
   const red = computeAllianceCapability("red", redTeams);
   const blue = computeAllianceCapability("blue", blueTeams);
   const result = computeMatchSimResult(red, blue);
-  return { ...result, winChance: await winChanceFor(client, input.eventKey, redTeams, blueTeams) };
+  // The list said "Blue 76%" (the team's saved, scouting-blended prediction, the one Strategy
+  // shows) and the card below it said 71% from public ratings alone. A scheduled match with a
+  // saved prediction shows that one; anything else keeps the ratings estimate.
+  const saved = input.orgId && input.matchKey ? await savedRedWin(client, input.orgId, input.matchKey) : null;
+  return {
+    ...result,
+    winChance: saved != null ? { red: saved, blue: 1 - saved } : await winChanceFor(client, input.eventKey, redTeams, blueTeams),
+  };
+}
+
+async function savedRedWin(client: PoolClient, orgId: string, matchKey: string): Promise<number | null> {
+  const rows = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<{ pRed: number }>(
+          `SELECT p_red AS "pRed" FROM predictions
+            WHERE org_id = $1::uuid AND match_key = $2::text AND p_red IS NOT NULL
+            ORDER BY scored_at DESC LIMIT 1`,
+          [orgId, matchKey],
+        )
+      ).rows,
+    [] as Array<{ pRed: number }>,
+  );
+  const value = Number(rows[0]?.pRed);
+  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
 }
 
 /**

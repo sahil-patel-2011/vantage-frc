@@ -2,7 +2,7 @@ import MatchSimClient from "./match-sim-client";
 import "./match-sim.css";
 
 export const metadata = {
-  title: "Match Simulator",
+  title: "Predict",
 };
 
 export default function MatchSimPage() {

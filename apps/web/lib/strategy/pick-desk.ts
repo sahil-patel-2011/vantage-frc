@@ -284,7 +284,9 @@ export async function loadPickDesk(
     byTeam.set(scout.teamKey, list);
   }
 
-  const baseCandidates = metrics.rows.map((metric) => {
+  // We never pick ourselves: our own robot sat first under "First picks" and in the pool.
+  const ownTeamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
+  const baseCandidates = metrics.rows.filter((metric) => metric.teamKey !== ownTeamKey).map((metric) => {
     const observations = byTeam.get(metric.teamKey) ?? [];
     // Disagreement resolutions demote losing entries to low confidence; prefer trusted rows.
     const trusted = observationsForStrategyTrust(observations);

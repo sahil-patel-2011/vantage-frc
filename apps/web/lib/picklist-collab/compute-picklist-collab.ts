@@ -388,7 +388,8 @@ export async function computePicklistCollabView(
     entries: sortEntriesForDisplay(entries),
     summary: summarizePicklistCollab(entries),
     fieldStats: fieldStatsFromRows(eventTeams),
-    eventTeams,
+    // The field averages count us; the list we pick from does not (we ranked ourselves first).
+    eventTeams: eventTeams.filter((row) => row.teamKey !== (org.teamNumber ? `frc${org.teamNumber}` : null)),
     computedAt: new Date().toISOString(),
   };
 }

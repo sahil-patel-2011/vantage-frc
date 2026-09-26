@@ -250,7 +250,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/inspection-copilot")).toBe("Inspection");
     expect(offlineCapableLabel("/inspection")).toBe("Inspection");
     expect(offlineCapableLabel("/fmea")).toBe("FMEA");
-    expect(offlineCapableLabel("/match-sim")).toBe("Match Simulator");
+    expect(offlineCapableLabel("/match-sim")).toBe("Predict");
     expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
     expect(offlineCapableLabel("/pairwise")).toBe("Pairwise ranking");
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");

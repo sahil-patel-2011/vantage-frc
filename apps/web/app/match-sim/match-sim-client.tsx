@@ -97,7 +97,7 @@ export default function MatchSimClient() {
         if (!response.ok || !isMatchSimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+            setError("Could not refresh Predict. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -112,7 +112,7 @@ export default function MatchSimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+          setError("Could not refresh Predict. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -176,13 +176,13 @@ export default function MatchSimClient() {
           breadcrumbs={
             <>
               <a href="/competition">Competition</a>
-              {" / Match Simulator"}
+              {" / Predict"}
             </>
           }
-          title="Match Simulator"
-          description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
+          title="Predict"
+          description="Who is likely to win any match, why, and the one phase that would swing it. From your scouting and this event's ratings; nothing is guessed."
         />
-        <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Predict" fromCache={fromCache} cachedAt={cachedAt} />
         {copy ? (
           <EmptyState title={copy.title} description={copy.description}>
             {copy.primary ? (
@@ -209,13 +209,13 @@ export default function MatchSimClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Match Simulator"}
+            {" / Predict"}
           </>
         }
-        title="Match Simulator"
-        description="Full-field score timeline from synced event numbers — plus the highest-leverage lever. Nothing here is guessed."
+        title="Predict"
+        description="Who is likely to win any match, why, and the one phase that would swing it. From your scouting and this event's ratings; nothing is guessed."
       />
-      <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Predict" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -319,40 +319,47 @@ function SimulateForm({
       }}
       style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Run a simulation</h2>
+      {/* Any six robots, in plain fields: the match key, event key and label were developer inputs
+          on the one form a strategist uses to try a lineup. They fold away. */}
+      <h2 style={{ margin: 0 }}>Try any six robots</h2>
       <FormGrid min={160}>
-        <FormRow label="Red alliance (team numbers, comma-separated)">
-          <input value={form.redTeamKeys} onChange={set("redTeamKeys")} placeholder="254, 1114, 971" required />
+        <FormRow label="Red robots">
+          <input value={form.redTeamKeys} onChange={set("redTeamKeys")} placeholder="Three team numbers" inputMode="numeric" required />
         </FormRow>
-        <FormRow label="Blue alliance (team numbers, comma-separated)">
-          <input value={form.blueTeamKeys} onChange={set("blueTeamKeys")} placeholder="118, 2056, 33" required />
-        </FormRow>
-        <FormRow label={form.eventKey.trim() ? "Event" : "Event key (optional)"}>
-          {form.eventKey.trim() ? (
-            <input
-              readOnly
-              aria-label="Event"
-              value={
-                scoutEventLabel({
-                  eventName: form.eventKey === activeEventKey ? eventName : null,
-                  eventKey: form.eventKey,
-                }) ?? ""
-              }
-            />
-          ) : (
-            <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026casj" />
-          )}
-        </FormRow>
-        <FormRow label="Match key (optional)">
-          <input value={form.matchKey} onChange={set("matchKey")} placeholder="2026casj_qm12" />
-        </FormRow>
-        <FormRow label="Label (optional)">
-          <input value={form.label} onChange={set("label")} placeholder="Quals 12" />
+        <FormRow label="Blue robots">
+          <input value={form.blueTeamKeys} onChange={set("blueTeamKeys")} placeholder="Three team numbers" inputMode="numeric" required />
         </FormRow>
       </FormGrid>
+      <details className="match-sim-more">
+        <summary>More: another event, a match, a name</summary>
+        <FormGrid min={160}>
+          <FormRow label={form.eventKey.trim() ? "Event" : "Another event (optional)"}>
+            {form.eventKey.trim() ? (
+              <input
+                readOnly
+                aria-label="Event"
+                value={
+                  scoutEventLabel({
+                    eventName: form.eventKey === activeEventKey ? eventName : null,
+                    eventKey: form.eventKey,
+                  }) ?? ""
+                }
+              />
+            ) : (
+              <input value={form.eventKey} onChange={set("eventKey")} placeholder="Event code from The Blue Alliance" />
+            )}
+          </FormRow>
+          <FormRow label="Match (optional)">
+            <input value={form.matchKey} onChange={set("matchKey")} placeholder="Match code, if it is on the schedule" />
+          </FormRow>
+          <FormRow label="Name it (optional)">
+            <input value={form.label} onChange={set("label")} placeholder="What if we play defense" />
+          </FormRow>
+        </FormGrid>
+      </details>
       <div>
         <Button variant="primary" type="submit" disabled={busy || !form.redTeamKeys.trim() || !form.blueTeamKeys.trim()}>
-          Simulate match
+          Predict
         </Button>
       </div>
     </Panel>
@@ -433,7 +440,7 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
 
       {result.lever ? (
         <div style={{ marginTop: 16 }}>
-          <strong className="app-muted">Highest-leverage lever</strong>
+          <strong className="app-muted">What would swing it most</strong>
           <p style={{ margin: "4px 0 0" }}>
             <strong>{allianceLabel(result.lever.alliance)}</strong> · {phaseLabel(result.lever.phase)}
             {result.lever.teamNumber ? ` · Team ${result.lever.teamNumber}` : ""} — trailing by{" "}
@@ -442,7 +449,7 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
           <p className="app-muted" style={{ margin: "4px 0 0" }}>{result.lever.rationale}</p>
         </div>
       ) : (
-        <p className="app-muted" style={{ marginTop: 16 }}>No leverage lever — alliances are tied on every synced phase.</p>
+        <p className="app-muted" style={{ marginTop: 16 }}>The alliances are even in every phase, so no single phase swings it.</p>
       )}
 
       {view.active === run && (result.red.dataCompleteness < 1 || result.blue.dataCompleteness < 1) ? (
@@ -469,7 +476,7 @@ function AllianceCard({ alliance, maxScore }: { alliance: MatchSimRun["result"][
           <li key={t.teamKey} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
             <span>{t.teamNumber ?? t.teamKey}</span>
             <small className="app-muted">
-              {t.hasData ? `${t.epaTotal ?? 0} rating (${t.source ?? "reference"})` : "No synced rating"}
+              {t.hasData ? `season rating ${t.epaTotal ?? 0}` : "No rating yet"}
             </small>
           </li>
         ))}

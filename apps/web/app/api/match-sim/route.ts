@@ -114,7 +114,7 @@ export async function POST(request: Request) {
           const label = trimmedOrNull(body.label, 120) ?? `Red ${numbers(redTeamKeys)} vs Blue ${numbers(blueTeamKeys)}`;
           const year = yearFrom(body.year);
 
-          const result = await simulateMatch(client, { redTeamKeys, blueTeamKeys, eventKey, year });
+          const result = await simulateMatch(client, { redTeamKeys, blueTeamKeys, eventKey, year, orgId, matchKey });
           await saveRun(client, {
             orgId,
             userId,
