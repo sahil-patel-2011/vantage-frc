@@ -39,9 +39,22 @@ function isProviderSetupError(error: unknown): boolean {
   const name = "name" in error && typeof error.name === "string" ? error.name : "";
   if (name === "ChatProviderResolutionError") return true;
   const message = error instanceof Error ? error.message : String(error);
-  return /No AI provider key|No configured model|could not be decrypted|local desktop relay|API key was rejected|KMS setup/i.test(
+  return /No AI provider key|No configured model|could not be decrypted|local desktop relay|API key was rejected|KMS setup|must configure a BYO AI key/i.test(
     message,
   );
+}
+
+/**
+ * "AI is off for this team" in the words a student reads. The router's own message names
+ * environment variables (OPENROUTER_API_KEY, AI_HORDE_POOL) and "BYO"; teams never see hosting
+ * plumbing, so that version goes to the server log only. Key problems a team can fix themselves
+ * ("could not be decrypted", "was rejected") keep their own message.
+ */
+export const AI_OFF_MESSAGE =
+  "AI isn't on for your team yet. An owner or admin can turn it on under Team → AI keys; a free Google Gemini key takes about two minutes.";
+
+function isAiOffError(message: string): boolean {
+  return /No AI provider key|must configure a BYO AI key|local desktop relay/i.test(message);
 }
 
 /**
@@ -63,8 +76,10 @@ export function failMeteredAi(
   }
 
   if (isProviderSetupError(error)) {
-    const message =
-      error instanceof Error ? error.message : "No AI provider key is configured for this organization.";
+    const raw = error instanceof Error ? error.message : "No AI provider key is configured for this organization.";
+    const aiOff = isAiOffError(raw);
+    if (aiOff) console.warn("[metered-ai] AI is off for this team:", raw);
+    const message = aiOff ? AI_OFF_MESSAGE : raw;
     return Response.json(
       {
         error: message,

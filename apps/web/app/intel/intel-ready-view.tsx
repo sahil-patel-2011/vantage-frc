@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type FormEvent } from "react";
 import { FormRow, Panel, Button } from "../../components/ui";
 import {
@@ -194,6 +195,7 @@ export function IntelReadyView({
   activeEvent,
   readyActions,
   chemistryHref,
+  actionNote,
   onWriteBrief,
   onFindNotes,
   onToggleTools,
@@ -218,6 +220,7 @@ export function IntelReadyView({
   activeEvent: IntelActiveEvent | null;
   readyActions: IntelNextAction[];
   chemistryHref: string;
+  actionNote?: { text: string; kind: "working" | "success" | "error"; aiOff?: boolean } | null;
   onWriteBrief: () => void;
   onFindNotes: () => void;
   onToggleTools: () => void;
@@ -272,6 +275,17 @@ export function IntelReadyView({
             </Button>
           </div>
         </header>
+        {actionNote ? (
+          <p className={`intel-action-note ${actionNote.kind}`} role="status">
+            {actionNote.text}
+            {actionNote.aiOff ? (
+              <>
+                {" "}
+                <Link href="/team/ai-keys">Open AI keys</Link>
+              </>
+            ) : null}
+          </p>
+        ) : null}
       </Panel>
 
       {summary ? (

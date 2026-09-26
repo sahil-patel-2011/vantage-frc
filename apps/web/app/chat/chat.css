@@ -395,3 +395,6 @@
     order: -1;
   }
 }
+
+.ch-not-sent { color: var(--danger, #b42318); }
+.ch-not-sent a { font-weight: 600; }

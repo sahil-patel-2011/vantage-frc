@@ -182,6 +182,9 @@ export default function ChatClient({
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // A send that fails because AI is off keeps the thread and the typed question on screen with a
+  // "Not sent" note; it used to swap the whole thread for a setup card and the question was gone.
+  const [notSent, setNotSent] = useState<string | null>(null);
   const [providerSetup, setProviderSetup] = useState<{
     message: string;
     steps: Array<{ id: string; label: string; detail: string; href: string }>;
@@ -272,6 +275,7 @@ export default function ChatClient({
         setStatus("Looking up tools…");
     setCutoffCode(null);
     setProviderSetup(null);
+    setNotSent(null);
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -289,10 +293,9 @@ export default function ChatClient({
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) setCutoffCode(cutoff);
       if (data.code === "setup_required" || data.status === "setup_required") {
-        setProviderSetup({
-          message: data.message ?? data.error ?? "Ask a mentor to add a key before chatting.",
-          steps: Array.isArray(data.steps) ? data.steps : [],
-        });
+        setNotSent(data.message ?? data.error ?? "AI isn't on for your team yet.");
+        setStatus("");
+        return;
       }
       setStatus(data.error ?? "Agent request failed.");
       return;
@@ -691,13 +694,24 @@ export default function ChatClient({
                   aria-label="Message"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter sends, as in every chat app; Shift+Enter adds a new line.
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      e.currentTarget.form?.requestSubmit();
+                    }
+                  }}
                   placeholder="Ask about team 254 scouting, qual 42 strategy…"
                 />
                 <div className="ch-composer-foot">
                   <Button variant="primary" type="submit">
                     Send
                   </Button>
-                  {status ? (
+                  {notSent ? (
+                    <p className="ch-status ch-not-sent" role="alert">
+                      <strong>Not sent.</strong> {notSent} <a href={withOrgHref("/team/ai-keys", orgId)}>Open AI keys</a>
+                    </p>
+                  ) : status ? (
                     <p className="ch-status" role="status">
                       {status}
                     </p>

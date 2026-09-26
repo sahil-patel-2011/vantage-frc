@@ -187,3 +187,9 @@ button.intel-sb-head:focus-visible{outline:2px solid var(--accent);outline-offse
   .intel-roster-bar{grid-column:2/4}
   .intel-roster-scouted{grid-column:4;text-align:right}
 }
+
+/* Write a brief / Find public notes answer right under their buttons. */
+.intel-action-note { margin: 10px 0 0; font-size: 14px; color: var(--muted, #52606d); }
+.intel-action-note.error { color: var(--danger, #b42318); }
+.intel-action-note.success { color: var(--success, #067647); }
+.intel-action-note a { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }

@@ -143,6 +143,9 @@ function IntelLive({ orgId }: { orgId: string }) {
   const [pickName, setPickName] = useState("Primary pick list");
   const [status, setStatus] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
+  // Write a brief / Find public notes answer under their own buttons: the page-top status sat a
+  // screen away from the button, so a student pressed it and saw nothing happen.
+  const [actionNote, setActionNote] = useState<{ text: string; kind: "working" | "success" | "error"; aiOff?: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
@@ -371,7 +374,7 @@ function IntelLive({ orgId }: { orgId: string }) {
 
   async function action(path: string, label: string) {
     if (!view) return;
-    setStatus(label);
+    setActionNote({ text: label, kind: "working" });
     setCutoffCode(null);
     try {
       const response = await fetch(path, {
@@ -389,17 +392,22 @@ function IntelLive({ orgId }: { orgId: string }) {
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) {
         setCutoffCode(cutoff);
-        setStatus(data.error ?? "Research paused until this team has credits.");
-        setMessageKind("error");
+        setActionNote({ text: data.error ?? "Research paused until this team has credits.", kind: "error" });
         return;
       }
       if (path.includes("summary") && data.summary) setSummary(data.summary);
-      setStatus(response.ok ? (path.includes("research") ? "Public notes updated." : "") : data.error ?? "");
-      setMessageKind(response.ok ? "success" : "error");
+      if (response.ok) {
+        setActionNote(path.includes("research") ? { text: "Public notes updated.", kind: "success" } : null);
+      } else {
+        setActionNote({
+          text: data.error ?? "That didn't work. Try again.",
+          kind: "error",
+          aiOff: data.code === "setup_required",
+        });
+      }
       if (response.ok && path.includes("research")) await select(view.intel.team.teamNumber);
     } catch {
-      setStatus("Network error — please try again.");
-      setMessageKind("error");
+      setActionNote({ text: "No connection. Try again.", kind: "error" });
     }
   }
 
@@ -616,6 +624,7 @@ function IntelLive({ orgId }: { orgId: string }) {
             )}
             lookupNote={view.lookupNote ?? parseLookupNote(null, view.intel.team.teamKey, false)}
             onSaveNote={(body) => void saveNote(body)}
+            actionNote={actionNote}
             onWriteBrief={() => void action("/api/intel/summary", "Writing a brief…")}
             onFindNotes={() => void action("/api/research", "Looking up public notes…")}
             onToggleTools={() => setToolsOpen((open) => !open)}
