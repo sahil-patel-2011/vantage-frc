@@ -828,9 +828,15 @@ export function resolveDraftPublishStatus(args: {
     };
   }
   const draftDef = definitionFromDraft(draftTitle, draftQuestions);
+  // Scout name / team are added to every published form automatically and never appear in the
+  // editor, so an untouched form read "Draft changes" (and "Undo my changes" could not clear it).
+  const withoutIdentity = (definition: SchemaDefinition): SchemaDefinition => ({
+    ...definition,
+    fields: definition.fields.filter((field) => !isScoutIdentityField(field)),
+  });
   const dirty =
-    stableDefinitionFingerprint(draftDef) !==
-    stableDefinitionFingerprint(published.definition);
+    stableDefinitionFingerprint(withoutIdentity(draftDef)) !==
+    stableDefinitionFingerprint(withoutIdentity(published.definition));
   if (dirty) {
     return {
       kind: "draft_changes",
