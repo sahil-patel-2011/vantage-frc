@@ -97,10 +97,10 @@ function QrHandoffShell({
     <div className="scout-workbench scout-qr-workbench soft-gate">
       <header className="scout-qr-heading">
         <div>
-          <h2 style={{ marginTop: 0 }}>QR scout handoff</h2>
+          <h2 style={{ marginTop: 0 }}>Hand off scouting by QR</h2>
           <p className="app-muted">
-            Transfer pending IndexedDB outbox rows between devices. Scans merge offline (last write wins),
-            then sync when venue Wi-Fi returns.
+            No signal? Show this code to a teammate whose phone has signal. Their phone sends your matches
+            to the team.
           </p>
         </div>
         <QrHandoffRelatedStrip orgId={orgId} />
@@ -196,17 +196,17 @@ export default function ScoutHandoffPanel({
           setLastSyncedCount(synced.count);
           await refreshPending();
           tell(
-            `Synced ${synced.count} handoff entries — queue clear after sync. Open Scouting or Offline if you need the cold-boot shell.`,
+            `Sent ${synced.count} ${synced.count === 1 ? "entry" : "entries"} to the team. Nothing is waiting on this phone.`,
           );
         } else {
-          tell("Handoff merged into the outbox — sync when the venue link stabilizes, or keep using QR.");
+          tell("Got it. Those matches are saved on this phone and send as soon as it has signal.");
         }
         onSynced?.();
       } catch (error) {
         tell(
           error instanceof Error
-            ? `${error.message} Entries stay queued — retry Sync or QR handoff.`
-            : "Sync paused — entries stay in the outbox.",
+            ? `${error.message} The matches are still saved on this phone; try again when you have signal.`
+            : "Not sent yet. The matches are still saved on this phone.",
         );
       }
     }
@@ -255,7 +255,7 @@ export default function ScoutHandoffPanel({
         }),
       );
       if (!scoped.length) {
-        tell("Queue clear — save scout entries offline first before sharing a QR.");
+        tell("Nothing to hand off: every match on this phone has been sent.");
         return;
       }
       if (forceShortCode || needsShortCodeHandoff(scoped)) {
@@ -357,10 +357,10 @@ export default function ScoutHandoffPanel({
       <Panel as="section" className="scout-qr-panel" id="scout-qr-share">
         <header className="scout-qr-heading">
           <div>
-            <h2 style={{ marginTop: 0 }}>QR scout handoff</h2>
+            <h2 style={{ marginTop: 0 }}>Hand off scouting by QR</h2>
             <p className="app-muted">
-              Transfer pending IndexedDB outbox rows between devices. Scans merge offline (last write wins),
-              then sync into disagreements and the coverage board.
+              No signal? Show this code to a teammate whose phone has signal. Their phone sends your matches to
+              the team. To take a teammate's matches, scan their code or paste it below.
             </p>
           </div>
           <div className="scout-qr-heading-meta">
@@ -472,7 +472,7 @@ export default function ScoutHandoffPanel({
           />
         </label>
         <Button variant="secondary" type="button" disabled={busy || !paste.trim()} onClick={() => void ingestContent(paste)}>
-          Merge into outbox
+          Take these matches
         </Button>
       </Panel>
 

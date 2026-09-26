@@ -76,14 +76,14 @@ describe("classifyQrHandoffQueue / qrHandoffQueueCopy", () => {
     const clear = qrHandoffQueueCopy({ loaded: true, pendingCount: 0, lastSyncedCount: 0 });
     const synced = qrHandoffQueueCopy({ loaded: true, pendingCount: 0, lastSyncedCount: 3 });
     expect(clear.tone).toBe("clear");
-    expect(clear.badge).toBe("Queue clear");
-    expect(clear.description).toMatch(/empty/i);
-    expect(clear.description).not.toMatch(/acknowledgement/i);
+    expect(clear.badge).toBe("All sent");
+    expect(clear.description).toMatch(/reached the team/i);
+    expect(clear.description).not.toMatch(/IndexedDB|outbox/i);
     expect(synced.tone).toBe("synced");
     expect(synced.badge).toBe("Synced");
-    expect(synced.title).toMatch(/after sync/i);
-    expect(synced.description).toMatch(/acknowledgement/i);
-    expect(synced.description).toMatch(/not because nothing was scouted/i);
+    expect(synced.title).toBe("Everything is sent");
+    expect(synced.description).toMatch(/reached the team/i);
+    expect(synced.description).not.toBe(clear.description);
   });
 });
 
@@ -125,7 +125,7 @@ describe("qrHandoffShellCopy", () => {
       const copy = qrHandoffShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(qrHandoffShellCopy("empty").badge).toBe("Queue clear");
+    expect(qrHandoffShellCopy("empty").badge).toBe("All sent");
     expectPlainCopy(qrHandoffShellCopy("empty").description);
     expect(qrHandoffShellCopy("setup").badge).toBe("Needs setup");
   });
@@ -154,7 +154,7 @@ describe("qrHandoffNextActions", () => {
       pendingCount: 0,
     });
     expect(actions[0]?.id).toBe("scouting");
-    expect(actions[0]?.detail).toMatch(/Queue clear/i);
+    expect(actions[0]?.detail).toMatch(/Nothing to hand off yet/i);
     expect(actions.map((a) => a.id)).toEqual(
       expect.arrayContaining(["scouting", "offline", "offline-shell"]),
     );
@@ -169,7 +169,7 @@ describe("qrHandoffNextActions", () => {
       lastSyncedCount: 5,
     });
     expect(actions[0]?.id).toBe("scouting");
-    expect(actions[0]?.detail).toMatch(/after sync/i);
+    expect(actions[0]?.detail).toMatch(/Everything is sent/i);
     expect(actions.some((a) => a.id === "offline")).toBe(true);
   });
 

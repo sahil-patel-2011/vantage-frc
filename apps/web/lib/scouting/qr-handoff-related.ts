@@ -151,29 +151,29 @@ export function qrHandoffQueueCopy(input: {
         tone,
         badge: "…",
         title: "Checking this device…",
-        description: "Reading the IndexedDB outbox — counts stay blank until this device answers.",
+        description: "Counting the entries saved on this phone.",
       };
     case "queued":
       return {
         tone,
         badge: `${formatQrHandoffMetric(pending, true)} pending`,
-        title: "Entries waiting on this device",
-        description: `Show a handoff QR so another tablet can merge these ${formatQrHandoffMetric(pending, true)} outbox row${pending === 1 ? "" : "s"} offline.`,
+        title: "Matches saved on this phone, not sent yet",
+        description: `No signal? Show this code to a teammate whose phone has signal. Their phone sends your ${formatQrHandoffMetric(pending, true)} ${pending === 1 ? "entry" : "entries"} for you.`,
       };
     case "synced":
       return {
         tone,
         badge: "Synced",
-        title: "Queue clear after sync",
-        description: `${formatQrHandoffMetric(synced, true)} entr${synced === 1 ? "y" : "ies"} left this device after a real sync acknowledgement. The outbox is clear because they synced — not because nothing was scouted.`,
+        title: "Everything is sent",
+        description: `${formatQrHandoffMetric(synced, true)} ${synced === 1 ? "entry" : "entries"} reached the team. Nothing is left on this phone to hand off.`,
       };
     default:
       return {
         tone: "clear",
-        badge: "Queue clear",
-        title: "Nothing pending to hand off",
+        badge: "All sent",
+        title: "Nothing to hand off",
         description:
-          "This device’s outbox is empty. Save match or pit scout entries offline first, then share a QR.",
+          "Every match you scouted on this phone has reached the team. Matches you save without signal show up here to hand off.",
       };
   }
 }
@@ -206,7 +206,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
       return {
         kind,
         title: "Loading QR handoff…",
-        description: "Checking which team you are on and this device’s outbox.",
+        description: "Checking which team you are on and what is saved on this phone.",
       };
     case "error":
       return {
@@ -214,7 +214,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
         badge: "Unavailable",
         title: "Could not load QR handoff",
         description:
-          "A network or device issue blocked the outbox. Retry, or open Scouting / Offline while it reloads.",
+          "This phone could not read what it has saved. Try again; your entries are still on the phone.",
       };
     case "setup":
       return {
@@ -222,22 +222,22 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
         badge: "Needs setup",
         title: "Publish a scouting form first",
         description:
-          "QR handoff merges into a published match or pit schema. Choose your team and publish a form before scanning.",
+          "Handing off needs your team's published scouting form. Ask your scouting lead to publish it.",
       };
     case "empty":
       return {
         kind,
-        badge: "Queue clear",
-        title: "Waiting on offline scout entries",
+        badge: "All sent",
+        title: "Nothing to hand off",
         description:
-          "The outbox stays blank until you save match or pit rows on this device. Cross-check Scouting and Offline.",
+          "Every match you scouted on this phone has reached the team. Matches you save without signal show up here to hand off.",
       };
     default:
       return {
         kind: "ready",
-        title: "QR scout handoff",
+        title: "Hand off scouting by QR",
         description:
-          "Transfer pending IndexedDB outbox rows between devices, then sync when venue Wi-Fi returns.",
+          "No signal? Show this code to a teammate whose phone has signal, and their phone sends your matches.",
       };
   }
 }
@@ -262,14 +262,14 @@ export function qrHandoffNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose your team before sharing outbox rows.",
+          detail: "Choose your team before handing off matches.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Forms and the outbox stay blank until your team configures them.",
+          detail: "Handing off works once your team publishes a scouting form.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -308,20 +308,20 @@ export function qrHandoffNextActions(input: {
       {
         id: "retry",
         label: "Retry QR handoff",
-        detail: "Reload this device’s outbox.",
+        detail: "Read what is saved on this phone again.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Match and pit forms stay available while the outbox reloads.",
+        detail: "Match and pit forms keep working meanwhile.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
         id: "offline",
         label: "Open Offline",
-        detail: "Cold-boot status stays available while the outbox reloads.",
+        detail: "Offline scouting keeps working meanwhile.",
         href: withOrgHref("/offline", orgId),
       },
     ];
@@ -332,7 +332,7 @@ export function qrHandoffNextActions(input: {
       {
         id: "scouting",
         label: "Save a scout entry offline",
-        detail: "Queue clear means nothing is pending yet — save a match or pit row first.",
+        detail: "Nothing to hand off yet: every match on this phone has been sent. Keep scouting.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -362,7 +362,7 @@ export function qrHandoffNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Queue clear after sync — keep scouting; new rows land in the outbox again.",
+        detail: "Everything is sent. Keep scouting; new matches save here until they send.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -388,7 +388,7 @@ export function qrHandoffNextActions(input: {
         pending > 0
           ? `Share ${pending} pending entr${pending === 1 ? "y" : "ies"}`
           : "Show handoff QR",
-      detail: "Generate an embedded QR or short code from real outbox rows.",
+      detail: "Make a QR code or short code from the matches saved on this phone.",
       href: "#scout-qr-share",
       primary: true,
     },
