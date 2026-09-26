@@ -8,6 +8,7 @@
  * step says a lead signs it off, and only a lead can.
  */
 
+import type { PasteVerifier, PrChangeRule } from "./checks-6925";
 import type { OnshapeApiCheck } from "./checks-onshape";
 
 export type FeatureExpectation = {
@@ -30,8 +31,12 @@ export type StepCheck =
   | { kind: "onshape-connected" }
   /** Reads the student's Onshape document through the API (tabs, sketches, mates, drawings…): checks-onshape.ts. */
   | OnshapeApiCheck
-  /** Pasted text must contain every pattern (a build log, a config block). */
-  | { kind: "paste"; prompt: string; must: Array<{ pattern: string; flags?: string; missing: string }> }
+  /**
+   * Pasted text must contain every pattern (a build log, a config block). `verify` (checks-6925.ts)
+   * reads it as Java with comments removed, as build output, or as a vendordeps file, and can refuse
+   * patterns, require an order, or read the file from a GitHub link.
+   */
+  | { kind: "paste"; prompt: string; must: Array<{ pattern: string; flags?: string; missing: string }>; verify?: PasteVerifier }
   /** Two or more numbers compared against a tolerance. */
   | {
       kind: "numbers";
@@ -39,8 +44,8 @@ export type StepCheck =
       /** Passes when |a - b| <= tolerance for the named pair. */
       within: { a: string; b: string; tolerance: number; unit: string };
     }
-  /** A GitHub pull request URL that exists; optionally with discussion on it. */
-  | { kind: "github-pr"; minComments?: number }
+  /** A GitHub pull request URL that exists; optionally with discussion on it, and changing matching files. */
+  | { kind: "github-pr"; minComments?: number; changes?: PrChangeRule }
   /** A GitHub tag or release URL that exists. */
   | { kind: "github-tag" }
   /** Software cannot tell: a team lead signs the step off. */

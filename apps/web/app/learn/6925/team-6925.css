@@ -19,17 +19,24 @@
   font-size: 18px;
 }
 
-/* Jump nav between the two tracks. */
+/* Jump nav between the two tracks: two 44px tap targets, side by side. */
 .lab-track-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
   margin: 0 0 28px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 .lab-track-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   color: var(--ink);
+  text-decoration: none;
 }
 
 .lab-track {
@@ -64,7 +71,150 @@
   line-height: 1.6;
 }
 .lab-week-index a {
+  display: inline-block;
+  padding: 10px 0;
   color: var(--ink);
+}
+
+/* The one action at the top of each track: do the steps with checks. */
+.lab-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 4px 0 12px;
+  padding: 0 18px;
+  border-radius: var(--radius-sm, 12px);
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* What the team's code uses, read from the repository. */
+.lab-stack {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: color-mix(in srgb, var(--surface) 92%, var(--line));
+}
+.lab-stack h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.lab-stack p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.lab-stack dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.lab-stack dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  gap: 10px;
+}
+.lab-stack dt {
+  font-weight: 700;
+}
+.lab-stack dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.lab-stack .lab-links {
+  margin: 6px 0 0;
+}
+@media (max-width: 480px) {
+  .lab-stack dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+/* A week's small steps: each opens to what to do, why, and how it is checked. */
+.lab-tasks {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lab-task {
+  scroll-margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+}
+.lab-task summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.lab-task summary::-webkit-details-marker {
+  display: none;
+}
+.lab-task-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2, var(--line));
+  font-size: 13px;
+  font-weight: 700;
+}
+.lab-task-title {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.lab-task-badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--ink);
+  font-size: 12px;
+}
+.lab-task-badge.is-lead {
+  background: var(--surface-2, var(--line));
+}
+.lab-task-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+.lab-task-body p,
+.lab-task-body ol {
+  margin: 0;
+}
+.lab-task-why {
+  padding-left: 10px;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  color: var(--ink);
+}
+.lab-task-do {
+  padding-left: 1.3em;
+  display: grid;
+  gap: 4px;
+}
+.lab-task-check {
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.lab-task-body .lab-links {
+  margin: 0;
 }
 
 .lab-subhead {
@@ -84,6 +234,9 @@
   font-size: 13px;
 }
 .lab-back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--muted);
 }
 
@@ -99,7 +252,11 @@
 }
 
 .lab-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .lab-link-primary {

@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { listOnshapeFeatures, readOnshapeMassProperties, resolveOnshapeBind } from "@vantage/cad";
 import { acquireOnshape } from "../cad-learn/onshape-access";
 import { checkFeatures, checkNumbers, checkPaste, parseGitHubUrl } from "./checks";
+import { checkPullRequestChanges, runPasteVerifier } from "./checks-6925";
 import { isOnshapeApiCheck, onshapeAccessMessage, onshapeLinkProblem, runOnshapeApiCheck } from "./checks-onshape";
 import type { CheckResult, StepCheck } from "./types";
 
@@ -55,7 +56,7 @@ export async function runGuidedCheck(
   }
   switch (check.kind) {
     case "paste":
-      return checkPaste(check, String(input.text ?? ""));
+      return check.verify ? runPasteVerifier(check, String(input.text ?? "")) : checkPaste(check, String(input.text ?? ""));
     case "numbers":
       return checkNumbers(check, input.values ?? {});
     case "lead-signoff":
@@ -87,6 +88,7 @@ export async function runGuidedCheck(
         if (discussion < need) {
           return { passed: false, message: "Not yet: the pull request has no review comments. Ask a lead to review it, answer their comment, then check again.", evidence };
         }
+        if (check.kind === "github-pr" && check.changes) return checkPullRequestChanges(ref, check.changes, github, evidence);
         return { passed: true, message: `Checked: pull request #${ref.number} is on GitHub${need ? " with review discussion" : ""}.`, evidence };
       }
       const response = await github(`/repos/${ref.owner}/${ref.repo}/git/ref/tags/${encodeURIComponent(ref.tag)}`);

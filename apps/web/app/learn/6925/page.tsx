@@ -4,7 +4,7 @@ import "./team-6925.css";
 export const metadata = {
   title: "Team 6925 lab",
   description:
-    "Two paced tracks for Team 6925 — programming (WPILib, Git, motor control, swerve, PathPlanner, vision) and mechanical (Onshape, materials, power transmission, prototyping, inspection). Official docs only.",
+    "Team 6925's paced tracks, step by step and checked: programming in the team's own stack (WPILib Java, CTRE Phoenix 6 swerve, PathPlanner, Limelight) and mechanical and CAD in Onshape. Official docs only.",
 };
 
 export default function Team6925LabPage() {

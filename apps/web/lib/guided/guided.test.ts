@@ -20,9 +20,10 @@ describe("guided track content", () => {
     const onshape = GUIDED_TRACKS.find((track) => track.id === "onshape-first-part")!;
     expect(onshape.steps.every((step) => step.check.kind.startsWith("onshape"))).toBe(true);
     const programming = GUIDED_TRACKS.find((track) => track.id === "frc6925-programming")!;
-    expect(programming.steps).toHaveLength(10);
+    // Every week is broken into small steps; most are checked by Vantage, not signed off.
+    expect(programming.steps.length).toBeGreaterThanOrEqual(30);
     const automatic = programming.steps.filter((step) => step.check.kind !== "lead-signoff");
-    expect(automatic.length).toBeGreaterThanOrEqual(8);
+    expect(automatic.length / programming.steps.length).toBeGreaterThan(0.8);
   });
 
   it("stores progress apart from the CAD track's lesson ids", () => {
@@ -67,10 +68,10 @@ describe("checkFeatures", () => {
 });
 
 describe("checkPaste", () => {
-  const check = guidedStep("frc6925-programming", "prog-1")!.check;
-  if (check.kind !== "paste") throw new Error("prog-1 is a paste check");
-  it("passes a real deploy and console log", () => {
-    expect(checkPaste(check, "> Task :deploy\nBUILD SUCCESSFUL in 14s\n...\n********** Robot program starting **********").passed).toBe(true);
+  const check = guidedStep("frc6925-programming", "prog-1-build")!.check;
+  if (check.kind !== "paste") throw new Error("prog-1-build is a paste check");
+  it("passes a real build log", () => {
+    expect(checkPaste(check, "> Task :compileJava\nBUILD SUCCESSFUL in 14s\n5 actionable tasks: 5 executed").passed).toBe(true);
   });
   it("names the first thing missing", () => {
     const result = checkPaste(check, "BUILD FAILED in 3s");
