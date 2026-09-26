@@ -3,9 +3,8 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import type { ScoutSchema } from "@vantage/scouting";
 import { Button, FormRow, Panel } from "../../components/ui";
-import { ExportButton } from "../../components/ui/export-button";
-import { scoutEventLabel, shouldShowScoutingRecentEntries } from "../../lib/scouting/scouting-related";
-import { SCOUT_ENTRY_CSV_COLUMNS, type Bootstrap, type TrustSnapshot } from "./scouting-model";
+import { shouldShowScoutingRecentEntries } from "../../lib/scouting/scouting-related";
+import type { Bootstrap, TrustSnapshot } from "./scouting-model";
 import { ScoutReportViewer } from "./scout-report-viewer";
 
 /** Wide enough that the tools sit in their own column beside the form. */
@@ -57,7 +56,15 @@ export function ScoutingLeadTools({
   }, []);
 
   const entries = data?.recentEntries ?? [];
-  const eventLabel = scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey });
+  // Only scouts with at least one report checked against an official score are
+  // ranked, best agreement first. Ranking unchecked scouts ordered them by how
+  // many forms they filled, which the heading says this is not.
+  const accuracyBoard = (trust?.leaderboard ?? [])
+    .filter((scout) => scout.checks > 0 && scout.accuracy != null)
+    .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0) || b.checks - a.checks);
+  const exportHref = data?.eventKey
+    ? `/api/scouting/export?orgId=${encodeURIComponent(orgId)}&eventKey=${encodeURIComponent(data.eventKey)}`
+    : null;
 
   return (
     <aside className="scout-side">
@@ -76,17 +83,17 @@ export function ScoutingLeadTools({
             <p className="app-muted">Tap one to see what was recorded.</p>
             {data && shouldShowScoutingRecentEntries(entries.length) ? (
               <>
-                <ExportButton
-                  rows={entries}
-                  columns={SCOUT_ENTRY_CSV_COLUMNS}
-                  feature="Scouting entries"
-                  orgLabel={eventLabel}
-                  orgId={orgId}
-                  size="sm"
-                  provenance={`${
-                    eventLabel ?? "Active event"
-                  } — the 30 most recent synced entries only. Anything still queued offline, and the rest of the event, is in the full export.`}
-                />
+                {data.canManageSchemas && exportHref ? (
+                  <p className="scout-export-all" style={{ display: "grid", gap: 6, margin: "0 0 12px" }}>
+                    <a className="app-button secondary" href={exportHref} download>
+                      Export all match scouting
+                    </a>
+                    <small className="app-muted">
+                      Every report at this event, with each answer, in match order. Reports still waiting to
+                      upload from a phone are not in it yet.
+                    </small>
+                  </p>
+                ) : null}
                 <ScoutReportViewer
                   entries={entries}
                   orgId={orgId}
@@ -102,15 +109,15 @@ export function ScoutingLeadTools({
           <Panel className="scout-activity" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Most accurate scouts</h2>
             <p className="app-muted">Checked against the official scores, not by how many forms were filled.</p>
-            {trust?.leaderboard?.length ? (
+            {accuracyBoard.length ? (
               <ol className="scout-accuracy-mini">
-                {trust.leaderboard.slice(0, 5).map((scout, index) => (
+                {accuracyBoard.slice(0, 5).map((scout, index) => (
                   <li key={scout.userId}>
                     <span className="scout-accuracy-rank">{index + 1}</span>
                     <div>
-                      <strong>{scout.name}</strong>
+                      <strong>{scout.name?.trim() || "Team scout"}</strong>
                       <small className="app-muted">
-                        {scout.checks} checked · {scout.entries} entries
+                        {scout.checks} of {scout.entries} {scout.entries === 1 ? "report" : "reports"} checked
                       </small>
                     </div>
                     <b>{scout.accuracy == null ? "—" : `${Math.round(scout.accuracy * 100)}%`}</b>
@@ -118,7 +125,10 @@ export function ScoutingLeadTools({
                 ))}
               </ol>
             ) : (
-              <p className="app-muted">Appears once official scores are in for matches you scouted.</p>
+              <p className="app-muted">
+                Appears once the official score breakdown is posted for a match you scouted. Some events post
+                only alliance totals; those can&apos;t check one robot.
+              </p>
             )}
           </Panel>
 
