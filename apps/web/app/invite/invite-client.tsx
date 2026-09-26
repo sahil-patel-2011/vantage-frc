@@ -404,7 +404,8 @@ export default function InviteClient() {
           </div>
         ) : null}
 
-        {kind !== "ready" && kind !== "auth_required" && kind !== "email_mismatch" ? (
+        {/* Not while loading: "Retry invitation" sat under "Checking invite…" on every normal open. */}
+        {kind !== "ready" && kind !== "loading" && kind !== "auth_required" && kind !== "email_mismatch" ? (
           <NextActions kind={kind} orgId={preview?.orgId} token={token} />
         ) : null}
       </section>

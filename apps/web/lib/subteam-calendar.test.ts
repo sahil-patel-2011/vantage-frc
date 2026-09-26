@@ -104,6 +104,19 @@ describe("groupEventsByDay / upcoming", () => {
     expect(list.map((e) => e.id)).toEqual(["soon", "later"]);
   });
 
+  it("keeps a practice later the same day when times arrive as Postgres text", () => {
+    const now = new Date("2026-09-26T02:00:00.000Z");
+    const list = upcomingEvents(
+      [
+        event({ id: "tonight", title: "Tonight", startsAt: "2026-09-26 14:00:00+00", endsAt: "2026-09-26 16:00:00+00" }),
+        event({ id: "earlier", title: "Earlier", startsAt: "2026-09-26 00:00:00+00", endsAt: "2026-09-26 01:00:00+00" }),
+      ],
+      now,
+      5,
+    );
+    expect(list.map((e) => e.id)).toEqual(["tonight"]);
+  });
+
   it("sortEvents is stable by start then title", () => {
     const sorted = sortEvents([
       event({ id: "2", title: "B", startsAt: "2026-01-01T10:00:00.000Z" }),

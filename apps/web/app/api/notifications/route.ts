@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 import { LIVE_NOTIFICATION_SQL } from "../../../lib/notifications/live-sql";
+import { joinerNames, nameTheJoiner } from "../../../lib/notifications/joiner-names";
 
 type NotificationRow = {
   id: string;
@@ -53,15 +54,24 @@ export async function GET(request: Request) {
         [session.user.id, orgId],
       );
 
+      const joinerIds = rows.rows
+        .filter((row) => row.type === "invite_accepted" && typeof row.payload?.userId === "string")
+        .map((row) => String(row.payload.userId));
+      const joiners = await joinerNames(client, [...new Set(joinerIds)]);
+
       return {
         unreadCount: Number(unread.rows[0]?.count ?? 0),
         items: rows.rows.map((row) => {
           const payload = row.payload ?? {};
+          const title = notificationTitle(row.type, payload);
           return {
             id: row.id,
             orgId: row.orgId,
             type: row.type,
-            title: notificationTitle(row.type, payload),
+            title:
+              row.type === "invite_accepted" && typeof payload.userId === "string"
+                ? nameTheJoiner(title, joiners.get(String(payload.userId)))
+                : title,
             body: notificationBody(payload),
             href: notificationHref(row.type, payload, row.orgId ?? orgId),
             payload,

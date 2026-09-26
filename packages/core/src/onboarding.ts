@@ -329,10 +329,6 @@ type LockedOrgRow = {
   requestCreatedAt: string | null;
 };
 
-function isTeamHeadRole(role: string | null | undefined): boolean {
-  return role === "owner" || role === "admin";
-}
-
 export async function getOnboardingState(client: PoolClient, userId: string): Promise<OnboardingState> {
   const profile = await client.query<{
     firstName: string | null;
@@ -445,7 +441,10 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     isTeamHead:
       // Affiliation only: the location is optional now, so a team that skipped it would have
       // asked every later admin the whole set again.
-      workspaceLocked && isTeamHeadRole(locked.role) ? !orgFunding.teamAffiliation : false,
+      // The owner only. An invited mentor is not a member yet, so row security hides the
+      // team's saved answers from this read and they were asked everything the owner had
+      // already answered. The platform admin always creates the owner first.
+      workspaceLocked && locked.role === "owner" ? !orgFunding.teamAffiliation : false,
     orgCity: locked?.city ?? null,
     orgStateProv: locked?.stateProv ?? null,
     orgDescription: locked?.description ?? null,

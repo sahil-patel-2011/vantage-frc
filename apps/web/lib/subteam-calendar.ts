@@ -276,9 +276,15 @@ function formatDayLabel(day: string): string {
 
 /** Upcoming (not-yet-ended) events, soonest first. */
 export function upcomingEvents(events: CalendarEvent[], now: Date = new Date(), limit = 5): CalendarEvent[] {
-  const iso = now.toISOString();
+  // Compared as instants, not text: the API sends Postgres text ("2026-09-26 14:00:00+00") and
+  // a space sorts before the "T" of an ISO string, so a practice later the same UTC day read as
+  // already over and "Coming up" said "Nothing scheduled yet" under the toast that added it.
+  const nowMs = now.getTime();
   return sortEvents(events)
-    .filter((event) => (event.endsAt ?? event.startsAt) >= iso)
+    .filter((event) => {
+      const at = Date.parse(event.endsAt ?? event.startsAt);
+      return Number.isFinite(at) ? at >= nowMs : true;
+    })
     .slice(0, limit);
 }
 

@@ -83,7 +83,8 @@ export function notificationHref(
       return orgId ? `/messages${orgQuery}` : "/messages";
     }
     case "invite_accepted":
-      return orgId ? `/team${orgQuery}` : "/team";
+      // Straight to the people list, where the person who joined is.
+      return orgId ? `/team/admin${orgQuery}` : "/team/admin";
     case "billing":
     case "credit_low":
       return orgId ? `/team/budgets${orgQuery}` : "/account";
