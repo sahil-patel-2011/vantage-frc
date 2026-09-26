@@ -210,7 +210,7 @@ export type FieldClock = CountdownState & {
   lateMinutes: number | null;
   /** Our match's time with the field's delay added, for the "about 3:51 PM" line. */
   expectedTime: string | null;
-  /** "Field on Qual 31 · 2 matches before ours", or null when the field is not known. */
+  /** "On the field: Qual 29 · ours is 2 matches away", or null when the field is not known. */
   fieldLine: string | null;
 };
 
@@ -242,8 +242,9 @@ export function fieldAwareClock(
     before == null || !field
       ? null
       : before === 0
-        ? `Ours is next on the field`
-        : `Field on Qual ${field.matchNumber} · ${before} ${before === 1 ? "match" : "matches"} before ours`;
+        ? // "Ours is next on the field" read as "we play now" at 19 minutes out.
+          `On the field next: ours`
+        : `On the field: Qual ${field.matchNumber} · ours is ${before} ${before === 1 ? "match" : "matches"} away`;
   if (before === 0) {
     return { ...base, label: base.remainingMs != null && base.remainingMs > 0 ? base.label : "Now", leavePit: true, queueSoon: true, queueNow: true, before, lateMinutes, expectedTime, fieldLine };
   }

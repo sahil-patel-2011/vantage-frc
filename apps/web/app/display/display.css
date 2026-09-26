@@ -485,6 +485,10 @@
   margin-bottom: 1rem;
   background: color-mix(in srgb, #f6e05e 18%, transparent);
   border: 1px solid color-mix(in srgb, #f6e05e 45%, transparent);
+}
+/* Only the link itself may break anywhere; the instructions broke mid-word ("p ress"). */
+.token-once code,
+.token-once .tv-link-url {
   word-break: break-all;
 }
 

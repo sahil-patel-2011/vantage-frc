@@ -14,7 +14,7 @@ describe("fieldAwareClock", () => {
     expect(clock.expectedTime).toBe(at("16:18"));
     expect(clock.leavePit).toBe(false);
     expect(queueCue(clock)).toBe("STAY READY");
-    expect(clock.fieldLine).toBe("Field on Qual 31 · 2 matches before ours");
+    expect(clock.fieldLine).toBe("On the field: Qual 31 · ours is 2 matches away");
   });
 
   it("tells the pit to move one match out and to queue when ours is next", () => {
@@ -22,7 +22,7 @@ describe("fieldAwareClock", () => {
     expect(one.leavePit).toBe(true);
     const next = fieldAwareClock(ours, { matchNumber: 33, scheduledTime: at("15:51") }, now);
     expect(queueCue(next)).toBe("QUEUE NOW");
-    expect(next.fieldLine).toBe("Ours is next on the field");
+    expect(next.fieldLine).toBe("On the field next: ours");
   });
 
   it("falls back to the printed time without field data", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ActionMenu, EmptyState, PageHeader, Button } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Button, Modal } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
@@ -257,14 +257,14 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
 
   const [tvName, setTvName] = useState("");
 
-  async function mintToken(choice: PairChoice) {
-    if (!canSync || !choice) return;
+  async function mintToken(choice: PairChoice): Promise<boolean> {
+    if (!canSync || !choice) return false;
     const [mode, boardId] = choice.split(":") as ["pit" | "stage", string];
     // A link for this board was made on this visit and is still on screen: show it again.
     // Every click used to make another live link ("Event board · Never used" three times).
     if (minted && minted.boardId === boardId && minted.mode === mode) {
       say("Here is the TV link you just made.", true);
-      return;
+      return true;
     }
     const board = boards.find((entry) => entry.id === boardId);
     // Named for the screen it goes on ("Pit TV", "Stands laptop"), so the list below can tell
@@ -290,18 +290,21 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       }
       say("TV link ready. Copy it now: it is shown only once.", true);
       await load();
-    } else {
-      say(d.error ?? "Couldn't make a TV link. Try again.", false);
+      return true;
     }
+    say(d.error ?? "Couldn't make a TV link. Try again.", false);
+    return false;
   }
 
-  // "Get a TV link" picks the Event board and asks which screen it is for before making the
-  // link: it used to make one at once, and the list filled with identical "Event board" rows.
-  function getEventTvLink(boardId: string) {
+  const [tvSheetOpen, setTvSheetOpen] = useState(false);
+
+  // "Get a TV link" makes the Event board's link at once and shows it in a sheet with the QR code
+  // and how to put it on a TV. It used to scroll to a second form 600px down with its hint at the
+  // top of the page. Unused older links for the board are turned off as the new one is made, so
+  // the list does not fill with identical rows.
+  async function getEventTvLink(boardId: string) {
     setPairChoice(`stage:${boardId}`);
-    document.getElementById("display-pair")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.setTimeout(() => document.getElementById("disp-tv-name")?.focus({ preventScroll: true }), 350);
-    say("Name the screen it goes on (Pit TV, Stands laptop), then press Make TV link.", true);
+    if (await mintToken(`stage:${boardId}`)) setTvSheetOpen(true);
   }
 
   async function revokeToken(tokenId: string, title: string) {
@@ -413,7 +416,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               canSync={canSync}
               busy={busy}
               onCreate={() => void turnOnEventBoard()}
-              onGetTvLink={getEventTvLink}
+              onGetTvLink={(boardId) => void getEventTvLink(boardId)}
             />
           )}
 
@@ -608,7 +611,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               </div>
             ) : null}
 
-            {minted ? (
+            {minted && !tvSheetOpen ? (
               <TvLinkPanel
                 token={minted.token}
                 mode={minted.mode}
@@ -616,6 +619,21 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                 onCopied={(text) => say(text, !/couldn/i.test(text))}
               />
             ) : null}
+            <Modal
+              open={tvSheetOpen && Boolean(minted)}
+              onClose={() => setTvSheetOpen(false)}
+              title="Your TV link"
+              description="Open it on the TV's laptop, cast it from a phone, or scan the code. Name it or make links for other boards under Put it on the TV."
+            >
+              {minted ? (
+                <TvLinkPanel
+                  token={minted.token}
+                  mode={minted.mode}
+                  boardName={boardName(minted.boardId) ?? undefined}
+                  onCopied={(text) => say(text, !/couldn/i.test(text))}
+                />
+              ) : null}
+            </Modal>
 
             {activeTokens.length ? (
               <div className="token-list">

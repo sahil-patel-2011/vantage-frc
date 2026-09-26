@@ -386,9 +386,9 @@ function countdownLabel(scheduled: string | null, now: number): string | null {
   if (!Number.isFinite(at)) return null;
   const ms = at - now;
   if (ms <= 0) return "now";
-  // The last five minutes count in seconds: "in 4 min" read the same for a whole minute of
-  // walking to the queue.
-  if (ms < 5 * 60_000) {
+  // The last ten minutes count in seconds, like Home and the briefing: "in 4 min" read the same
+  // for a whole minute of walking to the queue.
+  if (ms < 10 * 60_000) {
     const seconds = Math.ceil(ms / 1000);
     return `in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   }
@@ -430,7 +430,12 @@ function NextMatchScreen({ data, now, intel }: { data: DisplayStagePayload; now:
       {keys.map((key) => (
         <li key={key} className={key === ownKey ? "is-ours" : undefined}>
           <strong>{key.replace(/^frc/i, "")}</strong>
-          {key === ownKey ? <span className="stage-us">Us</span> : null}
+          {/* Our driver station too ("Us · Blue 2"): the drive team walks to it. */}
+          {key === ownKey ? (
+            <span className="stage-us">
+              Us · {color === "red" ? "Red" : "Blue"} {keys.indexOf(key) + 1}
+            </span>
+          ) : null}
           {wordsFor(key) ? <em>{wordsFor(key)}</em> : null}
         </li>
       ))}
