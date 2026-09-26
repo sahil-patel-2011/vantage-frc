@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { alliancePartners, resolveOwnAllianceColor, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import { scoutEventLabel } from "../scouting/scouting-related";
 import { strategyCanSync } from "../strategy/strategy-related";
 import { toBriefingMatchCardPayload, type MatchStrategyBriefingPayload } from "./briefing-payload";
@@ -72,6 +73,7 @@ type MatchRow = {
   winningAlliance: string | null;
   redAlliance: unknown;
   blueAlliance: unknown;
+  stillAhead?: boolean | null;
 };
 
 type CardRow = {
@@ -163,7 +165,8 @@ export async function computeMatchStrategyCardsView(
             m.set_number AS "setNumber", m.event_key AS "eventKey",
             COALESCE(m.predicted_time, m.event_time, m.actual_time)::text AS "scheduledAt",
             m.actual_time::text AS "actualTime", m.winning_alliance AS "winningAlliance",
-            m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
+            m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
+            ${matchStillAheadSql("m")} AS "stillAhead"
      FROM matches_ref m
      WHERE m.event_key = $1
        AND (

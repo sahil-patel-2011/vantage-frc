@@ -90,6 +90,22 @@ describe("match-strategy-cards pure helpers", () => {
       ),
     ).toBeNull();
   });
+
+  it("follows the shared still-ahead rule when the query supplies it, so a late match stays next", () => {
+    const now = "2026-03-14T16:00:00.000Z";
+    expect(
+      selectNextTbaMatch(
+        [
+          { matchKey: "2026casj_qm31", scheduledAt: "2026-03-14T15:40:00.000Z", stillAhead: true },
+          { matchKey: "2026casj_qm32", scheduledAt: "2026-03-14T16:15:00.000Z", stillAhead: true },
+        ],
+        now,
+      ),
+    ).toBe("2026casj_qm31");
+    expect(
+      selectNextTbaMatch([{ matchKey: "2026casj_qm20", scheduledAt: "2026-03-14T09:00:00.000Z", stillAhead: false }], now),
+    ).toBeNull();
+  });
 });
 
 describe("computeMatchStrategyCardsView", () => {

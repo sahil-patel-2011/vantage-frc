@@ -107,21 +107,42 @@ export function ourMatches(matches: ScheduleMatch[], teamKey: string): ScheduleM
   return matches.filter((match) => allianceOf(match, teamKey) != null);
 }
 
+const LATE_MATCH_GRACE_MS = 3 * 60 * 60 * 1000;
+
+function hasStarted(match: ScheduleMatch): boolean {
+  return isScored(match) || match.winningAlliance != null || Boolean(match.actualTime);
+}
+
 /**
- * First match containing the team that has no scores yet and whose time is still ahead (or not
- * posted). The same rule as every "next match" query (`time > now()`): with a six-hour window
- * here, My Day and the top strip kept a match due 77 minutes earlier as "next" while Home, the
- * pit TV and Strategy had moved on to the one after it.
+ * "This match is still to come" — the rule in matches/match-ahead-sql.ts, for a schedule already
+ * loaded in memory. A match is over once it has a result or a start time, once any later
+ * qualification match in the list has one (the field moved past it), or once its time is more
+ * than three hours gone. Anything else is still ahead, late or not.
+ *
+ * It used to be "its time is still in the future": while Qual 31 ran late, Event day said
+ * "Qual 31 · BLUE bumpers" and Schedule and My Day said "Qual 32 · RED" at the same moment.
  */
+export function isMatchStillAhead(match: ScheduleMatch, matches: ScheduleMatch[], now: number = Date.now()): boolean {
+  if (hasStarted(match)) return false;
+  const when = match.predictedTime ?? match.plannedTime ?? match.scheduledTime;
+  if (when) {
+    const time = new Date(when).getTime();
+    if (!Number.isNaN(time) && time <= now - LATE_MATCH_GRACE_MS) return false;
+  }
+  if (match.compLevel === "qm") {
+    const fieldMovedOn = matches.some(
+      (other) => other.compLevel === "qm" && other.matchNumber > match.matchNumber && hasStarted(other),
+    );
+    if (fieldMovedOn) return false;
+  }
+  return true;
+}
+
+/** First match containing the team that is still to come (see isMatchStillAhead), in schedule order. */
 export function nextOurMatch(matches: ScheduleMatch[], teamKey: string, now: number = Date.now()): ScheduleMatch | null {
   for (const match of matches) {
     if (allianceOf(match, teamKey) == null) continue;
-    if (isScored(match)) continue;
-    if (match.scheduledTime != null) {
-      const time = new Date(match.scheduledTime).getTime();
-      if (!Number.isNaN(time) && time <= now) continue;
-    }
-    return match;
+    if (isMatchStillAhead(match, matches, now)) return match;
   }
   return null;
 }

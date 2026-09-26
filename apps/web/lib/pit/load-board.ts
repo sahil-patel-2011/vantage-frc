@@ -8,6 +8,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { BATTERY_READY_RULE } from "../battery-reliability";
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import { loadRepeatFailureAlerts, type RepeatFailureAlert } from "../fmea/repeat-failures";
 import { loadBatteryFleet } from "../load-battery-fleet";
 import {
@@ -86,8 +87,9 @@ export async function loadPitBoard(
              FROM matches_ref
              WHERE event_key=$1
                AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
-               AND COALESCE(actual_time,predicted_time,event_time)>now()
-             ORDER BY COALESCE(actual_time,predicted_time,event_time)
+               -- Event day's still-ahead rule: a late match that has not started stays next.
+               AND ${matchStillAheadSql()}
+             ORDER BY COALESCE(predicted_time,event_time), match_number
              LIMIT 1`,
             [context.eventKey, teamKey],
           )

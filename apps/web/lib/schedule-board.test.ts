@@ -91,14 +91,36 @@ describe("nextOurMatch", () => {
     expect(nextOurMatch(list, US)).toBeNull();
   });
 
-  it("skips unscored matches whose time has passed but keeps ahead and untimed ones", () => {
+  it("keeps a late match that has not started as next, like Event day's still-ahead rule", () => {
     const now = Date.parse("2026-03-14T18:00:00Z");
-    const stale = match({ matchKey: "m1", scheduledTime: "2026-03-14T10:00:00Z" });
-    const late = match({ matchKey: "m2", scheduledTime: "2026-03-14T17:00:00Z" });
-    const ahead = match({ matchKey: "m3", scheduledTime: "2026-03-14T18:20:00Z" });
-    const untimed = match({ matchKey: "m4" });
-    expect(nextOurMatch([stale, late, ahead, untimed], US, now)?.matchKey).toBe("m3");
-    expect(nextOurMatch([stale, late, untimed], US, now)?.matchKey).toBe("m4");
+    // Eight hours gone: a match whose result never synced, not one the field is about to run.
+    const stale = match({ matchKey: "m1", matchNumber: 1, scheduledTime: "2026-03-14T10:00:00Z" });
+    // An hour late and not started: the field is running behind, so it is still our next match.
+    const late = match({ matchKey: "m2", matchNumber: 2, scheduledTime: "2026-03-14T17:00:00Z" });
+    const ahead = match({ matchKey: "m3", matchNumber: 3, scheduledTime: "2026-03-14T18:20:00Z" });
+    expect(nextOurMatch([stale, late, ahead], US, now)?.matchKey).toBe("m2");
+    expect(nextOurMatch([stale, ahead], US, now)?.matchKey).toBe("m3");
+  });
+
+  it("moves past a late match once a later qualification match has started", () => {
+    const now = Date.parse("2026-03-14T18:00:00Z");
+    const late = match({ matchKey: "m2", matchNumber: 2, scheduledTime: "2026-03-14T17:00:00Z" });
+    const later = match({
+      matchKey: "m3",
+      matchNumber: 3,
+      red: ["frc1", "frc2", "frc3"],
+      blue: ["frc4", "frc5", "frc6"],
+      actualTime: "2026-03-14T17:55:00Z",
+    });
+    const ours = match({ matchKey: "m4", matchNumber: 4, scheduledTime: "2026-03-14T18:20:00Z" });
+    expect(nextOurMatch([late, later, ours], US, now)?.matchKey).toBe("m4");
+  });
+
+  it("treats a match that has started as over, even before its score posts", () => {
+    const now = Date.parse("2026-03-14T18:00:00Z");
+    const running = match({ matchKey: "m2", matchNumber: 2, actualTime: "2026-03-14T17:58:00Z" });
+    const untimed = match({ matchKey: "m4", matchNumber: 4 });
+    expect(nextOurMatch([running, untimed], US, now)?.matchKey).toBe("m4");
   });
 });
 

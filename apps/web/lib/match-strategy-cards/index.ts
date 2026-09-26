@@ -101,6 +101,8 @@ export type TbaMatchForNext = {
   scheduledAt: string | null;
   actualTime?: string | null;
   winningAlliance?: string | null;
+  /** matches/match-ahead-sql's rule, computed in the query. When present it decides "next". */
+  stillAhead?: boolean | null;
 };
 
 /** Played once TBA posted a winner/tie or an actual_time. */
@@ -118,6 +120,11 @@ export function selectNextTbaMatch(
   matches: readonly TbaMatchForNext[],
   now: Date | string | number = Date.now(),
 ): string | null {
+  // The shared still-ahead rule, when the query supplied it: while Qual 31 ran late, Match cards
+  // said "next up: Qual 32" beside Event day's "Qual 31 · BLUE bumpers".
+  if (matches.some((match) => typeof match.stillAhead === "boolean")) {
+    return matches.find((match) => match.stillAhead === true)?.matchKey ?? null;
+  }
   const parsed = typeof now === "number" ? now : Date.parse(String(now));
   const nowMs = Number.isFinite(parsed) ? parsed : Date.now();
   const unplayed = matches.filter((match) => !matchHasTbaResult(match));

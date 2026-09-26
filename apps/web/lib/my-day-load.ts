@@ -275,6 +275,9 @@ export async function loadMyDayView(
     compLevel: string;
     matchNumber: number;
     scheduledTime: string | null;
+    plannedTime: string | null;
+    predictedTime: string | null;
+    actualTime: string | null;
     syncedAt: string | null;
     redAlliance: AllianceJson;
     blueAlliance: AllianceJson;
@@ -282,6 +285,10 @@ export async function loadMyDayView(
   }>(
     `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
             COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
+            m.event_time::text AS "plannedTime",
+            m.predicted_time::text AS "predictedTime",
+            -- A result posted without a start time still means the match was played.
+            COALESCE(m.actual_time, m.post_result_time)::text AS "actualTime",
             m.synced_at::text AS "syncedAt",
             m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
             m.winning_alliance AS "winningAlliance"
@@ -299,6 +306,9 @@ export async function loadMyDayView(
     compLevel: entry.compLevel,
     matchNumber: entry.matchNumber,
     scheduledTime: entry.scheduledTime,
+    plannedTime: entry.plannedTime,
+    predictedTime: entry.predictedTime,
+    actualTime: entry.actualTime,
     red: teamKeys(entry.redAlliance),
     blue: teamKeys(entry.blueAlliance),
     redScore: allianceScore(entry.redAlliance),
