@@ -85,3 +85,17 @@
   .scout-coverage-live-kpis{grid-template-columns:1fr}
   .scout-coverage-live-list li{flex-direction:column}
 }
+
+/* Phones: links and buttons a lead taps are at least 44px tall; tiles stack two across. */
+@media (max-width: 700px) {
+  .scout-coverage-live-related a,
+  .scout-coverage-live-page .app-button,
+  .scout-coverage-live-page .app-button.sm,
+  .scout-coverage-live-page button,
+  .scout-coverage-live-event input {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .scout-coverage-live-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -10,7 +10,6 @@ import {
   LINEUP_POLL_MS,
   LINEUP_RELATED_INCLUDE,
   classifyLineupShell,
-  formatLineupCoverage,
   formatLineupMetric,
   lineupEmptyDescription,
   lineupNextActions,
@@ -24,11 +23,12 @@ import {
   type LineupShellKind,
 } from "../../../lib/scouting/lineup-related";
 import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
+import { matchLabelFromKey } from "../../../lib/matches/no-next-match";
 import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { AssignmentRangeForm } from "./assignment-range-form";
+import type { CoverageScopeSummary } from "../../../lib/scouting/coverage";
 import "./lineup.css";
 
 type CoverageScout = {
@@ -67,6 +67,8 @@ type CoverageView =
         doubleSlots: CoverageGapSlot[];
       };
       slots: CoverageGapSlot[];
+      /** Played vs upcoming robots. Optional: an older saved copy has none. */
+      scope?: CoverageScopeSummary;
       scouts: CoverageScout[];
       schemaRoles: { status: string; warnings: SchemaRoleWarning[] };
       };
@@ -94,10 +96,14 @@ function teamLabel(slot: CoverageGapSlot): string {
 }
 
 function statusLabel(status: CoverageGapSlot["status"]): string {
-  if (status === "double") return "Double scouted";
-  if (status === "unscouted") return "Unscouted";
-  if (status === "assigned") return "Assigned, waiting";
-  return "Covered";
+  if (status === "double") return "Scouted twice";
+  if (status === "unscouted") return "No scout";
+  if (status === "assigned") return "Scout assigned";
+  return "Scouted";
+}
+
+function slotMatchLabel(slot: Pick<CoverageGapSlot, "matchKey">): string {
+  return matchLabelFromKey(slot.matchKey);
 }
 
 function LineupRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -371,7 +377,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       seen.add(slot.matchKey);
       options.push({
         matchKey: slot.matchKey,
-        label: `${slot.compLevel.toUpperCase()} ${slot.matchNumber}`,
+        label: slotMatchLabel(slot),
       });
     }
     return options;
@@ -392,8 +398,6 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   }, [view]);
 
   const totalSlots = view?.status === "live" ? view.summary.totalSlots : 0;
-  const unscouted = view?.status === "live" ? view.summary.unscouted : 0;
-  const gapCount = view?.status === "live" ? view.live.gapSlots.length : 0;
 
   const shell = classifyLineupShell({
     loading: view == null && !fetchFailed,
@@ -403,15 +407,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
     totalSlots,
   });
   const shellCopy = lineupShellCopy(shell);
-  const nextActions = lineupNextActions({
-    orgId,
-    shell,
-    totalSlots,
-    unscouted,
-    gapCount,
-  });
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const showTiles = view?.status === "live" && shouldShowLineupSummaryTiles(totalSlots);
   const loaded = view?.status === "live";
 
@@ -479,7 +475,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           </>
         }
         title="Lineup & coverage"
-        description="Double-scouted vs unscouted robots for the live quals window. Names come from signed-in scouts — never typed names."
+        description="Who scouts which robot in the next few matches: robots with no scout, robots scouted twice, and one tap to assign."
       >
         <div className="lineup-header-meta">
           <span className="lineup-live-pill" aria-live="polite">
@@ -490,9 +486,6 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           <CopyShareLink orgId={orgId} />
           <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
-          </Button>
-          <Button as="a" variant="secondary" href={scoutingHref}>
-            Scout forms
           </Button>
         </div>
       </PageHeader>
@@ -526,7 +519,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         </label>
         {view.canAssign ? (
           <Button variant="secondary" type="button" disabled={busy || !view.live.gapSlots.length} onClick={() => void mutate({ action: "auto-assign" })}>
-            {busy ? "Assigning…" : "Auto-assign open gaps"}
+            {busy ? "Assigning…" : "Auto-assign upcoming robots"}
           </Button>
         ) : null}
         <span className="app-muted">
@@ -547,10 +540,9 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       {view.schemaRoles.warnings.length ? (
         <section className="lineup-panel" aria-label="Form to strategy mapping">
           <header>
-            <h2>Form mapping</h2>
+            <h2>What Strategy can read from your form</h2>
             <p className="app-muted">
-              What your published form actually hands Strategy — a missing mapping reads as null,
-              not as zero.
+              When a question isn&apos;t marked, Strategy shows a blank for it, never a zero.
             </p>
           </header>
           <ul className="lineup-setup-steps">
@@ -558,7 +550,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
               <li key={warning.id}>
                 <div>
                   <strong>
-                    {warning.severity === "blocking" ? "Strategy reads null" : "Heads up"}
+                    {warning.severity === "blocking" ? "Strategy can't use this yet" : "Heads up"}
                   </strong>
                   <p className="app-muted lineup-tip">{warning.message}</p>
                 </div>
@@ -573,27 +565,41 @@ export default function LineupClient({ orgId }: { orgId: string }) {
 
       {showTiles ? (
         <section className="lineup-kpis" aria-label="Coverage summary">
+          {view.scope ? (
+            <>
+              <article>
+                <span>Upcoming: no scout</span>
+                <strong>{formatLineupMetric(view.scope.upcomingNoScout, loaded)}</strong>
+                <small>
+                  of {formatLineupMetric(view.scope.upcomingRobots, loaded)} robots in{" "}
+                  {formatLineupMetric(view.scope.upcomingMatches, loaded)} matches
+                </small>
+              </article>
+              <article>
+                <span>Played: scouted</span>
+                <strong>
+                  {formatLineupMetric(view.scope.playedScouted, loaded)} of{" "}
+                  {formatLineupMetric(view.scope.playedRobots, loaded)}
+                </strong>
+                <small>robots in {formatLineupMetric(view.scope.playedMatches, loaded)} played matches</small>
+              </article>
+              <article>
+                <span>Played: never scouted</span>
+                <strong>{formatLineupMetric(view.scope.playedMissed, loaded)}</strong>
+                <small>robots, too late to watch live</small>
+              </article>
+            </>
+          ) : (
+            <article>
+              <span>No scout</span>
+              <strong>{formatLineupMetric(view.summary.unscouted, loaded)}</strong>
+              <small>robots with no report or scout</small>
+            </article>
+          )}
           <article>
-            <span>Unscouted</span>
-            <strong>{formatLineupMetric(view.summary.unscouted, loaded)}</strong>
-            <small>no entry yet</small>
-          </article>
-          <article>
-            <span>Double scouted</span>
+            <span>Scouted twice</span>
             <strong>{formatLineupMetric(view.summary.doubleCovered, loaded)}</strong>
-            <small>{formatLineupCoverage(view.summary.doubleRate, loaded)} of slots</small>
-          </article>
-          <article>
-            <span>Covered</span>
-            <strong>
-              {formatLineupMetric(view.summary.covered + view.summary.doubleCovered, loaded)}
-            </strong>
-            <small>{formatLineupCoverage(view.summary.coverageRate, loaded)} coverage</small>
-          </article>
-          <article>
-            <span>Assigned waiting</span>
-            <strong>{formatLineupMetric(view.summary.assignedWaiting, loaded)}</strong>
-            <small>scout has the row</small>
+            <small>robots with two or more reports</small>
           </article>
         </section>
       ) : null}
@@ -602,14 +608,14 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         <div className="lineup-panel" id="lineup-gaps">
           <header>
             <h2>Needs coverage</h2>
-            <p className="app-muted">Unscouted or assigned-but-empty in the live window.</p>
+            <p className="app-muted">Robots in these matches with no report yet.</p>
           </header>
           {view.live.gapSlots.length ? (
             <ul className="lineup-gap-list">
               {view.live.gapSlots.map((slot) => (
                 <li key={`${slot.matchKey}-${slot.teamKey}`} className={slot.status}>
                   <strong>
-                    {slot.compLevel.toUpperCase()} {slot.matchNumber} · {teamLabel(slot)}
+                    {slotMatchLabel(slot)} · {teamLabel(slot)}
                   </strong>
                   <span>{statusLabel(slot.status)}</span>
                   <a href={lineupScoutNowHref(orgId, slot.matchKey, slot.teamKey)}>Scout now</a>
@@ -643,21 +649,21 @@ export default function LineupClient({ orgId }: { orgId: string }) {
               ))}
             </ul>
           ) : (
-            <p className="app-muted">No gaps in the current window.</p>
+            <p className="app-muted">Every robot in these matches has a report.</p>
           )}
         </div>
 
         <div className="lineup-panel">
           <header>
             <h2>Double scouted</h2>
-            <p className="app-muted">More than one signed-in scout logged this robot.</p>
+            <p className="app-muted">More than one scout saved a report for this robot.</p>
           </header>
           {view.live.doubleSlots.length ? (
             <ul className="lineup-gap-list">
               {view.live.doubleSlots.map((slot) => (
                 <li key={`${slot.matchKey}-${slot.teamKey}`} className="double">
                   <strong>
-                    {slot.compLevel.toUpperCase()} {slot.matchNumber} · {teamLabel(slot)}
+                    {slotMatchLabel(slot)} · {teamLabel(slot)}
                   </strong>
                   <span>
                     {slot.entryCount} scouts · {slot.scoutNames?.join(", ") || "members"}
@@ -666,24 +672,22 @@ export default function LineupClient({ orgId }: { orgId: string }) {
               ))}
             </ul>
           ) : (
-            <p className="app-muted">No doubles in the current window.</p>
+            <p className="app-muted">No robot in these matches was scouted twice.</p>
           )}
         </div>
       </section>
 
       <section className="lineup-board-wrap">
         <header>
-          <h2>Live window</h2>
-          <p className="app-muted">Next matches from the focus point — color shows gap vs double.</p>
+          <h2>Next matches</h2>
+          <p className="app-muted">Starting from the focus match. Each robot shows who has it.</p>
         </header>
         {grouped.map((group) => {
           const sample = group.slots[0];
           return (
             <div key={group.matchKey} className="lineup-match">
               <h3>
-                {sample
-                  ? `${sample.compLevel.toUpperCase()} ${sample.matchNumber}`
-                  : group.matchKey}
+                {sample ? slotMatchLabel(sample) : matchLabelFromKey(group.matchKey)}
               </h3>
               <div className="lineup-board">
                 {group.slots.map((slot) => (
@@ -705,21 +709,12 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         {!grouped.length ? (
           <p className="app-muted">
             {view.canAssign
-              ? "Match schedule is empty. Sync Team Data after the event schedule publishes."
-              : "Match schedule is empty. An owner or admin syncs the schedule after it publishes."}
+              ? "No match schedule yet. Update the event data once the schedule is out."
+              : "No match schedule yet. An owner or admin updates the event data once it is out."}
           </p>
         ) : null}
       </section>
 
-      <LineupNextActionsPanel actions={nextActions} />
-      <p className="app-muted lineup-footer-links">
-        Also see{" "}
-        <a href={withOrgHref("/scout-coverage-live", orgId)}>Scout Coverage Live</a>
-        {" · "}
-        <a href={hubHref("/competition", "forms", orgId)}>Form builder</a>
-        {" · "}
-        <a href={hubHref("/competition", "strategy", orgId)}>Strategy</a>
-      </p>
     </main>
   );
 }

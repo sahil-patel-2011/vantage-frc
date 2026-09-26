@@ -45,10 +45,11 @@ function statusTone(status: CoverageStatus): BadgeTone {
   return statusToneMap[status] ?? "neutral";
 }
 
-function statusLabel(status: CoverageStatus): string {
-  if (status === "zero") return "No coverage";
-  if (status === "thin") return "Thin";
-  return "Covered";
+function statusLabel(status: CoverageStatus, played?: boolean): string {
+  if (played === false) return "Upcoming · no scout";
+  if (status === "zero") return played ? "Played · never scouted" : "Not scouted";
+  if (status === "thin") return "Needs another scout";
+  return "Scouted";
 }
 
 type LiveView = Extract<ScoutCoverageLiveView, { status: "live" }>;
@@ -305,9 +306,6 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
   );
 
   const totalCells = view?.status === "live" ? view.summary.totalCells : 0;
-  const gapCount = view?.status === "live" ? view.gaps.length : 0;
-  const unackedNudges =
-    view?.status === "live" ? view.nudges.filter((nudge) => !nudge.acknowledged).length : 0;
 
   const shell = classifyScoutCoverageLiveShell({
     loading: view == null && !fetchFailed,
@@ -317,12 +315,6 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
     totalCells,
   });
   const shellCopy = scoutCoverageLiveShellCopy(shell);
-  const nextActions = scoutCoverageLiveNextActions({
-    orgId,
-    shell,
-    gapCount,
-    unackedNudges,
-  });
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const showTiles =
     view?.status === "live" &&
@@ -383,7 +375,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
           </>
         }
         title="Scout Coverage Live"
-        description="Zero and thin match/team cells from real scout-entry counts, with coordinator nudges mid-event."
+        description="Which robots were never scouted in played matches, which upcoming robots have no scout yet, and a quick nudge to the scout coordinator."
       >
         <div className="scout-coverage-live-header-meta">
           <ScoutCoverageLiveRelatedStrip orgId={orgId} />
@@ -414,7 +406,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
             }
           }}
         >
-          <FormRow label="Thin threshold (entries)">
+          <FormRow label="Reports wanted per robot" hint="2 means every robot should be scouted twice">
             <input
               type="number"
               min={1}
@@ -423,7 +415,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
             />
           </FormRow>
           <Button variant="secondary" type="submit" disabled={busy}>
-            Save threshold
+            Save
           </Button>
         </form>
       </section>
@@ -432,44 +424,41 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       <MissedAssignments view={view} orgId={orgId} />
       <CoverageGaps view={view} busy={busy} mutate={mutate} loaded={loaded} />
       <NudgeLog view={view} busy={busy} mutate={mutate} />
-      <ScoutCoverageLiveNextActionsPanel actions={nextActions} />
-      <p className="app-muted scout-coverage-live-footer-links">
-        Also see{" "}
-        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
-        {" · "}
-        <a href={withOrgHref("/scouting/lineup", orgId)}>Lineup</a>
-        {" · "}
-        <a href={withOrgHref("/scout-crossval", orgId)}>Cross-Validation</a>
-      </p>
     </main>
   );
 }
 
 function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
-  const { summary } = view;
+  const { summary, scope } = view;
   const hasSchedule = summary.totalCells > 0;
+  // Every tile names its scope: played matches (what was actually scouted)
+  // or upcoming matches (what a lead can still fix).
   return (
     <section className="scout-coverage-live-kpis" aria-label="Coverage summary">
       <StatTile
-        label="Schedule cells"
-        value={formatScoutCoverageLiveMetric(summary.totalCells, loaded)}
-        unit="match · team"
-      />
-      <StatTile
-        label="No coverage"
-        value={formatScoutCoverageLiveMetric(summary.zeroCount, loaded)}
-        unit="zero entries"
-      />
-      <StatTile
-        label="Thin"
-        value={formatScoutCoverageLiveMetric(summary.thinCount, loaded)}
-        unit="below threshold"
-      />
-      <StatTile
-        label="Covered"
+        label="Played matches: scouted"
         value={formatScoutCoverageLiveRate(summary.coveragePct, loaded, { hasSchedule })}
-        unit="real entry rate"
+        unit={`${formatScoutCoverageLiveMetric(summary.coveredCount, loaded)} of ${formatScoutCoverageLiveMetric(summary.totalCells, loaded)} robots`}
       />
+      <StatTile
+        label="Played matches: never scouted"
+        value={formatScoutCoverageLiveMetric(summary.zeroCount, loaded)}
+        unit={summary.zeroCount === 1 ? "robot" : "robots"}
+      />
+      {view.thinThreshold > 1 ? (
+        <StatTile
+          label={`Played matches: under ${view.thinThreshold} reports`}
+          value={formatScoutCoverageLiveMetric(summary.thinCount, loaded)}
+          unit={summary.thinCount === 1 ? "robot" : "robots"}
+        />
+      ) : null}
+      {scope ? (
+        <StatTile
+          label="Upcoming: no scout assigned"
+          value={formatScoutCoverageLiveMetric(scope.upcomingNoScout, loaded)}
+          unit={`of ${formatScoutCoverageLiveMetric(scope.upcomingRobots, loaded)} robots in ${formatScoutCoverageLiveMetric(scope.upcomingMatches, loaded)} matches`}
+        />
+      ) : null}
     </section>
   );
 }
@@ -488,14 +477,15 @@ function CoverageGaps({
   return (
     <Panel className="scout-coverage-live-panel" id="coverage-gaps">
       <header>
-        <h2>Coverage gaps</h2>
+        <h2>Robots to cover</h2>
         <p className="app-muted">
-          Zero and thin cells from real scout-entry counts. Nudge the coordinator mid-event.
+          Upcoming robots with no scout come first, then played robots nobody scouted (newest first, so the video
+          is easy to find).
         </p>
       </header>
       {view.gaps.length === 0 ? (
         <p className="app-muted">
-          No zero or thin coverage right now — every scheduled team/match meets the threshold from real entries.
+          Nothing to cover right now. Every upcoming robot has a scout, and every played robot was scouted.
         </p>
       ) : (
         <ul className="scout-coverage-live-list">
@@ -503,14 +493,18 @@ function CoverageGaps({
             <li key={`${cell.matchKey}::${cell.teamKey}`}>
               <div>
                 <div className="scout-coverage-live-row-meta">
-                  <Badge tone={statusTone(cell.status)}>{statusLabel(cell.status)}</Badge>
+                  <Badge tone={cell.played === false ? "setup" : statusTone(cell.status)}>
+                    {statusLabel(cell.status, cell.played)}
+                  </Badge>
                   <strong>
                     {cell.matchLabel} · Team {cell.teamNumber}
                   </strong>
                 </div>
                 <small>
-                  {cell.alliance} alliance · {formatScoutCoverageLiveMetric(cell.entryCount, loaded)} entr
-                  {cell.entryCount === 1 ? "y" : "ies"}
+                  {cell.alliance === "red" ? "Red" : "Blue"} alliance ·{" "}
+                  {cell.entryCount === 0
+                    ? "no reports"
+                    : `${formatScoutCoverageLiveMetric(cell.entryCount, loaded)} ${cell.entryCount === 1 ? "report" : "reports"}`}
                 </small>
               </div>
               {/* Every gap's button said only "Nudge coordinator", so fifteen
@@ -523,7 +517,10 @@ function CoverageGaps({
                 type="button"
                 aria-label={`Nudge the coordinator about ${cell.matchLabel}, Team ${cell.teamNumber}`}
                 disabled={busy}
-                onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`, }) }
+                onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message:
+                      cell.played === false
+                        ? `${cell.matchLabel}: Team ${cell.teamNumber} has no scout yet. Please assign one.`
+                        : `${cell.matchLabel}: Team ${cell.teamNumber} was never scouted. Can someone scout it from the video?`, }) }
               >
                 Nudge coordinator
               </Button>

@@ -85,7 +85,7 @@ describe("auditScoutSchemaRoles", () => {
       "teleop_score",
       "endgame",
     ]);
-    expect(blocking[0]?.message).toContain("read null");
+    expect(blocking[0]?.message).toContain("stay blank");
     expect(coverage.unmappedFields.map((field) => field.key)).toEqual([
       "cargo_high",
       "cargo_low",

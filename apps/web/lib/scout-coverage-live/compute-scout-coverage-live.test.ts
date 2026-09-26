@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeScoutCoverageLiveView } from "./compute-scout-coverage-live";
-import { buildCoverageCells, coverageStatusFor, rankCoverageGaps, summarizeCoverage, teamKeysFromAlliance } from ".";
+import { buildCoverageCells, coverageStatusFor, rankCoverageGaps, summarizeCoverage, summarizePlayedCoverage, teamKeysFromAlliance } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -77,7 +77,7 @@ describe("computeScoutCoverageLiveView", () => {
     expect(view.message).toBe("Pacific Practice has no match schedule yet.");
     expect(view.message).not.toContain("2026custom-");
     expect(view.steps[0]?.label).toBe("Open Scouting");
-    expect(view.steps.some((step) => step.label === "Sync Team Data")).toBe(false);
+    expect(view.steps.some((step) => step.label === "Update event data")).toBe(false);
   });
 
   it("returns a live view with a coverage grid computed from schedule + scout entry counts", async () => {
@@ -94,6 +94,7 @@ describe("computeScoutCoverageLiveView", () => {
               matchNumber: 1,
               redAlliance: { team_keys: ["frc254", "frc118"] },
               blueAlliance: { team_keys: ["frc1323", "frc4414"] },
+              played: true,
             },
           ],
         };
@@ -197,5 +198,41 @@ describe("scout-coverage-live pure helpers", () => {
     const gaps = rankCoverageGaps(cells);
     expect(gaps[0]?.status).toBe("zero");
     expect(gaps[1]?.status).toBe("thin");
+  });
+});
+
+describe("coverage gaps know which matches are played", () => {
+  const cell = (matchNumber: number, teamNumber: number, over: Partial<import("./types").CoverageCell>) => ({
+    matchKey: `e_qm${matchNumber}`,
+    matchLabel: `Qual ${matchNumber}`,
+    compLevel: "qm",
+    matchNumber,
+    teamKey: `frc${teamNumber}`,
+    teamNumber,
+    alliance: "red" as const,
+    entryCount: 0,
+    status: "zero" as const,
+    ...over,
+  });
+
+  it("lists upcoming robots with no scout first, then played robots nobody scouted, newest first", () => {
+    const gaps = rankCoverageGaps([
+      cell(1, 1, { played: true }),
+      cell(2, 2, { played: true }),
+      cell(2, 3, { played: true, entryCount: 1, status: "covered" }),
+      cell(3, 4, { played: false, assignmentCount: 1 }),
+      cell(4, 5, { played: false }),
+    ]);
+    expect(gaps.map((g) => g.teamNumber)).toEqual([5, 2, 1]);
+  });
+
+  it("counts coverage over played matches only", () => {
+    const summary = summarizePlayedCoverage([
+      cell(1, 1, { played: true, entryCount: 1, status: "covered" }),
+      cell(1, 2, { played: true }),
+      cell(9, 3, { played: false }),
+    ]);
+    expect(summary.totalCells).toBe(2);
+    expect(summary.coveragePct).toBe(0.5);
   });
 });

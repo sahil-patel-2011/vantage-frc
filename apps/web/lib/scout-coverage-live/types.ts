@@ -16,6 +16,10 @@ export type CoverageCell = {
   alliance: Alliance;
   entryCount: number;
   status: CoverageStatus;
+  /** True once the match is played. Absent on cells from an older saved view. */
+  played?: boolean;
+  /** Scouts assigned to this robot in this match. */
+  assignmentCount?: number;
 };
 
 export type CoverageSummary = {

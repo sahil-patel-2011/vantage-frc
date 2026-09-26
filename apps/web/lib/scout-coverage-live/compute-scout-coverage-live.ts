@@ -1,9 +1,9 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { DEFAULT_THIN_THRESHOLD, matchLabel, rankCoverageGaps, summarizeCoverage } from ".";
+import { DEFAULT_THIN_THRESHOLD, matchLabel, rankCoverageGaps, summarizePlayedCoverage } from ".";
 import type { CoverageCell, CoverageNudge, CoverageSummary } from "./types";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
-import { computeScoutingCoverageView } from "../scouting/coverage";
+import { computeScoutingCoverageView, type CoverageScopeSummary } from "../scouting/coverage";
 import { loadMissedAssignments, type MissedAssignmentRow } from "../scouting/assignment-accountability-load";
 import { scoutEventLabel } from "../scouting/scouting-related";
 
@@ -30,7 +30,13 @@ export type ScoutCoverageLiveView =
       eventName: string | null;
       thinThreshold: number;
       cells: CoverageCell[];
+      /** Played matches only: robots scouted vs robots that played. */
       summary: CoverageSummary;
+      /**
+       * Played vs upcoming, the same split Lineup shows. Optional so an older
+       * saved view still renders.
+       */
+      scope?: CoverageScopeSummary;
       gaps: CoverageCell[];
       nudges: CoverageNudge[];
       /**
@@ -99,20 +105,20 @@ export async function computeScoutCoverageLiveView(
     const scoutStep: ScoutCoverageLiveSetupStep = {
       id: "scouting",
       label: "Open Scouting",
-      detail: "The schedule is not cached yet. You can still type a team and match on Scouting.",
+      detail: "The match schedule is not out yet. You can still type a team and match on Scouting.",
       href: hubHref("/competition", "scouting", coverage.orgId),
     };
     const syncStep: ScoutCoverageLiveSetupStep = {
       id: "schedule",
-      label: "Sync Team Data",
-      detail: "Match slots stay blank until an owner or admin syncs the event schedule.",
+      label: "Update event data",
+      detail: "Matches appear here once an owner or admin updates the event data.",
       href: withOrgHref("/team/data", coverage.orgId),
     };
     return {
       status: "setup_required",
       message: named
         ? `${named} has no match schedule yet.`
-        : "No match schedule is synced for this event yet.",
+        : "This event has no match schedule yet.",
       steps: coverage.canAssign ? [syncStep, scoutStep] : [scoutStep],
       orgId: coverage.orgId,
       eventKey: coverage.eventKey,
@@ -145,6 +151,7 @@ export async function computeScoutCoverageLiveView(
       ? Number(settingsResult.rows[0].thinThreshold)
       : DEFAULT_THIN_THRESHOLD;
 
+  const played = new Set(coverage.playedMatchKeys);
   const cells: CoverageCell[] = coverage.slots.map((slot) => ({
     matchKey: slot.matchKey,
     matchLabel: matchLabel(slot.compLevel, slot.setNumber ?? 1, slot.matchNumber),
@@ -154,6 +161,8 @@ export async function computeScoutCoverageLiveView(
     teamNumber: slot.teamNumber ?? 0,
     alliance: slot.alliance ?? "red",
     entryCount: slot.entryCount,
+    played: played.has(slot.matchKey),
+    assignmentCount: slot.assignmentCount,
     status:
       slot.entryCount === 0
         ? "zero"
@@ -161,7 +170,7 @@ export async function computeScoutCoverageLiveView(
           ? "thin"
           : "covered",
   }));
-  const summary = summarizeCoverage(cells);
+  const summary = summarizePlayedCoverage(cells);
   const gaps = rankCoverageGaps(cells, 15);
   const nudges = nudgesResult.rows.map(mapNudge);
 
@@ -174,6 +183,7 @@ export async function computeScoutCoverageLiveView(
     thinThreshold,
     cells,
     summary,
+    scope: coverage.scope,
     gaps,
     nudges,
     missed,

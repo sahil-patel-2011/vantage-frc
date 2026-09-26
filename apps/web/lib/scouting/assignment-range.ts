@@ -77,6 +77,12 @@ export type AssignmentRangeInput = {
   teamKey: string;
   matchKeys: readonly string[];
   qualsOnly?: boolean;
+  /**
+   * The schedule's (match, robot) pairs. When given, only matches this robot
+   * actually plays are kept: without it a range handed the scout every match
+   * between the two, including ones the robot is not in.
+   */
+  schedule?: ReadonlyArray<{ matchKey: string; teamKey: string }>;
 };
 
 export type AssignmentRangeSlot = {
@@ -105,7 +111,7 @@ export function expandAssignmentRange(input: AssignmentRangeInput): AssignmentRa
   const first = parseMatchKey(input.firstMatchKey);
   const last = parseMatchKey(input.lastMatchKey);
   if (!first || !last) {
-    return { ok: false, error: "First and last match have to be real schedule keys.", slots: [], skipped: [] };
+    return { ok: false, error: "Pick a first and last match from the schedule.", slots: [], skipped: [] };
   }
   if (first.eventKey !== last.eventKey) {
     return { ok: false, error: "First and last match must be at the same event.", slots: [], skipped: [] };
@@ -137,10 +143,14 @@ export function expandAssignmentRange(input: AssignmentRangeInput): AssignmentRa
   }
   parsed.sort(compareParsedMatches);
 
+  const plays = input.schedule
+    ? new Set(input.schedule.filter((slot) => slot.teamKey.toLowerCase() === teamKey.toLowerCase()).map((slot) => slot.matchKey))
+    : null;
   const slots: AssignmentRangeSlot[] = [];
   for (const match of parsed) {
     if (compareParsedMatches(match, first) < 0) continue;
     if (compareParsedMatches(match, last) > 0) continue;
+    if (plays && !plays.has(match.raw)) continue;
     slots.push({
       matchKey: match.raw,
       teamKey,
@@ -150,7 +160,10 @@ export function expandAssignmentRange(input: AssignmentRangeInput): AssignmentRa
   }
 
   if (slots.length === 0) {
-    return { ok: false, error: "No official matches sit between those two keys.", slots, skipped };
+    const error = plays
+      ? `Team ${teamKey.slice(3)} plays no match between those two.`
+      : "No matches on the schedule between those two.";
+    return { ok: false, error, slots, skipped };
   }
   return { ok: true, slots, skipped };
 }

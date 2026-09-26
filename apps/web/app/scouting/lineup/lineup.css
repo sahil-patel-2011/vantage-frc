@@ -174,3 +174,14 @@
   .lineup-page{max-width:none!important;padding:0!important}
   .lineup-page article{break-inside:avoid;box-shadow:none!important}
 }
+
+/* Phones: every select, link and button a lead taps is at least 44px tall. */
+@media (max-width:700px){
+  .lineup-range select,
+  .lineup-range input,
+  .lineup-page .app-button,
+  .lineup-page .app-button.sm,
+  .lineup-related a,
+  .lineup-gap-list a{min-height:44px;display:inline-flex;align-items:center}
+  .lineup-range select{width:100%}
+}

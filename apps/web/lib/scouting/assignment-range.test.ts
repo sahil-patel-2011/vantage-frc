@@ -127,3 +127,32 @@ describe("uniqueMatchKeys", () => {
     ]);
   });
 });
+
+describe("a range covers only the matches the robot plays", () => {
+  it("skips matches the robot is not in", () => {
+    const result = expandAssignmentRange({
+      firstMatchKey: "2026gacmp_qm1",
+      lastMatchKey: "2026gacmp_qm4",
+      teamKey: "6925",
+      matchKeys: ["2026gacmp_qm1", "2026gacmp_qm2", "2026gacmp_qm3", "2026gacmp_qm4"],
+      schedule: [
+        { matchKey: "2026gacmp_qm1", teamKey: "frc6925" },
+        { matchKey: "2026gacmp_qm2", teamKey: "frc118" },
+        { matchKey: "2026gacmp_qm4", teamKey: "frc6925" },
+      ],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.slots.map((slot) => slot.matchKey)).toEqual(["2026gacmp_qm1", "2026gacmp_qm4"]);
+  });
+
+  it("says so when the robot plays none of them", () => {
+    const result = expandAssignmentRange({
+      firstMatchKey: "2026gacmp_qm2",
+      lastMatchKey: "2026gacmp_qm3",
+      teamKey: "frc6925",
+      matchKeys: ["2026gacmp_qm2", "2026gacmp_qm3"],
+      schedule: [{ matchKey: "2026gacmp_qm2", teamKey: "frc118" }],
+    });
+    expect(result).toMatchObject({ ok: false, error: "Team 6925 plays no match between those two." });
+  });
+});

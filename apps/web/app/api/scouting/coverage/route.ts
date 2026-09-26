@@ -165,6 +165,7 @@ export async function POST(request: Request) {
           teamKey,
           matchKeys: boardKeys,
           qualsOnly: qualsOnlyOf(body.qualsOnly),
+          schedule: preview.status === "live" ? preview.slots : [],
         });
         if (!range.ok) {
           throw Object.assign(new Error(range.error), { status: 400 });
@@ -219,6 +220,7 @@ export async function POST(request: Request) {
             eventKey: preview.eventKey,
             plan: planAutoAssignments({
               slots: preview.slots,
+              playedMatchKeys: preview.playedMatchKeys,
               scouts: preview.scouts,
               priorityTeamKeys,
               isBlocked: (userId, slot) => assignmentConflict(context, { userId, ...slot }) != null,

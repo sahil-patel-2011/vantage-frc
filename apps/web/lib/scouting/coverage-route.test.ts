@@ -39,6 +39,17 @@ function emptyLive(overrides: Partial<Extract<ScoutingCoverageView, { status: "l
     summary: EMPTY_SUMMARY,
     live: { focusMatchKeys: [], focusSlots: [], gapSlots: [], doubleSlots: [] },
     slots: [],
+    playedMatchKeys: [],
+    scope: {
+      playedMatches: 0,
+      playedRobots: 0,
+      playedScouted: 0,
+      playedMissed: 0,
+      upcomingMatches: 0,
+      upcomingRobots: 0,
+      upcomingNoScout: 0,
+      reportsBeforePlay: 0,
+    },
     scouts: [],
     schemaRoles: {
       status: "no_schema",

@@ -26,6 +26,7 @@ import {
   type LineupMatchRow,
 } from "./lineup-related";
 import { resolveScoutOrg } from "../scout-org-access";
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import { loadScoutRoleCoverage, type ScoutRoleCoverage } from "./schema-role-coverage";
 import {
   compareCoverageByWatchlist,
@@ -77,6 +78,13 @@ export type ScoutingCoverageView =
         doubleSlots: CoverageGapSlot[];
       };
       slots: CoverageGapSlot[];
+      /**
+       * Matches already played (a result is posted, or the field has moved
+       * past them). Auto-assign skips them; the split below uses them.
+       */
+      playedMatchKeys: string[];
+      /** The same robots counted two ways, so every heading can name its scope. */
+      scope: CoverageScopeSummary;
       scouts: CoverageScout[];
       /**
        * Published-schema to strategy role gaps. Surfaced here because coverage is where a lead
@@ -100,6 +108,61 @@ export type CoverageQuery = {
 };
 
 const COVERAGE_MATCH_LIMIT = 200;
+
+/**
+ * Coverage split by time. "Played" robots nobody scouted are lost for good;
+ * "upcoming" robots with no scout yet are the ones a lead can still fix.
+ */
+export type CoverageScopeSummary = {
+  playedMatches: number;
+  /** Robot slots in played matches. */
+  playedRobots: number;
+  /** Robot slots in played matches with at least one report. */
+  playedScouted: number;
+  /** Robot slots in played matches with no report. */
+  playedMissed: number;
+  upcomingMatches: number;
+  upcomingRobots: number;
+  /** Upcoming robot slots with neither a scout assigned nor a report. */
+  upcomingNoScout: number;
+  /** Reports saved for matches not played yet (tests, or a scout ahead of the field). */
+  reportsBeforePlay: number;
+};
+
+export function summarizeCoverageScope(
+  slots: ReadonlyArray<Pick<CoverageGapSlot, "matchKey" | "status" | "assignmentCount" | "entryCount">>,
+  playedMatchKeys: ReadonlySet<string>,
+): CoverageScopeSummary {
+  const played = new Set<string>();
+  const upcoming = new Set<string>();
+  const summary: CoverageScopeSummary = {
+    playedMatches: 0,
+    playedRobots: 0,
+    playedScouted: 0,
+    playedMissed: 0,
+    upcomingMatches: 0,
+    upcomingRobots: 0,
+    upcomingNoScout: 0,
+    reportsBeforePlay: 0,
+  };
+  for (const slot of slots) {
+    const entries = Number(slot.entryCount) || 0;
+    if (playedMatchKeys.has(slot.matchKey)) {
+      played.add(slot.matchKey);
+      summary.playedRobots += 1;
+      if (entries > 0) summary.playedScouted += 1;
+      else summary.playedMissed += 1;
+    } else {
+      upcoming.add(slot.matchKey);
+      summary.upcomingRobots += 1;
+      summary.reportsBeforePlay += entries;
+      if (entries === 0 && (Number(slot.assignmentCount) || 0) === 0) summary.upcomingNoScout += 1;
+    }
+  }
+  summary.playedMatches = played.size;
+  summary.upcomingMatches = upcoming.size;
+  return summary;
+}
 
 function setupRequired(
   message: string,
@@ -211,11 +274,12 @@ export async function computeScoutingCoverageView(
 
   const qualsOnly = input.qualsOnly !== false;
 
-  const matches = await client.query<LineupMatchRow>(
+  const matches = await client.query<LineupMatchRow & { played?: boolean | null }>(
     `SELECT match_key AS "matchKey", comp_level AS "compLevel", set_number AS "setNumber",
             match_number AS "matchNumber",
             red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
-            COALESCE(actual_time, predicted_time, event_time)::text AS "eventTime"
+            COALESCE(actual_time, predicted_time, event_time)::text AS "eventTime",
+            NOT (${matchStillAheadSql()}) AS played
        FROM matches_ref
       WHERE event_key = $1::text
         AND ($2::boolean IS FALSE OR comp_level = 'qm')
@@ -272,7 +336,14 @@ export async function computeScoutingCoverageView(
     watchlistKeys,
   );
   const summary = summarizeCoverageGaps(slots);
-  const focusKey = input.matchKey || defaultLineupFocusMatchKey(slots);
+  const playedMatchKeys = matches.rows.filter((row) => row.played === true).map((row) => row.matchKey);
+  const scope = summarizeCoverageScope(slots, new Set(playedMatchKeys));
+  // The live window opens on the next match still to be played. Opening on the
+  // first gap put it on Qual 1 at an event 30 matches in, where every gap is
+  // already history.
+  const nextUpcoming = matches.rows.find((row) => row.played !== true)?.matchKey ?? null;
+  const focusKey = input.matchKey || nextUpcoming || defaultLineupFocusMatchKey(slots);
+
   const live = focusLiveCoverage(slots, {
     matchKey: focusKey,
     windowSize: input.windowSize ?? 4,
@@ -290,6 +361,8 @@ export async function computeScoutingCoverageView(
     summary,
     live,
     slots,
+    playedMatchKeys,
+    scope,
     scouts,
     schemaRoles,
   };
@@ -388,6 +461,11 @@ export function planAutoAssignments(input: {
   /** Optional watchlist keys — watched threats are assigned before later schedule slots. */
   priorityTeamKeys?: readonly string[];
   /**
+   * Matches already played. Their robots can no longer be scouted live, so
+   * handing them out only piles finished matches onto each scout's list.
+   */
+  playedMatchKeys?: ReadonlySet<string> | readonly string[];
+  /**
    * True when this member may not take this slot: on drive team for the match,
    * or already holding another robot in it (see assignment-conflicts.ts). The
    * planner also never puts one member on two robots of the same match itself.
@@ -401,8 +479,9 @@ export function planAutoAssignments(input: {
   if (!scouts.length) return [];
 
   const priorityTeamKeys = input.priorityTeamKeys ?? [];
+  const played = new Set(input.playedMatchKeys ?? []);
   const open = input.slots
-    .filter((slot) => slot.status === "unscouted" && slot.assignmentCount === 0)
+    .filter((slot) => slot.status === "unscouted" && slot.assignmentCount === 0 && !played.has(slot.matchKey))
     .slice()
     .sort(
       (a, b) =>

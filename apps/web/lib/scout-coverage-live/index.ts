@@ -109,12 +109,33 @@ export function summarizeCoverage(cells: CoverageCell[]): CoverageSummary {
   };
 }
 
-/** Ranks the worst coverage gaps (zero before thin) in schedule order, for the nudge queue. */
+/**
+ * The gaps a coordinator can still act on, first: an upcoming robot with no
+ * scout assigned and no report, in schedule order. Then played robots nobody
+ * scouted, newest first (worth pulling the video). A match that has not been
+ * played yet is never a gap just because nobody has scouted it yet, and an
+ * upcoming robot someone is assigned to is not a gap.
+ */
 export function rankCoverageGaps(cells: CoverageCell[], limit = 15): CoverageCell[] {
   const severity: Record<CoverageStatus, number> = { zero: 0, thin: 1, covered: 2 };
-  return cells
-    .filter((c) => c.status !== "covered")
-    .slice()
-    .sort((a, b) => severity[a.status] - severity[b.status] || a.matchNumber - b.matchNumber)
-    .slice(0, limit);
+  const knowsTime = cells.some((cell) => cell.played != null);
+  if (!knowsTime) {
+    return cells
+      .filter((c) => c.status !== "covered")
+      .slice()
+      .sort((a, b) => severity[a.status] - severity[b.status] || a.matchNumber - b.matchNumber)
+      .slice(0, limit);
+  }
+  const upcoming = cells
+    .filter((c) => !c.played && c.entryCount === 0 && (c.assignmentCount ?? 0) === 0)
+    .sort((a, b) => a.matchNumber - b.matchNumber);
+  const played = cells
+    .filter((c) => c.played && c.status !== "covered")
+    .sort((a, b) => severity[a.status] - severity[b.status] || b.matchNumber - a.matchNumber);
+  return [...upcoming, ...played].slice(0, limit);
+}
+
+/** Coverage counted over played matches only: what was actually scouted. */
+export function summarizePlayedCoverage(cells: CoverageCell[]): CoverageSummary {
+  return summarizeCoverage(cells.filter((cell) => cell.played !== false));
 }

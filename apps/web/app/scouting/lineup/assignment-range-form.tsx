@@ -14,7 +14,7 @@ export function AssignmentRangeForm({
   busy,
   onAssign,
 }: {
-  matchKeys: Array<{ matchKey: string }>;
+  matchKeys: Array<{ matchKey: string; teamKey: string }>;
   scouts: ScoutOption[];
   qualsOnly: boolean;
   busy?: boolean;
@@ -38,6 +38,7 @@ export function AssignmentRangeForm({
     teamKey,
     matchKeys: keys,
     qualsOnly,
+    schedule: matchKeys,
   });
 
   return (
@@ -45,7 +46,8 @@ export function AssignmentRangeForm({
       <header>
         <h3>Assign a match range</h3>
         <p className="app-muted">
-          First to last official match for one robot. Missing quals stay missing — we do not invent them.
+          Give one scout every match a robot plays between two matches, for example a scout who follows one team all
+          morning.
         </p>
       </header>
       <div className="lineup-range-grid">
@@ -71,7 +73,7 @@ export function AssignmentRangeForm({
         </label>
         <label>
           Robot
-          <input value={teamKey} placeholder="Team #" onChange={(event) => setTeamKey(event.target.value)} />
+          <input value={teamKey} inputMode="numeric" placeholder="Team number, like 6925" onChange={(event) => setTeamKey(event.target.value)} />
         </label>
         <label>
           Scout
@@ -85,7 +87,9 @@ export function AssignmentRangeForm({
         </label>
       </div>
       <p className="app-muted">
-        {preview.ok ? `${preview.slots.length} official matches in this range` : preview.error}
+        {preview.ok
+          ? `${preview.slots.length} ${preview.slots.length === 1 ? "match" : "matches"} for this robot in this range`
+          : preview.error}
       </p>
       <Button
         variant="secondary"

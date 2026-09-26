@@ -5,6 +5,7 @@ import {
   canWriteAssignments,
   computeScoutingCoverageView,
   planAutoAssignments,
+  summarizeCoverageScope,
   swapCoverageSlot,
 } from "./coverage";
 
@@ -253,6 +254,38 @@ describe("planAutoAssignments", () => {
       { matchKey: "m1", teamKey: "frc1", userId: "a" },
       { matchKey: "m2", teamKey: "frc2", userId: "a" },
     ]);
+  });
+
+  it("never hands out a match that has already been played", () => {
+    const plan = planAutoAssignments({
+      slots,
+      playedMatchKeys: ["m1"],
+      scouts: [{ userId: "a", assignedCount: 0 }],
+    });
+    expect(plan).toEqual([{ matchKey: "m2", teamKey: "frc2", userId: "a" }]);
+  });
+
+  it("splits coverage into played and upcoming robots", () => {
+    const scope = summarizeCoverageScope(
+      [
+        { matchKey: "m1", status: "covered", assignmentCount: 0, entryCount: 1 },
+        { matchKey: "m1", status: "unscouted", assignmentCount: 1, entryCount: 0 },
+        { matchKey: "m2", status: "unscouted", assignmentCount: 0, entryCount: 0 },
+        { matchKey: "m2", status: "assigned", assignmentCount: 1, entryCount: 0 },
+        { matchKey: "m3", status: "covered", assignmentCount: 0, entryCount: 2 },
+      ],
+      new Set(["m1"]),
+    );
+    expect(scope).toEqual({
+      playedMatches: 1,
+      playedRobots: 2,
+      playedScouted: 1,
+      playedMissed: 1,
+      upcomingMatches: 2,
+      upcomingRobots: 3,
+      upcomingNoScout: 1,
+      reportsBeforePlay: 2,
+    });
   });
 
   it("starts from existing load so the lightest-loaded scout goes first", () => {

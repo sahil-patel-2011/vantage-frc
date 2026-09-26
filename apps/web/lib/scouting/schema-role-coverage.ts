@@ -168,8 +168,8 @@ export function auditScoutSchemaRoles(schemas: AuditableSchema[]): ScoutRoleCove
       severity: blocking ? "blocking" : "warning",
       role,
       message: blocking
-        ? `No published question maps to ${ROLE_LABELS[role]}. Strategy and the pick desk read null for it no matter how much you scout — set that question's role to "${role}" in Form builder.`
-        : `No published question maps to ${ROLE_LABELS[role]}, so that callout stays blank instead of wrong.`,
+        ? `No question on your published form is marked as ${ROLE_LABELS[role]}, so Strategy and the pick desk stay blank for it however much you scout. In Form builder, mark the question that records it.`
+        : `No question on your published form is marked as ${ROLE_LABELS[role]}, so that part of Strategy stays blank rather than guessing.`,
       fields: [],
     });
   }
@@ -185,7 +185,7 @@ export function auditScoutSchemaRoles(schemas: AuditableSchema[]): ScoutRoleCove
       role: null,
       message: `${unmappedFields.length} published question${
         unmappedFields.length === 1 ? "" : "s"
-      } reach no strategy signal (${named}). Scouts fill them and strategy never sees the answer — give each one a role in Form builder, or accept that it is reference-only.`,
+      } ${unmappedFields.length === 1 ? "isn't" : "aren't"} used by Strategy (${named}). Scouts answer them, but Strategy never reads the answers. In Form builder, say what each one records, or leave it as a note for people to read.`,
       fields: unmappedFields.map((field) => field.key),
     });
   }
@@ -202,7 +202,7 @@ export function auditScoutSchemaRoles(schemas: AuditableSchema[]): ScoutRoleCove
         .map((field) => field.label)
         .join(
           ", ",
-        )} look like scoring questions but are explicitly opted out (role "none"), so strategy ignores them.`,
+        )} look like scoring questions but are marked "not used by Strategy", so Strategy ignores them.`,
       fields: optedOutBlocking.map((field) => field.key),
     });
   }
