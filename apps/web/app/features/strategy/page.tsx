@@ -38,7 +38,7 @@ export default function StrategyFeaturePage() {
             what your scouts record. Nothing is filled in until that data exists.
           </p>
           <MarketingRouteActions
-            companion={{ href: "#frc-assistant", label: "Ask AI", variant: "secondary" }}
+            companion={{ href: "#frc-assistant", label: "See the assistant", variant: "secondary" }}
           />
         </header>
 

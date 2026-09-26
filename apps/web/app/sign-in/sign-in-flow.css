@@ -33,6 +33,19 @@
   align-items: center;
   gap: 10px;
 }
+/* The logo is a plain mark that links home, not a bordered box that reads as a button. */
+.signin-brand .brand-logo {
+  border: 0;
+  box-shadow: none;
+  background: none;
+  padding: 0;
+}
+.signin-submit.is-secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
 
 /* "Scouting" beside the logo on the Scouting host, so the card names the product. */
 .signin-product {

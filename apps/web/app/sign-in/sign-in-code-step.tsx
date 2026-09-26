@@ -203,19 +203,21 @@ export function SignInNotInvited({
       </div>
     );
   }
+  // The server never says who is on the waitlist, so this browser cannot tell. Lead with what
+  // is true either way, and offer the waitlist second: someone who already joined was told, with
+  // a big blue button, to join again.
   return (
     <div className="signin-not-invited" role="status">
       <p>
-        Vantage is invite-only. Ask your team&rsquo;s owner or a mentor to invite <strong>{email}</strong>, or join the
-        waitlist to get your team set up.
+        <strong>{email}</strong> isn&rsquo;t on a team yet. Vantage is invite-only: a team&rsquo;s owner or mentor
+        invites each person.
       </p>
-      <a className="signin-submit" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
+      <p className="app-muted">
+        Already joined the waitlist? You&rsquo;re set. We&rsquo;ll email you when your team is ready.
+      </p>
+      <a className="signin-submit is-secondary" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
         Join the waitlist
       </a>
-      {/* A waitlist sign-up from another device is not known here; say what it means. */}
-      <p className="app-muted">
-        Already joined the waitlist? You&rsquo;re all set. We&rsquo;ll email you when your team is set up.
-      </p>
       <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
         Use a different email
       </button>

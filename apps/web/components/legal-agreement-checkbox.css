@@ -79,3 +79,12 @@
   .legal-consent-row { min-height: 44px; align-items: center; }
   .legal-consent-row input[type="checkbox"] { width: 24px; height: 24px; }
 }
+
+/* The document links sat on an 18px line; on touch each gets a full-height target. */
+@media (pointer: coarse) {
+  .legal-consent-row a {
+    display: inline-block;
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+}

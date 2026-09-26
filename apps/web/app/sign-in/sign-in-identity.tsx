@@ -94,7 +94,7 @@ export function SignInIdentityStep({
                 onBlur={(event) => onEmailBlur(event.target.value)}
               />
             </span>
-            {rememberedEmail ? (
+            {rememberedEmail && email.trim().toLowerCase() === rememberedEmail.trim().toLowerCase() ? (
               <small className="signin-remembered">
                 Remembered on this device.{" "}
                 <button type="button" className="signin-link" onClick={onForgetAccount}>

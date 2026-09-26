@@ -19,6 +19,7 @@ import {
 } from "../../lib/marketing/product-story";
 import { MARKETING_APP_FRAMES, ProductFrame } from "./app-frames";
 import { MIcon } from "./marketing-icons";
+import { crossProductHref } from "../../lib/products/products";
 
 export function HomeShowcase() {
   return (
@@ -79,7 +80,9 @@ export function HomeShowcase() {
             </p>
             <p>
               Add it to a phone&rsquo;s home screen and it opens on your next assigned robot. One tap before the
-              venue keeps every screen working in a pit with no signal.
+              venue keeps every screen working in a pit with no signal.{" "}
+              {/* It said "its own app" without saying where. */}
+              <a href={crossProductHref("scouting", "/scout", null)}>Open Vantage Scouting →</a>
             </p>
           </header>
           <ul className="mk-app-gallery-grid" data-reveal>

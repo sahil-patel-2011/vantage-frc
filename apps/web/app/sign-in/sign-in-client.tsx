@@ -725,7 +725,8 @@ export default function SignInClient({
         ) : null}
         {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
             "No code?" help with the same link; a second one under it was noise. */}
-        {notInvited || flow.step === "code" ? null : <AccessFooter />}
+        {/* "Only invited emails get a code" is about codes; the password view has none. */}
+        {notInvited || flow.step === "code" || passwordPanel !== "closed" ? null : <AccessFooter />}
       </div>
     </SignInCard>
   );
