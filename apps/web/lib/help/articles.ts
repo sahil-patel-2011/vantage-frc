@@ -445,8 +445,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "If signal dies",
         body: [
-          "The outbox is the normal path at a venue. Save anyway; Sync now when the link returns.",
-          "QR pit-link is recovery when a device cannot sync, not the default Saturday loop. Details are in Scouting and offline.",
+          "Save anyway. Matches saved without signal stay on the phone and send by themselves when it has signal again.",
+          "Hand off by QR only when a phone cannot get signal at all: a teammate whose phone has signal scans it. Details are in Scouting and offline.",
         ],
       },
     ],
@@ -456,7 +456,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "scouting-offline",
     title: "Scouting and offline",
     summary:
-      "Match and pit forms cache on-device. Outbox syncs when online — coverage stays empty until real rows exist.",
+      "Match and pit forms work without signal. Saved entries send when the phone is back online; coverage fills in from real entries only.",
     category: "competition",
     keywords: [
       "scouting",
@@ -482,16 +482,16 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Offline and sync",
         body: [
-          "Entries and media queue in this device’s org-isolated outbox when the network drops.",
-          "The Online/Offline pill and Sync now button show real outbox counts.",
-          "Open This phone (/offline-shell) or the cold /offline page to reopen Scouting after a prior visit.",
+          "When the signal drops, entries and photos are saved on the phone, kept apart for each team.",
+          "The Online / Offline pill at the top says how many are waiting; Sync now sends them as soon as there is signal.",
+          "Before the event, open Scouting on each phone once and press Get this phone ready, so it opens with no signal at all.",
         ],
       },
       {
         heading: "Coverage and handoff",
         body: [
-          "Lineup & Coverage stays blank until real scout rows exist.",
-          "Device handoff merges pending IndexedDB outbox rows (last write wins) — sync when the venue link stabilizes.",
+          "Coverage shows which robots still need a scout; it stays empty until real entries exist. One entry per robot per match counts as covered.",
+          "No signal for a long time? Scouting → More → QR handoff shows a code. A teammate whose phone has signal scans it, and their phone sends your matches.",
         ],
       },
     ],
@@ -827,6 +827,53 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "What stays blank",
         body: [
           "Detection percentages, typed mass, and lesson scores stay blank. Explore Onshape shows document names and last-edited times from the connected account.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "checked-step-by-step",
+    slug: "checked-step-by-step",
+    title: "Checked step by step — tracks where each step is verified",
+    summary:
+      "Your first Onshape part, and Team 6925's programming and mechanical weeks, one step at a time. A step counts only when Vantage has checked it: your Part Studio in Onshape, your build output, your pull request on GitHub, or a lead's check.",
+    category: "build",
+    keywords: ["tutorial", "step by step", "check my work", "onshape", "wpilib", "6925", "learn", "verify"],
+    relatedHref: "/learn/guided",
+    sections: [
+      {
+        heading: "How a step is checked",
+        body: [
+          "Onshape steps: paste your Part Studio's address. Vantage reads it through your connected Onshape account and looks for what the step asks for (a sketch, an extrude, a Hole, a fillet, a Variable, a material). It only reads; it never edits your document.",
+          "Code steps: paste what your build or the Driver Station printed, or your motor and vision code. Vantage looks for the lines a working setup prints, like BUILD SUCCESSFUL and Robot program starting.",
+          "GitHub steps: paste your pull request or tag link. Vantage asks GitHub that it exists (public repositories only).",
+          "Shop steps no software can see, like tool sign-offs, say so: you mark them done after a lead has checked them with you, and they are labelled that way.",
+        ],
+      },
+      {
+        heading: "Progress",
+        body: [
+          "Your progress is saved to your team, on any device. The first step not yet checked opens when you come back. Do it again reopens a step.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "rank-projection",
+    slug: "rank-projection",
+    title: "Rank projection and chance to captain",
+    summary:
+      "Where the qualification rounds are likely to leave us: the rest of the schedule played out 10,000 times from each match's win chance, with our chance of finishing in the top eight and the seed range we usually land in.",
+    category: "competition",
+    keywords: ["rank", "seed", "captain", "alliance selection", "projection", "monte carlo", "what if"],
+    relatedHref: "/ranking-projection",
+    sections: [
+      {
+        heading: "What the numbers are",
+        body: [
+          "Chance to captain counts how often we finish in the top eight across 10,000 simulated finishes. 'Usually seed 4–9' is the middle 80% of those finishes.",
+          "Every input is real: ranking points already banked, the remaining schedule, and each match's win chance. A match nobody could predict counts as a coin flip, and the page says how many there are.",
+          "Force a result in What-if the rest of quals to see how one match changes the projection.",
         ],
       },
     ],
