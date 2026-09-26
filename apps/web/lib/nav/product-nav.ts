@@ -194,7 +194,8 @@ export type IslandTabDefinition = { href: string; label: string; icon: ProductNa
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/competition", label: "Matches", icon: "swords" },
+  // The page it opens is "Event day"; "Matches" was a third name for the same place.
+  { href: "/competition", label: "Event day", icon: "swords" },
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
   { href: "/rankings", label: "Stats", icon: "stats" },
 ];

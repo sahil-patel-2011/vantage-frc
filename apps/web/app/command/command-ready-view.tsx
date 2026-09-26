@@ -101,6 +101,9 @@ export function CommandReadyView({
   // With no match coming up, every "next match" card below would be empty. Show what is
   // true now (why, the record, what to do) instead of a grid of "No …" cards.
   const quiet = !next;
+  // A student's Event day was ten phone screens: the coverage board, opponent briefs and pit
+  // flags are a lead's tools. They fold under one line for everyone else.
+  const lead = me.role === "owner" || me.role === "admin";
 
   const seasonPulse = (
         <article className="edc-card">
@@ -483,6 +486,7 @@ export function CommandReadyView({
 
       {quiet ? null : (
       <>
+      <LeadsFold lead={lead}>
       <section className="edc-coverage-section" aria-label="Live scout coverage">
         <article className={`edc-card edc-coverage ${snap?.coverage.missingRows ? "gap" : ""}`}>
           <header>
@@ -623,6 +627,7 @@ export function CommandReadyView({
 
         {seasonPulse}
       </section>
+      </LeadsFold>
       </>
       )}
 
@@ -654,3 +659,12 @@ export function CommandReadyView({
   );
 }
 
+function LeadsFold({ lead, children }: { lead: boolean; children: ReactNode }) {
+  if (lead) return <>{children}</>;
+  return (
+    <details className="edc-for-leads">
+      <summary>For team leads: scout coverage, opponent briefs and pit flags</summary>
+      {children}
+    </details>
+  );
+}

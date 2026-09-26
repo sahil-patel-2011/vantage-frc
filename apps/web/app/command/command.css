@@ -112,3 +112,10 @@
 }
 .edc-match-hero .edc-bumper-cue.red { background: #d43a3a; }
 .edc-match-hero .edc-bumper-cue.blue { background: #2563eb; }
+
+/* Lead tools folded for students (Event day was ten phone screens for a scout). */
+.edc-for-leads { display: grid; gap: 12px; }
+.edc-for-leads > summary {
+  min-height: 44px; display: flex; align-items: center; padding: 10px 14px; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--surface); color: var(--ink); font-weight: 600; cursor: pointer;
+}

@@ -11,10 +11,10 @@ import {
 } from "./island-preferences";
 
 describe("island preferences", () => {
-  it("defaults to Home, Matches, Scout, Stats — a scouter's match week", () => {
+  it("defaults to Home, Event day, Scout, Stats — a scouter's match week", () => {
     expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/competition?tab=scouting", "/rankings"]);
-    expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Matches", "Scout", "Stats"]);
-    expect(defaultIslandLabelList()).toBe("Home, Matches, Scout, and Stats");
+    expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Event day", "Scout", "Stats"]);
+    expect(defaultIslandLabelList()).toBe("Home, Event day, Scout, and Stats");
     expect(islandCatalogLabelList()).toContain("Team chat");
     expect(islandCatalogLabelList()).not.toMatch(/Compete|Media/);
   });

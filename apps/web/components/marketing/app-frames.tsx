@@ -19,7 +19,7 @@ function AppChrome({ title, crumbs }: { title: string; crumbs: string }) {
   );
 }
 
-const PREVIEW_ISLAND = ["Home", "Matches", "Scout", "Stats"] as const;
+const PREVIEW_ISLAND = ["Home", "Event day", "Scout", "Stats"] as const;
 
 function AppIsland({ island }: { island: (typeof PREVIEW_ISLAND)[number] }) {
   return (
@@ -254,7 +254,7 @@ export function ProductFrame({ id }: { id: ProductFrameId }) {
                 <p className="mk-mock-empty">One lever, named by team and phase — from ratings, not a guess.</p>
               </article>
             </div>
-            <AppIsland island="Matches" />
+            <AppIsland island="Event day" />
           </div>
         </div>
       );
