@@ -269,3 +269,42 @@ export function picklistToCsv(input: {
   }
   return `${lines.join("\n")}\n`;
 }
+
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
+  }
+}
+
+/** One plain line under a listed team: slider rank, votes, the team's role. */
+export function picklistEntrySummary(input: {
+  sliderRank: number | null;
+  sliderCount: number;
+  votes: number;
+  weightedScore: number;
+  averageRankSuggestion: number | null;
+  role: string | null;
+}): string {
+  const parts: string[] = [];
+  if (input.sliderRank != null && input.sliderCount > 0) {
+    parts.push(`${ordinal(input.sliderRank)} of ${input.sliderCount} by your sliders`);
+  }
+  if (input.votes === 0) {
+    parts.push("No votes yet");
+  } else {
+    const count = `${input.votes} ${input.votes === 1 ? "vote" : "votes"}`;
+    parts.push(input.weightedScore !== input.votes ? `${count} (weight ${input.weightedScore})` : count);
+  }
+  if (input.averageRankSuggestion != null) parts.push(`suggested rank ${input.averageRankSuggestion}`);
+  if (input.role) parts.push(input.role);
+  return parts.join(" · ");
+}

@@ -47,3 +47,20 @@
   .picklist-event-ranking-list li{grid-template-columns:1.5rem 3rem minmax(0,1fr) auto}
   .picklist-event-why{display:none}
 }
+
+/* Phones: every control a lead taps is at least 44px tall. */
+@media (max-width: 700px) {
+  .picklist-collab-page select,
+  .picklist-collab-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .picklist-collab-page button,
+  .picklist-collab-page .app-button,
+  .picklist-collab-page .app-button.sm,
+  .picklist-collab-page .text-button,
+  .picklist-collab-page a.app-button {
+    min-height: 44px;
+  }
+  .picklist-collab-page input[type="range"] { min-height: 44px; }
+  .picklist-collab-select { flex-wrap: wrap; width: 100%; }
+  .picklist-collab-select select { flex: 1 1 12rem; min-width: 0; }
+  .picklist-collab-entry-actions select { flex: 1 1 9rem; }
+}

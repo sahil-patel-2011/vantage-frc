@@ -340,7 +340,11 @@ export async function computePicklistCollabView(
     };
   }
 
-  const lists = records.map(toCollabList);
+  // Lists for the event the team is at come first (most recently touched
+  // first), so opening the page lands on this event's list, not last week's.
+  const lists = [...records]
+    .sort((a, b) => Number(b.eventKey === org.eventKey) - Number(a.eventKey === org.eventKey))
+    .map(toCollabList);
   const snapshot = await listPickList(client, {
     orgId: org.orgId,
     pickListId: input.listId ?? lists[0]!.id,

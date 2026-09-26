@@ -109,10 +109,21 @@ export function PicklistWeightSliders({
     .filter((id) => isFormMetricId(id) && (fieldStats[id]?.n ?? 0) >= 2)
     .sort()
     .map((id) => ({ id, label: picklistMetricLabel(id), source: "form" as const }));
+  // "Total points" from the public ratings and "Total points" from the team's
+  // own form are different numbers; when both appear, say whose each one is.
+  const labelCount = new Map<string, number>();
+  for (const metric of [...builtinReady, ...formReady]) {
+    const key = metric.label.toLowerCase();
+    labelCount.set(key, (labelCount.get(key) ?? 0) + 1);
+  }
   const ready: Array<{ id: PicklistMetricId; label: string; source: "event" | "scout" | "form" }> = [
     ...builtinReady,
     ...formReady,
-  ];
+  ].map((metric) => {
+    if ((labelCount.get(metric.label.toLowerCase()) ?? 0) < 2) return metric;
+    const owner = metric.source === "event" ? "Public rating" : "Our scouts";
+    return { ...metric, label: `${owner}: ${metric.label.charAt(0).toLowerCase()}${metric.label.slice(1)}` };
+  });
   return (
     <section className="app-card soft-panel picklist-weight-sliders" aria-label="How much each rating matters">
       <header>
@@ -135,11 +146,9 @@ export function PicklistWeightSliders({
                 <span>
                   {metric.label}
                   <small className="app-muted">
-                    {metric.source === "form"
-                      ? `from your form · ${field.n} teams`
-                      : metric.source === "scout"
-                        ? `our scouting · ${field.n} teams`
-                        : `${field.n} teams at this event`}
+                    {metric.source === "event"
+                      ? `public rating · ${field.n} teams`
+                      : `our scouting · ${field.n} teams`}
                   </small>
                 </span>
                 <input

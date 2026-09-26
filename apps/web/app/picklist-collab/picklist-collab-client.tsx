@@ -14,31 +14,28 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import type { MetricWeight } from "@vantage/prediction-strategy";
+import { rankByWeightedZScores, type MetricWeight } from "@vantage/prediction-strategy";
+import { usePathname } from "next/navigation";
 import {
   PICKLIST_COLLAB_TIERS,
   epaRoleLabel,
-  formatFieldRating,
   picklistCollabTierLabel,
+  picklistEntrySummary,
   picklistToCsv,
   sortEntriesWithFieldRating,
   type PicklistCollabEntryWithRating,
 } from "../../lib/picklist-collab";
 import { PicklistWeightSliders, usePicklistFieldWeights } from "./picklist-weight-sliders";
 import { PicklistEventRanking } from "./picklist-event-ranking";
-import { DataSourcePicker } from "../analytics/data-source-picker";
-import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
   PICKLIST_COLLAB_RELATED_INCLUDE,
   classifyPicklistCollabShell,
   formatPicklistCollabMetric,
-  picklistCollabNextActions,
   picklistCollabRelatedLinks,
   picklistCollabSetupSteps,
   picklistCollabShellCopy,
   shouldShowPicklistCollabSummaryTiles,
-  type PicklistCollabNextAction,
   type PicklistCollabShellKind,
 } from "../../lib/picklist-collab/picklist-collab-related";
 import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
@@ -74,10 +71,31 @@ async function persistPicklistCollabSnapshot(
 
 type LiveView = Extract<PicklistCollabView, { status: "live" }>;
 
+/**
+ * The Scouting app (/scout/picklist) shows this same page inside its own
+ * five-tab frame. Links out to Vantage's Competition tools would leave it.
+ */
+function useInScoutApp(): boolean {
+  return (usePathname() ?? "").startsWith("/scout");
+}
+
+function Crumbs({ href }: { href: string }) {
+  if (useInScoutApp()) return null;
+  return (
+    <>
+      <a href={href}>Competition</a>
+      {" / Collaborative pick list"}
+    </>
+  );
+}
+
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = picklistCollabRelatedLinks(orgId, {
-    include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
-  });
+  const inScoutApp = useInScoutApp();
+  const links = inScoutApp
+    ? []
+    : picklistCollabRelatedLinks(orgId, {
+        include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
+      });
   if (!links.length) return null;
   return (
     <nav className="product-hub-related picklist-collab-related" aria-label="Related competition tools">
@@ -85,30 +103,6 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
         <a key={link.id} href={link.href}>{link.label}</a>
       ))}
     </nav>
-  );
-}
-
-function NextActionsPanel({ actions }: { actions: PicklistCollabNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions picklist-collab-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -133,7 +127,6 @@ function CollabShell({
   action?: { href: string; label: string } | null;
   children?: ReactNode;
 }) {
-  const actions = picklistCollabNextActions({ orgId, shell });
   const copy = picklistCollabShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
   const setup = shell === "setup" ? picklistCollabSetupSteps(orgId)[0] : null;
@@ -141,12 +134,7 @@ function CollabShell({
   return (
     <main className="module-page picklist-collab-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={competitionHref}>Competition</a>
-            {" / Collaborative pick list"}
-          </>
-        }
+        breadcrumbs={<Crumbs href={competitionHref} />}
         title="Collaborative pick list"
         description={description}
       >
@@ -183,7 +171,6 @@ function CollabShell({
           ) : null}
         </EmptyState>
       )}
-      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -271,10 +258,9 @@ export default function PicklistCollabClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
-  const source = useAnalyticsSource(orgId);
+  const inScoutApp = useInScoutApp();
   const listCount = view?.status === "live" ? view.lists.length : 0;
   const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
-  const totalVotes = view?.status === "live" ? view.summary.totalVotes : 0;
 
   const shell = classifyPicklistCollabShell({
     loading: view == null && !fetchFailed,
@@ -285,16 +271,11 @@ export default function PicklistCollabClient() {
     setupStepIds: view?.status === "setup_required" ? view.steps.map((step) => step.id) : [],
   });
   const shellCopy = picklistCollabShellCopy(shell);
-  const nextActions = picklistCollabNextActions({
-    orgId,
-    shell,
-    listCount,
-    totalEntries,
-    totalVotes,
-  });
-  const relatedLinks = picklistCollabRelatedLinks(orgId, {
-    include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
-  });
+  const relatedLinks = inScoutApp
+    ? []
+    : picklistCollabRelatedLinks(orgId, {
+        include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
+      });
   const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
   const showTiles = shouldShowPicklistCollabSummaryTiles({ listCount, totalEntries });
 
@@ -356,12 +337,7 @@ export default function PicklistCollabClient() {
       return (
         <main className="module-page picklist-collab-page">
           <PageHeader
-            breadcrumbs={
-              <>
-                <a href={competitionHref}>Competition</a>
-                {" / Collaborative pick list"}
-              </>
-            }
+            breadcrumbs={<Crumbs href={competitionHref} />}
             title="Collaborative pick list"
             description={setupView.message}
           >
@@ -400,14 +376,9 @@ export default function PicklistCollabClient() {
   return (
     <main className="module-page picklist-collab-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={competitionHref}>Competition</a>
-            {" / Collaborative pick list"}
-          </>
-        }
+        breadcrumbs={<Crumbs href={competitionHref} />}
         title="Collaborative pick list"
-        description="Build the pick list together — rank teams into tiers, weigh each rating against this event, and export CSV for the drive team."
+        description="Rank teams into tiers together, vote on them, and download the list for the drive team."
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (
@@ -450,8 +421,6 @@ export default function PicklistCollabClient() {
         </p>
       ) : null}
 
-      {shell === "ready" ? <NextActionsPanel actions={nextActions} /> : null}
-
       {showTiles && view?.status === "live" ? (
         <section className="picklist-collab-stats" aria-label="Pick list counts">
           <StatTile
@@ -483,14 +452,6 @@ export default function PicklistCollabClient() {
       ) : view?.status === "live" ? (
         <div className="picklist-collab-layout">
           <SummaryStatus view={view} />
-          <DataSourcePicker
-            settings={source.settings}
-            ownTeamKey={view.teamNumber != null ? `frc${view.teamNumber}` : null}
-            busy={source.busy}
-            onMode={source.setMode}
-            onTeams={source.setTeams}
-            onEvents={source.setEvents}
-          />
           <PicklistWeightSliders
             weights={fieldWeights.weights}
             fieldStats={view.fieldStats ?? {}}
@@ -552,6 +513,13 @@ function EntriesByTier({
   weights: MetricWeight[];
 }) {
   const ranked = sortEntriesWithFieldRating(view.entries, weights, view.fieldStats ?? {}, view.eventTeams);
+  // Where each listed team sits in "Ranked by your sliders", so a row says
+  // "7th of 23" instead of a bare comparison score.
+  const sliderRank = new Map<string, number>();
+  const sliderRanked = rankByWeightedZScores(view.eventTeams ?? [], weights, view.fieldStats ?? {}).filter(
+    (row) => row.score != null,
+  );
+  sliderRanked.forEach((row, index) => sliderRank.set(row.teamKey, index + 1));
   if (view.summary.totalEntries === 0) {
     return (
       <EmptyState
@@ -573,7 +541,15 @@ function EntriesByTier({
             <h2 style={{ marginTop: 0 }}>{picklistCollabTierLabel(tier)}</h2>
             <ul className="picklist-collab-list">
               {entries.map((entry) => (
-                <EntryRow key={entry.id} entry={entry} tier={tier} busy={busy} mutate={mutate} />
+                <EntryRow
+                  key={entry.id}
+                  entry={entry}
+                  tier={tier}
+                  busy={busy}
+                  mutate={mutate}
+                  sliderRank={sliderRank.get(`frc${entry.teamNumber}`) ?? null}
+                  sliderCount={sliderRanked.length}
+                />
               ))}
             </ul>
           </Panel>
@@ -588,11 +564,15 @@ function EntryRow({
   tier,
   busy,
   mutate,
+  sliderRank,
+  sliderCount,
 }: {
   entry: PicklistCollabEntryWithRating;
   tier: PicklistCollabTier;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  sliderRank: number | null;
+  sliderCount: number;
 }) {
   const [weight, setWeight] = useState("1");
   const [rank, setRank] = useState("");
@@ -605,10 +585,14 @@ function EntryRow({
           {entry.teamName ? ` — ${entry.teamName}` : ""}
         </strong>
         <small className="app-muted picklist-collab-tip">
-          Compared to this event {formatFieldRating(entry.fieldRating)} · Weighted score {entry.weightedScore} ·{" "}
-          {entry.votes.length} vote(s)
-          {entry.averageRankSuggestion != null ? ` · avg rank ${entry.averageRankSuggestion}` : ""}
-          {entry.epaRole ? ` · ${epaRoleLabel(entry.epaRole)}` : ""}
+          {picklistEntrySummary({
+            sliderRank,
+            sliderCount,
+            votes: entry.votes.length,
+            weightedScore: entry.weightedScore,
+            averageRankSuggestion: entry.averageRankSuggestion,
+            role: entry.epaRole ? epaRoleLabel(entry.epaRole) : null,
+          })}
         </small>
         {entry.note ? <small className="app-muted">{entry.note}</small> : null}
       </div>

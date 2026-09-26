@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyEpaRole, fieldEpaBenchmarks, picklistToCsv, sortEntriesWithFieldRating } from ".";
+import { classifyEpaRole, fieldEpaBenchmarks, picklistEntrySummary, picklistToCsv, sortEntriesWithFieldRating } from ".";
 import type { PicklistCollabEntry } from "./types";
 
 function entry(partial: Partial<PicklistCollabEntry> & Pick<PicklistCollabEntry, "id" | "teamNumber">): PicklistCollabEntry {
@@ -112,5 +112,25 @@ describe("sortEntriesWithFieldRating", () => {
       [{ id: "totalPoints", weight: 0 }],
     );
     expect(ranked.map((row) => row.teamNumber)).toEqual([10, 20]);
+  });
+});
+
+describe("picklistEntrySummary", () => {
+  it("says 'No votes yet' and the slider rank in words", () => {
+    expect(
+      picklistEntrySummary({ sliderRank: 7, sliderCount: 23, votes: 0, weightedScore: 0, averageRankSuggestion: null, role: "Teleop reliable" }),
+    ).toBe("7th of 23 by your sliders · No votes yet · Teleop reliable");
+  });
+
+  it("counts votes and shows the weight only when it differs", () => {
+    expect(
+      picklistEntrySummary({ sliderRank: 1, sliderCount: 23, votes: 2, weightedScore: 2, averageRankSuggestion: 3, role: null }),
+    ).toBe("1st of 23 by your sliders · 2 votes · suggested rank 3");
+    expect(
+      picklistEntrySummary({ sliderRank: null, sliderCount: 0, votes: 1, weightedScore: 1.5, averageRankSuggestion: null, role: null }),
+    ).toBe("1 vote (weight 1.5)");
+    expect(
+      picklistEntrySummary({ sliderRank: 12, sliderCount: 23, votes: 0, weightedScore: 0, averageRankSuggestion: null, role: null }),
+    ).toBe("12th of 23 by your sliders · No votes yet");
   });
 });

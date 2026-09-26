@@ -3,6 +3,8 @@
   .shift-balancer-page select,
   .shift-balancer-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   .shift-balancer-page button,
+  .shift-balancer-page .app-button,
+  .shift-balancer-page .app-button.sm,
   .shift-balancer-page .text-button {
     min-height: 44px;
   }
