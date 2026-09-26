@@ -855,7 +855,7 @@ function Composer({
         <Button variant="primary" type="button" onClick={generateWithAssistant} disabled={busy}>
           {busy ? "Drafting…" : "Draft with Ask AI"}
         </Button>
-        <small className="app-muted">Uses this org&apos;s profile + business data only · metered usage ledger</small>
+        <small className="app-muted">Uses only your team profile and business records.</small>
       </div>
 
       {draftBody ? (

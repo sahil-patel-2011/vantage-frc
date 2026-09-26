@@ -251,10 +251,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
       <header className="aa-header">
         <div>
           <p className="aa-eyebrow">Autonomous agent</p>
-          <h1>Goal → tools → answer</h1>
+          <h1>Give the AI a job</h1>
           <p>
-            Plan → tools → answer. Web fetch only hits sites your team allows. Team facts and tool
-            results are added each step.
+            It looks things up for you and shows each step. It only opens websites your team allows.
           </p>
         </div>
         <div className="aa-header-actions">
@@ -273,10 +272,10 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
 
       <section className="aa-setup" aria-label="Tool setup">
         <div className={webSearchConfigured ? "aa-pill ok" : "aa-pill warn"}>
-          Search: {webSearchConfigured ? "ready" : "not set"}
+          {webSearchConfigured ? "Web search is on" : "Web search is off"}
         </div>
         <div className={webBrowseEnabled ? "aa-pill ok" : "aa-pill warn"}>
-          Browse: {webBrowseEnabled ? "allowed sites only" : "disabled"}
+          {webBrowseEnabled ? "Opens only sites your team allows" : "Opening websites is off"}
         </div>
       </section>
 
@@ -289,7 +288,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
 
       {shell === "setup_required" && !selectedRun ? (
         <section className="app-card soft-panel aa-empty">
-          <h2>Add a key to run agents</h2>
+          <h2>AI isn&apos;t on for your team yet</h2>
           <p>
             {error ??
               "Add your own key, a team key, or a sponsored key under AI keys, or ask an admin to set up web search."}
@@ -332,7 +331,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         <section className="aa-history app-card soft-panel" aria-label="Past runs">
           <header>
             <h2>Past runs</h2>
-            <p>Persisted in saved rankings with truncated step logs.</p>
+            <p>Earlier jobs and what each one found.</p>
           </header>
           {loading ? <p className="aa-muted">Loading…</p> : null}
           {empty ? (

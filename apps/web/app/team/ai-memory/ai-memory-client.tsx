@@ -431,7 +431,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
             <header className="dream-journal-header">
               <div>
                 <span className="eyebrow">TEAM JOURNAL</span>
-                <h2>What last night&apos;s dream wrote</h2>
+                <h2>Nightly team summary</h2>
                 <p className="app-muted">
                   Each night Vantage folds that day&apos;s real activity into one team memory. Quiet days write
                   nothing at all — this list only ever shows runs that actually happened.
