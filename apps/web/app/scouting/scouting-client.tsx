@@ -493,8 +493,19 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       setMatchKey(next.matchKey);
       setTeamKey(next.teamKey);
     } else if (type === "match") {
+      // Only onto a match the schedule has: after the last qual this stepped to "Qual 37", which
+      // does not exist, with the same robot ready to be scouted again.
       const stepped = nextMatchKey(matchKey);
-      if (stepped) setMatchKey(stepped);
+      const scheduled = (data.matches ?? []).length === 0 || (data.matches ?? []).some((match) => match.matchKey === stepped);
+      if (stepped && scheduled) setMatchKey(stepped);
+      else {
+        setMatchKey("");
+        setTeamKey("");
+      }
+    } else if (type === "pit") {
+      // A pit report is one team: the next one starts blank (a chip above fills the next team in),
+      // so the next pit's answers cannot land under the team just saved.
+      setTeamKey("");
     }
     setSource("manual");
     editingRef.current = null;

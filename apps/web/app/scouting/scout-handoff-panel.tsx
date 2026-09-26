@@ -171,6 +171,22 @@ export default function ScoutHandoffPanel({
     setLoaded(true);
   }
 
+  // Follow the queue like the header does: back online it uploads, and "1 pending" sat under
+  // "Uploaded 1 entry" until the page was reloaded.
+  useEffect(() => {
+    const again = () => {
+      if (document.visibilityState !== "hidden") void refreshPending();
+    };
+    window.addEventListener("online", again);
+    document.addEventListener("visibilitychange", again);
+    const tick = window.setInterval(again, 5_000);
+    return () => {
+      window.removeEventListener("online", again);
+      document.removeEventListener("visibilitychange", again);
+      window.clearInterval(tick);
+    };
+  }, [eventKey]);
+
   useEffect(() => {
     void refreshPending();
     return () => {

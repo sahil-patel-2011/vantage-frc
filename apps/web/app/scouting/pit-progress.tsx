@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type RosterTeam = { teamNumber: number; nickname: string | null; pitScouted?: number };
 
@@ -13,12 +13,26 @@ export function PitProgress({
   orgId,
   teamKey,
   onTeamKey,
+  savedTeamKey = null,
 }: {
   orgId: string | null | undefined;
   teamKey: string;
   onTeamKey: (teamKey: string) => void;
+  /** The team just saved here: counted at once, not after a reload ("Saved 254" beside "1 of 24"). */
+  savedTeamKey?: string | null;
 }) {
   const [teams, setTeams] = useState<RosterTeam[] | null>(null);
+  const [savedHere, setSavedHere] = useState<string[]>([]);
+  useEffect(() => {
+    if (savedTeamKey) setSavedHere((prev) => (prev.includes(savedTeamKey) ? prev : [...prev, savedTeamKey]));
+  }, [savedTeamKey]);
+  const roster = useMemo(
+    () =>
+      teams?.map((team) =>
+        savedHere.includes(`frc${team.teamNumber}`) ? { ...team, pitScouted: Math.max(1, team.pitScouted ?? 0) } : team,
+      ) ?? null,
+    [teams, savedHere],
+  );
 
   useEffect(() => {
     if (!orgId) return;
@@ -34,18 +48,18 @@ export function PitProgress({
     };
   }, [orgId]);
 
-  if (!teams?.length || !teams.some((team) => typeof team.pitScouted === "number")) return null;
-  const missing = teams.filter((team) => (team.pitScouted ?? 0) === 0);
-  const visited = teams.length - missing.length;
+  if (!roster?.length || !roster.some((team) => typeof team.pitScouted === "number")) return null;
+  const missing = roster.filter((team) => (team.pitScouted ?? 0) === 0);
+  const visited = roster.length - missing.length;
 
   return (
     <section className="pit-progress" aria-label="Pit visits">
       <header>
         <strong>
-          {visited} of {teams.length} teams visited
+          {visited} of {roster.length} teams visited
         </strong>
         <span className="pit-progress-meter" aria-hidden="true">
-          <i style={{ width: `${Math.round((visited / teams.length) * 100)}%` }} />
+          <i style={{ width: `${Math.round((visited / roster.length) * 100)}%` }} />
         </span>
       </header>
       {missing.length ? (

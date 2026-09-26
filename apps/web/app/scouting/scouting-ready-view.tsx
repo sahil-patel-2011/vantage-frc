@@ -626,7 +626,12 @@ return (
             </div>
           ) : (
             <>
-              <PitProgress orgId={orgId} teamKey={teamKey} onTeamKey={setTeamKey} />
+              <PitProgress
+                orgId={orgId}
+                teamKey={teamKey}
+                onTeamKey={setTeamKey}
+                savedTeamKey={saveReceipt?.entryType === "pit" ? saveReceipt.teamKey : null}
+              />
               <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
             </>
           )}
