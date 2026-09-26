@@ -108,7 +108,7 @@ export function TeamAdminInvitesPanel({
             {/* The dropdown did not say what each choice can do, and "Mentor" is an admin. */}
             <small className="app-muted">
               {role === "admin"
-                ? "Scouts and uses team tools. Can also invite and remove people, change team settings and add AI keys."
+                ? "A team admin: invites and removes people, changes team settings and adds AI keys, and uses every team tool."
                 : role === "viewer"
                   ? "Can look, can't change."
                   : "Scouts and uses team tools."}

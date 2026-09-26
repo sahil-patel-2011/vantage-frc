@@ -73,7 +73,7 @@ function EventBoardPreview({ orgId, boardId }: { orgId: string; boardId: string 
   if (!data) {
     return (
       <div className="ebp is-loading" aria-busy={!failed}>
-        <p>{failed ? "Couldn't load the preview. Open fullscreen to see the board." : "Loading the live preview…"}</p>
+        <p>{failed ? "Couldn't load the preview. Open the board to see it." : "Loading the live preview…"}</p>
       </div>
     );
   }
@@ -174,7 +174,7 @@ export function EventBoardCard({
           {fullscreen ? (
             <>
               <Button as="a" variant="primary" href={fullscreen} target="_blank" rel="noreferrer">
-                Open fullscreen
+                Open the board
               </Button>
               {canSync ? (
                 <Button variant="secondary" type="button" onClick={() => onGetTvLink(boardId!)}>

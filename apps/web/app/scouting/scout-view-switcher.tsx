@@ -65,6 +65,8 @@ export function ScoutViewSwitcher({
   // Conflicts and scout accuracy are a lead's jobs; a student had them in their menu.
   const secondary = lead ? SECONDARY : SECONDARY.filter((entry) => entry.id === "handoff");
   const activeSecondary = secondary.find((entry) => entry.id === tab);
+  // A student's More opened a menu with one item in it: show that item as a button instead.
+  const onlyOne = secondary.length === 1 && hubTools.length === 0 ? secondary[0]! : null;
 
   return (
     <div className="scout-views" ref={ref}>
@@ -88,19 +90,31 @@ export function ScoutViewSwitcher({
             );
           })}
         </div>
-        <button
-          type="button"
-          className={`scout-views-more${activeSecondary ? " is-active" : ""}`}
-          aria-expanded={open}
-          aria-controls={menuId}
-          aria-current={activeSecondary ? "page" : undefined}
-          onClick={() => setOpen((current) => !current)}
-        >
-          {activeSecondary ? activeSecondary.label : "More"}
-          <span aria-hidden="true">▾</span>
-        </button>
+        {onlyOne ? (
+          <button
+            type="button"
+            className={`scout-views-more${tab === onlyOne.id ? " is-active" : ""}`}
+            aria-current={tab === onlyOne.id ? "page" : undefined}
+            title={onlyOne.what}
+            onClick={() => onChange(onlyOne.id)}
+          >
+            {onlyOne.label}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={`scout-views-more${activeSecondary ? " is-active" : ""}`}
+            aria-expanded={open}
+            aria-controls={menuId}
+            aria-current={activeSecondary ? "page" : undefined}
+            onClick={() => setOpen((current) => !current)}
+          >
+            {activeSecondary ? activeSecondary.label : "More"}
+            <span aria-hidden="true">▾</span>
+          </button>
+        )}
       </nav>
-      {open ? (
+      {open && !onlyOne ? (
         <div className="scout-views-menu" id={menuId}>
           <ul aria-label="More scouting views">
             {secondary.map((entry) => (

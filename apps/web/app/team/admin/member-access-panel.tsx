@@ -37,7 +37,7 @@ const ROLE_CHOICES: Array<{ id: "scout" | "admin" | "viewer"; label: string; hin
   {
     id: "admin",
     label: "Mentor or coach",
-    hint: "Can also invite and remove people, change team settings and add AI keys.",
+    hint: "A team admin: invites and removes people, changes team settings and adds AI keys, and uses every team tool.",
   },
   { id: "viewer", label: "Parent or guest", hint: "Can look, can't change." },
 ];

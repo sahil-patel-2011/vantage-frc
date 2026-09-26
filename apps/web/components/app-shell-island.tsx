@@ -173,6 +173,8 @@ export function AppShellIsland({
         }}
       >
         <Icon name="gear" />
+        {/* A bare gear beside four labelled apps read as a fifth, unnamed app. */}
+        <span>Edit</span>
       </button>
       {/*
         No fifth "All" button.

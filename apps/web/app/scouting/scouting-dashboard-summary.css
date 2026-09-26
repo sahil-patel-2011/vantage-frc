@@ -2,10 +2,12 @@
 .sds {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-  gap: 1px;
+  /* Hairlines drawn by each cell, not by a grey background showing through the gaps: five tiles
+     two to a row left the sixth slot a solid grey block. */
+  gap: 0;
   margin: 0;
   padding: 0;
-  background: var(--line-soft);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-md, 14px);
   overflow: hidden;
@@ -16,6 +18,7 @@
   gap: 4px;
   padding: 14px 16px;
   background: var(--surface);
+  box-shadow: 1px 0 0 var(--line-soft), 0 1px 0 var(--line-soft);
   animation: sds-settle var(--dur-move) var(--ease-settle) both;
   transition: background-color var(--dur-tint) var(--ease-out);
 }

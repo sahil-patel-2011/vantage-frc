@@ -159,7 +159,14 @@ export async function loadDashboardSnapshot(
 
   async function nextMatch() {
     if (!eventKey || !teamKey) {
-      widgets.next_match = stamp("setup_required", "next_match", undefined, "Set your active event and team.");
+      // Say which one is missing: the team is almost always set, and "Set your active event and
+      // team" left an owner looking for a team setting that was already done.
+      widgets.next_match = stamp(
+        "setup_required",
+        "next_match",
+        undefined,
+        !eventKey ? "No event picked yet. Matches appear once the team's event is chosen." : "Add your team number so Home can find your matches.",
+      );
       return;
     }
     const match = await client.query<{

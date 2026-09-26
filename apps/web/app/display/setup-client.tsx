@@ -546,7 +546,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                       maxSecondary={0}
                       triggerTestId={`board-menu-${board.id}`}
                       actions={[
-                        { id: "open", label: "Open fullscreen", href: openHref, intent: "primary" },
+                        { id: "open", label: "Open the board", href: openHref, intent: "primary" },
                         ...(canSync
                           ? [
                               ...(eventBoard ? [] : [{ id: "edit", label: "Edit", onClick: () => editBoard(board) }]),

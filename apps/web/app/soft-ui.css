@@ -385,9 +385,10 @@ body.soft-nav-panel-open .soft-island{
   touch-action:manipulation;
 }
 .soft-island-edit{
-  flex:0 0 34px;width:34px;align-self:center;min-height:44px;padding:0;border:0;border-radius:16px;
-  background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;
+  flex:0 0 44px;width:44px;align-self:stretch;min-height:44px;padding:7px 0;border:0;border-radius:16px;
+  background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;align-content:center;gap:3px;
 }
+.soft-island-edit span{font-size:10px;font-weight:600;line-height:1}
 .soft-island-edit svg{width:16px;height:16px}
 .soft-island-edit:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,transparent)}
 .soft-island a{

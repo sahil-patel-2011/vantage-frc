@@ -472,7 +472,7 @@ export function MessagesReadyView({
               }}
               aria-expanded={safetyOpen}
             >
-              {safetyOpen ? "Hide settings" : "Settings"}
+              {safetyOpen ? "Hide chat settings" : "Chat settings"}
             </button>
           </aside>
 

@@ -10,7 +10,7 @@ type Check = { state: "idle" | "checking" | "ok" | "failed"; detail: string };
 /**
  * The link a TV opens, shown once right after it is made. It shows what was picked: the event
  * board (rotates through next match, queue, rankings and bracket on its own) or a board the team
- * built, exactly as "Open fullscreen" does. The other screen is offered beside it, named as the
+ * built, exactly as "Open the board" does. The other screen is offered beside it, named as the
  * different thing it is. A QR code saves typing a 60-character address with a TV remote, and
  * "Test" opens the same feed the TV will, so a dead link is found at the laptop.
  */

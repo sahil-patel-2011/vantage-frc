@@ -174,13 +174,17 @@
 .chat-sidebar button.chat-safety-toggle,
 body.has-app-shell .messages-page .chat-sidebar button.chat-safety-toggle,
 body.has-app-shell .chat-page .chat-sidebar button.chat-safety-toggle {
-  display: block;
-  width: 100%;
+  /* A quiet control under the list, not a full-width grey bar that ran past the card's padding. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
   min-height: 44px;
   padding: 10px 14px;
   margin-top: 14px;
   color: var(--ink);
-  background: var(--surface-2);
+  background: transparent;
   border: 1px solid var(--line);
   border-radius:var(--radius-xs);
   text-align: center;
@@ -193,7 +197,8 @@ body.has-app-shell .chat-page .chat-sidebar button.chat-safety-toggle {
   /* The sidebar becomes a horizontal strip; keep the control from stretching to 145px min-width. */
   .chat-sidebar button.chat-safety-toggle,
   body.has-app-shell .messages-page .chat-sidebar button.chat-safety-toggle {
-    min-width: 120px;
+    min-width: 0;
+    flex: none;
     margin-top: 0;
     margin-left: 6px;
   }

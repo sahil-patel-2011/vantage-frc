@@ -83,14 +83,17 @@ function WidgetEmptyState({
   // Not on this event's schedule: usually the wrong event. A lead can change it from here;
   // everyone else is told who does, instead of being asked to check something they can't change.
   const wrongEvent = type === "next_match" && /isn't on this event's match schedule/.test(message ?? "");
-  const description = wrongEvent && !lead
+  const noEvent = type === "next_match" && /^No event picked yet/.test(message ?? "");
+  const description = noEvent && !lead
+    ? "No event picked yet. Your team lead chooses the event, then your matches appear here."
+    : wrongEvent && !lead
     ? (message ?? "").replace(/Check that it's the event you're at\.?/, "Your team lead picks the event.")
     : studentWidgetDescription(message, hint);
   // A member can't add the team's key: no "Add an AI key" button, only who does it.
   const askLead = type === "ask_ai" && /Ask an owner or mentor/.test(message ?? "");
   const ctaHref = askLead
     ? undefined
-    : wrongEvent
+    : wrongEvent || noEvent
     ? lead ? withOrg("/command?pickEvent=1") : undefined
     : eventOver
     ? withOrg("/rankings")
@@ -99,9 +102,13 @@ function WidgetEmptyState({
       : hint.ctaHref
         ? withOrg(hint.ctaHref)
         : href;
-  const ctaLabel = wrongEvent ? "Change event" : eventOver ? "See the rankings" : hint.ctaLabel;
+  const ctaLabel = noEvent ? "Pick your event" : wrongEvent ? "Change event" : eventOver ? "See the rankings" : hint.ctaLabel;
   return (
-    <EmptyState compact title={eventOver ? "Our matches here are done" : hint.title} description={description}>
+    <EmptyState
+      compact
+      title={eventOver ? "Our matches here are done" : noEvent ? "Which event are you at?" : hint.title}
+      description={description}
+    >
       {ctaHref && ctaLabel ? (
         <a className="dash-empty-cta" href={ctaHref}>
           {ctaLabel} →
