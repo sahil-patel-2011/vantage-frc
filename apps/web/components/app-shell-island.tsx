@@ -161,7 +161,7 @@ export function AppShellIsland({
       <button
         className="soft-island-edit"
         type="button"
-        aria-label="Edit these apps"
+        aria-label="Choose your bottom bar apps"
         title="Choose which four apps stay in this bar"
         onPointerDown={(event) => {
           event.stopPropagation();
@@ -173,8 +173,9 @@ export function AppShellIsland({
         }}
       >
         <Icon name="gear" />
-        {/* A bare gear beside four labelled apps read as a fifth, unnamed app. */}
-        <span>Edit</span>
+        {/* A bare gear beside four labelled apps read as a fifth, unnamed app; "Edit" clashed with
+            Home's own Edit button on a phone. */}
+        <span>Apps</span>
       </button>
       {/*
         No fifth "All" button.
@@ -217,9 +218,9 @@ export function AppShellIslandEditor({
       <section>
         <header>
           <div>
-            <span>BOTTOM ISLAND</span>
-            <h2 id="island-editor-title">Four apps</h2>
-            <p>{defaultIslandLabelList()} by default. Long-press the island or use the menu to change them.</p>
+            <span>BOTTOM BAR</span>
+            <h2 id="island-editor-title">Your four apps</h2>
+            <p>{defaultIslandLabelList()} by default. Tap apps in the order you want them.</p>
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close" onClick={onClose}><Icon name="x" /></button>
         </header>
@@ -228,7 +229,7 @@ export function AppShellIslandEditor({
             const selectedHref = islandDraft[slot];
             const selected = visibleIslandCatalog.find((entry) => entry.href === selectedHref)
               ?? ISLAND_TAB_CATALOG.find((entry) => entry.href === selectedHref);
-            return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `Slot ${slot + 1}`}</span>;
+            return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `${slot + 1}`}</span>;
           })}
         </div>
         <p className="soft-island-order-hint">Tap apps in the order you want them. Tap a selected app to remove it.</p>
@@ -245,7 +246,7 @@ export function AppShellIslandEditor({
                 type="button"
                 aria-pressed={selected}
               >
-                <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{selected ? `Slot ${islandDraft.indexOf(item.href) + 1}` : "Add"}</small></span>
+                <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{selected ? `App ${islandDraft.indexOf(item.href) + 1} of 4` : "Add"}</small></span>
               </button>
             );
           })}
@@ -254,7 +255,7 @@ export function AppShellIslandEditor({
         <footer>
           <button type="button" onClick={onReset}>Reset</button>
           <button className="primary" type="button" disabled={islandDraft.length !== 4 || islandSaving} onClick={onSave}>
-            {islandSaving ? "Saving…" : `Save ${islandDraft.length}/4`}
+            {islandSaving ? "Saving…" : "Save"}
           </button>
         </footer>
       </section>

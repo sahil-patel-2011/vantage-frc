@@ -259,7 +259,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Save or reset",
         body: [
-          "Save 4/4 writes your preference for this account.",
+          "Save writes your choice for this account.",
           `Reset restores ${defaultIslandLabelList()}.`,
         ],
       },

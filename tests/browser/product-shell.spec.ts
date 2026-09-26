@@ -105,7 +105,7 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // duplicate sitting among Team, Compete, Scout and Build as if it were one of
   // your apps. The gear is not an app and says so.
   await expect(island.getByRole("button")).toHaveCount(1);
-  await expect(island.getByRole("button", { name: "Edit these apps" })).toBeVisible();
+  await expect(island.getByRole("button", { name: "Choose your bottom bar apps" })).toBeVisible();
   await page.getByRole("button", { name: "Menu and search" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();

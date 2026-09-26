@@ -326,5 +326,7 @@
 
 /* One column, in reading order: win chance, game plan, leads' details, our scouting. The old
    two-column areas left the folded details floating alone above ~900px of empty right column. */
-.strategy-live-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; }
-.strategy-live-grid > * { grid-area: auto; grid-column: 1 / -1; }
+/* Doubled class: styles.css places `.strategy-live-grid .strategy-primary` (two classes) in named
+   areas, which beat a one-class reset and left the page in two lopsided columns at 1280-1440. */
+.strategy-live-grid.strategy-live-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; }
+.strategy-live-grid.strategy-live-grid > * { grid-area: auto; grid-column: 1 / -1; grid-row: auto; }
