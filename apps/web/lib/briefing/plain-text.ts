@@ -53,6 +53,7 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/Scout quality mean weight \d+%\s*[—–-]\s*/gi, "")
       .replace(/Scout [0-9a-f]{6,}\s+downweighted to \d+%:[^;]*(?:;\s*weight\s*[\d.]+)?\.?/gi, "One scout's numbers were far from the others', so they count for less.")
       .replace(/\s*\(mean quality weight [\d.]+\)/gi, "")
+      .replace(/\bTBA\/Statbotics base with scout trust blend capped at (\d+)%/gi, "Public ratings, adjusted by our scouting (at most $1%)")
       .replace(/\bscout trust blend capped at \d+%/gi, "some of our own scouting")
       .replace(/\bScoring mean [\d.]+ vs consensus [\d.]+\s*\(Δ\s*[-+]?[\d.]+\)(?:;\s*weight\s*[\d.]+)?\.?/gi, "")
       // "Scout quality downweights applied: frc6925 (mean 43%)." said to a student.
@@ -74,6 +75,19 @@ export function plainStrategyText(text: string | null | undefined): string {
       .replace(/\s*\(statbotics\)/gi, "")
       .replace(/\s*\(n=[\d.]+\)/gi, "")
       .replace(/\bevent\s+\d{4}[a-z0-9]+\b/gi, "this event")
+      // "How this was worked out" listed the engine's weighting rules ("61 org scout observations
+      // blended into ratings (max 50% scout weight per team; quality-weighted)", "TBA+scout trust
+      // blend"). Same facts, in the words a drive coach uses.
+      .replace(/^\s*TBA\+scout trust blend\s*$/i, "Public ratings plus our scouting")
+      .replace(/^\s*scout reliability\s*$/i, "How much we have scouted")
+      .replace(/^\s*scout auto\/teleop\s*$/i, "What our scouts saw")
+      .replace(
+        /\b(\d+) org scout observations blended into ratings \(max (\d+)% scout weight per team; quality-weighted\)\.?/gi,
+        (_all, n: string, pct: string) =>
+          `Ratings include ${n} observations from our scouts; scouting counts for at most ${pct}% of any team's rating.`,
+      )
+      .replace(/\bScout-derived capabilities\s*[—–-]\s*auto ([^;]*);\s*teleop ([^.]*)\./g, "Strong in auto: $1. Strong in teleop: $2.")
+      .replace(/\bOrg scout foul penalty \(capped\) margin ([\d.]+)/g, "Fouls our scouts logged swing it by about $1 points")
       .replace(/\bOrg scout\b/g, "Our scouts'")
       .replace(/\bOrg scouting\b/g, "Our scouting")
       .replace(/\bOrg-private edge from your scouting \+ cached public (?:EPA|rating)\.?/gi, "Only our team sees this: what our scouting says, next to the public rating.")

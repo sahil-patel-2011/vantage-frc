@@ -65,8 +65,24 @@ describe("the prediction model's own words", () => {
     );
     expect(plainStrategyText("8 FACT TBA match result(s) cited for alliance context.")).toBe("Uses 8 official match results.");
     expect(plainStrategyText("MODEL: Org scout foul penalty (capped) margin 0.7; not a TBA fact.")).toBe(
-      "Our scouts' foul penalty margin 0.7",
+      "Fouls our scouts logged swing it by about 0.7 points",
     );
+    expect(
+      plainStrategyText(
+        "MODEL: 61 org scout observations blended into ratings (max 50% scout weight per team; quality-weighted).",
+      ),
+    ).toBe("Ratings include 61 observations from our scouts; scouting counts for at most 50% of any team's rating.");
+    expect(
+      plainStrategyText(
+        "MODEL strategy-engine-v2: TBA/Statbotics base with scout trust blend capped at 50% (mean quality weight 0.93).",
+      ),
+    ).toBe("Public ratings, adjusted by our scouting (at most 50%).");
+    expect(plainStrategyText("MODEL: Scout-derived capabilities — auto frc254, frc1678; teleop none.")).toBe(
+      "Strong in auto: Team 254, Team 1678. Strong in teleop: none.",
+    );
+    expect(plainStrategyText("TBA+scout trust blend")).toBe("Public ratings plus our scouting");
+    expect(plainStrategyText("scout reliability")).toBe("How much we have scouted");
+    expect(plainStrategyText("scout auto/teleop")).toBe("What our scouts saw");
     expect(
       plainStrategyText("Alliance rating margin -17.1 from sources statbotics, event 2026gacmp, 58 weighted team-matches"),
     ).toBe("The gap between the alliance ratings from 58 matches of data");
