@@ -375,7 +375,7 @@ const KEYWORDS: Record<string, string[]> = {
   // --- Deployment-wave surfaces ---
   "business:reimbursements": ["reimburse", "reimbursement", "pay me back", "receipt", "expense claim", "i paid for"],
   "team:my-kit": ["my kit", "my stuff", "what do i need", "my tasks", "my assignments", "personal"],
-  "ai:ai-bridge": ["subscription bridge", "claude code", "codex", "chatgpt", "subscription", "bridge", "free ai"],
+  "ai:ai-bridge": ["claude code", "terminal", "codex", "chatgpt", "bridge", "free ai"],
   "build:agent-config": ["agent config", "agent rules", "claude.md", "mcp", "subagent", "team rules", "coding agent"],
   "media:media-library": ["media library", "photos", "videos", "album", "gallery", "pictures", "upload photo"],
 

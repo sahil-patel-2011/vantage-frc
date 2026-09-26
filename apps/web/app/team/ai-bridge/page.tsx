@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Claude Code",
   description:
-    "Pair Claude Code on one computer so Ask AI runs on that plan. No API key.",
+    "Pair Claude Code on one computer so Ask AI can run through Claude Code in the terminal. No API key.",
 };
 
 export default async function AiBridgePage({

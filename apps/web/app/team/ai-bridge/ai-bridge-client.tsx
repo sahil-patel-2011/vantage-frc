@@ -226,7 +226,7 @@ export default function AiBridgeClient({
           </>
         }
         title={AI_BRIDGE_TITLE}
-        description="Sign in to Claude Code on one computer. Pair it here. Ask AI then uses that plan — no API key."
+        description="Run Claude Code in the terminal on one computer and pair it here. Ask AI then runs through Claude Code — no API key."
       />
       <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature={AI_BRIDGE_FEATURE_LABEL} />
 

@@ -113,7 +113,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
         badge: "Needs setup",
         title: "Connect Claude Code",
         description:
-          "A mentor signs in to Claude Code on one computer and pairs it here. Ask AI then runs on that plan — no API key.",
+          "A mentor runs Claude Code in the terminal on one computer and pairs it here. Ask AI then runs through Claude Code — no API key.",
       };
     case "empty":
       return {

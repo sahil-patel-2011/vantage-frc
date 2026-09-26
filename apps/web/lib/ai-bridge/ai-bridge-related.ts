@@ -25,7 +25,7 @@ export function aiBridgeShellCopy(kind: "no-team" | "setup" | "ready"): {
         badge: "Needs setup",
         title: "Pair Claude Code",
         description:
-          "A mentor signs in to Claude Code on one computer and pastes the code here. Ask AI then runs on that plan.",
+          "A mentor runs Claude Code in the terminal on one computer and pastes the code here. Ask AI then runs through Claude Code.",
       };
     case "ready":
       return {
