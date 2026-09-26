@@ -69,8 +69,17 @@ export function formatMembershipLabel(row: MembershipOption): string {
   return teamLabelFor(teamNumber, row.orgName) ?? "Your team";
 }
 
+/** The words the invite and Team admin use for each access level ("scout" is the tier, "Student" the person). */
+const ROLE_WORDS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Mentor or coach",
+  scout: "Student",
+  viewer: "Parent or guest",
+};
+
 export function formatRolePlanCue(role?: string | null, planCode?: string | null, paidOrg?: boolean): string {
-  const roleLabel = role?.trim() ? role.trim().charAt(0).toUpperCase() + role.trim().slice(1) : null;
+  const raw = role?.trim() ?? "";
+  const roleLabel = raw ? ROLE_WORDS[raw.toLowerCase()] ?? raw.charAt(0).toUpperCase() + raw.slice(1) : null;
   const planLabel = planCode?.trim()
     ? paidOrg
       ? planCode.trim()

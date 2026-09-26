@@ -195,12 +195,14 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
   if (kind === "auth_required") {
     return {
       kind,
-      eyebrow: "SIGN IN TO JOIN",
+      // One eyebrow and one heading: a "SIGN IN" pill, a "SIGN IN TO JOIN" eyebrow and this
+      // heading said the same thing three times.
+      eyebrow: "YOU'RE INVITED",
       title: "Sign in with the invited email",
       description:
         detail?.trim() ||
         "This invite is for one specific address. Sign in with that email, then accept. People without an invite go to the waitlist.",
-      badge: "Sign in",
+      badge: "",
     };
   }
   if (kind === "email_mismatch") {

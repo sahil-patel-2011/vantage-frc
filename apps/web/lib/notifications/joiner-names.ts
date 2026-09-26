@@ -17,9 +17,15 @@ export async function joinerNames(client: PoolClient, userIds: string[]): Promis
     async () =>
       (
         await client.query<JoinedRow>(
+          // The account name (what Team admin lists), then the profile: a teammate's profile row
+          // can be hidden from the owner, which left "student-…@example.test joined" after the
+          // student had typed their name.
           `SELECT i.accepted_by::text AS "userId", i.email,
-                  COALESCE(NULLIF(trim(concat_ws(' ', p.first_name, p.last_name)), ''), NULLIF(p.display_name, '')) AS name
+                  COALESCE(NULLIF(btrim(u.name), ''),
+                           NULLIF(trim(concat_ws(' ', p.first_name, p.last_name)), ''),
+                           NULLIF(p.display_name, '')) AS name
              FROM invites i
+             LEFT JOIN users u ON u.id = i.accepted_by
              LEFT JOIN profiles p ON p.user_id = i.accepted_by
             WHERE i.accepted_by = ANY($1::uuid[])
             ORDER BY i.accepted_at DESC NULLS LAST`,

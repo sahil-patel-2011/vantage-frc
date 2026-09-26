@@ -459,7 +459,9 @@ export default function OnboardingClient() {
   const teamName = state?.lockedOrgName || state?.workspaceOrgName || null;
   const headerCopy =
     step === "done"
-      ? state?.workspaceRole === "owner" || state?.workspaceRole === "admin"
+      ? // The owner's hand-off only: an invited mentor was told to "bring your team" with a
+        // setup checklist that was the owner's.
+        state?.workspaceRole === "owner"
         ? { eyebrow: "ALL SET", title: "You're in. Now bring your team.", sub: "Four steps make Vantage useful for everyone else. Start by inviting people." }
         : { eyebrow: "ALL SET", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
       : step === "pending"

@@ -72,7 +72,8 @@ function InviteIdentity({ preview }: { preview: InvitePreview }) {
   return (
     <div className="invite-team-identity" aria-label="Team invitation details">
       <span>TEAM</span>
-      <strong>{formatInviteTeamIdentity(preview)}</strong>
+      {/* The role has its own line just below; the team line said it too. */}
+      <strong>{formatInviteTeamIdentity({ ...preview, role: "" })}</strong>
       <div className="invite-team-meta">
         <div>
           <span>ROLE</span>
@@ -84,7 +85,7 @@ function InviteIdentity({ preview }: { preview: InvitePreview }) {
         </div>
         <div>
           <span>EXPIRES</span>
-          <strong>{new Date(preview.expiresAt).toLocaleString()}</strong>
+          <strong>{new Date(preview.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</strong>
         </div>
       </div>
     </div>
