@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import { strategyCanSync } from "../strategy/strategy-related";
 import {
   DEFAULT_STATIONS,
@@ -355,13 +356,16 @@ export async function generatePlan(
               COALESCE(predicted_time, event_time)::text AS "scheduledAt"
        FROM matches_ref
        WHERE event_key = $1 AND comp_level = 'qm'
+         -- From the next match on: mid-event it planned all 36 quals from Qual 1, and Coverage
+         -- then counted assignments for matches already played as missed.
+         AND ${matchStillAheadSql()}
        ORDER BY match_number`,
       [eventKey],
     );
     const slots = scheduleSlotsFromQuals(matchRows.rows);
     const qualMatches = new Set(slots.map((slot) => slot.matchNumber)).size;
     if (qualMatches === 0) {
-      throw new Error("No qualification schedule cached for the active event. Sync Team Data or pick an event on Event day.");
+      throw new Error("No qualification matches are left to plan for the active event. Pick the event you are at on Event day, or sync Team data.");
     }
     matchCount = qualMatches;
     // Drive team never scouts a match our robot is in; backups only where asked.
