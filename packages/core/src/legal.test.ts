@@ -122,3 +122,25 @@ describe("legalUpdateRequired", () => {
     expect(legalUpdateRequired({ termsAcceptedAt: null, privacyAcceptedAt: null, termsVersion: null })).toBe(false);
   });
 });
+
+describe("the 2026-09-26 rewrite", () => {
+  const accepted = { termsAcceptedAt: "2026-09-25", privacyAcceptedAt: "2026-09-25" };
+
+  it("is the current version, effective the same day", () => {
+    expect(LEGAL_DOC_VERSION).toBe("2026-09-26.1");
+    expect(LEGAL_EFFECTIVE_DATE).toBe("September 26, 2026");
+  });
+
+  it("asks everyone who accepted the 2026-09-25 text to accept once more", () => {
+    expect(legalUpdateRequired({ ...accepted, termsVersion: "2026-09-25.1", privacyVersion: "2026-09-25.1" })).toBe(true);
+  });
+
+  it("asks again when only one of the two documents was accepted at the new version", () => {
+    expect(legalUpdateRequired({ ...accepted, termsVersion: LEGAL_DOC_VERSION, privacyVersion: "2026-09-25.1" })).toBe(true);
+    expect(legalUpdateRequired({ ...accepted, termsVersion: "2026-09-25.1", privacyVersion: LEGAL_DOC_VERSION })).toBe(true);
+  });
+
+  it("stops asking once the new version is recorded for both", () => {
+    expect(legalUpdateRequired({ ...accepted, termsVersion: LEGAL_DOC_VERSION, privacyVersion: LEGAL_DOC_VERSION })).toBe(false);
+  });
+});

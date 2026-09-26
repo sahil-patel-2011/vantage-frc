@@ -25,7 +25,7 @@ function LegalText({ text }: { text: string }) {
 export const metadata: Metadata = marketingPageMetadata({
   title: "Privacy Policy — Vantage",
   description:
-    "What Vantage collects from FRC teams and their members, how student data and supervised chat are handled, and what we never do with team content.",
+    "What Vantage collects from FRC teams and their members, who can see it, where AI requests go, how student data is handled, and how to export or delete it.",
   path: "/privacy",
 });
 

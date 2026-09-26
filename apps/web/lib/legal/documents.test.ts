@@ -170,10 +170,17 @@ describe("legal documents", () => {
     );
   });
 
-  it("lists the consent cookie itself as a necessary cookie", () => {
+  // It said "three necessary cookies" while the app also set a remembered-team cookie, a
+  // remembered two-step device cookie, and a second theme cookie. Each one is named instead.
+  it("names every cookie the app sets, including the consent cookie itself", () => {
     const deviceStorage = PRIVACY_POLICY.sections.find((section) => section.id === "device-storage");
-    const text = (deviceStorage?.paragraphs ?? []).join(" ");
-    expect(text).toMatch(/three necessary cookies/i);
+    const text = [...(deviceStorage?.paragraphs ?? []), ...(deviceStorage?.list ?? [])].join(" ");
+    expect(text).toMatch(/only necessary cookies/i);
+    expect(text).not.toMatch(/three necessary cookies/i);
+    expect(text).toMatch(/keep you signed in/i);
+    expect(text).toMatch(/two-step sign-in/i);
+    expect(text).toMatch(/which team you last opened/i);
+    expect(text).toMatch(/light or dark theme/i);
     expect(text).toMatch(/remembers the answer you gave about analytics/i);
   });
 
@@ -235,4 +242,76 @@ describe("legal documents", () => {
     // And it must not read as a waiver of rights the reader already has.
     expect(text).toMatch(/local consumer-protection law/i);
   });
+
+  // ------------------------------------------------------------ AI routes
+  //
+  // The 2026-09-25 text told every team without a key that Vantage connects free providers for
+  // it. The code (packages/agent/src/resolve-chat-adapter.ts) uses those only for a team invited
+  // to a sponsored promotion (packages/billing/src/sponsored-promo.ts). These guards keep the
+  // documents to what the code does.
+  describe("where AI requests go", () => {
+    const section = (doc: LegalDocument, id: string) => doc.sections.find((candidate) => candidate.id === id);
+    const textOf = (doc: LegalDocument, id: string) => {
+      const found = section(doc, id);
+      return [...(found?.paragraphs ?? []), ...(found?.list ?? [])].join(" ");
+    };
+
+    it("keeps the #ai anchor the AI keys page links to", () => {
+      expect(section(PRIVACY_POLICY, "ai")).toBeDefined();
+    });
+
+    it("never promises free providers to every team without a key", () => {
+      for (const doc of LEGAL_DOCUMENTS) {
+        expect(whole(doc)).not.toMatch(/(has not|hasn't) added a key/i);
+        expect(whole(doc)).not.toMatch(/free (AI )?services Vantage connects/i);
+      }
+    });
+
+    it("ties the sponsored providers to an invited promotion wherever they are named", () => {
+      for (const doc of LEGAL_DOCUMENTS) {
+        for (const candidate of doc.sections) {
+          for (const line of [...candidate.paragraphs, ...(candidate.list ?? [])]) {
+            if (/groq|cerebras|cohere/i.test(line) && /sponsored|Vantage's own accounts/i.test(line)) {
+              expect(line, `${doc.slug}#${candidate.id}`).toMatch(/invited to a sponsored promotion/i);
+            }
+          }
+        }
+      }
+    });
+
+    it("names each real route: own key, own computer, paired Claude Code, and the promotion", () => {
+      const ai = textOf(PRIVACY_POLICY, "ai");
+      expect(ai).toMatch(/own key/i);
+      expect(ai).toMatch(/Ollama|own computer or server/i);
+      expect(ai).toMatch(/Claude Code on a paired computer/i);
+      expect(ai).toMatch(/invited to a sponsored promotion/i);
+      expect(textOf(TERMS_OF_SERVICE, "ai")).toMatch(/Claude Code on a computer a mentor paired/i);
+    });
+
+    it("says a team with AI off sends nothing", () => {
+      expect(textOf(PRIVACY_POLICY, "ai")).toMatch(/nothing is sent to any AI company/i);
+    });
+
+    it("keeps public volunteer networks described as off", () => {
+      expect(textOf(PRIVACY_POLICY, "ai")).toMatch(/volunteer AI networks are off/i);
+    });
+  });
+
+  it("says photo and video uploads are paused while they are", () => {
+    expect(whole(PRIVACY_POLICY)).toMatch(/photo and video uploads are paused/i);
+  });
+
+  it("discloses the second adult in adult-student direct messages", () => {
+    const messages = PRIVACY_POLICY.sections.find((candidate) => candidate.id === "messages");
+    expect((messages?.paragraphs ?? []).join(" ")).toMatch(/second adult/i);
+  });
+
+  it("does not claim no outside script runs in the signed-in product", () => {
+    // Plausible, when configured, loads from the root layout on every page.
+    expect(whole(PRIVACY_POLICY)).not.toMatch(/no third-party tracking script is embedded/i);
+  });
 });
+
+function whole(doc: LegalDocument): string {
+  return doc.sections.flatMap((candidate) => [...candidate.paragraphs, ...(candidate.list ?? [])]).join(" ");
+}

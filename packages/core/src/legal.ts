@@ -16,8 +16,15 @@ import type { PoolClient } from "@neondatabase/serverless";
 // list of outside companies) and the AI section now says exactly where a request goes, including
 // the free providers Vantage connects when a team has no key. Members who accepted an earlier
 // version see the update once in the app (legalUpdateRequired) and accept it there.
-export const LEGAL_DOC_VERSION = "2026-09-25.1";
-export const LEGAL_EFFECTIVE_DATE = "September 9, 2026";
+// Bumped 2026-09-26.1: rewritten against the code. The 2026-09-25 AI section promised free
+// providers to every team without a key; the code offers them only to a team invited to a
+// sponsored promotion, so the AI section now lists the real routes (own key, own computer,
+// Claude Code on a paired computer, the promotion) and says a team without one sends nothing.
+// New sections on who can see what, deleting, and security; every cookie is named; the adult-
+// student direct-message rule is disclosed. The effective date moves with the version: it is
+// the day these words took effect, not the day the first version did.
+export const LEGAL_DOC_VERSION = "2026-09-26.1";
+export const LEGAL_EFFECTIVE_DATE = "September 26, 2026";
 
 export const TERMS_MISSING_MESSAGE = "You must agree to the Terms of Service to continue.";
 export const PRIVACY_MISSING_MESSAGE = "You must agree to the Privacy Policy to continue.";

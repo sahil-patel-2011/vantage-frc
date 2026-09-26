@@ -25,7 +25,7 @@ function LegalText({ text }: { text: string }) {
 export const metadata: Metadata = marketingPageMetadata({
   title: "Terms of Service — Vantage",
   description:
-    "The rules for using Vantage: who may hold an account, what a team owns, acceptable use for a youth robotics program, youth-protection limits, AI, and billing.",
+    "The rules for using Vantage: who may hold an account, what a team owns, acceptable use for a youth robotics program, members under 18, AI, and cost (Vantage is free).",
   path: "/terms",
 });
 

@@ -42,7 +42,7 @@ const faqs = [
   },
   {
     q: "Is team data private?",
-    a: "Yes. Access is invite-only, each team sees only its own data, and a member's personal files are private even from mentors. You can export everything at any time. One thing to know: what goes through Vantage's AI features (the prompt, the context sent with it and the answer) may be used to improve Vantage's own models, unless your team turns that off. An owner or admin can switch it off for the whole team in one place. It is never sold. The Privacy Policy has the details.",
+    a: "Yes. Access is invite-only, each team sees only its own data, and a member's personal files are private even from mentors. Your team can export its records at any time. One thing to know: what goes through Vantage's AI features (the prompt, the context sent with it and the answer) may be used to improve Vantage's own models, unless your team turns that off. An owner or admin can switch it off for the whole team in one place. It is never sold. The Privacy Policy has the details.",
   },
 ];
 
