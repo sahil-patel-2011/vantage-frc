@@ -10,6 +10,7 @@ import {
   type BriefingPrediction,
 } from "./briefing";
 import type { DriverCycle, DriverSession } from "./driver-practice";
+import { MEDIA_ENABLED } from "./media-availability";
 
 const US = "frc1678";
 
@@ -212,7 +213,8 @@ describe("briefingChecklist", () => {
       hasWatchNotes: true,
       hasDefensePlans: true,
     });
-    expect(rows).toHaveLength(9);
+    // The video row only shows while media is on (it is paused to save storage).
+    expect(rows).toHaveLength(MEDIA_ENABLED ? 9 : 8);
     expect(rows.every((row) => row.ok)).toBe(true);
     expect(rows.map((row) => row.label)).toEqual([
       "Prediction",
@@ -223,7 +225,7 @@ describe("briefingChecklist", () => {
       "Defense plan",
       "Whiteboard play",
       "Practice data",
-      "Opponent video",
+      ...(MEDIA_ENABLED ? ["Opponent video"] : []),
     ]);
   });
 
@@ -246,7 +248,7 @@ describe("briefingChecklist", () => {
       "Plan defense",
       "Draw a play",
       "Log practice runs",
-      "Tag opponent video",
+      ...(MEDIA_ENABLED ? ["Tag opponent video"] : []),
     ]);
   });
 });

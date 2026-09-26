@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { MEDIA_ENABLED } from "../media-availability";
 
 /** Soft-UI related surfaces for Match Note Timeline (never DEMO match metrics). */
 export const MATCH_NOTES_TIMELINE_RELATED_LINKS = [
@@ -246,12 +247,17 @@ export function matchNotesTimelineNextActions(input: {
         href: "#match-notes-timeline-log",
         primary: true,
       },
-      {
-        id: "video-analysis",
-        label: "Open Video",
-        detail: "Confirmed video events show here as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
-        href: withOrgHref("/video-analysis", orgId),
-      },
+      // Hidden while media is paused: it opened the "Match video is paused" page.
+      ...(MEDIA_ENABLED
+        ? [
+            {
+              id: "video-analysis",
+              label: "Open Video",
+              detail: "Confirmed video events show here as from-video evidence. Scouted cycle counts stay as the scouts entered them.",
+              href: withOrgHref("/video-analysis", orgId),
+            },
+          ]
+        : []),
       {
         id: "schedule",
         label: "Cross-check Schedule",

@@ -6,6 +6,7 @@
 // anything the team has not produced yet — it never invents data.
 
 import { actionBreakdown, sessionStats, type DriverSession } from "./driver-practice";
+import { MEDIA_ENABLED } from "./media-availability";
 
 export type BriefingMatch = {
   matchKey: string;
@@ -196,7 +197,8 @@ export function briefingChecklist(input: BriefingChecklistInput): BriefingCheckl
     { label: "Defense plan", ok: Boolean(input.hasDefensePlans), hint: "Plan defense" },
     { label: "Whiteboard play", ok: input.hasPlay, hint: "Draw a play" },
     { label: "Practice data", ok: input.practiceReps > 0, hint: "Log practice runs" },
-    { label: "Opponent video", ok: input.intelCount > 0, hint: "Tag opponent video" },
+    // Video is paused to save storage: a row asking for it led to the "Match video is paused" page.
+    ...(MEDIA_ENABLED ? [{ label: "Opponent video", ok: input.intelCount > 0, hint: "Tag opponent video" }] : []),
   ];
 }
 

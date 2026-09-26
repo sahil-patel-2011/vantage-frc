@@ -14,6 +14,7 @@ import type { TeamMatchLogView } from "../../lib/scouting/team-match-log-load";
 import { MIN_SUMMARY_MATCHES, sharedFieldTeams, summarizeTeamMatches } from "../../lib/scouting/team-match-log";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 import "./scouting-team-match-log.css";
 
 function num(teamKey: string): string {
@@ -219,8 +220,12 @@ export function ScoutingTeamMatchLog({
         </table>
       </div>
       <p className="stml-foot">
-        <a href={withOrgHref("/match-video-index", orgId)}>Add a video link</a>
-        {" · "}
+        {MEDIA_ENABLED ? (
+          <>
+            <a href={withOrgHref("/match-video-index", orgId)}>Add a video link</a>
+            {" · "}
+          </>
+        ) : null}
         <a href={withOrgHref("/match-notes-timeline", orgId)}>Add a match note</a>
       </p>
     </section>

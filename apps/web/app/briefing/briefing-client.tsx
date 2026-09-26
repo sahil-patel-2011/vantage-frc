@@ -24,6 +24,7 @@ import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { AddMoreLine, EmptyHint, OpponentCards, Section, withOrg } from "./briefing-parts";
 import { LiveCountdown } from "../dashboard/widgets/live-countdown";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -721,7 +722,7 @@ export default function BriefingClient() {
               ))}
             </ul>
           ) : null}
-          {view.opponentIntel.length > 0 ? <a href={withOrg("/video", orgId)}>Open Video Review</a> : null}
+          {MEDIA_ENABLED && view.opponentIntel.length > 0 ? <a href={withOrg("/video", orgId)}>Open Video Review</a> : null}
         </Section>
         ) : null}
 
