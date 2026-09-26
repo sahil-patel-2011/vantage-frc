@@ -2,7 +2,7 @@
 
 import { needsShortCodeHandoff, type ScoutQrRecord } from "@vantage/scouting/qr-handoff";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { EmptyState, FormRow, Panel, Button } from "../../components/ui";
+import { EmptyState, Panel, Button } from "../../components/ui";
 import {
   encodePendingQrPayload,
   listPendingEntries,
@@ -180,7 +180,11 @@ export default function ScoutHandoffPanel({
     };
   }, [eventKey]);
 
+  // Said in the card as well as passed up: the page showed it far from the button, so a tap
+  // that failed looked like a tap that did nothing.
+  const [note, setNote] = useState<string | null>(null);
   function tell(message: string) {
+    setNote(message);
     onMessage?.(message);
   }
 
@@ -332,7 +336,6 @@ export default function ScoutHandoffPanel({
   });
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const offlineHref = withOrgHref("/offline", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
   const readyActions = qrHandoffNextActions({
     orgId,
     shell: "ready",
@@ -380,16 +383,15 @@ export default function ScoutHandoffPanel({
           <Button variant="secondary" type="button" disabled={busy || !pendingCount || !navigator.onLine} onClick={() => void buildShareQr(true)}>
             Short code (large batch)
           </Button>
-          <Button as="a" variant="secondary" href={scoutingHref}>
-            Scouting
-          </Button>
-          <Button as="a" variant="secondary" href={offlineHref}>
-            Offline
-          </Button>
-          <Button as="a" variant="secondary" href={coverageHref}>
-            Coverage
-          </Button>
         </div>
+        {typeof navigator !== "undefined" && !navigator.onLine ? (
+          <p className="app-muted scout-qr-note">A short code needs signal; the QR works without it.</p>
+        ) : null}
+        {note ? (
+          <p className="scout-qr-note" role="status">
+            {note}
+          </p>
+        ) : null}
 
         {shortCode ? (
           <p className="form-message" role="status">
@@ -402,9 +404,11 @@ export default function ScoutHandoffPanel({
             { }
             <img src={qrImage} alt="Scout handoff QR code" width={280} height={280} />
             <figcaption>
-              <FormRow label="Payload / URI">
-                <textarea readOnly value={qrText} rows={3} />
-              </FormRow>
+              <p className="app-muted">Your teammate opens QR handoff on their phone and taps Scan.</p>
+              <details>
+                <summary>Can&apos;t scan? Copy the code as text</summary>
+                <textarea readOnly value={qrText} rows={3} aria-label="Handoff code as text" />
+              </details>
             </figcaption>
           </figure>
         ) : null}

@@ -4,7 +4,7 @@ import "../product-styles";
 import "./scouting-shell.css";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { crossProductHref } from "../../lib/products/products";
+import { crossProductHref, isScoutingPath, isSharedPath, productForHost, scoutingTwin } from "../../lib/products/products";
 import { ShellOutboxStatus } from "../../components/shell-outbox-status";
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null; authenticated?: boolean };
@@ -59,6 +59,31 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
       cancelled = true;
     };
     // Re-resolve only when the team in the URL changes.
+  }, [orgId]);
+
+  // A link inside the Scouting app to a Vantage-only page ("Open pick desk", "Open Pick clock")
+  // is a relative path on this host. Followed as-is it bounced off the product redirect (in the
+  // worst case back to itself) and arrived signed out. Send it through the sign-in handoff instead.
+  useEffect(() => {
+    if (productForHost(window.location.host) !== "scouting") return;
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+      let url: URL;
+      try {
+        url = new URL(anchor.href, window.location.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname.startsWith("/api/") || isScoutingPath(url.pathname) || isSharedPath(url.pathname)) return;
+      if (scoutingTwin(url.pathname)) return;
+      event.preventDefault();
+      window.location.assign(crossProductHref("vantage", `${url.pathname}${url.search}${url.hash}`, orgId));
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
   }, [orgId]);
 
   const team = me?.teamNumber ? `Team ${me.teamNumber}` : me?.orgName ?? null;

@@ -133,6 +133,16 @@ try {
     throw new Error(`No seeded organization ${ORG_ID}. Run scripts/seed-dev.mjs first.`);
   }
 
+  // Every real team gets a billing row when it is created (createOrganization; production was
+  // backfilled by migration 0687). The seeded team had none, so metered features such as a team
+  // brief answered "Billing account is not configured" only here.
+  await db.query(
+    `INSERT INTO org_billing (org_id, tier, credit_cap_usd, period_start, period_end)
+     VALUES ($1::uuid, 'free', 0, date_trunc('month', now()), date_trunc('month', now()) + interval '1 month')
+     ON CONFLICT (org_id) DO NOTHING`,
+    [ORG_ID],
+  );
+
   /**
    * Let this team sign in with a password.
    *

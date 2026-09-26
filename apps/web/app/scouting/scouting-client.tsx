@@ -50,6 +50,7 @@ import {
 } from "../../lib/scouting/scouting-related";
 import { asMediaFile, downscaleImageInBrowser } from "./scouting-media-browser";
 import {
+  openAssignment,
   type Bootstrap,
   type OfficialFlag,
   type SaveReceipt,
@@ -295,7 +296,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, [searchParams]);
 
   useEffect(() => {
-    const assignment = data?.assignments[0];
+    const assignment = data ? openAssignment(data, Date.now()) : null;
     if (assignment && !matchKey && !searchParams.get("matchKey")) {
       setMatchKey(assignment.matchKey);
       setTeamKey(assignment.teamKey);

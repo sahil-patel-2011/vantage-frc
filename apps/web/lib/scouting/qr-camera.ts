@@ -1,5 +1,9 @@
 "use client";
 
+// Bundled with the page, not loaded on the tap: with no signal (the only time a QR handoff is
+// needed) an on-demand chunk could not download, so "Show handoff QR" did nothing at all.
+import QRCode from "qrcode";
+
 type BarcodeDetectorLike = {
   detect(source: ImageBitmapSource): Promise<Array<{ rawValue: string }>>;
 };
@@ -19,7 +23,6 @@ export function cameraScanSupported(): boolean {
 }
 
 export async function renderQrDataUrl(payload: string, size = 280): Promise<string> {
-  const QRCode = (await import("qrcode")).default;
   return QRCode.toDataURL(payload, {
     errorCorrectionLevel: "M",
     margin: 2,

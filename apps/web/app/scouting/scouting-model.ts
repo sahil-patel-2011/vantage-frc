@@ -51,6 +51,33 @@ export type Bootstrap = {
 
 export type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust" | "teams";
 
+/** A match is over five minutes after its time (the same rule the match picker uses). */
+const PLAYED_AFTER_MS = 5 * 60_000;
+
+/**
+ * The assignment the Scout tab should open on: the first one whose match has not been played and
+ * whose robot nobody has scouted yet. Opening on assignments[0] put a scout on Qual 1, eleven
+ * hours over and already scouted, with their old report loaded, and they saved it a second time.
+ * Null when every assignment is done or over; the match picker then chooses.
+ */
+export function openAssignment(
+  data: Pick<Bootstrap, "assignments" | "matches" | "recentEntries">,
+  nowMs: number,
+): Bootstrap["assignments"][number] | null {
+  const scouted = new Set(
+    data.recentEntries.filter((entry) => entry.type === "match" && entry.matchKey).map((entry) => `${entry.matchKey}|${entry.teamKey}`),
+  );
+  const timeOf = new Map(data.matches.map((match) => [match.matchKey, match.matchTime ?? null]));
+  return (
+    data.assignments.find((assignment) => {
+      if (scouted.has(`${assignment.matchKey}|${assignment.teamKey}`)) return false;
+      const time = timeOf.get(assignment.matchKey);
+      const at = time ? Date.parse(time) : Number.NaN;
+      return !Number.isFinite(at) || at + PLAYED_AFTER_MS > nowMs;
+    }) ?? null
+  );
+}
+
 /** What the confirmation after Save says. `next` is only set when the schedule or an assignment names it. */
 export type SaveReceipt = {
   teamKey: string;
