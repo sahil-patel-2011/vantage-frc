@@ -566,7 +566,7 @@ describe("season dossier fact cards", () => {
     });
     const named = cards.find((card) => card.id === "event-epa-2026custom-org-pacific-practice");
     expect(named?.title).toBe("Pacific Practice EPA");
-    expect(named?.citation.detail).toBe("tba team_event_metrics for Pacific Practice.");
+    expect(named?.citation.detail).toBe("From The Blue Alliance, Pacific Practice.");
     expect(cards.find((card) => card.id === "event-record-2026custom-org-pacific-practice")?.title).toBe(
       "Pacific Practice record",
     );

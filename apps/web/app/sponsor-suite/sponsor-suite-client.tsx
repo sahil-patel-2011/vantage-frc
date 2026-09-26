@@ -704,8 +704,7 @@ function DeckPanel({
     <Panel id="sponsor-suite-decks">
       <h2 style={{ marginTop: 0 }}>Pitch / renewal decks</h2>
       <p className="app-muted" style={{ marginTop: 0 }}>
-        Metered generation grounded in recorded sponsors — UsageCutoffBanner appears when budgets
-        hard-stop.
+        Drafted from the sponsors you have recorded.
       </p>
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       <form

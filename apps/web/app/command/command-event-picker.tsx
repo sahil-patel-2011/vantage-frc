@@ -205,11 +205,21 @@ export function CommandEventPicker({
             />
             <ul className="edc-event-list">
               {events.length ? (
-                events.map((event) => (
+                // The team's current event first, marked, so the dialog opens on where they are.
+                [...events]
+                  .sort((a, b) => Number(b.eventKey === snap?.eventKey) - Number(a.eventKey === snap?.eventKey))
+                  .map((event) => (
                   <li key={event.eventKey}>
-                    <button type="button" disabled={busy} onClick={() => onSelect(event.eventKey)}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      aria-current={event.eventKey === snap?.eventKey ? "true" : undefined}
+                      onClick={() => onSelect(event.eventKey)}
+                    >
                       <strong>
+                        {event.eventKey === snap?.eventKey ? <span aria-hidden="true">✓ </span> : null}
                         {event.name}
+                        {event.eventKey === snap?.eventKey ? <em className="edc-event-own">Current</em> : null}
                         {/* Worth marking: a team-made event will never receive
                             Blue Alliance results, and the label is the only
                             place that difference is visible. */}
@@ -223,8 +233,8 @@ export function CommandEventPicker({
                 ))
               ) : (
                 <li className="edc-empty-events">
-                  No events in cache for this year.{" "}
-                  <a href={teamDataHref}>Open Team → Data to load events</a>, or add
+                  No events found for this year.{" "}
+                  <a href={teamDataHref}>Load this season&rsquo;s events in Team → Data</a>, or add
                   your own below.
                 </li>
               )}
@@ -238,10 +248,11 @@ export function CommandEventPicker({
               <Button variant="secondary" type="button" onClick={() => setAdding(true)}>
                 Add an event that isn’t listed
               </Button>
+              {/* A quiet link: as a button the same size as the others, it read as a normal choice. */}
               {snap?.eventKey ? (
-                <Button variant="secondary" type="button" disabled={busy} onClick={onClear}>
-                  Clear active event
-                </Button>
+                <button type="button" className="text-button" disabled={busy} onClick={onClear}>
+                  Stop following this event
+                </button>
               ) : null}
             </div>
           </>

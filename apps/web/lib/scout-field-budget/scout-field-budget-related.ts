@@ -78,7 +78,7 @@ export function scoutFieldBudgetSetupSteps(orgId?: string | null): ScoutFieldBud
     {
       id: "forms",
       label: "Open Form builder",
-      detail: "Draft the real scouting schema before linting phase field counts.",
+      detail: "Build the real scouting form first, then check how many fields each part of the match asks for.",
       href: hubHref("/competition", "forms", orgId),
     },
     {
@@ -125,7 +125,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
       return {
         kind,
         title: "Loading Field-Count Budget…",
-        description: "Checking which team you are on and schema snapshots.",
+        description: "Checking which team you are on and the forms you have checked.",
       };
     case "error":
       return {
@@ -133,7 +133,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
         badge: "Unavailable",
         title: "Could not load Field-Count Budget",
         description:
-          "A network or server issue blocked the linter. Retry, or open Form builder while it reloads.",
+          "This page could not load. Retry, or open Form builder while it reloads.",
       };
     case "setup":
       return {
@@ -141,21 +141,21 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before linting schema phases.",
+          "Choose your team before checking a form.",
       };
     case "empty":
       return {
         kind,
-        badge: "No schemas linted yet",
-        title: "Log your first schema snapshot",
+        badge: "No forms checked yet",
+        title: "Check your first form",
         description:
-          "Record how many fields each match phase asks for and lint against a realistic per-match budget.",
+          "Enter how many fields each part of the match asks for, and see whether a scout can fill them in time.",
       };
     default:
       return {
         kind: "ready",
-        title: "Schema field-count lint",
-        description: "Budgets from logged schemas only.",
+        title: "Form length check",
+        description: "From the forms you have checked.",
       };
   }
 }
@@ -187,14 +187,14 @@ export function scoutFieldBudgetNextActions(input: {
       {
         id: "retry",
         label: "Retry Field-Count Budget",
-        detail: "Reload real schema snapshots.",
+        detail: "Reload the forms you have checked.",
         href: withOrgHref("/scout-field-budget", orgId),
         primary: true,
       },
       {
         id: "forms",
         label: "Open Form builder",
-        detail: "Form builder stays available while the linter reloads.",
+        detail: "Form builder stays available while this page reloads.",
         href: hubHref("/competition", "forms", orgId),
       },
       {

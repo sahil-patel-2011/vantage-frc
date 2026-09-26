@@ -152,7 +152,7 @@ function BudgetShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#scout-field-budget-lint">Lint a schema</Button>
+            <Button as="a" variant="primary" href="#scout-field-budget-lint">Check a form</Button>
           ) : null}
         </EmptyState>
       )}
@@ -325,7 +325,7 @@ export default function ScoutFieldBudgetClient() {
           </>
         }
         title="Scouting Field-Count Budget"
-        description="Log a scouting schema's per-phase field count and lint it against a realistic per-match budget."
+        description="Count a scouting form's fields in each part of the match and see whether a scout can fill them in time."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -342,7 +342,7 @@ export default function ScoutFieldBudgetClient() {
         <Panel className="sfb-panel">
           <h2>Budget at a glance</h2>
           <div className="sfb-stats">
-            <StatTile label="Schemas linted" value={formatScoutFieldBudgetMetric(view.summary.totalSnapshots, loaded)} />
+            <StatTile label="Forms checked" value={formatScoutFieldBudgetMetric(view.summary.totalSnapshots, loaded)} />
             <StatTile label="Over budget" value={formatScoutFieldBudgetMetric(view.summary.overBudgetCount, loaded)} />
             <StatTile label="Within budget" value={formatScoutFieldBudgetMetric(view.summary.okCount, loaded)} />
             <StatTile
@@ -369,9 +369,9 @@ export default function ScoutFieldBudgetClient() {
       ) : (
         <EmptyState
           soft
-          badge="No schemas linted yet"
+          badge="No forms checked yet"
           badgeTone="setup"
-          title="Log your first schema snapshot"
+          title="Check your first form"
           description="Record how many fields each match phase asks for."
         />
       )}
@@ -391,7 +391,7 @@ function SnapshotList({
 }) {
   return (
     <Panel id="scout-field-budget-list" className="sfb-panel">
-      <h2>Linted schemas</h2>
+      <h2>Checked forms</h2>
       <ul className="sfb-lint-list">
         {view.lints.map((lint) => (
           <LintRow key={lint.snapshotId} lint={lint} busy={busy} mutate={mutate} />
@@ -501,9 +501,9 @@ function SnapshotForm({
         setForm(empty);
       }}
     >
-      <h2>Lint a schema</h2>
+      <h2>Check a form</h2>
       <FormGrid min={160}>
-        <FormRow label="Schema name">
+        <FormRow label="Form name">
           <input value={form.schemaName} onChange={set("schemaName")} placeholder="2026 Reefscape v2" required />
         </FormRow>
         <FormRow label="Auto fields">
@@ -527,7 +527,7 @@ function SnapshotForm({
       </FormRow>
       <div>
         <Button variant="primary" type="submit" disabled={busy || !form.schemaName.trim()}>
-          Lint schema
+          Check form
         </Button>
       </div>
     </Panel>

@@ -45,6 +45,14 @@ function round1(value: number) {
   return Math.round(value * 10) / 10;
 }
 
+/** The public name of a rating source ("tba" → "The Blue Alliance"), for the dossier's source notes. */
+function sourceName(source: string): string {
+  const key = source.toLowerCase();
+  if (key === "tba") return "The Blue Alliance";
+  if (key === "statbotics") return "Statbotics";
+  return source;
+}
+
 function normalizeSource(source?: string | null): DossierSource | null {
   if (source === "tba" || source === "statbotics" || source === "scout") return source;
   return null;
@@ -88,7 +96,7 @@ export function buildTeamDossierFacts(input: {
     value: input.identity.nickname ?? input.identity.name ?? input.identity.teamKey,
     citation: {
       source: identitySource,
-      detail: "Team identity from Neon teams_ref cache (TBA ingest).",
+      detail: "From The Blue Alliance.",
       syncedAt: input.identity.syncedAt ?? null,
     },
   });
@@ -101,7 +109,7 @@ export function buildTeamDossierFacts(input: {
       value: location,
       citation: {
         source: identitySource,
-        detail: "City / state / country from TBA team record cache.",
+        detail: "From The Blue Alliance.",
         syncedAt: input.identity.syncedAt ?? null,
       },
     });
@@ -115,7 +123,7 @@ export function buildTeamDossierFacts(input: {
       value: String(input.identity.rookieYear),
       citation: {
         source: identitySource,
-        detail: "Rookie year from TBA team record cache.",
+        detail: "From The Blue Alliance.",
         syncedAt: input.identity.syncedAt ?? null,
       },
     });
@@ -140,7 +148,7 @@ export function buildTeamDossierFacts(input: {
       value: parts.join(" · "),
       citation: {
         source,
-        detail: `${source} team_year_metrics cache for ${input.identity.teamKey} / ${year}.`,
+        detail: `From ${sourceName(source)}, ${year} season.`,
         syncedAt: preferred.syncedAt ?? null,
         year,
       },
@@ -167,7 +175,7 @@ export function buildTeamDossierFacts(input: {
         value: String(round1(preferred.epaTotal)),
         citation: {
           source,
-          detail: `${source} team_event_metrics for ${label}.`,
+          detail: `From ${sourceName(source)}, ${label}.`,
           syncedAt: preferred.syncedAt ?? null,
           eventKey,
           eventName: label,
@@ -188,7 +196,7 @@ export function buildTeamDossierFacts(input: {
         value: `${record}${rankBit}`,
         citation: {
           source,
-          detail: `${source} event W-L-T${preferred.rank != null ? " and rank" : ""} for ${label}.`,
+          detail: `From ${sourceName(source)}: record${preferred.rank != null ? " and rank" : ""} at ${label}.`,
           syncedAt: preferred.syncedAt ?? null,
           eventKey,
           eventName: label,
@@ -208,7 +216,7 @@ export function buildTeamDossierFacts(input: {
         value: `${Math.round(op.reliability)}% (n=${op.scoutSample})`,
         citation: {
           source: "scout",
-          detail: `Org match/pit scout observations for ${input.identity.teamKey}; not a TBA/Statbotics fact.`,
+          detail: "From our scouts' match and pit entries, not an official figure.",
         },
       });
     }
@@ -220,7 +228,7 @@ export function buildTeamDossierFacts(input: {
         value: `~${round1(op.foulRate)} / match (n=${op.scoutSample})`,
         citation: {
           source: "scout",
-          detail: `Derived from org scout payloads for ${input.identity.teamKey}; labeled separately from reference EPA.`,
+          detail: "From our scouts' match entries, not an official figure.",
         },
       });
     }

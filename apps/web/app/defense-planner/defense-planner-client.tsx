@@ -613,7 +613,7 @@ function LogMatchupForm({
     >
       <h2 style={{ margin: 0 }}>Scout the next opponent</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Metered local recommendation — UsageCutoffBanner appears when budgets hard-stop.
+        Worked out from the numbers you enter below.
       </p>
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       <FormGrid min={160}>
