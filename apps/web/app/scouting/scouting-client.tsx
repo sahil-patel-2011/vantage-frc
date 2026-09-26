@@ -295,6 +295,27 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     }
   }, [searchParams]);
 
+  // Conflicts load whenever that tab is showing and the event is known — a tap
+  // on the tab, or a link from a disagreement notification (?scoutTab=conflicts),
+  // which used to set the tab without ever fetching and showed "No disagreements".
+  const conflictsEventKey = data?.eventKey ?? "";
+  useEffect(() => {
+    if (tab !== "conflicts" || !orgId || !conflictsEventKey) return;
+    let cancelled = false;
+    void fetch(
+      `/api/scouting/disagreements?orgId=${encodeURIComponent(orgId)}&eventKey=${encodeURIComponent(conflictsEventKey)}`,
+    )
+      .then(async (response) => {
+        if (!response.ok || cancelled) return;
+        const body = (await response.json()) as { disagreements: [] };
+        if (!cancelled) setConflicts(body.disagreements);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, orgId, conflictsEventKey]);
+
   useEffect(() => {
     const assignment = data ? openAssignment(data, Date.now()) : null;
     if (assignment && !matchKey && !searchParams.get("matchKey")) {
@@ -678,6 +699,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }
 
   async function loadConflicts() {
+    if (!data?.eventKey) return;
     const response = await fetch(
       `/api/scouting/disagreements?orgId=${encodeURIComponent(orgId)}&eventKey=${encodeURIComponent(data?.eventKey ?? "")}`,
     );
@@ -761,7 +783,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   function onTabChange(id: string) {
     const next = id as ScoutTab;
     setTab(next);
-    if (next === "conflicts") void loadConflicts();
   }
 
   const shell = classifyScoutingShell({
