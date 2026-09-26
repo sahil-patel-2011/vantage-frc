@@ -7,6 +7,7 @@ import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellSidebar } from "./app-shell-sidebar";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
+import { LegalUpdateBanner } from "./legal-update-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
 import {
@@ -678,6 +679,7 @@ export default function AppShell() {
           onExpand={() => setFocusCollapsed(false)}
         />
       ) : null}
+      <LegalUpdateBanner />
       {accountMenuOpen ? (
         <button
           className="soft-account-scrim"

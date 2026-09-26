@@ -3,6 +3,7 @@ import {
   assertLegalAccepted,
   BOTH_MISSING_MESSAGE,
   legalAcceptanceRequired,
+  legalUpdateRequired,
   LEGAL_DOC_VERSION,
   LEGAL_EFFECTIVE_DATE,
   PRIVACY_MISSING_MESSAGE,
@@ -107,5 +108,17 @@ describe("recordLegalAcceptance", () => {
 
     expect(calls[0]?.sql).toContain("$1::uuid");
     expect(calls[0]?.sql).not.toContain("22222222-2222-2222-2222-222222222222");
+  });
+});
+
+describe("legalUpdateRequired", () => {
+  const accepted = { termsAcceptedAt: "2026-09-01", privacyAcceptedAt: "2026-09-01" };
+  it("asks someone who accepted an older version, or no recorded version, once", () => {
+    expect(legalUpdateRequired({ ...accepted, termsVersion: "2026-09-23.1", privacyVersion: "2026-09-23.1" })).toBe(true);
+    expect(legalUpdateRequired({ ...accepted, termsVersion: null, privacyVersion: null })).toBe(true);
+  });
+  it("is quiet for the current version and for anyone still in onboarding", () => {
+    expect(legalUpdateRequired({ ...accepted, termsVersion: LEGAL_DOC_VERSION, privacyVersion: LEGAL_DOC_VERSION })).toBe(false);
+    expect(legalUpdateRequired({ termsAcceptedAt: null, privacyAcceptedAt: null, termsVersion: null })).toBe(false);
   });
 });

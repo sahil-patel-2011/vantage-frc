@@ -12,7 +12,11 @@ import type { PoolClient } from "@neondatabase/serverless";
 // Bumped 2026-09-23.1: each team's records are now also copied to a Google spreadsheet in the
 // operator's Google Drive (the VantageFRC folder), a new place team data lives; and the Terms
 // now say Vantage is free, with AI on the team's own key.
-export const LEGAL_DOC_VERSION = "2026-09-23.1";
+// Bumped 2026-09-25.1: both documents rewritten for plain reading (a short version first, one
+// list of outside companies) and the AI section now says exactly where a request goes, including
+// the free providers Vantage connects when a team has no key. Members who accepted an earlier
+// version see the update once in the app (legalUpdateRequired) and accept it there.
+export const LEGAL_DOC_VERSION = "2026-09-25.1";
 export const LEGAL_EFFECTIVE_DATE = "September 9, 2026";
 
 export const TERMS_MISSING_MESSAGE = "You must agree to the Terms of Service to continue.";
@@ -67,4 +71,20 @@ export function legalAcceptanceRequired(input: {
   privacyAcceptedAt?: string | null;
 }): boolean {
   return !input.termsAcceptedAt?.trim() || !input.privacyAcceptedAt?.trim();
+}
+
+/**
+ * True when someone accepted an earlier version of the documents (or accepted before versions
+ * were recorded). The version string was saved but never compared, so a bump never reached
+ * anyone who had already accepted. This does not reopen onboarding: the app asks once, in place,
+ * and records the new acceptance.
+ */
+export function legalUpdateRequired(input: {
+  termsAcceptedAt?: string | null;
+  privacyAcceptedAt?: string | null;
+  termsVersion?: string | null;
+  privacyVersion?: string | null;
+}): boolean {
+  if (legalAcceptanceRequired(input)) return false;
+  return input.termsVersion !== LEGAL_DOC_VERSION || input.privacyVersion !== LEGAL_DOC_VERSION;
 }

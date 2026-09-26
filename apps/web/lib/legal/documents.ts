@@ -10,6 +10,15 @@
 /**
  * Date these documents were last rewritten. Bump when the text changes.
  *
+ * Rewritten 2026-09-25 for plain reading: each document opens with "The short version"; the
+ * Privacy Policy's two lists of outside companies (third-parties and subprocessors) are one list;
+ * "Where your data is held" joined the retention section; the AI section says exactly where a
+ * request goes (the team's own key, its own computer, or the free providers Vantage connects:
+ * Groq, Cerebras, Mistral, Cohere) and that public volunteer networks are off. It had implied
+ * Vantage supplies Anthropic/OpenAI by default while the Terms said AI runs only on the team's
+ * own key. LEGAL_DOC_VERSION moves to 2026-09-25.1 so members see the rewrite once and accept it
+ * (packages/core/src/legal.ts now compares the accepted version, not only the date).
+ *
  * Revised 2026-09-24 (second pass): the team backup copy is private to the operator and
  * shared with no one (it had said owners and admins could view it). Still named: Google Drive.
  *
@@ -51,7 +60,7 @@
  * updated" in the future would be the first false statement in a document
  * whose whole point is that it can be checked.
  */
-export const LEGAL_LAST_UPDATED = "September 24, 2026";
+export const LEGAL_LAST_UPDATED = "September 25, 2026";
 
 /** Where a privacy question goes. */
 // The Privacy Policy and Terms name this address as the way to reach a
@@ -87,6 +96,22 @@ export const PRIVACY_POLICY: LegalDocument = {
   summary:
     "What Vantage collects from FRC teams and their members, what we do with it, and what we do not do with it.",
   sections: [
+    {
+      id: "summary",
+      heading: "The short version",
+      paragraphs: [
+        "This is what the rest of this policy says, in a few lines. The full sections below are the ones that count.",
+      ],
+      list: [
+        "Your team's data belongs to your team. Each team's rows are walled off from every other team's in the database itself.",
+        "We collect what running a team needs: names and emails, the profile you fill in, and what your team creates (scouting, chat, hours, documents, budgets). Your date of birth and gender are visible only to you.",
+        "We never sell data, never show ads, and never build advertising profiles. There is no advertising in Vantage.",
+        "AI requests go where your team chooses: your own provider key, your own computer, or the free AI services Vantage connects. Your team can turn AI off, and can turn off the use of its AI activity for training our models.",
+        "Usage analytics are off until you turn them on, and never include what you type.",
+        "Students join only when a team's adult leaders invite them. Parents can ask the team, or us, what is held about their child.",
+        "You can see, correct, export, or ask us to delete your information by writing to " + CONTACT + ".",
+      ],
+    },
     {
       id: "who-we-are",
       heading: "Who we are, and who controls your team's workspace",
@@ -133,7 +158,8 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Vantage's AI features are grounded in two things: your own team's data, and public FRC data from The Blue Alliance and Statbotics. They do not read another team's workspace. When there is no real data behind a question, the feature says so and shows a setup or empty state — it does not invent numbers.",
         "We use your team's AI activity to train our own models. Prompts, the context sent with them, model responses, and tool traces from Vantage's AI features may be used by us to train, fine-tune, and evaluate in-house models that improve Vantage. This applies to AI-feature activity across the product. We do not sell this data or share it with advertisers, and third-party model providers still receive your requests only to answer them — the training use described here is ours. If your team brings its own API key, requests made with it are also subject to that provider's own terms, which say their own things about training — worth reading.",
         "Your team can turn this off. A team owner or admin can switch off model training for the whole team under Team → AI keys → Model training. While it is off, none of that team's AI activity — prompts, context, responses, or tool traces — is used to train, fine-tune, or evaluate our models, and any training we do reads only from activity of teams that have left it on.",
-        "When someone on your team uses an AI feature, the prompt and the context it needs are sent to the model provider your team has configured. Out of the box that is a major provider your team selects — Anthropic, OpenAI, or Google — or any OpenAI-compatible endpoint your team points us at. The provider processes the request and returns an answer.",
+        "Where an AI request goes is your team's choice, made by an owner or admin under Team → AI keys. There are three kinds of choice: (1) your team's own key with a provider such as Anthropic, OpenAI, Google, or OpenRouter, so the request goes to your team's own account there; (2) a model running on your team's own computer or server (for example Ollama or LM Studio), so the request never leaves your team's machine except to reach it; or (3) if your team has not added a key, one of the free AI services Vantage connects on your behalf — today Groq, Cerebras, Mistral, and Cohere. In every case the prompt and the context it needs are sent to that provider, which processes the request and returns an answer. A team that turns AI off sends nothing anywhere.",
+        "Public volunteer AI networks are off. Vantage can also reach volunteer networks whose computers are run by members of the public (such as the AI Horde), but that is switched off on vantagefrc.vercel.app. If it is ever switched on, this policy will say so first, because anything sent through such a network can be read by whoever runs the computer that answers it.",
         "AI use is counted. Every call is recorded in your team's usage log so the spend caps and limits your team sets can be enforced. Those records include which feature was used, the model, and token counts — not a separate copy of your content. Vantage itself charges nothing for AI; a team that brings its own key pays its provider directly.",
         "Bring-your-own keys are encrypted. If your team supplies its own provider API key, it is stored using envelope encryption: a unique data key encrypts the secret, and that data key is itself encrypted by a key-management service. Keys are decrypted only to make a request your team asked for. They are never shown back to you in full and are never included in a data export.",
         "Prompt caching is on by default. Parts of a prompt that repeat may be cached at the provider so repeat requests cost less and run faster. Your team can turn this off in AI budget settings.",
@@ -144,28 +170,30 @@ export const PRIVACY_POLICY: LegalDocument = {
       id: "third-parties",
       heading: "Other companies involved, and what each one gets",
       paragraphs: [
-        "We use a small number of service providers. Several of them only come into play if your team turns the feature on.",
-        "These providers process data to deliver their service to us. We do not sell data to anyone, and none of these are advertising networks.",
+        "Running Vantage means a small number of other companies handle some data for us. This is the complete list. We choose them, we are responsible for them, and none of them is an advertising network. Several only come into play if your team turns the feature on: a team with no Onshape connection sends nothing to Onshape, and a team that has turned AI off sends nothing to any AI provider.",
       ],
       list: [
-        "Neon (Postgres hosting) — hosts the database where your team's workspace lives. This is where essentially all of your data sits.",
-        "Resend (email) — sends sign-in codes, two-factor codes, invitations, password-reset emails, and notifications. It receives the recipient's email address and the message.",
-        "Stripe (payments) — only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing. If it is ever used, card details go directly to Stripe; we do not store card numbers.",
+        "Neon (database) — hosts the Postgres database where your team's workspace lives. This is where essentially all of your data sits.",
+        "Vercel (hosting) — runs the web app. Sees requests and standard server logs.",
+        "Email delivery (Google's mail service for our vantagefrc@gmail.com sender, or Resend where configured) — sends sign-in codes, invitations, password-reset emails, reminders, and notifications. Sees the recipient's address and the message.",
         "Google (sign-in) — if you sign in with Google, Google confirms your identity and returns your name, email, and account id.",
-        "Google (Drive) — stores a private backup copy of each team's records in the operator's own account. It holds the same tables your team can export, each team's records are kept separately, and it is shared with no one.",
+        "Google (storage) — holds a private backup copy of each team's records in the operator's own account. Each team's records are kept separately, the copy is shared with no one, and it is deleted when the team is deleted.",
+        "AI providers — receive the prompt and context of each AI request, as described in the AI section: the provider your team chose with its own key (such as Anthropic, OpenAI, Google, or OpenRouter), or, when your team has not added a key, the free services Vantage connects (Groq, Cerebras, Mistral, and Cohere).",
         "The Blue Alliance and Statbotics (public FRC data) — we read public event, team, and match data from them. We send event and team keys, never your members' information.",
-        "Onshape and Fusion (CAD, opt-in) — only if your team connects a CAD account. They receive the document and session requests your team makes.",
+        "Onshape and Autodesk Fusion (CAD, opt-in) — only if your team connects a CAD account. They receive the document and session requests your team makes.",
         "GitHub (opt-in) — only if your team connects a repository for robot-code review. It receives requests for the code your team pointed us at.",
+        "Discord and Slack (opt-in) — only if your team connects a chat bridge, which forwards the messages your team chooses to forward.",
         "Twilio (phone verification, opt-in) — only if you verify a phone number. It receives that phone number and the verification message.",
-        "AI providers your team configures (opt-in) — receive the prompt and context for each AI request, as described above.",
-        "Plausible (website analytics) — only when the deployment is configured for it. It records page views for the marketing site without advertising cookies or cross-site profiles.",
+        "Stripe (payments) — only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing. If it is ever used, card details go directly to Stripe; we do not store card numbers.",
+        "Upstash (rate limiting, if configured) — counts requests to stop abuse. Sees no personal content.",
+        "Plausible (website analytics, if configured) — records page views on the public marketing site without advertising cookies or cross-site profiles.",
       ],
     },
     {
       id: "retention",
       heading: "Where data lives, how long we keep it, and how to get it out",
       paragraphs: [
-        "Your team's data lives in our Postgres database, hosted by Neon. We do not currently offer a choice of hosting region — if that matters for your organization, ask us before you sign up.",
+        "Your team's data lives in our Postgres database, hosted by Neon in the United States, and is processed there. If your team is outside the United States, using Vantage means your information is transferred there. We do not currently offer a choice of hosting region — if that matters for your organization, ask us before you sign up.",
         "A backup copy of each team's records is also kept in the operator's private Google Drive storage (see the list of companies above). It is updated automatically while your team uses Vantage, shared with no one, and deleted when the team is deleted. If your team connects its own Google Sheet or Excel workbook, a copy goes there too, into your team's own account.",
         "We keep a team's data for as long as the team is active, and afterwards only as long as we need it for security, legal, billing, or dispute reasons. Chat messages specifically have no automatic deletion, as noted above.",
         "Your team can export its own data at any time from the Exports area — individual areas as CSV, or the whole workspace as a ZIP archive. API keys and encryption material are never included in an export.",
@@ -255,26 +283,6 @@ export const PRIVACY_POLICY: LegalDocument = {
       ],
     },
     {
-      id: "subprocessors",
-      heading: "Companies that process data on our behalf",
-      paragraphs: [
-        "Running Vantage means other companies handle some of your data. These are the ones that do, and what each one sees. We choose them, and we are responsible for them.",
-        "Some of these only apply if your team turns the feature on. A team with no Onshape connection sends nothing to Onshape; a team using its own AI provider key sends nothing to ours.",
-      ],
-      list: [
-        "Neon — our Postgres database. Holds essentially everything described in this policy.",
-        "Vercel — hosting for the web app. Sees requests and standard server logs.",
-        "Resend — sends our email: sign-in codes, invitations, reminders, and digests. Sees the recipient address and the message.",
-        "Stripe — payments, only if paid features are ever offered and an owner chooses one. Vantage is free today, so Stripe receives nothing.",
-        "Google — if you sign in with Google, which tells us your name and email; and Google Drive, which holds the private backup copy of each team's records described above.",
-        "AI providers (Anthropic, OpenAI, Groq, OpenRouter) — process the text of an AI request when a team uses an AI feature. A team may supply its own provider key instead, in which case the request goes to that team's own account.",
-        "Onshape — only if your team connects CAD. Sees the CAD documents you authorise.",
-        "Discord and Slack — only if your team connects a chat bridge, which forwards the messages your team chooses to forward.",
-        "The Blue Alliance and Statbotics — public FRC event and match data. We read from them; we do not send them your team's information.",
-        "Upstash — rate-limit counters, if configured. Sees no personal content.",
-      ],
-    },
-    {
       id: "security-incidents",
       heading: "If something goes wrong",
       paragraphs: [
@@ -299,13 +307,6 @@ export const PRIVACY_POLICY: LegalDocument = {
       ],
     },
     {
-      id: "where-data-lives",
-      heading: "Where your data is held",
-      paragraphs: [
-        "Vantage is hosted in the United States, and your team's data is stored and processed there. If your team is outside the United States, using Vantage means that information is transferred there.",
-      ],
-    },
-    {
       id: "contact",
       heading: "Questions",
       paragraphs: [
@@ -324,6 +325,22 @@ export const TERMS_OF_SERVICE: LegalDocument = {
   summary:
     "The rules for using Vantage: who may have an account, what teams and Vantage each owe, and what the product does and does not promise.",
   sections: [
+    {
+      id: "summary",
+      heading: "The short version",
+      paragraphs: [
+        "A plain summary of these Terms. The full sections below are the ones that count.",
+      ],
+      list: [
+        "Vantage is free, closed software for FRC teams: we set up each team and its owner, and the team invites its own members.",
+        "Your team owns its content. We store and show it to run Vantage for you, and we never sell it.",
+        "Be decent: no harassment, no reaching into another team's data, no scraping, and FIRST's Code of Conduct still applies.",
+        "Only claim a team you are authorized to represent.",
+        "AI can be wrong. Check it before you act on it. It runs on your team's own key, your own computer, or the free services Vantage connects, and Vantage charges nothing for it.",
+        "We work hard to keep Vantage running, but there is no uptime guarantee. Export anything your team cannot afford to lose.",
+        "Members under 18 use Vantage with the permission of a parent, guardian, or the adult who runs their team.",
+      ],
+    },
     {
       id: "eligibility",
       heading: "Who can use Vantage",
@@ -394,7 +411,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       paragraphs: [
         "AI output can be wrong. Check it before you act on it — especially for anything involving scouting conclusions, match strategy, engineering decisions, budgets, or safety. Treat it as a starting draft written by a fast assistant who was not at your event.",
         "Vantage does not invent your team's data. When a feature has no real data to work from, it shows a setup or empty state rather than a plausible-looking number. If you ever see a metric you cannot trace back to your own entries or to public FRC data, tell us.",
-        "AI features run on your team's own provider key (or not at all), and Vantage charges nothing for them. Each call is counted so your team's own limits work: teams can set daily and monthly spend caps, token caps, model allowlists, warning thresholds, and a kill switch. When a limit is reached, the call is refused with an explanation.",
+        "AI features run where your team chooses under Team → AI keys: your team's own provider key, a model on your own computer or server, or the free AI services Vantage connects when your team has not added a key. Your team can also turn AI off. Vantage charges nothing for AI. Each call is counted so your team's own limits work: teams can set daily and monthly spend caps, token caps, model allowlists, warning thresholds, and a kill switch. When a limit is reached, the call is refused with an explanation.",
         "If your team brings its own provider API key, your team is responsible for that provider account, its charges, and its acceptable-use terms. We use the key only for the requests your team makes, and we store it encrypted.",
       ],
     },
@@ -403,7 +420,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       heading: "Cost",
       paragraphs: [
         "Vantage is free. Every team gets every feature, and there is nothing to buy.",
-        "AI features run on an AI provider key your team supplies (or a free key, or a model on your own computer). Your team's provider bills your team directly under its own terms; Vantage adds no charge and no markup.",
+        "AI features run on an AI provider key your team supplies, a model on your own computer, or the free AI services Vantage connects. If your team uses its own key, that provider bills your team directly under its own terms; Vantage adds no charge and no markup.",
         "If Vantage ever offers something paid, owners will be told by email well before, nothing will be charged unless an owner chooses it, and these Terms will be updated first.",
       ],
     },

@@ -29,6 +29,12 @@ import { join } from "node:path";
 
 const ORG_ID = "6925a000-0000-4000-8000-000000000001";
 
+// The test accounts accept the documents as they are now, so the "Terms updated" banner (which
+// compares the accepted version) does not sit on every page a spec opens.
+import { readFileSync } from "node:fs";
+const CURRENT_LEGAL_VERSION =
+  /LEGAL_DOC_VERSION = "([^"]+)"/.exec(readFileSync(join(process.cwd(), "packages/core/src/legal.ts"), "utf8"))?.[1] ?? null;
+
 /** Mirrors `fixtureAccount` in tests/browser/session.ts. */
 const ACCOUNTS = [
   {
@@ -161,14 +167,16 @@ try {
     await db.query(
       `INSERT INTO profiles (user_id, display_name, first_name, last_name,
          preferred_team_number, onboarding_completed_at, onboarding_current_step,
-         terms_accepted_at, privacy_accepted_at)
-       VALUES ($1::uuid, $2, $3, 'Tester', 6925, now(), 'complete', now(), now())
+         terms_accepted_at, privacy_accepted_at, terms_version, privacy_version)
+       VALUES ($1::uuid, $2, $3, 'Tester', 6925, now(), 'complete', now(), now(), $4, $4)
        ON CONFLICT (user_id) DO UPDATE SET
          onboarding_completed_at = now(),
          onboarding_current_step = 'complete',
          terms_accepted_at = now(),
-         privacy_accepted_at = now()`,
-      [account.id, account.name, account.name.split(" ")[0]],
+         privacy_accepted_at = now(),
+         terms_version = EXCLUDED.terms_version,
+         privacy_version = EXCLUDED.privacy_version`,
+      [account.id, account.name, account.name.split(" ")[0], CURRENT_LEGAL_VERSION],
     );
 
     if (account.role) {
