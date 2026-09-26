@@ -109,11 +109,12 @@ export function buildOnboardingLanding(input: {
   );
   const trackKeys = ordered.map((track) => track.trackKey);
   const orgRole = String(input.orgRole ?? "").toLowerCase();
-  const runsTeam = Boolean(input.orgId) && (orgRole === "owner" || orgRole === "admin");
-
-  // Someone who runs the team lands on the same four setup steps Home's setup card shows,
-  // with inviting people first: the header promised that, and a list of pages to open
-  // (Event day, My Day) led an empty team to empty screens.
+  // The owner lands on the same four setup steps Home's setup card shows, inviting people first:
+  // the header promised that, and a list of pages to open led an empty team to empty screens.
+  // An invited mentor (admin) joins a team the owner already set up; this screen cannot see
+  // what is done, so their four steps showed unchecked beside Home's "2 of 4 done". They get
+  // their own first steps, and Home's setup card shows the team's real progress.
+  const runsTeam = Boolean(input.orgId) && orgRole === "owner";
   if (runsTeam) {
     const setup = TRACK_BY_KEY[TEAM_SETUP_TRACK]?.checks ?? [];
     return {
@@ -140,7 +141,9 @@ export function buildOnboardingLanding(input: {
   // "Your first week" opens on (same order, same filter).
   const member = isMemberRole(role);
   const limit = member ? MEMBER_FIRST_LIMIT : FIRST_FIVE_LIMIT;
-  const tracks = ordered.map((track) => ({
+  const tracks = ordered
+    .filter((track) => track.trackKey !== TEAM_SETUP_TRACK)
+    .map((track) => ({
     key: track.trackKey,
     source: track.source,
     reason: track.reason,

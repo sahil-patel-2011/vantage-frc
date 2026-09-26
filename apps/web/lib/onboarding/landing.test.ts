@@ -143,6 +143,19 @@ describe("role-aware landing", () => {
     expect(view.eyebrow).toBe("YOU'RE IN");
   });
 
+  it("gives an invited mentor (admin) their own first steps, not the owner's unchecked setup list", () => {
+    const view = landing({
+      teamRole: "mentor",
+      crewRole: null,
+      primaryFocus: "competition",
+      orgId: ORG,
+      orgName: "Walk Nine Robotics",
+      orgRole: "admin",
+    });
+    expect(view.firstFiveMinutes.map((link) => link.key).some((key) => key.startsWith("team_setup:"))).toBe(false);
+    expect(view.primary.label).not.toBe("Invite your team");
+  });
+
   it("lands an owner on the four team setup steps, inviting people first", () => {
     const view = landing({
       teamRole: "coach",
