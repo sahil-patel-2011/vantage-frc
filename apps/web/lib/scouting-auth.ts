@@ -1,6 +1,7 @@
 import { assertOrgAuthentication,auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies,headers } from "next/headers";
+import { publicErrorMessage } from "./security/public-error";
 
 export async function withScoutingRequest<T>(
   orgId: string | null,
@@ -35,11 +36,12 @@ export function scoutingErrorResponse(error: unknown) {
   if (error instanceof ScoutingHttpError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
-  const message = error instanceof Error ? error.message : "Scouting request failed";
-  const status = /access denied|authentication policy|membership required|coach role/i.test(message)
+  const raw = error instanceof Error ? error.message : "";
+  const status = /access denied|authentication policy|membership required|coach role/i.test(raw)
     ? 403
     : 400;
-  return Response.json({ error: message }, { status });
+  // A database error ("permission denied for table …") never reaches the page.
+  return Response.json({ error: publicErrorMessage(error, "Scouting request failed. Try again.") }, { status });
 }
 
 /** Pure predicate used by unit tests — mirrors withScoutingRequest denial. */

@@ -53,3 +53,12 @@ export function conflictValueLabel(value: unknown): string {
   }
   return JSON.stringify(value);
 }
+
+/** Why a closed disagreement is closed, when no scout was picked as right. */
+export function conflictClosedReason(resolution: unknown, status: string): string {
+  const reason =
+    resolution && typeof resolution === "object" ? (resolution as { reason?: unknown }).reason : undefined;
+  if (reason === "values_now_agree") return "The reports now agree";
+  if (reason === "report_deleted") return "One of the reports was deleted";
+  return status === "dismissed" ? "Dismissed" : "Resolved";
+}

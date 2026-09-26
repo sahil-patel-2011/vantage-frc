@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conflictFieldLabel, conflictScoutName, conflictTitle, conflictValueLabel } from "./conflict-label";
+import { conflictClosedReason, conflictFieldLabel, conflictScoutName, conflictTitle, conflictValueLabel } from "./conflict-label";
 
 describe("conflict card words", () => {
   it("names the match and robot plainly", () => {
@@ -24,5 +24,13 @@ describe("conflict card words", () => {
     expect(conflictValueLabel("climb")).toBe("Climb");
     expect(conflictValueLabel(true)).toBe("Yes");
     expect(conflictValueLabel(null)).toBe("Left blank");
+  });
+});
+
+describe("closed conflicts", () => {
+  it("says why it closed", () => {
+    expect(conflictClosedReason({ reason: "values_now_agree" }, "resolved")).toBe("The reports now agree");
+    expect(conflictClosedReason({ reason: "report_deleted" }, "dismissed")).toBe("One of the reports was deleted");
+    expect(conflictClosedReason(null, "dismissed")).toBe("Dismissed");
   });
 });

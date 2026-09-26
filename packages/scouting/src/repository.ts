@@ -357,17 +357,20 @@ export class ScoutingRepository {
     }
 
     if (input.type !== "match" || !input.matchKey) return;
-    const parsed = /_([a-z]+)(\d+)$/.exec(input.matchKey);
+    // Quals are `_qm12`; playoffs are `_sf1m2` / `_f1m2` (set, then match). The old pattern only
+    // read quals, so a playoff entry saved before the playoff schedule synced was refused.
+    const parsed = /_(qm|ef|qf|sf|f)(\d+)(?:m(\d+))?$/.exec(input.matchKey);
     if (!parsed) return;
-    const [, compLevel = "", matchNumber = ""] = parsed;
-    if (!["qm", "qf", "sf", "f"].includes(compLevel)) return;
+    const [, compLevel = "", first = "", second] = parsed;
+    const setNumber = compLevel === "qm" ? 1 : Number(first);
+    const matchNumber = compLevel === "qm" ? Number(first) : Number(second ?? 1);
     await this.tryPlaceholder(
       `INSERT INTO matches_ref (
          match_key, event_key, comp_level, set_number, match_number,
          red_alliance, blue_alliance, placeholder
-       ) VALUES ($1, $2, $3, 1, $4, '{"teamKeys":[]}'::jsonb, '{"teamKeys":[]}'::jsonb, true)
+       ) VALUES ($1, $2, $3, $4, $5, '{"teamKeys":[]}'::jsonb, '{"teamKeys":[]}'::jsonb, true)
        ON CONFLICT (match_key) DO NOTHING`,
-      [input.matchKey, input.eventKey, compLevel, Number(matchNumber)],
+      [input.matchKey, input.eventKey, compLevel, setNumber, matchNumber],
     );
   }
 
@@ -403,7 +406,8 @@ export class ScoutingRepository {
        WHERE org_id = $1 AND match_key = $2 AND team_key = $3 AND schema_id = $4`,
       [orgId, input.matchKey, input.teamKey, input.schemaId],
     );
-    for (const conflict of detectDisagreements(schema.definition, entries.rows)) {
+    const conflicts = detectDisagreements(schema.definition, entries.rows);
+    for (const conflict of conflicts) {
       const previous = await this.client.query<{
         id: string;
         status: string;
@@ -447,6 +451,37 @@ export class ScoutingRepository {
           ],
         );
       }
+    }
+
+    // A scout fixed their report and the two now agree: the open row is stale
+    // (its values are the old ones), so close it rather than let a lead
+    // resolve a disagreement that no longer exists.
+    const stillConflicting = conflicts.map((conflict) => conflict.fieldKey);
+    const settled = await this.client.query<{ id: string; entryIds: string[]; values: unknown }>(
+      `UPDATE scout_disagreements
+          SET status = 'resolved',
+              resolution = jsonb_build_object('reason', 'values_now_agree'),
+              reviewed_at = now(),
+              updated_at = now()
+        WHERE org_id = $1 AND match_key = $2 AND team_key = $3
+          AND status = 'open'
+          AND NOT (field_key = ANY($4::text[]))
+        RETURNING id, entry_ids AS "entryIds", values`,
+      [orgId, input.matchKey, input.teamKey, stillConflicting],
+    );
+    for (const row of settled.rows) {
+      await this.client.query(
+        `INSERT INTO scout_disagreement_audit
+          (org_id, disagreement_id, actor_user_id, action, before, after)
+         VALUES ($1,$2,$3,'resolved',$4::jsonb,$5::jsonb)`,
+        [
+          orgId,
+          row.id,
+          actorUserId,
+          JSON.stringify({ status: "open", entryIds: row.entryIds, values: row.values }),
+          JSON.stringify({ status: "resolved", reason: "values_now_agree" }),
+        ],
+      );
     }
   }
 
@@ -580,10 +615,45 @@ export class ScoutingRepository {
       throw new Error("Coach role required to delete a scout report.");
     }
     const table = input.type === "match" ? "match_scout_entries" : "pit_scout_entries";
-    const result = await this.client.query(
-      `DELETE FROM ${table} WHERE id = $1::uuid AND org_id = $2::uuid`,
+    const result = await this.client.query<{ clientId: string }>(
+      `DELETE FROM ${table} WHERE id = $1::uuid AND org_id = $2::uuid RETURNING client_id AS "clientId"`,
       [input.entryId, orgId],
     );
-    return (result.rowCount ?? 0) > 0;
+    const deleted = result.rows[0];
+    if (!deleted) return false;
+    // The phone's sync receipt pointed at this report. Left behind, a resend of
+    // the same report would be acknowledged as "already saved" against a row
+    // that no longer exists.
+    await this.client.query(
+      `DELETE FROM scout_sync_receipts WHERE org_id = $1::uuid AND client_id = $2 AND entry_type = $3`,
+      [orgId, deleted.clientId, input.type],
+    );
+    if (input.type === "match") {
+      // A disagreement needs two reports; with one of them gone it is over.
+      const closed = await this.client.query<{ id: string; entryIds: string[] }>(
+        `UPDATE scout_disagreements
+            SET status = 'dismissed',
+                resolution = jsonb_build_object('reason', 'report_deleted'),
+                reviewed_by = $3::uuid, reviewed_at = now(), updated_at = now()
+          WHERE org_id = $1::uuid AND status = 'open' AND $2::uuid = ANY(entry_ids)
+          RETURNING id, entry_ids AS "entryIds"`,
+        [orgId, input.entryId, userId],
+      );
+      for (const row of closed.rows) {
+        await this.client.query(
+          `INSERT INTO scout_disagreement_audit
+            (org_id, disagreement_id, actor_user_id, action, before, after)
+           VALUES ($1,$2,$3,'dismissed',$4::jsonb,$5::jsonb)`,
+          [
+            orgId,
+            row.id,
+            userId,
+            JSON.stringify({ status: "open", entryIds: row.entryIds }),
+            JSON.stringify({ status: "dismissed", reason: "report_deleted" }),
+          ],
+        );
+      }
+    }
+    return true;
   }
 }
