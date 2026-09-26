@@ -206,7 +206,7 @@ async function main() {
       // A District Championship belongs to its district, as TBA records it: without the key,
       // District advancement said the Peachtree District Championship "isn't a district event".
       `INSERT INTO events_ref (event_key, year, name, start_date, end_date, city, state_prov, country, event_type, district_key)
-       VALUES ($1, $2, $3, current_date - 1, current_date + 1, 'Macon', 'GA', 'USA', 2, $2::text || 'pch')
+       VALUES ($1, $2, $3, current_date - 1, current_date + 1, 'Macon', 'GA', 'USA', 2, ($2::int)::text || 'pch')
        -- The matches are placed around now, so the event's days are too: fixed March dates
        -- made a live event look over to everything that reads the end date.
        ON CONFLICT (event_key) DO UPDATE SET name = EXCLUDED.name,
