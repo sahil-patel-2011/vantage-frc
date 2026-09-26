@@ -24,6 +24,7 @@ import { ScoutingRelatedStrip } from "./scouting-chrome";
 import { Field } from "./scouting-field";
 import { ScoutChoice } from "./scout-choice";
 import { ScoutingLeadTools } from "./scouting-lead-tools";
+import { conflictFieldLabel, conflictScoutName, conflictTitle, conflictValueLabel } from "../../lib/scouting/conflict-label";
 import {
   type Bootstrap,
   type ConflictCandidate,
@@ -448,10 +449,13 @@ return (
               return (
                 <li key={id} className={`scout-conflict-card status-${status}`}>
                   <div className="scout-conflict-meta">
-                    <strong>
-                      {String(conflict.matchKey)} · {String(conflict.teamKey)}
-                    </strong>
-                    <span className="app-badge">{String(conflict.fieldKey)}</span>
+                    <strong>{conflictTitle(conflict.matchKey, conflict.teamKey)}</strong>
+                    <span className="app-badge">
+                      {conflictFieldLabel(
+                        conflict.fieldKey,
+                        data?.schemas.find((item) => item.type === "match")?.definition.fields,
+                      )}
+                    </span>
                     <span className={`scout-conflict-status ${status}`}>{status}</span>
                   </div>
                   {status === "open" ? (
@@ -471,14 +475,8 @@ return (
                                 setSelectedWinners((prev) => ({ ...prev, [id]: candidate.entryId }))
                               }
                             >
-                              <em>{candidate.scoutName ?? "Scout"}</em>
-                              <strong>
-                                {typeof candidate.value === "string" ||
-                                typeof candidate.value === "number" ||
-                                typeof candidate.value === "boolean"
-                                  ? String(candidate.value)
-                                  : JSON.stringify(candidate.value)}
-                              </strong>
+                              <em>{conflictScoutName(candidate.scoutName)}</em>
+                              <strong>{conflictValueLabel(candidate.value)}</strong>
                               <small>{active ? "Selected as right" : "Tap if this scout was right"}</small>
                             </button>
                           );
@@ -490,7 +488,7 @@ return (
                       <div className="scout-conflict-actions">
                         <Button variant="primary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
                           {selectedCandidate
-                            ? `${selectedCandidate.scoutName ?? "Scout"} was right`
+                            ? `${conflictScoutName(selectedCandidate.scoutName)} was right`
                             : "Pick a scout"}
                         </Button>
                         <Button variant="secondary" type="button" onClick={() => void reviewConflict(id, "dismissed")}>
