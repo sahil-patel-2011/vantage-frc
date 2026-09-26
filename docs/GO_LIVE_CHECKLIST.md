@@ -1,5 +1,7 @@
 # Go-live checklist
 
+> **Superseded.** The current, verified list is [`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md). This page records the state before production existed and is kept for history.
+
 *For operators, before real users sign in. Last updated 2026-09-09.*
 
 Verified 2026-08-24 by tracing source end to end (not by browser clicks). Each journey below lists the

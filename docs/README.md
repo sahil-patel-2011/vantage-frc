@@ -40,7 +40,8 @@ Start with the section that matches you. Each document says who it is for in its
 |---|---|
 | [SELF_HOSTING.md](SELF_HOSTING.md) | **Start here.** From fork to a working deployment on Vercel + Neon |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | The full runbook: every environment variable, connector, callback URL and cron |
-| [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md) | What to verify before real users sign in |
+| [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | The verified production checklist: release gates, tenancy, sign-in, headers, monitoring, AI, open operator tasks |
+| [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md) | Superseded pre-launch list, kept for history |
 | [CUSTOM_DOMAIN.md](CUSTOM_DOMAIN.md) | Putting the app on your own domain |
 | [SUPABASE_CUTOVER.md](SUPABASE_CUTOVER.md) | Running on a Supabase Postgres host instead of Neon |
 | [RELEASING.md](RELEASING.md) | Cutting releases, including desktop builds |
