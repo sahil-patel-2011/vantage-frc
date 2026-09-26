@@ -4,6 +4,7 @@ import {
   countDrawingDimensions,
   isOnshapeApiCheck,
   onshapeAccessMessage,
+  onshapeLinkProblem,
   parseOnshapeLink,
   referencesVariable,
   runOnshapeApiCheck,
@@ -510,5 +511,14 @@ describe("Onshape track content", () => {
   it("keeps words a student knows out of the API's jargon", () => {
     const words = JSON.stringify(ONSHAPE_TRACKS.map((t) => [t.title, t.summary, t.steps.map((s) => [s.title, s.why, s.do, s.checkedBy])]));
     expect(words).not.toMatch(/featureType|API|endpoint|payload|schema|JSON response|\borg\b/);
+  });
+});
+
+describe("links checked before Onshape is asked", () => {
+  it("names an empty, foreign or history link without a network call", () => {
+    expect(onshapeLinkProblem("")).toMatch(/Paste the address/);
+    expect(onshapeLinkProblem("https://example.com/x")).toMatch(/isn't an Onshape document address/);
+    expect(onshapeLinkProblem(`https://cad.onshape.com/documents/${DID}/m/${WID}/e/${PS}`)).toMatch(/older moment/);
+    expect(onshapeLinkProblem(psUrl)).toBeNull();
   });
 });

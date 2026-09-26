@@ -203,6 +203,15 @@ export function parseOnshapeLink(input: string): OnshapeLink | null {
   };
 }
 
+/** What is wrong with a pasted link before anything is asked of Onshape, or null when it can be read. */
+export function onshapeLinkProblem(input: string): string | null {
+  if (!input.trim()) return "Paste the address of your Onshape tab from the browser first.";
+  const link = parseOnshapeLink(input);
+  if (!link) return "That isn't an Onshape document address. Copy it from the browser's address bar while your Onshape tab is open; it starts with https://cad.onshape.com/documents/.";
+  if (link.wvm === "m") return "That link points at an older moment in the document's history. Open the document normally in Onshape and copy the address again.";
+  return null;
+}
+
 export type ElementRow = { id: string; name: string; tab: OnshapeTabType | "OTHER" };
 
 /** Onshape's elements list. Drawings are APPLICATION elements whose dataType names a drawing. */

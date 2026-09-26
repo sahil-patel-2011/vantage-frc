@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { listOnshapeFeatures, readOnshapeMassProperties, resolveOnshapeBind } from "@vantage/cad";
 import { acquireOnshape } from "../cad-learn/onshape-access";
 import { checkFeatures, checkNumbers, checkPaste, parseGitHubUrl } from "./checks";
-import { isOnshapeApiCheck, onshapeAccessMessage, runOnshapeApiCheck } from "./checks-onshape";
+import { isOnshapeApiCheck, onshapeAccessMessage, onshapeLinkProblem, runOnshapeApiCheck } from "./checks-onshape";
 import type { CheckResult, StepCheck } from "./types";
 
 export type CheckInput = { url?: string; text?: string; values?: Record<string, unknown> };
@@ -47,7 +47,8 @@ export async function runGuidedCheck(
   input: CheckInput,
 ): Promise<CheckResult> {
   if (isOnshapeApiCheck(check)) {
-    if (!String(input.url ?? "").trim()) return { passed: false, message: "Paste the address of your Onshape tab from the browser first." };
+    const problem = onshapeLinkProblem(String(input.url ?? ""));
+    if (problem) return { passed: false, message: problem };
     const access = await acquireOnshape(client, who.orgId, who.userId);
     if (!access.ok) return { passed: false, message: onshapeAccessMessage(access.message) };
     return runOnshapeApiCheck(access.http, check, String(input.url));
