@@ -2,10 +2,34 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../../../components/ui";
+import { isOnshapeApiCheck, onshapeInputLabel } from "../../../../lib/guided/checks-onshape";
 import type { CheckResult, GuidedStep, GuidedTrack } from "../../../../lib/guided/types";
 
 type Done = Record<string, string>;
 type StepState = { busy: boolean; result: CheckResult | null };
+
+/** Steps that read an Onshape document take its address; the track remembers the last one. */
+function takesOnshapeUrl(step: GuidedStep): boolean {
+  return step.check.kind === "onshape-features" || step.check.kind === "onshape-mass" || isOnshapeApiCheck(step.check);
+}
+
+const urlKey = (trackId: string) => `vantage.guided.onshape-url.${trackId}`;
+
+function readSavedUrl(trackId: string): string {
+  try {
+    return window.localStorage.getItem(urlKey(trackId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveUrl(trackId: string, url: string) {
+  try {
+    window.localStorage.setItem(urlKey(trackId), url);
+  } catch {
+    /* Private windows and blocked storage: the student pastes it again. */
+  }
+}
 
 /** What the student gives the check: a link, pasted text, numbers, or nothing. */
 function StepInput({
@@ -18,10 +42,10 @@ function StepInput({
   onChange: (next: { url: string; text: string; values: Record<string, string> }) => void;
 }) {
   const check = step.check;
-  if (check.kind === "onshape-features" || check.kind === "onshape-mass") {
+  if (takesOnshapeUrl(step)) {
     return (
       <label className="guided-input">
-        Your Part Studio&apos;s address
+        {onshapeInputLabel(check.kind)}
         <input
           type="url"
           inputMode="url"
@@ -87,6 +111,14 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
   const [inputs, setInputs] = useState<Record<string, { url: string; text: string; values: Record<string, string> }>>({});
   const [states, setStates] = useState<Record<string, StepState>>({});
   const [openId, setOpenId] = useState<string | null>(null);
+  const [savedUrl, setSavedUrl] = useState("");
+
+  useEffect(() => {
+    setSavedUrl(readSavedUrl(track.id));
+  }, [track.id]);
+
+  const inputFor = (step: GuidedStep) =>
+    inputs[step.id] ?? { url: takesOnshapeUrl(step) ? savedUrl : "", text: "", values: {} };
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/guided?track=${encodeURIComponent(track.id)}`, { cache: "no-store" }).catch(() => null);
@@ -110,7 +142,11 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
   const open = openId ?? current;
 
   async function runCheck(step: GuidedStep, extra?: Record<string, unknown>) {
-    const input = inputs[step.id] ?? { url: "", text: "", values: {} };
+    const input = inputFor(step);
+    if (takesOnshapeUrl(step) && input.url.trim()) {
+      saveUrl(track.id, input.url.trim());
+      setSavedUrl(input.url.trim());
+    }
     setStates((prev) => ({ ...prev, [step.id]: { busy: true, result: prev[step.id]?.result ?? null } }));
     const response = await fetch("/api/guided", {
       method: "POST",
@@ -226,7 +262,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                       <>
                         <StepInput
                           step={step}
-                          value={inputs[step.id] ?? { url: "", text: "", values: {} }}
+                          value={inputFor(step)}
                           onChange={(next) => setInputs((prev) => ({ ...prev, [step.id]: next }))}
                         />
                         <div className="guided-actions">
@@ -235,7 +271,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                             disabled={state?.busy}
                             onClick={() => void runCheck(step, signoff ? { confirmed: true } : undefined)}
                           >
-                            {state?.busy ? "Checking…" : signoff ? "A lead checked this with me" : "Check my work"}
+                            {state?.busy ? (step.check.kind === "onshape-drawing" && step.check.minDimensions ? "Checking… up to 15 seconds" : "Checking…") : signoff ? "A lead checked this with me" : "Check my work"}
                           </Button>
                         </div>
                       </>

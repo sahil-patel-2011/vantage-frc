@@ -57,3 +57,7 @@
 @media (max-width: 640px) {
   .guided-step-body { padding: 0 14px 14px; }
 }
+
+.guided-group { display: grid; gap: 8px; }
+.guided-group h2 { margin: 8px 0 0; font-size: 18px; }
+.guided-group > p { margin: 0 0 4px; color: var(--muted); line-height: 1.5; }

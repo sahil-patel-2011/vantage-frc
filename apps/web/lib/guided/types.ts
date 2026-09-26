@@ -8,6 +8,8 @@
  * step says a lead signs it off, and only a lead can.
  */
 
+import type { OnshapeApiCheck } from "./checks-onshape";
+
 export type FeatureExpectation = {
   /** Onshape featureType, e.g. "newSketch", "extrude", "fillet", "hole", "assignVariable". */
   featureType: string;
@@ -26,6 +28,8 @@ export type StepCheck =
   | { kind: "onshape-mass" }
   /** Onshape is connected for this account. */
   | { kind: "onshape-connected" }
+  /** Reads the student's Onshape document through the API (tabs, sketches, mates, drawings…): checks-onshape.ts. */
+  | OnshapeApiCheck
   /** Pasted text must contain every pattern (a build log, a config block). */
   | { kind: "paste"; prompt: string; must: Array<{ pattern: string; flags?: string; missing: string }> }
   /** Two or more numbers compared against a tolerance. */

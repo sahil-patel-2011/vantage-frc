@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { listOnshapeFeatures, readOnshapeMassProperties, resolveOnshapeBind } from "@vantage/cad";
 import { acquireOnshape } from "../cad-learn/onshape-access";
 import { checkFeatures, checkNumbers, checkPaste, parseGitHubUrl } from "./checks";
+import { isOnshapeApiCheck, onshapeAccessMessage, runOnshapeApiCheck } from "./checks-onshape";
 import type { CheckResult, StepCheck } from "./types";
 
 export type CheckInput = { url?: string; text?: string; values?: Record<string, unknown> };
@@ -45,6 +46,12 @@ export async function runGuidedCheck(
   check: StepCheck,
   input: CheckInput,
 ): Promise<CheckResult> {
+  if (isOnshapeApiCheck(check)) {
+    if (!String(input.url ?? "").trim()) return { passed: false, message: "Paste the address of your Onshape tab from the browser first." };
+    const access = await acquireOnshape(client, who.orgId, who.userId);
+    if (!access.ok) return { passed: false, message: onshapeAccessMessage(access.message) };
+    return runOnshapeApiCheck(access.http, check, String(input.url));
+  }
   switch (check.kind) {
     case "paste":
       return checkPaste(check, String(input.text ?? ""));
@@ -90,14 +97,14 @@ export async function runGuidedCheck(
       const access = await acquireOnshape(client, who.orgId, who.userId);
       return access.ok
         ? { passed: true, message: "Checked: your Onshape account is connected." }
-        : { passed: false, message: access.message };
+        : { passed: false, message: onshapeAccessMessage(access.message) };
     }
     case "onshape-features":
     case "onshape-mass": {
       const url = String(input.url ?? "").trim();
       if (!url) return { passed: false, message: "Paste the address of your Part Studio from the browser." };
       const access = await acquireOnshape(client, who.orgId, who.userId);
-      if (!access.ok) return { passed: false, message: access.message };
+      if (!access.ok) return { passed: false, message: onshapeAccessMessage(access.message) };
       let bound;
       try {
         bound = await resolveOnshapeBind(url, access.http);

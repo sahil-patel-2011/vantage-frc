@@ -16,7 +16,7 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
     id: "guided",
     title: "Checked step by step",
     description:
-      "Your first Onshape part and Team 6925's programming and mechanical weeks, one step at a time. Vantage checks each step (your Part Studio in Onshape, your build output, your pull request) before it counts.",
+      "Onshape from zero to robot parts (a first part, an assembly, sheet metal, a shop drawing, parts from FRC libraries, a belt layout) and Team 6925's programming weeks. Vantage checks each step in your own Onshape document, build output or pull request before it counts.",
     href: "/learn/guided",
     primary: "Start a checked track",
   },
