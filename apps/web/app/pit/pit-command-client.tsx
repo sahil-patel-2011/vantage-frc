@@ -542,13 +542,15 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       <section className={`pit-gate ${data.gate.state}`}>
         <div className="pit-gate-state">
           <span>RELEASE GATE</span>
-          <strong>{data.gate.state.toUpperCase()}</strong>
+          <strong>{data.gate.state === "empty" ? "—" : data.gate.state.toUpperCase()}</strong>
           <small>
             {data.gate.state === "go"
                 ? "Evidence clear"
                 : data.gate.state === "hold"
                   ? "Do not release"
-                  : "Crew review needed"}
+                  : data.gate.state === "empty"
+                    ? "Not checked yet"
+                    : "Crew review needed"}
           </small>
         </div>
         <div className="pit-reasons">

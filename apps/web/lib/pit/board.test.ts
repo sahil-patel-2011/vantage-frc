@@ -113,7 +113,7 @@ describe("pitBoardGate", () => {
     ).toEqual({ state: "empty", reasons: [] });
   });
 
-  it("does not invent a battery CHECK when only the queue flag is live", () => {
+  it("neither invents a battery CHECK nor says GO when only the queue flag is live", () => {
     const gate = pitBoardGate({
       flags: { repairs: false, batteries: false, queue: true },
       safetyIssues: 0,
@@ -122,8 +122,9 @@ describe("pitBoardGate", () => {
       readyBatteries: 0,
       activeBatteries: 0,
     });
-    expect(gate.state).toBe("go");
-    expect(gate.reasons.join(" ")).not.toMatch(/battery/i);
+    expect(gate.state).toBe("empty");
+    expect(gate.reasons.join(" ")).toMatch(/Nothing logged yet/);
+    expect(gate.reasons.join(" ")).not.toMatch(/No active battery/i);
     expect(JSON.stringify(gate)).not.toMatch(/DEMO/i);
   });
 

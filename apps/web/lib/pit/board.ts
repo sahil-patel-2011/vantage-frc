@@ -163,6 +163,12 @@ export function pitBoardGate(input: {
 
   if (input.safetyIssues || input.disabledIssues) return { state: "hold", reasons };
   if (reasons.length) return { state: "check", reasons };
+  // Only the match queue is live: nothing about the robot has been logged. That is not a
+  // problem to CHECK, and it is not a green GO either (it read "GO · Evidence clear" beside
+  // "No batteries tracked"). Neutral, and it says what would let the gate decide.
+  if (!input.flags.repairs && !input.flags.batteries) {
+    return { state: "empty", reasons: ["Nothing logged yet: add a battery reading or a repair and the gate decides."] };
+  }
   return { state: "go", reasons: ["No release blockers found in Pit Command"] };
 }
 
