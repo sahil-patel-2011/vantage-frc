@@ -209,10 +209,16 @@ describe("home view layout", () => {
 
   it("keeps custom next-match sizes after leaving edit mode", () => {
     const resized = applyWidgetSize(DEFAULT_DASHBOARD_LAYOUT[0]!, "m");
-    const viewed = homeViewLayout([resized], { editing: false, shell: "ready" });
-    // Home shows the size chosen; only a strip too narrow for any card is filled.
-    expect(viewed[0]?.w).toBe(resized.w);
-    expect(viewed[0]?.h).toBe(resized.h);
+    // Beside another card, Home shows the size chosen.
+    const beside = { ...resized, i: "other", type: "my_day" as const, x: resized.w, w: 12 - resized.w - 3 };
+    const viewed = homeViewLayout([resized, beside], { editing: false, shell: "ready" });
+    const shown = viewed.find((row) => row.i === resized.i)!;
+    expect(shown.w).toBe(resized.w);
+    expect(shown.h).toBe(resized.h);
+    // Alone on its row it fills the row on Home; the saved size is untouched.
+    const alone = homeViewLayout([resized], { editing: false, shell: "ready" });
+    expect(alone[0]?.w).toBe(12);
+    expect(resized.w).toBeLessThan(12);
     const withNarrowGap = homeViewLayout([{ ...resized, w: 10 }], { editing: false, shell: "ready" });
     expect(withNarrowGap[0]?.w).toBe(12);
   });

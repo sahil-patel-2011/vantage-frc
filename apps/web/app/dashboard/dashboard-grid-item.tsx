@@ -67,6 +67,14 @@ type DashboardGridItemProps = {
   click somewhere else is not.
 */
 let lastRemove = { at: 0, x: 0, y: 0 };
+
+/** What each size letter means, on hover: the letters alone did not say how wide. */
+const SIZE_WIDTH_WORDS: Record<string, string> = {
+  s: "Small: a quarter of the row",
+  m: "Medium: a third of the row",
+  l: "Large: half the row",
+  xl: "Extra large: the whole row",
+};
 function isRepeatRemove(detail: number, x: number, y: number): boolean {
   if (detail === 0) return false;
   const now = Date.now();
@@ -196,7 +204,6 @@ export const DashboardGridItem = memo(function DashboardGridItem({
             aria-label={`Resize ${label}`}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            {stretched ? <p className="dash-size-note">Stretched to fill its row on Home; its size is still {WIDGET_SIZE_LABEL[currentSize]}.</p> : null}
             <div className="dash-size-chips">
               {WIDGET_SIZE_KEYS.map((size) => (
                 <button
@@ -204,7 +211,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   type="button"
                   className="dash-size-btn"
                   data-active={currentSize === size}
-                  title={`${WIDGET_SIZE_LABEL[size]} widget`}
+                  title={SIZE_WIDTH_WORDS[size]}
                   aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
                   aria-pressed={currentSize === size}
                   onClick={() => {
@@ -243,6 +250,8 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                 </button>
               ) : null}
             </div>
+            {/* Under the buttons, inside the menu: it was drawn over the card's title. */}
+            {stretched ? <p className="dash-size-note">Fills its row on Home. Size stays {WIDGET_SIZE_LABEL[currentSize]}.</p> : null}
           </div>
         </>
       ) : null}

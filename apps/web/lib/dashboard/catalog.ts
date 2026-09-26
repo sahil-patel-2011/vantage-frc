@@ -350,9 +350,12 @@ export function fillRowEnds(
   for (const item of out) {
     const right = item.x + item.w;
     if (right >= cols) continue;
-    // Only a strip too narrow for the smallest card (S is 3 of 12) is filled. A half-width
-    // card the person chose stays half width on Home, as the edit board showed it.
-    if (cols - right >= 3) continue;
+    // A strip too narrow for the smallest card (S is 3 of 12) is filled. So is the rest of a row
+    // the card has to itself: moving a half-width card ahead of a full-width one left half of
+    // its row empty on Home for good. A half-width card sharing its row with others keeps its
+    // size, leaving room beside it for another card.
+    const alone = !out.some((other) => other !== item && other.y < item.y + item.h && item.y < other.y + other.h);
+    if (cols - right >= 3 && !alone) continue;
     const gap = { x: right, y: item.y, w: cols - right, h: item.h };
     if (out.some((other) => other !== item && overlaps(gap, other))) continue;
     item.w = cols - item.x;

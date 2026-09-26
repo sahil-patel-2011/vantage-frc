@@ -13,6 +13,7 @@ import { applyOrder, describePlace, planDrop, readingOrder } from "../../lib/das
 import {
   DASHBOARD_COLUMNS,
   catalogEntry,
+  fillRowEnds,
   packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
@@ -451,7 +452,8 @@ export function useDashboardPointerDrag(input: {
     if (changed) record(settled.baseLayout);
     // Cards keep the order you set, so moving a small card ahead of a full-width one leaves the
     // rest of its row empty. Say so and name the one-tap fix, instead of saving a silent hole.
-    if (changed && boardHasGap(packDashboardLayout([...layoutRef.current]), DASHBOARD_COLUMNS)) {
+    // A card alone on its row fills it on Home (fillRowEnds), so that is not a gap to warn about.
+    if (changed && boardHasGap(fillRowEnds(packDashboardLayout([...layoutRef.current])), DASHBOARD_COLUMNS)) {
       setMessageKind("success");
       setMessage("That left a gap in a row. Drag a card into it, or use ••• › Snap & tidy to fill it.");
     }

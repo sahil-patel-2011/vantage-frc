@@ -877,6 +877,7 @@ export function DashboardHomeView(props: {
           open={libraryOpen}
           onClose={closeLibrary}
           rows={paletteEntries}
+          waiting={!meLoaded || Boolean(onRetrySession)}
           dragOut={drag?.kind === "add"}
           onBeginDrag={beginPaletteDrag}
           onDragPointerMove={onDragPointerMove}

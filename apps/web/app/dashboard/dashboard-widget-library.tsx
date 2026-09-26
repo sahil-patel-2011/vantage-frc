@@ -22,6 +22,7 @@ export function DashboardWidgetLibrary({
   open,
   onClose,
   rows,
+  waiting = false,
   dragOut,
   onPick,
   onBeginDrag,
@@ -32,6 +33,8 @@ export function DashboardWidgetLibrary({
   open: boolean;
   onClose: () => void;
   rows: PaletteRow[];
+  /** The team or role is not known yet: rows would say Locked / On Home from missing data. */
+  waiting?: boolean;
   /** A widget is being dragged out of the sheet — get out of the way of the board. */
   dragOut: boolean;
   onPick: (entry: WidgetCatalogEntry) => void;
@@ -122,11 +125,12 @@ export function DashboardWidgetLibrary({
           Cards you add stay on Home, even before they have anything to show.
         </p>
         <div className="dash-sheet-list" data-testid="dash-catalog-inline">
-          {addableCount === 0 && !query ? (
+          {waiting ? <p className="dash-sheet-empty" role="status">Loading your team…</p> : null}
+          {!waiting && addableCount === 0 && !query ? (
             <p className="dash-sheet-empty">Every widget you can use is already on your Home.</p>
           ) : null}
-          {groups.length === 0 ? <p className="dash-sheet-empty">No widgets match “{query.trim()}”.</p> : null}
-          {groups.map((group) => (
+          {!waiting && groups.length === 0 ? <p className="dash-sheet-empty">No widgets match “{query.trim()}”.</p> : null}
+          {(waiting ? [] : groups).map((group) => (
             <section key={group.group} aria-label={group.label}>
               <h3>{group.label}</h3>
               <ul>
