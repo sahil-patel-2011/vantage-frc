@@ -9,11 +9,25 @@ export const dynamic = "force-dynamic";
 
 const DESCRIPTION = "Sign in with Google or email. Invite-only — no public signup.";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const scouting = productForHost((await headers()).get("host")) === "scouting";
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}): Promise<Metadata> {
+  const { next } = await searchParams;
+  const scouting =
+    productForHost((await headers()).get("host")) === "scouting" || (typeof next === "string" && next.startsWith("/scout"));
   // Root layout templates "%s — Vantage"; absolute keeps this from becoming
   // "Sign in · Vantage — Vantage".
-  return { title: { absolute: scouting ? "Sign in · Vantage Scouting" : "Sign in · Vantage" }, description: DESCRIPTION };
+  return {
+    title: { absolute: scouting ? "Sign in · Vantage Scouting" : "Sign in · Vantage" },
+    description: DESCRIPTION,
+    // Scouting is installed from a phone before anyone signs in: this page is where "Add to Home
+    // Screen" happens, and it offered Vantage's manifest ("Vantage Competition Operations").
+    ...(scouting
+      ? { manifest: "/scout.webmanifest", appleWebApp: { capable: true, title: "Scouting", statusBarStyle: "default" as const } }
+      : {}),
+  };
 }
 
 export default async function SignInPage({
