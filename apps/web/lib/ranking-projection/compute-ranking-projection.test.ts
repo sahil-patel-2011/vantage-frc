@@ -93,7 +93,7 @@ describe("ranking projection", () => {
     expect(view.whatIf?.remaining).toHaveLength(1);
     // 254 + 604 = 100 EPA vs 1678 + 971 = 123 EPA.
     expect(view.whatIf?.remaining[0].predicted).toBe("blue");
-    expect(view.whatIf?.caveats.join(" ")).toMatch(/sort-order tiebreakers/i);
+    expect(view.whatIf?.caveats.join(" ")).toMatch(/tiebreakers aren't modelled/i);
   });
 
   it("says so instead of projecting when the event has no cached ranking rows", async () => {

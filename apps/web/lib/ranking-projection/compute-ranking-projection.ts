@@ -179,26 +179,26 @@ async function loadWhatIf(
   const caveats: string[] = [];
   if (!rules.confirmed) {
     caveats.push(
-      `Ranking-point values for this season are not confirmed in Vantage (${rules.label}). Check the game manual before trusting the totals.`,
+      `Assumes ${rules.win} ranking points for a win and ${rules.tie} for a tie; check this season's game manual.`,
     );
   }
   if (rankingPointSource === "record") {
     caveats.push(
-      "Banked ranking points come from win/tie records — the cache has no official per-match RP, so bonus RPs already earned are not included.",
+      "Bonus ranking points already earned aren't counted: only wins and ties are saved for this event.",
     );
   }
   if (unpredictedMatches) {
     caveats.push(
-      `${unpredictedMatches} remaining match${unpredictedMatches === 1 ? "" : "es"} have no prediction because a robot has no cached rating. Toggle them by hand.`,
+      `${unpredictedMatches} remaining match${unpredictedMatches === 1 ? " has" : "es have"} no win chance because a robot has no rating yet. Set them by hand below.`,
     );
   }
   if (excludedTeams.length) {
     caveats.push(
-      `${excludedTeams.length} team${excludedTeams.length === 1 ? "" : "s"} at this event have no record to project and are left out of the seed order.`,
+      `${excludedTeams.length} team${excludedTeams.length === 1 ? " has" : "s have"} no record yet and ${excludedTeams.length === 1 ? "is" : "are"} left out of the seed order.`,
     );
   }
   caveats.push(
-    "Projected ties fall back to the current official rank — Vantage does not model this season's sort-order tiebreakers.",
+    "Teams that finish level keep their current official order: this season's tiebreakers aren't modelled.",
   );
 
   const odds = remaining.length

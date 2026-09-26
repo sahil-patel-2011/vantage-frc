@@ -157,7 +157,10 @@ function BestPathPlanner({
             return (
               <article data-testid="bp-captain-odds">
                 <span>Chance to captain</span>
-                <strong>{pct < 1 && odds.captainChance > 0 ? "<1%" : `${pct}%`}</strong>
+                {/* Odds from simulated finishes, never a certainty: "100%" read as a promise. */}
+                <strong>
+                  {odds.captainChance >= 0.99 ? "99%+" : pct < 1 && odds.captainChance > 0 ? "<1%" : `${pct}%`}
+                </strong>
                 <small>
                   {odds.bestLikelySeed === odds.worstLikelySeed
                     ? `seed ${odds.medianSeed} in almost every finish`
@@ -183,8 +186,12 @@ function BestPathPlanner({
           </article>
         </section>
 
+        {/* One short line up front; the rest of the fine print behind "About these numbers". The
+            rules line and the "not confirmed" caveat said the same thing twice. */}
+        <details className="bp-caveats-more">
+          <summary>About these numbers</summary>
         <ul className="bp-caveats">
-          <li>Ranking points: {whatIf.rules.label}.</li>
+          {whatIf.rules.confirmed ? <li>Ranking points: {whatIf.rules.label}.</li> : null}
           {whatIf.seedOdds ? (
             <li>
               Chance to captain plays the rest of quals {whatIf.seedOdds.iterations.toLocaleString()} times from each
@@ -206,6 +213,7 @@ function BestPathPlanner({
             </li>
           ) : null}
         </ul>
+        </details>
 
         <div className="bp-actions">
           <Button variant="primary" type="button" onClick={runBestPath}>
