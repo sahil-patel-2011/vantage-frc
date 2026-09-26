@@ -294,11 +294,36 @@ export function generateRotation(input: {
   return assignments;
 }
 
+/**
+ * What it would take to cover every robot in every match without breaking the
+ * "max in a row" rule. Each match leaves (scouts − stations) people sitting
+ * out, and every scout has to sit at least once in any (cap + 1) matches, so
+ * full coverage needs (scouts − stations) × (cap + 1) ≥ scouts.
+ *
+ * Returns the smallest roster that works with this cap, and the smallest cap
+ * that works with this roster (null when no cap can: fewer scouts than robots).
+ */
+export function rotationCoverageFix(input: {
+  activeScouts: number;
+  stationsPerMatch: number;
+  maxConsecutiveMatches: number;
+}): { minScouts: number; minCap: number | null } {
+  const stations = Math.max(1, Math.round(input.stationsPerMatch));
+  const cap = Math.max(1, Math.round(input.maxConsecutiveMatches));
+  const scouts = Math.max(0, Math.round(input.activeScouts));
+  const minScouts = Math.max(stations, Math.ceil((stations * (cap + 1)) / cap));
+  const spare = scouts - stations;
+  const minCap = spare > 0 ? Math.max(1, Math.ceil(scouts / spare) - 1) : null;
+  return { minScouts, minCap };
+}
+
 export function summarizePlan(input: {
   scouts: ShiftBalancerScout[];
   matchCount: number;
   stations: string[];
   assignments: ShiftBalancerAssignment[];
+  /** The plan's cap, so the summary can say what would fill the gaps. */
+  maxConsecutiveMatches?: number;
 }): ShiftBalancerSummary {
   const backupShifts = input.assignments.filter((assignment) => assignment.role === "backup").length;
   const primaries = backupShifts ? input.assignments.filter((assignment) => assignment.role !== "backup") : input.assignments;
@@ -343,9 +368,40 @@ export function summarizePlan(input: {
   const shiftCounts = loadByScout.map((l) => l.shifts);
   const stationsPerMatch = input.stations.length > 0 ? input.stations.length : DEFAULT_STATIONS.length;
 
+  // Robots nobody is scouting. A rotation that hits the "max in a row" rule for
+  // several scouts at once leaves stations empty; the lead has to see that.
+  const labelByMatch = new Map<number, string>();
+  const filledByMatch = new Map<number, number>();
+  for (const assignment of primaries) {
+    filledByMatch.set(assignment.match, (filledByMatch.get(assignment.match) ?? 0) + 1);
+    if (assignment.matchLabel && !labelByMatch.has(assignment.match)) {
+      labelByMatch.set(assignment.match, assignment.matchLabel);
+    }
+  }
+  const totalMatches = Math.max(0, Math.round(input.matchCount));
+  const unfilledMatches: ShiftBalancerSummary["unfilledMatches"] = [];
+  let unfilledSlots = 0;
+  for (let match = 1; match <= totalMatches; match += 1) {
+    const missing = Math.max(0, stationsPerMatch - (filledByMatch.get(match) ?? 0));
+    if (missing === 0) continue;
+    unfilledSlots += missing;
+    unfilledMatches.push({ match, label: labelByMatch.get(match) ?? `Match ${match}`, missing });
+  }
+  const fix =
+    unfilledSlots > 0 && input.maxConsecutiveMatches != null
+      ? rotationCoverageFix({
+          activeScouts: activeIds.length,
+          stationsPerMatch,
+          maxConsecutiveMatches: input.maxConsecutiveMatches,
+        })
+      : null;
+
   return {
-    totalMatches: Math.max(0, Math.round(input.matchCount)),
+    totalMatches,
     totalShifts: primaries.length,
+    unfilledSlots,
+    unfilledMatches,
+    ...(fix ? { coverageFix: fix } : {}),
     scoutsUsed: loadByScout.filter((l) => l.shifts > 0).length,
     maxLoad: shiftCounts.length > 0 ? Math.max(...shiftCounts) : 0,
     minLoad: shiftCounts.length > 0 ? Math.min(...shiftCounts) : 0,
@@ -353,6 +409,26 @@ export function summarizePlan(input: {
     loadByScout,
     ...(backupShifts ? { backupShifts } : {}),
   };
+}
+
+/**
+ * The one sentence a lead reads when a plan leaves robots unscouted: which
+ * matches, how many robots, and the two ways to close the gap.
+ */
+export function describeUnfilled(summary: Pick<ShiftBalancerSummary, "unfilledSlots" | "unfilledMatches" | "coverageFix" | "rosterShortfall">): string | null {
+  if (summary.unfilledSlots <= 0 || summary.unfilledMatches.length === 0) return null;
+  const shown = summary.unfilledMatches.slice(0, 4).map((row) => row.label);
+  const more = summary.unfilledMatches.length - shown.length;
+  const where = more > 0 ? `${shown.join(", ")} and ${more} more ${more === 1 ? "match" : "matches"}` : shown.join(", ");
+  const robots = `${summary.unfilledSlots} ${summary.unfilledSlots === 1 ? "robot" : "robots"}`;
+  const fix = summary.coverageFix;
+  let how = "Add a scout or raise \"Max matches in a row\".";
+  if (fix) {
+    const options = [`have ${fix.minScouts} active scouts`];
+    if (fix.minCap != null) options.push(`raise "Max matches in a row" to ${fix.minCap}`);
+    how = `To cover every robot, ${options.join(" or ")}.`;
+  }
+  return `${robots} have no scout in ${where}. ${how}`;
 }
 
 /** A plan row ready to become a scout_assignments row for a real member. */

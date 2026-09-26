@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { DEFAULT_STATIONS, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
+import { DEFAULT_STATIONS, describeUnfilled, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import "./shift-balancer.css";
 
 function isShiftBalancerView(value: unknown): value is ShiftBalancerView {
   if (!value || typeof value !== "object") return false;
@@ -148,7 +149,7 @@ export default function ShiftBalancerClient() {
   );
 
   return (
-    <main className="module-page">
+    <main className="module-page shift-balancer-page">
       <PageHeader
         breadcrumbs={
           <>
@@ -156,8 +157,8 @@ export default function ShiftBalancerClient() {
             {" / Shift Balancer"}
           </>
         }
-        title="Scout shift load balancer"
-        description="Auto-generate scouting shift rotations across the roster, capping consecutive matches per scout. When an event schedule is cached, assign scouts to real qualification slots, flag lunch-sized gaps, and print a sheet per tablet."
+        title="Scout shifts"
+        description="Share scouting shifts fairly across your roster, with a limit on matches in a row. Once the event schedule is saved, scouts get real qualification matches, long gaps are marked as breaks, and each tablet gets a printed sheet."
       />
       <OfflineBanner feature="Scout shift balancer" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -367,18 +368,18 @@ function GeneratePlanForm({
       <h2 style={{ margin: 0 }}>Generate rotation</h2>
       {eventLabel && view.qualMatchCount > 0 ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {eventLabel} has {view.qualMatchCount} cached qualification {view.qualMatchCount === 1 ? "match" : "matches"}.
+          {eventLabel} has {view.qualMatchCount} qualification {view.qualMatchCount === 1 ? "match" : "matches"} saved.
         </p>
       ) : eventLabel ? (
         <p className="app-muted" style={{ margin: 0 }}>
-          Active event {eventLabel} has no qualification matches cached yet.{" "}
+          {eventLabel} has no qualification schedule saved yet.{" "}
           {view.canPublish
-            ? "Sync Team Data or generate a numeric plan below."
-            : "An owner or admin syncs the schedule, or generate a numeric plan below."}
+            ? "Update the event data on Event day, or plan by match count below."
+            : "Ask an owner or admin to update the event data, or plan by match count below."}
         </p>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>
-          Set an active event on Command to generate from the real TBA qualification schedule.
+          Pick your event on Event day to plan from the real qualification schedule.
         </p>
       )}
       <FormGrid min={160}>
@@ -388,7 +389,7 @@ function GeneratePlanForm({
         <FormRow label="Match count">
           <input type="number" min={1} value={form.matchCount} onChange={set("matchCount")} required />
         </FormRow>
-        <FormRow label="Max consecutive matches" hint="Fatigue cap per scout">
+        <FormRow label="Max matches in a row" hint="Then the scout sits one out">
           <input
             type="number"
             min={1}
@@ -462,13 +463,12 @@ function PlansPanel({
     <Panel>
       <h2 style={{ marginTop: 0 }}>Latest plan · {latest.label}</h2>
       <small className="app-muted">
-        {latest.matchCount} matches · {latest.stations.length} stations/match · max {latest.maxConsecutiveMatches}{" "}
-        consecutive
+        {latest.matchCount} matches · {latest.stations.length} robots a match · at most {latest.maxConsecutiveMatches} in a row
       </small>
 
-      {summary?.rosterShortfall ? (
+      {summary && describeUnfilled(summary) ? (
         <p className="telemetry-status" role="alert" style={{ marginTop: 8 }}>
-          Roster is smaller than the station count — some stations may go unfilled some matches.
+          {describeUnfilled(summary)}
         </p>
       ) : null}
 
@@ -478,6 +478,12 @@ function PlansPanel({
             <strong style={{ fontSize: "1.4rem", display: "block" }}>{summary.totalShifts}</strong>
             <span className="app-muted">Total shifts</span>
           </div>
+          {summary.unfilledSlots > 0 ? (
+            <div>
+              <strong style={{ fontSize: "1.4rem", display: "block" }}>{summary.unfilledSlots}</strong>
+              <span className="app-muted">Robots with no scout</span>
+            </div>
+          ) : null}
           <div>
             <strong style={{ fontSize: "1.4rem", display: "block" }}>{summary.scoutsUsed}</strong>
             <span className="app-muted">Scouts used</span>
@@ -505,7 +511,7 @@ function PlansPanel({
             <li key={row.scoutId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span>{row.scoutName}</span>
               <small className="app-muted">
-                {row.shifts} shift(s) · longest streak {row.longestStreak}
+                {row.shifts} {row.shifts === 1 ? "shift" : "shifts"} · longest run {row.longestStreak} in a row
               </small>
             </li>
           ))}
@@ -544,7 +550,7 @@ function PlansPanel({
         <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
           <h3 style={{ margin: 0 }}>Tablet sheets</h3>
           <p className="app-muted" style={{ margin: 0 }}>
-            One card per scout — tape it to the tablet the way CD teams print ScoutingPASS / scoutsched sheets.
+            One card per scout. Print them and tape each one to that scout&apos;s tablet.
           </p>
           {sheets.map((sheet) => (
             <article

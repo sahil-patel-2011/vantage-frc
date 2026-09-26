@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { computeShiftBalancerView } from "./compute-shift-balancer";
-import { generateRotation, overlayScheduleOnRotation, planToCsv, scheduleSlotsFromQuals, summarizePlan, tabletSheetsByScout } from ".";
+import { describeUnfilled, generateRotation, overlayScheduleOnRotation, planToCsv, rotationCoverageFix, scheduleSlotsFromQuals, summarizePlan, tabletSheetsByScout } from ".";
 
 type QueryCall = { text: string; values: unknown[] };
 
@@ -249,5 +249,47 @@ describe("summarizePlan", () => {
     });
     expect(summary.rosterShortfall).toBe(true);
     expect(summary.totalShifts).toBe(1);
+  });
+});
+
+describe("robots with no scout", () => {
+  const six = ["Red 1", "Red 2", "Red 3", "Blue 1", "Blue 2", "Blue 3"];
+  const roster = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `s${i}`, name: `Scout ${i}`, active: true }));
+
+  it("reports the gap when 7 scouts cover 6 robots with at most 3 in a row", () => {
+    const scouts = roster(7);
+    const assignments = generateRotation({ scouts, matchCount: 36, stations: six, maxConsecutiveMatches: 3 });
+    // Nobody ever works a 4th match in a row.
+    const summary = summarizePlan({ scouts, matchCount: 36, stations: six, assignments, maxConsecutiveMatches: 3 });
+    expect(summary.loadByScout.every((row) => row.longestStreak <= 3)).toBe(true);
+    expect(summary.totalShifts + summary.unfilledSlots).toBe(216);
+    expect(summary.unfilledSlots).toBe(27);
+    expect(summary.unfilledMatches[0]).toEqual({ match: 4, label: "Match 4", missing: 3 });
+    expect(summary.rosterShortfall).toBe(false);
+    expect(summary.coverageFix).toEqual({ minScouts: 8, minCap: 6 });
+    expect(describeUnfilled(summary)).toBe(
+      '27 robots have no scout in Match 4, Match 8, Match 12, Match 16 and 5 more matches. To cover every robot, have 8 active scouts or raise "Max matches in a row" to 6.',
+    );
+  });
+
+  it("covers every robot once the roster or the cap is big enough", () => {
+    for (const [count, cap] of [
+      [8, 3],
+      [7, 6],
+    ] as const) {
+      const scouts = roster(count);
+      const assignments = generateRotation({ scouts, matchCount: 36, stations: six, maxConsecutiveMatches: cap });
+      const summary = summarizePlan({ scouts, matchCount: 36, stations: six, assignments, maxConsecutiveMatches: cap });
+      expect(summary.unfilledSlots).toBe(0);
+      expect(summary.unfilledMatches).toEqual([]);
+      expect(describeUnfilled(summary)).toBeNull();
+    }
+  });
+
+  it("has no cap that works when there are fewer scouts than robots", () => {
+    expect(rotationCoverageFix({ activeScouts: 5, stationsPerMatch: 6, maxConsecutiveMatches: 3 })).toEqual({
+      minScouts: 8,
+      minCap: null,
+    });
   });
 });

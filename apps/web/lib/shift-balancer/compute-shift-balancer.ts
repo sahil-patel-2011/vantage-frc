@@ -170,6 +170,7 @@ export async function computeShiftBalancerView(
         matchCount: latestPlan.matchCount,
         stations: latestPlan.stations,
         assignments: latestPlan.assignments,
+        maxConsecutiveMatches: latestPlan.maxConsecutiveMatches,
       })
     : null;
 

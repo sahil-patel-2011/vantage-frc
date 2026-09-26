@@ -61,6 +61,16 @@ export type ShiftBalancerSummary = {
   minLoad: number;
   /** True when the roster is too small to fill every station every match. */
   rosterShortfall: boolean;
+  /** Robot slots in the plan with no scout (stations × matches − primary shifts). */
+  unfilledSlots: number;
+  /** Every match with at least one robot left unscouted, in match order. */
+  unfilledMatches: Array<{ match: number; label: string; missing: number }>;
+  /**
+   * When robots go unscouted: the smallest roster that covers every robot with
+   * this plan's "max in a row", and the smallest "max in a row" that covers
+   * every robot with this roster (null when there are fewer scouts than robots).
+   */
+  coverageFix?: { minScouts: number; minCap: number | null };
   /** Backup duties in the plan. They do not count toward shifts or streaks. */
   backupShifts?: number;
   loadByScout: ShiftBalancerLoad[];
