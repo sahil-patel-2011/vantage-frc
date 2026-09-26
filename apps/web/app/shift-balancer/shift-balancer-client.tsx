@@ -82,7 +82,7 @@ export default function ShiftBalancerClient() {
         if (!response.ok || !isShiftBalancerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout shift balancer. Showing the last copy on this device.");
+            setError("Could not refresh scout shifts. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -98,7 +98,7 @@ export default function ShiftBalancerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scout shift balancer. Showing the last copy on this device.");
+          setError("Could not refresh scout shifts. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);

@@ -95,7 +95,7 @@ export function ScoutingTeamMatchLog({
         <h4>Match by match</h4>
         <p>
           <b className="stml-src observed">Our scouts</b> = what our entries recorded.{" "}
-          <b className="stml-src official">Official</b> = TBA’s posted alliance score.
+          <b className="stml-src official">Official</b> = the alliance’s posted score.
         </p>
       </header>
 
@@ -153,7 +153,7 @@ export function ScoutingTeamMatchLog({
               <th scope="col">With</th>
               <th scope="col">Against</th>
               <th scope="col">
-                Official <small>(TBA)</small>
+                Official <small>(alliance)</small>
               </th>
               <th scope="col">
                 Total <small>(our scouts)</small>
@@ -206,7 +206,7 @@ export function ScoutingTeamMatchLog({
                       href={row.video.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title={row.video.source === "tba" ? "Official video (TBA)" : "Video your team indexed"}
+                      title={row.video.source === "tba" ? "Official match video" : "Video your team saved"}
                     >
                       ▶
                     </a>
