@@ -467,7 +467,7 @@ function WatchTeamForm({
             min={1}
             value={teamNumber}
             onChange={(event) => setTeamNumber(event.target.value)}
-            placeholder="254"
+            placeholder="Team #"
             required
           />
         </FormRow>

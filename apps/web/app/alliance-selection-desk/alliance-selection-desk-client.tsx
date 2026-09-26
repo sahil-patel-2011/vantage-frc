@@ -223,7 +223,7 @@ function SlotRow({
       ) : null}
       <FormGrid>
         <FormRow label="Team #">
-          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="254" disabled={busy} />
+          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" disabled={busy} />
         </FormRow>
         <FormRow label="Rationale">
           <input

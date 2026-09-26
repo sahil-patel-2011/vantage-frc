@@ -356,7 +356,7 @@ function LivePairwise({
               inputMode="numeric"
               value={left}
               onChange={(event) => setLeft(event.target.value)}
-              placeholder="254"
+              placeholder="Team #"
             />
           </label>
           <div className="pairwise-bout-actions">

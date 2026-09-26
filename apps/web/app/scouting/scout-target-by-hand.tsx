@@ -56,7 +56,7 @@ export function PitTeamField({
             setDraft(next);
             onTeamKey(normalizeTeamKey(next) ?? "");
           }}
-          placeholder="e.g. 254"
+          placeholder="Team #"
           aria-invalid={Boolean(problem)}
         />
       </label>
@@ -134,7 +134,7 @@ export function ScoutTargetByHand({
             inputMode="numeric"
             value={team}
             onChange={(event) => setTeam(event.target.value)}
-            placeholder="e.g. 254"
+            placeholder="Team #"
             aria-invalid={Boolean(teamProblem)}
           />
         </label>

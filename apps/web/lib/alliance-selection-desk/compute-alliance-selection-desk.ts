@@ -463,19 +463,30 @@ export async function computeAllianceSelectionDeskView(
 
 // ---- writes ----
 
+/**
+ * The event's pick list: the one the team has been working on (most recently updated), else a new
+ * "Alliance picks". Naming it after the desk session made a second, empty list per session, and
+ * Pick desk then opened that one instead of the team's real list.
+ */
+async function eventPickListId(client: PoolClient, input: { orgId: string; userId: string; eventKey: string }): Promise<string> {
+  const existing = await client.query<{ id: string }>(
+    `SELECT id FROM pick_lists
+      WHERE org_id = $1::uuid AND event_key = $2::text
+      ORDER BY updated_at DESC NULLS LAST, created_at DESC
+      LIMIT 1`,
+    [input.orgId, input.eventKey],
+  );
+  if (existing.rows[0]) return existing.rows[0].id;
+  return ensurePickList(client, { ...input, name: "Alliance picks", source: "alliance_desk" });
+}
+
 export async function createDeskSession(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; name: string; notes?: string | null },
 ): Promise<string> {
-  // A new session drafts from the ONE pick list for this event — find-or-create it now so the
-  // board and the collaborative list are the same object from the first pick.
-  const pickListId = await ensurePickList(client, {
-    orgId: input.orgId,
-    userId: input.userId,
-    eventKey: input.eventKey,
-    name: input.name,
-    source: "alliance_desk",
-  });
+  // A new session drafts from the ONE pick list for this event, so the board and the
+  // collaborative list are the same object from the first pick.
+  const pickListId = await eventPickListId(client, { orgId: input.orgId, userId: input.userId, eventKey: input.eventKey });
 
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO alliance_selection_desk_sessions
@@ -551,13 +562,7 @@ export async function setDeskSlotTeam(
   // list and Pick Clock agree — the drafted team leaves Pick Clock's available pool immediately.
   const pickListId =
     session.linkedPickListId ??
-    (await ensurePickList(client, {
-      orgId: input.orgId,
-      userId: input.userId,
-      eventKey: session.eventKey,
-      name: session.name,
-      source: "alliance_desk",
-    }));
+    (await eventPickListId(client, { orgId: input.orgId, userId: input.userId, eventKey: session.eventKey }));
 
   await setBoardSlot(client, {
     orgId: input.orgId,
