@@ -109,9 +109,9 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Account and sign-in. Your name and email address. You sign in with Google, with a six-digit code emailed to you (it expires after five minutes), or with a password if your account has one; passwords are stored only as a one-way scramble, never as the password itself. If your team turns on two-step sign-in, we also send a second emailed code. Each sign-in keeps a session record that includes the network address and browser name it came from, and we keep security records such as sign-in attempts and request counters so we can stop abuse.",
         "Your profile. During onboarding you give your display name, first and last name, date of birth, gender (optional; \"prefer not to say\" is a choice), your role on the team (student, mentor, coach, parent, or other), your subteam, and your team number. You can add a recovery email, and a phone number if you verify one.",
         "Your date of birth and gender are private. In the database, only you and Vantage platform administrators can read those two fields. Your coach, your mentors, and your team's owners and admins cannot see them in the product. Your team role is not private: teammates can see it, and some team settings, such as the direct-message rules, depend on it.",
-        "What you and your team create in Vantage. This is most of the data, and it belongs to the team:",
         "Records we need to run the service: audit records of sensitive admin actions (invites, exports, permission changes), usage records for AI features, and, if you allow notifications on a device, that device's notification address and browser name.",
         "If you join the waitlist instead, we keep only your email, your team number, your phone number if you give one, and when you agreed to be contacted (and to launch texts, if you ticked that box).",
+        "What you and your team create in Vantage. This is most of the data, and it belongs to the team:",
       ],
       list: [
         "Scouting: match and pit entries, notes, and ratings. Robot photos are part of pit scouting, but photo and video uploads are paused right now, so none are being collected.",
@@ -152,7 +152,6 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         "AI is off for a team until an owner or admin turns it on under Team → AI keys. While it is off, AI buttons explain how to turn it on and nothing is sent to any AI company.",
         "What an AI request contains. Your question, the instructions Vantage adds, and the parts of your team's data the feature needs to answer, such as the scouting numbers behind a match question. AI features use your own team's data and public FRC data from The Blue Alliance and Statbotics. They never read another team's space. When there is no real data behind a question, the feature says so instead of inventing numbers.",
-        "Where a request goes. These are the only routes, and your team picks among them:",
         "Public volunteer AI networks are off. Vantage can also reach networks where members of the public answer requests on their own computers (the AI Horde and Petals), but they are switched off. If one is ever switched on, this policy will say so first, because whoever runs the computer that answers can read what is sent.",
         "We may use your team's AI activity to train our own models. Prompts, the context sent with them, the answers, and the steps an AI agent took in Vantage's AI features may be used by us to train, fine-tune, and test in-house models that make Vantage better. This data stays with us: we do not sell it or give it to advertisers, and the AI companies above receive your requests only to answer them. Requests made with your team's own key or plan are also covered by that company's own terms, which say their own things about training.",
         "Your team can turn training off. An owner or admin can switch it off for the whole team under Team → AI keys → Model training. While it is off, none of that team's AI activity is used to train, fine-tune, or test our models.",
@@ -160,6 +159,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Keys are locked. An AI key your team or a member saves is encrypted with a separate key service, used only to make requests your team asked for, never shown back in full, and never included in an export.",
         "Prompt caching is on by default: parts of a request that repeat may be kept briefly by the AI company so repeat requests cost less. Your team can turn this off in its AI settings.",
         "Nightly team summary. When the team summary job runs, it reads your team's own activity from the previous 24 hours and writes one short summary into your team's AI memory, so the AI knows what happened. If there was no activity, nothing is written. If no AI is set up, it stores a plain list of the same facts instead of prose. Each run is logged where your team can see it.",
+        "Where a request goes. These are the only routes, and your team picks among them:",
       ],
       list: [
         "Your team's own key, or a member's personal key, with an AI company: Anthropic, OpenAI, Google, OpenRouter, or any service that works like OpenAI's (such as Groq or Mistral). The request goes to that account, under that company's terms. A personal key is used only for that member's own requests.",
@@ -201,6 +201,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         "Your team's data is stored and processed in the United States, in our database hosted by Neon. If your team is outside the United States, using Vantage means your information goes there. We do not offer a choice of region; if that matters to your organization, ask us before you start.",
         "We keep a team's data for as long as the team uses Vantage. After that we keep it only as long as we need to for security, legal, or dispute reasons, or until the team asks us to delete it.",
+        "How long particular records are kept:",
       ],
       list: [
         "Chat messages: until the team is deleted. There is no automatic deletion.",
@@ -229,11 +230,11 @@ export const PRIVACY_POLICY: LegalDocument = {
       id: "device-storage",
       heading: "Cookies, and what is stored on your own device",
       paragraphs: [
-        "Competition venues have terrible Wi-Fi, so parts of Vantage keep a copy of data in your browser so they keep working offline.",
+        "Competition venues have terrible Wi-Fi, so parts of Vantage keep a copy of data in your browser so they keep working offline. Scouting keeps a queue of entries until they upload (entries can also move between devices by QR code), the hours kiosk keeps sign-ins while the network is down, and the calendar, tasks, logistics, and My Day keep the last data they loaded.",
         "This data sits in your browser's storage on that device. That matters most on a shared laptop or tablet in the shop or pit: the next person to use that browser could see the saved copy. Signing out does not wipe it. To clear it, clear site data for Vantage in your browser settings (in Chrome: Settings → Privacy → Site settings → the Vantage site → Delete data).",
         "Some personal settings never leave the device either. The command palette remembers the few places you opened most recently, the team picker remembers teams you switched to, the dashboard remembers how you arranged it, the sign-in page can remember which account you used, and scouting keeps an autosaved draft. These live in your browser on that device and are not sent to us or synced between your devices, so a different browser starts fresh.",
-        "We use only necessary cookies, and they are not part of the analytics choice described in the next section. A necessary cookie is one the product cannot work without, or one that exists only so we can honour a \"no\". Here is each one:",
         "We do not use advertising cookies, session replay, or fingerprinting. That is true whether or not you turn analytics on.",
+        "We use only necessary cookies, and they are not part of the analytics choice described in the next section. A necessary cookie is one the product cannot work without, or one that exists only so we can honour a \"no\". Here is each one:",
       ],
       list: [
         "Sign-in cookies keep you signed in.",
@@ -241,7 +242,6 @@ export const PRIVACY_POLICY: LegalDocument = {
         "One remembers which team you last opened, so links take you back to it.",
         "Two remember your light or dark theme.",
         "One remembers the answer you gave about analytics.",
-        "Offline copies: scouting keeps a queue of entries until they upload (entries can also move between devices by QR code), the hours kiosk keeps sign-ins while the network is down, and the calendar, tasks, logistics, and My Day keep the last data they loaded.",
       ],
     },
     {
@@ -305,8 +305,8 @@ export const PRIVACY_POLICY: LegalDocument = {
       id: "security",
       heading: "How we protect data",
       paragraphs: [
-        "Here is what Vantage actually does, and where it stops:",
         "No system is perfectly secure, and we do not promise that ours is. Keep your sign-in to yourself, and tell us if something looks wrong.",
+        "Here is what Vantage actually does, and where it stops:",
       ],
       list: [
         "Everything travels over encrypted connections (HTTPS).",

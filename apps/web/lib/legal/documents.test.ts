@@ -52,6 +52,20 @@ describe("legal documents", () => {
         }
       });
 
+      // The page renders every paragraph and then the list, so a paragraph that introduces the
+      // list ("…:") must be the last one, or the list lands under an unrelated paragraph.
+      it("puts a list's lead-in paragraph directly above the list", () => {
+        for (const section of doc.sections) {
+          section.paragraphs.forEach((paragraph, index) => {
+            if (!paragraph.trim().endsWith(":")) return;
+            expect(section.list, `${doc.slug}#${section.id} introduces a list it does not have`).toBeDefined();
+            expect(index, `${doc.slug}#${section.id} lead-in must be the last paragraph`).toBe(
+              section.paragraphs.length - 1,
+            );
+          });
+        }
+      });
+
       it("keeps section ids unique", () => {
         const ids = doc.sections.map((section) => section.id);
         expect(new Set(ids).size).toBe(ids.length);
