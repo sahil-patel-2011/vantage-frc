@@ -10,7 +10,8 @@ import {
   type ScoutedTeamProfile,
 } from "@vantage/prediction-strategy";
 import type { FormulaExpression } from "@vantage/scouting";
-import { scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
+import { onePerMatch, scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
+import { observableMatchSql } from "./scouted-counts";
 
 /**
  * What a weekend of tablets actually adds up to.
@@ -90,10 +91,15 @@ export async function loadTeamProfiles(
 
   const [entries, formulas] = await Promise.all([
     client.query<EntryRow>(
-      `SELECT team_key AS "teamKey", match_key AS "matchKey", payload
-         FROM match_scout_entries
-        WHERE org_id = $1::uuid AND event_key = $2
-        ORDER BY match_key, team_key`,
+      // Only reports for matches that can have been watched (see
+      // scouted-counts.ts), in match order so trends read early to late.
+      `SELECT e.team_key AS "teamKey", e.match_key AS "matchKey", e.payload
+         FROM match_scout_entries e
+         JOIN matches_ref m ON m.match_key = e.match_key
+        WHERE e.org_id = $1::uuid AND e.event_key = $2
+          AND ${observableMatchSql("m")}
+        ORDER BY CASE m.comp_level WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5 END,
+                 m.set_number, m.match_number, e.team_key, e.updated_at DESC, e.id`,
       [input.orgId, input.eventKey],
     ),
     client.query<FormulaRow>(
@@ -122,7 +128,10 @@ export async function loadTeamProfiles(
     };
   }
 
-  const profiles = profilesFromScouting(converted.rows);
+  // One row per robot per match, in match order, before anything averages or
+  // draws a trend: the same reduction the match log uses, so a robot's
+  // average reads the same on every screen.
+  const profiles = profilesFromScouting(onePerMatch(converted.rows));
   const pickOrder = pickListOrder(profiles);
   const weighted = rankByWeightedZScores(
     pickListRowsFromScouting(profiles),

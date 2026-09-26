@@ -4,6 +4,7 @@ import {
   type ScoutedMatchRow,
   type ScoutedTeamRating,
 } from "@vantage/prediction-strategy";
+import { matchOrderKey } from "./next-assignment";
 
 /**
  * The bridge from "what our scouts wrote down" to "what the predictor can use".
@@ -211,4 +212,76 @@ export function isScoutedRatingsUnavailable(
   value: ScoutedRatingsResult,
 ): value is Extract<ScoutedRatingsResult, { ok: false }> {
   return value.ok === false;
+}
+
+/** Match order: Qual 2 before Qual 10, quals before playoffs; unknown keys last, by text. */
+export function compareMatchOrder(a: string, b: string): number {
+  const left = matchOrderKey(a);
+  const right = matchOrderKey(b);
+  if (left && right) return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
+  if (left) return -1;
+  if (right) return 1;
+  return a.localeCompare(b);
+}
+
+function meanOf(values: ReadonlyArray<number | null | undefined>): number | null {
+  const real = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  if (!real.length) return null;
+  return real.reduce((sum, value) => sum + value, 0) / real.length;
+}
+
+/**
+ * One row per robot per match, in match order.
+ *
+ * Every screen that shows "our scouting" for a robot starts here, so two
+ * scouts on one robot count once and the same way everywhere: each phase is
+ * the average of what they recorded; the robot counts as disabled when at
+ * least half of them said so (and then scores 0); defense or a climb counts
+ * when anyone saw it. Rows come back sorted by match (Qual 2 before Qual 10),
+ * which is what a trend or a sparkline needs; sorting by the key's text put
+ * Qual 10-19 before Qual 2.
+ */
+export function onePerMatch(rows: readonly ScoutedMatchRow[]): ScoutedMatchRow[] {
+  const groups = new Map<string, ScoutedMatchRow[]>();
+  const order: string[] = [];
+  for (const row of rows) {
+    if (!row.teamKey) continue;
+    const key = `${row.teamKey}|${row.matchKey}`;
+    const list = groups.get(key);
+    if (list) list.push(row);
+    else {
+      groups.set(key, [row]);
+      order.push(key);
+    }
+  }
+  const merged: ScoutedMatchRow[] = order.map((key) => {
+    const list = groups.get(key)!;
+    const first = list[0]!;
+    if (list.length === 1) return { ...first };
+    const disabledVotes = list.filter((row) => row.disabled).length;
+    const climbs = list.map((row) => row.climbed).filter((value): value is boolean => typeof value === "boolean");
+    return {
+      teamKey: first.teamKey,
+      matchKey: first.matchKey,
+      auto: meanOf(list.map((row) => row.auto)),
+      teleop: meanOf(list.map((row) => row.teleop)),
+      endgame: meanOf(list.map((row) => row.endgame)),
+      disabled: disabledVotes * 2 >= list.length,
+      defense: list.some((row) => row.defense),
+      ...(climbs.length ? { climbed: climbs.some(Boolean) } : {}),
+    };
+  });
+  return merged.sort(
+    (a, b) => compareMatchOrder(a.matchKey, b.matchKey) || a.teamKey.localeCompare(b.teamKey),
+  );
+}
+
+/** The points one reduced row stands for: 0 when disabled, else the phases summed. Null with nothing recorded. */
+export function matchRowTotal(row: ScoutedMatchRow): number | null {
+  if (row.disabled) return 0;
+  const parts = [row.auto, row.teleop, row.endgame].filter(
+    (value): value is number => typeof value === "number" && Number.isFinite(value),
+  );
+  if (!parts.length) return null;
+  return parts.reduce((sum, value) => sum + value, 0);
 }

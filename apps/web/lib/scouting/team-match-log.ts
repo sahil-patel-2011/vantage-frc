@@ -17,7 +17,7 @@
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { allianceScore, allianceTeamKeys, type TbaAllianceJson } from "../schedule/tba-cache";
 import { safeVideoUrl, shortMatchLabel, tbaVideoUrl } from "../schedule/match-timeline";
-import { scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
+import { matchRowTotal, onePerMatch, scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
 import { matchOrderKey } from "./next-assignment";
 
 export type TeamLogEntryRow = {
@@ -140,17 +140,14 @@ export function buildTeamMatchLog(input: {
     input.entries.map((entry) => ({ teamKey, matchKey: entry.matchKey, payload: entry.payload ?? {} })),
     input.formulas,
   );
+  // The same one-row-per-match reduction the Robots list uses: two scouts are
+  // averaged, and a robot recorded as disabled scores 0 for that match.
   const totalsByMatch = new Map<string, number[]>();
   if (converted.ok) {
-    for (const row of converted.rows) {
-      const parts = [row.auto, row.teleop, row.endgame].filter(
-        (value): value is number => typeof value === "number" && Number.isFinite(value),
-      );
-      if (!parts.length) continue;
-      const total = parts.reduce((sum, value) => sum + value, 0);
-      const list = totalsByMatch.get(row.matchKey);
-      if (list) list.push(total);
-      else totalsByMatch.set(row.matchKey, [total]);
+    for (const row of onePerMatch(converted.rows)) {
+      const total = matchRowTotal(row);
+      if (total == null) continue;
+      totalsByMatch.set(row.matchKey, [total]);
     }
   }
 

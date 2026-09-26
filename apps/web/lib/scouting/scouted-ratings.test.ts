@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { FormulaExpression } from "@vantage/scouting";
 import {
+  compareMatchOrder,
   isScoutedRatingsUnavailable,
+  matchRowTotal,
+  onePerMatch,
   scoutedRowsFromEntries,
   type OrgValueFormula,
   type ScoutEntryRow,
@@ -185,5 +188,37 @@ describe("points the scouts recorded themselves", () => {
     );
     if (!result.ok) throw new Error("expected rows");
     expect(result.rows.map((row) => row.climbed)).toEqual([false, true]);
+  });
+});
+
+describe("onePerMatch", () => {
+  it("puts matches in match order, not text order", () => {
+    const rows = onePerMatch([
+      { teamKey: "frc118", matchKey: "e_qm12", teleop: 12 },
+      { teamKey: "frc118", matchKey: "e_qm25", teleop: 25 },
+      { teamKey: "frc118", matchKey: "e_qm4", teleop: 4 },
+      { teamKey: "frc118", matchKey: "e_sf1m1", teleop: 50 },
+    ]);
+    expect(rows.map((row) => row.matchKey)).toEqual(["e_qm4", "e_qm12", "e_qm25", "e_sf1m1"]);
+    expect(compareMatchOrder("e_qm2", "e_qm10")).toBeLessThan(0);
+  });
+
+  it("counts two scouts on one robot once, averaged", () => {
+    const [row] = onePerMatch([
+      { teamKey: "frc1", matchKey: "e_qm1", auto: 4, teleop: 4 },
+      { teamKey: "frc1", matchKey: "e_qm1", auto: 6, teleop: 10, defense: true },
+    ]);
+    expect(row).toMatchObject({ auto: 5, teleop: 7, disabled: false, defense: true });
+    expect(matchRowTotal(row!)).toBe(12);
+  });
+
+  it("scores a disabled robot 0 when at least half the scouts said so", () => {
+    const [row] = onePerMatch([
+      { teamKey: "frc1", matchKey: "e_qm1", teleop: 20, disabled: true },
+      { teamKey: "frc1", matchKey: "e_qm1", teleop: 8 },
+    ]);
+    expect(row?.disabled).toBe(true);
+    expect(matchRowTotal(row!)).toBe(0);
+    expect(matchRowTotal({ teamKey: "frc1", matchKey: "e_qm2" })).toBeNull();
   });
 });

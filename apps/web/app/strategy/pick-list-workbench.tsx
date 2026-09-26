@@ -24,7 +24,7 @@ import {
   type PickDeskNextAction,
   type PickDeskShellKind,
 } from "../../lib/strategy/pick-desk-related";
-import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
+import type { PickDeskCandidate, PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
 import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   heatmapCellGrid,
@@ -95,15 +95,27 @@ function teamLabel(entry: { teamKey: string; teamNumber?: number | null; nicknam
   return entry.nickname ? `${number} · ${entry.nickname}` : String(number);
 }
 
-function metricLine(candidate: PickCandidate | undefined) {
+/**
+ * One line per team. "Our scouting" is the plain average of what our scouts
+ * recorded (the same number as Robots); the public rating mixed with our
+ * scouting, which orders this list, has its own label so the two are never
+ * confused.
+ */
+function pickMetricLine(candidate: PickDeskCandidate | undefined) {
   if (!candidate) return "No numbers yet";
+  const matches = candidate.scoutedMatches ?? 0;
   const parts = [
-    candidate.pepa != null ? `Our scouting ${candidate.pepa.toFixed(1)}` : null,
+    candidate.scoutedAverage != null ? `Our scouting ${candidate.scoutedAverage.toFixed(1)} a match` : null,
+    candidate.pepa != null
+      ? `rating with our scouting ${candidate.pepa.toFixed(1)}${
+          candidate.epa != null ? ` (public ${Number(candidate.epa).toFixed(1)})` : ""
+        }`
+      : candidate.epa != null
+        ? `public rating ${Number(candidate.epa).toFixed(1)}`
+        : null,
     candidate.record,
     candidate.rank != null ? `event rank ${candidate.rank}` : null,
-    candidate.scoutSample > 0
-      ? `scouted ${candidate.scoutSample} match${candidate.scoutSample === 1 ? "" : "es"}`
-      : null,
+    matches > 0 ? `${matches} ${matches === 1 ? "match" : "matches"} scouted` : null,
   ].filter(Boolean);
   return parts.join(" · ") || "No numbers yet";
 }
@@ -408,7 +420,7 @@ export function PickListWorkbench({
   });
 
   const byKey = useMemo(() => {
-    const map = new Map<string, PickCandidate>();
+    const map = new Map<string, PickDeskCandidate>();
     for (const candidate of desk?.candidates ?? []) map.set(candidate.teamKey, candidate);
     return map;
   }, [desk]);
@@ -709,7 +721,7 @@ export function PickListWorkbench({
                       <strong>
                         #{entry.rank} {teamLabel(entry)}
                       </strong>
-                      <small>{metricLine(candidate)}</small>
+                      <small>{pickMetricLine(candidate)}</small>
                   <IndependenceChip candidate={candidate} />
                   <ConsistencyChip candidate={candidate} />
                     </div>
@@ -781,7 +793,7 @@ export function PickListWorkbench({
               <li key={candidate.teamKey}>
                 <div>
                   <strong>{teamLabel(candidate)}</strong>
-                  <small>{metricLine(candidate)}</small>
+                  <small>{pickMetricLine(candidate)}</small>
                   <IndependenceChip candidate={candidate} />
                   <ConsistencyChip candidate={candidate} />
                   {candidate.suggestedTier ? (

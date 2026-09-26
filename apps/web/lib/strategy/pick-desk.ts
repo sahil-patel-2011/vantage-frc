@@ -10,6 +10,9 @@ import {
   type PickTier,
 } from "@vantage/prediction-strategy";
 import { observationsForStrategyTrust } from "@vantage/scouting/trust";
+import { withSavepoint } from "@vantage/db";
+import { loadTeamProfiles } from "../scouting/team-profiles";
+import { loadScoutedMatchCounts } from "../scouting/scouted-counts";
 import type { SchemaDefinition } from "@vantage/scouting";
 import { loadScoutFieldRoles } from "./scout-field-roles";
 import { teamScoreDistribution } from "@vantage/prediction-strategy";
@@ -43,13 +46,25 @@ export type PickDeskList = {
   entries: PickDeskEntry[];
 };
 
+/**
+ * A pick candidate plus the two scouting numbers every screen shows the same
+ * way: the plain average of what our scouts recorded (the Robots list's
+ * number) and how many distinct matches were scouted.
+ */
+export type PickDeskCandidate = PickCandidate & {
+  /** Average points a match from our scouting, one decimal. Null with no scored reports. */
+  scoutedAverage?: number | null;
+  /** Distinct matches our scouts watched this robot in (see scouted-counts.ts). */
+  scoutedMatches?: number;
+};
+
 export type PickDeskView = {
   orgId: string;
   eventKey: string;
   eventName: string | null;
   teamNumber: number | null;
   canEdit: boolean;
-  candidates: PickCandidate[];
+  candidates: PickDeskCandidate[];
   pickLists: PickDeskList[];
   sources: string[];
   /** full when scouting coverage is usable; low_data_tba for TBA/Statbotics quick pick. */
@@ -330,8 +345,36 @@ export async function loadPickDesk(
     };
   });
 
+  // The Robots list's own numbers, so "Our scouting" is one number everywhere.
+  const [profileView, matchCounts] = await Promise.all([
+    withSavepoint<Awaited<ReturnType<typeof loadTeamProfiles>> | null>(
+      client,
+      () => loadTeamProfiles(client, { orgId: row.orgId, eventKey: row.eventKey }),
+      null,
+    ),
+    withSavepoint(
+      client,
+      () => loadScoutedMatchCounts(client, { orgId: row.orgId, eventKey: row.eventKey as string }),
+      new Map<string, number>(),
+    ),
+  ]);
+  const averageByTeam = new Map<string, number>();
+  if (profileView?.status === "ready") {
+    for (const profile of profileView.profiles) {
+      if (profile.matches > 0 && Number.isFinite(profile.meanTotal)) {
+        averageByTeam.set(profile.teamKey, Math.round(profile.meanTotal * 10) / 10);
+      }
+    }
+  }
+
   const modeInfo = detectPickDataMode(baseCandidates);
-  const candidates = rankPickCandidates(baseCandidates, { mode: modeInfo.mode });
+  const candidates: PickDeskCandidate[] = rankPickCandidates(baseCandidates, { mode: modeInfo.mode }).map(
+    (candidate) => ({
+      ...candidate,
+      scoutedAverage: averageByTeam.get(candidate.teamKey) ?? null,
+      scoutedMatches: matchCounts.get(candidate.teamKey) ?? 0,
+    }),
+  );
   const recentShares = await loadRecentAllianceShares(
     client,
     row.eventKey,
