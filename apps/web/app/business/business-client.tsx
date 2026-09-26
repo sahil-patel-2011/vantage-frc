@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
+import { MoneyAddMenu } from "./money-add-menu";
 import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -314,6 +315,7 @@ export default function BusinessClient() {
       >
         {live ? (
           <div className="biz-header-actions">
+            <MoneyAddMenu orgId={orgId ?? null} />
             <label className="biz-season">
               Season
               <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>

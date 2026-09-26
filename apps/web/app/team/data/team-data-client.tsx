@@ -415,15 +415,24 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       error?: string;
     };
     setBusy(false);
-    setOk(response.ok);
+    // Data already here stays in use when a refresh fails: that is a busy connection, not an
+    // unconnected team ("Match data isn't connected yet" showed above 36 cached matches).
+    const haveData = referenceCount(reference, "matches_ref") > 0;
+    setOk(response.ok || haveData);
     if (response.ok) {
       const summary = data.summary;
+      const matches = Number(summary?.matches ?? 0);
+      const teams = Number(summary?.teams ?? 0);
       setMessage(
-        `Sync finished — matches ${summary?.matches ?? 0}, teams ${summary?.teams ?? 0}, not-modified ${summary?.notModified ?? 0}.`,
+        matches || teams
+          ? `Updated just now · ${matches} ${matches === 1 ? "match" : "matches"}, ${teams} ${teams === 1 ? "team" : "teams"}.`
+          : "Up to date. Nothing changed since the last refresh.",
       );
       await load();
+    } else if (haveData) {
+      setMessage("Couldn't refresh just now. The event data already here is still in use; try again in a few minutes.");
     } else {
-      setMessage(data.error ?? "Sync failed");
+      setMessage(data.error ?? "Couldn't refresh. Try again in a few minutes.");
     }
   }
 

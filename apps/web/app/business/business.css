@@ -1449,3 +1449,18 @@ body .biz-stack > .biz-sustain.is-quiet { background: none; border: 0; box-shado
 .biz-category-purchase { margin-top: 12px; }
 .biz-category-purchase > summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .biz-category-purchase[open] > summary { margin-bottom: 10px; }
+
+/* One Add for Money: a small menu that asks what happened. */
+.money-add { position: relative; }
+.money-add-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: min(320px, 86vw);
+  margin: 0; padding: 6px; list-style: none; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); box-shadow: var(--shadow-pop, 0 12px 32px rgba(0, 0, 0, 0.14));
+}
+.money-add-menu a {
+  display: grid; gap: 2px; min-height: 44px; padding: 8px 10px; border-radius: 10px;
+  color: var(--ink); text-decoration: none;
+}
+.money-add-menu a:hover, .money-add-menu a:focus-visible { background: var(--surface-2); }
+.money-add-menu strong { font-size: 14px; }
+.money-add-menu small { color: var(--muted); font-size: 12px; }

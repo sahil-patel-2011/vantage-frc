@@ -504,7 +504,7 @@ export default function BudgetClient() {
       </Panel>
 
       <Panel>
-        <h2>Competition fees</h2>
+        <h2 id="fees">Competition fees</h2>
         <p className="app-muted">
           Registration and event fees are part of this budget, not a separate pot. Recording one
           here writes it to Season costs and, when it is marked paid, into the spend total above.

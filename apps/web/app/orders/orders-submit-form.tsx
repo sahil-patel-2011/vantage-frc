@@ -186,7 +186,7 @@ export function SubmitForm({
   }
 
   return (
-    <section className="soft-panel">
+    <section className="soft-panel" id="log-purchase">
       <h2>Log a purchase</h2>
       <p className="orders-form-lead">
         What, why, when, the cost and where from. A mentor approves it before anyone buys, and payment happens on the
