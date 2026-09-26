@@ -1,6 +1,6 @@
 import { isBackupRole } from "./assignment-accountability";
-import { matchKeyLabel } from "./scout-breakdown";
 import { matchOrderKey } from "./next-assignment";
+import { labelForMatchKey, matchOpenForScouting, type ScheduleMatch } from "./next-match";
 
 /**
  * "Which robot do I watch next?" — the first thing a scout opening Scouting needs.
@@ -8,9 +8,11 @@ import { matchOrderKey } from "./next-assignment";
  * From the person's own assignments (the scouting bootstrap already returns only
  * theirs): the earliest primary duty that has not happened yet and that nobody has
  * already filed an entry for. Backups are skipped (a backup scouts only when the
- * primary does not). "Has not happened" uses the assignment's start time when there is
- * one, with a grace window so a scout still filling in the match that just ended keeps
- * it; without a time, the recorded entries alone decide.
+ * primary does not). "Has not happened" is the shared still-to-come rule when the schedule
+ * has the match (matchOpenForScouting: a late event keeps its unplayed match), else the
+ * assignment's planned start with a grace window; without either, the entries alone decide.
+ * The time shown is the match's own (actual, else predicted, else scheduled), not the time
+ * written on the assignment when shifts were planned: schedules slip.
  */
 export type DutyAssignment = {
   matchKey: string;
@@ -27,7 +29,29 @@ export type DutyMatch = {
   blueAlliance?: Alliance;
   /** COALESCE(actual, predicted, scheduled): when the match ran or is expected to. */
   matchTime?: string | null;
+  compLevel?: string | null;
+  matchNumber?: number | null;
+  actualTime?: string | null;
+  predictedTime?: string | null;
+  plannedTime?: string | null;
+  postResultTime?: string | null;
+  winningAlliance?: string | null;
 };
+
+function asScheduleMatch(match: DutyMatch): ScheduleMatch {
+  const parsed = /_(qm|ef|qf|sf|f)(\d+)(?:m(\d+))?$/i.exec(match.matchKey);
+  return {
+    matchKey: match.matchKey,
+    compLevel: match.compLevel ?? parsed?.[1]?.toLowerCase() ?? null,
+    matchNumber: match.matchNumber ?? Number(parsed?.[3] ?? parsed?.[2] ?? 0),
+    matchTime: match.matchTime,
+    actualTime: match.actualTime,
+    predictedTime: match.predictedTime,
+    plannedTime: match.plannedTime,
+    postResultTime: match.postResultTime,
+    winningAlliance: match.winningAlliance,
+  };
+}
 
 function teamKeysOf(alliance: Alliance): readonly string[] {
   if (!alliance) return [];
@@ -60,14 +84,16 @@ export function nextScoutingDuty(input: {
       .filter((entry) => entry.matchKey && (entry.type ?? "match") === "match")
       .map((entry) => `${entry.matchKey}|${entry.teamKey}`),
   );
+  const schedule = (input.matches ?? []).map(asScheduleMatch);
   const candidates = input.assignments
     .filter((assignment) => assignment.matchKey && assignment.teamKey && !isBackupRole(assignment.role))
     .filter((assignment) => !filed.has(`${assignment.matchKey}|${assignment.teamKey}`))
     .filter((assignment) => {
-      // The match's own clock wins over the assignment's: a match that already ran is not
-      // "next", however the shift was planned.
-      const when =
-        input.matches?.find((row) => row.matchKey === assignment.matchKey)?.matchTime ?? assignment.startsAt;
+      // The match's own state wins over the assignment's: a match that already ran is not
+      // "next", however the shift was planned, and one running late still is.
+      const scheduled = schedule.find((row) => row.matchKey === assignment.matchKey);
+      if (scheduled) return matchOpenForScouting(scheduled, schedule, now);
+      const when = assignment.startsAt;
       if (!when) return true;
       const at = Date.parse(when);
       return Number.isNaN(at) || at >= now - GRACE_MS;
@@ -85,8 +111,8 @@ export function nextScoutingDuty(input: {
     matchKey: first.matchKey,
     teamKey: first.teamKey,
     teamNumber: first.teamKey.replace(/^frc/i, ""),
-    matchLabel: matchKeyLabel(first.matchKey),
+    matchLabel: labelForMatchKey(first.matchKey) ?? first.matchKey,
     station: redAt >= 0 ? `Red ${redAt + 1}` : blueAt >= 0 ? `Blue ${blueAt + 1}` : null,
-    startsAt: first.startsAt ?? null,
+    startsAt: match?.matchTime ?? first.startsAt ?? null,
   };
 }

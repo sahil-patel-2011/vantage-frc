@@ -1,6 +1,7 @@
 import type { ScoutSchema, ScoutIdentity } from "@vantage/scouting";
 import type { FieldTrustSummary } from "@vantage/scouting/trust";
 import type { CsvColumn } from "../../lib/export/to-csv";
+import { matchOpenForScouting, type ScheduleMatch } from "../../lib/scouting/next-match";
 
 export type OfficialFlag = {
   fieldKey: string;
@@ -31,6 +32,12 @@ export type Bootstrap = {
     blueAlliance?: { teamKeys?: string[] };
     /** When the match ran or will run; the bootstrap sends it. */
     matchTime?: string | null;
+    /** Match status (the shared "still to come" rule); missing on a copy saved before it was sent. */
+    actualTime?: string | null;
+    predictedTime?: string | null;
+    plannedTime?: string | null;
+    postResultTime?: string | null;
+    winningAlliance?: string | null;
   }>;
   recentEntries: Array<{
     id: string;
@@ -47,33 +54,82 @@ export type Bootstrap = {
     clientId?: string | null;
   }>;
   scoutIdentity?: ScoutIdentity;
+  /**
+   * Every report the signed-in scout filed at this event (recentEntries is only the team's
+   * latest 30). Missing on a copy saved on the phone before it was sent.
+   */
+  myEntries?: MyEntry[];
+  /** Every robot anyone on the team has a match report for at this event. */
+  scouted?: Array<{ matchKey: string; teamKey: string }>;
+  /** Our own team number, when the team has one. */
+  teamNumber?: number | null;
 };
+
+export type MyEntry = {
+  id: string;
+  type: "match" | "pit";
+  matchKey: string | null;
+  teamKey: string;
+  clientId: string | null;
+  payload: Record<string, unknown> | null;
+  confidence: string;
+  updatedAt: string;
+};
+
+/** The scout's own reports, newest first: the full list when the bootstrap has it. */
+export function myReports(
+  data: Pick<Bootstrap, "myEntries" | "recentEntries" | "scoutIdentity"> | null | undefined,
+): MyEntry[] {
+  if (!data) return [];
+  if (data.myEntries) return data.myEntries;
+  const me = data.scoutIdentity?.userId;
+  if (!me) return [];
+  return (data.recentEntries ?? [])
+    .filter((entry) => entry.scoutUserId === me)
+    .map((entry) => ({
+      id: entry.id,
+      type: entry.type === "pit" ? "pit" : "match",
+      matchKey: entry.matchKey,
+      teamKey: entry.teamKey,
+      clientId: entry.clientId ?? null,
+      payload: entry.payload ?? null,
+      confidence: entry.confidence,
+      updatedAt: entry.updatedAt,
+    }));
+}
+
+/** Every robot with a match report from anyone on the team (for the "Done" ticks). */
+export function scoutedRobots(
+  data: Pick<Bootstrap, "scouted" | "recentEntries"> | null | undefined,
+): Array<{ matchKey: string; teamKey: string }> {
+  if (!data) return [];
+  if (data.scouted) return data.scouted;
+  return (data.recentEntries ?? [])
+    .filter((entry) => entry.type === "match" && entry.matchKey)
+    .map((entry) => ({ matchKey: entry.matchKey!, teamKey: entry.teamKey }));
+}
 
 export type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust" | "teams";
 
-/** A match is over five minutes after its time (the same rule the match picker uses). */
-const PLAYED_AFTER_MS = 5 * 60_000;
-
 /**
- * The assignment the Scout tab should open on: the first one whose match has not been played and
- * whose robot nobody has scouted yet. Opening on assignments[0] put a scout on Qual 1, eleven
- * hours over and already scouted, with their old report loaded, and they saved it a second time.
+ * The assignment the Scout tab should open on: the first one whose match is still open for
+ * scouting (the shared still-to-come rule, so a late event keeps its unplayed match) and whose
+ * robot nobody has scouted yet. Opening on assignments[0] put a scout on Qual 1, eleven hours
+ * over and already scouted, with their old report loaded, and they saved it a second time.
  * Null when every assignment is done or over; the match picker then chooses.
  */
 export function openAssignment(
-  data: Pick<Bootstrap, "assignments" | "matches" | "recentEntries">,
+  data: Pick<Bootstrap, "assignments" | "matches" | "recentEntries" | "scouted">,
   nowMs: number,
 ): Bootstrap["assignments"][number] | null {
-  const scouted = new Set(
-    data.recentEntries.filter((entry) => entry.type === "match" && entry.matchKey).map((entry) => `${entry.matchKey}|${entry.teamKey}`),
-  );
-  const timeOf = new Map(data.matches.map((match) => [match.matchKey, match.matchTime ?? null]));
+  const scouted = new Set(scoutedRobots(data).map((entry) => `${entry.matchKey}|${entry.teamKey}`));
+  const schedule = data.matches as ScheduleMatch[];
+  const byKey = new Map(schedule.map((match) => [match.matchKey, match]));
   return (
     data.assignments.find((assignment) => {
       if (scouted.has(`${assignment.matchKey}|${assignment.teamKey}`)) return false;
-      const time = timeOf.get(assignment.matchKey);
-      const at = time ? Date.parse(time) : Number.NaN;
-      return !Number.isFinite(at) || at + PLAYED_AFTER_MS > nowMs;
+      const match = byKey.get(assignment.matchKey);
+      return !match || matchOpenForScouting(match, schedule, nowMs);
     }) ?? null
   );
 }
@@ -89,6 +145,8 @@ export type SaveReceipt = {
   /** Tells two saves of the same robot apart, so each one scrolls to its confirmation. */
   savedAt: number;
   next?: { matchLabel: string; teamNumber: string | null; stationLabel: string | null } | null;
+  /** Said when nothing comes next, e.g. after the last qualification match. */
+  note?: string | null;
 };
 
 export type RecentEntry = NonNullable<Bootstrap["recentEntries"]>[number];

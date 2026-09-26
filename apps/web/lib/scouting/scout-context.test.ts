@@ -52,6 +52,17 @@ describe("nextScoutTarget", () => {
     expect(next).toMatchObject({ matchKey: "2026gaalb_qm11", teamKey: "frc555", stationLabel: "Blue 2", reason: "assignment" });
   });
 
+  it("skips an assignment this scout already scouted, and falls back to the station", () => {
+    const next = nextScoutTarget({
+      matches: schedule,
+      assignments: [{ matchKey: "2026gaalb_qm11", teamKey: "frc555" }],
+      savedMatchKey: "2026gaalb_qm10",
+      savedTeamKey: "frc1323",
+      done: (matchKey, teamKey) => matchKey === "2026gaalb_qm11" && teamKey === "frc555",
+    });
+    expect(next).toMatchObject({ matchKey: "2026gaalb_qm11", teamKey: "frc254", reason: "station" });
+  });
+
   it("skips a robot this scout already has, instead of opening its report to overwrite", () => {
     const next = nextScoutTarget({
       matches: schedule,

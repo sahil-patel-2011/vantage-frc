@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { formatReportClock, savedWhen, scoutEntryByline, scoutReportFromPayload } from "../../lib/scouting/scout-report";
+import { labelForMatchKey } from "../../lib/scouting/next-match";
 import { describeMatchKey } from "../../lib/scouting/scout-target";
 import type { RecentEntry } from "./scouting-model";
 
@@ -36,7 +37,9 @@ export function ScoutReportViewer({
               onClick={() => setOpenId(open ? null : entry.id)}
             >
               <strong>
-                {entry.matchKey ? describeMatchKey(entry.matchKey) : "Pit"} · {entry.teamKey.replace(/^frc/i, "")}
+                {/* "Qual 31", the way the match picker names it, not "Qualification 31". */}
+                {entry.matchKey ? (labelForMatchKey(entry.matchKey) ?? describeMatchKey(entry.matchKey)) : "Pit"} ·{" "}
+                {entry.teamKey.replace(/^frc/i, "")}
               </strong>
               <span>{scoutEntryByline({ scoutName: entry.scoutName, source: entry.source })}</span>
               <small className="app-muted">

@@ -32,13 +32,19 @@ export function ScoutSaveConfirmation({
   const next = receipt.next
     ? [receipt.next.matchLabel, receipt.next.teamNumber, receipt.next.stationLabel].filter(Boolean).join(" · ")
     : null;
-  const detail = receipt.offline
-    ? "Kept on this phone. It uploads by itself when there is signal."
-    : receipt.next?.teamNumber
-      ? "The next robot is picked below. Tap a different one if you are watching someone else."
-      : receipt.next
-        ? "Pick the robot you are watching in the next match."
-        : null;
+  const detail = [
+    receipt.offline ? "Kept on this phone. It uploads by itself when there is signal." : null,
+    receipt.note ??
+      (receipt.offline
+        ? null
+        : receipt.next?.teamNumber
+          ? "The next robot is picked below. Tap a different one if you are watching someone else."
+          : receipt.next
+            ? "Pick the robot you are watching in the next match."
+            : null),
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div id="scout-save-confirmation" className="scout-saved" role="status">

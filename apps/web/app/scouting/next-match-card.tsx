@@ -29,6 +29,7 @@ export function NextMatchCard({
   onPick,
   onAutoPick,
   myMatchKeys = [],
+  autoPickEnabled = true,
 }: {
   matches: ScheduleMatch[];
   scouted: ScoutedEntry[];
@@ -40,6 +41,11 @@ export function NextMatchCard({
   onAutoPick?: (matchKey: string, teamKey: string) => void;
   /** Matches this scout already has a report for: reopening skips them, as the save flow does. */
   myMatchKeys?: readonly string[];
+  /**
+   * False until the team's live data is in, and after a save with nothing next (the last qual):
+   * a robot picked from an old copy, or after the last match, was one already scouted.
+   */
+  autoPickEnabled?: boolean;
 }) {
   const schedule = useMemo(() => orderedSchedule(matches), [matches]);
   const baseStart = useMemo(() => nextMatchIndex(schedule, scouted, assignments), [schedule, scouted, assignments]);
@@ -82,7 +88,9 @@ export function NextMatchCard({
   // Only our own robot left in a match: the next match with another team open comes first
   // (the save flow skips ours the same way), then ours.
   const autoPick = useMemo(() => {
-    if (matchKey || baseStart < 0 || !sessionChecked) return null;
+    if (!autoPickEnabled || matchKey || baseStart < 0 || !sessionChecked) return null;
+    // Every match is played: nothing is "next", and the scout picks what they are catching up on.
+    if (scheduleIsOver(schedule)) return null;
     const watched = new Set(myMatchKeys);
     let ownFallback: { matchKey: string; teamKey: string } | null = null;
     for (let at = baseStart; at < Math.min(schedule.length, baseStart + 6); at += 1) {
@@ -96,7 +104,7 @@ export function NextMatchCard({
       if (!ownFallback && open[0]) ownFallback = { matchKey: candidate.match.matchKey, teamKey: open[0].teamKey };
     }
     return ownFallback;
-  }, [matchKey, baseStart, schedule, scouted, assignments, ownTeamKey, sessionChecked, myMatchKeys]);
+  }, [autoPickEnabled, matchKey, baseStart, schedule, scouted, assignments, ownTeamKey, sessionChecked, myMatchKeys]);
   useEffect(() => {
     if (!autoPick) return;
     const at = schedule.findIndex((match) => match.matchKey === autoPick.matchKey);

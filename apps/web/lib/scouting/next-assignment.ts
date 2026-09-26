@@ -49,6 +49,8 @@ function eventPrefix(matchKey: string): string {
 export function nextAssignedTarget(
   assignments: readonly SteppableAssignment[],
   savedMatchKey: string,
+  /** Robots this scout already has a report for: skipped, so "Next" is never a finished one. */
+  done: (matchKey: string, teamKey: string) => boolean = () => false,
 ): { matchKey: string; teamKey: string } | null {
   const saved = matchOrderKey(savedMatchKey);
   if (!saved) return null;
@@ -57,6 +59,7 @@ export function nextAssignedTarget(
   for (const assignment of assignments) {
     if (!assignment.matchKey || !assignment.teamKey) continue;
     if (isBackupRole(assignment.role)) continue;
+    if (done(assignment.matchKey, assignment.teamKey)) continue;
     if (eventPrefix(assignment.matchKey) !== prefix) continue;
     const order = matchOrderKey(assignment.matchKey);
     if (!order || compare(order, saved) <= 0) continue;

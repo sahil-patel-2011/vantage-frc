@@ -31,8 +31,12 @@ import {
   conflictTitle,
   conflictValueLabel,
 } from "../../lib/scouting/conflict-label";
+import { MyReports } from "./my-reports";
 import {
+  myReports,
+  scoutedRobots,
   type Bootstrap,
+  type MyEntry,
   type ConflictCandidate,
   type OfficialFlag,
   type SaveReceipt,
@@ -107,6 +111,12 @@ export type ScoutingReadyViewProps = {
   saveReceipt: SaveReceipt | null;
   /** Put the entry just saved back in the form. */
   fixLastSave?: () => void;
+  /** Open one of your reports in the form to correct it. */
+  editMyReport?: (report: MyEntry) => void;
+  /** False until the team's live data is in, or after a save with nothing next. */
+  autoPickEnabled?: boolean;
+  /** Only answers the scout typed make a draft; a loaded report or carried answers do not. */
+  userEdited?: boolean;
   showFormula: boolean;
   formulaName: string;
   formulaWeights: Record<string, number>;
@@ -180,6 +190,9 @@ export function ScoutingReadyView({
   syncNote,
   saveReceipt,
   fixLastSave,
+  editMyReport,
+  autoPickEnabled = true,
+  userEdited = true,
   showFormula,
   formulaName,
   formulaWeights,
@@ -216,17 +229,15 @@ export function ScoutingReadyView({
   // What the card counts as scouted. The server list only refreshes on reload,
   // so after Save the card still thought the match just saved was next, and
   // showed "Back to next" on the match Save had moved to.
-  const recentEntries = data?.recentEntries;
-  const scouted = useMemo(() => [...(recentEntries ?? []), ...savedHere], [recentEntries, savedHere]);
+  // Every robot the team has scouted at the event (not only the latest 30 entries), plus this phone's saves.
+  const scouted = useMemo(() => [...scoutedRobots(data), ...savedHere], [data, savedHere]);
+  const mine = useMemo(() => myReports(data), [data]);
   // Matches this scout already watched, so reopening the tab does not send them back to one.
   const myMatchKeys = useMemo(() => {
-    const me = data?.scoutIdentity?.userId ?? null;
     const keys = new Set<string>(savedHere.map((entry) => entry.matchKey));
-    for (const entry of recentEntries ?? []) {
-      if (me && entry.scoutUserId === me && entry.matchKey) keys.add(entry.matchKey);
-    }
+    for (const entry of mine) if (entry.type === "match" && entry.matchKey) keys.add(entry.matchKey);
     return [...keys];
-  }, [data?.scoutIdentity?.userId, recentEntries, savedHere]);
+  }, [mine, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
   const scrollToFormPending = useRef(false);
@@ -561,7 +572,7 @@ return (
                   it cost a line above the first field on a phone. */}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-              {payloadHasDraftContent(payload) || draftSavedAt ? (
+              {(userEdited && payloadHasDraftContent(payload)) || draftSavedAt ? (
                 <span
                   className={`scout-draft-chip ${draftDirty ? "dirty" : draftSavedAt ? "saved" : ""}`}
                   role="status"
@@ -600,6 +611,7 @@ return (
                   onPick={pickRobot}
                   onAutoPick={autoPickRobot}
                   myMatchKeys={myMatchKeys}
+                  autoPickEnabled={autoPickEnabled}
                 />
               ) : null}
               {data?.matches?.length ? (
@@ -811,6 +823,9 @@ return (
             <p className="form-message" role="status">
               {message}
             </p>
+          ) : null}
+          {editMyReport ? (
+            <MyReports reports={mine} pendingCount={counts.entries} onEdit={editMyReport} />
           ) : null}
         </Panel>
 

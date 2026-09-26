@@ -68,6 +68,35 @@ export function RobotImagePreview({ clientId, orgId }: { clientId: string; orgId
   );
 }
 
+/**
+ * Counted things (points, cycles, fouls, pieces) get big − / + buttons: a scout taps while
+ * watching instead of opening the phone keyboard mid-match. Times, weights and rates stay a
+ * typed box, because they are measured, not counted. So do totals: a robot's 60-point match is
+ * sixty taps on a + button, and the scout reads it off the scoreboard anyway.
+ */
+export function isTapCounterField(field: Pick<SchemaDefinition["fields"][number], "type" | "key" | "label">): boolean {
+  return (
+    field.type === "number" &&
+    !/time|sec|\(s\)|weight|rate|avg|average|percent|%|speed|total/i.test(`${field.key} ${field.label}`)
+  );
+}
+
+/** The limits a form sets on a number (config.min / config.max), else never below zero. */
+function numberBounds(field: SchemaDefinition["fields"][number]): { min: number; max: number | null } {
+  const config = (field.config ?? {}) as Record<string, unknown>;
+  const min = typeof config.min === "number" && Number.isFinite(config.min) ? config.min : 0;
+  const max = typeof config.max === "number" && Number.isFinite(config.max) ? config.max : null;
+  return { min, max };
+}
+
+/** A typed number kept inside the form's limits; counted things are whole numbers. */
+function boundedNumber(field: SchemaDefinition["fields"][number], raw: number, whole: boolean): number | undefined {
+  if (!Number.isFinite(raw)) return undefined;
+  const { min, max } = numberBounds(field);
+  const value = whole ? Math.round(raw) : raw;
+  return Math.min(Math.max(value, min), max ?? Number.POSITIVE_INFINITY);
+}
+
 export function Field({
   field,
   value,
@@ -291,32 +320,37 @@ export function Field({
         </FormRow>
       );
     }
-    // Counted things (points, cycles, fouls, pieces) get big − / + buttons: a scout taps
-    // while watching instead of opening the phone keyboard mid-match. Times, weights and
-    // rates stay a typed box, because they are measured, not counted. So do totals: a
-    // robot's 60-point match is sixty taps on a + button, and the scout reads it off the
-    // scoreboard anyway.
-    if (field.type === "number" && !/time|sec|\(s\)|weight|rate|avg|average|percent|%|speed|total/i.test(`${field.key} ${field.label}`)) {
+    // Counted things get − / + buttons (isTapCounterField).
+    if (isTapCounterField(field)) {
       const count = typeof value === "number" && Number.isFinite(value) ? value : 0;
+      const { min, max } = numberBounds(field);
       // A div, not FormRow's <label>: a tap on the field's name went to the − button.
       return (
         <ScoutChoiceRow label={label} hint={field.helpText}>
           {() => (
           <div className="tap-counter">
-            <button type="button" aria-label={`${field.label}: one less`} disabled={count <= 0} onClick={() => onChange(Math.max(0, count - 1))}>
+            <button type="button" aria-label={`${field.label}: one less`} disabled={count <= min} onClick={() => onChange(Math.max(min, count - 1))}>
               −
             </button>
             <input
               type="number"
               inputMode="numeric"
-              min={0}
+              min={min}
+              max={max ?? undefined}
+              step={1}
               aria-label={field.label}
               value={typeof value === "number" && Number.isFinite(value) ? String(value) : ""}
               placeholder="0"
               required={field.required}
-              onChange={(event) => onChange(Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : undefined)}
+              onChange={(event) => onChange(boundedNumber(field, event.target.valueAsNumber, true))}
             />
-            <button type="button" className="plus" aria-label={`${field.label}: one more`} onClick={() => onChange(count + 1)}>
+            <button
+              type="button"
+              className="plus"
+              aria-label={`${field.label}: one more`}
+              disabled={max != null && count >= max}
+              onClick={() => onChange(max != null ? Math.min(max, count + 1) : count + 1)}
+            >
               +
             </button>
           </div>
@@ -329,15 +363,14 @@ export function Field({
         <input
           type={field.type === "number" ? "number" : "text"}
           inputMode={field.type === "number" ? "numeric" : undefined}
-          min={field.type === "number" ? 0 : undefined}
+          min={field.type === "number" ? numberBounds(field).min : undefined}
+          max={field.type === "number" ? (numberBounds(field).max ?? undefined) : undefined}
           value={String(value ?? "")}
           required={field.required}
           onChange={(event) =>
             onChange(
               field.type === "number"
-                ? Number.isFinite(event.target.valueAsNumber)
-                  ? event.target.valueAsNumber
-                  : undefined
+                ? boundedNumber(field, event.target.valueAsNumber, false)
                 : event.target.value,
             )
           }

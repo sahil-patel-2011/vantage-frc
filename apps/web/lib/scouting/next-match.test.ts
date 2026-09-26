@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { matchCard, matchLabel, nextMatchIndex, orderedSchedule, scheduleIsOver, type ScheduleMatch } from "./next-match";
+import {
+  labelForMatchKey,
+  matchCard,
+  matchLabel,
+  matchOpenForScouting,
+  nextMatchIndex,
+  orderedSchedule,
+  scheduleIsOver,
+  type ScheduleMatch,
+} from "./next-match";
 
 const qual = (n: number, red: number[], blue: number[]): ScheduleMatch => ({
   matchKey: `2027test_qm${n}`,
@@ -70,5 +79,44 @@ describe("a finished schedule", () => {
     expect(scheduleIsOver([{ matchKey: "a", matchNumber: 1, matchTime: at(-5 * hour) }, { matchKey: "b", matchNumber: 2, matchTime: at(-hour) }], now)).toBe(false);
     expect(scheduleIsOver([{ matchKey: "a", matchNumber: 1 }], now)).toBe(false);
     expect(scheduleIsOver([], now)).toBe(false);
+  });
+});
+
+describe("the shared still-to-come rule on the scout card", () => {
+  const now = Date.parse("2026-09-26T15:13:00Z");
+  const late = (n: number, time: string, played: boolean): ScheduleMatch => ({
+    ...qual(n, [n * 10 + 1, n * 10 + 2, n * 10 + 3], [n * 10 + 4, n * 10 + 5, n * 10 + 6]),
+    matchKey: `2026late_qm${n}`,
+    matchTime: time,
+    actualTime: played ? time : null,
+    predictedTime: null,
+    plannedTime: time,
+    postResultTime: null,
+    winningAlliance: played ? "red" : null,
+  });
+
+  it("keeps an unplayed match open when the event runs late", () => {
+    const running = [late(30, "2026-09-26T14:45:00Z", true), late(31, "2026-09-26T15:07:00Z", false), late(32, "2026-09-26T15:29:00Z", false)];
+    expect(matchOpenForScouting(running[1]!, running, now)).toBe(true);
+    expect(nextMatchIndex(running, [], [], now)).toBe(1);
+    expect(scheduleIsOver(running, now)).toBe(false);
+  });
+
+  it("closes a match once a later one has started, and after the last one ran", () => {
+    const moved = [late(31, "2026-09-26T14:00:00Z", false), late(32, "2026-09-26T14:20:00Z", true)];
+    expect(matchOpenForScouting(moved[0]!, moved, now)).toBe(false);
+    const done = [late(35, "2026-09-26T13:00:00Z", true), late(36, "2026-09-26T13:20:00Z", true)];
+    expect(scheduleIsOver(done, now)).toBe(true);
+  });
+
+  it("keeps the match that just started for the scout filling it in", () => {
+    const justNow = [late(33, "2026-09-26T15:08:00Z", true)];
+    expect(matchOpenForScouting(justNow[0]!, justNow, now)).toBe(true);
+  });
+
+  it("names a match from its key the way the tiles do", () => {
+    expect(labelForMatchKey("2026gacmp_qm33")).toBe("Qual 33");
+    expect(labelForMatchKey("2026gacmp_sf2m1")).toBe("Semi 2-1");
+    expect(labelForMatchKey("nonsense")).toBeNull();
   });
 });

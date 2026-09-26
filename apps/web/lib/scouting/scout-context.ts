@@ -103,7 +103,7 @@ export function nextScoutTarget(input: {
   /** Robots this scout already has a report for: "Next" opened one, and Save would replace it. */
   done?: (matchKey: string, teamKey: string) => boolean;
 }): NextScoutTarget | null {
-  const assigned = nextAssignedTarget(input.assignments, input.savedMatchKey);
+  const assigned = nextAssignedTarget(input.assignments, input.savedMatchKey, input.done);
   if (assigned) {
     const match = input.matches.find((candidate) => candidate.matchKey === assigned.matchKey);
     return {
