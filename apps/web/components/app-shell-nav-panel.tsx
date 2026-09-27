@@ -25,11 +25,11 @@ const MEMBER_QUICK: Array<{ label: string; path: string; icon: IconName; href: (
 ];
 
 const WORKSPACE_COPY: Record<string, string> = {
-  Home: "Your boards, next match, and personal work",
-  Competition: "Event day, scouting, teams, strategy, and pit",
-  Team: "People, calendar, work, playbook, and logistics",
-  Build: "Design, code, parts, and robot readiness",
-  Business: "Finance, sponsors, grants, and outreach",
+  Home: "Your day at a glance",
+  Competition: "Scout, plan, compete",
+  Team: "People, work, logistics",
+  Build: "Design, code, parts",
+  Business: "Finance, sponsors, grants",
 };
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
@@ -90,9 +90,6 @@ export function AppShellNavPanel({
   pathname,
   pathSearch,
   navHrefAllowed,
-  openIslandEditor,
-  signingOut,
-  onSignOut,
 }: {
   navOpen: boolean;
   closeNav: () => void;
@@ -129,9 +126,6 @@ export function AppShellNavPanel({
   pathname: string;
   pathSearch: string;
   navHrefAllowed: (href: string) => boolean;
-  openIslandEditor: () => void;
-  signingOut: boolean;
-  onSignOut: () => void;
 }) {
   const activeMembershipRole = orgId
     ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
@@ -168,7 +162,7 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-profile-link" href="/account" onClick={closeNav}>
+          <div className="soft-profile-link">
             <span className="soft-avatar">
               {me.image ? <img src={me.image} alt="" /> : initial}
             </span>
@@ -176,7 +170,7 @@ export function AppShellNavPanel({
               <strong>{accountLabel ?? "Account"}</strong>
               <span>{me.email ?? "Your account"}</span>
             </div>
-          </a>
+          </div>
           <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
             <button
               type="button"
@@ -434,17 +428,12 @@ export function AppShellNavPanel({
             ) : null}
           </nav>
         )}
-        {/* Settings, split the way people ask for them: "my stuff" and "the
-            team's stuff". Both used to be somewhere inside the hub lists, which
-            meant hunting through Team for a sign-in preference. The team link
-            only appears for an owner or admin, because for everyone else it is a
-            door that opens onto an error. */}
+        {/* Keep one settings destination; account actions live in the avatar menu. */}
         <div className="soft-drawer-settings">
           <a href="/account" onClick={closeNav}>
             <Icon name="gear" />
             <span>
               <strong>Personal settings</strong>
-              <small>Your profile, sign-in and notifications</small>
             </span>
           </a>
           {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
@@ -452,19 +441,10 @@ export function AppShellNavPanel({
               <Icon name="users" />
               <span>
                 <strong>Team admin</strong>
-                <small>Members, role profiles and team preferences</small>
               </span>
             </a>
           ) : null}
         </div>
-        <footer className="soft-drawer-foot">
-          <button type="button" onClick={openIslandEditor}>
-            Edit shortcuts
-          </button>
-          <button type="button" disabled={signingOut} onClick={onSignOut}>
-            {signingOut ? "Signing out…" : "Sign out"}
-          </button>
-        </footer>
       </div>
     </>
   );

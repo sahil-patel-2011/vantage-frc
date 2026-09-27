@@ -16,15 +16,20 @@ for (const [name, width, height] of [["phone", 390, 844], ["desktop", 1440, 1000
     await expect(slider).toHaveValue("20");
     await page.reload();
     await expect(slider).toHaveValue("20");
-    const wheel = panel.getByRole("group", { name: "Offline cache size choices" });
-    await wheel.getByRole("button", { name: "20 GB", exact: true }).focus();
-    await page.keyboard.press("ArrowUp");
+    await slider.focus();
+    await page.keyboard.press("ArrowLeft");
     await expect(slider).toHaveValue("19");
     await page.keyboard.press("Home");
     await expect(slider).toHaveValue("2");
-    await expect(wheel.getByRole("button", { name: "2 GB", exact: true })).toBeFocused();
-    await expect(panel.getByText(/Unsent reports and drafts are never removed/)).toBeVisible();
-    await expect(panel.locator(width < 640 ? ".offline-device-touch" : ".offline-device-pointer")).toBeVisible();
+    await expect(slider).toBeFocused();
+    await expect(panel.getByText("Synced uploads clear automatically. Unsent work stays safe.")).toBeVisible();
+    const details = panel.locator("details");
+    await expect(details).not.toHaveAttribute("open", "");
+    await details.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(details.getByText(/Drafts and unsent reports are never removed/)).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(details).not.toHaveAttribute("open", "");
     const bounds = await panel.boundingBox();
     expect(bounds!.width).toBeLessThanOrEqual(width);
     expect((await new AxeBuilder({ page }).include(".offline-storage").analyze()).violations).toEqual([]);
@@ -49,6 +54,7 @@ test("member menu folds shortcuts without removing destinations", async ({ page,
   await expect(page.getByRole("heading", { name: "Loading account", exact: true })).toBeHidden({ timeout: 20_000 });
   await page.getByRole("button", { name: "Menu and search", exact: true }).click();
   const menu = page.getByRole("dialog", { name: "Product navigation" });
+  await expect(menu.locator('a[href="/account"]')).toHaveCount(1);
   const shortcuts = menu.locator("details.soft-drawer-quick");
   await expect(shortcuts).not.toHaveAttribute("open", "");
   await expect(shortcuts.getByRole("link", { name: "Scout", exact: true })).toBeHidden();
@@ -57,4 +63,12 @@ test("member menu folds shortcuts without removing destinations", async ({ page,
   await expect(shortcuts.getByRole("link", { name: "Chat", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(menu).toBeHidden();
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  const account = page.getByRole("menu", { name: "Account", exact: true });
+  await expect(account.getByRole("menuitem", { name: "Sign out", exact: true })).toBeVisible();
+  await account.getByRole("menuitem", { name: "Help & support", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Help centre", exact: true })).toBeVisible();
+  for (const [name, href] of [["App manual", "/docs?view=sections"], ["Support tickets", "/support"], ["Report a bug", "/report-bug"]]) {
+    await expect(page.getByRole("link", { name, exact: true }).first()).toHaveAttribute("href", href);
+  }
 });

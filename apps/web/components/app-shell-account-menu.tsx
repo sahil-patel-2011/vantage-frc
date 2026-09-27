@@ -123,14 +123,8 @@ export function AppShellAccountMenu({
             <Icon name="users" /><span>Team admin</span><Icon name="chevron" />
           </a>
         ) : null}
-        <a role="menuitem" tabIndex={-1} href="/docs" onClick={onClose}>
-          <Icon name="clipboard" /><span>App manual</span><Icon name="chevron" />
-        </a>
-        <a role="menuitem" tabIndex={-1} href="/support" onClick={onClose}>
-          <Icon name="chat" /><span>Support tickets</span><Icon name="chevron" />
-        </a>
-        <a role="menuitem" tabIndex={-1} href="/report-bug" onClick={onClose}>
-          <Icon name="activity" /><span>Report a bug</span><Icon name="chevron" />
+        <a role="menuitem" tabIndex={-1} href="/help" onClick={onClose}>
+          <Icon name="chat" /><span>Help & support</span><Icon name="chevron" />
         </a>
         {me.platformAdmin ? (
           <a role="menuitem" tabIndex={-1} href="/admin" onClick={onClose}>

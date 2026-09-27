@@ -92,7 +92,8 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 
-test("product shell keeps four favorite apps and one way to see the rest", async ({ page }) => {
+test("product shell keeps four favorite apps and one way to see the rest", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
   const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
@@ -115,19 +116,24 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // Five described workspaces remain the same at every width. Advanced
   // sections belong inside the active workspace's explicit disclosure.
   await expect(drawer.locator(".soft-workspace-row")).toHaveCount(5);
+  const workspaces = drawer.getByRole("navigation", { name: "Hubs", exact: true });
   for (const name of ["Home", "Competition", "Team", "Build", "Business"]) {
-    await expect(drawer.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) })).toBeVisible();
+    await expect(workspaces.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) })).toBeVisible();
   }
   await expect(drawer.getByRole("link", { name: "Event day", exact: true })).toHaveCount(0);
   // Nested tools stay on the workspace ToolStrip.
   await expect(drawer.getByRole("link", { name: "Forms" })).toHaveCount(0);
   await expect(drawer.getByRole("link", { name: "Alliance desk" })).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: /^Team(?:\s|$)/ })).toContainText("logistics");
-  // Profile and personal settings are clearly labeled; the footer does not repeat them.
+  await expect(workspaces.getByRole("link", { name: /^Team(?:\s|$)/ })).toContainText("logistics");
+  // One account destination; sign-out stays in the account menu.
   await expect(drawer.locator(".soft-drawer-foot a")).toHaveCount(0);
-  await expect(drawer.locator(".soft-profile-link")).toHaveAttribute("href", "/account");
+  await expect(drawer.locator('a[href="/account"]')).toHaveCount(1);
   await expect(drawer.getByRole("link", { name: /^Personal settings/ })).toBeVisible();
-  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: "Sign out", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
   await drawer.getByRole("link", { name: /^Competition(?:\s|$)/ }).click();
   await expect(page.getByRole("tab", { name: "Event day", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Menu and search" }).click();

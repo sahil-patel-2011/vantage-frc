@@ -17,6 +17,8 @@ The release is **not verified**. Use inventory.json and completion-matrix.md to 
 
 ## Current evidence
 
+- Further UI cleanup consolidates cache input to one 2–20 GB slider, moves optional storage explanation into a disclosure, removes duplicate drawer actions and groups account help. Existing routes/actions remain reachable. The production build, 118 focused unit checks, nine repaired browser journeys and 22 accessibility states pass with the original failures recorded in [UI-CLEANUP.md](UI-CLEANUP.md). Production is unchanged; these are bounded regression results.
+
 - Device and launch increment: December 1, 2026 Eastern signup gate plus readiness switches; early-access contact; live homepage signup actions; 2–20 GB device cache budget with protected outboxes; folded member shortcuts; lap-timer evidence. Local unit/regression, build and browser evidence is recorded in DEVICE-AND-LAUNCH.md and evidence/device-and-launch.json. Production remains unchanged and release gates remain open.
 
 - Final device/launch CI [36328963807](https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36328963807) passes on `0063d23a141b5dc89c6f477612c58eaf47290faa`: lint, all workspace types, 1,502 unit files / 11,209 tests, static migrations, isolated PostgreSQL/RLS/sharing checks and the 748-page build. All 414 browser cases are accounted for: 408 direct passes, one retry-only pass and five explicit skips. The Lineup trace shows a 34.57-second development document response before the test's 45-second deadline; two unchanged production-build replays pass without retries. This does not erase the recorded CI timing issue or close the production gates.

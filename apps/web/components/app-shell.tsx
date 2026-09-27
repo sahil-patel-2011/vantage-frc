@@ -776,9 +776,6 @@ export default function AppShell() {
         pathname={pathname}
         pathSearch={pathSearch}
         navHrefAllowed={navHrefAllowed}
-        openIslandEditor={openIslandEditor}
-        signingOut={signingOut}
-        onSignOut={() => void handleSignOut()}
       />
       <AppTour />
       {onboarding ? null : (

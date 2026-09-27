@@ -240,32 +240,27 @@ export default function AppearancePanel() {
           <p className="app-muted">Loading your team’s branding…</p>
         ) : !org ? (
           <p>
-            You are not in a team yet, so there is no team colour to apply. Vantage stays on
-            its default accent.
+            Join a team to use its colour.
           </p>
         ) : !org.accentColor ? (
           <p>
-            {org.orgName ?? "Your team"} has not chosen a colour yet, so Vantage uses its default
-            accent.{" "}
+            Using the Vantage accent.{" "}
             {org.canEdit ? (
               <a href={`/team/admin?orgId=${encodeURIComponent(org.orgId)}#team-branding`}>
                 Set the team colour
               </a>
             ) : (
-              "An owner or admin can set one in Team admin."
+              "A team admin can choose a team colour."
             )}
           </p>
         ) : !org.applyAccentToApp ? (
           <p>
-            {org.orgName ?? "Your team"} picked {org.accentColor} but turned off applying it across the
-            app, so this setting has nothing to switch on yet.
+            Team colour is turned off in Team admin.
           </p>
         ) : (
           <>
             <p>
-              {org.orgName ?? "Your team"} uses{" "}
-              <code>{org.accentColor}</code>. Turn it off to stay on the neutral Vantage accent — this
-              only changes what <em>you</em> see.
+              Choose your accent. Only your view changes.
             </p>
             <div className="appearance-choice" role="radiogroup" aria-label="Accent colour">
               <button
@@ -286,7 +281,7 @@ export default function AppearancePanel() {
                 onClick={() => preview({ ...prefs, teamAccent: false })}
               >
                 <span>Neutral</span>
-                <small>Vantage default blue</small>
+                <small>Vantage default</small>
               </button>
             </div>
           </>
@@ -305,14 +300,13 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-density-title">
         <h3 id="appearance-density-title">Density</h3>
         <p>
-          Compact trims whitespace so more fits on a pit laptop or a phone in the stands. Buttons keep
-          their full tap size either way.
+          Choose your spacing. Tap targets stay the same size.
         </p>
         <div className="appearance-choice" role="radiogroup" aria-label="Interface density">
           {(
             [
               ["comfortable", "Comfortable", "Default spacing"],
-              ["compact", "Compact", "About 20% tighter"],
+              ["compact", "Compact", "Less space between items"],
             ] as [DensityPreference, string, string][]
           ).map(([value, label, hint]) => (
             <button
@@ -337,9 +331,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-clarity-title">
         <h3 id="appearance-clarity-title">Glass</h3>
         <p>
-          The bar at the top and the tabs at the bottom float over the page. How much of the page
-          shows through is up to you — outdoors, or on an older tablet, solid is easier to read and
-          quicker to draw.
+          Set the transparency of navigation bars.
         </p>
         <div className="appearance-choice" role="radiogroup" aria-label="Glass">
           {(
@@ -367,8 +359,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-motion-title">
         <h3 id="appearance-motion-title">Motion</h3>
         <p>
-          Reduced turns off the sheet, drag, and splash animations Vantage drives in JavaScript — the
-          ones your device’s own “reduce motion” setting cannot reach.
+          Reduce animations for calmer transitions.
         </p>
         <div className="appearance-choice" role="radiogroup" aria-label="Motion">
           {(
@@ -417,8 +408,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-cockpit-title">
         <h3 id="appearance-cockpit-title">Cockpit</h3>
         <p>
-          A few useful switches — like the car, not the factory. These stay small on purpose so nothing
-          surprising breaks.
+          Code review and live-update preferences.
         </p>
         <label className="appearance-check">
           <input
@@ -501,10 +491,9 @@ export default function AppearancePanel() {
       </section>
 
       <section className="appearance-group" aria-labelledby="appearance-island-title">
-        <h3 id="appearance-island-title">Bottom island — your four apps</h3>
+        <h3 id="appearance-island-title">Bottom shortcuts</h3>
         <p>
-          The four shortcuts at the bottom of every screen. Tap in the order you want them; tap a
-          chosen app again to remove it.
+          Choose four apps in order. Tap again to remove.
         </p>
         <div
           className="appearance-island-slots"
