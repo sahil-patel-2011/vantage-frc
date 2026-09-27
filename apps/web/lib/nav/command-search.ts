@@ -390,9 +390,10 @@ const KEYWORDS: Record<string, string[]> = {
 /** Destinations that are not hub tabs but people still search for. */
 const STANDALONE: CommandEntry[] = [
   { id: "home", label: "Home", context: "Vantage", href: "/dashboard", kind: "destination", keywords: ["home", "dashboard", "start", "overview"], featured: true },
-  { id: "logistics", label: "Logistics", context: "Vantage", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
+  { id: "logistics", label: "Travel & logistics", context: "Team · Calendar", href: "/team?tab=logistics", kind: "destination", keywords: ["logistics", "travel", "hotel", "rooming", "bus", "trip", "lodging"] },
   { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
-  { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
+  { id: "duties", label: "Duties", context: "Team · Calendar", href: "/team?tab=duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
+  { id: "free-scout", label: "Scout without an event", context: "Competition · Scouting", href: "/competition?tab=scouting&mode=free", kind: "destination", keywords: ["practice scouting", "no event", "video scouting", "manual scouting"] },
   // Four complete features — API, offline support, browser specs — that no
   // menu pointed at. They were reachable only by typing the URL, which the
   // route-coverage rule was supposed to catch and did not: it counted a route

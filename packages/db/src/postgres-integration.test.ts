@@ -130,5 +130,32 @@ describeWithDatabase(
         client.release();
       }
     });
+
+    it("keeps event-free observations team-scoped and binds the author at the database", async () => {
+      const client = await pool.connect();
+      const org = "10000000-0000-4000-8000-000000000001";
+      const author = "00000000-0000-4000-8000-000000000001";
+      const other = "00000000-0000-4000-8000-000000000002";
+      const report = "20000000-0000-4000-8000-000000000099";
+      try {
+        await client.query("BEGIN");
+        await client.query("SET LOCAL ROLE vantage_app");
+        await client.query("SELECT set_config('app.user_id', $1, true)", [author]);
+        await client.query(`INSERT INTO free_scout_reports
+          (id,org_id,scout_user_id,year,type,team_number,label,definition,payload,observed_at)
+          VALUES ($1,$2,$3,2026,'match',6925,'Practice 1','{}','{"auto_fuel":0}',now())`, [report, org, author]);
+        expect((await client.query("SELECT payload FROM free_scout_reports WHERE id=$1", [report])).rows[0].payload.auto_fuel).toBe(0);
+        await client.query("SELECT set_config('app.user_id', $1, true)", [other]);
+        expect((await client.query("SELECT id FROM free_scout_reports WHERE id=$1", [report])).rows).toHaveLength(0);
+        expect((await client.query("DELETE FROM free_scout_reports WHERE id=$1 RETURNING id", [report])).rowCount).toBe(0);
+        await client.query("SAVEPOINT reject_spoof");
+        await expect(client.query(`INSERT INTO free_scout_reports
+          (id,org_id,scout_user_id,year,type,team_number,label,definition,payload,observed_at)
+          VALUES (gen_random_uuid(),$1,$2,2026,'pit',6925,'Spoof','{}','{}',now())`, [org, author])).rejects.toThrow(/row-level security/);
+        await client.query("ROLLBACK TO SAVEPOINT reject_spoof");
+        await client.query("SELECT set_config('app.user_id', $1, true)", [author]);
+        expect((await client.query("DELETE FROM free_scout_reports WHERE id=$1 RETURNING id", [report])).rowCount).toBe(1);
+      } finally { await client.query("ROLLBACK"); client.release(); }
+    });
   },
 );

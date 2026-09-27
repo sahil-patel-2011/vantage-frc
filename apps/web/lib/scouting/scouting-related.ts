@@ -226,9 +226,9 @@ export function scoutingShellCopy(
         return {
           kind,
           badge: "Needs setup",
-          title: "Waiting on an event",
+          title: "Ready to scout",
           description:
-            "This team is already chosen. An owner or admin sets the event, and then match and pit forms load.",
+            "Start a practice or video review, or choose an event for competition scouting.",
         };
       }
       return {

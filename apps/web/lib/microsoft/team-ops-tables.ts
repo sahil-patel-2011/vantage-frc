@@ -33,7 +33,8 @@ export type OpsEntity =
   | "Finance"
   | "Sponsors"
   | "RobotFailures"
-  | "Batteries";
+  | "Batteries"
+  | "PracticeScouting";
 
 type OpsTableDef = {
   entity: OpsEntity;
@@ -152,6 +153,23 @@ export const OPS_TABLES: OpsTableDef[] = [
             FROM battery_packs b
            WHERE b.org_id = $1::uuid
            ORDER BY b.label, b.id`,
+  },
+  {
+    entity: "PracticeScouting",
+    description: "Practice and video-review observations, separate from official event statistics. Remove each json: prefix and join payload_1 through payload_8 to recover the JSON answers.",
+    columns: ["id", "year", "type", "team_number", "label", "definition", "payload_1", "payload_2", "payload_3", "payload_4", "payload_5", "payload_6", "payload_7", "payload_8", "observed_at", "updated_at", "source"],
+    sql: `SELECT id::text, year, type, team_number, label, definition::text,
+          ('json:' || substring(payload::text from 1 for 16000)) AS payload_1,
+          ('json:' || substring(payload::text from 16001 for 16000)) AS payload_2,
+          ('json:' || substring(payload::text from 32001 for 16000)) AS payload_3,
+          ('json:' || substring(payload::text from 48001 for 16000)) AS payload_4,
+          ('json:' || substring(payload::text from 64001 for 16000)) AS payload_5,
+          ('json:' || substring(payload::text from 80001 for 16000)) AS payload_6,
+          ('json:' || substring(payload::text from 96001 for 16000)) AS payload_7,
+          ('json:' || substring(payload::text from 112001 for 16000)) AS payload_8,
+          ${ISO("observed_at")} AS observed_at, ${ISO("created_at")} AS updated_at,
+          'practice_scouting' AS source
+          FROM free_scout_reports WHERE org_id=$1::uuid ORDER BY created_at, id`,
   },
 ];
 

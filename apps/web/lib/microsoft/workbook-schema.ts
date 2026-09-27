@@ -21,6 +21,7 @@ export type WorkbookEntity =
   | "Matches"
   | "MatchScouting"
   | "PitScouting"
+  | "PracticeScouting"
   | "PickList"
   // The team's own records (lib/microsoft/team-ops-tables) and the catalog of every table.
   | "Members"
