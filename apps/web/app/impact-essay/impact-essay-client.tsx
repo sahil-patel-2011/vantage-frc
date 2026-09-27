@@ -273,8 +273,6 @@ export default function ImpactEssayClient() {
   });
   const businessHref = hubWorkbenchHref("business", "impact-essay", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
-  const awardsHref = hubHref("/business", "evidence", orgId);
-  const writerHref = hubHref("/ai", "writer", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -462,13 +460,6 @@ export default function ImpactEssayClient() {
       <div className="impact-essay-layout">
         <GenerateForm busy={busy} award={award} setAward={setAward} mutate={mutate} hasData={hasGroundedData} />
         <DraftsList view={view} busy={busy} mutate={mutate} />
-        <Panel className="impact-essay-tip" aria-label="Impact Essay tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep outreach facts in <a href={impactHref}>Community Impact</a>, upload packets in{" "}
-            <a href={awardsHref}>Awards</a>, and pair language in <a href={writerHref}>Writer</a>.
-          </p>
-        </Panel>
       </div>
     </main>
   );

@@ -16,7 +16,7 @@ import {
   type AlliancePartnerBriefShellKind,
 } from "../../lib/alliance-partner-brief/alliance-partner-brief-related";
 import type { AllianceOption, PartnerAnalysis } from "../../lib/alliance-partner-brief/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -272,9 +272,7 @@ export default function AlliancePartnerBriefClient() {
     include: [...ALLIANCE_PARTNER_BRIEF_RELATED_INCLUDE],
   });
   const competitionHref = hubWorkbenchHref("competition", "alliance-partner-brief", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
   const allianceBoardHref = withOrgHref("/strategy/draft", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   const generate = useCallback(
     async (seed: number, eventKey: string) => {
@@ -401,15 +399,6 @@ export default function AlliancePartnerBriefClient() {
 
       <div className="alliance-partner-brief-layout">
         <LiveBody view={view} busy={busy} onSelectSeed={(seed) => load(seed)} onGenerate={generate} />
-        <Panel className="alliance-partner-brief-tip" aria-label="Alliance-Partner Brief tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Finalize captains on the{" "}
-            <a href={allianceBoardHref}>Alliance board</a>, keep{" "}
-            <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, and
-            confirm field notes in <a href={scoutingHref}>Scouting</a>.
-          </p>
-        </Panel>
       </div>
     </main>
   );

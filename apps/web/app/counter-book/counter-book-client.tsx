@@ -17,7 +17,7 @@ import {
   type CounterBookShellKind,
 } from "../../lib/counter-book/counter-book-related";
 import type { CounterBookReport } from "../../lib/counter-book/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -238,8 +238,6 @@ export default function CounterBookClient() {
     include: [...COUNTER_BOOK_RELATED_INCLUDE],
   });
   const competitionHref = hubWorkbenchHref("competition", "counter-book", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -374,13 +372,6 @@ export default function CounterBookClient() {
           eventName={view.eventName}
         />
         {shell === "ready" ? <ReportList view={view} busy={busy} mutate={mutate} /> : null}
-        <Panel className="counter-book-tip" aria-label="Counter-book tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep <a href={strategyHref}>Strategy</a> picks grounded in scouted metrics, and deepen{" "}
-            <a href={scoutingHref}>Scouting</a> samples before generating.
-          </p>
-        </Panel>
       </div>
     </main>
   );

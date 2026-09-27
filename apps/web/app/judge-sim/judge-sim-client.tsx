@@ -271,9 +271,6 @@ export default function JudgeSimClient() {
     include: [...JUDGE_SIM_RELATED_INCLUDE],
   });
   const businessHref = hubWorkbenchHref("business", "judge-sim", orgId);
-  const impactHref = hubHref("/business", "impact", orgId);
-  const essayHref = hubHref("/business", "impact-essay", orgId);
-  const awardsHref = hubHref("/business", "evidence", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -449,13 +446,6 @@ export default function JudgeSimClient() {
         <SessionsList view={view} busy={busy} mutate={mutate} />
         <EvidenceLogForm busy={busy} mutate={mutate} />
         <EvidenceList view={view} busy={busy} mutate={mutate} />
-        <Panel className="judge-sim-tip" aria-label="Judge-Pitch tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep outreach facts in <a href={impactHref}>Community Impact</a>, draft award language in{" "}
-            <a href={essayHref}>Impact Essay</a>, and upload packets in <a href={awardsHref}>Awards</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

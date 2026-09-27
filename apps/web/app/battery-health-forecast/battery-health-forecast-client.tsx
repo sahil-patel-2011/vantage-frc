@@ -268,8 +268,6 @@ export default function BatteryHealthForecastClient() {
   });
   const buildHref = withOrgHref("/build", orgId);
   const rotationHref = hubHref("/competition", "battery-rotation", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const pitHref = withOrgHref("/pit", orgId);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -391,14 +389,6 @@ export default function BatteryHealthForecastClient() {
         <AddBatteryForm busy={busy} mutate={mutate} />
         <LogReadingForm view={view} busy={busy} mutate={mutate} />
         {shell === "ready" ? <ForecastTable view={view} busy={busy} mutate={mutate} /> : null}
-        <Panel aria-label="Battery health forecast tip">
-          <span className="eyebrow">Fleet path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Schedule match packs in <a href={rotationHref}>Battery Rotation</a>, log IR on{" "}
-            <a href={batteriesHref}>Batteries</a>, and check event-day rack status in{" "}
-            <a href={pitHref}>Pit Command</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

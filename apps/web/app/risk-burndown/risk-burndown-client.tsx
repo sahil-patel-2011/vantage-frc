@@ -21,7 +21,7 @@ import {
   type RiskBurndownShellKind,
 } from "../../lib/risk-burndown/risk-burndown-related";
 import type { RiskCategory, RiskSeverityBand, RiskStatus } from "../../lib/risk-burndown/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -279,7 +279,6 @@ export default function RiskBurndownClient() {
   });
   const teamHref = hubWorkbenchHref("team", "risk-burndown", orgId);
   const risksHref = withOrgHref("/risks", orgId);
-  const fmeaHref = hubHref("/team", "fmea", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -423,13 +422,6 @@ export default function RiskBurndownClient() {
         <LogRiskForm busy={busy} mutate={mutate} />
         {view.summary.totalRisks > 0 ? <Breakdowns view={view} /> : null}
         <RiskRegister view={view} busy={busy} mutate={mutate} />
-        <Panel className="risk-burndown-tip" aria-label="Risk burndown tip">
-          <span className="eyebrow">Risk path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep season L×I scores in <a href={risksHref}>Risks</a> and failure modes in{" "}
-            <a href={fmeaHref}>FMEA</a> aligned with closures here.
-          </p>
-        </Panel>
       </div>
     </main>
   );

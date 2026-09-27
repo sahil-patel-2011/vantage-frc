@@ -288,9 +288,6 @@ export default function AwardTrackerClient() {
     include: [...AWARD_TRACKER_RELATED_INCLUDE],
   });
   const businessHref = hubWorkbenchHref("business", "award-tracker", orgId);
-  const evidenceHref = hubHref("/business", "evidence", orgId);
-  const awardsHref = withOrgHref("/team/awards", orgId);
-  const essayHref = hubHref("/business", "impact-essay", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -471,14 +468,6 @@ export default function AwardTrackerClient() {
         <UpcomingDeadlines view={view} />
         <CreateSubmissionForm busy={busy} mutate={mutate} />
         <SubmissionsList view={view} busy={busy} mutate={mutate} />
-        <Panel className="award-tracker-tip" aria-label="Award Tracker tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep packets in <a href={evidenceHref}>Awards</a>, review workbench uploads in{" "}
-            <a href={awardsHref}>Awards workbench</a>, and draft narratives in{" "}
-            <a href={essayHref}>Impact Essay</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

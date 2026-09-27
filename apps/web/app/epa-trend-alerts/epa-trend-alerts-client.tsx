@@ -16,7 +16,7 @@ import {
   type EpaTrendAlertsNextAction,
   type EpaTrendAlertsShellKind,
 } from "../../lib/epa-trend-alerts/epa-trend-alerts-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -250,8 +250,6 @@ export default function EpaTrendAlertsClient() {
     include: [...EPA_TREND_ALERTS_RELATED_INCLUDE],
   });
   const competitionHref = hubWorkbenchHref("competition", "epa-trend-alerts", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const watchlistHref = hubHref("/competition", "opponent-watchlist", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -386,14 +384,6 @@ export default function EpaTrendAlertsClient() {
             <WatchlistPanel view={view} busy={busy} mutate={mutate} />
           </>
         ) : null}
-        <Panel className="epa-trend-alerts-tip" aria-label="Rating alerts tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep{" "}
-            <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, and pair
-            qualitative notes in <a href={watchlistHref}>Opponent Watchlist</a>.
-          </p>
-        </Panel>
       </div>
     </main>
   );

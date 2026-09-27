@@ -264,9 +264,6 @@ export default function SponsorWallClient() {
     include: [...SPONSOR_WALL_RELATED_INCLUDE],
   });
   const businessHref = hubWorkbenchHref("business", "sponsor-wall", orgId);
-  const sponsorsHref = hubHref("/business", "sponsors", orgId);
-  const sponsorshipHref = hubHref("/business", "sponsorship", orgId);
-  const suiteHref = hubHref("/business", "sponsor-suite", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -415,13 +412,6 @@ export default function SponsorWallClient() {
         <SettingsForm view={view} busy={busy} mutate={mutate} canManage={canManage} />
         {canManage ? <AddEntryForm busy={busy} mutate={mutate} /> : null}
         <WallPreview view={view} busy={busy} mutate={mutate} canManage={canManage} />
-        <Panel className="sponsor-wall-tip" aria-label="Sponsor Wall tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Pull names from <a href={sponsorsHref}>Sponsor CRM</a>, align tiers with{" "}
-            <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor Suite</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

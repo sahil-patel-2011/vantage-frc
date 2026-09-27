@@ -30,7 +30,7 @@ import type {
   RuleImpactStatus,
   SubsystemCategory,
 } from "../../lib/rule-impact/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -295,8 +295,6 @@ export default function RuleImpactClient() {
     include: [...RULE_IMPACT_RELATED_INCLUDE],
   });
   const buildHref = hubWorkbenchHref("build", "rule-impact", orgId);
-  const kickoffHref = hubHref("/build", "kickoff", orgId);
-  const cadHref = hubHref("/build", "cad", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   const mutate = useCallback(
@@ -455,15 +453,6 @@ export default function RuleImpactClient() {
           </EmptyState>
         )}
         <AssessmentList view={view} busy={busy} mutate={mutate} />
-        <Panel className="rule-impact-tip" aria-label="Impact tip">
-          <span className="eyebrow">Reuse path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep{" "}
-            <a href={kickoffHref}>Kickoff</a> rule notes aligned with logged deltas, verify geometry in{" "}
-            <a href={cadHref}>CAD</a>, and match candidate names to{" "}
-            <a href={subsystemsHref}>Subsystems</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );
