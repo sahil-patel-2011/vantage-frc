@@ -7,6 +7,7 @@
 - Failed sign-out requests previously navigated away as though successful. Failure now stays on the page and permits retry. Successful sign-out revokes the session, clears the remembered-team cookie and downloaded feature snapshots, and preserves unsent scouting reports and drafts.
 - Protected API requests redirected to HTML sign-in/onboarding pages, which fetch followed to misleading 200 responses. They now return JSON 401/403 errors; page navigation still redirects normally.
 - Bottom-bar customization now moves keyboard focus into the dialog, contains Tab/Shift-Tab and returns focus on close. Saves time out and can be retried. Business help sits outside its section tab list so assistive technology sees valid tab-list children.
+- The earliest public signup date follows the requested December 1, 2026 launch. The separate operator switch still requires production acceptance; reaching the date alone does not open signup.
 
 ## Acceptance evidence
 

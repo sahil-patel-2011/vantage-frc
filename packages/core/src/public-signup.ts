@@ -25,13 +25,10 @@
 /**
  * The earliest date public sign-up may open, as a plain `YYYY-MM-DD`.
  *
- * Set a month out from the decision to open it (2026-09-19), which leaves time
- * to finish the things open sign-up implies and nobody has done yet: abuse
- * rate-limiting on account creation, a verified-email gate before a workspace
- * can be claimed, and a story for what a brand-new account with no team is
- * allowed to see. Moving this date earlier is a decision, not a tidy-up.
+ * The requested launch date is December 1, 2026. The operator switch remains
+ * independent so the date cannot bypass unfinished production acceptance.
  */
-export const PUBLIC_SIGNUP_EARLIEST = "2026-10-19";
+export const PUBLIC_SIGNUP_EARLIEST = "2026-12-01";
 
 /** The value `VANTAGE_PUBLIC_SIGNUP` must hold. Anything else stays closed. */
 export const PUBLIC_SIGNUP_ENV_VALUE = "open";
