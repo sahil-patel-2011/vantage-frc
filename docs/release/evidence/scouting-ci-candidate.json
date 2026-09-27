@@ -1,0 +1,279 @@
+{
+  "sourceRevision": "b8649784989f7f7d26d62117a34a3c4a674b4342",
+  "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36320709071",
+  "result": "failed",
+  "quality": "passed: lint, all workspace types, full unit suite, migration checks and 748-page build",
+  "postgres": "passed: fresh migrations/reapplication, restricted RLS, onboarding/invitation/inbox and new scouting sharing boundary",
+  "shards": [
+    {
+      "findings": [],
+      "stats": {
+        "total": 54,
+        "expected": 54,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      },
+      "shard": 1
+    },
+    {
+      "findings": [],
+      "stats": {
+        "total": 61,
+        "expected": 61,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      },
+      "shard": 2
+    },
+    {
+      "findings": [
+        {
+          "title": "FEATURE_MAP product routes render without a 500",
+          "annotations": [
+            {
+              "type": "skip",
+              "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                "line": 83,
+                "column": 10
+              }
+            }
+          ],
+          "file": "feature-map-walk.spec.ts",
+          "outcome": "skipped"
+        },
+        {
+          "title": "an event later today shows on the card, and goes when it is removed",
+          "annotations": [
+            {
+              "type": "skip",
+              "description": "the next match leads Home today",
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                "line": 77,
+                "column": 8
+              }
+            }
+          ],
+          "file": "home-knows-tonight.spec.ts",
+          "outcome": "skipped"
+        },
+        {
+          "title": "the card does not reach past today to find something to say",
+          "annotations": [
+            {
+              "type": "skip",
+              "description": "the next match leads Home today",
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                "line": 153,
+                "column": 8
+              }
+            }
+          ],
+          "file": "home-knows-tonight.spec.ts",
+          "outcome": "skipped"
+        }
+      ],
+      "stats": {
+        "total": 40,
+        "expected": 37,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 3,
+        "ok": true
+      },
+      "shard": 3
+    },
+    {
+      "result": "incomplete",
+      "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes.",
+      "stats": null,
+      "shard": 4
+    },
+    {
+      "findings": [],
+      "stats": {
+        "total": 50,
+        "expected": 50,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      },
+      "shard": 5
+    },
+    {
+      "findings": [],
+      "stats": {
+        "total": 55,
+        "expected": 55,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      },
+      "shard": 6
+    },
+    {
+      "findings": [],
+      "stats": {
+        "total": 47,
+        "expected": 47,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      },
+      "shard": 7
+    },
+    {
+      "findings": [
+        {
+          "title": "Home What to do now CTA is a real click",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "My Day Scout the next open match is a real click or Needs setup",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Event day Packing is a real click from the related strip",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Hours Clock in is on the board and clickable",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Pick desk lock or Open Scouting is reachable",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Team invites Send invite is on the board",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Business Sponsors tab is a real click",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "CAD paste offers Edit in Onshape",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "CAD paste offers Edit in Fusion",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Connectors pair Approve pairing stays student-usable",
+          "annotations": [],
+          "file": "student-week-gui.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "the site says Vantage is free and never shows a pricing tab",
+          "annotations": [],
+          "file": "signin-shell.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "Strategy hub still loads after the panel split",
+          "annotations": [],
+          "file": "strategy-shell.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "student this week can walk Home → My Day/Scout → Video paste → CAD link",
+          "annotations": [],
+          "file": "student-week-actions.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "student this week can walk Event day packing/checklist → My Hours clock-in → Pick desk",
+          "annotations": [],
+          "file": "student-week-event-slice.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "student-week hubs speak student chrome",
+          "annotations": [],
+          "file": "student-week-hubs-chrome.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "student this week can walk Team hub People → Invites → Season roles",
+          "annotations": [],
+          "file": "student-week-team-hub.spec.ts",
+          "outcome": "unexpected"
+        },
+        {
+          "title": "a real key is accepted, shown only by its last four characters, and never returned",
+          "annotations": [
+            {
+              "type": "skip",
+              "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                "line": 74,
+                "column": 8
+              }
+            }
+          ],
+          "file": "tinyfish-key-never-returned.spec.ts",
+          "outcome": "skipped"
+        }
+      ],
+      "stats": {
+        "total": 51,
+        "expected": 34,
+        "unexpected": 16,
+        "flaky": 0,
+        "skipped": 1,
+        "ok": false
+      },
+      "shard": 8
+    }
+  ],
+  "diagnosis": [
+    "Shard 4 runner received a shutdown signal before its final group; 29 of 52 planned cases are missing. The reason for the runner shutdown is not established.",
+    "Shard 8: one marketing assertion still expected the old free-use headline. Fifteen other tests failed because the real authentication endpoint returned HTTP 404 after a fresh development-server restart, confirmed in recorded network traces.",
+    "Repaired the headline assertion without dropping the free-use check. Server readiness now requires the authentication API instead of just the marketing page; failed sign-ins report HTTP status and do not cache a null session for later cases. Final replay required."
+  ],
+  "productionAcceptance": false,
+  "localRepairChecks": {
+    "journeysPassed": 19,
+    "journeysFailed": 0,
+    "lint": "passed",
+    "harnessUnitTests": 10,
+    "restartProof": {
+      "servers": 2,
+      "cases": 3,
+      "passed": 3,
+      "exactCoverage": true
+    }
+  }
+}

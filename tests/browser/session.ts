@@ -132,7 +132,12 @@ async function fetchSessionCookie(
     data: { email, password },
     failOnStatusCode: false,
   });
-  if (!response.ok()) return null;
+  if (!response.ok()) {
+    if (process.env.GITHUB_ACTIONS === "true") {
+      throw new Error(`Seeded account sign-in returned HTTP ${response.status()} at /api/auth/sign-in/email.`);
+    }
+    return null;
+  }
   /**
    * `cookies(url)` first, then the whole jar.
    *
@@ -172,7 +177,8 @@ export async function signInAs(context: BrowserContext, role: FixtureRole): Prom
   const { email, password } = fixtureAccount(role);
   if (!cookieCache.has(email)) {
     try {
-      cookieCache.set(email, await fetchSessionCookie(context, email, password));
+      const value = await fetchSessionCookie(context, email, password);
+      if (value) cookieCache.set(email, value);
     } catch (error) {
       if (process.env.GITHUB_ACTIONS === "true") throw error;
       // Next crashed or is still booting. Do not cache the miss — the next

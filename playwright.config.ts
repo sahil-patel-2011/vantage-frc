@@ -106,7 +106,10 @@ export default defineConfig({
         webServer: {
           command: `npx next dev --port ${port} --hostname 127.0.0.1`,
           cwd: path.join(__dirname, "apps/web"),
-          url: origin,
+          // A rendered marketing page does not establish that the auth route
+          // is ready after a cold dev-server restart. Keep real sign-in as the
+          // test prerequisite; a missing API must fail server readiness.
+          url: `${origin}/api/auth/get-session`,
           env: playwrightWebServerEnv(origin, port),
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
