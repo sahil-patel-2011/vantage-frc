@@ -15,7 +15,14 @@ const here = new URL("https://vantagefrc.vercel.app/dashboard?orgId=o1");
 describe("softNavigationTarget", () => {
   it("routes plain in-app links through the router", () => {
     expect(softNavigationTarget(click, anchor("/competition?orgId=o1"), here)).toBe("/competition?orgId=o1");
-    expect(softNavigationTarget(click, anchor("https://vantagefrc.vercel.app/team#roster"), here)).toBe("/team#roster");
+    expect(softNavigationTarget(click, anchor("https://vantagefrc.vercel.app/team#roster"), here)).toBe("/team?orgId=o1#roster");
+  });
+
+  it("remounts the app for a different team and retains context through personal pages", () => {
+    expect(softNavigationTarget(click, anchor("/competition?tab=scouting&orgId=o2"), here)).toBeNull();
+    expect(softNavigationTarget(click, anchor("/dashboard"), here)).toBe("/dashboard?orgId=o1");
+    expect(softNavigationTarget(click, anchor("/account?tab=appearance"), here)).toBe("/account?tab=appearance&orgId=o1");
+    expect(softNavigationTarget(click, anchor("/signin"), here)).toBe("/signin");
   });
 
   it("leaves everything that must be a real browser navigation alone", () => {

@@ -32,6 +32,7 @@ import { Icon, type IconName } from "./icon";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
+import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
 import { isKnownAppPath } from "../lib/nav/app-route-roots";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import {
@@ -70,6 +71,7 @@ export default function AppShell() {
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const notificationRevision = useRef(0);
   const [signingOut, setSigningOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [myDayGlance, setMyDayGlance] = useState<MyDayView | null>(null);
@@ -291,7 +293,9 @@ export default function AppShell() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchProductSession(orgId || null)
+    const revision = notificationRevision.current;
+    const globalInbox = pathname === "/notifications" && !new URLSearchParams(window.location.search).has("orgId");
+    void fetchProductSession(globalInbox ? null : orgId || null)
       .then((data) => {
         if (cancelled || !data) return;
         setMe(data as Me);
@@ -300,7 +304,7 @@ export default function AppShell() {
         );
         setMemberships(rows);
         const count = Number(data.unreadNotificationCount ?? 0);
-        setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
+        if (notificationRevision.current === revision) setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
         const messages = Number(data.unreadMessageCount ?? 0);
         setUnreadMessages(Number.isFinite(messages) && messages > 0 ? Math.floor(messages) : 0);
         if (!orgId && data.orgId) setOrgId(data.orgId);
@@ -312,6 +316,18 @@ export default function AppShell() {
     return () => {
       cancelled = true;
     };
+  }, [orgId, pathname]);
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      const detail = (event as CustomEvent<NotificationCountUpdate>).detail;
+      const globalInbox = pathname === "/notifications" && !new URLSearchParams(window.location.search).has("orgId");
+      if (!detail || (detail.orgId ?? "") !== (globalInbox ? "" : orgId) || !Number.isFinite(detail.unreadCount)) return;
+      notificationRevision.current += 1;
+      setUnreadCount(Math.max(0, detail.unreadCount));
+    };
+    window.addEventListener(NOTIFICATIONS_CHANGED, update);
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED, update);
   }, [orgId, pathname]);
 
   useEffect(() => {
@@ -589,6 +605,7 @@ export default function AppShell() {
     setSigningOut(true);
     closeOverlays();
     await signOutAndRedirect("/");
+    setSigningOut(false);
   }
 
   function handleToggleIslandDraft(href: string) {
@@ -608,6 +625,7 @@ export default function AppShell() {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tabs: islandDraft }),
+        signal: AbortSignal.timeout(8_000),
       });
       const data = await response.json() as { tabs?: unknown; error?: string };
       if (!response.ok) {

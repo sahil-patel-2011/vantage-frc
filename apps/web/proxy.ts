@@ -326,6 +326,9 @@ export async function proxy(request: NextRequest) {
 
   if (!authenticated || !session) {
     if (pathname === "/signin" || pathname === "/sign-in") return NextResponse.next();
+    // Fetch follows redirects: a sign-in page would become a misleading 200
+    // instead of letting product screens recognize an expired session.
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     // An address that is no page at all gets the 404, not a sign-in form that leads nowhere.
     if (!isKnownAppPath(pathname)) return NextResponse.next();
     return signInRedirect(request);
@@ -338,6 +341,7 @@ export async function proxy(request: NextRequest) {
     if (pathname === "/signin" || pathname === "/sign-in" || pathname.startsWith("/api/auth")) {
       return NextResponse.next();
     }
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Complete email verification to continue", code: "email_verification_required" }, { status: 403 });
     const verify = new URL("/signin", request.url);
     verify.searchParams.set("verify", "1");
     verify.searchParams.set("next", pathname.startsWith("/") ? pathname : "/dashboard");
@@ -359,6 +363,7 @@ export async function proxy(request: NextRequest) {
     ) {
       return NextResponse.next();
     }
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Complete your profile to continue", code: "onboarding_required" }, { status: 403 });
     return onboardingRedirect(request);
   }
 
@@ -366,6 +371,7 @@ export async function proxy(request: NextRequest) {
     // Profile is saved. Docs, account, and two-factor stay open so the
     // "while you wait" links are real pages, not a bounce back here.
     if (isPendingWorkspacePath(pathname)) return NextResponse.next();
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Team approval is required", code: "workspace_approval_required" }, { status: 403 });
     return approvalPendingRedirect(request);
   }
 

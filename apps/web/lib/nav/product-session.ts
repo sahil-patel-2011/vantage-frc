@@ -1,4 +1,5 @@
 import { FEATURE_API_TIMEOUT_MS } from "./resolve-org";
+import { sessionOrgId } from "./me-request";
 
 /** One in-flight /api/me read shared by AppShell, Home, and other product pages. */
 
@@ -57,7 +58,7 @@ export function productSessionUnreachable(): boolean {
 }
 
 export function fetchProductSession(orgId?: string | null): Promise<ProductSession | null> {
-  const key = orgId?.trim() ?? "";
+  const key = sessionOrgId(orgId);
   const now = Date.now();
   if (cache && cache.key === key && now - cache.at < TTL_MS) {
     return cache.data !== undefined ? Promise.resolve(cache.data) : cache.promise;

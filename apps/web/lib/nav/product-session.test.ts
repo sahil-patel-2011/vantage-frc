@@ -10,6 +10,17 @@ describe("productSessionUrl", () => {
 });
 
 describe("fetchProductSession", () => {
+  it("follows the page's selected team unless explicitly requesting the default", async () => {
+    vi.stubGlobal("window", { location: { search: "?orgId=team-b" } });
+    const fetchSpy = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal("fetch", fetchSpy);
+    await fetchProductSession();
+    await fetchProductSession(null);
+    expect(fetchSpy.mock.calls.map((call) => (call as unknown[])[0])).toEqual([
+      "/api/me?orgId=team-b", "/api/me",
+    ]);
+  });
+
   afterEach(() => {
     invalidateProductSession();
     vi.unstubAllGlobals();

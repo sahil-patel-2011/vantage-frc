@@ -7,12 +7,15 @@ import {
   publicSignupStatus,
 } from "./public-signup";
 
-const BEFORE = new Date("2026-10-01T00:00:00Z");
-const AFTER = new Date("2026-11-01T00:00:00Z");
+const BEFORE = new Date("2026-11-30T23:59:59.999Z");
+const AFTER = new Date("2026-12-01T00:00:00Z");
 const OPEN = { VANTAGE_PUBLIC_SIGNUP: "open" } as NodeJS.ProcessEnv;
 const UNSET = {} as NodeJS.ProcessEnv;
 
 describe("public sign-up stays closed until two separate things are true", () => {
+  it("keeps the superseded October launch date closed", () => {
+    expect(isPublicSignupOpen(new Date("2026-10-19T00:00:00Z"), OPEN)).toBe(false);
+  });
   it("is closed today, with nothing set", () => {
     expect(isPublicSignupOpen(BEFORE, UNSET)).toBe(false);
   });

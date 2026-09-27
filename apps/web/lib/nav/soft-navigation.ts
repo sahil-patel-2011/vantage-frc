@@ -1,3 +1,5 @@
+import { ORG_EXEMPT_HREFS } from "./product-nav";
+
 /**
  * Plain `<a href="/…">` links (many cards, the sidebar, Button as="a") make the browser
  * reload the whole app on every click: the shell flashes, scroll resets and every panel
@@ -47,6 +49,14 @@ export function softNavigationTarget(click: SoftClick, anchor: SoftAnchor, curre
   if (url.origin !== current.origin) return null;
   if (HARD_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return null;
   if (FILE_PATH.test(url.pathname)) return null;
+  const currentOrg = current.searchParams.get("orgId");
+  const nextOrg = url.searchParams.get("orgId");
+  // A workspace change is a document boundary. Many tools resolve their team at
+  // mount; reusing them after a query-only navigation can save into the old team.
+  if (nextOrg && nextOrg !== currentOrg) return null;
+  if (currentOrg && !nextOrg && !ORG_EXEMPT_HREFS.has(url.pathname) && !url.pathname.startsWith("/admin")) {
+    url.searchParams.set("orgId", currentOrg);
+  }
   // Same page, only the #hash differs: the browser scrolls to it without a reload.
   if (url.pathname === current.pathname && url.search === current.search && url.hash) return null;
   return `${url.pathname}${url.search}${url.hash}`;

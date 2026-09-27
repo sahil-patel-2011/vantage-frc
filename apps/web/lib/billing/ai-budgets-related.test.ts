@@ -41,7 +41,7 @@ describe("aiBudgetsRelatedLinks", () => {
     expect(links.find((l) => l.id === "chat")?.href).toContain("orgId=org-1");
     expect(links.find((l) => l.id === "usage")?.href).toContain("tab=usage");
     expect(links.find((l) => l.id === "pricing")?.href).toContain("/pricing");
-    expect(links.find((l) => l.id === "account")?.href).toBe("/account");
+    expect(links.find((l) => l.id === "account")?.href).toBe("/account?orgId=org-1");
   });
 
   it("never uses DEMO labels or raw ?orgId= JSX templates in Budgets paths", () => {

@@ -313,6 +313,7 @@ export default function BusinessClient() {
               : "Money, sponsors, grants, and outreach for this season."
         }
       >
+        <HelpTip entry={sectionHelpFor("business", tab) ?? sectionHelpFor("business", workbenchId)} />
         {live ? (
           <div className="biz-header-actions">
             <MoneyAddMenu orgId={orgId ?? null} />
@@ -340,9 +341,7 @@ export default function BusinessClient() {
         }}
         tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
-      >
-        <HelpTip entry={sectionHelpFor("business", tab) ?? sectionHelpFor("business", workbenchId)} />
-      </TabBar>
+      />
       {visibleNested.length > 0 ? (
         <ToolStrip
           aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}

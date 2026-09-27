@@ -37,23 +37,33 @@ export type MeResult = {
   data: unknown;
 };
 
-let inFlight: Promise<MeResult> | null = null;
-let settled: { at: number; result: MeResult } | null = null;
+let inFlight: { key: string; promise: Promise<MeResult> } | null = null;
+let settled: { key: string; at: number; result: MeResult } | null = null;
+let generation = 0;
+
+/** Undefined follows the current page; explicit null requests the account default. */
+export function sessionOrgId(orgId?: string | null): string {
+  if (orgId !== undefined) return orgId?.trim() ?? "";
+  return typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+}
 
 /** Drops the shared answer. For tests, and for a sign-out or team switch. */
 export function forgetMe(): void {
+  generation += 1;
   inFlight = null;
   settled = null;
 }
 
 export async function requestMe(): Promise<MeResult> {
-  if (settled && Date.now() - settled.at < FRESH_MS) return settled.result;
-  if (inFlight) return inFlight;
+  const key = sessionOrgId();
+  if (settled?.key === key && Date.now() - settled.at < FRESH_MS) return settled.result;
+  if (inFlight?.key === key) return inFlight.promise;
+  const requestGeneration = ++generation;
 
-  inFlight = (async () => {
+  const promise = (async () => {
     let result: MeResult;
     try {
-      const response = await fetch("/api/me", {
+      const response = await fetch(key ? `/api/me?orgId=${encodeURIComponent(key)}` : "/api/me", {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
@@ -65,10 +75,13 @@ export async function requestMe(): Promise<MeResult> {
     // Recorded before the promise resolves, so a caller arriving in the gap
     // between this request finishing and its awaiters running gets the answer
     // rather than starting a second request.
-    settled = { at: Date.now(), result };
-    inFlight = null;
+    if (generation === requestGeneration) {
+      settled = { key, at: Date.now(), result };
+      inFlight = null;
+    }
     return result;
   })();
 
-  return inFlight;
+  inFlight = { key, promise };
+  return promise;
 }

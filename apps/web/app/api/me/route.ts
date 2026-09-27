@@ -11,6 +11,9 @@ export async function GET(request: Request) {
     if (!session) return Response.json({ authenticated: false }, { status: 401 });
 
     const requestedOrg = new URL(request.url).searchParams.get("orgId");
+    if (requestedOrg && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedOrg)) {
+      return Response.json({ error: "Invalid team." }, { status: 400 });
+    }
 
     const profile = await withRls({ userId: session.user.id }, async (client) => {
       // The shell reads /api/me on every page load: the admin flag, account age,
@@ -31,7 +34,9 @@ export async function GET(request: Request) {
         `SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=$1::uuid) AS "platformAdmin",
                 (SELECT created_at::text FROM users WHERE id=$1::uuid) AS "createdAt",
                 (SELECT count(*)::text FROM notifications
-                 WHERE user_id=$1::uuid AND read_at IS NULL AND ${LIVE_NOTIFICATION_SQL}) AS "unreadCount",
+                 WHERE user_id=$1::uuid AND read_at IS NULL
+                   AND ($2::uuid IS NULL OR org_id IS NULL OR org_id=$2::uuid)
+                   AND ${LIVE_NOTIFICATION_SQL}) AS "unreadCount",
                 p.first_name AS "firstName",
                 p.display_name AS "displayName",
                 p.preferred_team_number AS "preferredTeamNumber",
@@ -41,7 +46,7 @@ export async function GET(request: Request) {
                 (p.user_id IS NOT NULL) AS "hasProfile"
          FROM (SELECT 1) AS one
          LEFT JOIN profiles p ON p.user_id=$1::uuid`,
-        [session.user.id],
+        [session.user.id, requestedOrg],
       );
       const selfRow = self.rows[0];
       const memberships = await client.query<{
@@ -58,9 +63,9 @@ export async function GET(request: Request) {
         [session.user.id],
       );
       const activeMembership =
-        (requestedOrg
+        requestedOrg
           ? memberships.rows.find((row) => row.orgId === requestedOrg)
-          : undefined) ?? memberships.rows[0] ?? null;
+          : memberships.rows[0] ?? null;
       let unreadMessageCount = 0;
       if (activeMembership?.orgId) {
         // A savepoint, not a bare try/catch: a failed read here (chat tables
@@ -194,6 +199,10 @@ export async function GET(request: Request) {
         sponsorsAllowed,
       };
     });
+
+    if (requestedOrg && !profile.membership) {
+      return Response.json({ error: "You do not have access to this team." }, { status: 403 });
+    }
 
     const displayName =
       profile.profile?.displayName?.trim() ||

@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { signInFixture } from "./session";
+import { signInAs } from "./session";
 
-test("landing sign in reaches dashboard with local auth fixture", async ({ context, page }) => {
+test("landing sign in reaches dashboard with a real authenticated session", async ({ context, page }) => {
   await page.goto("/");
   await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/signin$/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
-  await signInFixture(context);
+  expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/signin");
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

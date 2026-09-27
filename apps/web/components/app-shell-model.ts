@@ -265,6 +265,7 @@ export function orgLabelFor(me: Me, orgId: string): string {
 
 export function switchWorkspaceHrefFor(pathname: string, pathSearch: string, nextOrgId: string): string {
   const pathOnly = pathname.split("?")[0] || pathname;
+  if (pathOnly.startsWith("/forms/")) return withOrgHref("/forms", nextOrgId);
   if (ORG_EXEMPT_HREFS.has(pathOnly) || pathOnly.startsWith("/admin")) {
     return withOrgHref("/workspace", nextOrgId);
   }

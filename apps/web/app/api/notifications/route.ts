@@ -96,9 +96,11 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       orgId?: string | null;
       id?: string;
+      ids?: string[];
       action?: "read" | "unread" | "read_all";
     };
     const action = body.action ?? "read";
+    if (!["read", "unread", "read_all"].includes(action)) throw new Error("Invalid notification action");
     const orgId = body.orgId ?? null;
 
     const result = await withRls({ userId: session.user.id, orgId: orgId ?? undefined }, async (client) => {
@@ -112,14 +114,17 @@ export async function PATCH(request: Request) {
         return { ok: true, updated: updated.rowCount ?? 0 };
       }
 
-      if (!body.id) throw new Error("id is required");
+      const ids = body.ids ?? (body.id ? [body.id] : []);
+      if (!Array.isArray(ids) || !ids.length || ids.length > 100 || ids.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id))) throw new Error("Valid notification IDs are required");
+      const owned = await client.query("SELECT id FROM notifications WHERE id=ANY($1::uuid[]) AND user_id=$2 AND ($3::uuid IS NULL OR org_id IS NULL OR org_id=$3::uuid)", [ids, session.user.id, orgId]);
+      if (owned.rowCount !== new Set(ids).size) throw new Error("Notification not found");
       const readAt = action === "unread" ? null : new Date().toISOString();
       const updated = await client.query(
         `UPDATE notifications
          SET read_at = $3::timestamptz
-         WHERE id = $1 AND user_id = $2
+         WHERE id = ANY($1::uuid[]) AND user_id = $2
          RETURNING id`,
-        [body.id, session.user.id, readAt],
+        [ids, session.user.id, readAt],
       );
       if (!updated.rowCount) throw new Error("Notification not found");
       return { ok: true, id: body.id, readAt };

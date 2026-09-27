@@ -18,6 +18,8 @@ import {
 import "../product-hub.css";
 import "./notifications.css";
 import { inboxText, inboxWhen } from "../../lib/notifications/inbox-words";
+import { NOTIFICATIONS_CHANGED } from "../../lib/notifications/events";
+import { invalidateProductSession } from "../../lib/nav/product-session";
 
 type NotifItem = {
   id: string;
@@ -80,6 +82,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<NotificationsView | null>(null);
   const paintedFilterRef = useRef<InboxFilter>(filter);
+  const openedInbox = useRef(false);
   viewRef.current = view;
 
   const load = useCallback(async () => {
@@ -157,11 +160,31 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           ? Number(data.unreadCount ?? 0)
           : 0;
       const next: NotificationsView = { status: "ready", items, unreadCount };
+      let readError = "";
+      if (!openedInbox.current) {
+        openedInbox.current = true;
+        const ids = items.filter((item) => !item.readAt).map((item) => item.id);
+        if (ids.length) {
+          try {
+            const marked = await fetch("/api/notifications", {
+              method: "PATCH", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ action: "read", ids, orgId }),
+              signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+            });
+            if (!marked.ok) throw new Error("Mark read failed");
+            const { readAt } = await marked.json();
+            next.items = items.map((item) => ids.includes(item.id) ? { ...item, readAt } : item);
+            next.unreadCount = Math.max(0, unreadCount - ids.length);
+          } catch { readError = "Could not mark these notifications as read. You can retry below."; }
+        }
+      }
       setView(next);
       paintedFilterRef.current = filter;
       setFromCache(false);
       setCachedAt(null);
-      setMessage("");
+      setMessage(readError);
+      invalidateProductSession();
+      window.dispatchEvent(new CustomEvent(NOTIFICATIONS_CHANGED, { detail: { orgId, unreadCount: next.unreadCount } }));
       await persistNotificationsSnapshot(orgHint, filter, next);
     } catch {
       if (hadCache || viewRef.current) {
@@ -179,14 +202,14 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
     void load();
   }, [load]);
 
-  async function patch(action: "read" | "unread" | "read_all", id?: string) {
+  async function patch(action: "read" | "unread" | "read_all", id?: string | string[]) {
     setBusy(true);
     setMessage("");
     try {
       const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action, id, orgId }),
+        body: JSON.stringify({ action, ...(Array.isArray(id) ? { ids: id } : { id }), orgId }),
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as { error?: string };
@@ -345,9 +368,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                   disabled={busy}
                   aria-label={unread ? `Mark "${item.title}" as read` : `Mark "${item.title}" as unread`}
                   onClick={() =>
-                    void (async () => {
-                      for (const one of [item, ...repeats]) await patch(unread ? "read" : "unread", one.id);
-                    })()
+                    void patch(unread ? "read" : "unread", [item, ...repeats].map((one) => one.id))
                   }
                 >
                   {unread ? "Mark read" : "Mark unread"}

@@ -253,6 +253,7 @@ export type OfflineFeature =
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;
 const STORE = "snapshots";
+let signedOut = false;
 
 export type FeatureSnapshot<T> = {
   key: string;
@@ -295,8 +296,9 @@ export async function putFeatureSnapshot<T>(
   data: T,
   variant = "",
 ): Promise<void> {
-  if (typeof indexedDB === "undefined") return;
+  if (typeof indexedDB === "undefined" || signedOut) return;
   const db = await openDatabase();
+  if (signedOut) { db.close(); return; }
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
   const row: FeatureSnapshot<T> = {
     key: featureCacheKey(feature, orgId, variant),
@@ -327,4 +329,20 @@ export async function clearFeatureSnapshot(feature: OfflineFeature, orgId: strin
   const db = await openDatabase();
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
   await requestValue(store.delete(featureCacheKey(feature, orgId, variant)));
+}
+
+/** Clear downloaded views on shared devices, without touching unsent reports or drafts. */
+export async function clearFeatureSnapshotsOnSignOut(): Promise<void> {
+  signedOut = true;
+  if (typeof indexedDB === "undefined") return;
+  const db = await openDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(STORE, "readwrite");
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+      transaction.objectStore(STORE).clear();
+    });
+  } finally { db.close(); }
 }
