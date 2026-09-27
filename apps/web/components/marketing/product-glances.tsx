@@ -47,7 +47,7 @@ export function ProductHubCatalog() {
   );
 }
 
-const islandApps = ["Home", "Event day", "Scout", "Stats", "Apps"] as const;
+const islandApps = ["Home", "Event day", "Scout", "Stats"] as const;
 const drawerPillars = ["Home", "Competition", "Team", "Build", "Business"] as const;
 const competitionTabs = ["Event day", "Scout", "Teams", "Strategy", "Pit"] as const;
 

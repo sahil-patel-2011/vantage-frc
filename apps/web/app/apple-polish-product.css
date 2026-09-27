@@ -149,9 +149,8 @@ body.has-app-shell .soft-island a { flex: 1; color: var(--ink); }
 body.has-app-shell .soft-island a svg { width: 20px; height: 20px; color: var(--muted); }
 body.has-app-shell .soft-island a[aria-current="page"] svg { color: var(--accent); }
 body.has-app-shell .soft-island a span { font-size: 10px; font-weight: 600; }
-body.has-app-shell .soft-island-edit { flex: 0 0 48px; width: 48px; min-height: 48px; border-radius: 999px; color: var(--muted); }
-body.has-app-shell .soft-island a:hover,body.has-app-shell .soft-island-edit:hover { background: color-mix(in srgb,var(--accent-soft) 80%,transparent); color: var(--accent); }
-body.has-app-shell .soft-island a:active,body.has-app-shell .soft-island-edit:active { transform: scale(.96); }
+body.has-app-shell .soft-island a:hover { background: color-mix(in srgb,var(--accent-soft) 80%,transparent); color: var(--accent); }
+body.has-app-shell .soft-island a:active { transform: scale(.96); }
 body.has-app-shell .soft-avatar-btn { width: 48px; height: 48px; min-height: 48px; background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb,var(--accent) 15%,transparent); }
 body.has-app-shell .soft-account-pop { width: min(328px,calc(100vw - 24px)); max-height: calc(100dvh - 96px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 8px; border-radius: 20px; box-shadow: 0 12px 40px rgba(16,32,44,.14),0 2px 8px rgba(16,32,44,.04); }
 body.has-app-shell .soft-account-pop-head { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 6px; border-color: var(--line-soft); }
@@ -229,11 +228,11 @@ body.has-app-shell .soft-island-slot-preview > button small { font-size: 10px; }
   body.has-app-shell .soft-island { background: var(--surface); backdrop-filter: none; border-color: var(--muted); }
 }
 @media (prefers-reduced-motion:reduce) {
-  body.has-app-shell :where(.soft-island,.soft-island a,.soft-island-edit,.soft-account-pop) { animation: none; transition: none; }
-  body.has-app-shell :where(.soft-island a,.soft-island-edit):active { transform: none; }
+  body.has-app-shell :where(.soft-island,.soft-island a,.soft-account-pop) { animation: none; transition: none; }
+  body.has-app-shell :where(.soft-island a):active { transform: none; }
 }
 @media (forced-colors:active) {
   body.has-app-shell :where(.soft-island,.soft-account-pop) { background: Canvas; border: 1px solid CanvasText; box-shadow: none; backdrop-filter: none; }
-  body.has-app-shell :where(.soft-island a,.soft-island-edit,.soft-account-pop a,.soft-account-pop button) { color: CanvasText; }
+  body.has-app-shell :where(.soft-island a,.soft-account-pop a,.soft-account-pop button) { color: CanvasText; }
   body.has-app-shell .soft-island a[aria-current="page"] { outline: 2px solid Highlight; outline-offset: -3px; }
 }

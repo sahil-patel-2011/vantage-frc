@@ -127,7 +127,7 @@ export function AppShellIsland({
       data-testid="soft-island"
       data-tour="island"
       aria-label="Primary apps"
-      title="Press and hold to change these four apps, or use the gear"
+      title="Press and hold to change these four apps (or Account → Appearance)"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenEditor();
@@ -158,25 +158,8 @@ export function AppShellIsland({
           ) : null}
         </a>
       ))}
-      <button
-        className="soft-island-edit"
-        type="button"
-        aria-label="Choose your bottom bar apps"
-        title="Choose which four apps stay in this bar"
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          clearIslandPress();
-        }}
-        onClick={(event) => {
-          event.stopPropagation();
-          onOpenEditor();
-        }}
-      >
-        <Icon name="gear" />
-        {/* A bare gear beside four labelled apps read as a fifth, unnamed app; "Edit" clashed with
-            Home's own Edit button on a phone. */}
-        <span>Apps</span>
-      </button>
+      {/* No "Apps" gear: it took a fifth of the bar to repeat Account → Appearance. Press and
+          hold the bar (or right-click it) to change the four apps. */}
       {/*
         No fifth "All" button.
 
@@ -219,8 +202,7 @@ export function AppShellIslandEditor({
     dialog?.querySelector<HTMLButtonElement>('header button')?.focus();
     return () => {
       if (dialog?.contains(document.activeElement) || document.activeElement === document.body) {
-        const trigger = document.querySelector<HTMLElement>('.soft-island-edit');
-        (trigger ?? previous)?.focus();
+        previous?.focus();
       }
     };
   }, [open]);

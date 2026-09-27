@@ -100,12 +100,9 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
-  // Four apps and the gear that edits them (#2321). The island used to carry a
-  // fifth "All" button that opened the drawer the hamburger already opens — a
-  // duplicate sitting among Team, Compete, Scout and Build as if it were one of
-  // your apps. The gear is not an app and says so.
-  await expect(island.getByRole("button")).toHaveCount(1);
-  await expect(island.getByRole("button", { name: "Choose your bottom bar apps" })).toBeVisible();
+  // Four apps and nothing else. The fifth "All" button repeated the hamburger's drawer, and the
+  // "Apps" gear repeated Account → Appearance; press and hold (or right-click) the bar to change it.
+  await expect(island.getByRole("button")).toHaveCount(0);
   await page.getByRole("button", { name: "Menu and search" }).click();
   const drawer = page.getByRole("dialog", { name: "Product navigation" });
   await expect(drawer).toBeVisible();

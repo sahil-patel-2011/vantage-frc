@@ -23,7 +23,7 @@ for (const phase of ["editing", "saved"] as const) {
     });
     await page.goto("/dashboard");
     await expect.poll(() => loading).toBe(true);
-    await page.getByRole("button", { name: "Choose your bottom bar apps" }).click();
+    await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
     const editor = page.getByRole("dialog", { name: "Your four apps" });
     await editor.getByRole("button", { name: /^Stats App/ }).click();
     await editor.getByRole("button", { name: /^Team Add$/ }).click();
@@ -52,7 +52,7 @@ test("a saved app unavailable to this team can be removed without granting acces
   await page.route("**/api/navigation/preferences", route => route.fulfill({ json: { tabs: [...defaults.slice(0, 3), "/build"] } }));
   await page.goto("/dashboard");
   await expect(page.getByRole("navigation", { name: "Primary apps" }).getByRole("link", { name: "Build", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Choose your bottom bar apps" }).click();
+  await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
   const editor = page.getByRole("dialog", { name: "Your four apps" });
   const remove = editor.getByRole("button", { name: "Remove Build. Unavailable for this team.", exact: true });
   await expect(remove).toBeVisible();

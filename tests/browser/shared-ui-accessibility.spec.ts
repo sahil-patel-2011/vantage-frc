@@ -36,7 +36,7 @@ for (const width of [1280, 390]) {
     await checkAccessibility(page, testInfo, "drawer");
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "Choose your bottom bar apps", exact: true }).click();
+    await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
     await expect(page.getByRole("dialog", { name: "Your four apps", exact: true })).toBeVisible();
     await checkAccessibility(page, testInfo, "island-editor");
     await page.keyboard.press("Escape");
