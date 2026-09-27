@@ -42,11 +42,15 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE label=$1", [marker]);
     expect(saved.rows).toEqual([{ org_id: orgId }]);
     await page.getByRole("navigation", { name: "Primary apps" }).getByRole("link", { name: "Home", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`orgId=${orgId}`));
+    // The org is already in the scouting URL. Wait for the destination too,
+    // otherwise the test opens a menu on the page that is still leaving.
+    await expect(page).toHaveURL(new RegExp(`/dashboard\\?orgId=${orgId}`));
+    await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).locator(".soft-account-org").first()).toContainText(marker);
     await page.getByRole("menuitem", { name: "Account and settings" }).click();
-    await expect(page).toHaveURL(new RegExp(`orgId=${orgId}`));
+    await expect(page).toHaveURL(new RegExp(`/account\\?orgId=${orgId}`));
+    await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
     await page.getByRole("menuitem").filter({ hasText: "Team 6925" }).click();
