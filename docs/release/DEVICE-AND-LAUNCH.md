@@ -25,6 +25,12 @@ Lap-mode timers now expose total seconds, recorded lap count and average lap dur
 
 ## Verification record
 
-See evidence/device-and-launch.json for the final executed checks. Initial runs exposed noncanonical CSS tokens and the scouting component's 1,000-line limit; both were fixed. A local development browser run timed out on two loading states during compilation. Those failures are retained in this record and require a production-build replay, not weakened assertions.
+See evidence/device-and-launch.json for the executed checks. Initial runs exposed noncanonical CSS tokens and the scouting component's 1,000-line limit; both were fixed. Local development loading timeouts and the initial CI server-readiness failure remain recorded. The final production-build replay passed eleven affected journeys plus two administrator launch-gate checks with unchanged assertions.
+
+Full CI [36328963807](https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36328963807) on `0063d23a141b5dc89c6f477612c58eaf47290faa` passed lint, all workspace types, 1,502 unit files / 11,209 tests, migration checks, isolated PostgreSQL/RLS and the 748-page build. All eight browser shards prove exact coverage of 414 planned cases: 408 passed directly, one passed on retry, five were explicitly skipped, and none failed finally. The unit suite retains 16 skipped files / 41 skipped tests; conditional database checks ran separately.
+
+The retry was Lineup coverage. Its trace records a 34.57-second development-server document response; the 45-second test ended while coverage requests were still pending. The unchanged production-build test passed twice without retries (2.5 and 2.2 seconds). This is a bounded replay, not a claim that the CI timing issue is fixed. Phone, desktop and explicit dark/reduced-motion storage-panel accessibility scans reported no violations.
+
+The fresh read-only production preflight is in evidence/production-preflight-device-launch.json. It still rejects the application's database privileges and missing dedicated runtime connections, recovery/export/MFA settings, cron secret, rate-limit configuration and public site origin. Protected Gmail SMTP settings are recognized as an available provider configuration, but actual delivery remains unverified. Four focused preflight tests and lint pass after correcting the earlier Resend-only requirement. No production settings were changed.
 
 No claim of Apple/Google/Microsoft certification, universal feature parity, or a 90–100% usability score is made. Main merge, live Vercel deployment and opening public signup still require all release gates, including database roles, platform credentials, complete recovery/load proof and live integration journeys.

@@ -9,13 +9,27 @@ import { parseEnvFile } from "./deploy-preflight.mjs";
 export const RELEASE_SETTINGS = [
   "DATABASE_URL", "DATABASE_AUTH_URL", "DATABASE_WORKER_URL", "DATABASE_AI_BRIDGE_URL",
   "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "NEXT_PUBLIC_APP_URL", "NEXT_PUBLIC_SITE_URL",
-  "CRON_SECRET", "RESEND_API_KEY", "AUTH_EMAIL_FROM", "TBA_AUTH_KEY",
+  "CRON_SECRET", "TBA_AUTH_KEY",
   "RECOVERY_ENCRYPTION_KEY", "EXPORT_ENCRYPTION_KEY", "MFA_ENCRYPTION_KEY", "MFA_RECOVERY_PEPPER",
   "VANTAGE_SHEETS_HUB_SECRET", "RATE_LIMIT_REDIS_URL", "RATE_LIMIT_REDIS_TOKEN",
 ];
 const aliases = { DATABASE_URL: ["POSTGRES_URL"], DATABASE_AI_BRIDGE_URL: ["DATABASE_CAD_RELAY_URL"], TBA_AUTH_KEY: ["TBA_API_KEY"] };
 const valueFor = (env, name) => [name, ...(aliases[name] ?? [])].map((key) => env[key]?.trim()).find(Boolean);
 const protectedValue = (value) => /\[SENSITIVE\]|\[REDACTED\]/i.test(value ?? "");
+
+/** Match the runtime's two supported production email providers without treating redacted keys as verified. */
+export function checkEmailDelivery(env) {
+  const first = (...keys) => keys.map(key => env[key]?.trim()).find(Boolean);
+  const smtp = [first("GMAIL_SMTP_USER", "GMAIL_USER", "SMTP_USER", "SMTP_USERNAME"), first("GMAIL_SMTP_APP_PASSWORD", "GMAIL_APP_PASSWORD", "SMTP_PASSWORD", "SMTP_PASS")];
+  const resend = [first("RESEND_API_KEY", "RESEND_KEY"), first("AUTH_EMAIL_FROM", "EMAIL_FROM", "MAIL_FROM", "FROM_EMAIL")];
+  const pairs = [smtp, ...(!resend[1] || protectedValue(resend[1]) || !/@(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|msn)\./i.test(resend[1]) ? [resend] : [])];
+  const configured = pairs.some(pair => pair.every(value => value && !protectedValue(value)));
+  const protectedPair = pairs.some(pair => pair.every(Boolean));
+  return { name: "EMAIL_DELIVERY", status: configured ? "PASS" : protectedPair ? "UNVERIFIED" : "FAIL",
+    note: configured ? "A supported email provider is configured; live delivery acceptance remains required."
+      : protectedPair ? "Email provider settings are present but protected; verify live delivery."
+      : "Configure Gmail SMTP credentials or a Resend key with a non-consumer sender address." };
+}
 
 export function checkReleaseSettings(env) {
   const rows = RELEASE_SETTINGS.map((name) => {
@@ -31,6 +45,7 @@ export function checkReleaseSettings(env) {
     }
     return { name, status: "PASS", note: "Configured; live workflow acceptance remains required." };
   });
+  rows.push(checkEmailDelivery(env));
   for (const name of ["E2E_AUTH_FIXTURE", "DEV_KMS_MASTER_KEY", "DEV_OTP_SECRET", "ENABLE_EMAIL_2FA_BYPASS"]) if (env[name]?.trim()) rows.push({ name, status: "FAIL", note: "Development or bypass configuration is forbidden for release." });
   if (env.VANTAGE_SHEETS_HUB_SHARE?.trim() === "1") rows.push({ name: "VANTAGE_SHEETS_HUB_SHARE", status: "FAIL", note: "Operator workbooks must remain private by default." });
   if (env.VANTAGE_PUBLIC_SIGNUP === "open" && env.VANTAGE_PRODUCTION_VERIFIED !== "1") rows.push({ name: "VANTAGE_PUBLIC_SIGNUP", status: "FAIL", note: "Signup cannot open before production acceptance." });

@@ -4,6 +4,15 @@ Generated inventory: {"pages":324,"apis":499,"manifests":123,"coreWorkflows":20,
 
 An unchecked item is unverified, not a passing feature. Record test names and deployed evidence before marking it complete. A partial test is evidence for that dimension only, not acceptance of the entire workflow.
 
+September 27 device/launch additions have bounded evidence in [DEVICE-AND-LAUNCH.md](DEVICE-AND-LAUNCH.md) and [device-and-launch.json](evidence/device-and-launch.json). Existing pending workflow dimensions below are not waived by passing the regression suite.
+
+| Addition | Verified scope | Remaining acceptance |
+|---|---|---|
+| December signup and early contact | Exact date boundary plus both operator gates; live homepage state; contact links; administrator's three-condition checklist | Production signup after release verification; live email delivery |
+| Device cache budget | 2–20 GB persistence, phone/desktop/keyboard interaction, actual browser estimates, quota rejection preserving saved/queued scouting, successful-upload cleanup | Real low-space device/load behavior; application shell is outside read-cache pruning |
+| Simpler member menu | Match-day disclosure, Scout/Chat destinations and Escape; five workspaces preserved | Broader manual usability and assistive-technology evaluation |
+| Lap timer evidence | Per-report total/count/average, duplicate-match aggregation, missing versus zero, unchanged raw payload | Network sharing of timer arrays; full comparison/strategy acceptance |
+
 | Feature | Real data | Permissions | Actions | Failures | Mobile | Offline | Backup | Evidence |
 |---|---|---|---|---|---|---|---|---|
 | home-saved-boards | Partial: real saved-board APIs and local owner/new-team Home journeys | Partial: actual member access and scout admin denial | Partial: saved My Home and automatic setup-to-Home | Partial: unready Home gate repaired and retested | Partial: final built Home and island at390x844 | Pending | Partial: checkpoint | DashboardHomeView; evidence/journey-marketing-signin.json; journey-team-invitations.json; ui-navigation-refresh.json; production and useful default coverage pending |

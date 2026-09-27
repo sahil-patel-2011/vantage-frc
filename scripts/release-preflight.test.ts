@@ -10,6 +10,15 @@ function settings(env: Record<string, string>): Row[] {
   return JSON.parse(execFileSync(process.execPath, ["--input-type=module", "-e", 'const m=await import(process.argv[1]); console.log(JSON.stringify(m.checkReleaseSettings(JSON.parse(Buffer.from(process.argv[2],"base64").toString("utf8")))));', url, input], { encoding: "utf8" }));
 }
 describe("production release settings", () => {
+  it("accepts either supported email provider but requires a complete, readable pair", () => {
+    const status = (env: Record<string, string>) => settings(env).find(row => row.name === "EMAIL_DELIVERY")?.status;
+    expect(status({ GMAIL_SMTP_USER: "operator@gmail.com", GMAIL_SMTP_APP_PASSWORD: "local-fixture-only" })).toBe("PASS");
+    expect(status({ RESEND_KEY: "local-fixture-only", EMAIL_FROM: "Vantage <team@example.org>" })).toBe("PASS");
+    expect(status({ GMAIL_SMTP_USER: "[SENSITIVE]", GMAIL_SMTP_APP_PASSWORD: "[SENSITIVE]" })).toBe("UNVERIFIED");
+    expect(status({ GMAIL_SMTP_USER: "operator@gmail.com" })).toBe("FAIL");
+    expect(status({ RESEND_API_KEY: "local-fixture-only", AUTH_EMAIL_FROM: "operator@gmail.com" })).toBe("FAIL");
+    expect(status({ RESEND_API_KEY: "[SENSITIVE]", AUTH_EMAIL_FROM: "[SENSITIVE]" })).toBe("UNVERIFIED");
+  });
   it("does not accept development fallbacks or protected placeholders as proof", () => {
     const rows = settings({ DATABASE_URL: "postgresql://owner@localhost/test", DATABASE_AUTH_URL: "[SENSITIVE]", DATABASE_ADMIN_URL: "postgresql://owner@localhost/test" });
     expect(rows.find((row) => row.name === "DATABASE_AUTH_URL")?.status).toBe("UNVERIFIED");
