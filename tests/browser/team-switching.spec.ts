@@ -20,13 +20,14 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await pool.query("UPDATE org_auth_policies SET allow_password=true WHERE org_id=$1", [orgId]);
     expect(await signInAs(context, "owner")).toBe(true);
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`/competition?tab=scouting&mode=free&orgId=${homeOrg}`);
+    await page.goto(`/competition?tab=scouting&mode=free&orgId=${homeOrg}&reportId=previous-team-record`);
     await expect(page.getByRole("heading", { name: "Scout without an event" })).toBeVisible();
     await page.getByRole("button", { name: "Menu and search" }).click();
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
     await drawer.locator(".soft-org-chip-btn").click();
     await drawer.getByRole("option").filter({ hasText: marker }).click();
     await expect(page).toHaveURL(new RegExp(orgId));
+    expect(new URL(page.url()).searchParams.has("reportId")).toBe(false);
     await expect(page.getByRole("heading", { name: "Scout without an event" })).toBeVisible();
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);

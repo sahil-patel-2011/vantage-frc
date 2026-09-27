@@ -115,6 +115,8 @@ describe("hub chrome paths", () => {
   it("keeps the destination and selected team when switching from personal settings", () => {
     expect(switchWorkspaceHrefFor("/account", "", "org-2")).toBe("/account?orgId=org-2");
     expect(switchWorkspaceHrefFor("/competition", "?tab=scouting", "org-2")).toContain("orgId=org-2");
+    expect(switchWorkspaceHrefFor("/forms/old-team-form", "?orgId=org-1", "org-2")).toBe("/forms?orgId=org-2");
+    expect(switchWorkspaceHrefFor("/business", "?tab=orders&orderId=old-order&orgId=org-1", "org-2")).toBe("/business?tab=orders&orgId=org-2");
   });
 });
 

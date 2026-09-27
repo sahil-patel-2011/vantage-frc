@@ -242,7 +242,7 @@ export function withOrgHref(href: string, orgId: string | null | undefined): str
 }
 
 /**
- * Keep the current path/query (tabs, filters) but force a selected workspace orgId.
+ * Keep the current workspace view, but drop the previous team's record selections.
  * Used by the Soft-UI account menu when switching teams.
  */
 export function withSelectedOrgHref(href: string, orgId: string): string {
@@ -254,9 +254,14 @@ export function withSelectedOrgHref(href: string, orgId: string): string {
     return `${pathOnly}${hash}`;
   }
   const query = withoutHash.includes("?") ? withoutHash.slice(withoutHash.indexOf("?") + 1) : "";
-  const params = new URLSearchParams(query);
+  const previous = new URLSearchParams(query);
+  const params = new URLSearchParams();
+  for (const key of ["tab", "mode", "year", "view"]) {
+    const value = previous.get(key);
+    if (value) params.set(key, value);
+  }
   params.set("orgId", orgId);
-  return `${pathOnly}?${params.toString()}${hash}`;
+  return `${pathOnly}?${params.toString()}`;
 }
 
 /** Path portion of a nav href (hubs use ?tab=). */
