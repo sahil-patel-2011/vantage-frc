@@ -69,4 +69,31 @@ for (const width of [1280, 390]) {
       await checkAccessibility(page, testInfo, path);
     }
   });
+
+  test(`embedded team, robot and strategy tools share one accessible workspace at ${width}px`, async ({ page, context }, testInfo) => {
+    test.setTimeout(240_000);
+    expect(await signInAs(context, "owner"), "Actual seeded owner sign-in required").toBe(true);
+    const response = await context.request.get("/api/me");
+    expect(response.ok()).toBe(true);
+    const identity = await response.json();
+    expect(identity.orgId).toBeTruthy();
+    await page.setViewportSize({ width, height: 900 });
+    const views = [
+      ["/team?tab=knowledge", ".kb-page"], ["/team?tab=attendance", ".att-page"],
+      ["/team?tab=todos", ".todos-page"], ["/team?tab=practice", ".practice-page"],
+      ["/team?tab=logistics", ".log-page"], ["/build?tab=fmea", ".fmea-page"],
+      ["/build?tab=batteries", ".batt-page"], ["/build?tab=prototype", ".ptk-page"],
+      ["/competition?tab=my-day", ".myday-page"], ["/competition?tab=match-checklist", ".mcl-page"],
+      ["/competition?tab=forms", ".sfb-page"], ["/competition?tab=chemistry", ".chem-page"],
+      ["/competition?tab=pick-clock", ".pck-page"], ["/business?tab=sponsorship", ".svp-page"],
+    ] as const;
+    for (const [path, selector] of views) {
+      await page.goto(`${path}&orgId=${encodeURIComponent(identity.orgId)}`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(selector).first()).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator(`${selector}[aria-busy="true"], ${selector} [aria-busy="true"]`)).toHaveCount(0, { timeout: 20_000 });
+      await expect(page.locator("main")).toHaveCount(1);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await checkAccessibility(page, testInfo, path);
+    }
+  });
 }

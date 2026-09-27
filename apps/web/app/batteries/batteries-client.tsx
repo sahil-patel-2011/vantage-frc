@@ -70,6 +70,7 @@ function useHubEmbed(): HubEmbed | null {
 export default function BatteriesClient({ embedded = false }: { embedded?: boolean } = {}) {
   const pathEmbed = useHubEmbed();
   const embed = pathEmbed ?? (embedded ? "team" : null);
+  const Root = embed ? "section" : "main";
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
   const [okMessage, setOkMessage] = useState("");
@@ -281,7 +282,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   const measuredCount = view.packs.filter((pack) => packHasMeasurement(pack)).length;
 
   return (
-    <main className="module-page batt-page">
+    <Root className="module-page batt-page">
       <BatteriesReadyHeader
         embed={embed}
         view={view}
@@ -318,6 +319,6 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           run={run}
         />
       </div>
-    </main>
+    </Root>
   );
 }

@@ -1,0 +1,1094 @@
+{
+  "tool": "@axe-core/playwright 4.13.0",
+  "buildId": "ej9yST5ocX2ZfrFnGSp-R",
+  "scope": "Actual scratch owner, production build, loopback only. Default complete axe rule set; no exclusions. Automatic checks are not full WCAG conformance. Twenty-eight additional embedded-view states, with actual feature shell readiness, a single main landmark and a single visible page heading asserted.",
+  "results": [
+    {
+      "name": "/team?tab=knowledge-1280",
+      "url": "http://127.0.0.1:3419/team?tab=knowledge&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:17.928Z",
+      "passes": 38,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=attendance-1280",
+      "url": "http://127.0.0.1:3419/team?tab=attendance&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:19.269Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "/team?tab=todos-1280",
+      "url": "http://127.0.0.1:3419/team?tab=todos&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:20.527Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "/team?tab=practice-1280",
+      "url": "http://127.0.0.1:3419/team?tab=practice&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:21.455Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".practice-hero > div:nth-child(1) > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".practice-hero-score > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=logistics-1280",
+      "url": "http://127.0.0.1:3419/team?tab=logistics&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:22.815Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build?tab=fmea-1280",
+      "url": "http://127.0.0.1:3419/build?tab=fmea&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:24.148Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "/build?tab=batteries-1280",
+      "url": "http://127.0.0.1:3419/build?tab=batteries&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:25.461Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build?tab=prototype-1280",
+      "url": "http://127.0.0.1:3419/build?tab=prototype&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:26.687Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=my-day-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=my-day&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:27.786Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".myday-hero-kicker"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-hero-title"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-hero-time"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-chip-row:nth-child(5) > .myday-chip-label"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-chip-row:nth-child(6) > .myday-chip-label"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=match-checklist-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=match-checklist&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:29.026Z",
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "/competition?tab=forms-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=forms&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:30.515Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[aria-label=\"Move question 1 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 2 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 2 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 3 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 3 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(1) > .sfb-option-actions > button[aria-label=\"Move option 1 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(1) > .sfb-option-actions > button[aria-label=\"Remove option 1\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Move option 2 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Move option 2 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Remove option 2\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move option 3 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Remove option 3\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 4 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 4 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 5 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 5 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 6 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 6 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(6) > .sfb-option-editor > .sfb-option-list > li:nth-child(1) > .sfb-option-actions > button[aria-label=\"Move option 1 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(6) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Move option 2 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 7 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=chemistry-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=chemistry&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:32.341Z",
+      "passes": 42,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=pick-clock-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=pick-clock&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:33.530Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".pck-clock-value"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/business?tab=sponsorship-1280",
+      "url": "http://127.0.0.1:3419/business?tab=sponsorship&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:34.959Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[data-testid=\"biz-add-menu\"] > span"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=knowledge-390",
+      "url": "http://127.0.0.1:3419/team?tab=knowledge&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:36.053Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=attendance-390",
+      "url": "http://127.0.0.1:3419/team?tab=attendance&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:37.188Z",
+      "passes": 44,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=todos-390",
+      "url": "http://127.0.0.1:3419/team?tab=todos&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:38.335Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=practice-390",
+      "url": "http://127.0.0.1:3419/team?tab=practice&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:39.218Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".practice-hero > div:nth-child(1) > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".practice-hero-score > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team?tab=logistics-390",
+      "url": "http://127.0.0.1:3419/team?tab=logistics&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:40.333Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build?tab=fmea-390",
+      "url": "http://127.0.0.1:3419/build?tab=fmea&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:41.588Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build?tab=batteries-390",
+      "url": "http://127.0.0.1:3419/build?tab=batteries&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:42.687Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build?tab=prototype-390",
+      "url": "http://127.0.0.1:3419/build?tab=prototype&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:43.654Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=my-day-390",
+      "url": "http://127.0.0.1:3419/competition?tab=my-day&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:44.571Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".myday-hero-kicker"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-hero-title"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-hero-time"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-chip-row:nth-child(5) > .myday-chip-label"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".myday-chip-row:nth-child(6) > .myday-chip-label"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=match-checklist-390",
+      "url": "http://127.0.0.1:3419/competition?tab=match-checklist&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:45.616Z",
+      "passes": 37,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=forms-390",
+      "url": "http://127.0.0.1:3419/competition?tab=forms&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:46.801Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[aria-label=\"Move question 1 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 2 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 2 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 3 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 3 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(1) > .sfb-option-actions > button[aria-label=\"Move option 1 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(1) > .sfb-option-actions > button[aria-label=\"Remove option 1\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Move option 2 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Move option 2 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(3) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Remove option 2\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move option 3 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Remove option 3\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 4 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 4 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 5 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 5 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 6 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 6 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(6) > .sfb-option-editor > .sfb-option-list > li:nth-child(1) > .sfb-option-actions > button[aria-label=\"Move option 1 down\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "article:nth-child(6) > .sfb-option-editor > .sfb-option-list > li:nth-child(2) > .sfb-option-actions > button[aria-label=\"Move option 2 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                "button[aria-label=\"Move question 7 up\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=chemistry-390",
+      "url": "http://127.0.0.1:3419/competition?tab=chemistry&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:48.279Z",
+      "passes": 42,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=pick-clock-390",
+      "url": "http://127.0.0.1:3419/competition?tab=pick-clock&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:49.193Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/business?tab=sponsorship-390",
+      "url": "http://127.0.0.1:3419/business?tab=sponsorship&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:50.187Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[data-testid=\"biz-add-menu\"] > span"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "manualSemanticsRepair": "Later matches, Chemistry counts and Pick clock counts have explicit group roles; their prior aria-prohibited-attr review findings are resolved."
+}

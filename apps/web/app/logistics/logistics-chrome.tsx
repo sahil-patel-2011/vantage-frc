@@ -48,6 +48,7 @@ export function LogisticsNextActionsPanel({ actions }: { actions: LogisticsShell
 
 export function LogisticsShell({
   orgId,
+  embedded = false,
   shell,
   canManage,
   error,
@@ -55,17 +56,19 @@ export function LogisticsShell({
   children,
 }: {
   orgId?: string | null;
+  embedded?: boolean;
   shell: LogisticsShellKind;
   canManage?: boolean;
   error?: string;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
+  const Root = embedded ? "section" : "main";
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const copy = logisticsShellCopy(shell);
   if (shell === "loading") {
     return (
-      <main className="log-page soft-gate">
+      <Root className="log-page soft-gate">
         <PageHeader
           navPath="/logistics"
           title="Logistics"
@@ -80,13 +83,13 @@ export function LogisticsShell({
           <div style={{ height: 16 }} />
           <CardGridSkeleton cols={2} rows={2} />
         </div>
-      </main>
+      </Root>
     );
   }
 
   if (shell === "error") {
     return (
-      <main className="log-page soft-gate">
+      <Root className="log-page soft-gate">
         <PageHeader
           navPath="/logistics"
           title="Logistics"
@@ -97,7 +100,7 @@ export function LogisticsShell({
         <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
-      </main>
+      </Root>
     );
   }
 
@@ -105,7 +108,7 @@ export function LogisticsShell({
   const offerWaitlist =
     shell === "setup" && !orgId && mentionsWaitlist(setupText);
   return (
-    <main className="log-page soft-gate">
+    <Root className="log-page soft-gate">
       <PageHeader
         navPath="/logistics"
         title="Logistics"
@@ -143,6 +146,6 @@ export function LogisticsShell({
           </Button>
         ) : null}
       </EmptyState>
-    </main>
+    </Root>
   );
 }

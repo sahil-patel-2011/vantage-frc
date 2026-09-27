@@ -9,14 +9,15 @@ const require = createRequire(import.meta.url);
 
 export function reportCases(report) {
   const cases = [];
-  const visit = (suite) => {
+  const visit = (suite, parents = []) => {
+    const titlePath = [...parents, suite.title ?? ""];
     for (const spec of suite.specs ?? []) {
       const file = resolve(report.config.rootDir, spec.file).replaceAll("\\", "/");
       for (const test of spec.tests ?? []) {
-        cases.push({ file, key: JSON.stringify([file, spec.line, spec.column, spec.title, test.projectId ?? test.projectName, test.repeatEachIndex ?? 0]) });
+        cases.push({ file, key: JSON.stringify([file, spec.line, spec.column, ...titlePath, spec.title, test.projectId ?? test.projectName, test.repeatEachIndex ?? 0]) });
       }
     }
-    for (const child of suite.suites ?? []) visit(child);
+    for (const child of suite.suites ?? []) visit(child, titlePath);
   };
   for (const suite of report.suites ?? []) visit(suite);
   return cases;

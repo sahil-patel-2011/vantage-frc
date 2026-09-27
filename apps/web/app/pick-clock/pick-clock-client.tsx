@@ -134,6 +134,7 @@ function PickClockNextActionsPanel({ actions }: { actions: PickClockNextAction[]
 
 function PickClockShell({
   orgId,
+  embedded = false,
   shell,
   error,
   errorStatus,
@@ -145,6 +146,7 @@ function PickClockShell({
   children,
 }: {
   orgId?: string | null;
+  embedded?: boolean;
   shell: PickClockShellKind;
   error?: string;
   /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
@@ -157,6 +159,7 @@ function PickClockShell({
   eventName?: string | null;
   children?: ReactNode;
 }) {
+  const Root = embedded ? "section" : "main";
   const copy = pickClockShellCopy(shell);
   const description = shell === "empty" ? pickClockWaitingCopy(eventName) : copy.description;
   const emptyAction = pickClockEmptyAction({ orgId, canEdit: canSync });
@@ -181,7 +184,7 @@ function PickClockShell({
       : null;
 
   return (
-    <main className="module-page app-shell-page pck-page pck-workbench soft-gate">
+    <Root className="module-page app-shell-page pck-page pck-workbench soft-gate">
       <PageHeader
         breadcrumbs="Competition / Pick clock"
         title="Pick Clock"
@@ -221,16 +224,18 @@ function PickClockShell({
           </Button>
         ) : null}
       </EmptyState>
-    </main>
+    </Root>
   );
 }
 
 export default function PickClockClient({
   orgId: initialOrgId,
+  embedded = false,
 }: {
   orgId?: string;
   embedded?: boolean;
 } = {}) {
+  const Root = embedded ? "section" : "main";
   const [orgId, setOrgId] = useState(initialOrgId?.trim() ?? "");
   const [view, setView] = useState<PickClockView | null>(null);
   const [error, setError] = useState("");
@@ -434,6 +439,7 @@ export default function PickClockClient({
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
       <PickClockShell
+        embedded={embedded}
         orgId={
           view?.status === "ready"
             ? view.orgId
@@ -488,6 +494,7 @@ export default function PickClockClient({
   if (!readyView || (shell === "empty" && !stayOnBoard)) {
     return (
       <PickClockShell
+        embedded={embedded}
         orgId={resolvedOrgId}
         shell="empty"
         fromCache={fromCache}
@@ -509,7 +516,7 @@ export default function PickClockClient({
   const active = queue[Math.min(skipOffset, Math.max(0, queue.length - 1))] ?? null;
 
   return (
-    <main className="module-page app-shell-page pck-page pck-workbench">
+    <Root className="module-page app-shell-page pck-page pck-workbench">
       <PageHeader
         breadcrumbs="Competition / Pick clock"
         title="Pick Clock"
@@ -543,7 +550,7 @@ export default function PickClockClient({
       ) : null}
 
       {showTiles ? (
-        <div className="pck-kpis" aria-label="Pick clock counts">
+        <div className="pck-kpis" role="group" aria-label="Pick clock counts">
           <article>
             <strong>{formatPickClockMetric(availableCount, true)}</strong>
             <small>available</small>
@@ -701,6 +708,6 @@ export default function PickClockClient({
             : ""}
         </p>
       ) : null}
-    </main>
+    </Root>
   );
 }

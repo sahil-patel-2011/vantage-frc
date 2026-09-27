@@ -138,6 +138,7 @@ export default function LogisticsClient({ embedded = false }: { embedded?: boole
   if (error && !view) {
     return (
       <LogisticsShell
+        embedded={embedded}
         orgId={urlOrg}
         shell="error"
         error={error}
@@ -158,6 +159,7 @@ export default function LogisticsClient({ embedded = false }: { embedded?: boole
   if (!view) {
     return (
       <LogisticsShell
+        embedded={embedded}
         orgId={urlOrg}
         shell={classifyLogisticsShell({ loading: !fetchFailed, fetchFailed })}
       />
@@ -167,6 +169,7 @@ export default function LogisticsClient({ embedded = false }: { embedded?: boole
   if (view.status === "setup_required") {
     return (
       <LogisticsShell
+        embedded={embedded}
         orgId={orgIdParam}
         shell="setup"
         error={view.message}
@@ -215,7 +218,7 @@ export default function LogisticsClient({ embedded = false }: { embedded?: boole
 
   if (!hasPlan) {
     return (
-      <LogisticsShell orgId={orgId} shell="empty" canManage={canManage}>
+      <LogisticsShell embedded={embedded} orgId={orgId} shell="empty" canManage={canManage}>
         <OfflineBanner
           feature="Logistics"
           fromCache={fromCache}

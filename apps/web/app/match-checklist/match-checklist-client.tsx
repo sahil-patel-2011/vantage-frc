@@ -30,7 +30,8 @@ import "./match-checklist.css";
 
 type LiveView = Extract<MatchChecklistView, { status: "live" }>;
 
-export default function MatchChecklistClient(_props: { embedded?: boolean } = {}) {
+export default function MatchChecklistClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<MatchChecklistView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -175,7 +176,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         )
       : null;
     return (
-      <main className="module-page mcl-page">
+      <Root className="module-page mcl-page">
         <PageHeader
           breadcrumbs={
             <>
@@ -205,12 +206,12 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         ) : (
           <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
         )}
-      </main>
+      </Root>
     );
   }
 
   return (
-    <main className="module-page mcl-page">
+    <Root className="module-page mcl-page">
       <PageHeader
         breadcrumbs={
           <>
@@ -256,7 +257,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           <RunList view={view} busy={busy} mutate={mutate} />
         </div>
       )}
-    </main>
+    </Root>
   );
 }
 
@@ -405,7 +406,7 @@ function StartRunForm({
         </div>
       ) : null}
       {later.length > 0 ? (
-        <div className="mcl-upcoming" aria-label="Later matches">
+        <div className="mcl-upcoming" role="group" aria-label="Later matches">
           <span className="mcl-start-hint">Or a later match:</span>
           {later.map((match) => (
             <button

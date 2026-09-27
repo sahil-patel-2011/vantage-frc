@@ -692,8 +692,8 @@ html[data-theme="dark"] .marketing-lux {
   }
 }
 @keyframes soft-busy-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.86; }
+  0%, 100% { border-color: var(--line-soft); }
+  50% { border-color: color-mix(in srgb, var(--accent) 30%, var(--line-soft)); }
 }
 
 /* Error surfaces read as errors — a tinted hairline and plate, so a failure is

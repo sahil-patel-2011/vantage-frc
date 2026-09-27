@@ -828,5 +828,816 @@
       }
     ],
     "diagnosis": "Three runners received shutdown signals before publishing complete reports. Logs show 15 GiB initial free memory plus 9 GiB swap. The termination cause is not established; memory pressure is an inference, not a proven OOM. Full cache eviction alone did not establish a reliable complete run."
+  },
+  "followupA9c": {
+    "revision": "a9c850e206df2bc503f37bde88697585ae2384d4",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36292900870",
+    "quality": "passed",
+    "postgresRls": "passed",
+    "result": "failed",
+    "shards": [
+      {
+        "shard": 1,
+        "stats": {
+          "total": 51,
+          "expected": 51,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "findings": []
+      },
+      {
+        "shard": 2,
+        "result": "not executed",
+        "stats": null,
+        "plannedCases": 47,
+        "reason": "Coverage preflight rejected generated width variants as duplicate identities because their suite paths were omitted. No tests in this shard ran; not a runner termination. Suite paths now distinguish all 47 cases."
+      },
+      {
+        "shard": 3,
+        "stats": {
+          "total": 48,
+          "expected": 47,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 1,
+          "ok": true
+        },
+        "findings": [
+          {
+            "file": "feature-map-walk.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ],
+            "title": "FEATURE_MAP product routes render without a 500",
+            "outcome": "skipped"
+          }
+        ]
+      },
+      {
+        "shard": 4,
+        "stats": {
+          "total": 50,
+          "expected": 48,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 2,
+          "ok": true
+        },
+        "findings": [
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ],
+            "title": "an event later today shows on the card, and goes when it is removed",
+            "outcome": "skipped"
+          },
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ],
+            "title": "the card does not reach past today to find something to say",
+            "outcome": "skipped"
+          }
+        ]
+      },
+      {
+        "shard": 5,
+        "stats": {
+          "total": 48,
+          "expected": 48,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "findings": []
+      },
+      {
+        "shard": 6,
+        "stats": {
+          "total": 51,
+          "expected": 51,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "findings": []
+      },
+      {
+        "shard": 7,
+        "stats": {
+          "total": 44,
+          "expected": 42,
+          "unexpected": 2,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "shared-ui-accessibility.spec.ts",
+            "annotations": [],
+            "title": "shared navigation and event UI accessibility at 1280px",
+            "outcome": "unexpected"
+          },
+          {
+            "file": "shared-ui-accessibility.spec.ts",
+            "annotations": [],
+            "title": "shared navigation and event UI accessibility at 390px",
+            "outcome": "unexpected"
+          }
+        ]
+      },
+      {
+        "shard": 8,
+        "stats": {
+          "total": 47,
+          "expected": 45,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 2,
+          "ok": true
+        },
+        "findings": [
+          {
+            "file": "student-week-gui.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ],
+            "title": "Home What to do now CTA is a real click",
+            "outcome": "skipped"
+          },
+          {
+            "file": "tinyfish-key-never-returned.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ],
+            "title": "a real key is accepted, shown only by its last four characters, and never returned",
+            "outcome": "skipped"
+          }
+        ]
+      }
+    ],
+    "axeFindings": [
+      {
+        "test": "shared navigation and event UI accessibility at 1280px",
+        "state": "notifications-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">Loading your inbox.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.39 (foreground color: #6e7986, background color: #fefefe, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".soft-empty"
+                    ],
+                    "element": "<section class=\"soft-empty scan-empty\" aria-busy=\"true\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell has-event-focus\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "test": "shared navigation and event UI accessibility at 1280px",
+        "state": "home-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".hero > header > .dash-widget-title > div > h2"
+                ],
+                "html": "<h2>Next match</h2>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.38 (foreground color: #5f7996, background color: #fbfcfd, font size: 11.3pt (15px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-alliance"
+                ],
+                "html": "<span class=\"nm-alliance nm-alliance-blue\">Switch to BLUE bumpers</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.77 (foreground color: #fbfcfd, background color: #6f97f0, font size: 9.8pt (13px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-alliance"
+                    ],
+                    "element": "<span class=\"nm-alliance nm-alliance-blue\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".dash-countdown > span"
+                ],
+                "html": "<span>Starts in</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.88 (foreground color: #8e97a1, background color: #fbfcfd, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-side:nth-child(1) > span"
+                ],
+                "html": "<span>With us</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.73 (foreground color: #8e97a1, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-side:nth-child(1)"
+                    ],
+                    "element": "<div class=\"nm-side\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-against > span"
+                ],
+                "html": "<span>Against</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.73 (foreground color: #8e97a1, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-against"
+                    ],
+                    "element": "<div class=\"nm-side nm-against\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-win-head > span"
+                ],
+                "html": "<span>chance we win · usually 65⁠–⁠85%</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.88 (foreground color: #8e97a1, background color: #fbfcfd, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".hero > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">Open briefing →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.39 (foreground color: #60919a, background color: #fbfcfd, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > header > .dash-widget-title > div > h2"
+                ],
+                "html": "<h2>My day</h2>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.93 (foreground color: #a9b7c7, background color: #f8f9fa, font size: 11.3pt (15px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">Qual 31 at 4:20 AM is next. Nothing else is on your list today.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.63 (foreground color: #c1c6cc, background color: #f8f9fa, font size: 11.3pt (15px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">Open My Day →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.75 (foreground color: #aac3c8, background color: #f8f9fa, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "test": "shared navigation and event UI accessibility at 390px",
+        "state": "home-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".nm-alliance"
+                ],
+                "html": "<span class=\"nm-alliance nm-alliance-blue\">Switch to BLUE bumpers</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.91 (foreground color: #fcfcfd, background color: #6993ef, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-alliance"
+                    ],
+                    "element": "<span class=\"nm-alliance nm-alliance-blue\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".dash-countdown > span"
+                ],
+                "html": "<span>Starts in</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.03 (foreground color: #8a939e, background color: #fcfcfd, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-side:nth-child(1) > span"
+                ],
+                "html": "<span>With us</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.87 (foreground color: #8a939e, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-side:nth-child(1)"
+                    ],
+                    "element": "<div class=\"nm-side\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-against > span"
+                ],
+                "html": "<span>Against</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.87 (foreground color: #8a939e, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-against"
+                    ],
+                    "element": "<div class=\"nm-side nm-against\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-win-head > span"
+                ],
+                "html": "<span>chance we win · usually 65⁠–⁠85%</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.03 (foreground color: #8a939e, background color: #fcfcfd, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".hero > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">Open briefing →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.6 (foreground color: #5a8d96, background color: #fcfcfd, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > header > .dash-widget-title > div > h2"
+                ],
+                "html": "<h2>My day</h2>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.98 (foreground color: #a7b5c5, background color: #f8f9fa, font size: 11.3pt (15px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">Qual 31 at 4:20 AM is next. Nothing else is on your list today.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.66 (foreground color: #bfc4cb, background color: #f8f9fa, font size: 11.3pt (15px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">Open My Day →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.79 (foreground color: #a7c1c7, background color: #f8f9fa, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "test": "shared navigation and event UI accessibility at 390px",
+        "state": "notifications-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.2 (foreground color: #717c88, background color: #fdfefe, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".soft-empty"
+                    ],
+                    "element": "<section class=\"soft-empty scan-empty\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell has-event-focus\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "repairs": [
+      "Include full suite ancestry in coverage identities for generated viewport variants.",
+      "Keep content at full opacity during card/page entrances. Loading states animate their border, not their text."
+    ],
+    "coverage": [
+      {
+        "shard": "1/8",
+        "maxFiles": 6,
+        "planned": 51,
+        "reported": 51,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:59:08.427Z",
+          "duration": 281768.65087890625,
+          "expected": 51,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "3/8",
+        "maxFiles": 6,
+        "planned": 48,
+        "reported": 48,
+        "groups": 2,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:21.194Z",
+          "duration": 269269.35009765625,
+          "expected": 47,
+          "skipped": 1,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "4/8",
+        "maxFiles": 6,
+        "planned": 50,
+        "reported": 50,
+        "groups": 6,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:36.807Z",
+          "duration": 461626.958984375,
+          "expected": 48,
+          "skipped": 2,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "5/8",
+        "maxFiles": 6,
+        "planned": 48,
+        "reported": 48,
+        "groups": 2,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:21.362Z",
+          "duration": 165847.65502929688,
+          "expected": 48,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "6/8",
+        "maxFiles": 6,
+        "planned": 51,
+        "reported": 51,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:24.472Z",
+          "duration": 194125.86694335938,
+          "expected": 51,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "7/8",
+        "maxFiles": 6,
+        "planned": 44,
+        "reported": 44,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "failed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:32.177Z",
+          "duration": 263441.64501953125,
+          "expected": 42,
+          "skipped": 0,
+          "unexpected": 2,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "8/8",
+        "maxFiles": 6,
+        "planned": 47,
+        "reported": 47,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:41.362Z",
+          "duration": 284718.9189453125,
+          "expected": 45,
+          "skipped": 2,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      }
+    ],
+    "localRepair": {
+      "testsPassed": 4,
+      "states": 48,
+      "log": "vantage-ui-extended-accessibility-retry.log",
+      "unitTestsPassed": 17,
+      "unitScope": "Coverage identity, origin guards, motion conventions and motion preferences",
+      "harness": {
+        "planned": 14,
+        "reported": 14,
+        "exactCoverage": true,
+        "result": "12 passed / 2 failed before Logistics shell repair",
+        "log": "vantage-ui-extended-accessibility-harness.log"
+      },
+      "subsequentRepair": "Forward embedded state to every Logistics loading/error/setup/empty shell; actual four-test desktop/phone replay then passes all 48 states."
+    }
   }
 }

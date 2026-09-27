@@ -119,6 +119,7 @@ function NextActions({
 export default function FmeaClient({ embedded = false }: { embedded?: boolean } = {}) {
   const pathEmbed = useHubEmbed();
   const embed = pathEmbed ?? (embedded ? "team" : null);
+  const Root = embed ? "section" : "main";
   const [view, setView] = useState<FmeaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -261,7 +262,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         )
       : null;
     return (
-      <main className="module-page fmea-page">
+      <Root className="module-page fmea-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Failure Log (FMEA)"
@@ -285,13 +286,13 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page fmea-page">
+      <Root className="module-page fmea-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Failure Log (FMEA)"
@@ -310,7 +311,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
@@ -318,7 +319,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   const topTitle = view.summary.topFailures[0]?.failure.title ?? null;
 
   return (
-    <main className="module-page fmea-page">
+    <Root className="module-page fmea-page">
       <PageHeader
         breadcrumbs={crumbs}
         title="Failure Log (FMEA)"
@@ -406,7 +407,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
 
       <AddFailureForm view={view} busy={busy} mutate={mutate} />
       {hasFailures ? <FailureList view={view} busy={busy} mutate={mutate} orgId={orgId} /> : null}
-    </main>
+    </Root>
   );
 }
 

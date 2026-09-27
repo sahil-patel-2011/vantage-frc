@@ -1,6 +1,6 @@
 {
   "tool": "@axe-core/playwright 4.13.0",
-  "buildId": "epbhuK3I35yD78a1mBlwq",
+  "buildId": "ej9yST5ocX2ZfrFnGSp-R",
   "scope": "Actual scratch owner, production build, loopback only. Default complete axe rule set; no exclusions. Automatic checks are not full WCAG conformance.",
   "results": [
     {
@@ -10,7 +10,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:07.261Z",
+      "timestamp": "2026-09-27T04:21:17.261Z",
       "passes": 34,
       "violations": [],
       "incomplete": []
@@ -22,7 +22,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:08.107Z",
+      "timestamp": "2026-09-27T04:21:18.149Z",
       "passes": 38,
       "violations": [],
       "incomplete": [
@@ -63,7 +63,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:09.179Z",
+      "timestamp": "2026-09-27T04:21:19.161Z",
       "passes": 44,
       "violations": [],
       "incomplete": [
@@ -90,7 +90,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:10.390Z",
+      "timestamp": "2026-09-27T04:21:20.083Z",
       "passes": 38,
       "violations": [],
       "incomplete": [
@@ -117,7 +117,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:12.240Z",
+      "timestamp": "2026-09-27T04:21:21.864Z",
       "passes": 40,
       "violations": [],
       "incomplete": [
@@ -216,7 +216,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:13.578Z",
+      "timestamp": "2026-09-27T04:21:23.295Z",
       "passes": 34,
       "violations": [],
       "incomplete": []
@@ -228,8 +228,8 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:14.773Z",
-      "passes": 43,
+      "timestamp": "2026-09-27T04:21:24.390Z",
+      "passes": 41,
       "violations": [],
       "incomplete": [
         {
@@ -255,7 +255,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:16.707Z",
+      "timestamp": "2026-09-27T04:21:26.037Z",
       "passes": 45,
       "violations": [],
       "incomplete": [
@@ -282,7 +282,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:18.038Z",
+      "timestamp": "2026-09-27T04:21:27.365Z",
       "passes": 40,
       "violations": [],
       "incomplete": [
@@ -309,7 +309,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:19.892Z",
+      "timestamp": "2026-09-27T04:21:28.826Z",
       "passes": 43,
       "violations": [],
       "incomplete": [
@@ -348,7 +348,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:21.660Z",
+      "timestamp": "2026-09-27T04:21:30.386Z",
       "passes": 34,
       "violations": [],
       "incomplete": [
@@ -381,7 +381,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:22.499Z",
+      "timestamp": "2026-09-27T04:21:31.200Z",
       "passes": 38,
       "violations": [],
       "incomplete": [
@@ -428,7 +428,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:23.532Z",
+      "timestamp": "2026-09-27T04:21:32.278Z",
       "passes": 44,
       "violations": [],
       "incomplete": [
@@ -461,7 +461,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:24.433Z",
+      "timestamp": "2026-09-27T04:21:33.198Z",
       "passes": 39,
       "violations": [],
       "incomplete": [
@@ -494,7 +494,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:26.132Z",
+      "timestamp": "2026-09-27T04:21:34.597Z",
       "passes": 40,
       "violations": [],
       "incomplete": [
@@ -599,7 +599,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:27.431Z",
+      "timestamp": "2026-09-27T04:21:35.747Z",
       "passes": 34,
       "violations": [],
       "incomplete": [
@@ -626,8 +626,8 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:28.487Z",
-      "passes": 44,
+      "timestamp": "2026-09-27T04:21:36.704Z",
+      "passes": 42,
       "violations": [],
       "incomplete": [
         {
@@ -659,7 +659,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:30.063Z",
+      "timestamp": "2026-09-27T04:21:38.206Z",
       "passes": 45,
       "violations": [],
       "incomplete": [
@@ -692,7 +692,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:31.266Z",
+      "timestamp": "2026-09-27T04:21:39.726Z",
       "passes": 40,
       "violations": [],
       "incomplete": [
@@ -725,7 +725,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:54:32.638Z",
+      "timestamp": "2026-09-27T04:21:40.950Z",
       "passes": 41,
       "violations": [],
       "incomplete": [
@@ -770,11 +770,18 @@
       ]
     }
   ],
-  "previousAudit": {
-    "buildId": "BrzMPzVDXoMZgvbi2lzWD",
-    "states": 12,
-    "detectedViolations": 0
-  },
+  "previousAudits": [
+    {
+      "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+      "states": 12,
+      "detectedViolations": 0
+    },
+    {
+      "buildId": "epbhuK3I35yD78a1mBlwq",
+      "states": 20,
+      "detectedViolations": 0
+    }
+  ],
   "manualChecks": {
     "accountControlledMenuId": "Confirmed in actual Chrome; account trigger controls the present account-menu-popup.",
     "transparency": "Actual Windows Chrome reports reduced-transparency. Its opaque accessibility fallback was observed; the normal translucent material is source-verified, not a claim about that screenshot.",
@@ -788,5 +795,7 @@
     "ui-accessibility-final-desktop.png",
     "ui-accessibility-final-account-phone.png",
     "ui-accessibility-final-drawer-phone.png"
-  ]
+  ],
+  "additionalAudit": "ui-embedded-accessibility-audit.json",
+  "totalAutomaticallyScannedStates": 48
 }
