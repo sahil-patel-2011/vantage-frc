@@ -125,6 +125,7 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
 }
 
 export default function TodosClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -287,7 +288,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
     : null;
 
   return (
-    <main className={`module-page todos-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page todos-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <>
           <PageHeader
@@ -380,7 +381,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
           ) : null}
         </div>
       )}
-    </main>
+    </Root>
   );
 }
 

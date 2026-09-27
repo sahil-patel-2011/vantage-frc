@@ -1908,6 +1908,8 @@ body.has-app-shell .team-admin-page .team-admin-links a{
    that sets its own columns still wins; on a card that is not a grid,
    grid-template-columns does nothing. */
 :where(.app-card){grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere}
+.soft-tab-container{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-4)}
+.soft-tab-container>.soft-tab-bar,.soft-tab-container>.soft-tab-toolbar{margin-bottom:0}
 .soft-tab-bar{
   display:flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 0 var(--space-4);
   background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius);

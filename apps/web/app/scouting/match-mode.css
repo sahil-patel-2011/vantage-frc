@@ -71,7 +71,7 @@
   border-radius: 12px;
   color: #fff;
   cursor: pointer;
-  transition: transform var(--dur-fast, 0.12s) ease, box-shadow var(--dur-fast, 0.12s) ease, opacity var(--dur-fast, 0.12s) ease;
+  transition: transform var(--dur-fast, 0.12s) ease, box-shadow var(--dur-fast, 0.12s) ease;
 }
 .next-match-robot b {
   font-size: 22px;
@@ -82,16 +82,12 @@
   /* Set, not inherited: a global small{} rule made "Red 2" dark grey on red. */
   color: #fff;
   font-size: 11px;
-  opacity: 0.92;
 }
 .next-match-row.red .next-match-robot {
   background: #c9302c;
 }
 .next-match-row.blue .next-match-robot {
   background: #1f5fbf;
-}
-.next-match-robot.is-done {
-  opacity: 0.6;
 }
 .next-match-robot.is-selected {
   border-color: var(--ink);
@@ -217,9 +213,8 @@
   }
 }
 
-/* The robot you are scouting is unmistakable: a white ring and a check; the other open robots
-   step back while one is picked. */
-.next-match-robots:has(.is-selected) .next-match-robot:not(.is-selected):not(.is-done) { opacity: 0.72; }
+/* Selection uses a ring and corner marker. Completed reports have an explicit
+   Done label; retain full contrast on every robot that can still be selected. */
 .next-match-robot.is-selected {
   box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ink);
   transform: scale(1.03);

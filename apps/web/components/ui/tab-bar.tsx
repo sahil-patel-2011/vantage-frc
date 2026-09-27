@@ -32,7 +32,7 @@ export function TabBar({
   variant = "pill",
 }: TabBarProps) {
   const shell = variant === "toolbar" ? "soft-tab-toolbar" : "soft-tab-bar";
-  return (
+  const tabList = (
     <nav
       className={[shell, className].filter(Boolean).join(" ")}
       role="tablist"
@@ -66,7 +66,8 @@ export function TabBar({
           </button>
         );
       })}
-      {children}
     </nav>
   );
+  // Help and bulk actions are ordinary controls, not tabs in the tablist.
+  return children ? <div className="soft-tab-container">{tabList}{children}</div> : tabList;
 }

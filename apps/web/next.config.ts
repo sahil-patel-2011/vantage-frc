@@ -15,7 +15,7 @@ const config: NextConfig = {
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.
   supportsImmutableAssets: false,
-  // A browser shard visits many cold routes. CI's small runner can be killed
+  // A browser shard visits many cold routes. CI's runner can be killed
   // while Turbopack's default auto eviction retains their compiled state.
   // Use its supported disk-snapshot eviction in CI dev sessions only.
   ...(process.env.CI === "true" && process.env.NODE_ENV === "development"

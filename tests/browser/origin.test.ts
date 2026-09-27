@@ -89,6 +89,6 @@ describe("playwrightWebServerEnv", () => {
     expect(env.DATABASE_URL).toBeUndefined();
     expect(env.E2E_AUTH_FIXTURE).toBe("1");
     expect(env.NODE_ENV).toBe("development");
-    expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=4096/);
+    expect(env.NODE_OPTIONS).toMatch(/max-old-space-size=2048/);
   });
 });

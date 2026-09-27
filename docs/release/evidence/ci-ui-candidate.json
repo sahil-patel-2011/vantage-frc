@@ -734,5 +734,99 @@
       "testsSkipped": 0,
       "log": "vantage-ui-ci-followup-regressions.log"
     }
+  },
+  "followup30f": {
+    "revision": "30f85fa8bc6cc5ef71ab00468f18634a699daf27",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36291289125",
+    "quality": "passed",
+    "postgresRls": "passed",
+    "result": "incomplete",
+    "shards": [
+      {
+        "stats": {
+          "total": 68,
+          "expected": 68,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "shard": 1,
+        "findings": []
+      },
+      {
+        "stats": {
+          "total": 62,
+          "expected": 60,
+          "unexpected": 0,
+          "flaky": 1,
+          "skipped": 1,
+          "ok": false
+        },
+        "shard": 2,
+        "findings": [
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "an owner builds and opens a form, a member answers it once",
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "feature-map-walk.spec.ts",
+            "title": "FEATURE_MAP product routes render without a 500",
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "result": "incomplete",
+        "stats": null,
+        "shard": 3,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes."
+      },
+      {
+        "stats": {
+          "total": 66,
+          "expected": 65,
+          "unexpected": 0,
+          "flaky": 1,
+          "skipped": 0,
+          "ok": false
+        },
+        "shard": 4,
+        "findings": [
+          {
+            "file": "picklist-collab-shell.spec.ts",
+            "title": "Collaborative pick list still loads after the Saturday shell pass",
+            "outcome": "flaky",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "result": "incomplete",
+        "stats": null,
+        "shard": 5,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes."
+      },
+      {
+        "result": "incomplete",
+        "stats": null,
+        "shard": 6,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes."
+      }
+    ],
+    "diagnosis": "Three runners received shutdown signals before publishing complete reports. Logs show 15 GiB initial free memory plus 9 GiB swap. The termination cause is not established; memory pressure is an inference, not a proven OOM. Full cache eviction alone did not establish a reliable complete run."
   }
 }

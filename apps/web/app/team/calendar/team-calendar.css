@@ -136,7 +136,7 @@
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   background: color-mix(in srgb, var(--accent) 6%, var(--surface));
 }
-.tc-day h3 {
+.tc-day h2 {
   margin: 8px 0 0;
   font-size:var(--text-xs);
   letter-spacing: 0.04em;

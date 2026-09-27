@@ -18,7 +18,7 @@ async function checkAccessibility(page: Page, testInfo: TestInfo, state: string)
 
 for (const width of [1280, 390]) {
   test(`shared navigation and event UI accessibility at ${width}px`, async ({ page, context }, testInfo) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     expect(await signInAs(context, "owner"), "Actual seeded owner sign-in required").toBe(true);
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
@@ -54,5 +54,19 @@ for (const width of [1280, 390]) {
     await page.goto("/notifications");
     await expect(page.getByRole("heading", { level: 1, name: "Notifications", exact: true })).toBeVisible();
     await checkAccessibility(page, testInfo, "notifications");
+
+    for (const path of ["/team", "/build", "/business", "/competition?tab=scouting"]) {
+      await page.goto(`${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(identity.orgId)}`, { waitUntil: "domcontentloaded" });
+      await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Opening your team", exact: true })).toHaveCount(0);
+      // The hub heading can appear before its actual embedded feature data.
+      const ready = path === "/team" ? page.locator(".tc-toolbar")
+        : path === "/build" ? page.locator(".kick-year")
+          : path === "/business" ? page.locator(".biz-season")
+            : page.getByRole("button", { name: /^Scout team / }).first();
+      await expect(ready).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator("main"), "Embedded tools share the workspace's single main landmark").toHaveCount(1);
+      await checkAccessibility(page, testInfo, path);
+    }
   });
 }

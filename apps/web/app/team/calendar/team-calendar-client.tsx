@@ -88,6 +88,7 @@ async function persistTeamCalendarSnapshot(orgHint: string, data: SubteamCalenda
 }
 
 export default function TeamCalendarClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const online = useOnline();
   const [view, setView] = useState<SubteamCalendarView | null>(null);
   const [error, setError] = useState("");
@@ -348,7 +349,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
   if (!view) {
     return (
-      <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
+      <Root className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
           <header className="app-page-header">
             <div>
@@ -393,13 +394,13 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             <p className="app-muted">Loading team calendar…</p>
           )}
         </div>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
+      <Root className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
           <header className="app-page-header">
             <div>
@@ -418,7 +419,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             </Button>
           </div>
         </div>
-      </main>
+      </Root>
     );
   }
 
@@ -533,7 +534,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   };
 
   return (
-    <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <header className="app-page-header">
           <div>
@@ -704,12 +705,12 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                       className={["tc-day", quickDay === bucket.day ? "focused" : ""].filter(Boolean).join(" ")}
                       id={quickDay === bucket.day ? "tc-list-focus" : undefined}
                     >
-                      <h3>
+                      <h2>
                         {bucket.label}
                         <span className="tc-day-count">
                           {dayCountLabel(bucket.items.length, taskDays.get(bucket.day)?.length ?? 0)}
                         </span>
-                      </h3>
+                      </h2>
                       {overlayItemsForDay(githubItems, bucket.day).map((item) => (
                         <a
                           key={item.id}
@@ -940,7 +941,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           </div>
         </>
       )}
-    </main>
+    </Root>
   );
 }
 

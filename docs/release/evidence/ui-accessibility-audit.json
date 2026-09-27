@@ -1,6 +1,6 @@
 {
   "tool": "@axe-core/playwright 4.13.0",
-  "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+  "buildId": "epbhuK3I35yD78a1mBlwq",
   "scope": "Actual scratch owner, production build, loopback only. Default complete axe rule set; no exclusions. Automatic checks are not full WCAG conformance.",
   "results": [
     {
@@ -10,7 +10,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:05.578Z",
+      "timestamp": "2026-09-27T03:54:07.261Z",
       "passes": 34,
       "violations": [],
       "incomplete": []
@@ -22,7 +22,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:06.306Z",
+      "timestamp": "2026-09-27T03:54:08.107Z",
       "passes": 38,
       "violations": [],
       "incomplete": [
@@ -63,7 +63,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:07.214Z",
+      "timestamp": "2026-09-27T03:54:09.179Z",
       "passes": 44,
       "violations": [],
       "incomplete": [
@@ -90,7 +90,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:08.081Z",
+      "timestamp": "2026-09-27T03:54:10.390Z",
       "passes": 38,
       "violations": [],
       "incomplete": [
@@ -117,7 +117,7 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:09.801Z",
+      "timestamp": "2026-09-27T03:54:12.240Z",
       "passes": 40,
       "violations": [],
       "incomplete": [
@@ -216,10 +216,130 @@
         "width": 1280,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:10.997Z",
+      "timestamp": "2026-09-27T03:54:13.578Z",
       "passes": 34,
       "violations": [],
       "incomplete": []
+    },
+    {
+      "name": "/team-1280",
+      "url": "http://127.0.0.1:3419/team?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:14.773Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build-1280",
+      "url": "http://127.0.0.1:3419/build?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:16.707Z",
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/business-1280",
+      "url": "http://127.0.0.1:3419/business?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:18.038Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[data-testid=\"biz-add-menu\"] > span"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=scouting-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=scouting&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:19.892Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".scout-views-more > span[aria-hidden=\"true\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".is-selected > b"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "target": [
+                ".is-selected > small"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "home-390",
@@ -228,7 +348,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:12.043Z",
+      "timestamp": "2026-09-27T03:54:21.660Z",
       "passes": 34,
       "violations": [],
       "incomplete": [
@@ -261,7 +381,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:12.733Z",
+      "timestamp": "2026-09-27T03:54:22.499Z",
       "passes": 38,
       "violations": [],
       "incomplete": [
@@ -308,7 +428,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:13.645Z",
+      "timestamp": "2026-09-27T03:54:23.532Z",
       "passes": 44,
       "violations": [],
       "incomplete": [
@@ -341,7 +461,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:14.463Z",
+      "timestamp": "2026-09-27T03:54:24.433Z",
       "passes": 39,
       "violations": [],
       "incomplete": [
@@ -374,7 +494,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:15.858Z",
+      "timestamp": "2026-09-27T03:54:26.132Z",
       "passes": 40,
       "violations": [],
       "incomplete": [
@@ -479,7 +599,7 @@
         "width": 390,
         "height": 900
       },
-      "timestamp": "2026-09-27T03:18:17.016Z",
+      "timestamp": "2026-09-27T03:54:27.431Z",
       "passes": 34,
       "violations": [],
       "incomplete": [
@@ -498,46 +618,175 @@
           ]
         }
       ]
+    },
+    {
+      "name": "/team-390",
+      "url": "http://127.0.0.1:3419/team?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:28.487Z",
+      "passes": 44,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build-390",
+      "url": "http://127.0.0.1:3419/build?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:30.063Z",
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/business-390",
+      "url": "http://127.0.0.1:3419/business?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:31.266Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[data-testid=\"biz-add-menu\"] > span"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=scouting-390",
+      "url": "http://127.0.0.1:3419/competition?tab=scouting&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T03:54:32.638Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".scout-views-more > span[aria-hidden=\"true\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".is-selected > b"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "target": [
+                ".is-selected > small"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
     }
   ],
-  "originalStableCandidate": {
-    "buildId": "eV3IvdW2-rvFmfWWMqpSy",
-    "findings": [
-      "Drawer aside could not take dialog role",
-      "Coverage articles could not take listitem role",
-      "Warning text contrast 4.22:1, required 4.5:1",
-      "Labeled generic containers require group semantics"
+  "previousAudit": {
+    "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+    "states": 12,
+    "detectedViolations": 0
+  },
+  "manualChecks": {
+    "accountControlledMenuId": "Confirmed in actual Chrome; account trigger controls the present account-menu-popup.",
+    "transparency": "Actual Windows Chrome reports reduced-transparency. Its opaque accessibility fallback was observed; the normal translucent material is source-verified, not a claim about that screenshot.",
+    "limitations": [
+      "Default axe incomplete checks retained below; overlapping/gradient contrast needs manual review.",
+      "No full WCAG conformance, assistive-technology certification or universal aesthetic score is claimed.",
+      "Actual production providers, production flows, physical devices and full release gates remain separate."
     ]
   },
-  "localRegression": {
-    "testsPassed": 6,
-    "testsSkipped": 0,
-    "scanStates": 12,
-    "log": "vantage-ui-accessibility-regressions.log"
-  },
-  "manualFollowup": {
-    "browser": "Actual Chrome, synthetic Morgan Journey, loopback acceptance database",
-    "viewport": {
-      "width": 390,
-      "height": 844
-    },
-    "horizontalOverflow": false,
-    "controlsTargetExists": true,
-    "menu": {
-      "width": 328,
-      "height": 572.0521240234375
-    },
-    "island": {
-      "width": 358,
-      "height": 59.33333587646485,
-      "borderRadius": "999px"
-    },
-    "reducedTransparency": true,
-    "notes": "Windows preference selects the intentional opaque fallback. Gradient/overlap incomplete checks and physical assistive-technology evaluation remain open.",
-    "screenshots": [
-      "ui-accessibility-final-desktop.png",
-      "ui-accessibility-final-account-phone.png",
-      "ui-accessibility-final-drawer-phone.png"
-    ]
-  }
+  "screenshots": [
+    "ui-accessibility-final-desktop.png",
+    "ui-accessibility-final-account-phone.png",
+    "ui-accessibility-final-drawer-phone.png"
+  ]
 }
