@@ -6,7 +6,7 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Cost — Vantage",
   description:
-    "Vantage is free for FRC teams. Connect personal Codex or use a personal or team AI provider key. External provider charges are separate. Access is invite-only during release verification.",
+    "Vantage is free for FRC teams. Connect personal Codex or use a personal or team AI provider key. External provider charges are separate.",
   path: "/pricing",
 });
 

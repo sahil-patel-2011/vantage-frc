@@ -403,7 +403,7 @@ export function TeamOpsPreview() {
           </li>
         </ul>
         <footer className="product-demo-footer">
-          <span>Waitlist + invite only</span>
+          <span>Account and team access</span>
           <b>Platform admin gated separately</b>
         </footer>
       </div>

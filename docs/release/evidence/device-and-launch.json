@@ -5,15 +5,16 @@
   "requiresProductionVerification": true,
   "checks": {
     "unit": {
-      "filesPassed": 1501,
-      "testsPassed": 11207,
+      "filesPassed": 1502,
+      "testsPassed": 11209,
       "filesSkipped": 16,
-      "testsSkipped": 41
+      "testsSkipped": 41,
+      "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36327911132"
     },
     "additionalTests": "New live-cache tests and final affected regression checks passed separately; see DEVICE-AND-LAUNCH.md.",
     "lint": "passed",
-    "workspaceTypes": "passed before final small follow-up edits; exact candidate CI required",
-    "productionBuild": "passed, 748 pages; final sign-in footer follow-up verified in development and requires exact candidate build",
+    "workspaceTypes": "passed in candidate CI",
+    "productionBuild": "candidate CI and exact local 748-page build passed",
     "browser": {
       "initialSettings": 4,
       "developmentFinal": 6,
@@ -25,9 +26,33 @@
           "New test used nonexistent scout fixture role: corrected to member and passed",
           "Existing sign-in test assumes development email OTP; masked production preview has no email provider"
         ]
-      }
+      },
+      "productionFinal": {
+        "passed": 11,
+        "failed": 0
+      },
+      "adminDateFollowup": {
+        "passed": 2,
+        "failed": 0
+      },
+      "fullCandidate": {
+        "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36328016492",
+        "attempt": 1,
+        "result": "failed",
+        "completed": 405,
+        "passed": 400,
+        "skipped": 5,
+        "failedTests": 0,
+        "missing": 9,
+        "reason": "Final group in shard 8 did not start: webServer readiness timed out after 180 seconds. Coverage verification failed correctly."
+      },
+      "localMissingGroup": {
+        "result": "one outdated assertion identified",
+        "reason": "The admin checklist test expected two conditions; December 1 adds a third. Updated to assert all three and exact open-state agreement, then both admin cases passed on the built app."
+      },
+      "rerunAttempt2": "Cancelled after identifying the stale checklist assertion locally; it would still run the old assertion."
     },
-    "accessibility": "No axe violations in scoped device settings on phone and desktop; keyboard and persistence checks passed"
+    "accessibility": "Phone, desktop and explicit dark-theme reduced-motion scans of the storage panel: zero violations. No horizontal overflow in the dark phone check."
   },
   "limitations": [
     "Browser storage estimates are approximate; selected GB budget does not reserve space",
@@ -35,5 +60,6 @@
     "Synced queues clear automatically, saved read caches remain available",
     "Original production release gates remain unresolved"
   ],
-  "ci": "pending candidate push"
+  "ci": "Final suite pending follow-up commit.",
+  "copyFollowup": "Removed permanent invite-only claims from search/social metadata; six marketing test files / 36 tests and targeted lint passed."
 }

@@ -47,13 +47,13 @@ export function rootMarketingMetadata(): Metadata {
       template: "%s — Vantage",
     },
     description:
-      "Invite-only FRC software: scouting, Learn CAD, team chat, and practice. Google or an email code. Mentors invite exact emails.",
+      "An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections.",
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
       title: "Vantage — your FRC team, connected",
       description:
-        "Scout, learn CAD, talk with the team, and run practice. Invite-only — no public signup.",
+        "Scouting, strategy, team coordination, robot development and business in one connected FRC workspace.",
       url: SITE_URL,
       type: "website",
       siteName: "Vantage",
@@ -63,7 +63,7 @@ export function rootMarketingMetadata(): Metadata {
       card: "summary_large_image",
       title: "Vantage — your FRC team, connected",
       description:
-        "Invite-only FRC software: offline scouting, Learn CAD, team chat, and practice.",
+        "Your FRC team, connected: scouting, team work, robot development and business.",
       images: [OG_IMAGE.url],
     },
     robots: { index: true, follow: true },
@@ -96,7 +96,7 @@ export function organizationSoftwareJsonLd() {
         operatingSystem: "Web",
         url: SITE_URL,
         description:
-          "An FRC workspace for scouting, strategy, team coordination, robot development and business. Currently invite-only, with optional personal AI connections.",
+          "An FRC workspace for scouting, strategy, team coordination, robot development and business, with optional personal AI connections.",
         offers: {
           "@type": "Offer",
           price: "0",
