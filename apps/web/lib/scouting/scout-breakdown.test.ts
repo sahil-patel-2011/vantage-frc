@@ -29,6 +29,34 @@ describe("matchKeyLabel", () => {
 });
 
 describe("buildScoutBreakdown", () => {
+  it("exposes numeric evidence without counting missing values as zero or duplicate reports as matches", () => {
+    const result = buildScoutBreakdown([
+      { matchKey: "x_qm1", payload: { duration: 0 }, fields: [{ key: "duration", label: "Defense time", type: "timer", helpText: "Time spent defending." }] },
+      { matchKey: "x_qm1", payload: { duration: 4 } },
+      { matchKey: "x_qm2", payload: { duration: 10 } },
+      { matchKey: "x_qm3", payload: {} },
+    ]);
+    const field = result.fields[0]!;
+    expect(field).toMatchObject({ label: "Defense time", mean: 6, evidence: { unit: "seconds", definition: "Time spent defending.", answered: 2, missing: 1, disagreements: 1 } });
+    expect(field.evidence.samples).toEqual([
+      { match: "Q1", matchKey: "x_qm1", value: 2, reports: [0,4] },
+      { match: "Q2", matchKey: "x_qm2", value: 10, reports: [10] },
+      { match: "Q3", matchKey: "x_qm3", value: null, reports: [] },
+    ]);
+  });
+  it("keeps tied selections out of rates and exposes their conflicting answers", () => {
+    const result = buildScoutBreakdown([
+      { matchKey: "x_qm1", payload: { climbed: true } },
+      { matchKey: "x_qm1", payload: { climbed: false } },
+      { matchKey: "x_qm2", payload: { climbed: false } },
+    ]);
+    expect(result.fields[0]).toMatchObject({ kind: "rate", rate: 0, total: 1, evidence: { answered: 1, missing: 1, disagreements: 1 } });
+    expect(result.fields[0]!.evidence.samples[0]).toMatchObject({ value: null, reports: [true,false] });
+  });
+  it("does not turn field positions into average scoring numbers", () => {
+    const result = buildScoutBreakdown([{ matchKey: "x_qm1", payload: { position: 12 }, fields: [{ key: "position", label: "Start", type: "field_position" }] }]);
+    expect(result.fields).toEqual([]);
+  });
   const breakdown = buildScoutBreakdown(rows);
 
   it("reads the fields the form actually collects, in match order", () => {

@@ -123,16 +123,19 @@ describe("legalUpdateRequired", () => {
   });
 });
 
-describe("the 2026-09-26 rewrite", () => {
+describe("the 2026-09-27 scouting-sharing update", () => {
   const accepted = { termsAcceptedAt: "2026-09-25", privacyAcceptedAt: "2026-09-25" };
 
   it("is the current version, effective the same day", () => {
-    expect(LEGAL_DOC_VERSION).toBe("2026-09-26.2");
-    expect(LEGAL_EFFECTIVE_DATE).toBe("September 26, 2026");
+    expect(LEGAL_DOC_VERSION).toBe("2026-09-27.1");
+    expect(LEGAL_EFFECTIVE_DATE).toBe("September 27, 2026");
   });
 
   it("asks everyone who accepted the 2026-09-25 text to accept once more", () => {
     expect(legalUpdateRequired({ ...accepted, termsVersion: "2026-09-25.1", privacyVersion: "2026-09-25.1" })).toBe(true);
+  });
+  it("requires renewed acceptance of the previous private-sharing policy", () => {
+    expect(legalUpdateRequired({ ...accepted, termsVersion: "2026-09-26.2", privacyVersion: "2026-09-26.2" })).toBe(true);
   });
 
   it("asks again when only one of the two documents was accepted at the new version", () => {

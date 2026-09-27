@@ -155,6 +155,7 @@ test("Best fit ranks on more than points, and is the order that opens", async ({
 
 test("the weights are yours, and they change the order in front of you", async ({ page }) => {
   test.skip(!(await openRobots(page)), "no scouting seeded on this box");
+  await page.getByText("Adjust what makes a good pick", { exact: true }).click();
 
   const order = async () =>
     (await page.locator(".stp-row .stp-team").allInnerTexts()).map((text) => text.trim());
@@ -204,6 +205,7 @@ test("a weighting survives a reload, because a pick meeting is not one page view
   page,
 }) => {
   test.skip(!(await openRobots(page)), "no scouting seeded on this box");
+  await page.getByText("Adjust what makes a good pick", { exact: true }).click();
 
   const sliders = page.locator(".stp-weight-grid input[type='range']");
   await sliders.nth(2).fill("2");
@@ -211,6 +213,7 @@ test("a weighting survives a reload, because a pick meeting is not one page view
 
   await page.reload();
   await page.getByRole("button", { name: "Robots", exact: true }).click();
+  await page.getByText("Adjust what makes a good pick", { exact: true }).click();
   await expect(page.locator(".stp-weight-grid input[type='range']").nth(2)).toHaveValue("2");
 
   await page.getByRole("button", { name: "Reset" }).click();

@@ -96,7 +96,7 @@ export function parseAnalyticsSource(raw: unknown): AnalyticsSourceSettings {
 export function analyticsSourceLabel(mode: AnalyticsSourceMode): string {
   switch (mode) {
     case "own":
-      return "Our scouting";
+      return "Our robot";
     case "all":
       return "All teams at this event";
     case "selected":
@@ -111,9 +111,9 @@ export function analyticsSourceLabel(mode: AnalyticsSourceMode): string {
 export function analyticsSourceDetail(settings: AnalyticsSourceSettings): string {
   switch (settings.mode) {
     case "own":
-      return "Only this team's scout rows. Event ratings still use the whole field.";
+      return "Compare ratings for your own robot. This controls the comparison field, not who collected scouting reports.";
     case "all":
-      return "Every team with data at this event.";
+      return "Compare ratings across robots at this event. Shared scouting has its own source controls.";
     case "selected":
       return settings.teamKeys.length
         ? `${settings.teamKeys.length} team${settings.teamKeys.length === 1 ? "" : "s"} you picked.`
@@ -179,7 +179,7 @@ export function analyticsSourceIssue(
   ownTeamKey: string | null,
 ): AnalyticsSourceIssue {
   if (settings.mode === "own" && !normalizeTeamKey(ownTeamKey)) {
-    return { kind: "needs_own_team", message: "Choose your team before filtering to our scouting." };
+    return { kind: "needs_own_team", message: "Choose your robot before filtering the comparison field." };
   }
   if (settings.mode === "selected" && settings.teamKeys.length === 0) {
     return { kind: "needs_selected", message: "Needs setup — pick the teams this board should use." };

@@ -37,6 +37,7 @@ import {
 import { DataSourcePicker } from "../analytics/data-source-picker";
 import { useAnalyticsSource } from "../../lib/analytics/use-analytics-source";
 import { filterRowsBySource } from "../../lib/analytics/lovat-data-source";
+import { SharedScoutObservations } from "./shared-scout-observations";
 import { parseLookupNote, type LookupNote } from "../../lib/intel/lookup-notes";
 import {
   loadRoster,
@@ -662,6 +663,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
             onSavePick={() => void savePick()}
             onSelectSimilar={(teamNumber) => void select(teamNumber)}
           />
+          <SharedScoutObservations key={orgId + view.intel.team.teamKey + view.activeEvent?.eventKey} orgId={orgId} teamKey={view.intel.team.teamKey} eventKey={view.activeEvent?.eventKey ?? null} />
           {scouting ? (
             <details className="intel-source-more">
               <summary>Compare against other teams or events</summary>

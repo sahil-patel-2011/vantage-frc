@@ -1,146 +1,210 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Panel } from "../../components/ui";
-import type { FieldBreakdown, NumericBreakdown, ScoutBreakdown } from "../../lib/scouting/scout-breakdown";
+import type {
+  FieldBreakdown,
+  ScoutBreakdown,
+} from "../../lib/scouting/scout-breakdown";
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+function answer(value: unknown): string {
+  if (value === null || value === undefined || value === "")
+    return "Not recorded";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number")
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
-function Trend({ delta, lowerIsBetter }: { delta: number | null; lowerIsBetter: boolean }) {
-  if (delta == null || Math.abs(delta) < 0.5) return null;
-  const up = delta > 0;
-  const good = lowerIsBetter ? !up : up;
+function MetricTile({ field }: { field: FieldBreakdown }) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const evidence = field.evidence;
+  const summary =
+    field.kind === "number"
+      ? field.mean
+      : field.kind === "rate"
+        ? Math.round(field.rate * 100) + "%"
+        : (field.options[0]?.value ?? "—");
   return (
-    <small className={`intel-vs ${good ? "intel-vs-above" : "intel-vs-below"}`}>
-      {up ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} last 3 matches
-    </small>
-  );
-}
-
-/**
- * One bar per match, tallest = best match. The numbers are underneath in a
- * list, so the chart is never the only way to read a value.
- */
-function MatchBars({ field }: { field: NumericBreakdown }) {
-  const max = Math.max(1, field.max);
-  return (
-    <div className="intel-sb-detail">
-      <div className="intel-sb-bars" aria-hidden="true">
-        {field.series.map((point, index) => (
-          <span key={`${point.match}-${index}`} style={{ height: `${Math.max(4, (point.value / max) * 100)}%` }} />
-        ))}
-      </div>
-      <ol className="intel-sb-series" aria-label={`${field.label} by match`}>
-        {field.series.map((point, index) => (
-          <li key={`${point.match}-${index}`}>
-            <span>{point.match}</span>
-            <strong>{point.value}</strong>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
-function Tile({ field, open, onToggle }: { field: FieldBreakdown; open: boolean; onToggle: () => void }) {
-  if (field.kind === "number") {
-    // An accordion in flow, not a floating panel: it widens to the full row.
-    const tileClass = open ? "intel-sb-tile is-expanded" : "intel-sb-tile";
-    return (
-      <Panel className={tileClass} style={{ minHeight: "auto" }}>
-        <button type="button" className="intel-sb-head" aria-expanded={open} onClick={onToggle}>
-          <span className="app-muted">{field.label}</span>
-          <strong>{field.mean}</strong>
-          <small className="app-muted">
-            avg · {field.min}–{field.max} over {field.series.length}
-          </small>
-          <Trend delta={field.recentDelta} lowerIsBetter={field.lowerIsBetter} />
-          {field.sparkline ? (
-            <svg className="intel-spark" viewBox="0 0 72 28" aria-hidden="true">
-              <path d={field.sparkline} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          ) : null}
-        </button>
-        {open ? <MatchBars field={field} /> : null}
-      </Panel>
-    );
-  }
-  if (field.kind === "rate") {
-    const bad = field.yesIsBad && field.yes > 0;
-    return (
-      <Panel className="intel-sb-tile" style={{ minHeight: "auto" }}>
-        <div className="intel-sb-head">
-          <span className="app-muted">{field.label}</span>
-          <strong className={bad ? "intel-vs-below" : undefined}>{pct(field.rate)}</strong>
-          <small className="app-muted">
-            yes in {field.yes} of {field.total}
-          </small>
-          <span className="intel-sb-meter" aria-hidden="true">
-            <i className={bad ? "is-bad" : undefined} style={{ width: pct(field.rate) }} />
+    <Panel
+      className={"intel-sb-tile" + (open ? " is-expanded" : "")}
+      style={{ minHeight: "auto" }}
+    >
+      <button
+        type="button"
+        className="intel-sb-head"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{field.label}</span>
+        <strong>
+          {summary} {evidence.unit ? <small>{evidence.unit}</small> : null}
+        </strong>
+        <small className="app-muted">
+          {field.kind === "number"
+            ? "Average"
+            : field.kind === "rate"
+              ? "Recorded yes"
+              : "Most common"}{" "}
+          · {evidence.answered} matches
+          {evidence.missing ? " · " + evidence.missing + " unanswered" : ""}
+        </small>
+        {evidence.disagreements ? (
+          <span className="intel-evidence-warning">
+            {evidence.disagreements} disagreements
           </span>
+        ) : null}
+        {field.kind === "number" && field.sparkline ? (
+          <svg className="intel-spark" viewBox="0 0 72 28" aria-hidden="true">
+            <path
+              d={field.sparkline}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            />
+          </svg>
+        ) : null}
+        <span className="intel-evidence-action">
+          {open ? "Close details −" : "View matches +"}
+        </span>
+      </button>
+      {open ? (
+        <div id={id} className="intel-sb-detail">
+          <p>{evidence.definition}</p>
+          {field.kind === "number" && !evidence.unit ? (
+            <p className="app-muted">
+              Units follow the form label; no separate unit was specified.
+            </p>
+          ) : null}
+          <p className="app-muted">
+            {field.kind === "number"
+              ? "Observed range: " +
+                field.min +
+                "–" +
+                field.max +
+                (evidence.unit ? " " + evidence.unit : "") +
+                ". Each robot-match counts once; multiple numeric reports are averaged within that match first."
+              : "Repeated reports are combined within each robot-match. Conflicting selections use the most frequent answer; a tie stays unanswered."}{" "}
+            Missing answers are excluded; recorded zeroes count.{" "}
+            {evidence.answered < 3
+              ? "Small sample — use these observations with care."
+              : ""}
+          </p>
+          {field.kind === "number" && field.recentDelta !== null ? (
+            <p className="app-muted">
+              Last three observed matches average{" "}
+              {field.recentDelta >= 0 ? "+" : ""}
+              {field.recentDelta} versus the overall average. This describes
+              observations, not a prediction.
+            </p>
+          ) : null}
+          {field.kind === "split" ? (
+            <ul className="intel-sb-split">
+              {field.options.map((option) => (
+                <li key={option.value}>
+                  <span>{option.value}</span>
+                  <span>
+                    {option.count} / {field.total}
+                  </span>
+                  <b>{Math.round(option.share * 100)}%</b>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div
+            className="intel-evidence-table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label={field.label + " supporting matches"}
+          >
+            <table className="intel-evidence-table">
+              <caption>{field.label}: observations behind this summary</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Match</th>
+                  <th scope="col">Combined answer</th>
+                  <th scope="col">Individual reports</th>
+                </tr>
+              </thead>
+              <tbody>
+                {evidence.samples.map((sample, index) => (
+                  <tr key={(sample.matchKey ?? "") + index}>
+                    <th scope="row">{sample.match}</th>
+                    <td>{answer(sample.value)}</td>
+                    <td>
+                      {sample.reports.length
+                        ? sample.reports.map(answer).join(" · ")
+                        : "Not recorded"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </Panel>
-    );
-  }
-  return (
-    <Panel className="intel-sb-tile" style={{ minHeight: "auto" }}>
-      <div className="intel-sb-head">
-        <span className="app-muted">{field.label}</span>
-        <strong>{field.options[0]?.value ?? "—"}</strong>
-        <small className="app-muted">most often, of {field.total}</small>
-        <ul className="intel-sb-split">
-          {field.options.map((option) => (
-            <li key={option.value}>
-              <span>{option.value}</span>
-              <span className="intel-sb-meter" aria-hidden="true">
-                <i style={{ width: pct(option.share) }} />
-              </span>
-              <b>{option.count}</b>
-            </li>
-          ))}
-        </ul>
-      </div>
+      ) : null}
     </Panel>
   );
 }
 
-export function IntelScoutBreakdown({ breakdown }: { breakdown: ScoutBreakdown }) {
-  const [open, setOpen] = useState<string | null>(null);
-  if (breakdown.fields.length === 0 && breakdown.notes.length === 0) {
-    return (
-      <section className="intel-lookup-board" aria-label="From our scouting">
-        <header>
-          <h3>From our scouting</h3>
-          <p className="app-muted">No match scouting on this team yet. Scout a match and it shows up here.</p>
-        </header>
-      </section>
-    );
-  }
+export function IntelScoutBreakdown({
+  breakdown,
+  title = "From our scouting",
+  showNotes = true,
+}: {
+  breakdown: ScoutBreakdown;
+  title?: string;
+  showNotes?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const fields = breakdown.fields.filter((field) =>
+    field.label.toLowerCase().includes(query.trim().toLowerCase()),
+  );
   return (
-    <section className="intel-lookup-board" aria-label="From our scouting">
-      <header>
-        <h3>From our scouting</h3>
-        <p className="app-muted">
-          {breakdown.matches} match{breakdown.matches === 1 ? "" : "es"} scouted by our team. Tap a number to see it
-          match by match.
-        </p>
+    <section className="intel-lookup-board" aria-label={title}>
+      <header className="intel-evidence-header">
+        <div>
+          <h3>{title}</h3>
+          <p className="app-muted">
+            {breakdown.matches
+              ? breakdown.matches +
+                " unique matches. Open any metric to inspect its evidence."
+              : "No match observations in this selection yet."}
+          </p>
+        </div>
+        {breakdown.fields.length > 6 ? (
+          <label className="intel-metric-search">
+            Find a metric
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Auto, climb, cycles…"
+            />
+          </label>
+        ) : null}
       </header>
+      {breakdown.disagreements?.length ? (
+        <p className="intel-evidence-warning" role="status">
+          Reports disagree on {breakdown.disagreements.length} match-field
+          observations. Inspect individual answers before making a close
+          decision.
+        </p>
+      ) : null}
       <div className="intel-lookup-grid">
-        {breakdown.fields.map((field) => (
-          <Tile
-            key={field.key}
-            field={field}
-            open={open === field.key}
-            onToggle={() => setOpen((current) => (current === field.key ? null : field.key))}
-          />
+        {fields.map((field) => (
+          <MetricTile key={field.key} field={field} />
         ))}
       </div>
-      {breakdown.notes.length ? (
+      {query && !fields.length ? (
+        <p className="app-muted">No metrics match “{query}”.</p>
+      ) : null}
+      {showNotes && breakdown.notes.length ? (
         <ul className="intel-sb-notes" aria-label="Scout notes">
           {breakdown.notes.map((note, index) => (
-            <li key={`${note.match}-${index}`}>
+            <li key={note.match + index}>
               <span className="app-badge">{note.match}</span>
               <p>{note.text}</p>
             </li>

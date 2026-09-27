@@ -1,4 +1,5 @@
 "use client";
+import { ScoutingSharing } from "../scouting/scouting-sharing";
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -305,6 +306,7 @@ export function ScoutingHome() {
         </div>
       </section>
 
+      {orgId ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}
       <section className="scout-home-device" aria-label="This device">
         <div className={`scout-home-status ${online ? "is-online" : "is-offline"}`}>
           <span aria-hidden="true" />

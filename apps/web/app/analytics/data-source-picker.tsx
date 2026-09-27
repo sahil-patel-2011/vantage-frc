@@ -30,10 +30,10 @@ export function DataSourcePicker({
   return (
     <Panel className="lovat-source-picker motion-card" style={{ minHeight: "auto" }}>
       <header>
-        <h3>Data source</h3>
+        <h3>Comparison field</h3>
         <p className="app-muted">{analyticsSourceDetail(settings)}</p>
       </header>
-      <div className="lovat-source-modes" role="radiogroup" aria-label="Data source">
+      <div className="lovat-source-modes" role="group" aria-label="Comparison field">
         {ANALYTICS_SOURCE_MODES.map((mode) => (
           <Button
             key={mode}

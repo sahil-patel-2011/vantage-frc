@@ -12,6 +12,8 @@ import {
 import type { FormulaExpression } from "@vantage/scouting";
 import { onePerMatch, scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
 import { observableMatchSql } from "./scouted-counts";
+import type { IntelScoutNote } from "../intel/intel-related";
+export type ObservedRobot = { teamKey: string; reports: IntelScoutNote[] };
 
 /**
  * What a weekend of tablets actually adds up to.
@@ -52,14 +54,17 @@ export type TeamProfilesView =
       basis: "phase" | "total" | "recorded";
       /** Teams seen, but not enough times to rank yet. */
       thin: number;
+      observations: ObservedRobot[];
     }
   | { status: "empty"; eventKey: string | null; message: string }
-  | { status: "needs_formula"; eventKey: string | null; message: string };
+  | { status: "needs_formula"; eventKey: string | null; message: string; observations: ObservedRobot[] };
 
 type EntryRow = {
   teamKey: string;
   matchKey: string;
   payload: Record<string, unknown>;
+  confidence: "high" | "normal" | "low";
+  fields: IntelScoutNote["fields"];
 };
 
 type FormulaRow = { name: string; expression: unknown };
@@ -96,9 +101,10 @@ export async function loadTeamProfiles(
     client.query<EntryRow>(
       // Only reports for matches that can have been watched (see
       // scouted-counts.ts), in match order so trends read early to late.
-      `SELECT e.team_key AS "teamKey", e.match_key AS "matchKey", e.payload
+      `SELECT e.team_key AS "teamKey", e.match_key AS "matchKey", e.payload, e.confidence, s.schema->'fields' AS fields
          FROM match_scout_entries e
          JOIN matches_ref m ON m.match_key = e.match_key
+         JOIN scout_schemas s ON s.id=e.schema_id AND s.org_id=e.org_id
         WHERE e.org_id = $1::uuid AND e.event_key = $2
           AND ${observableMatchSql("m")}
         ORDER BY CASE m.comp_level WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5 END,
@@ -119,7 +125,14 @@ export async function loadTeamProfiles(
     };
   }
 
-  const converted = scoutedRowsFromEntries(entries.rows, usableFormulas(formulas.rows));
+  const robots = new Map<string, IntelScoutNote[]>();
+  for (const row of entries.rows) {
+    const reports = robots.get(row.teamKey) ?? [];
+    reports.push({ matchKey: row.matchKey, eventKey: input.eventKey, payload: row.payload, confidence: row.confidence ?? "normal", fields: row.fields });
+    robots.set(row.teamKey, reports);
+  }
+  const observations = [...robots].map(([teamKey,reports]) => ({ teamKey,reports }));
+  const converted = scoutedRowsFromEntries(entries.rows.filter(row => row.confidence !== "low"), usableFormulas(formulas.rows));
   if (!converted.ok) {
     return {
       status: "needs_formula",
@@ -128,6 +141,7 @@ export async function loadTeamProfiles(
       // repeating it here in different words would be a second source of truth
       // about the same gap.
       message: converted.reason,
+      observations,
     };
   }
 
@@ -148,5 +162,6 @@ export async function loadTeamProfiles(
     weighted,
     basis: converted.source === "recorded" ? "recorded" : converted.basis,
     thin: profiles.filter((profile) => profile.matches < MIN_MATCHES_TO_STAND_ALONE).length,
+    observations,
   };
 }

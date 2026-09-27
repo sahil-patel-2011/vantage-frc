@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds } from "./match-clock";
+import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, timingForSeason } from "./match-clock";
 
 describe("match clock", () => {
+  it("uses official 2026 timing with a scoring pause and a 30-second endgame", () => {
+    const timing = timingForSeason(2026);
+    expect(phaseAt(19_999,timing)).toBe("auto");
+    expect(phaseAt(20_000,timing)).toBe("transition");
+    expect(phaseRemainingSeconds(20_000,timing)).toBe(3);
+    expect(phaseAt(23_000,timing)).toBe("teleop");
+    expect(phaseAt(132_999,timing)).toBe("teleop");
+    expect(phaseAt(133_000,timing)).toBe("endgame");
+    expect(phaseRemainingSeconds(133_000,timing)).toBe(30);
+    expect(phaseAt(163_000,timing)).toBe("done");
+  });
   it("walks pre, auto, teleop, endgame, done on standard FRC timing", () => {
     expect(phaseAt(null)).toBe("pre");
     expect(phaseAt(0)).toBe("auto");

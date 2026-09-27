@@ -13,8 +13,11 @@ The release is **not verified**. Use inventory.json and completion-matrix.md to 
 - No new photo/video storage; external match-video links remain.
 - Open signup only after release verification; no calendar date gate.
 - Preserve saved dashboards and financial/inventory transaction guarantees.
+- September 27 user update: structured match scouting is shared by default, including past reports, with owner/admin opt-out. This supersedes the original opt-in default; identities and private notes remain excluded. See SCOUTING-REVIEW.md.
 
 ## Current evidence
+
+- September 27 scouting iteration: Lovat-informed capabilities and match evidence, no-formula raw profiles, real event/match/confidence filters, recorded position/path grids, corrected 2026 clock, and default-on structured sharing with owner/admin opt-out. All 15 focused journeys pass on the local 748-page production build, including a real two-team API/opt-out journey. Six scoped phone/desktop result accessibility scans report no violations. Repository lint, all workspace types, 1,500 unit files / 11,200 tests and migration checks pass; 16 files / 41 tests remain explicitly skipped, with the new conditional sharing test passing separately on PostgreSQL. Recovery capture covers all 612 scratch tables. Production is unchanged; see SCOUTING-REVIEW.md and evidence/scouting-refresh.json.
 
 - Initial tree was clean on main; isolated implementation branch created.
 - Actual Vercel project and environment metadata inspected. The project is on an active Pro plan. Production request access currently uses a database-owner connection; least-privilege configuration remains a release blocker. Protected environment values are unavailable through an environment pull and need runtime validation.

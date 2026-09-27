@@ -1,5 +1,5 @@
 /** Shared policy content. Disclosures must match the released service. */
-export const LEGAL_LAST_UPDATED = "September 26, 2026";
+export const LEGAL_LAST_UPDATED = "September 27, 2026";
 export const LEGAL_CONTACT_EMAIL = "vantagefrc@gmail.com";
 export type LegalSection = { id: string; heading: string; paragraphs: string[]; list?: string[] };
 export type LegalDocument = { slug: "privacy" | "terms"; title: string; summary: string; sections: LegalSection[] };
@@ -29,7 +29,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     ]),
     section("who-can-see", "Access and sharing", [
       "Team records are separated by team and protected by permissions. Members access shared records according to their roles. Ordinary team access does not reveal your date of birth, gender, personal keys, private AI conversations, or private files.",
-      "An owner may explicitly share selected scouting data with partner teams. Public forms, display boards, and share links expose their designated information to people who can access the link.",
+      "Scouting sharing is enabled by default. Past and new structured match observations are available to other signed-in Vantage teams, identified by the contributing team. Scout identities, free text, private notes, and action histories are excluded. A team owner or admin can turn sharing off from Scouting; this stops further access through the shared scouting service but cannot recall copies already saved by recipients. Public forms, display boards, and share links expose their designated information to people who can access the link.",
       "Authorized operators may access underlying records for maintenance, support, security, abuse investigation, and legal obligations. Personal privacy inside the product does not prevent necessary operator access to infrastructure.",
     ]),
     section("messages", "Messages", [

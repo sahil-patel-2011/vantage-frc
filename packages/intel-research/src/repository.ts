@@ -195,14 +195,16 @@ export class IntelResearchRepository {
     return { eventKey: row.eventKey, eventName: row.eventName };
   }
 
-  async getScoutObservations(orgId: string, teamKey: string): Promise<ScoutObservation[]> {
+  async getScoutObservations(orgId: string, teamKey: string, includeLow = false): Promise<ScoutObservation[]> {
     const result = await this.client.query<ScoutObservation>(
-      `SELECT payload, confidence, match_key AS "matchKey" FROM match_scout_entries
-       WHERE org_id=$1 AND team_key=$2 AND confidence <> 'low'
+      `SELECT e.payload, e.confidence, e.match_key AS "matchKey", e.event_key AS "eventKey", s.schema->'fields' AS fields
+       FROM match_scout_entries e JOIN scout_schemas s ON s.id=e.schema_id AND s.org_id=e.org_id
+       WHERE e.org_id=$1 AND e.team_key=$2 AND ($3::boolean OR e.confidence <> 'low')
        UNION ALL
-       SELECT payload, confidence, NULL FROM pit_scout_entries
-       WHERE org_id=$1 AND team_key=$2 AND confidence <> 'low'`,
-      [orgId, teamKey],
+       SELECT e.payload, e.confidence, NULL, e.event_key, s.schema->'fields'
+       FROM pit_scout_entries e JOIN scout_schemas s ON s.id=e.schema_id AND s.org_id=e.org_id
+       WHERE e.org_id=$1 AND e.team_key=$2 AND ($3::boolean OR e.confidence <> 'low')`,
+      [orgId, teamKey, includeLow],
     );
     return result.rows;
   }

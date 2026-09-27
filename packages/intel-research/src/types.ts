@@ -27,6 +27,8 @@ export type Finding = {
 };
 
 export type ScoutObservation = {
+  eventKey?: string;
+  fields?: Array<{ key: string; label: string; type: string; helpText?: string; config?: Record<string, unknown> }>;
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
   matchKey?: string;

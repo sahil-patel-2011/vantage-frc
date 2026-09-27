@@ -81,6 +81,8 @@ export type IntelSetupStep = {
 };
 
 export type IntelScoutNote = {
+  eventKey?: string;
+  fields?: import("@vantage/scouting").FieldDefinition[];
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
   matchKey?: string;

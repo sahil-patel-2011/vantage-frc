@@ -7,6 +7,7 @@ import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "
 import { MEDIA_ENABLED } from "../../lib/media-availability";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { ScoutingTeamProfiles } from "./scouting-team-profiles";
+import { ScoutingSharing } from "./scouting-sharing";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
 import { PitTeamField, ScoutTargetChoices } from "./scout-target-by-hand";
@@ -411,6 +412,7 @@ return (
       embedded={embedded}
       lead={Boolean(data?.canManageSchemas)}
     />
+    {tab === "teams" || tab === "trust" ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}
 
     {tab === "teams" ? (
       /* The one screen that answers what the scouting was *for*. Everything
@@ -674,6 +676,7 @@ return (
                 </div>
                 {formFields.length ? (
                   <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`}
+                    seasonYear={data?.eventKey ? Number(data.eventKey.slice(0,4)) : schema?.year ?? null}
                     storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })}
                     onStarted={() => {
                       const userId = data?.scoutIdentity?.userId;

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
           const intel = await repository.getTeamIntel(orgId!, teamNumber);
           if (!intel) return { team: null, activeEvent };
           const [observations, similarTeams, field] = await Promise.all([
-            repository.getScoutObservations(orgId!, intel.team.teamKey),
+            repository.getScoutObservations(orgId!, intel.team.teamKey, true),
             repository.getSimilarTeams(intel.team.teamKey),
             activeEvent?.eventKey
               ? client.query<EventRatingRow>(

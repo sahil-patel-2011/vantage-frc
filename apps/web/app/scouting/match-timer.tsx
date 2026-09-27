@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, type MatchPhase } from "../../lib/scouting/match-clock";
+import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, timingForSeason, type MatchPhase } from "../../lib/scouting/match-clock";
 import { readScoutClock, writeScoutClock } from "../../lib/scouting/draft-autosave";
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
   pre: "Match timer",
   auto: "Auto",
+  transition: "Scoring pause",
   teleop: "Teleop",
   endgame: "Endgame",
   done: "Match over",
@@ -31,8 +32,8 @@ function saveFromTimer() {
  * stay on the field and their thumb finds the right counters. When the match ends the bar
  * becomes "Save this match" and the form scrolls to its last answers. Restarting is one tap.
  */
-export function MatchTimer({ fields, resetKey, storageKey, onStarted }: {
-  fields: Array<{ key: string; label: string }>; resetKey: string; storageKey: string | null; onStarted?: () => void;
+export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear = null }: {
+  fields: Array<{ key: string; label: string }>; resetKey: string; storageKey: string | null; onStarted?: () => void; seasonYear?: number | null;
 }) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -47,7 +48,8 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted }: {
   }, [resetKey, storageKey]);
 
   const elapsed = startedAt == null ? null : now - startedAt;
-  const phase = phaseAt(elapsed);
+  const timing = timingForSeason(seasonYear);
+  const phase = phaseAt(elapsed, timing);
   const done = phase === "done";
 
   // Save asks "still running?" while the clock is in the match (see scouting-ready-view).
@@ -85,10 +87,10 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted }: {
     target.scrollIntoView({ behavior, block: "start" });
   }, [phase, anchors]);
 
-  const secondsLeft = elapsed == null || done ? 0 : phaseRemainingSeconds(elapsed);
+  const secondsLeft = elapsed == null || done ? 0 : phaseRemainingSeconds(elapsed, timing);
 
   return (
-    <div className="match-timer" role="timer" aria-live="off" data-running={elapsed != null && !done ? "true" : "false"}>
+    <div><div className="match-timer" role="timer" aria-live="off" data-running={elapsed != null && !done ? "true" : "false"}>
       {/* Before the start the button says what this is; a grey "Match timer" pill beside it
           looked like a second button. */}
       {elapsed != null ? (
@@ -120,6 +122,14 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted }: {
           Start match timer when auto starts
         </button>
       )}
+    </div>
+    <nav className="scout-phase-navigation" aria-label="Match form sections">
+      {(["auto", "teleop", "endgame"] as const).filter(key => anchors[key]).map(key => <button type="button" key={key} aria-current={phase === key ? "step" : undefined} onClick={() => {
+        document.getElementById("scout-field-" + encodeURIComponent(anchors[key]!))?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+      }}>{PHASE_LABEL[key]}</button>)}
+      <button type="button" onClick={() => document.querySelector(".scout-save-button")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" })}>Review</button>
+    </nav>
+    {seasonYear !== 2026 ? <small className="app-muted">Practice timing: 15s auto / 135s teleop. Follow the field clock.</small> : null}
     </div>
   );
 }

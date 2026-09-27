@@ -13,14 +13,26 @@
  */
 
 import { sparklinePath } from "../intel/lovat-lookup";
-import { combineObservations, type ObservationConflict } from "./observations";
+import { combineObservations, observationFields, type ObservationConflict } from "./observations";
+import type { FieldDefinition } from "@vantage/scouting";
 
 export type ScoutRow = {
   matchKey?: string | null;
   payload: Record<string, unknown>;
+  fields?: FieldDefinition[];
+};
+
+export type MetricEvidence = {
+  unit: string | null;
+  definition: string;
+  answered: number;
+  missing: number;
+  disagreements: number;
+  samples: Array<{ match: string; matchKey: string | null; value: unknown; reports: unknown[] }>;
 };
 
 export type NumericBreakdown = {
+  evidence: MetricEvidence;
   kind: "number";
   key: string;
   label: string;
@@ -37,6 +49,7 @@ export type NumericBreakdown = {
 };
 
 export type RateBreakdown = {
+  evidence: MetricEvidence;
   kind: "rate";
   key: string;
   label: string;
@@ -48,6 +61,7 @@ export type RateBreakdown = {
 };
 
 export type SplitBreakdown = {
+  evidence: MetricEvidence;
   kind: "split";
   key: string;
   label: string;
@@ -161,17 +175,31 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
 
   const fields: FieldBreakdown[] = [];
   const notes: ScoutBreakdown["notes"] = [];
+  const definitions = new Map(rows.flatMap(row => row.fields ?? []).map(field => [field.key, field]));
+  const selections = new Map<string,Set<string>>();
+  for (const row of rows) for (const [key,value] of Object.entries(row.payload)) {
+    if (Array.isArray(value) && value.every(item => typeof item === "string")) {
+      const options = selections.get(key) ?? new Set<string>(); value.forEach(item => options.add(item)); selections.set(key,options);
+    }
+  }
+  const raw = rows.map(row => ({ ...row, flat: observationFields(row.payload,selections) }));
+  const reportsByMatch = new Map<string | null | undefined, typeof raw>();
+  for (const row of raw) {
+    const reports = reportsByMatch.get(row.matchKey) ?? [];
+    reports.push(row); reportsByMatch.set(row.matchKey,reports);
+  }
+  const isNote = (key: string) => NOTE_KEYS.has(key.toLowerCase()) || ["text","long_text","short_answer"].includes(definitions.get(key)?.type ?? "");
 
   for (const row of rows) {
     for (const [key, value] of Object.entries(row.payload)) {
-      if (NOTE_KEYS.has(key.toLowerCase()) && typeof value === "string" && value.trim()) {
+      if (isNote(key) && typeof value === "string" && value.trim()) {
         notes.push({ match: matchKeyLabel(row.matchKey), text: value.trim() });
       }
     }
   }
 
   for (const key of order) {
-    if (NOTE_KEYS.has(key.toLowerCase())) {
+    if (isNote(key)) {
       continue;
     }
 
@@ -194,13 +222,30 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
       }
     }
 
-    const label = fieldLabel(key);
+    const definition = definitions.get(key) ?? definitions.get(key.split(".")[0]!);
+    // A grid cell is a location, never a scoring average. Paths remain raw observations.
+    if (definition?.type === "field_position" || definition?.type === "auto_path") continue;
+    const label = definition?.label ? `${definition.label}${key.includes(".") ? ` · ${fieldLabel(key.split(".").slice(1).join(" "))}` : ""}` : fieldLabel(key);
+    const evidence: MetricEvidence = {
+      unit: definition?.type === "timer" ? "seconds" : typeof definition?.config?.unit === "string" ? definition.config.unit : null,
+      definition: definition?.helpText?.trim() || `Recorded answers for ${label.toLowerCase()} in the scouting form.`,
+      answered: 0,
+      missing: 0,
+      disagreements: combined.conflicts.filter(conflict => conflict.field === key).length,
+      samples: sorted.map(row => ({
+        match: matchKeyLabel(row.matchKey), matchKey: row.matchKey ?? null,
+        value: row.payload[key] ?? null,
+        reports: (reportsByMatch.get(row.matchKey) ?? [])
+          .map(report => report.flat[key]).filter(value => value !== null && value !== undefined && value !== ""),
+      })),
+    };
     if (numbers.length > 0 && numbers.length >= flags.length && numbers.length >= words.length) {
       const values = numbers.map((point) => point.value);
       const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
       const recent = values.slice(-3);
       const recentMean = recent.reduce((sum, value) => sum + value, 0) / recent.length;
       fields.push({
+        evidence: { ...evidence, answered: numbers.length, missing: sorted.length - numbers.length },
         kind: "number",
         key,
         label,
@@ -215,6 +260,7 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
     } else if (flags.length > 0 && flags.length >= words.length) {
       const yes = flags.filter(Boolean).length;
       fields.push({
+        evidence: { ...evidence, answered: flags.length, missing: sorted.length - flags.length },
         kind: "rate",
         key,
         label,
@@ -230,6 +276,7 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
       // as many options as answers says nothing.
       if (counts.size > 6 || (counts.size === words.length && words.length > 3)) continue;
       fields.push({
+        evidence: { ...evidence, answered: words.length, missing: sorted.length - words.length },
         kind: "split",
         key,
         label,
@@ -243,7 +290,7 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
 
   fields.sort((a, b) => fieldRank(a) - fieldRank(b));
   return { matches: sorted.filter((row) => row.matchKey).length, fields, notes,
-    ...(combined.conflicts.some((item) => !NOTE_KEYS.has(item.field.toLowerCase())) ? {
-      disagreements: combined.conflicts.filter((item) => !NOTE_KEYS.has(item.field.toLowerCase())),
+    ...(combined.conflicts.some((item) => !isNote(item.field)) ? {
+      disagreements: combined.conflicts.filter((item) => !isNote(item.field)),
     } : {}) };
 }

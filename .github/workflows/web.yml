@@ -217,6 +217,10 @@ jobs:
         env:
           TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
         run: npm test -- packages/db/src/invitation-age-integration.test.ts apps/web/lib/notifications/inbox-integration.test.ts packages/core/src/onboarding-postgres.test.ts --maxWorkers=1
+      - name: Prove default scouting sharing and private-data isolation
+        env:
+          TEST_SCOUTING_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
+        run: npm test -- packages/db/src/scouting-network.integration.test.ts --maxWorkers=1
       - name: Upload migration failure log
         if: failure()
         uses: actions/upload-artifact@v4
