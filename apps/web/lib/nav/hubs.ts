@@ -116,7 +116,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Its own href keeps the hub's one-route-per-tab rule; search lists it once (Event day).
         { id: "match-briefing", label: "Pre-match briefing", legacyHref: "/briefing?from=strategy", featured: true, inSearch: false },
         { id: "alliance-selection-desk", label: "Alliance desk", legacyHref: "/alliance-selection-desk", featured: true },
-        { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", featured: true },
+        // Not a chip: the Strategy page right under the strip has its own "Pick lists" tab that opens
+        // this same view, so the chip was a second button for one place. Search still finds it.
+        { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", inStrip: false },
         { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
         { id: "chemistry", label: "Chemistry", legacyHref: "/chemistry" },
         { id: "pairwise", label: "Pairwise", legacyHref: "/pairwise" },
