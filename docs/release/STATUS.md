@@ -11,11 +11,13 @@ The release is **not verified**. Use inventory.json and completion-matrix.md to 
 - Personal local AI connections never execute another person's jobs.
 - Age 13+ eligibility; model-training opt-out remains available and enforced.
 - No new photo/video storage; external match-video links remain.
-- Open signup only after release verification; no calendar date gate.
+- September 27 launch update: open public signup no earlier than December 1, 2026 at midnight America/New_York, and only after release verification. Early access is by contact and invitation. This supersedes the earlier no-calendar-gate decision; PLAN.md remains unchanged.
 - Preserve saved dashboards and financial/inventory transaction guarantees.
 - September 27 user update: structured match scouting is shared by default, including past reports, with owner/admin opt-out. This supersedes the original opt-in default; identities and private notes remain excluded. See SCOUTING-REVIEW.md.
 
 ## Current evidence
+
+- Device and launch increment: December 1, 2026 Eastern signup gate plus readiness switches; early-access contact; live homepage signup actions; 2–20 GB device cache budget with protected outboxes; folded member shortcuts; lap-timer evidence. Local unit/regression, build and browser evidence is recorded in DEVICE-AND-LAUNCH.md and evidence/device-and-launch.json. Production remains unchanged and release gates remain open.
 
 - September 27 scouting iteration: Lovat-informed capabilities and match evidence, no-formula raw profiles, real event/match/confidence filters, recorded position/path grids, corrected 2026 clock, and default-on structured sharing with owner/admin opt-out. All 15 focused journeys pass on the local 748-page production build, including a real two-team API/opt-out journey. Six scoped phone/desktop result accessibility scans report no violations. Repository lint, all workspace types, 1,500 unit files / 11,200 tests and migration checks pass; 16 files / 41 tests remain explicitly skipped, with the new conditional sharing test passing separately on PostgreSQL. Recovery capture covers all 612 scratch tables. Production is unchanged; see SCOUTING-REVIEW.md and evidence/scouting-refresh.json.
 

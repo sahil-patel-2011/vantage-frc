@@ -36,6 +36,7 @@ import {
   type CockpitPrefs,
 } from "../../lib/cockpit/prefs";
 import { ThemeToggle } from "../theme-provider";
+import OfflineStoragePanel from "./offline-storage-panel";
 
 type Status = { tone: "ok" | "error"; text: string } | null;
 
@@ -228,6 +229,7 @@ export default function AppearancePanel() {
 
   return (
     <div className="appearance-stack">
+      <OfflineStoragePanel />
       <section className="appearance-group">
         <ThemeToggle expanded />
       </section>

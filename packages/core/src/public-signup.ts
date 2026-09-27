@@ -1,10 +1,9 @@
-/** Production signup opens only after the operator records release acceptance. */
-export const PUBLIC_SIGNUP_EARLIEST = "";
+/** December 1, 2026 at midnight in America/New_York; readiness is still required. */
+export const PUBLIC_SIGNUP_EARLIEST = "2026-12-01T05:00:00.000Z";
 export const PUBLIC_SIGNUP_ENV_VALUE = "open";
 
-/** Kept for existing status consumers; signup has no scheduled release date. */
 export function publicSignupDateReached(now: Date = new Date()): boolean {
-  return Number.isFinite(now.getTime());
+  return Number.isFinite(now.getTime()) && now.getTime() >= Date.parse(PUBLIC_SIGNUP_EARLIEST);
 }
 
 export function publicSignupEnvEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -35,8 +34,8 @@ export function isLocalAcceptanceSignup(env: NodeJS.ProcessEnv = process.env): b
 }
 
 export function isPublicSignupOpen(now: Date = new Date(), env: NodeJS.ProcessEnv = process.env): boolean {
-  return publicSignupDateReached(now) && (isLocalAcceptanceSignup(env)
-    || (publicSignupEnvEnabled(env) && env.VANTAGE_PRODUCTION_VERIFIED === "1"));
+  return Number.isFinite(now.getTime()) && (isLocalAcceptanceSignup(env)
+    || (publicSignupDateReached(now) && publicSignupEnvEnabled(env) && env.VANTAGE_PRODUCTION_VERIFIED === "1"));
 }
 
 export type PublicSignupStatus = {
@@ -55,8 +54,9 @@ export function publicSignupStatus(now: Date = new Date(), env: NodeJS.ProcessEn
   const readinessVerified = env.VANTAGE_PRODUCTION_VERIFIED === "1";
   const localAcceptance = isLocalAcceptanceSignup(env);
   const open = isPublicSignupOpen(now, env);
-  const reason = !dateReached ? "Signup is closed because the server clock is invalid."
+  const reason = !Number.isFinite(now.getTime()) ? "Signup is closed because the server clock is invalid."
     : localAcceptance ? "Local acceptance signup is enabled for an isolated test database. Production remains unverified."
+    : !dateReached ? "Public sign-up is scheduled for December 1, 2026 (Eastern Time), subject to production verification. Contact vantagefrc@gmail.com for early access."
     : open ? "Public sign-up is open."
     : !readinessVerified ? "Public sign-up is closed until production verification passes (VANTAGE_PRODUCTION_VERIFIED=1)."
     : "Production is verified. Set VANTAGE_PUBLIC_SIGNUP=open to allow sign-up.";

@@ -1,0 +1,39 @@
+{
+  "date": "2026-09-27",
+  "productionChanged": false,
+  "signupEarliest": "2026-12-01T05:00:00.000Z",
+  "requiresProductionVerification": true,
+  "checks": {
+    "unit": {
+      "filesPassed": 1501,
+      "testsPassed": 11207,
+      "filesSkipped": 16,
+      "testsSkipped": 41
+    },
+    "additionalTests": "New live-cache tests and final affected regression checks passed separately; see DEVICE-AND-LAUNCH.md.",
+    "lint": "passed",
+    "workspaceTypes": "passed before final small follow-up edits; exact candidate CI required",
+    "productionBuild": "passed, 748 pages; final sign-in footer follow-up verified in development and requires exact candidate build",
+    "browser": {
+      "initialSettings": 4,
+      "developmentFinal": 6,
+      "productionCandidate": {
+        "passed": 10,
+        "failed": 3,
+        "findings": [
+          "Early-access footer hidden in password mode: fixed and replayed in development",
+          "New test used nonexistent scout fixture role: corrected to member and passed",
+          "Existing sign-in test assumes development email OTP; masked production preview has no email provider"
+        ]
+      }
+    },
+    "accessibility": "No axe violations in scoped device settings on phone and desktop; keyboard and persistence checks passed"
+  },
+  "limitations": [
+    "Browser storage estimates are approximate; selected GB budget does not reserve space",
+    "Service-worker app-shell assets are not pruned by the setting",
+    "Synced queues clear automatically, saved read caches remain available",
+    "Original production release gates remain unresolved"
+  ],
+  "ci": "pending candidate push"
+}

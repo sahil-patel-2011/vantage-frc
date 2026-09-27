@@ -17,6 +17,15 @@ describe("personal scouting on shared devices", () => {
   beforeEach(() => { identity.user = "a"; vi.stubGlobal("indexedDB", new IDBFactory()); vi.stubGlobal("navigator", { onLine: true }); });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("blocks new read caches at quota but preserves and accepts unsent reports", async () => {
+    await cacheEvent(ORG, { saved: "event" });
+    vi.stubGlobal("navigator", { onLine: true, storage: { estimate: async () => ({ usage: 1024, quota: 1024 }) } });
+    await expect(cacheEvent(ORG, { replacement: true })).rejects.toThrow("cache limit");
+    await queueEntry(entry("quota-report"));
+    expect((await listPendingEntries()).map(row => row.clientId)).toEqual(["quota-report"]);
+    expect(await getCachedEvent(ORG)).toEqual({ saved: "event" });
+  });
+
   it("keeps two people's identical client IDs, cache, counts and last team separate", async () => {
     await queueEntry(entry());
     await cacheEvent(ORG, { myEntries: ["a-private"] });

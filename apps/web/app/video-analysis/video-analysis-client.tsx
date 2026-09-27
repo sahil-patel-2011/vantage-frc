@@ -167,6 +167,7 @@ function VideoAnalysisLive({ orgId }: { orgId: string }) {
       {snapshot.offline ? (
         <OfflineBanner feature="Video" fromCache={Boolean(snapshot.cachedAt)} cachedAt={snapshot.cachedAt} />
       ) : null}
+      {snapshot.cacheError ? <p role="status" className="brand-notice">{snapshot.cacheError}</p> : null}
       {shell === "ready" ? <VideoNextActionsPanel actions={nextActions} /> : null}
       <VideoPasteForm
         sourceKind={sourceKind}

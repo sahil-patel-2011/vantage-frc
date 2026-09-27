@@ -1,6 +1,7 @@
 "use client";
 
 import { MEDIA_PAUSED_MESSAGE } from "./media-availability";
+import { cacheJsonBytes, checkCacheSpace } from "./offline/storage-budget";
 import type { SyncEntry } from "@vantage/scouting";
 import { partitionByOrgId } from "@vantage/scouting";
 import { lockScoutPayload } from "@vantage/scouting/identity";
@@ -74,6 +75,7 @@ export async function getLastOrgId(): Promise<string | null> {
 
 export async function cacheEvent(orgId: string, data: unknown): Promise<void> {
   const user = await requireScoutStorageUser(orgId);
+  await checkCacheSpace(cacheJsonBytes(data));
   await scoutTransaction(user, [CACHE, META], "readwrite", async tx => {
     await Promise.all([
       idbValue(tx.objectStore(CACHE).put({ orgId, data, cachedAt: new Date().toISOString() })),

@@ -423,14 +423,14 @@ export function AppShellNavPanel({
               );
             })}
             {memberView ? (
-              <div className="soft-drawer-quick" aria-label="Your match day">
-                <p className="soft-menu-section-label">Quick access</p>
+              <details className="soft-drawer-quick soft-workspace-sections" aria-label="Your match day">
+                <summary>Match-day shortcuts</summary>
                 {MEMBER_QUICK.filter((entry) => entry.label !== "Home" && entry.label !== "Strategy" && navHrefAllowed(entry.path)).map((entry) => (
                   <a key={entry.label} href={entry.href(orgId)} onClick={closeNav}>
                     <Icon name={entry.icon} /><span>{entry.label}</span>
                   </a>
                 ))}
-              </div>
+              </details>
             ) : null}
           </nav>
         )}

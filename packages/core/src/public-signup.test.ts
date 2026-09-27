@@ -2,23 +2,26 @@ import { describe, expect, it } from "vitest";
 import { isLocalAcceptanceSignup, isPublicSignupOpen, publicSignupEnvEnabled, publicSignupStatus } from "./public-signup";
 describe("production readiness controls public signup", () => {
   const ready = { VANTAGE_PUBLIC_SIGNUP: "open", VANTAGE_PRODUCTION_VERIFIED: "1" };
-  it("requires both explicit switches, regardless of calendar date", () => {
-    expect(isPublicSignupOpen(new Date("2026-09-26"), ready)).toBe(true);
+  it("opens at midnight Eastern on December 1 only after acceptance", () => {
+    expect(isPublicSignupOpen(new Date("2026-12-01T04:59:59.999Z"), ready)).toBe(false);
+    expect(isPublicSignupOpen(new Date("2026-12-01T05:00:00.000Z"), ready)).toBe(true);
     expect(isPublicSignupOpen(new Date("2026-11-01"), {})).toBe(false);
-    expect(isPublicSignupOpen(new Date(), { VANTAGE_PUBLIC_SIGNUP: "open" })).toBe(false);
-    expect(isPublicSignupOpen(new Date(), { VANTAGE_PRODUCTION_VERIFIED: "1" })).toBe(false);
+    expect(isPublicSignupOpen(new Date("2026-12-02"), { VANTAGE_PUBLIC_SIGNUP: "open" })).toBe(false);
+    expect(isPublicSignupOpen(new Date("2026-12-02"), { VANTAGE_PRODUCTION_VERIFIED: "1" })).toBe(false);
     expect(isPublicSignupOpen(new Date("invalid"), ready)).toBe(false);
   });
   it("only accepts the intended values and can be closed immediately", () => {
     for (const value of ["true", "1", "yes", "opened", ""]) expect(publicSignupEnvEnabled({ VANTAGE_PUBLIC_SIGNUP: value })).toBe(false);
     expect(publicSignupEnvEnabled({ VANTAGE_PUBLIC_SIGNUP: "OPEN " })).toBe(true);
-    expect(isPublicSignupOpen(new Date(), { ...ready, VANTAGE_PUBLIC_SIGNUP: "closed" })).toBe(false);
-    expect(isPublicSignupOpen(new Date(), { ...ready, VANTAGE_PRODUCTION_VERIFIED: "0" })).toBe(false);
+    expect(isPublicSignupOpen(new Date("2026-12-02"), { ...ready, VANTAGE_PUBLIC_SIGNUP: "closed" })).toBe(false);
+    expect(isPublicSignupOpen(new Date("2026-12-02"), { ...ready, VANTAGE_PRODUCTION_VERIFIED: "0" })).toBe(false);
   });
   it("explains the remaining readiness requirement", () => {
-    expect(publicSignupStatus(new Date(), {}).reason).toContain("production verification");
-    expect(publicSignupStatus(new Date(), { VANTAGE_PRODUCTION_VERIFIED: "1" }).reason).toContain("VANTAGE_PUBLIC_SIGNUP=open");
-    expect(publicSignupStatus(new Date(), ready)).toMatchObject({ open: true, readinessVerified: true });
+    expect(publicSignupStatus(new Date("2026-11-01"), ready)).toMatchObject({ open: false, dateReached: false, earliest: "2026-12-01T05:00:00.000Z" });
+    expect(publicSignupStatus(new Date("2026-11-01"), ready).reason).toContain("early access");
+    expect(publicSignupStatus(new Date("2026-12-02"), {}).reason).toContain("production verification");
+    expect(publicSignupStatus(new Date("2026-12-02"), { VANTAGE_PRODUCTION_VERIFIED: "1" }).reason).toContain("VANTAGE_PUBLIC_SIGNUP=open");
+    expect(publicSignupStatus(new Date("2026-12-02"), ready)).toMatchObject({ open: true, readinessVerified: true });
   });
 });
 
@@ -29,7 +32,7 @@ describe("isolated local acceptance signup", () => {
     DATABASE_URL: "postgresql://test_admin@127.0.0.1:55439/vantage_release_test?sslmode=disable",
   };
   it("opens real local signup without marking production verified", () => {
-    expect(isPublicSignupOpen(new Date(), local)).toBe(true);
+    expect(isPublicSignupOpen(new Date("2026-09-27"), local)).toBe(true);
     expect(publicSignupStatus(new Date(), local)).toMatchObject({ open: true, localAcceptance: true, readinessVerified: false });
     expect(isPublicSignupOpen(new Date("invalid"), local)).toBe(false);
   });

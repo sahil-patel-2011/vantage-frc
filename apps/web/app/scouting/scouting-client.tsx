@@ -59,6 +59,7 @@ import { ScoutingShell } from "./scouting-chrome";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
+import { cacheLiveScouting } from "../../lib/scouting/live-cache";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
@@ -294,8 +295,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
-          await cacheEvent(orgId, fresh);
-          await persistScoutingSnapshot(orgId, fresh);
+          const cacheNotice = await cacheLiveScouting(orgId, fresh);
+          if (cacheNotice) setMessage(cacheNotice);
           await loadTrust(fresh.eventKey);
         } else if (cached) {
           setMessage("Using the last copy on this phone — could not refresh.");
@@ -805,8 +806,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       return;
     }
     setData(body);
-    await cacheEvent(orgId, body);
-    setMessage("Starter match and pit forms are ready.");
+    try {
+      await cacheEvent(orgId, body);
+      setMessage("Starter match and pit forms are ready.");
+    } catch (error) {
+      setMessage(`Starter forms are ready online. ${error instanceof Error ? error.message : "Could not update the offline copy."}`);
+    }
   }
 
   async function reviewConflict(id: string, status: "resolved" | "dismissed") {
@@ -876,8 +881,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
-          await cacheEvent(orgId, fresh);
-          await persistScoutingSnapshot(orgId, fresh);
+          const cacheNotice = await cacheLiveScouting(orgId, fresh);
+          if (cacheNotice) setMessage(cacheNotice);
           await loadTrust(fresh.eventKey);
         } else {
           setFetchFailed(true);

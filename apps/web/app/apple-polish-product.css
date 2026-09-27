@@ -202,6 +202,8 @@ body.has-app-shell .soft-workspace-sections > summary::after { content: '+'; mar
 body.has-app-shell .soft-workspace-sections[open] > summary::after { content: '−'; }
 body.has-app-shell .soft-drawer-quick { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
 body.has-app-shell .soft-drawer-quick > p { grid-column: 1 / -1; }
+body.has-app-shell details.soft-drawer-quick { margin-left: 0; }
+body.has-app-shell .soft-drawer-quick > summary { grid-column: 1 / -1; }
 body.has-app-shell .soft-drawer-quick > a { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-size: 13px; text-decoration: none; }
 body.has-app-shell .soft-drawer-quick > a svg { width: 18px; height: 18px; color: var(--accent); }
 body.has-app-shell .soft-drawer-settings { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }

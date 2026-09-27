@@ -5,10 +5,11 @@ export type MarketingAccountLink = {
 };
 
 /** Header actions. Guests join the waitlist. A signed-in member opens the team. */
-export function marketingHeaderLinks(signedIn: boolean): MarketingAccountLink[] {
+export function marketingHeaderLinks(signedIn: boolean, signupOpen = false): MarketingAccountLink[] {
   if (signedIn) {
     return [{ href: "/dashboard", label: "Open your team", primary: true }];
   }
+  if (signupOpen) return [{ href: "/signin", label: "Create your account", primary: true }];
   return [
     { href: "/signin", label: "Sign in" },
     { href: "/#waitlist", label: "Join the waitlist", primary: true },
@@ -16,10 +17,11 @@ export function marketingHeaderLinks(signedIn: boolean): MarketingAccountLink[] 
 }
 
 /** Hero actions on the public homepage. */
-export function marketingHeroLinks(signedIn: boolean): MarketingAccountLink[] {
+export function marketingHeroLinks(signedIn: boolean, signupOpen = false): MarketingAccountLink[] {
   if (signedIn) {
     return [{ href: "/dashboard", label: "Open your team", primary: true }];
   }
+  if (signupOpen) return [{ href: "/signin", label: "Create your account", primary: true }];
   return [
     { href: "#waitlist", label: "Join the waitlist", primary: true },
     { href: "/signin", label: "Already invited? Sign in" },

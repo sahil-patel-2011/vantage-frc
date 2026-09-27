@@ -8,6 +8,7 @@ import {
 import { FAQ } from "../components/marketing/faq";
 import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
+import { LaunchAvailability } from "../components/marketing/launch-availability";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 import "./marketing-showcase.css";
 
@@ -16,7 +17,7 @@ export const revalidate = 86_400;
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — your FRC team, connected",
   description:
-    "An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections. Currently invite-only.",
+    "An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections. Team signup planned for December 1, 2026; contact us for early access.",
   path: "/",
 });
 
@@ -44,9 +45,7 @@ export default function Home() {
                 <li>Team, Build and Business alongside Competition</li>
                 <li>Free to use. AI connections are optional.</li>
               </ul>
-              <p className="lux-hero-note">
-                Currently invite-only. <a href="/pricing">See costs and connection options</a>
-              </p>
+              <LaunchAvailability />
             </div>
             <HeroProductPanel />
           </div>

@@ -130,6 +130,9 @@ export default function WaitlistAdminClient() {
             <p>{signup.reason}</p>
           </div>
           <ol className="admin-signup-steps">
+            <li data-done={signup.dateReached ? "yes" : "no"}>
+              {signup.dateReached ? "December 1 launch date reached" : "Scheduled for December 1, 2026 at midnight Eastern Time"}
+            </li>
             <li data-done={signup.readinessVerified ? "yes" : "no"}>
               {signup.readinessVerified ? "Production verification passed" : "Complete production verification before opening signup"}
             </li>

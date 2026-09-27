@@ -7,7 +7,7 @@ import { safeAppPath } from "../../lib/security/safe-navigation";
 
 export const dynamic = "force-dynamic";
 
-const DESCRIPTION = "Sign in with Google or email. Invite-only — no public signup.";
+const DESCRIPTION = "Sign in with Google or email. Team signup is planned for December 1, 2026, with early access by invitation.";
 
 export async function generateMetadata({
   searchParams,

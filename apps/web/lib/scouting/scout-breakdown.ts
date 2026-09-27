@@ -161,6 +161,29 @@ function fieldRank(field: FieldBreakdown): number {
 
 /** Build the breakdown for one team's scout rows. */
 export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
+  // Lap arrays need explicit summaries, not array indexes treated as metrics.
+  // Keep the original API payload untouched for the raw observation view/export.
+  rows = rows.map(row => {
+    const payload = { ...row.payload };
+    const fields = [...(row.fields ?? [])];
+    for (const field of row.fields ?? []) {
+      const value = payload[field.key];
+      if (field.type !== "timer" || field.config?.mode !== "lap" || !Array.isArray(value)) continue;
+      delete payload[field.key];
+      if (!value.every(lap => typeof lap === "number" && Number.isFinite(lap) && lap >= 0)) continue;
+      const total = value.reduce((sum: number, lap: number) => sum + lap, 0);
+      if (!Number.isFinite(total)) continue;
+      payload[field.key] = { totalSeconds: total, lapCount: value.length, averageLapSeconds: value.length ? total / value.length : null };
+      const label = field.label || fieldLabel(field.key);
+      for (const [suffix, title, unit, explanation] of [
+        ["totalSeconds", "Total time", "seconds", "Sum of recorded laps per report."],
+        ["lapCount", "Recorded laps", "laps", "Number of recorded laps; an empty recorded list is zero."],
+        ["averageLapSeconds", "Average lap", "seconds", "Mean recorded lap time per report; no laps means unknown, not zero."],
+      ]) fields.push({ key: `${field.key}.${suffix}`, label: `${label} · ${title}`, type: "number",
+        config: { unit }, helpText: `${explanation} Reports are combined within each match before matches receive equal weight.` });
+    }
+    return { ...row, payload, fields };
+  });
   const combined = combineObservations(rows);
   const sorted = combined.rows.sort((a, b) => matchSortValue(a.matchKey) - matchSortValue(b.matchKey));
   const order: string[] = [];
@@ -225,7 +248,7 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
     const definition = definitions.get(key) ?? definitions.get(key.split(".")[0]!);
     // A grid cell is a location, never a scoring average. Paths remain raw observations.
     if (definition?.type === "field_position" || definition?.type === "auto_path") continue;
-    const label = definition?.label ? `${definition.label}${key.includes(".") ? ` · ${fieldLabel(key.split(".").slice(1).join(" "))}` : ""}` : fieldLabel(key);
+    const label = definition?.label ? `${definition.label}${key.includes(".") && definition.key !== key ? ` · ${fieldLabel(key.split(".").slice(1).join(" "))}` : ""}` : fieldLabel(key);
     const evidence: MetricEvidence = {
       unit: definition?.type === "timer" ? "seconds" : typeof definition?.config?.unit === "string" ? definition.config.unit : null,
       definition: definition?.helpText?.trim() || `Recorded answers for ${label.toLowerCase()} in the scouting form.`,

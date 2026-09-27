@@ -3,8 +3,10 @@
  * IndexedDB rule: open one transaction and enqueue every request synchronously.
  */
 
-export const FILE_BYTES_CAP = 200 * 1024 * 1024;
-export const FILE_BYTES_CAP_LABEL = "200 MB";
+import { checkCacheSpace, GB, readOfflineBudget } from "./storage-budget";
+
+export const FILE_BYTES_CAP = 2 * GB;
+export const FILE_BYTES_CAP_LABEL = "your device cache budget";
 
 export type OfflineFileMeta = {
   key: string;
@@ -93,18 +95,20 @@ export async function dropOfflineFile(key: string): Promise<void> {
 }
 
 export async function putOfflineFile(record: OfflineFileRecord): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const usage = await offlineFileUsageBytes(record.orgId);
+  const usage = await offlineFileUsageBytes();
   const existing = await getOfflineFile(record.key);
   const nextUsage = usage - (existing?.byteSize ?? 0) + record.byteSize;
-  if (nextUsage > FILE_BYTES_CAP) {
+  if (nextUsage > readOfflineBudget() * GB) {
     return {
       ok: false,
-      reason: `This device is at the ${FILE_BYTES_CAP_LABEL} offline-files limit. Remove a kept file first.`,
+      reason: `This device is at its ${readOfflineBudget()} GB offline cache budget. Remove a kept file or change the budget in Account settings.`,
     };
   }
   if (typeof indexedDB === "undefined") {
     return { ok: false, reason: "This browser cannot keep files on the device." };
   }
+  try { await checkCacheSpace(Math.max(0, record.byteSize - (existing?.byteSize ?? 0))); }
+  catch (error) { return { ok: false, reason: error instanceof Error ? error.message : "Device storage unavailable." }; }
   const db = await openDatabase();
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
   await requestValue(store.put(record));
@@ -123,13 +127,15 @@ export async function keepOfflineFile(input: {
   if (existing) return { ok: true };
   const expected = input.expectedBytes ?? 0;
   if (expected > 0) {
-    const usage = await offlineFileUsageBytes(input.orgId);
-    if (usage + expected > FILE_BYTES_CAP) {
+    const usage = await offlineFileUsageBytes();
+    if (usage + expected > readOfflineBudget() * GB) {
       return {
         ok: false,
-        reason: `This file is too large to keep on this device (${FILE_BYTES_CAP_LABEL} max).`,
+        reason: `This file exceeds the ${readOfflineBudget()} GB offline cache budget. Change it in Account settings.`,
       };
     }
+    try { await checkCacheSpace(expected); }
+    catch (error) { return { ok: false, reason: error instanceof Error ? error.message : "Device storage unavailable." }; }
   }
   let response: Response;
   try {

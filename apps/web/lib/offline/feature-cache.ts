@@ -251,6 +251,7 @@ export type OfflineFeature =
   | "partner-placements";
 
 import { offlineSnapshotUser } from "./identity";
+import { cacheJsonBytes, checkCacheSpace } from "./storage-budget";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 2;
@@ -310,6 +311,7 @@ export async function putFeatureSnapshot<T>(
   if (typeof indexedDB === "undefined") return;
   const userId = await offlineSnapshotUser(orgId);
   if (!userId) return;
+  await checkCacheSpace(cacheJsonBytes(data));
   const db = await openDatabase();
   try {
     const store = db.transaction(STORE, "readwrite").objectStore(STORE);
