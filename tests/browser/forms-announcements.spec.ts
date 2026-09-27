@@ -178,13 +178,12 @@ test.describe("with real sessions", () => {
     await start.click();
     const createdResponse = await created;
     expect(createdResponse.ok(), "Creating the form succeeds before the detail-page navigation").toBe(true);
-    const createdBody = await createdResponse.json() as { formId: string };
-    expect(createdBody.formId).toMatch(/^[0-9a-f-]{36}$/i);
-
     // Creating navigates into the new form, carrying the workspace with it.
     // A fresh next-dev CI worker compiles this dynamic route on first use.
-    // The response above still proves the mutation succeeded independently.
-    await owner.page.waitForURL(new RegExp(`/forms/${createdBody.formId}\\?`), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    // Read the identifier from the real destination: Chrome can discard the
+    // POST response body when a full-page navigation unloads its document.
+    // The successful mutation status and actual detail record are both checked.
+    await owner.page.waitForURL(/\/forms\/[0-9a-f-]{36}\?orgId=/i, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await expect(owner.page.getByRole("heading", { level: 1, name: title })).toBeVisible();
     const formId = new URL(owner.page.url()).pathname.split("/").pop()!;
 

@@ -15,6 +15,12 @@ const config: NextConfig = {
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.
   supportsImmutableAssets: false,
+  // A browser shard visits many cold routes. CI's small runner can be killed
+  // while Turbopack's default auto eviction retains their compiled state.
+  // Use its supported disk-snapshot eviction in CI dev sessions only.
+  ...(process.env.CI === "true" && process.env.NODE_ENV === "development"
+    ? { experimental: { turbopackMemoryEviction: "full" as const } }
+    : {}),
   // Dev only. 127.0.0.1 is the local stand-in for the Scouting host (see
   // lib/products/products.ts); without it the dev server withholds its scripts
   // there and the Scouting pages never hydrate.

@@ -19,6 +19,7 @@ This is a bounded evaluation of Vantage's shared UI. It is not Apple, Google, Mi
 - [Google accessible views](https://developer.android.com/guide/topics/ui/accessibility/views/apps-views): 48dp targets as a mobile design reference. Vantage uses CSS pixels, not Android dp.
 - [Microsoft accessibility testing](https://learn.microsoft.com/en-us/windows/apps/design/accessibility/accessibility-testing): combine automated checks with manual keyboard and assistive-technology testing.
 - [W3C menu-button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/) and [menu keyboard behavior](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/).
+- [Playwright accessibility testing](https://playwright.dev/docs/accessibility-testing): scan the intended rendered state with axe, and combine automated checks with manual evaluation.
 
 ## Checks and evidence
 
@@ -36,6 +37,10 @@ This is a bounded evaluation of Vantage's shared UI. It is not Apple, Google, Mi
 Concrete results, viewport sizes, build identity, screenshots and limitations are recorded in `evidence/ui-glass-refresh.json` after the final browser run. A passing category means its listed checks passed in that scope; it does not establish whole-app usability or full WCAG conformance.
 
 The subsequent [deep-detail evidence](evidence/ui-deep-details.json) records the failed candidate CI run and its local repairs, including selected-event context, truthful onboarding, timeout recovery, late preference response races and unavailable shortcut removal. Generated-cache and numerical precision failures are retained with their repaired reruns. Explicit skips and full production gates remain visible.
+
+The [accessibility audit](evidence/ui-accessibility-audit.json) runs the default axe rule set against actual signed-in scratch data in the production build: Home, account menu, drawer, island editor, Event day and Notifications at 1280px and 390px. All twelve settled-state scans have zero automatically detected violations. Native dialog/list semantics and warning-text contrast were repaired. Incomplete gradient/overlap contrast checks remain in the evidence for manual review; the account trigger's controlled menu ID was verified in the actual browser. No rules or page regions were excluded. The two permanent browser regressions attach all violations and incomplete checks to their reports.
+
+CI run 36290241694 passed quality and PostgreSQL/RLS. Two browser failures and eight retry-only passes remain in its five complete shard reports. Shard five was terminated by the runner after a navigation timeout and could not publish its remaining results. Local repaired form/safety/first-run journeys pass eleven tests. Next.js's supported full memory eviction is enabled only in CI development sessions to address retained cold-route compilation; the subsequent full CI run must still establish that repair.
 
 ## Remaining evaluation
 

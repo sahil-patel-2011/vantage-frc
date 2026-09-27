@@ -56,7 +56,7 @@
   --accent-soft: var(--brand-blue-soft);
   --positive: #15803d;
   --critical: #b91c1c;
-  --warning: #98630a;
+  --warning: #87580a;
   --warning-soft: color-mix(in srgb, var(--warning) 14%, var(--surface));
   --critical-soft: color-mix(in srgb, var(--critical) 13%, var(--surface));
   --positive-soft: color-mix(in srgb, var(--positive) 13%, var(--surface));

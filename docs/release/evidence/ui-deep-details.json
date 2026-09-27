@@ -184,5 +184,23 @@
     "ui-event-day-release-phone.png",
     "ui-account-current-build-phone.png",
     "ui-hamburger-current-build-phone.png"
-  ]
+  ],
+  "accessibilityFollowup": {
+    "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+    "productionAcceptance": false,
+    "zeroAutomaticallyDetectedViolations": true,
+    "scanStates": 12,
+    "viewports": [
+      1280,
+      390
+    ],
+    "evidence": "ui-accessibility-audit.json",
+    "quality": "Local lint, all workspace types, 746-page production build passed. CI development-only eviction checked separately.",
+    "browser": {
+      "accessibilityAndShellTestsPassed": 6,
+      "repairedCiJourneyTestsPassed": 11,
+      "skips": 0
+    },
+    "remoteCandidate": "ci-ui-candidate.json#followup9f"
+  }
 }

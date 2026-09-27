@@ -487,5 +487,252 @@
   },
   "productionDeployment": "not performed",
   "productionAcceptance": false,
-  "latestRepairEvidence": "ui-deep-details.json"
+  "latestRepairEvidence": "ui-deep-details.json",
+  "followup9f": {
+    "revision": "9f8388248d7dac148fb9a6eece62a5dd61231d2f",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36290241694",
+    "result": "failed",
+    "quality": "passed: lint, all workspace types, full unit suite, migration static checks, production build",
+    "postgres": "passed: migration/reapplication/RLS plus invitation/onboarding/inbox integrations",
+    "browser": [
+      {
+        "findings": [],
+        "shard": 1,
+        "stats": {
+          "total": 64,
+          "expected": 64,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "unexpected",
+            "file": "first-run-shell.spec.ts",
+            "title": "/start paints a heading instead of leftover VANTAGE chrome"
+          },
+          {
+            "annotations": [],
+            "outcome": "unexpected",
+            "file": "forms-announcements.spec.ts",
+            "title": "an owner builds and opens a form, a member answers it once"
+          },
+          {
+            "annotations": [],
+            "outcome": "skipped",
+            "file": "forms-announcements.spec.ts",
+            "title": "a non-admin is offered no way to write a form or an announcement"
+          },
+          {
+            "annotations": [],
+            "outcome": "skipped",
+            "file": "forms-announcements.spec.ts",
+            "title": "an acknowledgement moves the count and drops the name off the chase list"
+          },
+          {
+            "annotations": [],
+            "outcome": "skipped",
+            "file": "forms-announcements.spec.ts",
+            "title": "a link-audience form is answerable with no session at all"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "feature-map-walk.spec.ts",
+            "title": "FEATURE_MAP product routes render without a 500"
+          }
+        ],
+        "shard": 2,
+        "stats": {
+          "total": 65,
+          "expected": 59,
+          "unexpected": 2,
+          "flaky": 0,
+          "skipped": 4,
+          "ok": false
+        }
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "inventory-adjust-once.spec.ts",
+            "title": "adjusting with a note changes the count by the amount typed, not twice"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "judging-district-shell.spec.ts",
+            "title": "/budget-reconciler paints a heading instead of leftover VANTAGE chrome"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "leftover-org-bound.spec.ts",
+            "title": "Alliance, Team admin, Help, and Attendance drop leftover engineering copy"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "leftover-setup-vantage-chrome.spec.ts",
+            "title": "leftover Setup required / VANTAGE Forms chrome is gone from student boards"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "home-knows-tonight.spec.ts",
+            "title": "an event later today shows on the card, and goes when it is removed"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "home-knows-tonight.spec.ts",
+            "title": "the card does not reach past today to find something to say"
+          }
+        ],
+        "shard": 3,
+        "stats": {
+          "total": 63,
+          "expected": 57,
+          "unexpected": 0,
+          "flaky": 4,
+          "skipped": 2,
+          "ok": false
+        }
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "one-h1-per-page.spec.ts",
+            "title": "/business has exactly one visible h1"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "people-continuity-shell.spec.ts",
+            "title": "/reviews paints a heading instead of leftover VANTAGE chrome"
+          }
+        ],
+        "shard": 4,
+        "stats": {
+          "total": 64,
+          "expected": 62,
+          "unexpected": 0,
+          "flaky": 2,
+          "skipped": 0,
+          "ok": false
+        }
+      },
+      {
+        "shard": 5,
+        "result": "incomplete",
+        "stats": null,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed. Logs contain a safety navigation timeout; no complete shard result exists."
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "student-week-event-slice.spec.ts",
+            "title": "student this week can walk Event day packing/checklist → My Hours clock-in → Pick desk"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "team-playbook.spec.ts",
+            "title": "a team can start its own playbook, and it is about that team"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "student-week-gui.spec.ts",
+            "title": "Home What to do now CTA is a real click"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "tinyfish-key-never-returned.spec.ts",
+            "title": "a real key is accepted, shown only by its last four characters, and never returned"
+          }
+        ],
+        "shard": 6,
+        "stats": {
+          "total": 59,
+          "expected": 55,
+          "unexpected": 0,
+          "flaky": 2,
+          "skipped": 2,
+          "ok": false
+        }
+      }
+    ],
+    "repairs": [
+      "Read actual form destination ID instead of a response body that Chrome can discard during document unload. Mutation status and actual detail record remain asserted.",
+      "First-run and safety route walks wait for DOMContentLoaded and then their original visible state assertions, rather than every page resource.",
+      "Runner-terminated shard retains incomplete status; supported Turbopack full memory eviction is enabled only for CI development sessions."
+    ],
+    "localRepair": {
+      "testsPassed": 11,
+      "testsSkipped": 0,
+      "log": "vantage-ui-ci-followup-regressions.log"
+    }
+  }
 }

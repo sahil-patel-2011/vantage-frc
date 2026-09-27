@@ -36,6 +36,7 @@
     "dev:otp": "node scripts/dev-otp.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "latest",
     "@next/eslint-plugin-next": "latest",
     "@playwright/test": "latest",

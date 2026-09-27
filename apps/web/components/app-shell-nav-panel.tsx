@@ -142,7 +142,7 @@ export function AppShellNavPanel({
       {navOpen ? (
         <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={closeNav} />
       ) : null}
-      <aside
+      <div
         className={`soft-drawer ${navOpen ? "open" : ""}`}
         role="dialog"
         aria-modal={navOpen ? true : undefined}
@@ -465,7 +465,7 @@ export function AppShellNavPanel({
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
         </footer>
-      </aside>
+      </div>
     </>
   );
 }

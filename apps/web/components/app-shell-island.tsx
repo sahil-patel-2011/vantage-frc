@@ -244,7 +244,7 @@ export function AppShellIslandEditor({
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close" onClick={onClose}><Icon name="x" /></button>
         </header>
-        <div className="soft-island-slot-preview" aria-label={`${islandDraft.length} of 4 island apps selected`}>
+        <div className="soft-island-slot-preview" role="group" aria-label={`${islandDraft.length} of 4 island apps selected`}>
           {[0, 1, 2, 3].map((slot) => {
             const selectedHref = islandDraft[slot];
             const selected = visibleIslandCatalog.find((entry) => entry.href === selectedHref)

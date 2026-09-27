@@ -20,7 +20,7 @@ test("safety / incidents student boards say Needs setup with one primary", async
   test.setTimeout(90_000);
 
   for (const leaf of LEAVES) {
-    await page.goto(leaf.path);
+    await page.goto(leaf.path, { waitUntil: "domcontentloaded" });
     await expect(page.locator("body")).not.toContainText("Application error");
     const heading = page.getByRole("heading", { level: 1 }).filter({ hasText: leaf.heading });
     const setup = page.locator("main").getByRole("heading", { name: "Choose your team", exact: true });
