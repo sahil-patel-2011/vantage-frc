@@ -36,11 +36,11 @@ describe("parentsNextActions", () => {
     expect(actions.map((a) => a.href)).toEqual(steps.map((s) => s.href));
   });
 
-  it("restricted boards open Home", () => {
+  it("restricted boards open Home for the selected team", () => {
     const actions = parentsNextActions({ orgId: "org-1", shell: "restricted" });
     expect(actions[0]?.id).toBe("home");
     expect(actions[0]?.label).toBe("Open Home");
-    expect(actions[0]?.href).toBe("/dashboard");
+    expect(actions[0]?.href).toBe("/dashboard?orgId=org-1");
     expect(actions).toHaveLength(1);
   });
 

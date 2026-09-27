@@ -76,6 +76,13 @@ const owner = await mk("owner@proof.test", "Owner");
 const student = await mk("student@proof.test", "Student");
 const peer = await mk("peer@proof.test", "Peer");
 const outsider = await mk("outsider@proof.test", "Outsider");
+// The membership age gate requires a known eligible birthday. Give the
+// synthetic actors real profiles instead of bypassing the production trigger.
+await su.query(
+  `INSERT INTO profiles(user_id,date_of_birth)
+   SELECT unnest($1::uuid[]), DATE '2000-01-01'`,
+  [[owner, student, peer, outsider]],
+);
 await su.query(
   `INSERT INTO memberships(org_id,user_id,role) VALUES ($1,$2,'owner'),($1,$3,'scout'),($1,$4,'scout'),($5,$6,'owner')`,
   [orgA, owner, student, peer, orgB, outsider],

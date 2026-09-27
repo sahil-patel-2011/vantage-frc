@@ -7,7 +7,7 @@ const suite = url ? describe.sequential : describe.skip;
 suite("invitation membership age boundary in PostgreSQL", () => {
   it("rejects missing, null and underage birthdays, admits the thirteenth birthday, and preserves denied profiles", async () => {
     const target = new URL(url!);
-    if (!["127.0.0.1", "localhost"].includes(target.hostname) || !target.pathname.includes("test")) throw new Error("Dedicated local test database required.");
+    if (!["127.0.0.1", "localhost"].includes(target.hostname) || !/(?:^|[_-])(test|ci)(?:[_-]|$)/i.test(decodeURIComponent(target.pathname.slice(1)))) throw new Error("Dedicated local test/CI database required.");
     const client = new pg.Client({ connectionString: url });
     await client.connect();
     const org = randomUUID(), user = randomUUID();

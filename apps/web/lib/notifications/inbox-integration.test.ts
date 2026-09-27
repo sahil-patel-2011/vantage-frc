@@ -7,7 +7,7 @@ const suite = url ? describe : describe.skip;
 suite("actual PostgreSQL personal/team notification state", () => {
   it("matches badge scope, acknowledges only shown rows, preserves history and rejects cross-person/team mutations", async () => {
     const target = new URL(url!);
-    if (!["127.0.0.1", "localhost"].includes(target.hostname) || !target.pathname.includes("test")) throw new Error("Dedicated loopback test database required");
+    if (!["127.0.0.1", "localhost"].includes(target.hostname) || !/(?:^|[_-])(test|ci)(?:[_-]|$)/i.test(decodeURIComponent(target.pathname.slice(1)))) throw new Error("Dedicated loopback test/CI database required");
     const pool = new pg.Pool({ connectionString: url, max: 1 });
     const client = await pool.connect();
     const user = randomUUID(), other = randomUUID(), orgA = randomUUID(), orgB = randomUUID();

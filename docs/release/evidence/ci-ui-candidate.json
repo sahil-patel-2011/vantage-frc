@@ -1,0 +1,38 @@
+{
+  "scope": "Candidate branch CI follow-up; not production acceptance",
+  "originalRun": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36286595247",
+  "originalRevision": "b7a1a87cbbf280e7f3e0909697a33a41a023da81",
+  "originalResult": "failed",
+  "findings": [
+    {
+      "name": "Standalone RLS fixture lacked positive age confirmation",
+      "repair": "Seed eligible synthetic profiles before memberships. Production age trigger and all access assertions retained.",
+      "localResult": "40/40 proofs passed as NOSUPERUSER/NOBYPASSRLS vantage_app login"
+    },
+    {
+      "name": "Browser seeds also lacked birthdays",
+      "repair": "Set synthetic fixture birthdays explicitly; no authentication or eligibility bypass.",
+      "localResult": "Development and four-login browser seeds each passed twice against migrated loopback scratch database"
+    },
+    {
+      "name": "Route inventory expected generated Workflow directory in fresh checkout",
+      "repair": "Separate the explicitly generated .well-known root; still compare every source directory exactly and recognize Workflow endpoints before generation."
+    },
+    {
+      "name": "Parent Home assertion expected selected team to be discarded",
+      "repair": "Assert exact team-scoped Home URL, consistent with final navigation behavior."
+    }
+  ],
+  "localFollowup": {
+    "database": "vantage_schema_test_20260927",
+    "postgresVersion": "17.11",
+    "focusedFilesPassed": 5,
+    "focusedTestsPassed": 27,
+    "lint": "passed for changed source/scripts/tests",
+    "whitespace": "passed",
+    "notes": "Invitation eligibility and inbox isolation now also run with real PostgreSQL in CI; safety guards require loopback test/ci database names."
+  },
+  "remoteFollowup": "pending",
+  "productionDeployment": "not performed",
+  "productionAcceptance": false
+}
