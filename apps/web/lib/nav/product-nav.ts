@@ -86,18 +86,16 @@ export type ProductNavIcon =
  */
 const TONE = { tone: "var(--tone-blue)", toneBg: "" } as const;
 
-/** Routes that never append ?orgId= (account / platform chrome). */
+/** Public and platform routes never inherit a team's navigation context. */
 export const ORG_EXEMPT_HREFS = new Set([
-  "/dashboard",
-  "/account",
-  "/security",
+  "/",
+  "/terms",
+  "/privacy",
   "/admin",
-  "/notifications",
-  "/docs",
-  "/help",
-  "/support",
   "/signin",
   "/sign-in",
+  "/signup",
+  "/sign-up",
 ]);
 
 /**

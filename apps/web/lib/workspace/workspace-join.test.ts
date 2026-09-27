@@ -24,12 +24,12 @@ describe("workspaceRelatedLinks", () => {
     expect(links.find((l) => l.id === "account")?.href).toBe("/account?tab=profile");
   });
 
-  it("keeps org-exempt Invite / Support / Account without DEMO paths", () => {
+  it("keeps invites independent and support in the selected team", () => {
     const links = workspaceRelatedLinks("org-1", {
       include: [...WORKSPACE_RELATED_INCLUDE],
     });
     expect(links.find((l) => l.id === "invite")?.href).toBe("/invite");
-    expect(links.find((l) => l.id === "support")?.href).toBe("/support");
+    expect(links.find((l) => l.id === "support")?.href).toBe("/support?orgId=org-1");
     expect(links.every((l) => !/demo/i.test(l.href))).toBe(true);
   });
 });

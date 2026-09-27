@@ -195,7 +195,7 @@ export default function AccountClient() {
       applyAccount(data);
       setMessage("");
 
-      const me = await fetchProductSession();
+      const me = await fetchProductSession(new URLSearchParams(window.location.search).get("orgId"));
       const nextOrg: OrgContext = me
         ? {
             orgId: me.orgId ?? null,
@@ -337,6 +337,7 @@ export default function AccountClient() {
   async function signOut() {
     setBusy(true);
     await signOutAndRedirect("/");
+    setBusy(false);
   }
 
   const orgId = org.orgId;

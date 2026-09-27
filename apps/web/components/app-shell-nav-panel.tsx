@@ -146,7 +146,7 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-profile-link" href="/account" onClick={closeNav}>
+          <a className="soft-profile-link" href={withOrgHref("/account", orgId)} onClick={closeNav}>
             <span className="soft-avatar">
               {me.image ? <img src={me.image} alt="" /> : initial}
             </span>
@@ -373,7 +373,7 @@ export function AppShellNavPanel({
             only appears for an owner or admin, because for everyone else it is a
             door that opens onto an error. */}
         <div className="soft-drawer-settings">
-          <a href="/account" onClick={closeNav}>
+          <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
             <Icon name="gear" />
             <span>
               <strong>Personal settings</strong>

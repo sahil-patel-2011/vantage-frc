@@ -175,7 +175,8 @@ describe("product-nav", () => {
   it("appends orgId except on exempt chrome routes", () => {
     expect(withOrgHref("/practice", "org-1")).toBe("/practice?orgId=org-1");
     expect(withOrgHref("/practice?tab=a", "org-1")).toBe("/practice?tab=a&orgId=org-1");
-    expect(withOrgHref("/account", "org-1")).toBe("/account");
+    expect(withOrgHref("/account", "org-1")).toBe("/account?orgId=org-1");
+    expect(withOrgHref("/dashboard", "org-1")).toBe("/dashboard?orgId=org-1");
     expect(withOrgHref("/practice?orgId=org-1", "org-2")).toBe("/practice?orgId=org-1");
     expect(withOrgHref("/competition?tab=scouting#scout-voice", "org-1")).toBe(
       "/competition?tab=scouting&orgId=org-1#scout-voice",

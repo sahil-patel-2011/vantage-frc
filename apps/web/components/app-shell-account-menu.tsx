@@ -1,6 +1,7 @@
 "use client";
 
 import { formatMembershipLabel, roleWord, type Me, type MembershipOption } from "./app-shell-model";
+import { withOrgHref } from "../lib/nav/product-nav";
 
 export function AppShellAccountMenu({
   open,
@@ -73,7 +74,7 @@ export function AppShellAccountMenu({
         {/* Settings owns the canonical list (SETTINGS_NAV): profile,
             appearance, notifications, security, keys. Repeating two of
             its rows here meant this menu had two ways to /account. */}
-        <a role="menuitem" href="/account" onClick={onClose}>
+        <a role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
           {/* The page it opens is titled Account; the menu said Settings. */}
           Account and settings
         </a>
@@ -83,13 +84,13 @@ export function AppShellAccountMenu({
             Team admin
           </a>
         ) : null}
-        <a role="menuitem" href="/docs" onClick={onClose}>
+        <a role="menuitem" href={withOrgHref("/docs", orgId)} onClick={onClose}>
           App manual
         </a>
-        <a role="menuitem" href="/support" onClick={onClose}>
+        <a role="menuitem" href={withOrgHref("/support", orgId)} onClick={onClose}>
           Support tickets
         </a>
-        <a role="menuitem" href="/report-bug" onClick={onClose}>
+        <a role="menuitem" href={withOrgHref("/report-bug", orgId)} onClick={onClose}>
           Report a bug
         </a>
         {me.platformAdmin ? (

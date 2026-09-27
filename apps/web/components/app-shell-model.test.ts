@@ -112,8 +112,8 @@ describe("hub chrome paths", () => {
     expect(shellTitleForPath("/support")).toBe("Support");
   });
 
-  it("lands org-exempt chrome on Manage teams when switching teams", () => {
-    expect(switchWorkspaceHrefFor("/account", "", "org-2")).toContain("/workspace");
+  it("keeps the destination and selected team when switching from personal settings", () => {
+    expect(switchWorkspaceHrefFor("/account", "", "org-2")).toBe("/account?orgId=org-2");
     expect(switchWorkspaceHrefFor("/competition", "?tab=scouting", "org-2")).toContain("orgId=org-2");
   });
 });

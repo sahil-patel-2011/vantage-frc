@@ -27,6 +27,18 @@ afterEach(() => {
 });
 
 describe("requestMe", () => {
+  it("keeps each selected team's session separate", async () => {
+    const location = { search: "?orgId=team-a" };
+    vi.stubGlobal("window", { location });
+    const fetchSpy = stubFetch(async () => okResponse({}));
+    await requestMe();
+    location.search = "?orgId=team-b";
+    await requestMe();
+    expect(fetchSpy.mock.calls.map((call) => (call as unknown[])[0])).toEqual([
+      "/api/me?orgId=team-a", "/api/me?orgId=team-b",
+    ]);
+  });
+
   it("makes one request for callers that ask at the same time", async () => {
     const fetchSpy = stubFetch(async () => okResponse({ orgId: "org-1" }));
 
