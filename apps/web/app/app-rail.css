@@ -140,17 +140,13 @@
     padding-top: 8px;
   }
 
-  /* Give every product page room for the rail without touching page sheets.
-     Drop the phone dock's bottom inset — the rail replaces it. */
+  /* Give legacy rail layouts their horizontal inset. Keep room for the island. */
   body.has-app-shell {
     padding-left: 232px !important;
-    padding-bottom: 28px !important;
+    padding-bottom: calc(100px + var(--safe-bottom)) !important;
   }
   body.has-app-shell .soft-topbar {
     left: 232px;
-  }
-  body.has-app-shell .soft-island {
-    display: none !important;
   }
   /* The rail already has Search and Ask AI. The top-bar copies are for phones. */
   body.has-app-shell .soft-menu-btn,

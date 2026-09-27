@@ -5,30 +5,17 @@
 
 /* ── Signed-in product, light theme ────────────────────────────────────── */
 html[data-theme="light"] body.has-app-shell {
-  --bg: #f5f5f7;
-  --surface: #ffffff;
-  --surface-2: #f2f2f7;
-  --ink: #1d1d1f;
-  --muted: #6e6e73;
-  --line: #dedee3;
   --line-soft: rgba(29, 29, 31, .08);
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-soft: #eaf1ff;
-  --accent-ink: #ffffff;
   --radius-xs: 10px;
   --radius-sm: 14px;
   --radius: 20px;
   --radius-lg: 26px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .025), 0 8px 24px rgba(0, 0, 0, .045);
-  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .035), 0 16px 38px rgba(0, 0, 0, .075);
-  --shadow-pop: 0 8px 22px rgba(0, 0, 0, .08), 0 24px 60px rgba(0, 0, 0, .12);
   --glow: none;
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   --vt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
-  background-color: #f5f5f7 !important;
+  background-color: var(--bg) !important;
   background-image: none !important;
-  color: #1d1d1f;
+  color: var(--ink);
   font-family: var(--font-sans) !important;
   font-size: 15px;
   line-height: 1.5;
@@ -38,7 +25,7 @@ html[data-theme="light"] body.has-app-shell {
 body.has-app-shell .soft-topbar {
   height: 60px;
   padding-inline: 18px;
-  background-color: rgba(245, 245, 247, .78);
+  background-color: color-mix(in srgb, var(--bg) 88%, transparent);
   border-bottom-color: rgba(29, 29, 31, .08);
   box-shadow: none;
   backdrop-filter: saturate(180%) blur(22px);
@@ -61,7 +48,8 @@ body.has-app-shell .soft-icon-btn:hover {
 }
 
 body.has-app-shell .soft-avatar {
-  background: #2563eb;
+  background: var(--accent);
+  color: var(--accent-ink);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
 }
 
@@ -97,19 +85,19 @@ body.has-app-shell .vrail-foot {
 }
 
 body.has-app-shell .vrail-nav a[aria-current="page"] {
-  color: #1d1d1f;
-  background: #e8e8ed;
+  color: var(--ink);
+  background: var(--accent-soft);
   font-weight: 650;
 }
 
 body.has-app-shell .vrail-nav a[aria-current="page"] svg {
-  color: #2563eb;
+  color: var(--accent);
 }
 
 body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
   border-color: rgba(29, 29, 31, .08);
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: var(--shadow);
   line-height: 1.55;
 }
@@ -121,7 +109,7 @@ body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat
 body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
   :where(h2, h3, h4) {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
-  color: #1d1d1f;
+  color: var(--ink);
   font-weight: 650;
   letter-spacing: -.025em;
   text-wrap: balance;
@@ -145,13 +133,13 @@ body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-
 }
 
 body.has-app-shell :where(.app-page-header, .dash-home-header) h1 {
-  color: #1d1d1f;
+  color: var(--ink);
   font-weight: 720;
   letter-spacing: -.045em;
 }
 
 body.has-app-shell :where(.app-page-header, .dash-home-header) p {
-  color: #6e6e73;
+  color: var(--muted);
 }
 
 body.has-app-shell :where(.app-button, .soft-btn, .primary-action) {
@@ -161,38 +149,38 @@ body.has-app-shell :where(.app-button, .soft-btn, .primary-action) {
 }
 
 body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary) {
-  color: #fff;
-  background: #2563eb;
-  border-color: #2563eb;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary):hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 body.has-app-shell :where(input, select, textarea) {
   border-color: rgba(29, 29, 31, .14);
-  background: #fff;
+  background: var(--surface);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, .02);
 }
 
 body.has-app-shell :where(input, select, textarea):focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
   outline: 0;
 }
 
 body.has-app-shell .soft-island {
   border-color: rgba(29, 29, 31, .1);
-  background: rgba(255, 255, 255, .76);
+  background: var(--island);
   box-shadow: 0 12px 34px rgba(0, 0, 0, .12), inset 0 1px rgba(255, 255, 255, .7);
   backdrop-filter: saturate(180%) blur(24px);
 }
 
 body.has-app-shell .soft-island a[aria-current="page"] {
-  color: #2563eb;
-  background: rgba(37, 99, 235, .1);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 body.has-app-shell .soft-drawer,
@@ -200,7 +188,7 @@ body.has-app-shell .soft-account-pop,
 body.has-app-shell .soft-island-editor > section {
   border-color: rgba(29, 29, 31, .1);
   /* Solid: menu text over page text read as one jumble at 94%. */
-  background: #fff;
+  background: var(--surface);
 }
 
 body.has-app-shell .app-badge {

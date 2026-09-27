@@ -13,12 +13,12 @@
    ========================================================================== */
 
 :root {
-  --scan-navy: #0d3560;
-  --scan-navy-deep: #092848;
-  --scan-navy-soft: #e7eef6;
-  --scan-gold: #e8b923;
+  --scan-navy: var(--accent);
+  --scan-navy-deep: #124b53;
+  --scan-navy-soft: var(--accent-soft);
+  --scan-gold: #f1d898;
   --scan-gold-ink: #10202c;
-  --scan-rail: #0d3560;
+  --scan-rail: #24424e;
   --scan-rail-ink: #e8eef6;
   --scan-rail-muted: #9db3cb;
   --scan-radius: 16px;
@@ -31,13 +31,13 @@
 }
 
 :root[data-theme="dark"] {
-  --scan-navy: #9ec0e8;
+  --scan-navy: var(--accent);
   --scan-navy-deep: #0c1624;
   /* Was a hardcoded well a shade off system.css's --surface, which is the
      drift css-integrity exists to stop. One palette owns dark mode; the scan
      overlay borrows it. */
-  --scan-navy-soft: var(--surface);
-  --scan-gold: #f0c84a;
+  --scan-navy-soft: var(--accent-soft);
+  --scan-gold: #e9c77b;
   --scan-gold-ink: #0c1118;
   --scan-rail: #101a28;
   --scan-rail-ink: #edf2f7;
@@ -272,13 +272,13 @@ body.has-app-shell .app-button.primary,
 body.has-app-shell .app-button.is-primary,
 body.has-app-shell .primary-action {
   background: var(--scan-navy);
-  color: #fff;
+  color: var(--accent-ink);
   border-color: var(--scan-navy);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--scan-navy) 22%, transparent);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 body.has-app-shell .app-button.primary:hover:not(:disabled),
 body.has-app-shell .app-button.is-primary:hover:not(:disabled) {
-  background: var(--scan-navy-deep);
+  background: var(--accent-hover);
 }
 body.has-app-shell .app-button.secondary {
   background: var(--surface);
@@ -491,9 +491,9 @@ body.has-app-shell .product-hub > .app-page-header {
 }
 :root[data-theme="dark"] body.has-app-shell .app-button.primary,
 :root[data-theme="dark"] body.has-app-shell .app-button.is-primary {
-  background: #7aa2d6;
-  color: #0c1118;
-  border-color: #7aa2d6;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
 }
 
 /* --- Onboarding / workspace picker ---------------------------------------- */
@@ -547,8 +547,8 @@ body.has-app-shell .data-source-degraded-banner {
 
 /* --- Onboarding / sign-in (often no app shell) ---------------------------- */
 .onboarding-page {
-  --scan-navy: #0d3560;
-  --scan-gold: #e8b923;
+  --scan-navy: var(--accent);
+  --scan-gold: #f1d898;
   --scan-gold-ink: #10202c;
 }
 .onboarding-flow-header > span,

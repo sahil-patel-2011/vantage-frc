@@ -2,7 +2,7 @@
  * Team-accent colour maths.
  *
  * A team picks one hex. That hex has to survive two very different surfaces
- * (the light card `#ffffff` and the dark card `#151b24`) and two very different
+ * (the light card `#ffffff` and the dark card `#1b222a`) and two very different
  * jobs (coloured *text* like links and active tabs, versus *fills* like the
  * primary button and the island indicator).
  *
@@ -15,10 +15,10 @@
 export const ACCENT_CONTRAST_TARGET = 4.5;
 
 /** Mirrors the `--surface` values in app/system.css. */
-export const SOFT_CARD_SURFACE = { light: "#ffffff", dark: "#151b24" } as const;
+export const SOFT_CARD_SURFACE = { light: "#ffffff", dark: "#1b222a" } as const;
 
 /** Mirrors the stock `--accent` values in app/system.css. */
-export const DEFAULT_ACCENT = { light: "#17457f", dark: "#6e9bff" } as const;
+export const DEFAULT_ACCENT = { light: "#155e68", dark: "#86cdd0" } as const;
 
 export type ThemeKey = "light" | "dark";
 
