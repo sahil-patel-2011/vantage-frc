@@ -12,7 +12,9 @@ test("a visitor can join the waitlist", async ({ page }) => {
     await expect(finalForm.getByText("Setup required")).toHaveCount(0);
     return;
   }
-  await finalForm.getByLabel("Email").fill(`browser-${Date.now()}@example.com`);
+  await expect(finalForm).toContainText("Joining does not create an account");
+  const email = `browser-${Date.now()}@example.com`;
+  await finalForm.getByLabel("Email").fill(email);
   await finalForm.getByLabel("FRC team number").fill("254");
   const join = finalForm.getByRole("button", { name: "Join the waitlist" });
   await expect(join).toBeEnabled();
@@ -25,6 +27,8 @@ test("a visitor can join the waitlist", async ({ page }) => {
   await expect(success.or(closed).or(error)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("Setup required")).toHaveCount(0);
   if (await success.count()) {
-    await expect(page.getByText("does not create a Vantage account")).toBeVisible();
+    await expect(success).toContainText("You’re on the list");
+    await expect(success).toContainText(email);
+    await expect(success).toContainText("254");
   }
 });

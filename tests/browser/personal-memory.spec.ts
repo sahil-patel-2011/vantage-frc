@@ -50,6 +50,9 @@ async function forgetAll(page: import("@playwright/test").Page, needle: string) 
 }
 
 test("something you tell it is remembered, and can be forgotten", async ({ page }) => {
+  // This journey includes write, reload, delete, and read-back on a cold dev server.
+  // Its individual 20–25s waits need room inside the overall CI budget.
+  test.setTimeout(90_000);
   await openMemory(page);
   const marker = `spec-memory-${Date.now()}`;
   await forgetAll(page, "spec-memory-");

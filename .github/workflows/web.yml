@@ -168,7 +168,9 @@ jobs:
           sudo swapon /mnt/vantage-swap
           free -h
       - name: Run browser tests
-        run: npm run test:browser -- --reporter=line,html --shard=${{ matrix.shard }}/6
+        # Bound compiler memory by restarting the managed dev server between groups.
+        # The runner verifies that every planned test appears exactly once in the merged report.
+        run: node scripts/run-browser-shard.mjs --shard ${{ matrix.shard }}/6 --max-files 6
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
