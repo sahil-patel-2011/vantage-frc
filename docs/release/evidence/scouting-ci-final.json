@@ -1,0 +1,355 @@
+{
+  "sourceRevision": "5b19e7a5615577993669b390f945539d7410a2b2",
+  "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36321477559",
+  "result": "passed",
+  "quality": {
+    "lint": "passed",
+    "workspaceTypes": "passed",
+    "unitFilesPassed": 1500,
+    "unitFilesSkipped": 16,
+    "unitTestsPassed": 11200,
+    "unitTestsSkipped": 41,
+    "migrationStaticTestsPassed": 15,
+    "productionBuild": "passed",
+    "pages": 748
+  },
+  "postgres": {
+    "migrationReapplication": "passed",
+    "restrictedRlsProof": "passed",
+    "onboardingInvitationInbox": "passed",
+    "scoutingSharingIsolation": "passed",
+    "database": "Isolated PostgreSQL 17 with restricted request roles"
+  },
+  "browser": {
+    "total": 410,
+    "passed": 405,
+    "failed": 0,
+    "flaky": 0,
+    "skipped": 5,
+    "shards": [
+      {
+        "shard": 1,
+        "findings": [],
+        "stats": {
+          "total": 54,
+          "expected": 54,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "shard": 2,
+        "findings": [],
+        "stats": {
+          "total": 61,
+          "expected": 61,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "shard": 3,
+        "findings": [
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "title": "FEATURE_MAP product routes render without a 500",
+            "file": "feature-map-walk.spec.ts"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "title": "an event later today shows on the card, and goes when it is removed",
+            "file": "home-knows-tonight.spec.ts"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "title": "the card does not reach past today to find something to say",
+            "file": "home-knows-tonight.spec.ts"
+          }
+        ],
+        "stats": {
+          "total": 40,
+          "expected": 37,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 3,
+          "ok": true
+        }
+      },
+      {
+        "shard": 4,
+        "findings": [],
+        "stats": {
+          "total": 52,
+          "expected": 52,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "shard": 5,
+        "findings": [],
+        "stats": {
+          "total": 50,
+          "expected": 50,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "shard": 6,
+        "findings": [],
+        "stats": {
+          "total": 55,
+          "expected": 55,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "shard": 7,
+        "findings": [],
+        "stats": {
+          "total": 47,
+          "expected": 47,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "shard": 8,
+        "findings": [
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "title": "Home What to do now CTA is a real click",
+            "file": "student-week-gui.spec.ts"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "title": "a real key is accepted, shown only by its last four characters, and never returned",
+            "file": "tinyfish-key-never-returned.spec.ts"
+          }
+        ],
+        "stats": {
+          "total": 51,
+          "expected": 49,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 2,
+          "ok": true
+        }
+      }
+    ],
+    "coverage": [
+      {
+        "shard": "1/8",
+        "maxFiles": 6,
+        "planned": 54,
+        "reported": 54,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:37.838Z",
+          "duration": 257196.40502929688,
+          "expected": 54,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "2/8",
+        "maxFiles": 6,
+        "planned": 61,
+        "reported": 61,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:35.440Z",
+          "duration": 389775.0520019531,
+          "expected": 61,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "3/8",
+        "maxFiles": 6,
+        "planned": 40,
+        "reported": 40,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:36.141Z",
+          "duration": 190145.40600585938,
+          "expected": 37,
+          "skipped": 3,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "4/8",
+        "maxFiles": 6,
+        "planned": 52,
+        "reported": 52,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:40.326Z",
+          "duration": 398412.6779785156,
+          "expected": 52,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "5/8",
+        "maxFiles": 6,
+        "planned": 50,
+        "reported": 50,
+        "groups": 2,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:48.341Z",
+          "duration": 181887.11791992188,
+          "expected": 50,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "6/8",
+        "maxFiles": 6,
+        "planned": 55,
+        "reported": 55,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:46.647Z",
+          "duration": 199755.833984375,
+          "expected": 55,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "7/8",
+        "maxFiles": 6,
+        "planned": 47,
+        "reported": 47,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:41.971Z",
+          "duration": 239531.72607421875,
+          "expected": 47,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "8/8",
+        "maxFiles": 6,
+        "planned": 51,
+        "reported": 51,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T13:11:31.924Z",
+          "duration": 460331.64501953125,
+          "expected": 49,
+          "skipped": 2,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      }
+    ]
+  },
+  "productionAcceptance": false,
+  "limitations": [
+    "Explicit skips retain their report reasons.",
+    "Live providers/devices, recovery/retention, load, production configuration and operating-cycle gates remain open.",
+    "Automated UI checks do not establish full accessibility conformance or a vendor usability score."
+  ],
+  "initialCandidate": "scouting-ci-candidate.json"
+}
