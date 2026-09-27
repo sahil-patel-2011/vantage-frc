@@ -6,11 +6,17 @@ async function palette(page: Page) {
   return page.evaluate(() => {
     const style = getComputedStyle(document.documentElement);
     return Object.fromEntries(
-      ["bg", "surface", "ink", "muted", "accent", "accent-ink", "positive", "critical", "warning"]
+      ["bg", "surface", "ink", "muted", "accent", "accent-ink", "positive", "critical", "warning", "alliance-blue"]
         .map((name) => [name, style.getPropertyValue(`--${name}`).trim()]),
     );
   });
 }
+
+test.afterEach(async ({ context }) => {
+  // These journeys share the seeded owner with other specs. Restore its theme.
+  const response = await context.request.put("/api/theme", { data: { theme: "light" } });
+  expect(response.ok()).toBe(true);
+});
 
 for (const width of [390, 1440]) {
   test(`theme choices preserve contrast and navigation at ${width}px`, async ({ page, context }, testInfo) => {
@@ -32,7 +38,7 @@ for (const width of [390, 1440]) {
         bg: colors.bg, surface: colors.surface, ink: colors.ink, muted: colors.muted, accent: colors.accent,
       });
       await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute("content", colors.bg);
-      for (const token of ["ink", "muted", "accent", "positive", "critical", "warning"]) {
+      for (const token of ["ink", "muted", "accent", "positive", "critical", "warning", "alliance-blue"]) {
         expect(contrastRatio(colors[token], colors.surface), `${name}: ${token} on cards`).toBeGreaterThanOrEqual(4.5);
       }
       expect(contrastRatio(colors.accent, colors["accent-ink"]), `${name}: filled action`).toBeGreaterThanOrEqual(4.5);

@@ -19,6 +19,7 @@
   --accent-soft: var(--brand-blue-soft);
   --positive: #15803d;
   --critical: #b91c1c;
+  --alliance-blue: #1d4ed8;
   --warning: #87580a;
   --warning-soft: color-mix(in srgb, var(--warning) 14%, var(--surface));
   --critical-soft: color-mix(in srgb, var(--critical) 13%, var(--surface));
@@ -133,6 +134,7 @@
   --accent-soft: #213d43;
   --positive: #7cd4a0;
   --critical: #ffa397;
+  --alliance-blue: #93b4e8;
   --warning: #eac078;
   --tone-plate-mix: 24%;
   --tone-ink-mix: 42%;
@@ -174,6 +176,7 @@ body {
     --accent-soft: #213d43;
     --positive: #7cd4a0;
     --critical: #ffa397;
+    --alliance-blue: #93b4e8;
     --warning: #eac078;
     --tone-plate-mix: 24%;
     --tone-ink-mix: 42%;
