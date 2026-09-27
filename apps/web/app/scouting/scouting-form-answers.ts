@@ -17,4 +17,3 @@ export function answersToSave(fields: FormField[], payload: Record<string, unkno
   }
   return answers;
 }
-
