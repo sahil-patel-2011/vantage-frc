@@ -239,8 +239,8 @@ textarea {
    of rise, then still. Duration is 0ms when motion is reduced, so the
    keyframes finish on the resting state and nothing is left translated. */
 @keyframes page-arrive {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateY(8px); }
+  to { transform: none; }
 }
 
 .signin-page,

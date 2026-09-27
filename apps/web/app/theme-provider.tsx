@@ -68,7 +68,7 @@ function readStoredPreference(): ThemePreference {
 /** Keep the OS browser chrome on the same colour as --bg. */
 function syncBrowserColor(theme: Theme) {
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-    .forEach((meta) => { meta.content = theme === "dark" ? "#0b1015" : "#f5f6f8"; });
+    .forEach((meta) => { meta.content = theme === "dark" ? "#11161c" : "#f6f7f9"; });
 }
 
 function applyResolvedTheme(theme: Theme) {
@@ -138,7 +138,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     return (
       <fieldset className="theme-setting">
         <legend>Appearance</legend>
-        <p>Choose Light, Dark, or System (follows your device).</p>
+        <p>System follows your device.</p>
         <div role="radiogroup" aria-label="Color theme">
           {(["light", "dark", "system"] as const).map((option) => (
             <button

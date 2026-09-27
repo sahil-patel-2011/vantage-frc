@@ -12,7 +12,7 @@ import "./product-hub.css";
 import "./vantage-chrome.css";
 // Rail comes after chrome: it owns the body inset and the topbar offset.
 import "./app-rail.css";
-// Final visual pass: calm spacing, soft depth, cobalt actions. Product half only —
+// Final visual pass: calm spacing and soft depth, using the shared palette. Product half only —
 // its marketing twin lives in marketing-styles.ts so neither sheet is in two chunk groups.
 import "./apple-polish-product.css";
 // Toast and disclosure entrances, on the shared motion tokens.

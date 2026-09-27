@@ -5,19 +5,19 @@
    ========================================================================== */
 
 :root {
-  --vt-bg: #f7f8fa;
-  --vt-surface: #ffffff;
-  --vt-surface-2: #f9fafb;
-  --vt-ink: #111827;
-  --vt-ink-secondary: #1f2937;
-  --vt-muted: #6b7280;
-  --vt-muted-light: #9ca3af;
-  --vt-line: #e5e7eb;
-  --vt-line-soft: #f3f4f6;
-  --vt-blue: #2563eb;
-  --vt-blue-light: #3b82f6;
-  --vt-blue-soft: #eff6ff;
-  --vt-blue-tint: #dbeafe;
+  --vt-bg: var(--bg);
+  --vt-surface: var(--surface);
+  --vt-surface-2: var(--surface-2);
+  --vt-ink: var(--ink);
+  --vt-ink-secondary: var(--ink);
+  --vt-muted: var(--muted);
+  --vt-muted-light: var(--muted);
+  --vt-line: var(--line);
+  --vt-line-soft: var(--line);
+  --vt-blue: var(--accent);
+  --vt-blue-light: var(--accent);
+  --vt-blue-soft: var(--accent-soft);
+  --vt-blue-tint: var(--accent-soft);
   --vt-green: #059669;
   --vt-green-soft: #d1fae5;
   --vt-red: #dc2626;
@@ -41,26 +41,11 @@
   --vt-font: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Light palette only. Dark mode keeps the tokens in system.css. */
+/* Shared tokens own the palette in both modes, including team accents. */
 html[data-theme="light"] body.has-app-shell {
-  --bg: var(--vt-bg);
-  --surface: var(--vt-surface);
-  --ink: var(--vt-ink);
-  --muted: var(--vt-muted);
-  --accent: var(--vt-blue);
-  --accent-ink: #fff;
-  --accent-soft: var(--vt-blue-soft);
-  --line: var(--vt-line);
-  --radius: var(--vt-radius);
-  --radius-sm: var(--vt-radius-sm);
-  --radius-xs: var(--vt-radius-xs);
-  --font-sans: var(--vt-font);
-  --shadow: var(--vt-shadow);
-  --shadow-lift: var(--vt-shadow-md);
-  --shadow-pop: var(--vt-shadow-lg);
-  background-color: var(--vt-bg) !important;
+  background-color: var(--bg) !important;
   background-image: none !important;
-  font-family: var(--vt-font) !important;
+  font-family: var(--font-sans) !important;
 }
 
 body.has-app-shell {
@@ -68,17 +53,6 @@ body.has-app-shell {
   padding-top: 60px !important;
   padding-bottom: calc(96px + var(--safe-bottom, 0px)) !important;
   overflow-x: hidden;
-}
-
-@media (min-width: 1024px) {
-  body.has-app-shell {
-    padding-bottom: 28px !important;
-  }
-  /* The left rail is the way you move on a wide screen. The floating dock
-     would sit on top of the page and repeat the same destinations. */
-  body.has-app-shell .soft-island {
-    display: none !important;
-  }
 }
 
 /* ===== Topbar ===== */
@@ -93,7 +67,7 @@ body.has-app-shell {
 .soft-topbar-title { font: 600 15px/1.2 var(--vt-font); letter-spacing: -.01em; }
 .soft-icon-btn { width: 40px; height: 40px; border-radius: var(--vt-radius-sm); }
 .soft-icon-btn svg { width: 20px; height: 20px; }
-.soft-avatar { width: 36px; height: 36px; background: var(--vt-blue); font: 700 13px var(--vt-font); }
+.soft-avatar { width: 36px; height: 36px; background: var(--accent); color: var(--accent-ink); font: 700 13px var(--vt-font); }
 .soft-avatar-btn { min-width: 40px; min-height: 40px; }
 
 /* ===== Floating Bottom Dock ===== */
@@ -107,8 +81,8 @@ body.has-app-shell {
   align-items: center;
   gap: 0;
   padding: 6px 8px;
-  background: rgba(255, 255, 255, .72);
-  border: 1px solid rgba(229, 231, 235, .5);
+  background: var(--island);
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
   border-radius: var(--vt-radius-pill);
   backdrop-filter: blur(20px) saturate(1.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .04);

@@ -138,10 +138,9 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
   await expect(island).toBeVisible();
 
-  // At desktop width the phone bar steps aside and the same three-line menu is the one
-  // navigation (the always-open left rail was retired): one menu, every width.
+  // The island stays available on desktop; the hamburger opens the full directory.
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(island).toBeHidden();
+  await expect(island).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Pillars" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Menu and search" })).toBeVisible();
 });

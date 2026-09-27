@@ -321,7 +321,9 @@ export function EventCard({
           {fmtRange(event.startsAt, event.endsAt)}
         </span>
         {event.source === "tba" ? (
-          <span style={{ color: accent }}>{event.bumper === "red" ? "RED" : "BLUE"}</span>
+          <span className={event.bumper === "red" ? "tc-alliance-red" : "tc-alliance-blue"}>
+            {event.bumper === "red" ? "RED" : "BLUE"}
+          </span>
         ) : event.subteamName ? (
           <span style={{ color: accent }}>{event.subteamName}</span>
         ) : (

@@ -238,32 +238,27 @@ export default function AppearancePanel() {
           <p className="app-muted">Loading your team’s branding…</p>
         ) : !org ? (
           <p>
-            You are not in a team yet, so there is no team colour to apply. Vantage stays on
-            its default accent.
+            Join a team to use its colours.
           </p>
         ) : !org.accentColor ? (
           <p>
-            {org.orgName ?? "Your team"} has not chosen a colour yet, so Vantage uses its default
-            accent.{" "}
+            Using Vantage teal.{" "}
             {org.canEdit ? (
               <a href={`/team/admin?orgId=${encodeURIComponent(org.orgId)}#team-branding`}>
                 Set the team colour
               </a>
             ) : (
-              "An owner or admin can set one in Team admin."
+              "Your team admin can choose a team colour."
             )}
           </p>
         ) : !org.applyAccentToApp ? (
           <p>
-            {org.orgName ?? "Your team"} picked {org.accentColor} but turned off applying it across the
-            app, so this setting has nothing to switch on yet.
+            Team colours are off. Using Vantage teal.
           </p>
         ) : (
           <>
             <p>
-              {org.orgName ?? "Your team"} uses{" "}
-              <code>{org.accentColor}</code>. Turn it off to stay on the neutral Vantage accent — this
-              only changes what <em>you</em> see.
+              Choose your accent. This only changes your view.
             </p>
             <div className="appearance-choice" role="radiogroup" aria-label="Accent colour">
               <button
@@ -283,8 +278,8 @@ export default function AppearancePanel() {
                 disabled={busy}
                 onClick={() => preview({ ...prefs, teamAccent: false })}
               >
-                <span>Neutral</span>
-                <small>Vantage default blue</small>
+                <span>Vantage</span>
+                <small>Default teal</small>
               </button>
             </div>
           </>
@@ -303,8 +298,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-density-title">
         <h3 id="appearance-density-title">Density</h3>
         <p>
-          Compact trims whitespace so more fits on a pit laptop or a phone in the stands. Buttons keep
-          their full tap size either way.
+          Compact fits more on screen. Tap targets stay the same size.
         </p>
         <div className="appearance-choice" role="radiogroup" aria-label="Interface density">
           {(

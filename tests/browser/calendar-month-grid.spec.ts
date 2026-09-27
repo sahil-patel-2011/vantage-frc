@@ -93,14 +93,21 @@ test("the arrows move a month at a time and Today comes back", async ({ page }) 
   await openCalendar(page);
   const heading = page.locator(".cal-grid-move h2");
   const started = (await heading.innerText()).trim();
+  const initialDate = await page.locator('.cal-grid-day[data-in-month="yes"]').first().getAttribute("data-date");
+  expect(initialDate).toBeTruthy();
+  const nextMonth = new Date(`${initialDate!.slice(0, 7)}-01T12:00:00Z`);
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
 
   await page.getByRole("button", { name: /^Next month/ }).click();
   await expect(heading).not.toHaveText(started);
-  // Away from this month, today's ring is gone and Today appears.
-  await expect(page.locator('.cal-grid-day[data-today="yes"]')).toHaveCount(0);
+  await expect(page.locator('.cal-grid-day[data-in-month="yes"]').first()).toHaveAttribute("data-date", `${nextMonth.toISOString().slice(0, 7)}-01`);
+  // Today may remain visible in the adjacent-month padding of a full week.
+  // It must not be mislabeled as a day inside the newly selected month.
+  await expect(page.locator('.cal-grid-day[data-in-month="yes"][data-today="yes"]')).toHaveCount(0);
 
   await page.getByRole("button", { name: "Today" }).click();
   await expect(heading).toHaveText(started);
+  await expect(page.locator('.cal-grid-day[data-in-month="yes"][data-today="yes"]')).toHaveCount(1);
   // And it takes itself away again, rather than sitting there doing nothing.
   await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
 });

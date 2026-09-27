@@ -1,62 +1,26 @@
-/* =============================================================================
-   Canonical tokens. This is the only stylesheet allowed to DECLARE
-   --bg/--surface/--ink and the marketing --m-* palette.
-
-   Light: navy ink on neutral grey paper, one deep house blue. Dark: surfaces
-   step UP in lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows
-   become rims. No pure black on white. No neon.
-
-   Contrast (WCAG 2.1, measured against the fill they sit on):
-     #14243a on #f2f3f5  ≈ 14.1:1  (body text)
-     #14243a on #ffffff  ≈ 15.6:1
-     #17457f on #ffffff  ≈  9.6:1  (accent as text)
-     #ffffff on #17457f  ≈  9.6:1  (accent-ink on house blue)
-     #5a6578 on #f2f3f5  ≈  5.3:1  (muted)
-     #98630a on #ffffff  ≈  5.1:1  (warning text)
-     #b91c1c on #ffffff  ≈  6.5:1  (critical text)
-     #15803d on #ffffff  ≈  5.0:1  (positive text)
-     #edf2f7 on #0c1118  ≈ 16.8:1  (dark body)
-     #0c1118 on #93b4e8  ≈  9.0:1  (dark accent-ink)
-   Marketing copper #a34a07 is decoration + large type; it is not body text.
-   ========================================================================== */
+/* Shared palette: neutral slate surfaces, restrained teal actions and semantic status colours.
+   Keep explicit and system dark mode identical. Contrast is verified in palette browser checks. */
 
 :root {
-  /* The accent is a deep navy-blue, not a bright one, and the page under it is
-     grey rather than tinted.
-
-     It used to be #17457f on a #f2f3f5 page: a vivid cornflower primary on a
-     blue-washed background, with a pale blue behind every badge and active
-     chip. Three blues stacked on each other is what made the product read as
-     light blue overall, which is a colour scheme for a consumer app, not for
-     something a team runs a competition on.
-
-     Deepening the accent is also the accessible direction, which is unusual
-     enough to be worth saying: white on #17457f measures 6.2:1, and white on
-     #17457f measures 9.6:1. The page loses its blue cast, the badges lose
-     theirs, and the one thing that stays blue is the thing you are meant to
-     press. */
-  /* 2026 repaint: the house colour moves from cornflower navy to a deep
-     teal-slate. The paper is cooler, the ink is graphite slate rather than a
-     blue, and the one saturated colour left is the thing you press.
-     White on #0e5a66 measures ~6.3:1; #0e5a66 on #f5f6f8 ~5.9:1. */
-  --brand-navy: #10202c;
-  --brand-blue: #0e5a66;
-  --brand-blue-soft: #e2edef;
-  --brand-paper: #f5f6f8;
+  --brand-navy: #202a35;
+  --brand-blue: #155e68;
+  --brand-blue-soft: #e7f0f1;
+  --brand-paper: #f6f7f9;
   --brand-white: #ffffff;
 
   --bg: var(--brand-paper);
   --surface: var(--brand-white);
   --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
-  --line: #dde1e7;
+  --line: #d9dfe5;
   --ink: var(--brand-navy);
-  --muted: #566372;
+  --muted: #556270;
   --accent: var(--brand-blue);
   --accent-ink: #fff;
   --accent-soft: var(--brand-blue-soft);
   --positive: #15803d;
   --critical: #b91c1c;
-  --warning: #98630a;
+  --alliance-blue: #1d4ed8;
+  --warning: #87580a;
   --warning-soft: color-mix(in srgb, var(--warning) 14%, var(--surface));
   --critical-soft: color-mix(in srgb, var(--critical) 13%, var(--surface));
   --positive-soft: color-mix(in srgb, var(--positive) 13%, var(--surface));
@@ -76,12 +40,12 @@
      the page. Real elevation has a tight contact shadow where the object meets
      the surface AND a wider ambient one; the pair is what makes an edge look
      crisp instead of smudged. Same ink, same overall weight, better defined. */
-  --shadow: 0 1px 2px rgba(19, 32, 51, .06), 0 6px 16px rgba(19, 32, 51, .06);
+  --shadow: 0 1px 2px rgba(19, 32, 51, .04), 0 4px 14px rgba(19, 32, 51, .035);
   --shadow-lift: 0 2px 4px rgba(19, 32, 51, .07), 0 10px 24px rgba(19, 32, 51, .09);
   --shadow-pop: 0 4px 8px rgba(19, 32, 51, .09), 0 16px 38px rgba(19, 32, 51, .14);
   --space: 8px;
 
-  --tone-blue: #0e5a66;
+  --tone-blue: #155e68;
   --tone-green: #15803d;
   --tone-teal: #0f766e;
   --tone-amber: #b45309;
@@ -159,21 +123,22 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #0b1015;
-  --surface: #141a20;
+  --bg: #11161c;
+  --surface: #1b222a;
   --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
-  --line: #253038;
-  --ink: #e9eff3;
-  --muted: #97a4ad;
-  --accent: #66c2cd;
-  --accent-ink: #08131a;
-  --accent-soft: #123038;
-  --positive: #4ade80;
-  --critical: #ff9a91;
-  --warning: #ffb936;
+  --line: #35414d;
+  --ink: #edf1f5;
+  --muted: #aab6c2;
+  --accent: #86cdd0;
+  --accent-ink: #102529;
+  --accent-soft: #213d43;
+  --positive: #7cd4a0;
+  --critical: #ffa397;
+  --alliance-blue: #93b4e8;
+  --warning: #eac078;
   --tone-plate-mix: 24%;
   --tone-ink-mix: 42%;
-  --island: rgba(20, 26, 32, .86);
+  --island: rgba(27, 34, 42, .86);
   /* Dark mode keeps the same two-layer shape. The contact layer carries more
      of the weight here, because a wide soft blur on a dark ground is almost
      invisible — it is the tight edge that separates the card from the page. */
@@ -200,21 +165,22 @@ body {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0c1118;
-    --surface: #151b24;
+    --bg: #11161c;
+    --surface: #1b222a;
     --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
-    --line: #273140;
-    --ink: #edf2f7;
-    --muted: #9aa7b5;
-    --accent: #93b4e8;
-    --accent-ink: #0c1118;
-    --accent-soft: #1a2740;
-    --positive: #4ade80;
-    --critical: #ff9a91;
-    --warning: #ffb936;
+    --line: #35414d;
+    --ink: #edf1f5;
+    --muted: #aab6c2;
+    --accent: #86cdd0;
+    --accent-ink: #102529;
+    --accent-soft: #213d43;
+    --positive: #7cd4a0;
+    --critical: #ffa397;
+    --alliance-blue: #93b4e8;
+    --warning: #eac078;
     --tone-plate-mix: 24%;
     --tone-ink-mix: 42%;
-    --island: rgba(21, 27, 36, .86);
+    --island: rgba(27, 34, 42, .86);
     /* Same two-layer shape as the explicit dark theme above. */
     --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 18px rgba(0, 0, 0, .36);
     --shadow-lift: 0 2px 5px rgba(0, 0, 0, .55), 0 12px 28px rgba(0, 0, 0, .44);
@@ -241,7 +207,7 @@ html[data-motion="reduced"] {
 }
 
 .marketing-lux {
-  --m-ink: #10202c;
+  --m-ink: #202a35;
   --m-muted: #53606b;
   --m-line: rgba(16, 32, 44, .1);
   --m-paper: #f2f4f6;
@@ -252,9 +218,9 @@ html[data-motion="reduced"] {
   --m-line-soft: rgba(0, 0, 0, .08);
   --m-line-strong: rgba(0, 0, 0, .22);
   --m-on-accent: #ffffff;
-  --m-accent: #10202c;
+  --m-accent: #202a35;
   --m-accent-dark: #04121a;
-  --m-blue: #0e5a66;
+  --m-blue: #155e68;
   --m-pad-x: clamp(20px, 5.5vw, 88px);
   --m-pad-y: clamp(56px, 7vw, 88px);
   --m-section-gap: clamp(48px, 6vw, 72px);
@@ -266,7 +232,7 @@ html[data-motion="reduced"] {
   --m-step-3: clamp(26px, 1.35rem + 1.5vw, 38px);
   --m-step-4: clamp(32px, 1.6rem + 2.4vw, 52px);
   --m-step-5: clamp(38px, 2rem + 2.9vw, 64px);
-  --m-warm: #0e5a66;
+  --m-warm: #155e68;
   --m-warm-soft: rgba(14, 90, 102, .08);
   --m-warm-line: rgba(14, 90, 102, .26);
   --m-grid-line: rgba(16, 32, 44, .05);
@@ -292,7 +258,7 @@ html[data-theme="dark"] .marketing-lux {
   --m-accent: #f2f3f5;
   --m-accent-dark: #ffffff;
   --m-on-accent: #0e1013;
-  --m-blue: #66c2cd;
+  --m-blue: #86cdd0;
   --m-warm: #7fd2dc;
   --m-warm-soft: rgba(127, 210, 220, .12);
   --m-warm-line: rgba(127, 210, 220, .3);
@@ -603,7 +569,7 @@ html[data-theme="dark"] .marketing-lux {
 /* --- Tones: one hue in, a theme-aware pair out -----------------------------
    A tone used to travel as TWO inline custom properties — `--tone` (the hue)
    and `--tone-bg` (a light-only plate). An inline custom property outranks every
-   stylesheet, so `--tone-bg: #e8eefc` painted a pale chip on the #0c1118 drawer
+   stylesheet, so `--tone-bg: #e8eefc` painted a pale chip on the #11161c drawer
    and no sheet could say otherwise. Last round patched the CONSUMERS in dark,
    which fixed the symptom and left the cause: a hardcoded light value in a .ts
    file deciding what a dark panel looks like.
@@ -692,8 +658,8 @@ html[data-theme="dark"] .marketing-lux {
   }
 }
 @keyframes soft-busy-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.86; }
+  0%, 100% { border-color: var(--line-soft); }
+  50% { border-color: color-mix(in srgb, var(--accent) 30%, var(--line-soft)); }
 }
 
 /* Error surfaces read as errors — a tinted hairline and plate, so a failure is

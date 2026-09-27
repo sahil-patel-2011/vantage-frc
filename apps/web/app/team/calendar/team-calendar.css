@@ -187,6 +187,8 @@
   font-size: 12px;
   color: var(--muted);
 }
+.tc-alliance-red { color: var(--critical); }
+.tc-alliance-blue { color: var(--alliance-blue); }
 .tc-chip {
   display: inline-flex;
   align-items: center;
