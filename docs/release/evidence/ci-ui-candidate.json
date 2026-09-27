@@ -32,7 +32,460 @@
     "whitespace": "passed",
     "notes": "Invitation eligibility and inbox isolation now also run with real PostgreSQL in CI; safety guards require loopback test/ci database names."
   },
-  "remoteFollowup": "pending",
+  "remoteFollowup": {
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36287059784",
+    "revision": "1b4bccd827f67a50e43260dfb51a9850e4eec444",
+    "result": "failed",
+    "quality": "passed; lint, workspace types,1497files/11186tests,746-page build",
+    "postgres": "passed; fresh migrations/reapplication, two-team RLS,40 standalone role proofs, invitation age and inbox SQL checks",
+    "browserShards": [
+      {
+        "shard": 1,
+        "stats": {
+          "total": 64,
+          "expected": 61,
+          "unexpected": 3,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "action-menu-mouse.spec.ts",
+            "title": "a saved TV board's More menu stays open after a mouse click",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "calendar-month-grid.spec.ts",
+            "title": "the arrows move a month at a time and Today comes back",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "choose-your-team-leftover.spec.ts",
+            "title": "All apps team chip and Chat never say Pick a team",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "shard": 2,
+        "stats": {
+          "total": 64,
+          "expected": 56,
+          "unexpected": 4,
+          "flaky": 1,
+          "skipped": 3,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "event-day-shells.spec.ts",
+            "title": "scouting hub stays empty/setup and never DEMO",
+            "path": [
+              "phone event-day shells"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "event-day-shells.spec.ts",
+            "title": "scouting hub stays empty/setup and never DEMO",
+            "path": [
+              "tablet event-day shells"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "event-day-shells.spec.ts",
+            "title": "scouting hub stays empty/setup and never DEMO",
+            "path": [
+              "desktop event-day shells"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "a non-admin is offered no way to write a form or an announcement",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "an owner builds and opens a form, a member answers it once",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "an acknowledgement moves the count and drops the name off the chase list",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "skipped",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "a link-audience form is answerable with no session at all",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "skipped",
+            "annotations": []
+          },
+          {
+            "file": "feature-map-walk.spec.ts",
+            "title": "FEATURE_MAP product routes render without a 500",
+            "path": [
+              "FEATURE_MAP fixture walk"
+            ],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "shard": 3,
+        "stats": {
+          "total": 64,
+          "expected": 57,
+          "unexpected": 2,
+          "flaky": 3,
+          "skipped": 2,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "forms-shell.spec.ts",
+            "title": "Form builder still loads after the panel split",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "home-edit-mode.spec.ts",
+            "title": "the edit toolbar replaces the tab bar and fits on one line",
+            "path": [
+              "on a phone"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "leftover-chrome-snapshot-shell.spec.ts",
+            "title": "/auton-path-library paints a heading instead of leftover VANTAGE chrome",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "my-day-shell.spec.ts",
+            "title": "My Day still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "newly-findable-pages.spec.ts",
+            "title": "/match-debrief opens and says what it is",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "title": "an event later today shows on the card, and goes when it is removed",
+            "path": [],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ]
+          },
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "title": "the card does not reach past today to find something to say",
+            "path": [],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "shard": 4,
+        "stats": {
+          "total": 61,
+          "expected": 55,
+          "unexpected": 5,
+          "flaky": 1,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "Hours keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "Batteries keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "FMEA keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "Event readiness keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "no-team-access-wall.spec.ts",
+            "title": "a signed-in account with no team is told what is happening, once",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "one-h1-per-page.spec.ts",
+            "title": "/chat has exactly one visible h1",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "shard": 5,
+        "stats": {
+          "total": 68,
+          "expected": 63,
+          "unexpected": 4,
+          "flaky": 1,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "product-shell.spec.ts",
+            "title": "product shell keeps four favorite apps and one way to see the rest",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "product-shell.spec.ts",
+            "title": "scouting and Work strips hide meta jobs that still have routes",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "saturday-pit-shells.spec.ts",
+            "title": "/match-video-index still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "saturday-pit-shells.spec.ts",
+            "title": "/drive-team-signals still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "pricing.spec.ts",
+            "title": "the cost page says it is free and that AI runs on the team's own key",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "shard": 6,
+        "stats": {
+          "total": 58,
+          "expected": 48,
+          "unexpected": 6,
+          "flaky": 1,
+          "skipped": 3,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "scouting-shell.spec.ts",
+            "title": "Scouting hub still loads after the panel split",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "search-storage-ai-shell.spec.ts",
+            "title": "/team/ai-bridge loads without engineering copy",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "student-week-actions.spec.ts",
+            "title": "student this week can walk Home → My Day/Scout → Video paste → CAD link",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "video-analysis-shell.spec.ts",
+            "title": "Video is a student paste page, not an engineering wall",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "video-shell.spec.ts",
+            "title": "Match video still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "waitlist.spec.ts",
+            "title": "a visitor can join the waitlist",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "student-week-gui.spec.ts",
+            "title": "waitlist form still submits without Setup required",
+            "path": [
+              "marketing waitlist and sign-in"
+            ],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "student-week-gui.spec.ts",
+            "title": "Home What to do now CTA is a real click",
+            "path": [
+              "student-week GUI path"
+            ],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ]
+          },
+          {
+            "file": "student-week-gui.spec.ts",
+            "title": "Connectors pair Approve pairing stays student-usable",
+            "path": [
+              "student-week GUI path"
+            ],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the student fixture is not on a team — nothing to check the student audience against",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 324,
+                  "column": 10
+                }
+              }
+            ]
+          },
+          {
+            "file": "tinyfish-key-never-returned.spec.ts",
+            "title": "a real key is accepted, shown only by its last four characters, and never returned",
+            "path": [],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "notes": "HTML report includes serial tests skipped after first failure; counts differ from compact CLI lines. Original failures and retry-only passes are retained. Repairs are verified locally; final remote rerun pending."
+  },
   "productionDeployment": "not performed",
-  "productionAcceptance": false
+  "productionAcceptance": false,
+  "latestRepairEvidence": "ui-deep-details.json"
 }

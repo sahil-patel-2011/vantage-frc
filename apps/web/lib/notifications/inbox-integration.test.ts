@@ -49,6 +49,16 @@ suite("actual PostgreSQL personal/team notification state", () => {
       await client.query("SAVEPOINT cross_team");
       await expect(updateInboxReadState(client,user,orgA,"read",[b])).rejects.toThrow("not found");
       await client.query("ROLLBACK TO SAVEPOINT cross_team");
+      // A live announcement remains countable without app.org_id, as in
+      // /api/me. Removing its source must remove the badge, not its history.
+      const announcement = randomUUID(), alert = randomUUID();
+      await client.query("INSERT INTO team_announcements(id,org_id,title,created_by) VALUES($1,$2,'Live fixture',$3)", [announcement,orgA,user]);
+      await client.query("INSERT INTO notifications(id,user_id,org_id,type,payload) VALUES($1,$2,$3,'team_announcement',$4)", [alert,user,orgA,JSON.stringify({announcementId:announcement})]);
+      await client.query("SELECT set_config('app.org_id','',true)");
+      expect(await unreadNotificationCount(client,user,orgA)).toBe(1);
+      await client.query("DELETE FROM team_announcements WHERE id=$1", [announcement]);
+      expect(await unreadNotificationCount(client,user,orgA)).toBe(0);
+      expect((await client.query("SELECT read_at FROM notifications WHERE id=$1",[alert])).rows).toEqual([{read_at:null}]);
     } finally { await client.query("ROLLBACK"); client.release(); await pool.end(); }
   });
 });

@@ -40,7 +40,7 @@ const QUESTIONS = [
   },
   {
     q: "Do we have to use AI?",
-    a: "No. Everything except the AI assistants works without a key. Add one whenever you want.",
+    a: "No. Vantage's team tools work without AI. If you want an assistant, connect your own Codex account or add a provider key.",
   },
   {
     q: "Can students use their own key?",

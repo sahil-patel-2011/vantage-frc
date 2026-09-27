@@ -24,6 +24,11 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 /* Room under the board so its last row can scroll out from under the toolbar. */
 @media (max-width:720px){
   .dash-home .dash-grid-wrap.editing{padding-bottom:96px}
+  /* Setup and contextual guidance are useful in Home, but push the actual
+     board below the fold while arranging it. Restore them when editing ends. */
+  .dash-home.is-editing > [data-edit-dim="true"],
+  .dash-home.is-editing > .dash-first-week,
+  .dash-home.is-editing > .dash-setup-banner{display:none}
 }
 
 /* ---- "Edit", beside the greeting ---- */

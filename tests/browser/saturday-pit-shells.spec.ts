@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { expectHubReadyOrGate, loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
-import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -47,8 +46,7 @@ const SHELLS = [
   },
   {
     path: "/match-video-index",
-    // A media tool: shows the paused page while media is switched off.
-    pausedAs: "Match video index",
+    // This catalogs external links; removing media uploads preserves it.
     board: /Match Video Index|Match video library/i,
     empty: /Index your first match video/i,
     shot: "match-video-index-after-shell.png",
@@ -59,7 +57,10 @@ for (const shell of SHELLS) {
   test(`${shell.path} still loads after the Saturday shell pass`, async ({ page }) => {
     await page.goto(shell.path);
     await expect(page.locator("body")).not.toContainText("Application error");
-    if (mediaPaused && "pausedAs" in shell) return expectPausedPage(page, shell.pausedAs);
+    if (shell.path === "/match-video-index") {
+      await expect(page.getByRole("heading", { name: /is paused$/ })).toHaveCount(0);
+      await expect(page.locator('input[type="file"]')).toHaveCount(0);
+    }
 
     const board = page.getByRole("heading", { name: shell.board });
     const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });

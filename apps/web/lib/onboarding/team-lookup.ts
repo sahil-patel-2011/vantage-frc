@@ -10,9 +10,9 @@
  *     or an existing request already bound this account to a real workspace), and
  *   - the outcome of the last submit: `completeOnboarding` calls
  *     `request_workspace_access()`, which raises "No Vantage workspace exists for
- *     FRC team N yet" and is swallowed — so a saved `preferredTeamNumber` that
- *     came back with `accessStatus: "none"` is a real, server-confirmed
- *     "no workspace yet".
+ *     FRC team N yet". Only that explicit failure sets `workspaceMissing` in
+ *     the submission response. A saved preferred number or `accessStatus:
+ *     "none"` alone does not establish whether the workspace exists.
  *
  * Anything else is reported as `unchecked`: the number is well-formed and we say
  * plainly that Vantage checks it on submit. We never render "Team 1234 exists"
@@ -67,8 +67,10 @@ export type TeamLookupInput = {
   lockedTeamNumber?: number | null;
   lockedOrgName?: string | null;
   accessStatus?: TeamLookupAccessStatus | null;
-  /** `preferredTeamNumber` the server has already stored and acted on. */
+  /** The saved preferred number; saving it alone is not a directory lookup. */
   knownTeamNumber?: number | null;
+  /** Explicit failure from requesting this exact team's access. */
+  workspaceMissing?: boolean;
   /** Adults get the /claim path; students are told to ask a mentor. */
   adult?: boolean;
   /** The team was set up for this person to own (not an invite to join someone else's). */
@@ -211,7 +213,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
   }
 
   // Server-confirmed: we asked for this exact number and no workspace was found.
-  if (serverSaw && (input.accessStatus === "none" || input.accessStatus == null)) {
+  if (serverSaw && input.workspaceMissing && (input.accessStatus === "none" || input.accessStatus == null)) {
     return {
       kind: "no_workspace",
       tone: "warn",
@@ -230,7 +232,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
     tone: "info",
     teamNumber: parsed,
     title: `This requests Team ${parsed}'s approval`,
-    body: "Every owner and admin of that team gets a notification when you submit. Vantage looks the team up then — if nobody has set the team up yet, it will say so.",
+    body: "When you submit, Vantage checks this team number. If a workspace exists, its owners and admins receive a notification with your access request. Your profile and team preference alone do not give access.",
     ok: true,
     action: null,
   };

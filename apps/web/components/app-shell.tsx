@@ -104,6 +104,8 @@ export default function AppShell() {
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
   const islandSaveAbort = useRef<AbortController | null>(null);
+  const islandPreferenceRevision = useRef(0);
+  const islandDraftRevision = useRef(0);
   const focusSearchOnOpen = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
@@ -340,15 +342,22 @@ export default function AppShell() {
   }, [me.userId, orgId]);
 
   useEffect(() => {
-    void fetch("/api/navigation/preferences", { cache: "no-store" })
+    const controller = new AbortController();
+    const revision = islandPreferenceRevision.current;
+    const draftRevision = islandDraftRevision.current;
+    void fetch("/api/navigation/preferences", {
+      cache: "no-store",
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+    })
       .then(async (response) => (response.ok ? response.json() as Promise<{ tabs?: unknown }> : null))
       .then((data) => {
-        if (!data) return;
+        if (!data || controller.signal.aborted || revision !== islandPreferenceRevision.current) return;
         const tabs = resolveIslandTabs(data.tabs).map((item) => item.href);
         setIslandHrefs(tabs);
-        setIslandDraft(tabs);
+        if (draftRevision === islandDraftRevision.current) setIslandDraft(tabs);
       })
       .catch(() => undefined);
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -356,6 +365,7 @@ export default function AppShell() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("island") === "1" || params.get("customize") === "island") {
       islandQueryOpened.current = true;
+      islandDraftRevision.current++;
       setIslandDraft(islandHrefs);
       setIslandMessage("");
       setIslandEditorOpen(true);
@@ -363,6 +373,7 @@ export default function AppShell() {
   }, [pathname, islandHrefs]);
 
   function openIslandEditor() {
+    islandDraftRevision.current++;
     islandSaveAbort.current?.abort();
     setIslandSaving(false);
     setIslandDraft(islandHrefs);
@@ -634,6 +645,7 @@ export default function AppShell() {
 
   async function saveIsland() {
     if (islandDraft.length !== 4 || islandSaving) return;
+    islandPreferenceRevision.current++;
     setIslandSaving(true);
     setIslandMessage("");
     const controller = new AbortController();

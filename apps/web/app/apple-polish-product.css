@@ -197,7 +197,7 @@ body.has-app-shell .soft-workspace-row:hover { background: var(--bg); border-col
 body.has-app-shell .soft-workspace-row.is-active { background: var(--accent-soft); color: var(--accent); }
 body.has-app-shell .soft-workspace-row.is-active > i { background: var(--surface); color: var(--accent); }
 body.has-app-shell .soft-workspace-sections { margin: 4px 0 8px 48px; }
-body.has-app-shell .soft-workspace-sections > summary { min-height: 40px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--muted); font-size: 12px; }
+body.has-app-shell .soft-workspace-sections > summary { min-height: 48px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--muted); font-size: 12px; }
 body.has-app-shell .soft-workspace-sections > summary::after { content: '+'; margin-left: auto; padding-right: 12px; font-size: 16px; }
 body.has-app-shell .soft-workspace-sections[open] > summary::after { content: '−'; }
 body.has-app-shell .soft-drawer-quick { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -209,7 +209,9 @@ body.has-app-shell .soft-drawer-foot { margin-top: 12px; }
 body.has-app-shell .soft-drawer-flat .soft-nav-group,
 body.has-app-shell .soft-drawer-flat .soft-nav-group + .soft-nav-group { margin: 0; padding: 0; border: 0; }
 body.has-app-shell .soft-workspace-sections .soft-nav-items { margin-left: 0; }
-body.has-app-shell .soft-workspace-sections .soft-nav-items > a { min-height: 44px !important; }
+body.has-app-shell .soft-workspace-sections .soft-nav-items > a { min-height: 48px !important; }
+body.has-app-shell .soft-island-slot-preview > button { display: grid; place-items: center; gap: 5px; min-height: 68px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--muted); background: var(--surface); font: 600 11px/1.3 var(--font-sans); text-align: center; cursor: pointer; }
+body.has-app-shell .soft-island-slot-preview > button small { font-size: 10px; }
 @media (max-width:600px) {
   body.has-app-shell .soft-menu-btn { width: 48px; padding: 0; }
   body.has-app-shell .soft-menu-label { display: none; }

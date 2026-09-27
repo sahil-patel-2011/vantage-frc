@@ -9,10 +9,10 @@ test.beforeEach(async ({ context }) => {
 
 test("Form builder still loads after the panel split", async ({ page }) => {
   await page.goto("/competition?tab=forms");
-  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const tools = page.getByRole("navigation", { name: "Tools in Scouting" });
+  const tools = page.getByRole("navigation", { name: "Tools in Scout", exact: true });
   const formsChip = tools.getByRole("button", { name: "Forms", exact: true });
   const types = page.getByRole("navigation", { name: "Form type" });
   const settledEmpty = page.locator(".sfb-shell-empty:not([aria-busy='true'])");

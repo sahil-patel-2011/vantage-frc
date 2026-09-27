@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-09-27T01:41:47.273Z",
+  "checkedAt": "2026-09-27T02:53:18.215Z",
   "environment": "Windows local checkout; isolated PostgreSQL 17 acceptance database",
   "productionAcceptance": false,
   "checks": [
@@ -196,6 +196,12 @@
       "testsSkipped": 5,
       "command": "TEST_DATABASE_ADMIN_URL=<dedicated loopback scratch database> npm test -- apps/web/lib/nav apps/web/lib/notifications apps/web/lib/css-motion-lint.test.ts apps/web/components/app-shell-model.test.ts apps/web/lib/dashboard/catalog.test.ts apps/web/lib/dashboard/grid-drag.test.ts --maxWorkers=1",
       "notes": "Actual notification RLS/history checks ran against vantage_schema_test_20260927. Five existing media retirement skips remain. Tests include team-scoped permission cache, stale-person pending cache invalidation, canonical search and safe Back."
+    },
+    {
+      "name": "UI deep detail follow-up",
+      "result": "passed-bounded",
+      "evidence": "ui-deep-details.json",
+      "notes": "Contains original CI failures, local repair results, generated-cache failure and actual scratch PostgreSQL evidence. Final remote run pending."
     }
   ],
   "remaining": [

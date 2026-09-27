@@ -178,6 +178,8 @@ export type OnboardingState = {
   workspaceOrgId: string | null;
   workspaceOrgName: string | null;
   requestCreatedAt: string | null;
+  /** Only a failed exact-number access request establishes absence. */
+  workspaceMissing?: boolean;
 };
 
 export type OnboardingDraftInput =
@@ -549,6 +551,7 @@ export async function completeOnboarding(
   userId: string,
   input: OnboardingPayload,
 ): Promise<OnboardingState> {
+  let workspaceMissing = false;
   const state = await getOnboardingState(client, userId);
   if (state.complete && !["declined", "withdrawn", "none"].includes(state.accessStatus)) return state;
 
@@ -699,10 +702,12 @@ export async function completeOnboarding(
       );
     } catch (error) {
       if (!isMissingWorkspaceError(error)) throw error;
+      workspaceMissing = true;
     }
   }
 
-  return getOnboardingState(client, userId);
+  const completed = await getOnboardingState(client, userId);
+  return workspaceMissing ? { ...completed, workspaceMissing: true } : completed;
 }
 
 /** Lightweight gate for proxy/middleware: profile complete + workspace membership. */

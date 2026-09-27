@@ -118,6 +118,7 @@ export function WaitlistForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (state === "sending") return;
     const formElement = event.currentTarget;
     const fields = new FormData(formElement);
     const nextErrors: FieldErrors = {};
@@ -156,6 +157,7 @@ export function WaitlistForm({
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
+        signal: AbortSignal.timeout(20_000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: form.get("email"),
@@ -183,7 +185,9 @@ export function WaitlistForm({
       track("waitlist_success");
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error ? error.message : "Please try again.");
+      setMessage(error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
+        ? "We couldn't confirm your request in time. Your details are still here. Try again; the same email will not create a duplicate request."
+        : error instanceof Error ? error.message : "We couldn't reach Vantage. Your details are still here. Please try again.");
     }
   }
 

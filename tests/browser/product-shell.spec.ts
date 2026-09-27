@@ -19,8 +19,7 @@ test("dashboard home is decluttered and exposes customize controls", async ({ pa
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {
   await page.goto("/dashboard");
-  // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
-  await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
+  await page.getByTestId("dash-customize").click();
   const toolbar = page.getByTestId("dash-edit-toolbar");
   await expect(toolbar).toBeVisible();
   await expect(page.getByTestId("dash-edit-hint")).toBeVisible();
@@ -36,7 +35,7 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await page.getByTestId("dash-edit-more").click();
   await expect(page.getByTestId("dash-reset-board")).toBeVisible();
   await expect(page.getByTestId("dash-tidy")).toBeVisible();
-  await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
+  await page.getByTestId("dash-preview").click();
   await expect(page.getByTestId("dash-preview-back")).toBeVisible();
   await expect(page.getByTestId("dash-preview-save")).toBeVisible();
   await expect(page.getByText("Previewing unsaved changes")).toBeVisible();
@@ -45,7 +44,7 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
 test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/dashboard");
-  await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
+  await page.getByTestId("dash-customize").click();
   await expect(page.getByTestId("dash-edit-hint")).toBeVisible();
   await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
   await expect(page.locator(".dash-grid")).toBeVisible();
@@ -107,41 +106,49 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(island.getByRole("button")).toHaveCount(1);
   await expect(island.getByRole("button", { name: "Choose your bottom bar apps" })).toBeVisible();
   await page.getByRole("button", { name: "Menu and search" }).click();
-  const drawer = page.getByRole("complementary", { name: "Product navigation" });
+  const drawer = page.getByRole("dialog", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
   // Search is a field in the panel, not a button that opened a second overlay.
   await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
   // The island lists four of these same apps, so it steps aside while the panel is up.
   await expect(island).toBeHidden();
-  // Hub row opens the default workbench. The other workbenches hang under it
-  // so All can open Scouting without a second hop. Event day is the Competition
-  // row itself, so it is not repeated.
-  await expect(drawer.getByRole("link", { name: "Competition" })).toHaveCount(1);
-  await expect(drawer.getByRole("link", { name: "Event day" })).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Robot check" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Chat" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "CAD" })).toBeVisible();
-  await expect(drawer.getByRole("button", { name: /Competition pages/ })).toHaveCount(0);
-  // Nested tools stay on the workbench ToolStrip, not in All.
+  // Five described workspaces remain the same at every width. Advanced
+  // sections belong inside the active workspace's explicit disclosure.
+  await expect(drawer.locator(".soft-workspace-row")).toHaveCount(5);
+  for (const name of ["Home", "Competition", "Team", "Build", "Business"]) {
+    await expect(drawer.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) })).toBeVisible();
+  }
+  await expect(drawer.getByRole("link", { name: "Event day", exact: true })).toHaveCount(0);
+  // Nested tools stay on the workspace ToolStrip.
   await expect(drawer.getByRole("link", { name: "Forms" })).toHaveCount(0);
   await expect(drawer.getByRole("link", { name: "Alliance desk" })).toHaveCount(0);
-  // Logistics has no in-page tab bar, so the panel still carries its pages.
-  await expect(drawer.getByRole("link", { name: "Packing" })).toBeVisible();
-  // Account lives on the profile row at the top; the footer no longer repeats it.
+  await expect(drawer.getByRole("link", { name: /^Team(?:\s|$)/ })).toContainText("logistics");
+  // Profile and personal settings are clearly labeled; the footer does not repeat them.
   await expect(drawer.locator(".soft-drawer-foot a")).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: /Account/ })).toHaveCount(1);
+  await expect(drawer.locator(".soft-profile-link")).toHaveAttribute("href", "/account");
+  await expect(drawer.getByRole("link", { name: /^Personal settings/ })).toBeVisible();
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await drawer.getByRole("link", { name: "Scouting" }).click();
+  await drawer.getByRole("link", { name: /^Competition(?:\s|$)/ }).click();
+  await expect(page.getByRole("tab", { name: "Event day", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Menu and search" }).click();
+  await drawer.getByText("Sections in Competition", { exact: true }).click();
+  expect((await drawer.locator(".soft-workspace-sections > summary").boundingBox())?.height).toBeGreaterThanOrEqual(48);
+  for (const name of ["Scout", "Teams", "Strategy", "Pit", "Pit TV"]) {
+    const section = drawer.getByRole("link", { name, exact: true });
+    await expect(section).toBeVisible();
+    // Chromium can subtract fractional transformed coordinates as
+    // 47.999969px for a 48px target. Check hundredths of a CSS pixel.
+    expect(Math.round((await section.boundingBox())!.height * 100) / 100).toBeGreaterThanOrEqual(48);
+  }
+  await drawer.getByRole("link", { name: "Scout", exact: true }).click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);
-  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   await expect(island).toBeVisible();
 
-  // At desktop width the phone bar steps aside and the same three-line menu is the one
-  // navigation (the always-open left rail was retired): one menu, every width.
+  // The requested personal island remains on desktop, with one hamburger
+  // for the rest of the app and no competing permanent left rail.
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(island).toBeHidden();
+  await expect(island).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Pillars" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Menu and search" })).toBeVisible();
 });
@@ -195,7 +202,7 @@ test("the hub tab bar owns the workbench name and the tool strip does not repeat
 test("scouting and Work strips hide meta jobs that still have routes", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/competition?tab=scouting");
-  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   const scoutingStrip = page.locator(".hub-tool-strip");
   await expect(scoutingStrip).toContainText("Forms");
   // The strip shows three chips now, not six, so a tool being present and a

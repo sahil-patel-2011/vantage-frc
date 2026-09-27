@@ -196,7 +196,7 @@ export function AppShellNavPanel({
               </span>
             </button>
             {workspaceOpen ? (
-              <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Your teams">
+              <nav id="soft-workspace-picker" className="soft-workspace-picker" aria-label="Your teams">
                 {!teamsLoaded ? (
                   <p className="soft-workspace-empty">Checking your team.</p>
                 ) : memberships.length === 0 ? (
@@ -211,8 +211,7 @@ export function AppShellNavPanel({
                   orderedMemberships.map((row) => (
                     <a
                       key={row.orgId}
-                      role="option"
-                      aria-selected={row.orgId === orgId}
+                      aria-current={row.orgId === orgId ? "true" : undefined}
                       href={switchWorkspaceHref(row.orgId)}
                       data-full-reload
                       onClick={() => {
@@ -236,7 +235,7 @@ export function AppShellNavPanel({
                     Have an invite?
                   </a>
                 </div>
-              </div>
+              </nav>
             ) : null}
           </div>
         </div>

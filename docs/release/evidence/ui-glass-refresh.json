@@ -108,8 +108,7 @@
     "Complete route-by-route workflow and WCAG acceptance",
     "Physical phones/camera, screen readers, zoom, forced colors and all OS effect preferences",
     "Representative FRC first-use task success/time/error measurements; no invented 90–100% usability score",
-    "Back filter+scroll restoration across all workflows/browsers; bounded current URL return passed",
-    "Event day selected-event coherence finding from prior run"
+    "Back filter+scroll restoration across all workflows/browsers; bounded current URL return passed"
   ],
   "screenshots": [
     "ui-notifications-final-desktop.png",
@@ -120,6 +119,13 @@
     "ui-account-short-phone.png",
     "ui-hamburger-final-phone.png",
     "ui-island-preferences-persisted.png",
-    "ui-home-final-verified-desktop.png"
-  ]
+    "ui-home-final-verified-desktop.png",
+    "ui-event-day-release-desktop.png"
+  ],
+  "followup": {
+    "checkedAt": "2026-09-27T03:00:07.899Z",
+    "buildId": "eV3IvdW2-rvFmfWWMqpSy",
+    "evidence": "ui-deep-details.json",
+    "scope": "Final compact event header and shell refinements; original14check records retain their own build identity"
+  }
 }

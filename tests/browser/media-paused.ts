@@ -2,12 +2,10 @@ import { expect, type Page } from "@playwright/test";
 import { MEDIA_ENABLED } from "../../apps/web/lib/media-availability";
 
 /**
- * Media and video tools are switched off to save storage (`MEDIA_ENABLED` in
- * apps/web/lib/media-availability.ts). The switch is meant to be temporary and
- * reversible, so the specs for those tools are not rewritten to expect "paused"
- * forever: while it is off they check the paused page is a real page, and the
- * moment it is back on they check the tool itself again — so turning media back
- * on is tested, not assumed.
+ * Upload, capture and storage surfaces are disabled by MEDIA_ENABLED.
+ * External video links, timestamps, notes and supported analysis are separate
+ * features and must continue to work without uploads; do not gate their tests
+ * through this helper.
  */
 export const mediaPaused = !MEDIA_ENABLED;
 

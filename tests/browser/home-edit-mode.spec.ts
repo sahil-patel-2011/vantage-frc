@@ -73,7 +73,11 @@ test("Escape asks before discarding changes, and Reset only changes the draft", 
   await expect(page.getByTestId("dash-toast")).toContainText("Tap Done to keep it");
   await expect(page.getByTestId("dash-edit-toolbar")).toBeVisible();
 
-  await page.getByTestId("dash-remove-widget").first().click();
+  const resetCount = await cards.count();
+  // Use a different position after Reset. Two rapid clicks at the same point
+  // intentionally protect the next card from accidental double removal.
+  await page.getByTestId("dash-remove-widget").last().click();
+  await expect(cards).toHaveCount(resetCount - 1);
   await page.getByTestId("dash-edit-cancel").click();
   await page.getByRole("dialog", { name: "Discard changes?" }).getByRole("button", { name: "Discard changes" }).click();
   await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);

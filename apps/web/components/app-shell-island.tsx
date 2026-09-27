@@ -249,6 +249,18 @@ export function AppShellIslandEditor({
             const selectedHref = islandDraft[slot];
             const selected = visibleIslandCatalog.find((entry) => entry.href === selectedHref)
               ?? ISLAND_TAB_CATALOG.find((entry) => entry.href === selectedHref);
+            if (selected && !visibleIslandCatalog.some(entry => entry.href === selected.href)) {
+              return <button className="filled" key={slot} type="button" disabled={islandSaving}
+                aria-label={`Remove ${selected.label}. Unavailable for this team.`} onClick={() => {
+                  onToggle(selected.href);
+                  // This removal button disappears. Keep keyboard focus in
+                  // the editor on a surviving choice (or its close button).
+                  (dialogRef.current?.querySelector<HTMLButtonElement>('.soft-island-choice-grid button:not(:disabled)')
+                    ?? dialogRef.current?.querySelector<HTMLButtonElement>('header button'))?.focus();
+                }}>
+                <Icon name={selected.icon} />{selected.label}<small>Unavailable · Remove</small>
+              </button>;
+            }
             return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `${slot + 1}`}</span>;
           })}
         </div>

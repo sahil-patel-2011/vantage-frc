@@ -174,10 +174,17 @@ test.describe("with real sessions", () => {
     await expect(start).toBeDisabled();
     await owner.page.getByRole("textbox", { name: "What are you asking?" }).fill(title);
     await expect(start).toBeEnabled();
+    const created = owner.page.waitForResponse(response => response.url().includes("/api/forms") && response.request().method() === "POST");
     await start.click();
+    const createdResponse = await created;
+    expect(createdResponse.ok(), "Creating the form succeeds before the detail-page navigation").toBe(true);
+    const createdBody = await createdResponse.json() as { formId: string };
+    expect(createdBody.formId).toMatch(/^[0-9a-f-]{36}$/i);
 
     // Creating navigates into the new form, carrying the workspace with it.
-    await expect(owner.page).toHaveURL(/\/forms\/[0-9a-f-]{36}/);
+    // A fresh next-dev CI worker compiles this dynamic route on first use.
+    // The response above still proves the mutation succeeded independently.
+    await owner.page.waitForURL(new RegExp(`/forms/${createdBody.formId}\\?`), { waitUntil: "domcontentloaded", timeout: 30_000 });
     await expect(owner.page.getByRole("heading", { level: 1, name: title })).toBeVisible();
     const formId = new URL(owner.page.url()).pathname.split("/").pop()!;
 

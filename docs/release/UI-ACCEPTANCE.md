@@ -9,6 +9,7 @@ This is a bounded evaluation of Vantage's shared UI. It is not Apple, Google, Mi
 - Keep the personal four-shortcut island plus its explicit Apps customization button. Shrink the container without shrinking the 48-pixel controls.
 - Show actual notification counts for the selected inbox. Mark only visible live alerts as read; retain history and deliberate manual unread state.
 - Group account actions, team switching and help. Keep long team names readable, roles subordinate and keyboard behavior predictable.
+- Use ordinary team-switching links with the current team identified. Keep Competition section controls at least 48px; preserve island edits when preference requests finish late, and allow unavailable saved shortcuts to be removed.
 
 ## Primary references
 
@@ -33,6 +34,8 @@ This is a bounded evaluation of Vantage's shared UI. It is not Apple, Google, Mi
 | Visual accessibility | Readable contrast, focus styles, reduced motion/transparency and forced-color fallbacks | Computed styles plus source checks; assistive-technology/OS preference checks remain separate |
 
 Concrete results, viewport sizes, build identity, screenshots and limitations are recorded in `evidence/ui-glass-refresh.json` after the final browser run. A passing category means its listed checks passed in that scope; it does not establish whole-app usability or full WCAG conformance.
+
+The subsequent [deep-detail evidence](evidence/ui-deep-details.json) records the failed candidate CI run and its local repairs, including selected-event context, truthful onboarding, timeout recovery, late preference response races and unavailable shortcut removal. Generated-cache and numerical precision failures are retained with their repaired reruns. Explicit skips and full production gates remain visible.
 
 ## Remaining evaluation
 

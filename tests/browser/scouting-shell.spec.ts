@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Scouting hub still loads after the panel split", async ({ page }) => {
   await page.goto("/competition?tab=scouting");
-  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const views = page.getByRole("navigation", { name: "Scouting views" });

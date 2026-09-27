@@ -246,6 +246,7 @@ export default function OnboardingClient() {
         lockedOrgName: state?.lockedOrgName ?? null,
         accessStatus: state?.accessStatus ?? null,
         knownTeamNumber: state?.preferredTeamNumber ?? null,
+        workspaceMissing: state?.workspaceMissing,
         adult,
         owner: state?.workspaceRole === "owner",
       }),
@@ -473,6 +474,7 @@ export default function OnboardingClient() {
     accessStatus: state?.accessStatus,
     teamNumber: state?.preferredTeamNumber ?? null,
     orgName: teamName,
+    workspaceMissing: state?.workspaceMissing,
     adult,
   });
   const headerCopy =

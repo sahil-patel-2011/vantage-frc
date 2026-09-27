@@ -291,6 +291,7 @@ describe("pending-approval plan", () => {
       teamNumber: 9999,
       orgName: null,
       adult: true,
+      workspaceMissing: true,
     });
     expect(adult.kind).toBe("no_workspace");
     expect(adult.primaryAction).toEqual({ kind: "claim", label: "Claim this team" });
@@ -300,10 +301,19 @@ describe("pending-approval plan", () => {
       teamNumber: 9999,
       orgName: null,
       adult: false,
+      workspaceMissing: true,
     });
     expect(student.kind).toBe("no_workspace");
     expect(student.primaryAction.kind).toBe("edit");
     expect(student.stages[1]?.title).toMatch(/mentor or coach/i);
+  });
+
+  it("does not infer a missing workspace or an owner notification from a saved team preference", () => {
+    const plan = buildOnboardingPendingPlan({ accessStatus: "none", teamNumber: 6925, orgName: null, adult: false });
+    expect(plan.headline).toBe("Your profile is ready. Join your team next.");
+    expect(plan.headline).not.toMatch(/nobody|not set up/i);
+    expect(plan.notified).toBe("");
+    expect(plan.primaryAction.kind).toBe("edit");
   });
 
   it("has a distinct state for finishing without any team number", () => {

@@ -47,7 +47,7 @@ export default function Home() {
               <ul className="mk-hero-proof">
                 <li>Keeps working when the venue Wi-Fi does not</li>
                 <li>Match predictions that say how sure they are</li>
-                <li>Free for every team: AI runs on your own key, or not at all</li>
+                <li>Free for every team. Optional AI uses your own Codex account or provider key.</li>
               </ul>
               <p className="lux-hero-note">
                 We bring teams on one at a time. <a href="/pricing">What it costs</a>
@@ -58,7 +58,7 @@ export default function Home() {
         </section>
 
         <HomeShowcase />
-        {/* No separate cost section here: "free, AI on your own key" is in the hero and the
+        {/* No separate cost section here: free Vantage and optional personal AI are in the hero and the
             FAQ, and the Cost page has the detail. It was said four times on this page. */}
         <FAQ />
 
