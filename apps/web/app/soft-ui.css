@@ -2169,7 +2169,7 @@ body.has-app-shell .writer-page .writer-cross-links a:hover{
   border-color:color-mix(in srgb,var(--accent) 40%,var(--line));
   background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface));
 }
-body.has-app-shell .writer-page .writer-ai-neighbors{margin-top:-4px}
+
 body.has-app-shell .writer-page .writer-next-actions{margin-bottom:0}
 body.has-app-shell .writer-page .writer-empty-hint,
 body.has-app-shell .writer-page .writer-template-empty,

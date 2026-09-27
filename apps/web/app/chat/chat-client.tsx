@@ -457,7 +457,7 @@ export default function ChatClient({
           </span>
           {shell === "ready" ? (
             <Button variant="secondary" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
-              {contextOpen ? "Hide context" : "Context controls"}
+              {contextOpen ? "Hide chat settings" : "Chat settings"}
             </Button>
           ) : null}
         </div>
@@ -467,22 +467,8 @@ export default function ChatClient({
       <ChatRelatedStrip orgId={orgId} />
       <AiAgentStatus orgId={orgId} agents={["ask_ai", "web_research"]} className="ch-agent-status" />
 
-      {shell === "ready" ? (
-        <nav className="ch-gov" aria-label="AI governance">
-          <span className="ch-cache">
-            Prompt caching{" "}
-            <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
-          </span>
-          <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
-          <a href={budgetsHref}>Chat limits</a>
-          <a href={memoryHref}>Memory</a>
-          <a href={promptsHref}>Prompts</a>
-          <a href={strategyHref}>Strategy</a>
-          <a href={usageHref}>Usage</a>
-          <a href={runsHref}>AI runs</a>
-          <a href={knowledgeHref}>Knowledge</a>
-        </nav>
-      ) : null}
+      {/* The settings links and the memory controls live behind "Chat settings" (one button), not
+          as nine links and a side panel around a single text box. */}
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
       <SponsoredPromoBanner orgId={orgId} />
@@ -723,7 +709,21 @@ export default function ChatClient({
         </section>
 
         {shell === "ready" ? (
-        <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Context controls">
+        <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Chat settings">
+          <nav className="ch-gov" aria-label="Chat settings links">
+            <span className="ch-cache">
+              Prompt caching{" "}
+              <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
+            </span>
+            <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
+            <a href={budgetsHref}>Chat limits</a>
+            <a href={memoryHref}>Memory</a>
+            <a href={promptsHref}>Prompts</a>
+            <a href={strategyHref}>Strategy</a>
+            <a href={usageHref}>Usage</a>
+            <a href={runsHref}>AI runs</a>
+            <a href={knowledgeHref}>Knowledge</a>
+          </nav>
           <div>
             <span className="eyebrow">Context</span>
             <h2>Injection & memory</h2>
