@@ -3,11 +3,8 @@ import { expect, test } from "@playwright/test";
 test("marketing navigation uses real routes and active tabs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // The landing headline changed on purpose: it used to name the product's
-  // shape ("the season, in one login") and now names the reader's problem.
-  // Pinned rather than loosened — an accidental copy edit on the first screen
-  // anybody sees should fail something.
-  await expect(page.getByRole("heading", { name: "Your season stops living in spreadsheets." })).toBeVisible();
+  // The homepage identifies the whole product without promising spreadsheet replacement.
+  await expect(page.getByRole("heading", { name: "Your whole team. One connected season." })).toBeVisible();
   const hero = page.locator(".lux-hero");
   await expect(hero.getByRole("link", { name: "Join the waitlist" })).toHaveCount(1);
   await expect(hero.getByRole("link", { name: /Already invited/ })).toBeVisible();

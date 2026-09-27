@@ -33,42 +33,29 @@ describe("marketing chrome", () => {
   it("does not dump dashboard routes or fake metrics on the public story", () => {
     const showcase = src("components/marketing/home-showcase.tsx");
     expect(showcase).not.toMatch(/mk-tag/);
-    // The day-one path moved to /for-teams when the homepage was simplified;
-    // the home story now carries the four-step loop instead.
-    expect(showcase).toMatch(/MARKETING_LEARN/);
+    expect(showcase).toMatch(/MARKETING_HUBS/);
     expect(showcase).toMatch(/ProductFrame/);
     expect(showcase).toMatch(/MARKETING_APP_FRAMES/);
     expect(showcase).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
   });
 
-  it("hero shows an event-day Home, labelled as an example, with no invented numbers", () => {
+  it("public previews disclose their purpose without invented data or inaccessible links", () => {
     const frames = src("components/marketing/app-frames.tsx");
-    const hero = src("components/marketing/hero-product.tsx");
-    expect(hero).toMatch(/export \{ HeroProductPanel \} from "\.\/app-frames"/);
-    // It opened on next season's Kickoff brief, which reads "manual not out" most of the year.
-    expect(frames).not.toMatch(/computeGameBrief/);
-    expect(frames).toMatch(/Example screen/);
-    const heroSrc = frames.slice(frames.indexOf("export function HeroProductPanel"));
-    const heroText = [...heroSrc.slice(0, heroSrc.indexOf("\n}\n")).matchAll(/>([^<>{}]*)</g)]
-      .map((match) => match[1])
-      .join(" ");
-    expect(heroText).not.toMatch(/\d/);
-    // The hero shows the app working, never an unfinished "Needs setup" screen.
-    expect(frames).not.toMatch(/Needs setup/);
-    expect(frames).toMatch(/Your next robot, one tap/);
-    expect(frames).not.toMatch(/never a fake/);
-    // The gallery draws the three data screens a strategist lives in. They are
-    // shapes, not scores: no frame may print a number a team did not produce.
-    expect(frames).toMatch(/Teams at your event/);
-    expect(frames).toMatch(/Chance to win/);
-    expect(frames).toMatch(/Drag to weigh/);
-    const gallery = frames.slice(frames.indexOf("export function ProductFrame"));
-    const printed = [...gallery.matchAll(/>([^<>{}]*)</g)].map((match) => match[1]).join(" ");
-    expect(printed).not.toMatch(/\d/);
-    expect(frames).not.toMatch(/Connect Claude Code/);
-    expect(src("app/marketing-showcase.css")).toMatch(/color:var\(--m-on-accent/);
-    expect(frames).not.toMatch(/Good evening/);
-    expect(frames).not.toMatch(/\b\d{2,}%\b|\b\d{3,}\s+teams\b/i);
+    expect(src("components/marketing/hero-product.tsx")).toMatch(/export \{ HeroProductPanel \} from "\.\/app-frames"/);
+    expect(frames).toContain("Product overview");
+    expect(frames).toContain("Workflow overview");
+    expect(frames).toContain("href={hub.href}");
+    expect(frames).not.toMatch(/Chance (we win|to win)|mk-hero-win|mk-shape-win|width:.*%/);
+    for (const route of ["features", "for-teams", "workflow", "features/strategy"]) {
+      expect(src(`app/${route}/page.tsx`)).not.toContain('className="lux-route-hero-visual" aria-hidden="true"');
+    }
+  });
+
+  it("describes current costs consistently in machine-readable offers", () => {
+    const seo = src("lib/marketing/seo.ts");
+    expect(seo).toContain("Vantage has no subscription charge");
+    expect(seo).toContain("external provider charges are separate");
+    expect(seo).not.toContain("Paid plans add Vantage-hosted AI");
   });
 
   it("pricing and for-teams keep one hero primary and point leftover to waitlist or sign-in", () => {

@@ -346,7 +346,7 @@ test.describe("marketing waitlist and sign-in", () => {
   test("waitlist form still submits without Setup required", async ({ page }) => {
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: "Your season stops living in spreadsheets." }),
+      page.getByRole("heading", { name: "Your whole team. One connected season." }),
     ).toBeVisible();
     const section = page.locator("#waitlist");
     await section.scrollIntoViewIfNeeded();

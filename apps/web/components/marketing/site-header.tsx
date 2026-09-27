@@ -262,7 +262,7 @@ export function SiteFooter() {
     <footer className="marketing-footer">
       <div className="marketing-footer-brand">
         <BrandLink />
-        <p>Free software for FRC teams — scouting, strategy, build and business in one login.</p>
+        <p>Your FRC team, connected. Scouting, team work, robot development and business.</p>
       </div>
       <div className="marketing-footer-cols">
         <nav className="marketing-footer-col" aria-label="Product">

@@ -8,16 +8,15 @@ import {
 import { FAQ } from "../components/marketing/faq";
 import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
-import { ScrollReveal } from "../components/marketing/scroll-reveal";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 import "./marketing-showcase.css";
 
 export const revalidate = 86_400;
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Vantage — the FRC season in one login",
+  title: "Vantage — your FRC team, connected",
   description:
-    "Free software for FIRST Robotics Competition teams: scouting that tells you which robot to pick, match predictions that say how sure they are, the build, the budget and the shop — in one login, and it keeps working when the venue Wi-Fi does not.",
+    "An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections. Currently invite-only.",
   path: "/",
 });
 
@@ -26,7 +25,6 @@ export default function Home() {
   return (
     <div className="marketing-site marketing-lux">
       <SiteHeader />
-      <ScrollReveal />
       <main>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(entityLd) }} />
 
@@ -34,23 +32,20 @@ export default function Home() {
           <div className="lux-hero-backdrop" aria-hidden="true" />
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
-              <p className="lux-kicker">Free software for FRC teams</p>
-              <h1 id="lux-hero-title">Your season stops living in spreadsheets.</h1>
+              <p className="lux-kicker">Built for FIRST Robotics Competition</p>
+              <h1 id="lux-hero-title">Your whole team.<br /><span>One connected season.</span></h1>
               <p>
-                Scouting, strategy, the build, the budget and the calendar — one login for every student and mentor.
-                Scouts keep working with no Wi-Fi, and what they record becomes your pick list and your plan for the
-                next match.
+                From the first shop meeting to alliance selection. Bring scouting, team work, robot development
+                and business together in a workspace built around how FRC teams work.
               </p>
               <MarketingHeroActions />
-              {/* Three things a team can check rather than three adjectives.
-                  Every one of them is a screen you can open. */}
               <ul className="mk-hero-proof">
-                <li>Keeps working when the venue Wi-Fi does not</li>
-                <li>Match predictions that say how sure they are</li>
-                <li>Free for every team. Optional AI uses your own Codex account or provider key.</li>
+                <li>Scouting collection that saves on your device</li>
+                <li>Team, Build and Business alongside Competition</li>
+                <li>Free to use. AI connections are optional.</li>
               </ul>
               <p className="lux-hero-note">
-                We bring teams on one at a time. <a href="/pricing">What it costs</a>
+                Currently invite-only. <a href="/pricing">See costs and connection options</a>
               </p>
             </div>
             <HeroProductPanel />

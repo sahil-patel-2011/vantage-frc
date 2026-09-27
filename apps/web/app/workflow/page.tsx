@@ -23,7 +23,7 @@ const stages = [
     id: "2",
     title: "Connect what you already have",
     detail:
-      "Pick your events and publish your scouting forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. Anything not set up yet shows a card with the next step.",
+      "Pick your events and publish your scouting forms. Optional: Onshape or Fusion, GitHub, and your own AI keys. External accounts and local connectors need their own setup.",
   },
   {
     id: "3",
@@ -60,15 +60,15 @@ export default function WorkflowPage() {
           <p className="lux-kicker">How it works</p>
           <h1>One team. One event. Then the rest of the season.</h1>
           <p>
-            Scouting feeds strategy and event day. CAD, code, money, and the playbook live in the same place — without a
-            pile of extra logins.
+            Start with your people and event. Collect scouting, prepare match plans and keep team work organized.
+            Connect your own CAD, GitHub and AI accounts where you need them.
           </p>
           <MarketingRouteActions
             companion={{ href: "/features", label: "All features", variant: "secondary" }}
           />
           {/* The right half of the first screen was empty on a laptop: show the product there. */}
-          <div className="lux-route-hero-visual" aria-hidden="true">
-            <ProductFrame id="lookup" />
+          <div className="lux-route-hero-visual">
+            <ProductFrame id="lookup" headingLevel={2} />
           </div>
         </header>
 

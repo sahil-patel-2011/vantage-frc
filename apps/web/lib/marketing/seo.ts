@@ -43,7 +43,7 @@ export function rootMarketingMetadata(): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: "Vantage — the FRC season in one login",
+      default: "Vantage — your FRC team, connected",
       template: "%s — Vantage",
     },
     description:
@@ -51,7 +51,7 @@ export function rootMarketingMetadata(): Metadata {
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
-      title: "Vantage — the FRC season in one login",
+      title: "Vantage — your FRC team, connected",
       description:
         "Scout, learn CAD, talk with the team, and run practice. Invite-only — no public signup.",
       url: SITE_URL,
@@ -61,7 +61,7 @@ export function rootMarketingMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Vantage — the FRC season in one login",
+      title: "Vantage — your FRC team, connected",
       description:
         "Invite-only FRC software: offline scouting, Learn CAD, team chat, and practice.",
       images: [OG_IMAGE.url],
@@ -96,13 +96,13 @@ export function organizationSoftwareJsonLd() {
         operatingSystem: "Web",
         url: SITE_URL,
         description:
-          "Invite-only FRC app: scouting, event day, strategy, alliance selection, season planning, CAD agent, Code Coach, and metered assistant. Screens stay empty until real TBA, scout, or connector data exists.",
+          "An FRC workspace for scouting, strategy, team coordination, robot development and business. Currently invite-only, with optional personal AI connections.",
         offers: {
           "@type": "Offer",
           price: "0",
           priceCurrency: "USD",
           description:
-            "Free competition core with bring-your-own-key or local AI. Paid plans add Vantage-hosted AI as a service.",
+            "Vantage has no subscription charge. Optional AI uses personal Codex or a personal or team provider key; external provider charges are separate.",
           url: `${SITE_URL}/pricing`,
         },
         publisher: { "@id": `${SITE_URL}/#organization` },

@@ -9,7 +9,7 @@ import "../marketing-showcase.css";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Features — Vantage",
   description:
-    "What FRC teams open after sign-in: Team, Build, Competition, and Business — every tool inside one of four workspaces, with Ask AI on every page.",
+    "Explore Home, Competition, Team, Build and Business: scouting, team coordination, robot development and business tools for FRC.",
   path: "/features",
 });
 
@@ -22,8 +22,8 @@ export default function FeaturesPage() {
           <p className="lux-kicker">Product</p>
           <h1>What you open after sign-in.</h1>
           <p>
-            On a phone, four tabs: Home, Matches, Scout and Stats. On a laptop, four workspaces: Team, Build,
-            Competition and Business, with related tools as tabs inside each. Search finds any tool by name.
+            Home, Competition, Team, Build and Business organize the app on phones and computers.
+            Personal shortcuts keep frequently used tools close; the menu opens the full workspace.
           </p>
           <MarketingRouteActions
             companion={{ href: "/workflow", label: "How it works", variant: "secondary" }}
@@ -36,7 +36,7 @@ export default function FeaturesPage() {
             ))}
           </nav>
           {/* The right half of the first screen was empty on a laptop: show the product there. */}
-          <div className="lux-route-hero-visual" aria-hidden="true">
+          <div className="lux-route-hero-visual">
             <HeroProductPanel />
           </div>
         </header>
