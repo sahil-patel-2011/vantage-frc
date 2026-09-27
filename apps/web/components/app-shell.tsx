@@ -625,6 +625,7 @@ export default function AppShell() {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tabs: islandDraft }),
+        signal: AbortSignal.timeout(8_000),
       });
       const data = await response.json() as { tabs?: unknown; error?: string };
       if (!response.ok) {

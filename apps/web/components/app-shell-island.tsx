@@ -1,6 +1,6 @@
 "use client";
 
-import type { PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { defaultIslandLabelList } from "../lib/nav/island-preferences";
@@ -211,10 +211,25 @@ export function AppShellIslandEditor({
   onReset: () => void;
   onSave: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.querySelector<HTMLButtonElement>('header button')?.focus();
+    return () => { if (opener?.isConnected) opener.focus(); };
+  }, [open]);
   if (!open) return null;
   return (
-    <div className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title">
-      <button className="soft-island-editor-scrim" type="button" aria-label="Close island customization" onClick={onClose} />
+    <div ref={dialogRef} className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const controls = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled]):not([tabindex="-1"])')];
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }}>
+      <button className="soft-island-editor-scrim" type="button" tabIndex={-1} aria-label="Close island customization" onClick={onClose} />
       <section>
         <header>
           <div>
