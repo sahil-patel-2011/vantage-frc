@@ -118,21 +118,26 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // row itself, so it is not repeated.
   await expect(drawer.getByRole("link", { name: "Competition" })).toHaveCount(1);
   await expect(drawer.getByRole("link", { name: "Event day" })).toHaveCount(0);
+  await drawer.getByRole("button", { name: "Show Competition tools" }).click();
   await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Robot check" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Pit", exact: true })).toBeVisible();
+  await drawer.getByRole("button", { name: "Show Team tools" }).click();
+  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeHidden();
   await expect(drawer.getByRole("link", { name: "Chat" })).toBeVisible();
+  await drawer.getByRole("button", { name: "Show Build tools" }).click();
   await expect(drawer.getByRole("link", { name: "CAD" })).toBeVisible();
   await expect(drawer.getByRole("button", { name: /Competition pages/ })).toHaveCount(0);
   // Nested tools stay on the workbench ToolStrip, not in All.
   await expect(drawer.getByRole("link", { name: "Forms" })).toHaveCount(0);
   await expect(drawer.getByRole("link", { name: "Alliance desk" })).toHaveCount(0);
   // Logistics has no in-page tab bar, so the panel still carries its pages.
-  await expect(drawer.getByRole("link", { name: "Packing" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
   // Account lives on the profile row at the top; the footer no longer repeats it.
   await expect(drawer.locator(".soft-drawer-foot a")).toHaveCount(0);
   await expect(drawer.getByRole("link", { name: /Account/ })).toHaveCount(1);
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await drawer.getByRole("button", { name: "Show Competition tools" }).click();
   await drawer.getByRole("link", { name: "Scouting" }).click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);
   await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();

@@ -335,6 +335,7 @@ return (
       queue count says the same thing and says it with a number.
     */}
     <div className="scout-status-bar">
+      <Button as="a" variant="secondary" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Scout without an event</Button>
       {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey }) ? (
         <strong className="scout-status-event">
           {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey })}

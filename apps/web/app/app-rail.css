@@ -218,3 +218,10 @@
     display: none;
   }
 }
+/* Keep workspace navigation compact without hiding tools from keyboard users. */
+.soft-nav-workspace-row { display: flex; align-items: center; gap: 4px; }
+.soft-nav-workspace-row > a { flex: 1; min-width: 0; }
+.soft-drawer .soft-nav-expand { flex: 0 0 48px; min-height: 48px !important; }
+.soft-nav-expand[aria-expanded="true"] svg { transform: rotate(90deg); }
+.soft-nav-items[hidden] { display: none; }
+.soft-menu-btn[hidden] { display: none !important; }

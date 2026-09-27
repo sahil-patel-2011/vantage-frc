@@ -151,10 +151,10 @@ describe("scoutingShellCopy", () => {
     expect(scoutingShellCopy("ready").description).not.toMatch(/DEMO/i);
   });
 
-  it("asks for an event once the team is already chosen", () => {
+  it("offers practice or event scouting once the team is chosen", () => {
     const copy = scoutingShellCopy("setup", { orgId: "org-1" });
-    expect(copy.title).toBe("Waiting on an event");
-    expect(copy.description).toMatch(/owner or admin/);
+    expect(copy.title).toBe("Ready to scout");
+    expect(copy.description).toMatch(/practice or video review/);
     expect(copy.title).not.toMatch(/Choose your team/);
   });
 });

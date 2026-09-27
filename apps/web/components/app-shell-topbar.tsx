@@ -107,8 +107,8 @@ export function AppShellTopbar({
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
         {/* Navigation opens from the left, where a hamburger lives on every
             other app. The right side is for things you act on. */}
-        {navOpen ? null : (
           <button
+            hidden={navOpen}
             className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
             data-tour="menu"
             type="button"
@@ -123,7 +123,6 @@ export function AppShellTopbar({
               <i />
             </span>
           </button>
-        )}
         <div className="soft-page-head">
           {showBack ? (
             <button

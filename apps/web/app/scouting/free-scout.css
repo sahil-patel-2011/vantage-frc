@@ -1,0 +1,16 @@
+.free-scout { display: grid; gap: 20px; max-width: 880px; margin: 0 auto; }
+.free-scout button, .free-scout .btn { min-height: 48px !important; }
+.free-scout-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.free-scout-heading h2, .free-scout-heading h3 { margin: 0; }
+.free-scout-heading p { color: var(--muted); margin: 6px 0 0; }
+.free-scout-card { padding: clamp(16px, 3vw, 28px); border: 1px solid var(--line); background: var(--surface); border-radius: 24px; display: grid; gap: 20px; }
+.free-scout-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 14px; }
+.free-scout-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.free-scout-inputs label { display: grid; gap: 8px; font-weight: 600; }
+.free-scout-inputs input, .free-scout-inputs select { width: 100%; min-width: 0; min-height: 48px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; }
+.free-scout-report { border-top: 1px solid var(--line); padding-top: 12px; }
+.free-scout-report summary { min-height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.free-scout-report summary span:last-child { font-size: 13px; color: var(--muted); }
+.free-scout-report dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; }
+.free-scout-report dd { margin: 0; overflow-wrap: anywhere; text-align: right; }
+@media (max-width: 480px) { .free-scout-inputs { grid-template-columns: 1fr; } }

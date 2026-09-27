@@ -2,12 +2,13 @@
 
 import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
+import type { SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior, validatePayload } from "@vantage/scouting";
-import { isTapCounterField } from "./scouting-field";
+import { answersToSave } from "./scouting-form-answers";
+import { FreeScoutView } from "./free-scout-view";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
-import { stripHiddenAnswers, visibleFields, withInferredPhaseRules } from "../../lib/scouting/context-visible";
+import { visibleFields, withInferredPhaseRules } from "../../lib/scouting/context-visible";
 import { buildScoutTargets, normalizeTeamKey } from "../../lib/scouting/scout-target";
 import { apiErrorMessage } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -65,22 +66,6 @@ async function persistScoutingSnapshot(orgId: string, data: Bootstrap): Promise<
   } catch {
     // Live Scouting already painted; IndexedDB is best-effort.
   }
-}
-
-type FormField = ScoutSchema["definition"]["fields"][number];
-
-/**
- * What Save sends: the answers still on screen (hidden ones dropped), only for questions the
- * form has, and a required counted number the scout never tapped saved as the 0 it showed.
- */
-function answersToSave(fields: FormField[], payload: Record<string, unknown>): Record<string, unknown> {
-  const shown = stripHiddenAnswers(withInferredPhaseRules(fields), payload);
-  const known = new Set(fields.map((field) => field.key));
-  const answers = Object.fromEntries(Object.entries(shown).filter(([key]) => known.has(key)));
-  for (const field of fields) {
-    if (field.required && answers[field.key] === undefined && isTapCounterField(field)) answers[field.key] = 0;
-  }
-  return answers;
 }
 
 /** After the last match on the schedule, the confirmation says so instead of naming a "next". */
@@ -904,6 +889,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     pendingEntries: counts.entries,
     pendingMedia: counts.media,
   });
+
+  if (searchParams.get("mode") === "free" && data?.scoutIdentity?.userId) {
+    return <FreeScoutView key={`${orgId}:${data.scoutIdentity.userId}`} orgId={orgId} userId={data.scoutIdentity.userId} />;
+  }
 
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (

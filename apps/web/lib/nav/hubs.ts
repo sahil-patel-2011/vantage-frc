@@ -142,7 +142,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "dossier", label: "Team dossier", legacyHref: "/dossier" },
         { id: "video", label: "Video review", legacyHref: "/video" },
       ]),
-      { id: "match-checklist", label: "Robot check", legacyHref: "/match-checklist" },
+      { id: "match-checklist", label: "Pit", legacyHref: "/match-checklist" },
       ...nest("match-checklist", [
         // The screen the pit crew points at the TV. It was only reachable by typing "TV" into search.
         { id: "pit-tv", label: "Pit TV", legacyHref: "/display", featured: true },
@@ -161,6 +161,11 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
+      ...nest("calendar", [
+        { id: "logistics", label: "Travel & logistics", legacyHref: "/logistics", featured: true },
+        { id: "duties", label: "Duties", legacyHref: "/duties" },
+        { id: "visit-invites", label: "Visit invites", legacyHref: "/visit-invites" },
+      ]),
       { id: "messages", label: "Chat", legacyHref: "/messages" },
       ...nest("messages", [
         // Announcements is nested rather than a fifth Team workbench (the set is pinned by a

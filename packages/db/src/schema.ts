@@ -2239,6 +2239,21 @@ export const scoutSchemas = pgTable(
   ],
 );
 
+/** Practice and video observations never join the official event-scoring tables. */
+export const freeScoutReports = pgTable("free_scout_reports", {
+  id: uuid("id").primaryKey(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  scoutUserId: uuid("scout_user_id").notNull().references(() => users.id),
+  year: integer("year").notNull(),
+  type: text("type").notNull(),
+  teamNumber: integer("team_number").notNull(),
+  label: text("label").notNull(),
+  definition: jsonb("definition").$type<ScoutSchemaDefinition>().notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("free_scout_reports_org_time").on(table.orgId, table.createdAt)]);
+
 /** Per-org scouting form builder identity (design-time). */
 export const scoutForms = pgTable(
   "scout_forms",

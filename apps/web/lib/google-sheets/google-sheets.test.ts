@@ -71,7 +71,10 @@ describe("Google OAuth for the mirror", () => {
   it("refuses a tampered, expired, or Microsoft state", () => {
     const state = createGoogleOAuthState({ orgId: "org", userId: "user" }, env, 1_000);
     const [body, sig] = state.split(".");
-    expect(() => verifyGoogleOAuthState(`${body}.x${sig!.slice(1)}`, env, 2_000)).toThrow(/signature/);
+    // The nonce makes the signature random; replacing an existing "x" with "x" is not tampering.
+    const changedSignature = `${sig![0] === "x" ? "y" : "x"}${sig!.slice(1)}`;
+    expect(changedSignature).not.toBe(sig);
+    expect(() => verifyGoogleOAuthState(`${body}.${changedSignature}`, env, 2_000)).toThrow(/signature/);
     expect(() => verifyGoogleOAuthState(state, env, 1_000 + 16 * 60_000)).toThrow(/expired/);
     const microsoft = createMicrosoftOAuthState({ orgId: "org", userId: "user" }, env, 1_000);
     expect(() => verifyGoogleOAuthState(microsoft, env, 2_000)).toThrow();

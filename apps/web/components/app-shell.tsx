@@ -99,6 +99,7 @@ export default function AppShell() {
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
   const focusSearchOnOpen = useRef(false);
+  const navOpenerRef = useRef<HTMLElement | null>(null);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
 
@@ -106,6 +107,9 @@ export default function AppShell() {
   const activeGroupLabel = activeNav?.group.label;
 
   const openNav = useCallback((options?: { focusSearch?: boolean }) => {
+    if (!document.activeElement?.closest(".soft-drawer")) {
+      navOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     focusSearchOnOpen.current = Boolean(options?.focusSearch);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
@@ -224,6 +228,9 @@ export default function AppShell() {
 
   useEffect(() => {
     if (!navOpen) {
+      const opener = navOpenerRef.current;
+      navOpenerRef.current = null;
+      if (opener?.isConnected) requestAnimationFrame(() => opener.focus());
       setNavQuery("");
       setSearchHits([]);
       setSearchLoading(false);
