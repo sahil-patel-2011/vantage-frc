@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
 
+// Each browser-test group starts a new dev server. Reusing its predecessor's
+// compiler files has produced Turbopack cache panics and 404s for real routes.
+// Keep this override restricted to the local test harness; builds use .next.
+const browserDistDir = process.env.VANTAGE_BROWSER_DIST_DIR ?? "";
+const isolatedBrowserRun = process.env.NODE_ENV === "development"
+  && process.env.E2E_AUTH_FIXTURE === "1"
+  && /^\.next\/browser-tests\/\d+-\d+-\d+$/.test(browserDistDir);
+
 const config: NextConfig = {
+  ...(isolatedBrowserRun ? { distDir: browserDistDir } : {}),
   // Leftover volume kits under app/win-kit, app/lovat-kit, app/agent-kit are
   // moved out of app/ for `next build` by scripts/build-without-leftover-kits.mjs
   // (same skip as eslint / tsconfig / vitest / copy-lint / route-coverage). Do

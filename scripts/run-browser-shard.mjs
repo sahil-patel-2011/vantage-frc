@@ -105,7 +105,9 @@ export async function main(args = process.argv.slice(2)) {
   for (let index = 0; index < groups.length; index++) {
     console.log(`Browser group ${index + 1}/${groups.length}: ${groups[index].length} files; fresh Playwright-managed development server.`);
     const result = await runCli(["test", ...groups[index].map(filePattern), "--reporter=line,blob", "--workers=1", `--output=test-results/browser-chunk-${stamp}-${index + 1}`], {
-      ...process.env, PLAYWRIGHT_BLOB_OUTPUT_FILE: resolve(blobDir, `chunk-${index + 1}.zip`),
+      ...process.env,
+      VANTAGE_BROWSER_DIST_DIR: `.next/browser-tests/${stamp}-${index + 1}`,
+      PLAYWRIGHT_BLOB_OUTPUT_FILE: resolve(blobDir, `chunk-${index + 1}.zip`),
     });
     failed ||= result.code !== 0;
   }
