@@ -11,6 +11,9 @@ type PackRow = {
   voltage: number | null;
   resistanceMilliohms: number | null;
   cycleCount: number;
+  lastChargedAt: string | null;
+  lastUsedAt: string | null;
+  lastTestedAt: string | null;
 };
 
 /**
@@ -27,7 +30,10 @@ export async function loadBatteryFleet(
             latest.measured_at::text AS "measuredAt",
             latest.voltage,
             latest.resistance_mohm AS "resistanceMilliohms",
-            COALESCE(cycles.cycle_count, 0)::int AS "cycleCount"
+            COALESCE(cycles.cycle_count, 0)::int AS "cycleCount",
+            cycles.last_charged_at::text AS "lastChargedAt",
+            cycles.last_used_at::text AS "lastUsedAt",
+            cycles.last_tested_at::text AS "lastTestedAt"
      FROM battery_packs p
      LEFT JOIN LATERAL (
        SELECT l.created_at AS measured_at,
@@ -36,13 +42,16 @@ export async function loadBatteryFleet(
        FROM battery_logs l
        WHERE l.battery_id = p.id AND l.org_id = p.org_id
          AND (l.resting_voltage IS NOT NULL OR l.internal_resistance_mohm IS NOT NULL)
-       ORDER BY l.created_at DESC
+       ORDER BY l.created_at DESC, l.id DESC
        LIMIT 1
      ) latest ON true
      LEFT JOIN LATERAL (
-       SELECT count(*)::int AS cycle_count
+       SELECT count(*) FILTER (WHERE kind IN ('match', 'practice'))::int AS cycle_count,
+              max(created_at) FILTER (WHERE kind IN ('charge', 'storage_charge')) AS last_charged_at,
+              max(created_at) FILTER (WHERE kind IN ('match', 'practice')) AS last_used_at,
+              max(created_at) FILTER (WHERE kind NOT IN ('charge', 'storage_charge') AND resting_voltage IS NOT NULL AND internal_resistance_mohm IS NOT NULL) AS last_tested_at
        FROM battery_logs l
-       WHERE l.battery_id = p.id AND l.org_id = p.org_id AND l.kind IN ('match', 'practice')
+       WHERE l.battery_id = p.id AND l.org_id = p.org_id
      ) cycles ON true
      WHERE p.org_id = $1
      ORDER BY CASE p.status WHEN 'active' THEN 0 WHEN 'quarantine' THEN 1 ELSE 2 END, p.label
@@ -61,6 +70,9 @@ export async function loadBatteryFleet(
       cycleCount: row.cycleCount,
       ageMonths: monthsBetween(row.purchaseDate, now),
       now: now.getTime(),
+      lastChargedAt: row.lastChargedAt ?? null,
+      lastUsedAt: row.lastUsedAt ?? null,
+      lastTestedAt: row.lastTestedAt ?? null,
     })),
   );
 }

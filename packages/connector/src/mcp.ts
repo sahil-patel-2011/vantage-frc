@@ -8,9 +8,9 @@ import { CONNECTOR_VERSION } from "./version.js";
 
 /**
  * mcp capability — expose Vantage as an MCP stdio server to Claude Code / Cursor on this
- * machine. The JSON-RPC framing and dispatch are a generalized port of the proven CAD-only
- * server in packages/cad/src/mcp-stdio.ts (which stays untouched): same Content-Length
- * framing with the line-delimited fallback, same method surface (initialize, ping,
+ * machine. Standard MCP stdio uses newline-delimited JSON. The decoder also accepts the
+ * legacy CAD connector's Content-Length framing for compatibility; responses always use
+ * standard stdio. The method surface (initialize, ping,
  * tools/list, tools/call), but the TOOLS are an injected registry instead of a hard-coded
  * CAD list — the actual Vantage tool surface is wired by the hosts.
  *
@@ -20,12 +20,14 @@ import { CONNECTOR_VERSION } from "./version.js";
  * binds to its stdio when the editor launches it.
  */
 
-export const MCP_PROTOCOL_VERSION = "2024-11-05";
+export const MCP_PROTOCOL_VERSION = "2025-11-25";
+const SUPPORTED_MCP_VERSIONS = new Set([MCP_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05"]);
 
 export type McpToolDefinition = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  annotations?: { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: boolean };
 };
 
 export type McpToolRegistry = {
@@ -121,11 +123,12 @@ export async function dispatchConnectorMcp(
   const method = String(message.method ?? "");
   const id = message.id;
   if (method === "initialize") {
+    const requestedVersion = message.params?.protocolVersion;
     write({
       jsonrpc: "2.0",
       id,
       result: {
-        protocolVersion: MCP_PROTOCOL_VERSION,
+        protocolVersion: typeof requestedVersion === "string" && SUPPORTED_MCP_VERSIONS.has(requestedVersion) ? requestedVersion : MCP_PROTOCOL_VERSION,
         capabilities: { tools: {} },
         serverInfo: { name: "vantage-connector", version: CONNECTOR_VERSION },
       },
@@ -173,6 +176,11 @@ export async function dispatchConnectorMcp(
 export function encodeMcpFrame(message: unknown): Buffer {
   const payload = Buffer.from(JSON.stringify(message), "utf8");
   return Buffer.concat([Buffer.from(`Content-Length: ${payload.length}\r\n\r\n`, "utf8"), payload]);
+}
+
+/** MCP stdio messages contain exactly one JSON value per line. */
+export function encodeMcpStdio(message: unknown): Buffer {
+  return Buffer.from(`${JSON.stringify(message)}\n`, "utf8");
 }
 
 /**
@@ -237,7 +245,7 @@ export function runConnectorMcp(
 ): void {
   const decoder = new McpFrameDecoder();
   const write: McpWrite = (message) => {
-    io.output.write(encodeMcpFrame(message));
+    io.output.write(encodeMcpStdio(message));
   };
   io.input.on("data", (chunk: Buffer) => {
     for (const message of decoder.push(chunk)) {
@@ -252,7 +260,7 @@ export function runConnectorMcp(
 
 export class McpCapability implements ConnectorCapability {
   readonly id = "mcp" as const;
-  readonly label = "MCP server (Claude Code / Cursor)";
+  readonly label = "MCP server (Codex / Claude Code / Cursor)";
 
   constructor(private readonly options: { registry?: McpToolRegistry } = {}) {}
 
@@ -288,7 +296,7 @@ export class McpCapability implements ConnectorCapability {
     const tools = this.registry().list();
     return {
       detail:
-        "Served on demand over stdio when Claude Code / Cursor launches the connector's mcp command.",
+        "Served on demand over stdio when Codex, Claude Code or Cursor launches the connector's mcp command.",
       data: { tools: tools.map((tool) => tool.name) },
     };
   }

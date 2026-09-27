@@ -20,19 +20,19 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
-import { buildAllTables } from "../microsoft/team-ops-tables";
 import type { WorkbookSource } from "../microsoft/workbook-schema";
-import { loadWorkbookSource, summarizeOutcomes } from "../microsoft/workbook-sync";
-import { contentHash, withMirrorInfo } from "../mirror/mirror-hash";
-import { writeTablesToCopy } from "../mirror/mirror-sync";
-import { AppsScriptBridge, AppsScriptTarget, type HubTeam, type HubTeamBook } from "./apps-script-bridge";
+import { loadWorkbookSource } from "../microsoft/workbook-sync";
+import { AppsScriptBridge, type HubTeam, type HubTeamBook } from "./apps-script-bridge";
 import {
   HUB_REGISTRATION_MAX_AGE_MS,
   hubRegistrationMessage,
   isAppsScriptSecret,
   isAppsScriptUrl,
 } from "./apps-script-source";
-import { describeGoogleError, isGoogleSheetsError } from "./google-api";
+import { describeGoogleError } from "./google-api";
+import { isLocalAcceptanceSignup } from "@vantage/core/public-signup";
+import { provisionWorkbooks } from "../provisioning/workbooks";
+import type { WorkspaceWorkbookName } from "../provisioning/model";
 
 export type SheetsHubConfig = { url: string; secret: string };
 
@@ -145,7 +145,8 @@ export async function readHubTeam(client: PoolClient, orgId: string): Promise<Hu
     )
   ).rows.map((row) => row.email);
   return {
-    key: orgId,
+    key: isLocalAcceptanceSignup() ? `test-${orgId}` : orgId,
+    ...(isLocalAcceptanceSignup() ? { testRun: orgId } : {}),
     number: org.teamNumber ?? null,
     name: org.name,
     title: teamSheetTitle(org.teamNumber ?? null, org.name),
@@ -157,17 +158,18 @@ export type HubSyncResult =
   | { status: "not_configured" }
   | { status: "busy" }
   | { status: "no_team" }
+  | { status: "setup_required" }
   | { status: "unchanged"; book: HubTeamBook }
   | { status: "succeeded" | "partial" | "failed"; book: HubTeamBook | null; rowsWritten: number; error: string | null };
 
 /**
- * Bring this team's hub spreadsheet up to date. Creates it on first use. Skips the write when
- * the tables hash to what was last written, unless `force`.
+ * Refresh the same five workspace books used by setup. Strict reads prevent an incomplete
+ * database export from replacing a good copy. Only changed books are rewritten and verified.
  */
 export async function syncTeamToHub(
   client: PoolClient,
   orgId: string,
-  options: { force?: boolean; bridge?: AppsScriptBridge | null; now?: () => Date } = {},
+  options: { force?: boolean; bridge?: AppsScriptBridge | null; now?: () => Date; only?: WorkspaceWorkbookName } = {},
 ): Promise<HubSyncResult> {
   const bridge = options.bridge === undefined ? await loadSheetsHubBridge(client) : options.bridge;
   if (!bridge) return { status: "not_configured" };
@@ -185,34 +187,33 @@ export async function syncTeamToHub(
   const team = await readHubTeam(client, orgId);
   if (!team) return { status: "no_team" };
 
-  const source = await loadWorkbookSource(client, orgId);
-  const built = buildAllTables(source, now());
-  const hash = contentHash(built);
-
-  let book: HubTeamBook;
+  const setup = (await client.query<{ state: string; verified: boolean; resources: { workbooks?: Record<string, { id: string; hash: string }> } }>(
+    "SELECT state,verified_at IS NOT NULL AS verified,resources FROM team_provisioning_jobs WHERE org_id=$1::uuid", [orgId],
+  )).rows[0];
+  if (setup && (setup.state !== "ready" || !setup.verified)) return { status: "setup_required" };
+  let book: HubTeamBook | null = null;
+  let rowsWritten = 0;
+  let changed = false;
+  let verifiedBooks = 0;
   try {
-    book = await bridge.ensureTeamBook(team);
+    const source = await loadWorkbookSource(client, orgId, { strict: true });
+    await provisionWorkbooks(bridge, team, source, {
+      now, force: options.force, only: options.only, verifyUnchanged: false, verifiedResources: setup?.resources?.workbooks,
+      onVerified: async (name, resource, outcome) => {
+        if (name === "Competition" || options.only) book = outcome.book;
+        rowsWritten += outcome.rowsWritten;
+        changed ||= outcome.changed;
+        verifiedBooks++;
+        await client.query(`UPDATE team_provisioning_jobs SET resources=jsonb_set(resources,'{workbooks}',
+          COALESCE(resources->'workbooks','{}'::jsonb)||$2::jsonb) WHERE org_id=$1::uuid AND state='ready'`,
+        [orgId, JSON.stringify({ [name]: resource })]);
+      },
+    });
   } catch (error) {
-    return { status: "failed", book: null, rowsWritten: 0, error: describeGoogleError(error) };
+    return { status: verifiedBooks ? "partial" : "failed", book, rowsWritten, error: describeGoogleError(error) };
   }
-  if (!options.force && !book.created && book.lastHash === hash) return { status: "unchanged", book };
-
-  const target = new AppsScriptTarget(bridge, team);
-  const { outcomes } = await writeTablesToCopy(target, withMirrorInfo(built, hash, ["google"]), {
-    describe: describeGoogleError,
-    isFatal: (error) => isGoogleSheetsError(error) && error.kind === "auth_expired",
-    throttle: (error) => (isGoogleSheetsError(error) && error.kind === "throttled" ? (error.retryAfterMs ?? 0) : null),
-  });
-  const summary = summarizeOutcomes(outcomes);
-  if (summary.status === "succeeded") {
-    try {
-      await bridge.stampTeamBook(team, hash, built.map((table) => table.spec.sheet));
-      book = { ...book, lastHash: hash, lastSyncAt: now().toISOString() };
-    } catch {
-      // The data landed; without the stamp the next sync just writes it again.
-    }
-  }
-  return { status: summary.status, book, rowsWritten: summary.rowsWritten, error: summary.error };
+  if (!changed && book) return { status: "unchanged", book };
+  return { status: "succeeded", book, rowsWritten, error: null };
 }
 
 /** A team with nothing in it yet: every table exists, with its columns and no rows. */
@@ -231,10 +232,8 @@ export function emptyTeamSource(team: HubTeam): WorkbookSource {
 }
 
 /**
- * Give a brand-new team its whole spreadsheet straight after the team is created: named the
- * standard way, every table tab with its header row, the Tables catalog, the Summary formulas
- * and the database layout, before anyone has signed in. There is no team data yet, so nothing
- * is read from Postgres. The content stamp means the first real sync with nothing new skips.
+ * Legacy administrative entry point. Uses the same five verified books as self-service
+ * setup. A partial write never returns a resource as though all setup succeeded.
  */
 export async function ensureHubSheetForNewTeam(
   team: HubTeam,
@@ -243,17 +242,12 @@ export async function ensureHubSheetForNewTeam(
 ): Promise<HubTeamBook | null> {
   if (!bridge) return null;
   try {
-    const book = await bridge.ensureTeamBook(team);
-    const built = buildAllTables(emptyTeamSource(team), now());
-    const hash = contentHash(built);
-    const { outcomes } = await writeTablesToCopy(new AppsScriptTarget(bridge, team), withMirrorInfo(built, hash, ["google"]), {
-      describe: describeGoogleError,
-      isFatal: (error) => isGoogleSheetsError(error) && error.kind === "auth_expired",
-      throttle: (error) => (isGoogleSheetsError(error) && error.kind === "throttled" ? (error.retryAfterMs ?? 0) : null),
+    let competition: HubTeamBook | null = null;
+    await provisionWorkbooks(bridge, team, emptyTeamSource(team), {
+      now,
+      onVerified: async (name, _resource, outcome) => { if (name === "Competition") competition = outcome.book; },
     });
-    if (summarizeOutcomes(outcomes).status !== "succeeded") return book;
-    await bridge.stampTeamBook(team, hash, built.map((table) => table.spec.sheet));
-    return { ...book, lastHash: hash, lastSyncAt: now().toISOString() };
+    return competition;
   } catch {
     return null;
   }

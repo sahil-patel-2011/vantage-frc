@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-09-27T00:11:51.187Z",
+  "productionAcceptance": false,
+  "database": "vantage_release_test",
+  "clientId": "45663597-199b-4553-8afc-bae174942bb0",
+  "rowCount": 1,
+  "matchingNoteCount": 1,
+  "matchKey": "2026gacmp_qm36",
+  "teamKey": "frc1323",
+  "exactPayloadAndHistoryMatch": true,
+  "originalAuthorRetained": true,
+  "observations": 8,
+  "auto": 0,
+  "teleop": 2,
+  "total": 17,
+  "scope": "Read-only comparison of actual acknowledged synthetic browser report to independently decoded offline QR artifact; no database writes or production acceptance."
+}

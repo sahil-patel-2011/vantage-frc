@@ -26,8 +26,10 @@ import {
   type TeamSourceRow,
   type WorkbookEntity,
   type WorkbookSource,
+  MAX_ROWS_PER_TABLE,
 } from "./workbook-schema";
 import { buildAllTables, loadOpsTables } from "./team-ops-tables";
+import { normalizeUtcTimestamp } from "./workbook-timestamp";
 
 // ------------------------------------------------------------------ the target interface
 
@@ -48,7 +50,7 @@ export interface WorkbookTarget {
 
 // ------------------------------------------------------------------ reading Postgres
 
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS"Z"'`;
+const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`;
 const iso = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', ${ISO})`;
 
 function num(value: unknown): number | null {
@@ -75,7 +77,7 @@ function score(alliance: unknown): number | null {
  * (org_active_context). With no active event, Teams and Matches are empty — there is no
  * roster to show — and scouting covers every event the team has scouted.
  */
-export async function loadWorkbookSource(client: PoolClient, orgId: string): Promise<WorkbookSource> {
+export async function loadWorkbookSource(client: PoolClient, orgId: string, options: { strict?: boolean } = {}): Promise<WorkbookSource> {
   const org = (
     await client.query<{ name: string; teamNumber: number | null; activeEventKey: string | null }>(
       `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "activeEventKey"
@@ -199,7 +201,7 @@ export async function loadWorkbookSource(client: PoolClient, orgId: string): Pro
          LEFT JOIN users u ON u.id = e.scout_user_id
         WHERE e.org_id = $1::uuid AND ($2::text IS NULL OR e.event_key = $2::text)
         ORDER BY e.event_key, e.match_key, e.team_key, e.created_at, e.id
-        LIMIT 50000`,
+        LIMIT ${MAX_ROWS_PER_TABLE + 1}`,
       [orgId, eventKey],
     )
   ).rows;
@@ -210,7 +212,7 @@ export async function loadWorkbookSource(client: PoolClient, orgId: string): Pro
          LEFT JOIN users u ON u.id = e.scout_user_id
         WHERE e.org_id = $1::uuid AND ($2::text IS NULL OR e.event_key = $2::text)
         ORDER BY e.event_key, e.team_key, e.created_at, e.id
-        LIMIT 50000`,
+        LIMIT ${MAX_ROWS_PER_TABLE + 1}`,
       [orgId, eventKey],
     )
   ).rows;
@@ -251,17 +253,15 @@ export async function loadWorkbookSource(client: PoolClient, orgId: string): Pro
     pitScouting,
     pickList,
     // The team's own records (roster, hours, calendar, tasks, money, sponsors, failures,
-    // batteries), each read in its own savepoint so a missing table is just empty.
-    ops: await loadOpsTables(client, orgId),
+    // batteries). Failed reads stop the sync before the old copy can be replaced.
+    ops: await loadOpsTables(client, orgId, options),
   };
 }
 
-/** Postgres `timestamptz::text` ("2026-09-22 10:00:00.123+00") → ISO UTC, second precision. */
+/** Postgres timestamp text → ISO UTC, retaining exact fractional seconds. */
 export function normalizeTimestamp(value: string | null): string | null {
   if (!value) return null;
-  const parsed = Date.parse(value.includes("T") ? value : value.replace(" ", "T").replace(/([+-]\d\d)$/, "$1:00"));
-  if (Number.isNaN(parsed)) return value;
-  return new Date(parsed).toISOString().replace(/\.\d{3}Z$/, "Z");
+  return normalizeUtcTimestamp(value) ?? value;
 }
 
 // ------------------------------------------------------------------ writing the workbook

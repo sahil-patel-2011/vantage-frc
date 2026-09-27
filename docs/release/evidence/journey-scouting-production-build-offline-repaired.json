@@ -1,0 +1,73 @@
+{
+  "date": "2026-09-26",
+  "environment": "Production-built LOCAL app at http://127.0.0.1:3417 against isolated vantage_release_test; deployed production and public signup unchanged",
+  "actor": "Morgan Journey, same normal UI session and device; no auth/storage/network injections",
+  "tabs": {"sender":"781731034","receiver":"781731064"},
+  "priorReport": "Previous Q36/team6925 outage report auto-uploaded once. After normal reload, personal count3 and one visible Q36/6925 report with Auto0/Teleop2/total13 and all8 original observations. No replacement submitted.",
+  "newReport": {
+    "match":"2026gacmp_qm36",
+    "team":"frc1323",
+    "note":"[Synthetic scouting journey 2026-09-26] Multipart QR outage retest; Q36 team1323; original zero/history must survive; no real match observation.",
+    "answers":{"autoPoints":0,"teleopCycles":2,"totalPoints":17,"endgame":"none","brokeDown":"no","confidence":"Sure","fouls":"missing"},
+    "observationVersion":1,
+    "eventCount":8,
+    "originalTimestampRange":"2026-09-26T23:57:58.136Z through 2026-09-26T23:58:03.170Z",
+    "saveCount":1,
+    "serverAcknowledgement":"Pending parent restart/read-only SQL check"
+  },
+  "checks": [
+    {
+      "id":"outage-save-and-multipart-generation",
+      "status":"passed_bounded",
+      "evidence":"Parent verified actual loopback listener stopped. Save exactly once produced Saved1323Qual36 and one pending report. Ordinary Show handoff QR renders4 QR parts offline and says full action history requires4codes. No network short code required. Actual Copy-code-as-text opened separately for each Next-code page."
+    },
+    {
+      "id":"independent-image-decode-and-reassembly",
+      "status":"passed_bounded",
+      "evidence":"Captured actual rendered QR PNGs and textarea contents. Independent jsQR image decoder exactly matches all4 actual text parts, lengths990/990/990/224. Reassembly from captured parts validates common transferID and SHA256, then yields exactQ36/frc1323, Auto0/Teleop2/total17 and version1/8 original observations including recordedzero. No payload fabricated or browser state manipulated."
+    },
+    {
+      "id":"partial-import-reload-persistence",
+      "status":"passed_bounded_same_device",
+      "evidence":"Normal receiver UI takes actual part1 and says Saved1of4; no upload until all arrive. Genuine full receiver reload while server remains down restores cached shell/Morgan/event/sharedqueue1. Returning to QR and importing only part2 says Saved2of4, proving retained part1. Repeating part2 still2of4 and one pending report."
+    },
+    {
+      "id":"multiline-import",
+      "status":"failed",
+      "evidence":"Actual captured parts3 and4 joined by one newline were filled into rendered TEXTAREA rows3; read-only DOM verified value length1215 and newlineCount1. Take these matches rejects That QR transfer part is invalid. Scan it again. Parent authorized continuing individual parts; bulk import is not passed.",
+      "screenshot":"docs/release/evidence/scouting-multipart-invalid-multiline.png"
+    },
+    {
+      "id":"individual-multipart-completion",
+      "status":"passed_bounded_same_device",
+      "evidence":"After bulk failure, individually pasting actual part3 gives Saved3of4; part4 completes with This phone already had those matches. Header/QR panel/Scouting badge remain one pending report. This proves same-device assembly/dedup; no distinct-device delivery or hardware-camera claim."
+    },
+    {
+      "id":"complete-transfer-replay",
+      "status":"partial_blocked_browser_control",
+      "evidence":"Replay of same parts1,2,3 individually starts a new assembly and reports1/2/3of4 while sharedqueue remains1 throughout. Before final part4 fill, Chrome automation paused because an extension UI was open. No final replay completion claimed. Original full transfer already completed once with no duplicate report."
+    },
+    {
+      "id":"per-tab-queued-count",
+      "status":"failed_display_only",
+      "evidence":"Initially warm receiver's Scouting badge remains0queued even while headerSyncpending1 and its QRsenderpanel show1saved. Genuine receiver reload changes badge to1queued consistently. Parent recorded separately; this is not proof of another queued report or transfer failure."
+    }
+  ],
+  "browserInterruptions": "Two import clicks returned detached-action errors after textarea edits; visible DOM showed pending typed text. Read actual state before retrying only the unprocessed click. Final extension UI blocked further browser control before any final part4 input.",
+  "artifacts": [
+    "docs/release/evidence/scouting-multipart-prepared.json",
+    "docs/release/evidence/scouting-multipart-codes.json",
+    "docs/release/evidence/scouting-multipart-capture-dom.json",
+    "docs/release/evidence/scouting-multipart-code-1.png",
+    "docs/release/evidence/scouting-multipart-code-2.png",
+    "docs/release/evidence/scouting-multipart-code-3.png",
+    "docs/release/evidence/scouting-multipart-code-4.png",
+    "docs/release/evidence/scouting-multipart-independent-decode.json",
+    "docs/release/evidence/scouting-multipart-reassembly-proof.json",
+    "docs/release/evidence/scouting-multipart-reassembled-report.json",
+    "docs/release/evidence/scouting-multipart-assembly-dom.json",
+    "docs/release/evidence/scouting-multipart-individual-completion-dom.json"
+  ],
+  "preservation": "Original QR failure remains in journey-scouting-production-build-offline.json. Synthetic records/queue/partial assembly preserved; no deletion, external messages, auth switch or additional Save.",
+  "completion":"Bounded individual offline multipart generation, independent decode, reload persistence and same-device completion passed; bulk-paste failure and final replay/browser interruption remain open. No deployed-production completion claim."
+}

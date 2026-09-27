@@ -36,8 +36,8 @@ export const MARKETING_HUBS = [
     title: "Team",
     href: "/features#team",
     route: "/team",
-    promise: "The week: calendar and tasks, chat, files, people, and the team's own playbook.",
-    modules: ["Calendar", "Chat", "People", "Work", "Playbook"],
+    promise: "The week: calendar and tasks, chat, people, logistics, and the team's own playbook.",
+    modules: ["Calendar", "Chat", "People", "Work", "Logistics", "Playbook"],
     tools: [
       "One calendar for meetings, tasks, matches and deadlines — with an assistant that finds a time from when your team actually shows up",
       "Files: a team drive and a private space for every member, shareable by link or email",
@@ -69,7 +69,7 @@ export const MARKETING_HUBS = [
     href: "/features#competition",
     route: "/competition",
     promise: "Scout offline, see the next match, pick the alliance from evidence.",
-    modules: ["Event day", "Scouting", "Strategy", "Robot check"],
+    modules: ["Event day", "Scout", "Teams", "Strategy", "Pit"],
     tools: [
       "Match and pit forms that work with no Wi-Fi and sync later",
       "Event day and My Day from the real match schedule",

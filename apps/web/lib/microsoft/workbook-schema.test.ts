@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_PAYLOAD_COLUMNS,
+  MAX_ROWS_PER_TABLE,
   PAYLOAD_OVERFLOW_COLUMN,
   type WorkbookSource,
   buildWorkbookTables,
@@ -81,8 +82,9 @@ describe("cell hygiene", () => {
     expect(toCell(true)).toBe(true);
   });
 
-  it("caps text at Excel's cell limit", () => {
-    expect(String(toCell("x".repeat(40_000))).length).toBe(32_767);
+  it("retains complete values for the lossless workbook sharding pass", () => {
+    expect(toCell("x".repeat(40_000))).toBe("x".repeat(40_000));
+    expect(toCell(9007199254740993123456789n)).toBe("9007199254740993123456789");
   });
 
   it("dedupes header names case-insensitively", () => {
@@ -95,6 +97,11 @@ describe("cell hygiene", () => {
 });
 
 describe("workbook tables", () => {
+  it("refuses excess observations before a partial workbook can be written", () => {
+    const entries = Array.from({ length: MAX_ROWS_PER_TABLE + 1 }, (_, index) => scout(`entry-${index}`, { count: index }));
+    expect(() => buildWorkbookTables(source({ pitScouting: entries }), NOW)).toThrow(/additional capacity/);
+    expect(() => buildWorkbookTables(source({ pitScouting: entries.slice(0, MAX_ROWS_PER_TABLE) }), NOW)).not.toThrow();
+  });
   it("produces one table per entity in a fixed order, each with id / updated_at / source", () => {
     const tables = buildWorkbookTables(source(), NOW);
     expect(tables.map((t) => t.spec.entity)).toEqual(["Teams", "Matches", "MatchScouting", "PitScouting", "PickList", "SyncInfo"]);

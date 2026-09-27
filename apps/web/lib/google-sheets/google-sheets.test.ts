@@ -71,7 +71,9 @@ describe("Google OAuth for the mirror", () => {
   it("refuses a tampered, expired, or Microsoft state", () => {
     const state = createGoogleOAuthState({ orgId: "org", userId: "user" }, env, 1_000);
     const [body, sig] = state.split(".");
-    expect(() => verifyGoogleOAuthState(`${body}.x${sig!.slice(1)}`, env, 2_000)).toThrow(/signature/);
+    // Always change the signature, including when its random first character is x.
+    const changedSignature = `${sig![0] === "x" ? "y" : "x"}${sig!.slice(1)}`;
+    expect(() => verifyGoogleOAuthState(`${body}.${changedSignature}`, env, 2_000)).toThrow(/signature/);
     expect(() => verifyGoogleOAuthState(state, env, 1_000 + 16 * 60_000)).toThrow(/expired/);
     const microsoft = createMicrosoftOAuthState({ orgId: "org", userId: "user" }, env, 1_000);
     expect(() => verifyGoogleOAuthState(microsoft, env, 2_000)).toThrow();
@@ -269,5 +271,26 @@ describe("GoogleSheetsTarget", () => {
     expect(await target.readTable({ entity: "PitScouting", sheet: "PitScouting", table: "VantagePitScouting" })).toBeNull();
     expect(calls.filter((call) => call.url.includes("values:batchGet"))).toHaveLength(1);
     expect(calls).toHaveLength(2);
+  });
+
+  it("detects an extra data row instead of silently importing a capped table", async () => {
+    const data = [["id"], ...Array.from({ length: 20_001 }, (_, index) => [String(index)])];
+    const { client, calls } = fakeSheets([{ title: "PickList", sheetId: 3 }], [data]);
+    const target = await GoogleSheetsTarget.open(client, "s");
+    const result = await target.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" });
+    expect(result?.truncated).toBe(true);
+    expect(result?.rows).toHaveLength(20_000);
+    expect(calls.find((call) => call.url.includes("values:batchGet"))?.url).toContain("ZZ20002");
+  });
+
+  it("accepts the exact continuation limit and rejects an extra continuation row", async () => {
+    for (const count of [20_000, 20_001]) {
+      const continuations = [["id", "part", "text_json", "characters"], ...Array.from({ length: count }, (_, index) => [index.toString(16).padStart(64, "0"), 0, '"a"', 1])];
+      const { client } = fakeSheets([{ title: "PickList", sheetId: 3 }, { title: "LongText", sheetId: 4 }], [[["id"], ["a"]], continuations]);
+      const target = await GoogleSheetsTarget.open(client, "s");
+      const read = target.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" });
+      if (count === 20_000) expect((await read)?.truncated).toBe(false);
+      else await expect(read).rejects.toThrow(/No fragments were imported/);
+    }
   });
 });

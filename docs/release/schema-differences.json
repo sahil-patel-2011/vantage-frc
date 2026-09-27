@@ -1,0 +1,3691 @@
+{
+  "observedAt": "2026-09-26T22:04:00.245Z",
+  "productionObservedAt": "2026-09-26T18:49:42.856Z",
+  "scratchObservedAt": "2026-09-26T21:54:31.214Z",
+  "scope": "Read-only schema metadata; matching row counts do not establish application/schema compatibility.",
+  "productionTables": 719,
+  "scratchTables": 613,
+  "onlyProduction": [
+    "drizzle.__drizzle_migrations",
+    "neon_auth.account",
+    "neon_auth.invitation",
+    "neon_auth.jwks",
+    "neon_auth.member",
+    "neon_auth.organization",
+    "neon_auth.project_config",
+    "neon_auth.session",
+    "neon_auth.user",
+    "neon_auth.verification",
+    "public.accessible_ui_mode_prefs",
+    "public.ai_credit_weights",
+    "public.ai_free_token_ledger",
+    "public.ai_request_credit_ledger",
+    "public.ai_usage_reservations",
+    "public.announcement_reads",
+    "public.auto_routine_reliability_ledger_routines",
+    "public.auto_routine_reliability_ledger_runs",
+    "public.automation_rules_studio_rules",
+    "public.automation_rules_studio_runs",
+    "public.award_rubric_scorer_runs",
+    "public.checkin_cadence_assignments",
+    "public.checkin_cadence_logs",
+    "public.daily_match_reports",
+    "public.deep_game_analysis_loops",
+    "public.deep_game_analysis_runs",
+    "public.deep_game_analysis_sources",
+    "public.defense_impact_analytics_observations",
+    "public.defense_impact_analytics_team_summaries",
+    "public.electrical_inspection_preflight_rules",
+    "public.electrical_inspection_preflight_runs",
+    "public.epa_credible_intervals_team_ratings",
+    "public.ext_barcode_multiformat_links",
+    "public.ext_discord_interactions_guild_links",
+    "public.ext_discord_interactions_log",
+    "public.ext_google_calendar_sync_channels",
+    "public.ext_google_calendar_sync_connections",
+    "public.ext_google_calendar_sync_events",
+    "public.ext_ics_import_events",
+    "public.ext_ics_import_subscriptions",
+    "public.ext_notion_sync_connections",
+    "public.ext_notion_sync_events",
+    "public.ext_notion_sync_pages",
+    "public.ext_outbound_webhooks_deliveries",
+    "public.ext_outbound_webhooks_endpoints",
+    "public.ext_plaid_bank_sync_connections",
+    "public.ext_plaid_bank_sync_transactions",
+    "public.ext_quickbooks_connections",
+    "public.ext_quickbooks_exports",
+    "public.ext_resend_webhooks_events",
+    "public.ext_slack_bridge_connections",
+    "public.ext_slack_bridge_messages",
+    "public.ext_twilio_sms_messages",
+    "public.ext_twilio_sms_subscribers",
+    "public.ext_web_push_subscriptions",
+    "public.ext_wiki_connections",
+    "public.ext_wiki_pages",
+    "public.ext_yjs_picklist_snapshots",
+    "public.ext_zapier_api_keys",
+    "public.ext_zapier_deliveries",
+    "public.ext_zapier_subscriptions",
+    "public.free_relay_devices",
+    "public.honor_nomination_studio_collaborators",
+    "public.honor_nomination_studio_comments",
+    "public.honor_nomination_studio_nominations",
+    "public.honor_nomination_studio_sections",
+    "public.honor_nomination_studio_testimonial_requests",
+    "public.hub_rp_war_room_projections",
+    "public.hub_rp_war_room_season_config",
+    "public.injury_near_miss_log_incidents",
+    "public.live_queue_countdown_alerts",
+    "public.live_queue_countdown_watches",
+    "public.mentor_compliance_tracker_events",
+    "public.mentor_compliance_tracker_mentors",
+    "public.multilingual_family_hub_member_locales",
+    "public.multilingual_family_hub_translations",
+    "public.notebook_autodraft_runs",
+    "public.notebook_entry_drafts",
+    "public.org_ai_access_grants",
+    "public.org_join_code_redemptions",
+    "public.org_join_codes",
+    "public.outreach_evidence_vault_items",
+    "public.playoff_bracket_tracker_configs",
+    "public.playoff_bracket_tracker_state",
+    "public.program_umbrella_console_program_members",
+    "public.program_umbrella_console_program_orgs",
+    "public.program_umbrella_console_programs",
+    "public.rules_qa_assistant_messages",
+    "public.rules_qa_assistant_sources",
+    "public.rules_qa_assistant_threads",
+    "public.scouting_data_exchange_partners",
+    "public.scouting_data_exchange_records",
+    "public.shop_machine_queue_jobs",
+    "public.shop_machine_queue_machines",
+    "public.student_retention_radar_checkins",
+    "public.student_retention_radar_students",
+    "public.sustainability_evidence",
+    "public.sustainability_narrative_drafts",
+    "public.team_wiki_pages",
+    "public.training_assignments",
+    "public.training_audit_events",
+    "public.training_competencies",
+    "public.training_credentials",
+    "public.training_self_assessments",
+    "public.training_tracks",
+    "public.training_verifications",
+    "public.vendordep_drift_tracker_libraries",
+    "public.vendordep_drift_tracker_scans",
+    "public.volunteer_shift_board_shifts",
+    "public.volunteer_shift_board_signups"
+  ],
+  "onlyScratch": [
+    "public.recovery_checkpoints",
+    "public.recovery_events",
+    "public.team_provisioning_jobs",
+    "public.team_readable_sync_jobs"
+  ],
+  "differentColumns": [
+    {
+      "table": "public.ai_runs",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "thread_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "capability",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "privacy_scope",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "model",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "request_id",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "input",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "output",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "context_sources",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "usage_event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "error",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "billing_owner_type",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "billing_owner_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "entitlement_snapshot",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "allowance_bucket",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "provider_cost_usd",
+          "type": "numeric(12,6)",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "credit_debit",
+          "type": "numeric(12,6)",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "routing_decision",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "thread_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "capability",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "privacy_scope",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "model",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "request_id",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "input",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "output",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "context_sources",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "usage_event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "error",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "billing_owner_type",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "billing_owner_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "entitlement_snapshot",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "allowance_bucket",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "provider_cost_usd",
+          "type": "numeric(12,6)",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "credit_debit",
+          "type": "numeric(12,6)",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "routing_decision",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "training_eligible_at_collection",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.attendance_entries",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "person_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "hours",
+          "type": "numeric(5,2)",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "person_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "hours",
+          "type": "numeric(6,2)",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.attendance_events",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "occurred_on",
+          "type": "date",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "credit_hours",
+          "type": "numeric(5,2)",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "season_year",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "occurred_on",
+          "type": "date",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "credit_hours",
+          "type": "numeric(6,2)",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "season_year",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.driver_sessions",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "event_key",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "session_date",
+          "type": "date",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "driver_user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "driver_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "goal",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "attendance_event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "build_task_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "event_key",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "session_date",
+          "type": "date",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "driver_user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "driver_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "goal",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "attendance_event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "build_task_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.member_onboarding_checks",
+      "production": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "track_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "item_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "track_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "check_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.member_onboarding_tracks",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "track_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "subteam_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "dismissed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "track_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "dismissed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.org_byok_routing_prefs",
+      "production": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "mode",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "fixed_model_id",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "enabled_model_ids",
+          "type": "text[]",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "consult_enabled",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "use_platform_free_ai",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "freebuff_model",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "free_swarm_model",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "mode",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "fixed_model_id",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "enabled_model_ids",
+          "type": "text[]",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "consult_enabled",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "free_swarm_model",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.org_match_schedule_state",
+      "production": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "event_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "fingerprint",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "match_count",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notified_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "event_key",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "fingerprint",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "our_match_count",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.partner_placement_campaigns",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "package_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "asset_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "source_submission_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "season_year",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "headline",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "link_url",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "surfaces",
+          "type": "text[]",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "start_on",
+          "type": "date",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "end_on",
+          "type": "date",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "amount_usd",
+          "type": "numeric(12,2)",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "payment_status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "contribution_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "package_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "asset_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "source_submission_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "season_year",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "headline",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "link_url",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "surfaces",
+          "type": "text[]",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "start_on",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "end_on",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "amount_usd",
+          "type": "numeric(12,2)",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "payment_status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "contribution_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.partner_program_settings",
+      "production": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "public_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "storefront_enabled",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "payment_url",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "pitch",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "public_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "storefront_enabled",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "payment_url",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "pitch",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.partner_storefront_submissions",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "package_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "company_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "contact_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "contact_email",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "website",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "external_logo_url",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "headline",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "package_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "company_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "contact_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "contact_email",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "website",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "headline",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "external_logo_url",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.profiles",
+      "production": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "notification_prefs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "theme_preference",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "first_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "last_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "date_of_birth",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "gender",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "preferred_team_number",
+          "type": "integer",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "team_role",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "primary_focus",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "terms_accepted_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "terms_version",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_current_step",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_started_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_saved_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "island_tabs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "email_bounced_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "email_bounce_reason",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "crew_role",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "role_description",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "recovery_email",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "phone_e164",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "phone_verified_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "privacy_accepted_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "privacy_version",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "appearance_prefs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "team_braindump",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "share_team_braindump",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "cockpit_prefs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "theme_chosen_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "notification_prefs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "theme_preference",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "first_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "last_name",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "date_of_birth",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "gender",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "preferred_team_number",
+          "type": "integer",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "team_role",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "terms_accepted_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "terms_version",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "primary_focus",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_current_step",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_started_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "onboarding_saved_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "island_tabs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "crew_role",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "role_description",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "recovery_email",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "phone_e164",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "phone_verified_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "privacy_accepted_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "privacy_version",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "appearance_prefs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "team_braindump",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "share_team_braindump",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "cockpit_prefs",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "theme_chosen_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.sponsor_assets",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "public_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "media_type",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "bytes",
+          "type": "bytea",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "width",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "height",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "checksum_sha256",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "byte_size",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "public_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "media_type",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "bytes",
+          "type": "bytea",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "byte_size",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "width",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "height",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "checksum_sha256",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.subteam_calendar_events",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "subteam_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "attendance_event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "milestone_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "driver_session_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "import_uid",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "rrule",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "recurrence_end",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "series_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "recurrence_timezone",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "meeting_url",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "links",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "subteam_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "attendance_event_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "milestone_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "driver_session_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "import_uid",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "rrule",
+          "type": "text",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "recurrence_end",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "series_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "recurrence_timezone",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.team_announcements",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "priority",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "pinned",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "require_ack",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "posted_to_discord",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "priority",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "pinned",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "require_ack",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "posted_to_discord",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.team_todos",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "assignee_user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "subteam_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "due_on",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "links",
+          "type": "jsonb",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "assignee_user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "subteam_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "due_on",
+          "type": "date",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.user_email_preferences",
+      "production": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "product_updates",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "coach_assignments",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "coach_todos",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "coach_practice_reminders",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "unsubscribe_token",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "sponsor_reminders",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "daily_match_report",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "performance_digest",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "announcements",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "dues_reminders",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "member_onboarding",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "product_updates",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "coach_assignments",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "coach_todos",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "coach_practice_reminders",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "unsubscribe_token",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "sponsor_reminders",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "performance_digest",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "announcements",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "dues_reminders",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "member_onboarding",
+          "type": "boolean",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    },
+    {
+      "table": "public.visit_invite_rsvps",
+      "production": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "visit_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "guest_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "guest_email",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "party_size",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "response",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "responded_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ],
+      "scratch": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "org_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "visit_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "identity": "",
+          "nullable": true,
+          "generated": ""
+        },
+        {
+          "name": "guest_name",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "guest_email",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "party_size",
+          "type": "integer",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "response",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "responded_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "identity": "",
+          "nullable": false,
+          "generated": ""
+        }
+      ]
+    }
+  ]
+}

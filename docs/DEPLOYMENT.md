@@ -1,15 +1,16 @@
 # Deployment runbook
 
-> **Before you self-host:** the recommended way to use Vantage is the hosted version at
-> **https://vantage-frc-web.vercel.app**. It is free, already set up end to end (database, sign-in,
-> integrations, scheduled jobs), and needs nothing installed. This runbook is for teams that
-> specifically want to run their own copy on their own accounts — start with the shorter
-> [SELF_HOSTING.md](SELF_HOSTING.md) and come here for every variable and connector.
+The canonical hosted URL is **https://vantagefrc.vercel.app**. Production completion is being
+tracked in [release/STATUS.md](release/STATUS.md); the current deployment has not passed the
+production acceptance plan. For a separate installation, start with [SELF_HOSTING.md](SELF_HOSTING.md).
 
 How to take this repo to a real Vercel + Neon (or Supabase Postgres host) production deployment.
 Everything below is verified against code in this repo — file paths are cited so you can re-check.
 Run `npm run deploy:preflight` before every deploy; it prints a PASS/WARN/FAIL table for env
 completeness and the migration-file inventory (`scripts/deploy-preflight.mjs`).
+Also run `node scripts/release-preflight.mjs --env-file <production-env-file>` for required
+platform settings and actual restricted database role checks. Protected values remain unverified
+until checked at runtime. Neither preflight substitutes for the release matrix and live journeys.
 
 ## 1. Vercel project
 
@@ -132,11 +133,11 @@ Two failure modes worth knowing before you debug a "missing" email:
 
 ## 4a. Object storage for Vantage Drive (`DRIVE_OBJECT_*`)
 
-Vantage Drive (`/files`) routes each upload to one of three homes: the hosted database, the team's own
-paired storage node, or an S3-compatible object store. The database path is capped by Vercel's
-request-body limit (4 MiB — see `apps/web/lib/storage-routing/caps.ts`) and the node path needs
-hardware the team owns and exposes, so a team with neither has nowhere to put a 300 MB practice-match
-video. These five variables give it one:
+Vantage Drive (`/files`) routes supported documents to the hosted database or a configured
+S3-compatible object store. New photo/video writes and storage-node setup are retired. Existing
+nodes serve archives only and are never selected for new writes. The database path is capped
+at 4 MiB (see `apps/web/lib/storage-routing/caps.ts`); larger supported documents require these
+five object-store settings:
 
 | Var | Example |
 | --- | --- |
@@ -190,7 +191,7 @@ is the most common cause of `redirect_uri_mismatch` an hour later.
 
 | Connector | Variables | URL to register with the provider | Where you create the credential | Permissions / scopes to grant |
 | --- | --- | --- | --- | --- |
-| Google sign-in | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Authorised redirect URI: `https://<your-domain>/api/auth/callback/google`. For `next dev`, also register `http://localhost:3001/api/auth/callback/google` and keep local `BETTER_AUTH_URL=http://localhost:3001`. `next dev` ignores a production URL copied by `vercel env pull` so Google does not callback to Vercel. On Vercel, Google is always sent `GOOGLE_OAUTH_CALLBACK_ORIGIN` (default `https://vantage-frc-web.vercel.app`, the one address registered today) and Better Auth's oAuthProxy returns the person to the host they started on. After registering another address, set `GOOGLE_OAUTH_CALLBACK_ORIGIN` to it. | Google Cloud console → APIs & Services → Credentials → OAuth 2.0 Client IDs → **Web application** | `openid`, `email`, `profile` |
+| Google sign-in | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Authorised redirect URI: `https://<your-domain>/api/auth/callback/google`. For `next dev`, also register `http://localhost:3001/api/auth/callback/google` and keep local `BETTER_AUTH_URL=http://localhost:3001`. `next dev` ignores a production URL copied by `vercel env pull` so Google does not callback to Vercel. On Vercel, Google is always sent `GOOGLE_OAUTH_CALLBACK_ORIGIN` (configured canonical authentication origin; confirm its registration before launch) and Better Auth's oAuthProxy returns the person to the host they started on. After registering another address, set `GOOGLE_OAUTH_CALLBACK_ORIGIN` to it. | Google Cloud console → APIs & Services → Credentials → OAuth 2.0 Client IDs → **Web application** | `openid`, `email`, `profile` |
 | GitHub | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` (optional `GITHUB_OAUTH_REDIRECT_URI`, `GITHUB_OAUTH_SCOPES`) | Authorization callback URL: `https://<your-domain>/api/github/oauth/callback` | github.com → Settings → Developer settings → OAuth Apps → New OAuth App | `read:user`, `repo` (never `workflow`; Vantage never pushes) |
 | The Blue Alliance | `TBA_AUTH_KEY` (alias `TBA_API_KEY`) | **none** — TBA has no OAuth and needs no URL from us | thebluealliance.com → Account → Read API Keys | Read API v3 |
 | Onshape | `ONSHAPE_OAUTH_CLIENT_ID`, `ONSHAPE_OAUTH_CLIENT_SECRET` (optional `ONSHAPE_OAUTH_REDIRECT_URI`, `ONSHAPE_OAUTH_SCOPES`) | Redirect URL: `https://<your-domain>/api/cad/onshape/oauth/callback` | dev-portal.onshape.com → OAuth applications | `OAuth2Read`, `OAuth2Write` |
@@ -198,7 +199,7 @@ is the most common cause of `redirect_uri_mismatch` an hour later.
 | Slack | **none for outbound.** `SLACK_SIGNING_SECRET` (or a per-team secret saved on `/team/slack`) only for replies coming back | Request URL: `https://<your-domain>/api/integrations/slack/events` | api.slack.com/apps → your app → Incoming Webhooks, then Event Subscriptions (secret under Basic Information) | `incoming-webhook`, `chat:write`, `channels:history`; subscribe to `message.channels` |
 | Email (Resend) | `RESEND_API_KEY`, `AUTH_EMAIL_FROM` | **none** | resend.com → API Keys, **and** Domains → verify the sending domain | Sending access; the domain in `AUTH_EMAIL_FROM` must be verified |
 | Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (optional `DATABASE_BILLING_URL`) | Endpoint URL: `https://<your-domain>/api/stripe/webhook` | Secret key: dashboard.stripe.com → Developers → **API keys**. Signing secret: Developers → **Webhooks** → Add endpoint | Events `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed` |
-| Team storage node | `DATABASE_CAD_RELAY_URL` (the `vantage_pairing` role; may point at `DATABASE_URL` until a dedicated role exists) | **none** — the node polls `/api/storage-node/pair/poll` | Run the storage-node agent on the team machine; it prints a pairing code | A pairing code approved by an owner or admin, at `/team/storage` |
+| Legacy media archive | Existing private configuration only | No new provider callback | New setup and pairing are retired | Preserve existing authorized reads; see [archive maintenance](STORAGE_NODE.md) |
 | Fusion 360 relay | `FUSION_RELAY_SIGNING_SECRET`, `DATABASE_CAD_RELAY_URL` | **none** | Install the Vantage Fusion add-in on the laptop | A pairing code approved by an owner or admin, at `/cad/connections` |
 | Free relay (Pi) | `DATABASE_CAD_RELAY_URL` (pairing pool), plus on the Pi: `FREE_RELAY_BASE_URL`, `FREE_RELAY_API_KEY`, `FREE_RELAY_MODEL` | **none** — the Pi polls `/api/relay/pair/poll` | Pair at `/team/relays`. Do not paste a Freebuff website cookie. | Owner/admin pairing code. Chat / agent / video roles. See `docs/FREEBUFF.md` |
 | Claude Code | **none** — no deployment variable and no API key | **none** — the computer polls `/api/ai-bridge/device/pair/poll` | Install Claude Code, start the Vantage Claude connector, then approve the code | A pairing code approved by the person who signed in on that computer, at `/team/ai-bridge`. See `docs/AI_BRIDGE.md` |
@@ -242,7 +243,7 @@ Notes that cost time when they are missed:
 - **Pairing endpoints answer 503 for a missing `DATABASE_CAD_RELAY_URL`.** The caller is an agent on
   someone's shop computer, and a 400 tells it that *it* sent something wrong, so it stops.
 - **A team-scoped connector never reads as Connected from environment alone.** GitHub, Discord, Slack and
-  the storage node each need a row an owner or admin created; until then `/connectors` says "Ready to
+  supported specialist relays each need a permitted connection record; until then `/connectors` says "Ready to
   connect" or "Not connected", which are different states with different fixes.
 
 ## 5. Cron jobs and the CRON_SECRET

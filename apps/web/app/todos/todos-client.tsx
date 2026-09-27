@@ -193,7 +193,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
     load();
   }, [load]);
 
-  useEffect(() => {
+  const loadWork = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
@@ -203,10 +203,12 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
     })
       .then(async (response) => (response.ok ? (await response.json()) as WorkItemsView : null))
       .then((data) => {
-        if (data?.status === "live") setWorkView(data);
+        setWorkView(data?.status === "live" ? data : null);
       })
-      .catch(() => undefined);
+      .catch(() => setWorkView(null));
   }, []);
+
+  useEffect(() => { loadWork(); }, [loadWork]);
 
   useEffect(() => {
     if (view?.status !== "live" || !view.focusTodoId) return;
@@ -216,11 +218,11 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   useEffect(() => {
     if (!orgId) return;
     const onOnline = () => {
-      void syncOutbox({ orgId }).then(() => load());
+      void syncOutbox({ orgId }).then(() => { load(); loadWork(); });
     };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
-  }, [orgId, load]);
+  }, [orgId, load, loadWork]);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -261,11 +263,12 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             return;
           }
           setView(data);
+          loadWork();
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
     },
-    [orgId, busy, view],
+    [orgId, busy, view, loadWork],
   );
 
   const failure = fetchFailed

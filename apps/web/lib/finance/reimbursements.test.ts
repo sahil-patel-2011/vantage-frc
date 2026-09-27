@@ -11,6 +11,7 @@ import {
   formatBytes,
   isReimbursementAction,
   isReimbursementStatus,
+  isPdfReceiptBytes,
   isUuid,
   mapSummaryRow,
   mirrorLabel,
@@ -153,21 +154,30 @@ describe("evaluateTransition", () => {
 });
 
 describe("evaluateReceiptUpload", () => {
-  it("accepts phone camera stills", () => {
-    expect(evaluateReceiptUpload({ mediaType: "image/jpeg", byteSize: 900_000 })).toEqual({
+  it("checks PDF bytes instead of trusting a renamed image or MIME label", () => {
+    const bytes = (value: string) => new TextEncoder().encode(value);
+    expect(isPdfReceiptBytes(bytes("%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n"))).toBe(true);
+    expect(isPdfReceiptBytes(bytes("%PDF-2.0\n<<>>\n%%EOF"))).toBe(true);
+    for (const invalid of ["", "PNG image bytes", "%PDF-1.7\nunfinished", "%PDF-3.0\n%%EOF", "<html>%PDF-1.7 %%EOF</html>"]) {
+      expect(isPdfReceiptBytes(bytes(invalid))).toBe(false);
+    }
+    expect(isPdfReceiptBytes(bytes("%PDF-1.7\n%%EOF" + "x".repeat(2048)))).toBe(false);
+  });
+  it("accepts PDF receipt documents", () => {
+    expect(evaluateReceiptUpload({ mediaType: "application/pdf", byteSize: 900_000 })).toEqual({
       ok: true,
-      mediaType: "image/jpeg",
+      mediaType: "application/pdf",
     });
   });
 
-  it("rejects non-image and empty uploads", () => {
-    expect(evaluateReceiptUpload({ mediaType: "application/pdf", byteSize: 10 }).ok).toBe(false);
+  it("rejects photo, video and empty uploads", () => {
+    for (const mediaType of ["image/jpeg", "image/png", "image/webp", "video/mp4"]) expect(evaluateReceiptUpload({ mediaType, byteSize: 10 }).ok).toBe(false);
     expect(evaluateReceiptUpload({ mediaType: null, byteSize: 10 }).ok).toBe(false);
-    expect(evaluateReceiptUpload({ mediaType: "image/png", byteSize: 0 }).ok).toBe(false);
+    expect(evaluateReceiptUpload({ mediaType: "application/pdf", byteSize: 0 }).ok).toBe(false);
   });
 
   it("names the actual size when over the cap", () => {
-    const verdict = evaluateReceiptUpload({ mediaType: "image/jpeg", byteSize: MAX_RECEIPT_BYTES + 1 });
+    const verdict = evaluateReceiptUpload({ mediaType: "application/pdf", byteSize: MAX_RECEIPT_BYTES + 1 });
     expect(verdict.ok).toBe(false);
     expect(verdict.ok === false && verdict.reason).toContain("3.0 MB");
   });

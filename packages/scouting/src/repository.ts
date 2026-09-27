@@ -160,7 +160,8 @@ export class ScoutingRepository {
       if (existing.rowCount) continue;
       await this.client.query(
         `INSERT INTO scout_schemas (org_id, year, type, version, schema, created_by)
-         VALUES ($1, $2, $3, 1, $4::jsonb, $5)`,
+         VALUES ($1, $2, $3, 1, $4::jsonb, $5)
+         ON CONFLICT(org_id,year,type,version) DO NOTHING`,
         [orgId, year, entry.type, JSON.stringify(entry.definition), userId],
       );
     }

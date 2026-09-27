@@ -91,7 +91,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot" },
       ]),
-      { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
+      { id: "scouting", label: "Scout", legacyHref: "/scouting" },
       ...nest("scouting", [
         { id: "forms", label: "Forms", legacyHref: "/scouting/forms" },
         { id: "scout-coverage-live", label: "Coverage", legacyHref: "/scout-coverage-live" },
@@ -109,6 +109,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate", inStrip: false },
         { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
       ]),
+      { id: "teams", label: "Teams", legacyHref: "/scout/teams" },
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
         // The briefing is the drive coach's main screen, so it leads Strategy's chips too.
@@ -142,7 +143,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "dossier", label: "Team dossier", legacyHref: "/dossier" },
         { id: "video", label: "Video review", legacyHref: "/video" },
       ]),
-      { id: "match-checklist", label: "Robot check", legacyHref: "/match-checklist" },
+      { id: "match-checklist", label: "Pit", legacyHref: "/match-checklist" },
       ...nest("match-checklist", [
         // The screen the pit crew points at the TV. It was only reachable by typing "TV" into search.
         { id: "pit-tv", label: "Pit TV", legacyHref: "/display", featured: true },
@@ -157,7 +158,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/team",
     label: "Team",
     title: "Team",
-    description: "Calendar, chat, people, work, and the playbook.",
+    description: "Calendar, people, work, playbook, and logistics.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
@@ -238,6 +239,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "checklist-library", label: "Checklists", legacyHref: "/checklist-library" },
         { id: "pit-map-planner", label: "Pit map", legacyHref: "/pit-map-planner" },
         { id: "field-reset-timer", label: "Field reset", legacyHref: "/field-reset-timer" },
+      ]),
+      { id: "logistics", label: "Logistics", legacyHref: "/logistics" },
+      ...nest("logistics", [
+        { id: "packing", label: "Packing", legacyHref: "/packing" },
+        { id: "duties", label: "Duties", legacyHref: "/duties" },
+        { id: "visit-invites", label: "Visit invites", legacyHref: "/visit-invites" },
       ]),
       { id: "knowledge", label: "Playbook", legacyHref: "/team/knowledge" },
       ...nest("knowledge", [
@@ -596,4 +603,3 @@ export function hubLegacyHref(tab: HubTabDef, orgId?: string | null): string {
   const join = base.includes("?") ? "&" : "?";
   return `${base}${join}orgId=${encodeURIComponent(orgId)}`;
 }
-

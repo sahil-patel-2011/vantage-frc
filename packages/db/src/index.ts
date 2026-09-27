@@ -32,6 +32,9 @@ export async function withRls<T>(
   const client = await requestPool.connect();
   try {
     await client.query("BEGIN");
+    // Even a misconfigured owner URL must never bypass tenant policies. Restricted
+    // logins are members of vantage_app; SET LOCAL also resets on commit/rollback.
+    await client.query("SET LOCAL ROLE vantage_app");
     await client.query("SELECT set_config('app.user_id', $1, true)", [context.userId]);
     await client.query("SELECT set_config('app.org_id', $1, true)", [context.orgId ?? ""]);
     const result = await work(client);

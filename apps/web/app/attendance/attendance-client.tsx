@@ -259,7 +259,7 @@ function MemberOneTap({
                       eventId: event.id,
                       userId: member.userId,
                       personName: member.name.trim(),
-                      role,
+                      role: member.attendanceRole ?? role,
                       hours: hours === "" ? null : Number(hours),
                     },
                     `tap-on:${member.userId}`,
@@ -383,7 +383,7 @@ function SessionDetail({
                     type="button"
                     className="att-chip"
                     disabled={busy}
-                    onClick={() => addPerson(member.name, role, member.userId)}
+                    onClick={() => addPerson(member.name, member.attendanceRole ?? role, member.userId)}
                   >
                     {member.name}
                   </button>

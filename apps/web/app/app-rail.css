@@ -167,24 +167,6 @@
   }
 }
 
-/* One menu: the three-line button opens the drawer at every width (app-shell.tsx), so the
-   always-open left rail is retired and pages use the full width. */
-@media (min-width: 1024px) {
-  body.has-app-shell .vrail {
-    display: none !important;
-  }
-  body.has-app-shell {
-    padding-left: 0 !important;
-  }
-  body.has-app-shell .soft-topbar {
-    left: 0 !important;
-  }
-  body.has-app-shell .soft-menu-btn,
-  body.has-app-shell .soft-ask-ai {
-    display: inline-flex;
-  }
-}
-
 /* Page title stacked over the team button (non-hub pages): the pair was 64px tall inside a
    60px bar, so the title's top was clipped. A shorter team button fits both, centred; the
    button keeps a full 44px tap area through its ::after. */

@@ -1,0 +1,209 @@
+{
+  "checkedAt": "2026-09-27T01:41:47.273Z",
+  "environment": "Windows local checkout; isolated PostgreSQL 17 acceptance database",
+  "productionAcceptance": false,
+  "checks": [
+    {
+      "name": "Full repository suite",
+      "command": "npm test -- --maxWorkers=2",
+      "result": "passed",
+      "filesPassed": 1496,
+      "filesSkipped": 14,
+      "testsPassed": 11179,
+      "testsSkipped": 39,
+      "durationSeconds": 363.84,
+      "startedAt": "2026-09-27T01:18:10Z",
+      "notes": "Full suite passed after initial shared glass/inbox changes. Subsequent browser fixes passed the focused 275-test rerun, final lint, web types and fresh production build. Conditional integration skips remain explicit."
+    },
+    {
+      "name": "Workspace types",
+      "command": "npm run typecheck",
+      "result": "passed",
+      "notes": "All workspace checks passed on the current UI and QR changes; the final web build also completed its TypeScript phase."
+    },
+    {
+      "name": "Repository lint",
+      "command": "npm run lint",
+      "result": "passed",
+      "notes": "Final repository lint passed after compact menu CSS, UI/help/marketing changes and the guarded local runner metadata correction."
+    },
+    {
+      "name": "Production web build",
+      "command": "npm run build --workspace=@vantage/web",
+      "result": "passed",
+      "notes": "Final fresh local production build passed after all browser-discovered shared UI corrections. 746 pages. Guarded scratch-data browser verification; no Vercel application deployment.",
+      "buildId": "M_xEbgvFdVhWUir9c-DjY"
+    },
+    {
+      "name": "Fresh migration and RLS proof",
+      "result": "passed",
+      "database": "vantage_acceptance_test",
+      "testsPassed": 2,
+      "file": "packages/db/src/postgres-integration.test.ts",
+      "notes": "Fresh migrations through0704, reapplication and two-team RLS passed in the final seven-test PostgreSQL run.",
+      "startedAt": "2026-09-26T21:52:39Z"
+    },
+    {
+      "name": "Fresh savepoint proof",
+      "result": "passed",
+      "database": "vantage_acceptance_test",
+      "testsPassed": 8,
+      "file": "packages/db/src/savepoint-integration.test.ts",
+      "startedAt": "2026-09-26T20:02:52Z"
+    },
+    {
+      "name": "PostgreSQL services and isolation",
+      "result": "passed",
+      "database": "vantage_acceptance_test",
+      "filesPassed": 8,
+      "testsPassed": 15,
+      "files": [
+        "packages/db/src/request-rls.test.ts",
+        "packages/db/src/recovery-integration.test.ts",
+        "packages/db/src/personal-bridge-integration.test.ts",
+        "packages/db/src/training-choice-integration.test.ts",
+        "packages/db/src/receipt-retirement-integration.test.ts",
+        "apps/web/lib/provisioning/defaults-integration.test.ts",
+        "apps/web/lib/ai-bridge/feature-tools-integration.test.ts",
+        "packages/db/src/invitation-age-integration.test.ts"
+      ],
+      "command": "npm test -- <eight recorded files> --maxWorkers=1",
+      "startedAt": "2026-09-26T20:07:27Z",
+      "durationSeconds": 9.35,
+      "notes": "Sequential scratch PostgreSQL service checks passed after positive invitation DOB confirmation; original assertions retained and adult fixtures made explicit."
+    },
+    {
+      "name": "Legacy archive HTTP service regression",
+      "result": "passed",
+      "testsPassed": 3,
+      "file": "packages/storage-node/archive.test.ts",
+      "startedAt": "2026-09-26T19:10:57Z",
+      "notes": "Rerun after private no-store headers and truthful connector health status."
+    },
+    {
+      "name": "Personal Gmail quota and journal safeguards",
+      "result": "passed",
+      "filesPassed": 3,
+      "testsPassed": 12,
+      "startedAt": "2026-09-26T20:06:41Z",
+      "files": [
+        "apps/web/lib/google-sheets/creation-quota.test.ts",
+        "apps/web/lib/google-sheets/bridge-retry.test.ts",
+        "apps/web/lib/recovery/journal.test.ts"
+      ],
+      "notes": "Generated Apps Script executed with simulated Google services; daily/short throttling distinguished, ambiguous creation reused, recovery reads never create, failed journal events never acknowledged. This is not live Google capacity acceptance."
+    },
+    {
+      "name": "Diff whitespace checks",
+      "result": "passed",
+      "command": "git diff --check",
+      "notes": "Only Git LF/CRLF conversion notices; no whitespace errors."
+    },
+    {
+      "name": "Private cache and account switching",
+      "result": "passed",
+      "filesPassed": 6,
+      "testsPassed": 64,
+      "notes": "Unit identity/cache/session/load-failure checks, plus actual owner-to-scout browser denial rerun."
+    },
+    {
+      "name": "Google recovery test-resource isolation",
+      "result": "passed",
+      "testsPassed": 29,
+      "filesPassed": 5,
+      "notes": "Stable acceptance UUID required; production scope unchanged. Separate generated-script live/test book collision proof passed15tests."
+    },
+    {
+      "name": "Request setup and sign-in capability copy",
+      "result": "passed",
+      "filesPassed": 3,
+      "testsPassed": 25,
+      "notes": "Request body/query selection, incomplete readiness denial, sign-in copy and legacy admin-denial handling."
+    },
+    {
+      "name": "Personal generic offline writes",
+      "result": "passed",
+      "filesPassed": 3,
+      "testsPassed": 19,
+      "notes": "Outbox, identity and hours checks; two people on the same team cannot view, overwrite, delete or submit each other's queued writes. Legacy unowned rows are preserved and hidden, with attention/recovery UI still pending."
+    },
+    {
+      "name": "Five-workspace sync and durable retries",
+      "result": "passed",
+      "filesPassed": 3,
+      "testsPassed": 26,
+      "startedAt": "2026-09-26T21:56:49Z",
+      "notes": "Generated Apps Script refreshes the right books, reuses resources and preserves strict-read failures. Failed stamp/layout verification is not silently acknowledged; previously verified work survives interruptions and provider waits release the worker."
+    },
+    {
+      "name": "Final PostgreSQL migration, recovery and sync coordination",
+      "result": "passed",
+      "filesPassed": 3,
+      "testsPassed": 7,
+      "startedAt": "2026-09-26T21:52:39Z",
+      "durationSeconds": 14.01,
+      "database": "vantage_acceptance_test",
+      "files": [
+        "packages/db/src/postgres-integration.test.ts",
+        "packages/db/src/recovery-integration.test.ts",
+        "apps/web/lib/google-sheets/hub-jobs-integration.test.ts"
+      ],
+      "notes": "Fresh0704/reapplication/RLS; transactional recovery; restricted-worker concurrent dispatch, failure persistence, member-only sync state and recovery coverage."
+    },
+    {
+      "name": "PostgreSQL sponsor, readable hub and recovery services",
+      "result": "passed",
+      "filesPassed": 3,
+      "testsPassed": 6,
+      "database": "vantage_acceptance_test",
+      "startedAt": "2026-09-26T23:44:21Z",
+      "durationSeconds": 3.89,
+      "command": "npm test -- apps/web/lib/business/sponsor-contribution-integration.test.ts apps/web/lib/google-sheets/hub-jobs-integration.test.ts packages/db/src/recovery-integration.test.ts --maxWorkers=1",
+      "notes": "Concurrent run passed all six assertions but timed out during hub organization cleanup. Unchanged individual hub run passed2tests; unchanged sequential three-file run then passed6. Cleanup timeout remains recorded; no timeout increases or assertion removal."
+    },
+    {
+      "name": "Lossless multipart offline QR and personal receiving",
+      "result": "passed_bounded",
+      "filesPassed": 6,
+      "testsPassed": 36,
+      "startedAt": "2026-09-26T23:51:52Z",
+      "durationSeconds": 0.799,
+      "notes": "Five new codec tests and three new IndexedDB tests cover full histories, zero, timestamps, reorder/repeat/corruption/limits, receiving-person/team isolation and reopening incomplete parts. Includes existing QR/history/outbox regression files. Browser repaired transfer, camera hardware and production acceptance remain pending."
+    },
+    {
+      "name": "Actual Google Summary and older Finance compatibility",
+      "result": "passed_bounded",
+      "evidence": "google-summary.json",
+      "notes": "Real operator-owned synthetic workbook formulas compute42.50income/7.25includedexpenses/35.25balance, excluding500. Older Finance without inclusion flag retains its500record and explicitly marks totals unavailable. Current layout restored and retry reused same resource. No 50-team load proof."
+    },
+    {
+      "name": "Final shared UI browser verification",
+      "result": "passed_bounded",
+      "evidence": "ui-navigation-refresh.json",
+      "notes": "Separate-agent desktop navigation plus root final-build desktop and390x844 phone proof: preserved saved Home, all-width island, compact five-workspace hamburger, actual Teams roster, embedded Logistics/help, and keyboard section navigation. Selected-event coherence is recorded as an open release finding; production and complete feature/accessibility acceptance remain pending."
+    },
+    {
+      "name": "Dependency audit and resolution",
+      "result": "passed_with_remaining_moderates",
+      "evidence": "dependency-review.json",
+      "notes": "npm ls exits0 and actual Workflow patch overrides resolve. npm audit reports4moderate/0high/0critical; development-tool moderation remains open."
+    },
+    {
+      "name": "Final shared UI, navigation, saved Home and actual PostgreSQL inbox checks",
+      "result": "passed",
+      "filesPassed": 28,
+      "testsPassed": 275,
+      "testsSkipped": 5,
+      "command": "TEST_DATABASE_ADMIN_URL=<dedicated loopback scratch database> npm test -- apps/web/lib/nav apps/web/lib/notifications apps/web/lib/css-motion-lint.test.ts apps/web/components/app-shell-model.test.ts apps/web/lib/dashboard/catalog.test.ts apps/web/lib/dashboard/grid-drag.test.ts --maxWorkers=1",
+      "notes": "Actual notification RLS/history checks ran against vantage_schema_test_20260927. Five existing media retirement skips remain. Tests include team-scoped permission cache, stale-person pending cache invalidation, canonical search and safe Back."
+    }
+  ],
+  "remaining": [
+    "Remaining connected Team/Build/Business/scouting browser journeys and production repetition",
+    "Real personal Codex execution and supported approvals",
+    "50-team provisioning and600-client scouting load; one team readiness took418460ms",
+    "Complete journal replay/retention/deletion/session revocation recovery proof",
+    "Live production configuration and operating cycle",
+    "Personal Gmail resource-capacity acceptance"
+  ]
+}

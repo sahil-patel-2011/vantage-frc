@@ -791,9 +791,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Drivetrain", kind: "drivetrain", optionsText: DRIVETRAIN_OPTIONS_TEXT, }), ]) }>
                   Add drivetrain
                 </Button>
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Robot images", kind: "robot_image" }), ]) }>
-                  Add robot images
-                </Button>
                 <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setMode("preview")}>
                   Preview
                 </Button>

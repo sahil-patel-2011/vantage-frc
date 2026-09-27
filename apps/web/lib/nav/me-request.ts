@@ -37,23 +37,30 @@ export type MeResult = {
   data: unknown;
 };
 
-let inFlight: Promise<MeResult> | null = null;
-let settled: { at: number; result: MeResult } | null = null;
+const inFlight = new Map<string, Promise<MeResult>>();
+const settled = new Map<string, { at: number; result: MeResult }>();
+let generation = 0;
 
 /** Drops the shared answer. For tests, and for a sign-out or team switch. */
 export function forgetMe(): void {
-  inFlight = null;
-  settled = null;
+  generation++;
+  inFlight.clear();
+  settled.clear();
 }
 
-export async function requestMe(): Promise<MeResult> {
-  if (settled && Date.now() - settled.at < FRESH_MS) return settled.result;
-  if (inFlight) return inFlight;
+export async function requestMe(orgId?: string | null): Promise<MeResult> {
+  const scope = orgId === undefined && typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("orgId") ?? "" : orgId ?? "";
+  const cached = settled.get(scope);
+  if (cached && Date.now() - cached.at < FRESH_MS) return cached.result;
+  const pending = inFlight.get(scope);
+  if (pending) return pending;
+  const started = generation;
 
-  inFlight = (async () => {
+  const request = (async () => {
     let result: MeResult;
     try {
-      const response = await fetch("/api/me", {
+      const response = await fetch(scope ? `/api/me?orgId=${encodeURIComponent(scope)}` : "/api/me", {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
@@ -65,10 +72,13 @@ export async function requestMe(): Promise<MeResult> {
     // Recorded before the promise resolves, so a caller arriving in the gap
     // between this request finishing and its awaiters running gets the answer
     // rather than starting a second request.
-    settled = { at: Date.now(), result };
-    inFlight = null;
+    if (generation === started) {
+      settled.set(scope, { at: Date.now(), result });
+      inFlight.delete(scope);
+    }
     return result;
   })();
 
-  return inFlight;
+  inFlight.set(scope, request);
+  return request;
 }

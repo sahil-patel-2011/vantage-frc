@@ -1,0 +1,73 @@
+{
+  "auditDate": "2026-09-26",
+  "scope": "Read-only shared shell, island customization, account menu, and notification source audit while root implementation is in progress",
+  "browserExecuted": false,
+  "productionAcceptance": false,
+  "sourceEdited": false,
+  "confirmedSafeguards": [
+    "Notification SQL reads and mutations are authenticated and restricted to the requesting user.",
+    "New inbox-store code shares the same personal/team scope across counts, lists, and read mutations.",
+    "Feature read caches include authenticated user, organization, and filter in their keys; legacy unowned rows are discarded.",
+    "Closed navigation drawer uses visibility:hidden; open drawer has a Tab containment handler.",
+    "Saved island preferences validate exactly four distinct known app paths and persist to the authenticated user's profile."
+  ],
+  "findingsAtAuditTime": [
+    {
+      "file": "apps/web/components/app-shell-island.tsx",
+      "line": 193,
+      "finding": "Island customization declares aria-modal but lacks initial focus, Tab containment, and return-focus handling.",
+      "status": "Reported to root; reread after pending fixes"
+    },
+    {
+      "file": "apps/web/components/app-shell.tsx",
+      "line": 607,
+      "finding": "Island preference save lacks a timeout; draft controls can change or close during saving, allowing a late response to replace or close a newer draft.",
+      "status": "Reported to root; reread after pending fixes"
+    },
+    {
+      "file": "apps/web/components/app-shell.tsx",
+      "line": 246,
+      "finding": "Already-dispatched search requests are not invalidated when a query becomes shorter than two characters or the drawer closes. Delayed results can repaint after reset.",
+      "status": "Reported to root; reread after pending fixes"
+    },
+    {
+      "file": "apps/web/app/notifications/notifications-client.tsx",
+      "line": 85,
+      "finding": "Current notification loader has no request generation or abort guard and tracks only painted filter, so delayed filter/team responses can overwrite newer state or retain prior-team state on refresh failure.",
+      "status": "Client is being rewritten by root; reread final implementation"
+    },
+    {
+      "file": "apps/web/app/soft-ui.css",
+      "line": 376,
+      "finding": "Island z-index 95 exceeds account scrim 85 and elevated account topbar 86. Account-open does not hide island, and opening island customization does not explicitly close account state.",
+      "status": "Reported to root; verify final stacking and overlay exclusivity"
+    },
+    {
+      "file": "apps/web/app/soft-ui.css",
+      "line": 423,
+      "finding": "Desktop media rule still overrides the smaller 384px island base with width:min(440px,...).",
+      "status": "Reported to root; verify actual final computed width"
+    },
+    {
+      "file": "apps/web/app/notifications/notifications-client.tsx",
+      "line": 365,
+      "finding": "Repeat folding uses type/title/read-state only, potentially hiding different destinations and bodies under one visible link.",
+      "status": "Reported to root; reread final implementation"
+    }
+  ],
+  "boundedBrowserChecklist": [
+    "Existing Morgan session: reload Home and verify actual saved board and fixture task remain.",
+    "Desktop and phone: island visible, smaller final width, safe-area clearance, no horizontal overflow, readable active state and focus outline.",
+    "Hamburger: five workspace rows/descriptions, keyboard Tab containment, Escape/close returns focus, short viewport scroll reaches all choices.",
+    "Account: arrow/Home/End movement if menu semantics retained; Tab/Escape dismissal and return focus; short viewport scrolling; no overlapping shell overlays.",
+    "Apps editor: keyboard initial focus, Tab containment, Escape/cancel preserves saved preferences; busy-state and retry behavior if a synthetic save is authorized.",
+    "Competition Teams and Team Logistics: normal menu navigation, coherent selected team, browser Back and query-driven tab state.",
+    "Notification fixtures if authorized: selected-team badge agrees with list, acknowledge only shown items, unshown older unread rows remain, mark unread updates without reload, same-person cross-tab update, rapid filter changes do not repaint older state.",
+    "Read browser warning/error logs; distinguish product failures from CUA transport timeouts."
+  ],
+  "limitations": [
+    "Root is concurrently updating this source; audit findings are not final regression results.",
+    "Browser use is paused until root authorizes the rebuilt local server.",
+    "No account switches, sign-outs, production actions, or notification mutations were performed."
+  ]
+}

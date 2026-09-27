@@ -6,7 +6,8 @@
  * default workbench is the hub row itself). Nested tools stay on the hub
  * ToolStrip and Cmd+K — never dumped into All.
  *
- * Pillars: Competition · Team · Logistics · Business · Build (+ Home).
+ * Workspaces: Home · Competition · Team · Build · Business.
+ * Logistics belongs to Team; existing standalone URLs remain supported.
  * Media folded into Business › Outreach; AI is the persistent "Ask AI"
  * control and its settings live under Settings. Settings live in the drawer
  * footer only.
@@ -88,11 +89,9 @@ const TONE = { tone: "var(--tone-blue)", toneBg: "" } as const;
 
 /** Routes that never append ?orgId= (account / platform chrome). */
 export const ORG_EXEMPT_HREFS = new Set([
-  "/dashboard",
   "/account",
   "/security",
   "/admin",
-  "/notifications",
   "/docs",
   "/help",
   "/support",
@@ -125,10 +124,10 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     items: [{ href: "/team", label: "Team", icon: "users" }],
   },
   {
-    label: "Logistics",
+    label: "Build",
     ...TONE,
-    icon: "pin",
-    items: [{ href: "/logistics", label: "Logistics", icon: "pin" }],
+    icon: "cube",
+    items: [{ href: "/build", label: "Build", icon: "cube" }],
   },
   {
     label: "Business",
@@ -136,16 +135,11 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "clipboard",
     items: [{ href: "/business", label: "Business", icon: "clipboard" }],
   },
-  {
-    label: "Build",
-    ...TONE,
-    icon: "cube",
-    items: [{ href: "/build", label: "Build", icon: "cube" }],
-  },
 ];
 
 /** Standalone logistics tools — All-panel sub-links, Cmd+K, and breadcrumbs. */
 export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
+  { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/packing", label: "Packing", icon: "grid" },
   { href: "/duties", label: "Duties", icon: "users" },
   { href: "/visit-invites", label: "Visit invites", icon: "users" },
@@ -161,9 +155,6 @@ export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
  * this list — they live on the workbench ToolStrip.
  */
 export function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
-  if (group.label === "Logistics") {
-    return LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label }));
-  }
   const hub = NAV_HUBS.find((entry) => entry.label === group.label);
   if (!hub) return [];
   const tabs = hubPrimaryTabs(hub)
@@ -221,9 +212,8 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
 export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition", label: "Competition", icon: "swords" },
   { href: "/team", label: "Team", icon: "users" },
-  { href: "/logistics", label: "Logistics", icon: "pin" },
-  { href: "/business", label: "Business", icon: "clipboard" },
   { href: "/build", label: "Build", icon: "cube" },
+  { href: "/business", label: "Business", icon: "clipboard" },
   { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
 ];
 
@@ -385,7 +375,7 @@ export function findNavMatch(
 
   // Logistics / settings deep links for breadcrumbs when not in the flat drawer.
   if (!best || best.score < 1_000) {
-    const logisticsGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Logistics");
+    const logisticsGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Team");
     if (logisticsGroup) {
       for (const item of LOGISTICS_DEEP_LINKS) {
         const hrefPath = navPathOnly(item.href);

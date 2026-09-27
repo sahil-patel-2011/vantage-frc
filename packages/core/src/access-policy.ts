@@ -1,4 +1,4 @@
-import { isPublicSignupOpen } from "./public-signup";
+import { isLocalAcceptanceSignup, isPublicSignupOpen } from "./public-signup";
 
 /** Canonical platform owner email used for first-user bootstrap. */
 export const PLATFORM_OWNER_EMAIL_DEFAULT = "sahiljpatel2011@gmail.com";
@@ -321,6 +321,7 @@ export type AuthCapabilityReport = {
    */
   waitlistOnly: boolean;
   publicSignup: boolean;
+  localAcceptanceSignup?: boolean;
   databaseConfigured: boolean;
   emailOtpAvailable: boolean;
   email2faEnforced: boolean;
@@ -342,6 +343,7 @@ export type PublicAuthCapabilityReport = Pick<
   AuthCapabilityReport,
   | "waitlistOnly"
   | "publicSignup"
+  | "localAcceptanceSignup"
   | "databaseConfigured"
   | "emailOtpAvailable"
   | "email2faEnforced"
@@ -364,6 +366,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
   return {
     waitlistOnly: !publicSignup,
     publicSignup,
+    ...(isLocalAcceptanceSignup() ? { localAcceptanceSignup: true } : {}),
     databaseConfigured,
     emailOtpAvailable,
     email2faEnforced,
@@ -394,6 +397,7 @@ export function getPublicAuthCapabilities(): PublicAuthCapabilityReport {
   return {
     waitlistOnly: report.waitlistOnly,
     publicSignup: report.publicSignup,
+    ...(report.localAcceptanceSignup ? { localAcceptanceSignup: true } : {}),
     databaseConfigured: report.databaseConfigured,
     emailOtpAvailable: report.emailOtpAvailable,
     email2faEnforced: report.email2faEnforced,

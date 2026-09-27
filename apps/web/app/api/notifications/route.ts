@@ -3,7 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../lib/security/public-error";
-import { LIVE_NOTIFICATION_SQL } from "../../../lib/notifications/live-sql";
+import { INBOX_SCOPE_SQL, parseInboxAction, unreadNotificationCount, updateInboxReadState } from "../../../lib/notifications/inbox-store";
 import { joinerNames, nameTheJoiner } from "../../../lib/notifications/joiner-names";
 
 type NotificationRow = {
@@ -37,22 +37,14 @@ export async function GET(request: Request) {
         `SELECT id, org_id AS "orgId", type, payload,
                 read_at::text AS "readAt", created_at::text AS "createdAt"
          FROM notifications
-         WHERE user_id = $1
-           AND ($2::uuid IS NULL OR org_id IS NULL OR org_id = $2::uuid)
+         WHERE ${INBOX_SCOPE_SQL}
            AND ($3::text = 'all' OR read_at IS NULL)
-           AND ${LIVE_NOTIFICATION_SQL}
          ORDER BY created_at DESC
          LIMIT $4`,
         [session.user.id, orgId, filter, limit],
       );
 
-      const unread = await client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM notifications
-         WHERE user_id = $1 AND read_at IS NULL
-           AND ($2::uuid IS NULL OR org_id IS NULL OR org_id = $2::uuid)
-           AND ${LIVE_NOTIFICATION_SQL}`,
-        [session.user.id, orgId],
-      );
+      const unreadCount = await unreadNotificationCount(client, session.user.id, orgId);
 
       const joinerIds = rows.rows
         .filter((row) => row.type === "invite_accepted" && typeof row.payload?.userId === "string")
@@ -60,7 +52,9 @@ export async function GET(request: Request) {
       const joiners = await joinerNames(client, [...new Set(joinerIds)]);
 
       return {
-        unreadCount: Number(unread.rows[0]?.count ?? 0),
+        userId: session.user.id,
+        orgId,
+        unreadCount,
         items: rows.rows.map((row) => {
           const payload = row.payload ?? {};
           const title = notificationTitle(row.type, payload);
@@ -96,33 +90,14 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       orgId?: string | null;
       id?: string;
-      action?: "read" | "unread" | "read_all";
+      action?: unknown;
+      ids?: unknown;
     };
-    const action = body.action ?? "read";
+    const { action, ids } = parseInboxAction(body);
     const orgId = body.orgId ?? null;
 
     const result = await withRls({ userId: session.user.id, orgId: orgId ?? undefined }, async (client) => {
-      if (action === "read_all") {
-        const updated = await client.query(
-          `UPDATE notifications SET read_at = coalesce(read_at, now())
-           WHERE user_id = $1 AND read_at IS NULL
-             AND ($2::uuid IS NULL OR org_id IS NULL OR org_id = $2::uuid)`,
-          [session.user.id, orgId],
-        );
-        return { ok: true, updated: updated.rowCount ?? 0 };
-      }
-
-      if (!body.id) throw new Error("id is required");
-      const readAt = action === "unread" ? null : new Date().toISOString();
-      const updated = await client.query(
-        `UPDATE notifications
-         SET read_at = $3::timestamptz
-         WHERE id = $1 AND user_id = $2
-         RETURNING id`,
-        [body.id, session.user.id, readAt],
-      );
-      if (!updated.rowCount) throw new Error("Notification not found");
-      return { ok: true, id: body.id, readAt };
+      return { ...(await updateInboxReadState(client, session.user.id, orgId, action, ids)), userId: session.user.id, orgId };
     });
 
     return Response.json(result);

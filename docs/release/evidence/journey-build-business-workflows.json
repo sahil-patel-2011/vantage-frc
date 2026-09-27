@@ -1,0 +1,194 @@
+{
+  "journey": "Build and Business connected workflows",
+  "date": "2026-09-26",
+  "environment": "local acceptance, http://127.0.0.1:3417, isolated vantage_release_test",
+  "productionAcceptance": false,
+  "identity": "Morgan Journey, journey-mentor-20260926@example.test, Team 6925 admin",
+  "organizationId": "6925a000-0000-4000-8000-000000000001",
+  "browserTabId": "781731037",
+  "method": "Normal UI through CUA; no session injection, API mutations, DB writes, purchases, external messages, source edits, or credential setup",
+  "status": "awaiting_fix_retests",
+  "recordsPreserved": true,
+  "fixtures": {
+    "inventory": "Journey Test Washer 20260926; Hardware / fasteners; each; initial stock 0; reorder 5; unit cost 1.25; Journey test drivetrain",
+    "vendor": "Journey Synthetic Vendor 20260926",
+    "purchase": "Journey Test Washer order 20260926; one unit; 1.25 USD; explicit simulation-only note",
+    "repair": "Journey Test Washer repair 20260926; synthetic loose washer; no physical robot work",
+    "tool": "Journey Test Torque Wrench 20260926; Hand tool; asset JOURNEY-TEST-20260926; checkout/return to Morgan",
+    "battery": "JOURNEY-TEST-BATTERY-20260926; synthetic fixture, no initial readings; test log12.8V/10mΩ explicitly synthetic; charged6:20PM local",
+    "sponsor": "Journey Synthetic Sponsor 20260926; Morgan owner; followup2026-09-27; ask100; Note interaction with synthetic nextstep; failed cash25 contribution retained",
+    "pitIssue": "JOURNEY TEST20260926 synthetic safety issue resolved through UI",
+    "maintenance": "JOURNEY TEST maintenance20260926 due2026-09-26T18:00 completed through UI",
+    "grant": "Journey Synthetic Foundation20260926 / Journey Synthetic Grant20260926; deadline2026-10-03; requested50; ownerMorgan; synthetic purpose/requirements; normal UI statuses through Awarded",
+    "funding": "Journey Synthetic Funding20260926; Otherincome; planned100; received10; date2026-09-26; simulation note",
+    "receipt": "Journey Synthetic Receipt20260926; vendorJourneySyntheticVendor; amount2.50; reimbursementowed; simulationnote"
+  },
+  "checks": [
+    {
+      "name": "Synthetic catalog creation",
+      "status": "passed",
+      "evidence": "Fresh catalog showed one item, stock 0, one low/out-of-stock; name, units, subsystem persisted."
+    },
+    {
+      "name": "Catalog to purchase navigation",
+      "status": "passed",
+      "evidence": "Actual Inventory Orders link opened canonical Business Orders and linked inventory selector contained the test item."
+    },
+    {
+      "name": "Purchase submission and mentor approval",
+      "status": "passed",
+      "evidence": "Normal UI pending request, approval note, assigned buyer Morgan Journey, approved state."
+    },
+    {
+      "name": "Ordered and received transition",
+      "status": "passed",
+      "evidence": "Normal UI Mark ordered, Mark received; history moved to one received line."
+    },
+    {
+      "name": "Received stock read-back",
+      "status": "passed",
+      "evidence": "Fresh Inventory showed one each, zero out of stock, on-hand value 1.25 USD."
+    },
+    {
+      "name": "Order ledger read-back",
+      "status": "passed",
+      "evidence": "Money tab Every entry table has one Order row for test title, amount -1.25; Money out1.25, Balance-1.25, no receipt duplicate."
+    },
+    {
+      "name": "Repair consumption",
+      "status": "passed",
+      "evidence": "Normal UI failure linked to real catalog item1, resolution selected one used part; report Resolved, spares0."
+    },
+    {
+      "name": "Tool checkout and return",
+      "status": "passed",
+      "evidence": "New synthetic asset loan to Morgan, Checked-out1; return Available1/Checked-out0 and refresh persisted."
+    },
+    {
+      "name": "Batteries and pit readiness",
+      "status": "failed",
+      "evidence": "Unmeasured Unknown/Not ready passed; synthetic measurement log and cooldown passed; same pack PitREADY/GO during cooldown failed. Safety issueHOLD and overdue maintenanceCHECK transitions and normal UI resolution/completion passed."
+    },
+    {
+      "name": "Sponsors, grants, task and finance links",
+      "status": "failed",
+      "evidence": "Sponsor creation and interaction success; contribution API fails. Grant statuses and ledger pass but no canonical-task or deliverable-evidence UI. Root repairs pending."
+    },
+    {
+      "evidence": "Researching→Drafting→Review→Submitted→Awarded via normalUI. Money Everyentry adds exactly one Grant awarded row+50, Order−1.25; received50,balance48.75.",
+      "name": "Synthetic grant status and finance connection",
+      "status": "passed"
+    },
+    {
+      "status": "passed",
+      "name": "Funding planned versus received",
+      "evidence": "Table planned100/received10; SeasonReceived60 after grant50, therefore planned100 excluded from received."
+    },
+    {
+      "status": "passed",
+      "name": "Receipt reimbursement and ledger",
+      "evidence": "Synthetic2.50 receipt reimbursementowed→repaid2026-09-26 via UI. Fresh refresh shows four records: grant+50, funding+10, order−1.25, receipt−2.50; totalin60,out3.75,balance56.25. Season figures match after refresh."
+    },
+    {
+      "evidence": "Samechargedpack8minremaining, freshBatteriesandPitbothrejectready; PitCHECK/Review.",
+      "status": "passed",
+      "name": "Battery readiness negative regression after repair"
+    }
+  ],
+  "gaps": [
+    {
+      "id": "purchase-quantity-ui",
+      "severity": "medium",
+      "boundary": "canonical Orders Log a purchase form",
+      "evidence": "Linked inventory selector exists but no quantity field. Source POST omits quantity; validator defaults1. Only one-unit receipt proved."
+    },
+    {
+      "id": "money-commitment-spend-labels",
+      "severity": "medium",
+      "boundary": "Money balance and Season money",
+      "evidence": "Actual money text says nothing estimated, but source inserts outgoing ledger at approval. Committed tile combines receipts, approved orders, paid costs. Separate commitments/spending acceptance is unproved."
+    },
+    {
+      "id": "inventory-zero-value",
+      "severity": "low",
+      "boundary": "Inventory real counts",
+      "evidence": "Known zero stock with known unit cost rendered on-hand value as em dash; one unit later renders1.25."
+    },
+    {
+      "severity": "high",
+      "boundary": "Batteries to Pit Command",
+      "id": "pit-cooldown-readiness",
+      "evidence": "At1minute after charge, Batteries shows Cooling15m/Cartready0 but Pit shows batteryREADY and releaseGO/Evidenceclear from same pack.",
+      "retest": "After root repair, fresh BatteriesCompetitionready0/Notready/Cooling8m/Cartready0 and PitCHECK/Review/Batteries0of1. Negative readiness boundary repaired. Positive post-cooldown test remains pending; no clock/timestamp tampering."
+    },
+    {
+      "severity": "medium",
+      "boundary": "Pit repair triage",
+      "id": "triage-unexplained-confidence",
+      "evidence": "Report shows confidence80% despite zero FMEA observations; no calibration/source shown."
+    },
+    {
+      "severity": "medium",
+      "boundary": "Tool checkout creation",
+      "id": "tool-catalog-disconnection",
+      "evidence": "Addtool creates separate registry record with no catalog-item selector; purchasing-to-checkout identity is not proved."
+    },
+    {
+      "evidence": "Cash25 simulation-only submission returned Could not complete / Business portal request failed. Totals0 unchanged, form retained. No blind duplicate retry.",
+      "boundary": "Business Sponsors Record contribution",
+      "id": "sponsor-contribution-api",
+      "severity": "high"
+    },
+    {
+      "evidence": "Note interaction saved; canonical card has no task action and no interaction history. Service stores sponsor_interactions and nextdate, no task creation visible.",
+      "boundary": "Sponsor interaction nextstep",
+      "id": "sponsor-task-link",
+      "severity": "medium"
+    },
+    {
+      "evidence": "Form supports subsystem, due, worktext but no responsible-person assignment or canonical-task/source link; service inserts maintenance_items only.",
+      "boundary": "Pit Add work",
+      "id": "maintenance-task-owner",
+      "severity": "medium"
+    },
+    {
+      "evidence": "Button source hardcodes requested amount as awardedCents; UI has no actual award amount/date/evidence field. Grant awarded counted as received immediately.",
+      "severity": "medium",
+      "boundary": "Move to Awarded",
+      "id": "grant-award-amount-input"
+    },
+    {
+      "evidence": "Created owner and requirements in form, but card shows no owner, linked task, deliverable evidence, or requirements detail.",
+      "severity": "medium",
+      "boundary": "Grant application board",
+      "id": "grant-owned-workflow"
+    },
+    {
+      "severity": "high",
+      "evidence": "Funding table10received and SeasonReceived60 but Teammoneybalance still50/Balance48.75. BalancePanel effect only dependsorgId so parent mutation cannot invalidate it.",
+      "id": "finance-stale-balance",
+      "boundary": "Funding/receipt mutation → Money balance"
+    }
+  ],
+  "screenshots": [
+    "journey-money-order-ledger.png",
+    "journey-order-received-stock.png",
+    "journey-pit-cooldown-go.png",
+    "journey-sponsor-contribution-failure.png",
+    "journey-grant-drafting.png",
+    "journey-finance-fresh-ledger.png",
+    "journey-battery-cooldown-fixed.png",
+    "journey-pit-cooldown-fixed.png"
+  ],
+  "cleanup": "Preserve all fixtures. Root should collect exact IDs with scoped read-only query before eventual approved cleanup. No existing records edited.",
+  "captureLimitations": [
+    "Repair and tool fullPage captures timed out; do not claim PNG evidence for them. Viewport Pit capture succeeded."
+  ],
+  "remaining": [
+    "Sponsor add-contribution retry after root repair announcement",
+    "Finance live balance invalidation retest after root repair",
+    "Battery real15minute cooldown plus fresh voltage and IR test, positive readiness",
+    "Canonical owned task/parts checkout links remain incomplete",
+    "Calibration and wording review for triage confidence"
+  ]
+}

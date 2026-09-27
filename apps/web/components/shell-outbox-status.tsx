@@ -28,7 +28,7 @@ export function ShellOutboxStatus({ orgId, scoutPath = "/scouting" }: ShellOutbo
   const [lastError, setLastError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    void pendingCounts()
+    void pendingCounts(orgId ?? undefined)
       .then((counts) => {
         setEntries(counts.entries);
         setMedia(counts.media);
@@ -80,7 +80,7 @@ export function ShellOutboxStatus({ orgId, scoutPath = "/scouting" }: ShellOutbo
       void (async () => {
         try {
           await syncProductOutbox({ orgId });
-          const counts = await pendingCounts();
+          const counts = await pendingCounts(orgId);
           if (counts.entries > 0) await syncScoutOutbox(orgId, { maxAttempts: 1 });
           if (counts.media > 0) await syncMediaOutbox(orgId, { maxAttempts: 1 });
         } catch {

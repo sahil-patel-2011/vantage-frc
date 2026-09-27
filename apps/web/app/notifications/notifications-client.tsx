@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, ToolStrip, Button } from "../../components/ui";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
+import { listenInboxUpdates, ownInboxUpdate, publishInboxUpdate } from "../../lib/notifications/inbox-events";
 import {
   clearFeatureSnapshot,
   getFeatureSnapshot,
@@ -34,6 +35,7 @@ type InboxFilter = "all" | "unread";
 
 type NotificationsView = {
   status: "ready";
+  userId?: string;
   items: NotifItem[];
   unreadCount: number;
 };
@@ -69,6 +71,8 @@ function InboxRelated() {
 }
 
 export default function NotificationsClient({ orgId }: { orgId: string | null }) {
+  const [scopeOrgId, setScopeOrgId] = useState(orgId);
+  const [scopeReady, setScopeReady] = useState(Boolean(orgId));
   const [view, setView] = useState<NotificationsView | null>(null);
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [message, setMessage] = useState("");
@@ -79,31 +83,59 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<NotificationsView | null>(null);
-  const paintedFilterRef = useRef<InboxFilter>(filter);
+  const listRef = useRef<HTMLUListElement>(null);
+  const seenIds = useRef(new Set<string>());
+  const loadGeneration = useRef(0);
+  const scopeKey = `${scopeOrgId ?? "_"}:${filter}`;
+  const currentScope = useRef(scopeKey);
+  const paintedScope = useRef(scopeKey);
+  currentScope.current = scopeKey;
   viewRef.current = view;
 
+  useEffect(() => {
+    let cancelled = false;
+    seenIds.current.clear();
+    if (orgId) { setScopeOrgId(orgId); setScopeReady(true); return; }
+    void fetchActiveOrgId().then(id => {
+      if (cancelled) return;
+      setScopeOrgId(id);
+      if (id) persistOrgIdInUrl(id);
+    }).catch(() => {
+      if (!cancelled) setMessage("Could not select your team. Retry or select a team from your account menu.");
+    }).finally(() => { if (!cancelled) setScopeReady(true); });
+    return () => { cancelled = true; };
+  }, [orgId]);
+
   const load = useCallback(async () => {
-    const orgHint = orgId?.trim() ?? "";
-    let hadCache = Boolean(viewRef.current) && paintedFilterRef.current === filter;
+    if (!scopeReady) return;
+    const orgHint = scopeOrgId?.trim() ?? "";
+    const key = `${scopeOrgId ?? "_"}:${filter}`;
+    if (currentScope.current !== key) return;
+    const generation = ++loadGeneration.current;
+    const stale = () => loadGeneration.current !== generation || currentScope.current !== key;
+    let hadCache = Boolean(viewRef.current) && paintedScope.current === key;
+    if (paintedScope.current !== key) { setView(null); viewRef.current = null; }
     try {
       const cached = await getFeatureSnapshot<NotificationsView>(
         "notifications",
         orgHint || "_",
         filter,
       );
+      if (stale()) return;
       if (cached?.data && isNotificationsView(cached.data)) {
         setView(cached.data);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
-        paintedFilterRef.current = filter;
+        paintedScope.current = key;
         hadCache = true;
-      } else if (paintedFilterRef.current !== filter) {
+      } else if (paintedScope.current !== key) {
         setView(null);
         hadCache = false;
       }
     } catch {
       // IndexedDB missing or blocked; live fetch still runs.
     }
+    if (stale()) return;
     setFetchFailed(false);
     setErrorStatus(null);
     try {
@@ -114,6 +146,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data: unknown = await response.json().catch(() => null);
+      if (stale()) return;
       if (response.status === 401 || response.status === 403) {
         setView(null);
         setFromCache(false);
@@ -133,7 +166,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         return;
       }
       if (!response.ok) {
-        if (hadCache || viewRef.current) {
+        if (hadCache || (viewRef.current && paintedScope.current === key)) {
           setFromCache(true);
           setMessage("Could not refresh Notifications. Showing the last copy on this device.");
           setFetchFailed(false);
@@ -148,23 +181,26 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         setFetchFailed(true);
         return;
       }
-      const items =
-        data && typeof data === "object" && "items" in data && Array.isArray(data.items)
-          ? (data.items as NotifItem[])
-          : [];
-      const unreadCount =
-        data && typeof data === "object" && "unreadCount" in data
-          ? Number(data.unreadCount ?? 0)
-          : 0;
-      const next: NotificationsView = { status: "ready", items, unreadCount };
+      if (!data || typeof data !== "object" || !("items" in data) || !Array.isArray(data.items)
+        || !("unreadCount" in data) || typeof data.unreadCount !== "number"
+        || !Number.isSafeInteger(data.unreadCount) || data.unreadCount < 0
+        || !("userId" in data) || typeof data.userId !== "string" || !data.userId) {
+        throw new Error("The inbox returned an incomplete response. Retry to load notifications.");
+      }
+      const items = data.items as NotifItem[];
+      const unreadCount = data.unreadCount;
+      const userId = data.userId;
+      const next: NotificationsView = { status: "ready", userId, items, unreadCount };
       setView(next);
-      paintedFilterRef.current = filter;
+      paintedScope.current = key;
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
+      if (userId) publishInboxUpdate({ userId, orgId: scopeOrgId, unreadCount });
       await persistNotificationsSnapshot(orgHint, filter, next);
     } catch {
-      if (hadCache || viewRef.current) {
+      if (stale()) return;
+      if (hadCache || (viewRef.current && paintedScope.current === key)) {
         setFromCache(true);
         setMessage("Could not refresh Notifications. Showing the last copy on this device.");
         setFetchFailed(false);
@@ -173,27 +209,92 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       setMessage("Network error loading notifications.");
       setFetchFailed(true);
     }
-  }, [filter, orgId]);
+  }, [filter, scopeOrgId, scopeReady]);
+  const refreshInbox = useRef(load);
+  refreshInbox.current = load;
 
   useEffect(() => {
     void load();
+    return () => { loadGeneration.current += 1; };
   }, [load]);
 
-  async function patch(action: "read" | "unread" | "read_all", id?: string) {
+  useEffect(() => listenInboxUpdates(data => {
+    if (data.mutation && data.userId === viewRef.current?.userId && !ownInboxUpdate(data)) void refreshInbox.current();
+  }), []);
+
+  // Opening the inbox acknowledges rows actually seen. Unseen, off-screen,
+  // offline and failed reads remain unread; history is retained.
+  useEffect(() => {
+    if (!view?.userId || fromCache || !listRef.current || typeof IntersectionObserver === "undefined") return;
+    const userId = view.userId;
+    const groups = groupRepeats(view.items);
+    let stopped = false;
+    const visible = new Set<string>();
+    let flushing = false;
+    const flush = async () => {
+      if (flushing || stopped || document.visibilityState !== "visible" || visible.size === 0) return;
+      const ids = [...visible].filter(id => !seenIds.current.has(id)).slice(0, 100);
+      if (!ids.length) return;
+      flushing = true;
+      ids.forEach(id => seenIds.current.add(id));
+      try {
+        const response = await fetch("/api/notifications", {
+          method: "PATCH", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "read_visible", ids, orgId: scopeOrgId }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Could not acknowledge notifications");
+        publishInboxUpdate({ userId, orgId: scopeOrgId, unreadCount: data.unreadCount, mutation: true });
+        if (stopped) { void refreshInbox.current(); return; }
+        const read = new Map<string, string>(data.items.map((item: { id: string; readAt: string }) => [item.id, item.readAt]));
+        const current = viewRef.current;
+        if (current?.userId !== userId) return;
+        const next = { ...current, unreadCount: data.unreadCount,
+          items: current.items.map(item => read.has(item.id) ? { ...item, readAt: read.get(item.id)! } : item)
+            .filter(item => filter !== "unread" || !item.readAt) };
+        setView(next);
+        await persistNotificationsSnapshot(scopeOrgId || "_", filter, next);
+      } catch {
+        ids.forEach(id => seenIds.current.delete(id));
+        if (!stopped) setMessage("Could not mark these notifications as read. Your unread count is preserved; use Mark all as read to retry.");
+      } finally { flushing = false; }
+    };
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        const id = (entry.target as HTMLElement).dataset.notificationId;
+        const group = groups.find(group => group.item.id === id);
+        if (!group) continue;
+        for (const item of [group.item, ...group.repeats]) {
+          if (entry.isIntersecting && entry.intersectionRatio >= .6 && !item.readAt) visible.add(item.id);
+          else visible.delete(item.id);
+        }
+      }
+      void flush();
+    }, { threshold: [.6], rootMargin: "0px 0px -88px 0px" });
+    listRef.current.querySelectorAll("[data-notification-id]").forEach(row => observer.observe(row));
+    const onVisibility = () => { void flush(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { stopped = true; observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
+  }, [view, fromCache, scopeOrgId, filter]);
+
+  async function patch(action: "read" | "unread" | "read_all", id?: string, ids?: string[]) {
     setBusy(true);
     setMessage("");
     try {
       const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action, id, orgId }),
+        body: JSON.stringify({ action, id, ids, orgId: scopeOrgId }),
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; userId: string; unreadCount: number };
       if (!response.ok) {
         setMessage(data.error ?? "Could not update notification.");
         return;
       }
+      if (action === "unread") for (const one of ids ?? (id ? [id] : [])) seenIds.current.add(one);
+      publishInboxUpdate({ userId: data.userId, orgId: scopeOrgId, unreadCount: data.unreadCount, mutation: true });
       if (action === "read_all") {
         const unread = view?.unreadCount ?? 0;
         setMessage(
@@ -322,7 +423,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           ) : null}
         </EmptyState>
       ) : (
-        <ul className="notif-list" id="notif-inbox-list" aria-label="Inbox">
+        <ul ref={listRef} className="notif-list" id="notif-inbox-list" aria-label="Inbox">
           {/* Compact rows, and repeats folded: the same card arriving minutes apart used to fill a
               phone screen two at a time (Open + Mark as read on every ~165px card). */}
           {groupRepeats(items).map(({ item, repeats }) => {
@@ -330,7 +431,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             const titleText = inboxText(item.title);
             const title = item.href ? <a href={item.href}>{titleText}</a> : titleText;
             return (
-              <li key={item.id} className={unread ? "unread" : undefined}>
+              <li key={item.id} data-notification-id={item.id} className={unread ? "unread" : undefined}>
                 <div className="notif-row-main">
                   <strong>{title}</strong>
                   {item.body ? <p>{inboxText(item.body)}</p> : null}
@@ -344,11 +445,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                   className="notif-row-toggle"
                   disabled={busy}
                   aria-label={unread ? `Mark "${item.title}" as read` : `Mark "${item.title}" as unread`}
-                  onClick={() =>
-                    void (async () => {
-                      for (const one of [item, ...repeats]) await patch(unread ? "read" : "unread", one.id);
-                    })()
-                  }
+                  onClick={() => void patch(unread ? "read" : "unread", undefined, [item, ...repeats].map(one => one.id))}
                 >
                   {unread ? "Mark read" : "Mark unread"}
                 </button>
@@ -362,13 +459,13 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
 }
 
 /** Consecutive notifications with the same kind and title fold into the first one. */
-function groupRepeats<T extends { type: string; title: string; readAt: string | null }>(
+function groupRepeats<T extends { type: string; title: string; body?: string | null; href?: string | null; readAt: string | null }>(
   items: T[],
 ): Array<{ item: T; repeats: T[] }> {
   const groups: Array<{ item: T; repeats: T[] }> = [];
   for (const item of items) {
     const last = groups[groups.length - 1];
-    if (last && last.item.type === item.type && last.item.title === item.title && Boolean(last.item.readAt) === Boolean(item.readAt)) {
+    if (last && last.item.type === item.type && last.item.title === item.title && last.item.body === item.body && last.item.href === item.href && Boolean(last.item.readAt) === Boolean(item.readAt)) {
       last.repeats.push(item);
     } else {
       groups.push({ item, repeats: [] });

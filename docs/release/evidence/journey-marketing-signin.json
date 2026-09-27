@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "journey": "Marketing site to existing owner's saved dashboard",
+  "checkedAt": "2026-09-26T20:26:00Z",
+  "environment": "Local development server with isolated vantage_release_test PostgreSQL database",
+  "baseUrl": "http://127.0.0.1:3417",
+  "account": "Controlled synthetic owner@example.test fixture",
+  "browser": "Chrome, visible UI through cua_repl",
+  "status": "passed_with_product_findings",
+  "productionAcceptance": false,
+  "steps": [
+    { "action": "Open marketing home", "result": "Passed", "observed": "Home title, primary navigation, waitlist form, and sign-in link rendered." },
+    { "action": "Open Features through navigation", "result": "Passed", "observed": "Features page and four workspace descriptions rendered." },
+    { "action": "Open How it works through navigation", "result": "Passed", "observed": "Six-step workflow page rendered." },
+    { "action": "Open Cost through navigation", "result": "Passed", "observed": "Free pricing and AI-key information rendered." },
+    { "action": "Click Sign in and request code for controlled existing owner", "result": "Passed", "observed": "Code entry screen shown; server request returned 200." },
+    { "action": "Submit configured local development OTP", "result": "Passed", "observed": "Authentication returned 200, onboarding check returned 200, and browser redirected to /dashboard." },
+    { "action": "Load saved dashboard", "result": "Passed", "observed": "Team 6925, My Home board, Peachtree District Championship, Next match Qual 31, My day, and synced state shown. Missing win prediction explicitly disclosed." },
+    { "action": "Choose Only necessary cookies", "result": "Passed", "observed": "Analytics choice dismissed in controlled test session." },
+    { "action": "Complete four-step dashboard tour", "result": "Passed", "observed": "Menu, AI, active event, and editable Home guidance advanced and completed." },
+    { "action": "Reload dashboard", "result": "Passed", "observed": "Authenticated team context and same saved My Home board restored; tour and analytics choice did not recur." }
+  ],
+  "apiEvidenceFromServerLog": [
+    { "path": "/api/auth/email-otp/send-verification-otp", "method": "POST", "status": 200 },
+    { "path": "/api/auth/sign-in/email-otp", "method": "POST", "status": 200 },
+    { "path": "/api/onboarding", "method": "GET", "status": 200 },
+    { "path": "/api/me", "method": "GET", "status": 200 },
+    { "path": "/api/dashboards (home and snapshot modes)", "method": "GET", "status": 200 },
+    { "path": "/api/my-day", "method": "GET", "status": 200 },
+    { "path": "/api/integrations/sheets/auto", "method": "POST", "status": 202, "note": "Triggered by dashboard automatically; 202 does not prove Google work completed." }
+  ],
+  "browserConsoleErrors": [],
+  "browserConsoleWarnings": [],
+  "serverWarnings": [
+    "PostgreSQL driver warns that concurrent client.query calls are deprecated and will be removed in pg@9.0."
+  ],
+  "findings": [
+    { "severity": "medium", "path": "/workflow", "observed": "Marketing promises Photos compress before upload, contradicting permanent photo/video upload removal." },
+    { "severity": "medium", "path": "/features", "observed": "Every tool listed here ships today is stated before required acceptance evidence is complete." },
+    { "severity": "medium", "path": "/dashboard", "observed": "Initial primary navigation includes Logistics as a separate pillar; target plan places it within Team and uses five primary destinations." },
+    { "severity": "low", "path": "/pricing", "observed": "AI setup explanation emphasizes team provider keys and does not explain personal Codex pairing." }
+  ],
+  "harnessIssueResolved": {
+    "observed": "First local OTP was rejected with 400 because bare dev-otp.mjs used its default secret rather than the dev server's configured secret.",
+    "resolution": "Read the configured development environment using node --env-file=apps/web/.env.development.local scripts/dev-otp.mjs owner@example.test and submit through visible UI.",
+    "classification": "Harness configuration, not an application authentication failure.",
+    "credentialsAndCodesSaved": false
+  },
+  "screenshot": "docs/release/evidence/journey-marketing-dashboard.png",
+  "limitations": [
+    "Local controlled fixture only; production email delivery, signup, provisioning, invitations, role boundaries, and connector execution are separate acceptance journeys.",
+    "Updated legal notice rendered but legal acceptance was not submitted in this journey.",
+    "No auth cookies were injected and no direct UI HTTP requests were used."
+  ]
+}

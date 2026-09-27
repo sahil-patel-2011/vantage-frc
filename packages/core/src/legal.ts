@@ -23,7 +23,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 // New sections on who can see what, deleting, and security; every cookie is named; the adult-
 // student direct-message rule is disclosed. The effective date moves with the version: it is
 // the day these words took effect, not the day the first version did.
-export const LEGAL_DOC_VERSION = "2026-09-26.1";
+export const LEGAL_DOC_VERSION = "2026-09-26.2";
 export const LEGAL_EFFECTIVE_DATE = "September 26, 2026";
 
 export const TERMS_MISSING_MESSAGE = "You must agree to the Terms of Service to continue.";

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, type MatchPhase } from "../../lib/scouting/match-clock";
+import { readScoutClock, writeScoutClock } from "../../lib/scouting/draft-autosave";
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
   pre: "Match timer",
@@ -30,7 +31,9 @@ function saveFromTimer() {
  * stay on the field and their thumb finds the right counters. When the match ends the bar
  * becomes "Save this match" and the form scrolls to its last answers. Restarting is one tap.
  */
-export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; label: string }>; resetKey: string }) {
+export function MatchTimer({ fields, resetKey, storageKey, onStarted }: {
+  fields: Array<{ key: string; label: string }>; resetKey: string; storageKey: string | null; onStarted?: () => void;
+}) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const anchors = useMemo(() => phaseAnchors(fields), [fields]);
@@ -38,9 +41,10 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
 
   // A new robot or match is a new clock.
   useEffect(() => {
-    setStartedAt(null);
+    setStartedAt(readScoutClock(storageKey));
+    setNow(Date.now());
     lastPhase.current = "pre";
-  }, [resetKey]);
+  }, [resetKey, storageKey]);
 
   const elapsed = startedAt == null ? null : now - startedAt;
   const phase = phaseAt(elapsed);
@@ -104,12 +108,14 @@ export function MatchTimer({ fields, resetKey }: { fields: Array<{ key: string; 
               {clockLabel(secondsLeft * 1000)}
             </span>
           )}
-          <button type="button" onClick={() => setStartedAt(null)}>
+          <button type="button" onClick={() => { writeScoutClock(storageKey, null); setStartedAt(null); }}>
             {done ? "Restart" : "Reset"}
           </button>
         </>
       ) : (
-        <button type="button" className="start" onClick={() => { setNow(Date.now()); setStartedAt(Date.now()); }}>
+        <button type="button" className="start" onClick={() => {
+          const start = Date.now(); setNow(start); setStartedAt(start); writeScoutClock(storageKey, start); onStarted?.();
+        }}>
           {/* Says what it is and when to press it; "Start with the field" read as a place. */}
           Start match timer when auto starts
         </button>

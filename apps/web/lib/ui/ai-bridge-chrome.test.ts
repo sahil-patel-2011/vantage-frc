@@ -17,15 +17,15 @@ const FILES = [
   "lib/ai-bridge/ai-bridge-related.ts",
 ] as const;
 
-describe("Claude Code student chrome", () => {
-  it("uses Claude Code, Needs setup, and one approve primary", () => {
-    expect(offlineCapableLabel("/team/ai-bridge")).toBe("Claude Code");
-    expect(AI_BRIDGE_TITLE).toBe("Claude Code");
+describe("personal Codex student chrome", () => {
+  it("uses a personal connection, Needs setup, and one approve primary", () => {
+    expect(offlineCapableLabel("/team/ai-bridge")).toBe("Personal Codex");
+    expect(AI_BRIDGE_TITLE).toBe("Personal Codex");
     expect(AI_BRIDGE_SETUP_STEPS).toHaveLength(3);
     expect(aiBridgeShellCopy("no-team").badge).toBe("Needs setup");
     expect(aiBridgeShellCopy("no-team").description).toMatch(/Choose your team/);
     expect(aiBridgeShellCopy("no-team").description).not.toMatch(/pick your team/i);
-    expect(aiBridgeShellCopy("setup").title).toBe("Pair Claude Code");
+    expect(aiBridgeShellCopy("setup").title).toBe("Connect your Codex");
     expectPlainCopy(aiBridgeShellCopy("setup").description);
 
     for (const rel of FILES) {

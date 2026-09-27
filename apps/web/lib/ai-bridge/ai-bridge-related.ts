@@ -1,11 +1,11 @@
-export const AI_BRIDGE_TITLE = "Claude Code";
-export const AI_BRIDGE_CRUMB = "Team / Claude Code";
-export const AI_BRIDGE_FEATURE_LABEL = "Claude Code";
+export const AI_BRIDGE_TITLE = "Personal Codex";
+export const AI_BRIDGE_CRUMB = "Team / Personal Codex";
+export const AI_BRIDGE_FEATURE_LABEL = "Personal Codex";
 
 export const AI_BRIDGE_SETUP_STEPS = [
-  "On a computer that stays on, install Claude Code and sign in with the Claude plan you already pay for.",
+  "Install Codex on your own computer. Each person connects their own account, including on shared computers.",
   "On that computer, download the Vantage connector and start it with the commands below. It needs Node.js 20 or newer and shows an 8-character code.",
-  "Type the code here and approve it. Chat then uses that computer — no API key.",
+  "Approve your code here, then sign in and test with the commands below. Leave the connector running for your Vantage requests.",
 ] as const;
 
 export function aiBridgeShellCopy(kind: "no-team" | "setup" | "ready"): {
@@ -18,20 +18,20 @@ export function aiBridgeShellCopy(kind: "no-team" | "setup" | "ready"): {
       return {
         badge: "Needs setup",
         title: "Choose your team",
-        description: "Choose your team before pairing Claude Code to it.",
+        description: "Choose your team to use its context with your personal Codex connection.",
       };
     case "setup":
       return {
         badge: "Needs setup",
-        title: "Pair Claude Code",
+        title: "Connect your Codex",
         description:
-          "A mentor runs Claude Code in the terminal on one computer and pastes the code here. Ask AI then runs through Claude Code.",
+          "Pair your computer, sign in to your own Codex profile, and test the connection.",
       };
     case "ready":
       return {
         badge: "Connected",
-        title: "Claude Code",
-        description: "This computer answers Ask AI while it is online. Revoke it here to stop.",
+        title: "Personal Codex",
+        description: "Your connected computer answers your requests while online. Revoke it here to stop.",
       };
     default: {
       const _exhaustive: never = kind;

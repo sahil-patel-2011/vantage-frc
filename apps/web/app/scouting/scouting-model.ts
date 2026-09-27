@@ -1,7 +1,17 @@
 import type { ScoutSchema, ScoutIdentity } from "@vantage/scouting";
+import { ACTION_HISTORY_KEY } from "@vantage/scouting";
 import type { FieldTrustSummary } from "@vantage/scouting/trust";
 import type { CsvColumn } from "../../lib/export/to-csv";
 import { matchOpenForScouting, type ScheduleMatch } from "../../lib/scouting/next-match";
+
+/** The final qualification confirmation distinguishes later, unposted playoffs. */
+export function lastMatchNote(matches: Bootstrap["matches"], savedMatchKey: string): string | null {
+  const saved = matches.find((match) => match.matchKey === savedMatchKey);
+  if (!saved) return null;
+  return (saved.compLevel ?? "qm") === "qm"
+    ? "That was the last qualification match. Playoff matches show up here when they are posted."
+    : "That was the last match on the schedule.";
+}
 
 export type OfficialFlag = {
   fieldKey: string;
@@ -163,6 +173,8 @@ export const SCOUT_ENTRY_CSV_COLUMNS: CsvColumn<RecentEntry>[] = [
   { key: "scoutName", header: "Scout", hint: "Who submitted it" },
   { key: "source", header: "Source", hint: "How it arrived (form, QR handoff, sync)" },
   { key: "confidence", header: "Confidence", hint: "Scout's own confidence flag" },
+  { key: "payload", header: "Answers (JSON)", value: entry => entry.payload },
+  { key: "observations", header: "Observation history (versioned JSON)", value: entry => entry.payload?.[ACTION_HISTORY_KEY] ?? null },
   {
     key: "updatedAt",
     header: "Updated at",

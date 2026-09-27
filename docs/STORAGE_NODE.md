@@ -1,142 +1,62 @@
-# Self-hosted storage node
+# Legacy media archive
 
-*For the team running a storage node, and operators. Last updated 2026-08-24.*
+*For operators preserving previously stored files. Updated 2026-09-26.*
 
-A storage node is an always-on computer your team runs — a Raspberry Pi in the shop is the
-canonical choice, but any Linux/macOS/Windows box with Node.js 20+ works. It stores your team's
-large binary files (media, exports, scans) on its own disk so the hosted database never maxes
-out: **only metadata (sha256, size, content type, which node) lives in the cloud; the bytes
-live on your hardware.**
+Vantage no longer offers photo/video uploads, capture, recording or storage-node setup. External match-video links remain available. Supported documents, PDF financial receipts and CAD artifacts use their own workflows.
 
-The service is a single stdlib-only file: `packages/storage-node/server.mjs`. No `npm install`,
-no dependencies.
+Existing files and database records are retained. `packages/storage-node/server.mjs` can serve an existing archive using its existing access configuration; it cannot provision a new node or accept uploads. The retired connector capability is not a setup option.
 
 ## How it works (and what it honestly cannot do)
 
-- **Pairing** mirrors the Vantage CAD relay: the node asks the cloud for an 8-character code, a
-  team **owner or admin** enters it at `/team/storage`, and the cloud issues the node a token.
-  The cloud stores only the token's sha256 hash.
-- **Heartbeats**: every 60 seconds the node reports real disk stats and verifies a batch of the
-  items the cloud believes it holds (an incremental scrub). A heartbeat gap over 5 minutes shows
-  the node as **degraded** on `/team/storage`; over 30 minutes, **offline**. Items on an
-  unreachable node are shown as *"stored on `<node>`, currently unreachable"* with the last-seen
-  time — never silently hidden, never faked as available.
-- **Serving**: the node exposes `PUT/GET/HEAD/DELETE /items/<sha256>` (plus `/health`), with
-  Range support for media playback. Every request needs the node's access key, which the cloud
-  hands only to signed-in members of your team (`resolve-item`). Writes are verified against the
-  URL's sha256 — corrupt or mismatched uploads are rejected, nothing partial is kept.
-- **Quota**: the node enforces a disk quota (`--quota-gb`, default 20) and refuses writes past
-  it with an honest HTTP 507 — it will not fill your SD card.
+Authenticated `GET` and `HEAD /items/<sha256>` retrieve existing files, including byte ranges. Archive responses use private, non-persistent browser caching. The standalone server also accepts existing scoped download grants. `GET /health` identifies the service as archive-only.
+
+New item writes return HTTP 410. The standalone server rejects every upload-session endpoint. Startup preserves partial legacy files and does not run upload, heartbeat, quota or cleanup workers. Missing files return 404; unavailable hardware cannot be presented as a successful download.
+
+An explicit authenticated `DELETE /items/<sha256>` remains available to remove an identified archive file. A scoped download grant cannot authorize deletion on the standalone server. Stopping the service does not delete files.
 
 ### The networking truth
 
-- **On the same LAN** (shop, pit Wi-Fi with the Pi plugged into it), devices reach the node
-  directly at `http://<pi-address>:8788`. The node reports its LAN addresses in heartbeats and
-  the team page shows them.
-- **From anywhere else, the cloud cannot reach a node behind your router.** There is no relay
-  and no magic. If you want files available away from the LAN, give the node a public URL and
-  paste it into its card on `/team/storage`. Two sane options:
-  - **Tailscale Funnel** — `tailscale funnel 8788` gives you a stable
-    `https://<machine>.<tailnet>.ts.net` URL. Easiest, free for this use.
-  - **cloudflared** — `cloudflared tunnel --url http://localhost:8788` (quick tunnel) or a named
-    tunnel on your own domain.
-  Until a reachable URL is set, `resolve-item` returns `node-unreachable` with reason
-  `no-public-url`, and the UI says so plainly.
+Archive access requires a reachable address. The service does not provide a cloud relay or automatically update an address. Preserve the existing network configuration and access controls when maintaining an archive. A healthy local service does not prove that a remote browser can reach it.
 
 ## Raspberry Pi setup
 
-1. **Flash** Raspberry Pi OS Lite (64-bit) with Raspberry Pi Imager; set a hostname, user, and
-   enable SSH in the imager's settings. Boot and SSH in.
-2. **Install Node.js 20+** (Raspberry Pi OS's default may be older):
+New storage-node setup is retired, including `--setup`. For an **existing** installation with Node.js 20 or later and its original configuration, run:
 
-   ```sh
-   sudo apt-get update && sudo apt-get install -y curl
-   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   node --version   # v22.x
-   ```
+```sh
+node packages/storage-node/server.mjs --dir /path/to/existing/archive --port 8788
+```
 
-3. **Get the service file** — copy `packages/storage-node/server.mjs` from the Vantage repo onto
-   the Pi (it is one file):
-
-   ```sh
-   mkdir -p ~/vantage-storage-node
-   # from your laptop:
-   scp packages/storage-node/server.mjs pi@<pi-address>:vantage-storage-node/
-   ```
-
-4. **Pair** (interactive-free — everything is flags; the only human step is a teammate entering
-   the code on the website):
-
-   ```sh
-   cd ~/vantage-storage-node
-   node server.mjs --setup --cloud https://your-vantage-host --name pi-shop --quota-gb 100 \
-     --dir /var/lib/vantage-storage
-   ```
-
-   It prints a code like `AB2D-EFGH`. A team owner/admin opens `/team/storage`, enters the code,
-   and the node finishes pairing by itself. The config (including this node's private token) is
-   saved with mode 0600 under the data directory.
-
-   > `--dir /var/lib/vantage-storage` needs to exist and be writable:
-   > `sudo mkdir -p /var/lib/vantage-storage && sudo chown $USER /var/lib/vantage-storage`
-
-5. **Run**:
-
-   ```sh
-   node server.mjs --dir /var/lib/vantage-storage
-   ```
-
-   The node logs its LAN URLs and starts heartbeating. Check `/team/storage` — the node should
-   show **Online** with real disk numbers within a minute.
-
-6. **Autostart (systemd)** — a ready unit ships next to the server:
-
-   ```sh
-   sudo cp packages/storage-node/vantage-storage-node.service /etc/systemd/system/
-   sudo nano /etc/systemd/system/vantage-storage-node.service   # adjust User= and paths
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now vantage-storage-node
-   systemctl status vantage-storage-node
-   ```
+Keep access keys and tokens private. Do not print or commit `config.json`. Copy the configuration and files together when moving an existing archive; do not create an empty replacement and claim the files were restored.
 
 ## Flags
 
-| Flag | Meaning | Default |
-| --- | --- | --- |
-| `--setup` | Pair this machine (prints the 8-char code) | — |
-| `--cloud URL` | Hosted Vantage app URL (required with `--setup`) | — |
-| `--name NAME` | Name shown to the team | machine hostname |
-| `--dir DIR` | Data directory (config + items) | `$VANTAGE_STORAGE_DIR` or `./vantage-storage` |
-| `--port N` | HTTP port | `8788` |
-| `--quota-gb N` | Disk quota for stored items | `20` |
+| Flag | Current behavior |
+| --- | --- |
+| `--dir DIR` | Existing data directory; defaults to `VANTAGE_STORAGE_DIR` or `./vantage-storage` |
+| `--port N` | Listening port; default 8788, or the saved port |
+| `--allow-origin URL` | Adds an explicitly allowed browser origin to the saved allowlist |
+| `--help` | Shows the archive command |
+| `--setup` | Fails immediately; no pairing or resources are created |
+
+Legacy name, cloud and quota fields may remain in configuration for compatibility. They do not enable uploads or background workers.
 
 ## On-disk layout
 
-```
-<dir>/config.json          # cloud URL, node token, access-key hash (mode 0600)
-<dir>/items/ab/cd/abcd…    # content-addressed files, sharded by sha256 prefix
-<dir>/items/ab/cd/abcd….json  # sidecar: content type, size, stored-at
-<dir>/tmp/                 # in-flight uploads (cleared on boot)
+```text
+<dir>/config.json            # existing private access configuration
+<dir>/items/ab/cd/abcd…      # existing content-addressed bytes
+<dir>/items/ab/cd/abcd….json # existing content type and metadata
+<dir>/tmp/ or uploads/      # retained partial legacy files, if present
 ```
 
-Items are content-addressed: the filename **is** the sha256 of the bytes, verified on every
-write. Restoring a node is just copying the `items/` tree back.
+Back up the configuration and complete item tree before moving hardware. Verify hashes and representative authenticated reads after restoration. Startup does not discard unfinished files.
 
 ## Unpairing / decommissioning
 
-On `/team/storage`, **Unpair node** revokes the node's token immediately: heartbeats stop being
-accepted and every registered item on it is treated as unreachable (the metadata stays until you
-remove it). The node itself keeps serving its LAN until you stop the service — wipe
-`<dir>/config.json` and the `items/` tree to fully decommission.
+Stop the service to end local serving. Revoking cloud registration does not automatically stop a process or erase its disk. Preserve an offline copy and reconcile references before intentionally deleting an identified archive. Media retirement itself performs no deletion.
 
 ## Cloud API surface (for feature integration)
 
-- `POST /api/storage-node/pair/start|poll` — node-side pairing (unauthenticated, rate-limited).
-- `POST /api/storage-node/pair/approve` — owner/admin approves a code.
-- `POST /api/storage-node/heartbeat` — node token auth; liveness + disk + scrub.
-- `GET/POST /api/storage-node` — team view; rename / set-base-url / unpair.
-- `POST /api/storage-node/items` — `register-item`, `resolve-item`, `remove-item`.
-  `resolve-item` returns `{status:"ok", url, accessKey}` only when the node has a reachable URL
-  and a recent heartbeat; otherwise `node-unreachable` (with reason and LAN hints),
-  `missing-on-node`, or `not-found` — callers must show those states, not paper over them.
+Pairing, heartbeat, storage registration, upload and media mutation routes are retired. Existing authorized archive resolution or removal may remain for previously registered records. Callers must show actual missing/unreachable errors and must not advertise storage setup or upload quotas.
+
+Supported documents and external video links are separate from this archive. Their authorization, retention and acceptance checks remain part of the [production plan](release/PLAN.md).

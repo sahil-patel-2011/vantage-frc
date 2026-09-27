@@ -161,8 +161,8 @@ export function availableActions(input: {
  */
 export const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;
 
-/** Formats a phone camera can produce that we are willing to store and re-serve. */
-export const RECEIPT_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+/** Receipt documents remain supported after photo/video storage retirement. */
+export const RECEIPT_MEDIA_TYPES = ["application/pdf"] as const;
 
 export type ReceiptMediaType = (typeof RECEIPT_MEDIA_TYPES)[number];
 
@@ -177,18 +177,25 @@ export function evaluateReceiptUpload(input: {
   byteSize: number;
 }): ReceiptVerdict {
   if (!isReceiptMediaType(input.mediaType)) {
-    return { ok: false, reason: "Receipts must be a JPEG, PNG, or WebP photo." };
+    return { ok: false, reason: "Attach a PDF receipt. Photo and video uploads are not supported." };
   }
   if (!Number.isFinite(input.byteSize) || input.byteSize <= 0) {
-    return { ok: false, reason: "That file is empty. Retake the photo and try again." };
+    return { ok: false, reason: "That file is empty. Choose the receipt PDF and try again." };
   }
   if (input.byteSize > MAX_RECEIPT_BYTES) {
     return {
       ok: false,
-      reason: `That photo is ${formatBytes(input.byteSize)} — over the ${formatBytes(MAX_RECEIPT_BYTES)} limit. Retake it at a lower resolution.`,
+      reason: `That document is ${formatBytes(input.byteSize)} — over the ${formatBytes(MAX_RECEIPT_BYTES)} limit. Export a smaller PDF.`,
     };
   }
   return { ok: true, mediaType: input.mediaType };
+}
+
+/** MIME labels alone do not establish that a file is a PDF. */
+export function isPdfReceiptBytes(bytes: Uint8Array): boolean {
+  const decode = (part: Uint8Array) => new TextDecoder().decode(part);
+  return /^%PDF-1\.[0-9]|^%PDF-2\.[0-9]/.test(decode(bytes.subarray(0, 8)))
+    && decode(bytes.subarray(Math.max(0, bytes.length - 2048))).includes("%%EOF");
 }
 
 export function formatBytes(bytes: number): string {

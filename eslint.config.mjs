@@ -8,6 +8,7 @@ export default tseslint.config(
   {
     ignores: [
       "**/.next/**",
+      "apps/web/app/.well-known/workflow/**",
       "**/node_modules/**",
       "**/dist/**",
       "**/release/**",

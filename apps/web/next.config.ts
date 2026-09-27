@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
+import { withWorkflow } from "workflow/next";
+
+// Empty deployment metadata in local env files is not a deployed host. WDK
+// distinguishes absence from an empty string when constructing its step URL.
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL_URL?.trim()) delete process.env.VERCEL_URL;
 
 const config: NextConfig = {
   // Leftover volume kits under app/win-kit, app/lovat-kit, app/agent-kit are
@@ -57,4 +62,4 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+export default withWorkflow(config);

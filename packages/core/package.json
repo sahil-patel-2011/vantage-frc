@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./public-signup": "./src/public-signup.ts",
     "./legal": "./src/legal.ts"
   },
   "scripts": {

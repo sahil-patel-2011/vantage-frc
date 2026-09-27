@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
@@ -11,7 +11,7 @@ import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
 import { PitTeamField, ScoutTargetChoices } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
-import { formatDraftSavedAgo, payloadHasDraftContent } from "../../lib/scouting/draft-autosave";
+import { formatDraftSavedAgo, payloadHasDraftContent, scoutDraftStorageKey, rememberActiveScoutDraft } from "../../lib/scouting/draft-autosave";
 import { scoutContext } from "../../lib/scouting/scout-context";
 import { hubHref } from "../../lib/nav/hubs";
 import type { QuarantinedItem } from "../../lib/scout-offline";
@@ -54,6 +54,7 @@ import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
 import "./scout-flow.css";
 import { PitProgress } from "./pit-progress";
+import { ScoutActionHistoryView } from "./scout-action-history";
 
 const CONFIDENCE_OPTIONS = [
   { value: "high", label: "Sure" },
@@ -254,7 +255,8 @@ export function ScoutingReadyView({
   // started about 1,300px further down, under the match list, the typed-team
   // box and a card of focus buttons. Now the tap is the start of the form.
   const scrollToForm = useCallback(() => {
-    formStartRef.current?.scrollIntoView({ behavior: smoothOrInstant(), block: "start" });
+    // Keep the first tap target still when the scout moves straight into counting.
+    formStartRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
   }, []);
   const pickRobot = useCallback(
     (nextMatch: string, nextTeam: string) => {
@@ -269,10 +271,10 @@ export function ScoutingReadyView({
     },
     [matchKey, teamKey, scrollToForm, setMatchKey, setTeamKey],
   );
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!scrollToFormPending.current) return;
     scrollToFormPending.current = false;
-    window.requestAnimationFrame(scrollToForm);
+    scrollToForm();
   }, [matchKey, teamKey, scrollToForm]);
 
   // The robot picked for you on arrival: selected, but the page stays where it is.
@@ -671,7 +673,14 @@ return (
                   </button>
                 </div>
                 {formFields.length ? (
-                  <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`} />
+                  <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`}
+                    storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })}
+                    onStarted={() => {
+                      const userId = data?.scoutIdentity?.userId;
+                      const eventKey = data?.eventKey;
+                      const key = scoutDraftStorageKey({ userId, orgId, eventKey: eventKey ?? "", entryType: "match", matchKey, teamKey });
+                      if (userId && eventKey && key) rememberActiveScoutDraft({ userId, orgId, eventKey }, { key, type: "match", matchKey, teamKey });
+                    }} />
                 ) : null}
               </div>
             </>
@@ -709,7 +718,7 @@ return (
 
           {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
-              key={field.key}
+              key={`${type}:${matchKey}:${teamKey}:${field.key}`}
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
@@ -811,6 +820,7 @@ return (
                 ? `Save this ${type}`
                 : "Save on this phone"}
           </Button>
+          <ScoutActionHistoryView payload={payload} labels={Object.fromEntries(formFields.map((field) => [field.key, field.label]))} />
           {confirmRunning ? (
             <p className="form-message scout-running-note" role="status">
               Match clock still running. Tap again to save now, or{" "}

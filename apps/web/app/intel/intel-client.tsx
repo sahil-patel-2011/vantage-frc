@@ -105,7 +105,7 @@ async function persistIntelSnapshot(orgHint: string, data: IntelBoardView): Prom
  * `variant="scouting"` is Scouting's Teams tab: titled "Teams", what our scouts saw first, and the
  * data-source controls folded under the team card instead of between the search and the team.
  */
-export default function IntelClient({ variant = "vantage" }: { variant?: "vantage" | "scouting" } = {}) {
+export default function IntelClient({ variant = "vantage", embedded = false }: { variant?: "vantage" | "scouting"; embedded?: boolean } = {}) {
   const [orgId, setOrgId] = useState("");
   const [orgReady, setOrgReady] = useState(false);
 
@@ -126,12 +126,12 @@ export default function IntelClient({ variant = "vantage" }: { variant?: "vantag
   }, []);
 
   if (!orgReady) {
-    return <IntelShell orgId={null} shell="loading" />;
+    return <IntelShell orgId={null} shell="loading" embedded={embedded} />;
   }
   if (!orgId) {
-    return <IntelShell orgId={null} shell="setup" />;
+    return <IntelShell orgId={null} shell="setup" embedded={embedded} />;
   }
-  return <IntelLive orgId={orgId} variant={variant} />;
+  return <IntelLive orgId={orgId} variant={variant} embedded={embedded} />;
 }
 
 /** The open team in the address, so Back, reload and a shared link keep it. */
@@ -146,7 +146,8 @@ function rememberTeamInUrl(teamNumber: number | null) {
   }
 }
 
-function IntelLive({ orgId, variant }: { orgId: string; variant: "vantage" | "scouting" }) {
+function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vantage" | "scouting"; embedded: boolean }) {
+  const Container = embedded ? "section" : "main";
   const scouting = variant === "scouting";
   const motion = useAppleMotion();
   const source = useAnalyticsSource(orgId);
@@ -533,6 +534,7 @@ function IntelLive({ orgId, variant }: { orgId: string; variant: "vantage" | "sc
     if (shell === "loading" || shell === "error") {
       return (
         <IntelShell
+          embedded={embedded}
           orgId={orgId}
           shell={shell}
           error={shell === "error" ? status || "Could not load Research." : undefined}
@@ -562,7 +564,7 @@ function IntelLive({ orgId, variant }: { orgId: string; variant: "vantage" | "sc
   const emptyCopy = intelShellCopy("empty");
 
   return (
-    <main className={`module-page intel-page ${motion.classNames.page}`}>
+    <Container className={`module-page intel-page ${embedded ? "is-embedded" : ""} ${motion.classNames.page}`}>
       <PageHeader
         breadcrumbs={scouting ? "Scouting / Teams" : "Competition / Research"}
         title={scouting ? "Teams" : "Research"}
@@ -675,6 +677,6 @@ function IntelLive({ orgId, variant }: { orgId: string; variant: "vantage" | "sc
           ) : null}
         </>
       ) : null}
-    </main>
+    </Container>
   );
 }

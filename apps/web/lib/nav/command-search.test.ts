@@ -9,6 +9,13 @@ const hrefs = (query: string, count = 5): string[] =>
   searchCommands(query, catalog).slice(0, count).map((hit) => hit.href);
 
 describe("commandCatalog", () => {
+  it("consolidates old Team routes while preserving travel and RSVP search terms", () => {
+    for (const tab of ["logistics", "duties", "visit-invites"]) {
+      expect(catalog.filter(entry => entry.href === `/team?tab=${tab}`)).toHaveLength(1);
+      expect(catalog.some(entry => entry.href === `/${tab}`)).toBe(false);
+    }
+    expect(hrefs("hotel")).toContain("/team?tab=logistics");
+  });
   it("covers every hub tab plus actions and standalone destinations", () => {
     expect(catalog.length).toBeGreaterThan(120);
     expect(catalog.some((entry) => entry.kind === "action")).toBe(true);
@@ -26,7 +33,7 @@ describe("commandCatalog", () => {
   it("gives nested tabs a hub breadcrumb so labels are unambiguous", () => {
     const coverage = catalog.find((entry) => entry.href === "/competition?tab=scout-coverage-live");
     expect(coverage?.label).toBe("Coverage");
-    expect(coverage?.context).toBe("Competition › Scouting");
+    expect(coverage?.context).toBe("Competition › Scout");
   });
 
   it.skipIf(!MEDIA_ENABLED)("lists Media library so search opens a real destination", () => {

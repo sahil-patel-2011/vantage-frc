@@ -4,6 +4,7 @@ import { GoogleSheetsError } from "../google-sheets/google-api";
 import { GraphError } from "../microsoft/graph";
 import type { CellValue, TableSpec } from "../microsoft/workbook-schema";
 import type { WorkbookTarget } from "../microsoft/workbook-sync";
+import { OPS_TABLES } from "../microsoft/team-ops-tables";
 import { contentHash } from "./mirror-hash";
 import { type MirrorTargetDef, clampThrottle, isDeferred, syncMirror, writeTablesToCopy } from "./mirror-sync";
 
@@ -39,6 +40,7 @@ function fakeClient(options: { locked?: boolean } = {}) {
     async query(sql: string, params: unknown[] = []) {
       log.push({ sql, params });
       const rows = (r: unknown[]) => ({ rows: r, rowCount: r.length });
+      if (OPS_TABLES.some((table) => sql.startsWith(table.sql))) return rows([]);
       if (sql.includes("pg_try_advisory_xact_lock")) return rows([{ locked: options.locked ?? true }]);
       if (sql.includes("INSERT INTO workbook_sync_runs")) return rows([{ id: `run-${++runs}` }]);
       if (sql.includes("FROM organizations o")) return rows([{ name: "Robo Team", teamNumber: 1234, activeEventKey: "2026casj" }]);

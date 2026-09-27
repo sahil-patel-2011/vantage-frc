@@ -4,7 +4,6 @@ import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
-import { AppShellSidebar } from "./app-shell-sidebar";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
 import { LegalUpdateBanner } from "./legal-update-banner";
@@ -26,12 +25,16 @@ import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "..
 import { commandCatalog, searchCommands } from "../lib/nav/command-search";
 import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { softNavigationTarget } from "../lib/nav/soft-navigation";
+import { shellBackUsesHistory } from "../lib/nav/shell-back";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
-import { fetchProductSession } from "../lib/nav/product-session";
+import { fetchProductSession, invalidateProductSession } from "../lib/nav/product-session";
+import { listenInboxUpdates } from "../lib/notifications/inbox-events";
+import { FEATURE_API_TIMEOUT_MS } from "../lib/nav/resolve-org";
 import { Icon, type IconName } from "./icon";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
+import { watchSessionBoundary } from "../lib/offline/identity";
 import { isKnownAppPath } from "../lib/nav/app-route-roots";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import {
@@ -57,6 +60,7 @@ const groups = PRODUCT_NAV_GROUPS;
 export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
+  const knownAppSteps = useRef(0);
   const [orgId, setOrgId] = useState("");
   // The team's spreadsheets follow the app on their own: no Sync button to remember.
   useSheetsAutoSync(orgId);
@@ -69,6 +73,7 @@ export default function AppShell() {
   const [navOpen, setNavOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
+  const inboxRevision = useRef(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -98,11 +103,13 @@ export default function AppShell() {
   const islandPressTimer = useRef<number | null>(null);
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
+  const islandSaveAbort = useRef<AbortController | null>(null);
   const focusSearchOnOpen = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
 
   const activeNav = findNavMatch(pathname);
+  useEffect(() => { watchSessionBoundary(); }, []);
   const activeGroupLabel = activeNav?.group.label;
 
   const openNav = useCallback((options?: { focusSearch?: boolean }) => {
@@ -115,6 +122,7 @@ export default function AppShell() {
   const closeNav = useCallback(() => {
     setNavOpen(false);
     setWorkspaceOpen(false);
+    document.querySelector<HTMLButtonElement>('.soft-menu-btn')?.focus();
   }, []);
 
   /**
@@ -151,6 +159,7 @@ export default function AppShell() {
       if (!path || !routerReady) return;
       event.preventDefault();
       const before = window.location.href;
+      if (path !== `${window.location.pathname}${window.location.search}${window.location.hash}`) knownAppSteps.current++;
       try {
         router.push(path);
       } catch {
@@ -224,6 +233,7 @@ export default function AppShell() {
 
   useEffect(() => {
     if (!navOpen) {
+      if ((document.activeElement as HTMLElement | null)?.closest('.soft-drawer')) document.querySelector<HTMLButtonElement>('.soft-menu-btn')?.focus();
       setNavQuery("");
       setSearchHits([]);
       setSearchLoading(false);
@@ -237,10 +247,17 @@ export default function AppShell() {
       if (wantsSearch) searchInputRef.current?.focus();
       else panelCloseRef.current?.focus();
     }, 40);
-    return () => window.clearTimeout(focusTimer);
+    const panel = panelCloseRef.current?.closest('.soft-drawer');
+    return () => {
+      window.clearTimeout(focusTimer);
+      if (document.activeElement === document.body || panel?.contains(document.activeElement)) {
+        document.querySelector<HTMLButtonElement>('.soft-menu-btn')?.focus();
+      }
+    };
   }, [navOpen]);
 
   useEffect(() => {
+    const id = ++searchRequestId.current;
     if (!navOpen) return;
     const q = navQuery.trim();
     if (q.length < 2) {
@@ -248,7 +265,6 @@ export default function AppShell() {
       setSearchLoading(false);
       return;
     }
-    const id = ++searchRequestId.current;
     setSearchLoading(true);
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ q });
@@ -284,6 +300,8 @@ export default function AppShell() {
 
   useEffect(() => {
     let cancelled = false;
+    const revision = inboxRevision.current;
+    setUnreadCount(0);
     void fetchProductSession(orgId || null)
       .then((data) => {
         if (cancelled || !data) return;
@@ -293,7 +311,7 @@ export default function AppShell() {
         );
         setMemberships(rows);
         const count = Number(data.unreadNotificationCount ?? 0);
-        setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
+        if (revision === inboxRevision.current) setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
         const messages = Number(data.unreadMessageCount ?? 0);
         setUnreadMessages(Number.isFinite(messages) && messages > 0 ? Math.floor(messages) : 0);
         if (!orgId && data.orgId) setOrgId(data.orgId);
@@ -306,6 +324,20 @@ export default function AppShell() {
       cancelled = true;
     };
   }, [orgId, pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const stop = listenInboxUpdates(data => {
+      if (data.userId !== me.userId) return;
+      const revision = ++inboxRevision.current;
+      invalidateProductSession();
+      if (data.orgId === (orgId || null)) setUnreadCount(data.unreadCount);
+      else if (data.mutation) void fetchProductSession(orgId || null).then(session => {
+        if (!cancelled && session && revision === inboxRevision.current && session.userId === me.userId) setUnreadCount(Number(session.unreadNotificationCount ?? 0));
+      });
+    });
+    return () => { cancelled = true; stop(); };
+  }, [me.userId, orgId]);
 
   useEffect(() => {
     void fetch("/api/navigation/preferences", { cache: "no-store" })
@@ -331,11 +363,19 @@ export default function AppShell() {
   }, [pathname, islandHrefs]);
 
   function openIslandEditor() {
+    islandSaveAbort.current?.abort();
+    setIslandSaving(false);
     setIslandDraft(islandHrefs);
     setIslandMessage("");
     setNavOpen(false);
+    setAccountMenuOpen(false);
     setIslandEditorOpen(true);
   }
+
+  useEffect(() => {
+    if (!islandEditorOpen) islandSaveAbort.current?.abort();
+    return () => { islandSaveAbort.current?.abort(); };
+  }, [islandEditorOpen]);
 
   useEffect(
     () => () => {
@@ -596,13 +636,17 @@ export default function AppShell() {
     if (islandDraft.length !== 4 || islandSaving) return;
     setIslandSaving(true);
     setIslandMessage("");
+    const controller = new AbortController();
+    islandSaveAbort.current = controller;
     try {
       const response = await fetch("/api/navigation/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tabs: islandDraft }),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       const data = await response.json() as { tabs?: unknown; error?: string };
+      if (controller.signal.aborted) return;
       if (!response.ok) {
         setIslandMessage(data.error ?? "Could not save the island.");
         return;
@@ -612,9 +656,10 @@ export default function AppShell() {
       setIslandDraft(tabs);
       setIslandEditorOpen(false);
     } catch {
+      if (controller.signal.aborted) return;
       setIslandMessage("Could not save the island. Check your connection and try again.");
     } finally {
-      setIslandSaving(false);
+      if (islandSaveAbort.current === controller) setIslandSaving(false);
     }
   }
 
@@ -625,21 +670,16 @@ export default function AppShell() {
       <a className="soft-skip-link" href="#main-content">
         Skip to main content
       </a>
-      <AppShellSidebar
-        orgId={orgId}
-        pathname={pathname}
-        pathSearch={pathSearch}
-        orgLabel={orgLabel}
-        visibleNavGroups={visibleNavGroups}
-        navHrefAllowed={navHrefAllowed}
-        onOpenSearch={() => openNav({ focusSearch: true })}
-        shortcutHint={shortcutHint}
-        islandTabs={islandTabs}
-        onEditApps={openIslandEditor}
-      />
       <AppShellTopbar
         showBack={showBack}
-        onBack={() => router.push(backHref)}
+        onBack={() => {
+          const navigation = (window as Window & { navigation?: { currentEntry?: { index: number }; entries(): Array<{ index: number; url?: string }> } }).navigation;
+          const previous = navigation?.entries().find(entry => entry.index === (navigation.currentEntry?.index ?? 0) - 1)?.url ?? null;
+          if (shellBackUsesHistory(window.location.href, previous, knownAppSteps.current)) {
+            knownAppSteps.current = Math.max(0, knownAppSteps.current - 1);
+            router.back();
+          } else router.push(backHref);
+        }}
         isHubRoot={isHubRoot}
         title={title}
         orgLabel={orgLabel}
@@ -657,7 +697,7 @@ export default function AppShell() {
         }}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
-        onToggleAccount={() => setAccountMenuOpen((value) => !value)}
+        onToggleAccount={() => { setNavOpen(false); setIslandEditorOpen(false); setAccountMenuOpen((value) => !value); }}
         onCloseAccount={() => setAccountMenuOpen(false)}
         me={me}
         initial={initial}

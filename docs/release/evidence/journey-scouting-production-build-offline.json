@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-26",
+  "environment": {
+    "url": "http://127.0.0.1:3417",
+    "database": "vantage_release_test",
+    "runtime": "Production-built LOCAL Next app; not deployed production",
+    "productionSignupOpened": false,
+    "actor": "Morgan Journey existing normal UI session",
+    "organization": "6925a000-0000-4000-8000-000000000001",
+    "event": "2026gacmp",
+    "tab": "781731034"
+  },
+  "safety": "CUA browser actions only; no auth switch, injected state/session/storage/network, code/config edits, external messages or deletion. Parent controlled actual listener stop; report saved exactly once.",
+  "report": {
+    "match": "2026gacmp_qm36",
+    "team": "frc6925",
+    "note": "[Synthetic scouting journey 2026-09-26] Production-built local outage QR recovery; Q36 team6925; no real match observation.",
+    "answers": {"autoPoints":0,"teleopCycles":2,"totalPoints":13,"endgame":"none","brokeDown":"no","confidence":"Sure","fouls":"missing"},
+    "observationCount": 8,
+    "observedActions": ["Auto missing→1","Auto1→0","Teleop missing→1","Teleop1→2","Total missing→13","Endgame missing→none","Breakdown missing→no","Notes missing→synthetic note"],
+    "originalDeviceTimes": "19:43:32–19:43:47 America/New_York",
+    "saveCount": 1,
+    "serverAcknowledgement": "Not checked after restart in this bounded run"
+  },
+  "checks": [
+    {
+      "id":"built-rapid-first-action",
+      "status":"passed_bounded",
+      "evidence":"Fresh genuine full reload preservesMorgan session. NewQ36/team6925 selected then immediate semantic Auto+ visibly produces1/Review1 before other fields."
+    },
+    {
+      "id":"prepare-zero-history-and-warm-shell",
+      "status":"passed_bounded",
+      "evidence":"Actual form decrement recordsAuto1→0; Teleop2,total13,None,No and unique note complete8timestamped actions. Genuine reload retains exact draft/history. QR panel warmed online to Nothing waiting and Match reopened before outage."
+    },
+    {
+      "id":"actual-outage-save",
+      "status":"passed_bounded",
+      "evidence":"Parent verified real3417listener stopped. Save once through normal UI eventually displays Saved6925Qual36, Online1queued, Syncpending1 and Yourreports2+1waiting. Form advances to blank next selection after save. No second Save."
+    },
+    {
+      "id":"offline-qr-generation",
+      "status":"failed",
+      "evidence":"Warmed QR panel remains usable while server unreachable and reports1matchsavedhere,notsentyet. Actual Show handoff QR click ends with Could not make the code. Try again, or sync when you have signal. NoQRimage or textfallback payload rendered. No retries performed.",
+      "screenshot":"docs/release/evidence/scouting-built-outage-qr-failure.png",
+      "logs":"Captured bounded error/warning logs empty; internal failure swallowed by UI catch, source cause not proven."
+    },
+    {
+      "id":"genuine-offline-cached-shell-reload",
+      "status":"passed_with_header_limitation_bounded",
+      "evidence":"After parent instruction, genuine full reload while listener remains down initially showsOpeningteam, then settles into actualScouting/Peachtree/MorganJourney using cached30recentrecords. Syncpending1 and Yourreports2+1waiting retained; Using the last copy on this phone visible. Header saysThisteam/account?; organization links retain6925 and scout identity retainsMorgan. No selectedrobot/blankform after prior save, so unsaved draft restoration not independently tested during outage.",
+      "screenshot":"docs/release/evidence/scouting-built-outage-reload-settled.png"
+    },
+    {
+      "id":"independent-qr-decode-import-dedup",
+      "status":"blocked_by_qr_generation",
+      "evidence":"No actualQRpayload exists to decode/import. Transfer, observations-through-transfer and duplicate handling are not passed. Dependent actions stopped."
+    }
+  ],
+  "sourceLead": "After UI failure, read-only source shows >1200byte embedded payload threshold chooses network-required short-code publication, gated by navigator.onLine. Actual loopback outage can leave browser online. Full observation JSON is uncompressed/base64. Single eight-action report may exceed threshold; hypothesis sent to parent, not independently confirmed by hidden-state access or injected payload. qr-camera statically importsqrcode, so lazy-renderer hypothesis withdrawn.",
+  "artifacts": [
+    "docs/release/evidence/scouting-build-offline-prepared-dom.json",
+    "docs/release/evidence/scouting-built-outage-dom.json",
+    "docs/release/evidence/scouting-built-outage-errors.json",
+    "docs/release/evidence/scouting-built-outage-reload.txt",
+    "docs/release/evidence/scouting-built-outage-reload-settled.txt",
+    "docs/release/evidence/scouting-built-outage-reload-errors.json"
+  ],
+  "completion":"partial_local_build_acceptance; QR failure blocks transfer acceptance. Queue preserved, browser released for parent restart/investigation. No production-complete claim."
+}

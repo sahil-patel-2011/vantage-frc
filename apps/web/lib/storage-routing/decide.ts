@@ -28,9 +28,6 @@ import type {
   StorageRoutingPolicy,
 } from "./types";
 
-/** Keep this much of the node's reported free disk untouched. */
-export const NODE_DISK_HEADROOM_BYTES = 256 * 1024 * 1024;
-
 /**
  * Can a BROWSER on the (https) app origin reach this URL? Plain http is
  * blocked as mixed content except for localhost, so an http LAN address is
@@ -53,45 +50,11 @@ export type NodeEligibility =
   | { eligible: true; node: CandidateNode & { baseUrl: string } }
   | { eligible: false; reason: string };
 
-/** Why (or why not) this node can take an upload of `byteSize` right now. */
+/** Existing nodes are archives. Their saved liveness never authorizes a new write. */
 export function nodeEligibilityFor(node: CandidateNode | null, byteSize: number): NodeEligibility {
-  if (!node) {
-    return { eligible: false, reason: "No storage node is paired.." };
-  }
-  if (!node.baseUrl) {
-    return {
-      eligible: false,
-      reason: `"${node.name}" has no reachable URL configured, so your browser cannot send it files.`,
-    };
-  }
-  if (!isBrowserReachableUrl(node.baseUrl)) {
-    return {
-      eligible: false,
-      reason: `"${node.name}" is configured with a plain-http address (${node.baseUrl}) that browsers on a secure page cannot call. Give it an https URL (Cloudflare Tunnel or Tailscale).`,
-    };
-  }
-  if (node.liveness === "never") {
-    return {
-      eligible: false,
-      reason: `"${node.name}" has never sent a heartbeat — it is paired but not running yet.`,
-    };
-  }
-  if (node.liveness === "offline" || node.liveness === "degraded") {
-    const lastSeen = node.lastHeartbeatAt
-      ? `last heartbeat ${new Date(node.lastHeartbeatAt).toISOString()}`
-      : "no heartbeat received";
-    return {
-      eligible: false,
-      reason: `"${node.name}" looks ${node.liveness} (${lastSeen}).`,
-    };
-  }
-  if (node.diskFreeBytes != null && byteSize + NODE_DISK_HEADROOM_BYTES > node.diskFreeBytes) {
-    return {
-      eligible: false,
-      reason: `"${node.name}" reported only ${formatBytes(node.diskFreeBytes)} free — not enough for this ${formatBytes(byteSize)} file.`,
-    };
-  }
-  return { eligible: true, node: { ...node, baseUrl: node.baseUrl } };
+  // Keep the public shape for callers with saved routing records.
+  void node; void byteSize;
+  return { eligible: false, reason: "Storage nodes serve existing archives; new uploads are retired." };
 }
 
 export type DecideInput = {

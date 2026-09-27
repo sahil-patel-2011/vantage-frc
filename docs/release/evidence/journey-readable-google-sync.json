@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-26T22:00:13.9536871Z",
+  "environment": "isolated local app and operator-owned Google test folder",
+  "productionAcceptance": false,
+  "organizationId": "e6048770-61f0-48a6-b555-069a1a8d8f03",
+  "method": "Normal browser auto-sync trigger; actual Workflow callbacks; restricted-worker source and Google read-back; read-only PostgreSQL status verification",
+  "firstRefresh": {
+    "requestedAt": "2026-09-26T21:49:29.033Z",
+    "elapsedMs": 296220,
+    "completedAt": "2026-09-26T21:54:25.253Z",
+    "workbooksVerified": 5
+  },
+  "subsequentRefresh": {
+    "error": null,
+    "requestedAt": "2026-09-26T17:55:31.251705-04:00",
+    "completedWorkbooks": {
+      "Team": {
+        "verifiedAt": "2026-09-26T17:55:40.404466-04:00",
+        "sourceReadAt": "2026-09-26T21:55:37.913Z"
+      },
+      "Build": {
+        "verifiedAt": "2026-09-26T17:55:42.789284-04:00",
+        "sourceReadAt": "2026-09-26T21:55:40.477Z"
+      },
+      "Business": {
+        "verifiedAt": "2026-09-26T17:55:46.500663-04:00",
+        "sourceReadAt": "2026-09-26T21:55:42.857Z"
+      },
+      "Start Here": {
+        "verifiedAt": "2026-09-26T17:55:34.630585-04:00",
+        "sourceReadAt": "2026-09-26T21:55:31.326Z"
+      },
+      "Competition": {
+        "verifiedAt": "2026-09-26T17:55:37.847268-04:00",
+        "sourceReadAt": "2026-09-26T21:55:34.709Z"
+      }
+    },
+    "oldestSourceReadAt": "2026-09-26T17:55:31.326-04:00",
+    "completedAt": "2026-09-26T17:55:46.561781-04:00",
+    "elapsedMs": 15310.076,
+    "state": "ready"
+  },
+  "resourcesReused": 5,
+  "expectedWorkbooks": 5,
+  "browserStatus": {
+    "staleWarningObserved": true,
+    "currentAgeShown": true,
+    "sensitiveDriveDetailsExposed": false,
+    "screenshot": "docs/release/evidence/journey-readable-google-status.png"
+  },
+  "migration": "0704_readable_google_sync.sql (scratch only)",
+  "limitations": [
+    "One synthetic team; 50-team load acceptance remains open",
+    "Browser interval observed; cron is configured but actual production scheduling is unverified",
+    "Readable coverage remains limited to existing core tables; full feature coverage is pending",
+    "Protected recovery freshness and replay require separate proof"
+  ]
+}

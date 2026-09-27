@@ -4,13 +4,14 @@ import { PRODUCT_HUBS } from "./nav/hubs";
 import { canAccessWidget, homeViewLayout } from "./dashboard/catalog";
 import { decideStorageRoute } from "./storage-routing/decide";
 
-describe("reversible media pause", () => {
+describe("removed photo and video storage", () => {
   it("blocks direct pages, nested endpoints and hub aliases", () => {
     expect(MEDIA_ENABLED).toBe(false);
-    for (const path of ["/media", "/media-library", "/video-analysis", "/api/media/posts", "/api/scouting/media/test.png", "/api/media-library/items/id"]) {
+    for (const path of ["/media", "/media-library", "/api/media/posts", "/api/scouting/media/test.png", "/api/media-library/items/id"]) {
       expect(isPausedMediaRoute(path)).toBe(true);
     }
-    expect(isPausedMediaRoute("/competition", "video")).toBe(true);
+    expect(isPausedMediaRoute("/competition", "video")).toBe(false);
+    expect(isPausedMediaRoute("/video-analysis")).toBe(false);
     expect(isPausedMediaRoute("/business", "content-drafts")).toBe(true);
     for (const path of ["/dashboard", "/api/scouting/sync", "/api/todos", "/files", "/api/drive"]) {
       expect(isPausedMediaRoute(path)).toBe(false);
@@ -18,7 +19,7 @@ describe("reversible media pause", () => {
     expect(isPausedMediaRoute("/competition", "scouting")).toBe(false);
   });
   it("removes media tabs and pit stream widgets without touching saved data", () => {
-    expect(PRODUCT_HUBS.flatMap((hub) => hub.tabs).some((tab) => tab.id === "video" || tab.id === "media-library")).toBe(false);
+    expect(PRODUCT_HUBS.flatMap((hub) => hub.tabs).some((tab) => tab.id === "media-library")).toBe(false);
     expect(canAccessWidget("pit_youtube", "owner")).toBe(false);
     const saved = [{ i: "pit", type: "pit_youtube" as const, x: 0, y: 0, w: 6, h: 4 }];
     expect(homeViewLayout(saved, { editing: true, shell: "ready" })).toEqual([]);

@@ -23,6 +23,7 @@ export type MembershipOption = {
 };
 
 export type Me = {
+  userId?: string;
   name?: string | null;
   firstName?: string | null;
   displayName?: string | null;

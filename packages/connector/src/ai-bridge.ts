@@ -7,20 +7,17 @@ import {
 } from "./capability.js";
 import { cloudUrl } from "./endpoints.js";
 import type { Spawner } from "./ports.js";
+import { personalFeatureToolRegistry } from "./feature-tools.js";
+import type { CodexFeatureTools } from "./codex-app-server.js";
 
 /**
- * ai-bridge capability — serve the team's interactive AI from this machine's Claude
- * Pro/Max (Claude Code CLI) or ChatGPT (Codex CLI) subscription, at $0 API cost to the
- * team. Faithful port of packages/ai-bridge/bridge.mjs (which stays untouched — the
- * standalone single-file bridge remains supported); the proven semantics and comments are
- * preserved, with the process/network access moved behind the injected Spawner/transport
- * so this port is unit-testable.
+ * Execute the paired person's requests using their isolated local subscriber account.
+ * The standalone bridge and connector share the same App Server implementation.
  *
  * Verified against Claude Code 2.1.241 on Windows: `claude -p --output-format json`
  * emits a single JSON object with {is_error, result, usage:{input_tokens, output_tokens},
  * modelUsage:{<model-id>: …}} and EXIT CODE 0 even for errors — failures must be read
- * from the JSON, not the exit code. The Codex path is EXPERIMENTAL (detect-only unless
- * present; see executeCodex below).
+ * from the JSON, not the exit code. Codex uses App Server streaming and typed Vantage tools.
  */
 
 export const AI_BRIDGE_DEFAULT_JOB_TIMEOUT_MS = 90_000;
@@ -50,7 +47,7 @@ export type BridgeExecutionSuccess = {
 
 export type BridgeExecutionFailure = {
   ok: false;
-  errorClass: "not_authenticated" | "rate_limited" | "cli_error" | "cli_timeout";
+  errorClass: "not_authenticated" | "rate_limited" | "cli_error" | "cli_timeout" | "cancelled";
   errorMessage: string;
   resetText?: string | null;
 };
@@ -167,11 +164,11 @@ export function classifySpawnFailure(input: {
   };
 }
 
-/** Pick the engine for a job: honor requested_engine, else prefer claude, else codex. */
+/** Honor an explicit engine; personal Codex is the default. */
 export function pickEngine(engines: EngineMap, requestedEngine: EngineId | null): EngineId | null {
   if (requestedEngine) return engines[requestedEngine]?.available ? requestedEngine : null;
-  if (engines.claude?.available) return "claude";
   if (engines.codex?.available) return "codex";
+  if (engines.claude?.available) return "claude";
   return null;
 }
 
@@ -180,14 +177,15 @@ export function pickEngine(engines: EngineMap, requestedEngine: EngineId | null)
 /* ------------------------------------------------------------------ */
 
 /** `claude --version` + `claude auth status` (both verified on 2.1.241). */
-export function detectClaude(spawner: Spawner): EngineDetection {
+export function detectClaude(spawner: Spawner, userId?: string): EngineDetection {
   const version = spawner.runSync("claude", ["--version"], { timeoutMs: AI_BRIDGE_DETECT_TIMEOUT_MS });
   if (version.error || version.status !== 0) return { available: false };
   const report: EngineDetection = {
     available: true,
     version: String(version.stdout ?? "").trim().split(/\s+/)[0] || null,
   };
-  const auth = spawner.runSync("claude", ["auth", "status"], { timeoutMs: AI_BRIDGE_DETECT_TIMEOUT_MS });
+  if (!userId) return { ...report, authenticated: false };
+  const auth = spawner.runSync("claude", ["auth", "status"], { timeoutMs: AI_BRIDGE_DETECT_TIMEOUT_MS, personalUserId: userId });
   if (!auth.error && typeof auth.stdout === "string") {
     try {
       report.authenticated = Boolean((JSON.parse(auth.stdout) as Record<string, unknown>).loggedIn);
@@ -198,20 +196,19 @@ export function detectClaude(spawner: Spawner): EngineDetection {
   return report;
 }
 
-/** Codex CLI detection. Execution below is EXPERIMENTAL — detection alone is safe. */
+/** Version detection does not establish personal authentication. */
 export function detectCodex(spawner: Spawner): EngineDetection {
   const version = spawner.runSync("codex", ["--version"], { timeoutMs: AI_BRIDGE_DETECT_TIMEOUT_MS });
   if (version.error || version.status !== 0) return { available: false };
   return {
     available: true,
     version: String(version.stdout ?? "").trim().split(/\s+/).pop() || null,
-    authenticated: null, // No verified non-interactive auth probe; jobs report honestly.
-    experimental: true,
+    authenticated: null,
   };
 }
 
-export function detectEngines(spawner: Spawner): EngineMap {
-  return { claude: detectClaude(spawner), codex: detectCodex(spawner) };
+export function detectEngines(spawner: Spawner, userId?: string): EngineMap {
+  return { claude: detectClaude(spawner, userId), codex: detectCodex(spawner) };
 }
 
 /**
@@ -227,7 +224,9 @@ export async function executeClaude(
   spawner: Spawner,
   prompt: string,
   timeoutMs: number,
+  personal?: { userId: string; signal?: AbortSignal },
 ): Promise<BridgeExecutionResult> {
+  if (!personal?.userId) return { ok: false, errorClass: "not_authenticated", errorMessage: "Pair your personal connection before using Claude." };
   const args = [
     "-p",
     "--output-format",
@@ -239,53 +238,22 @@ export async function executeClaude(
     "--setting-sources",
     "",
   ];
-  const run = await spawner.run("claude", args, { input: prompt, timeoutMs });
+  const run = await spawner.run("claude", args, { input: prompt, timeoutMs, personalUserId: personal.userId, signal: personal.signal });
   if (run.timedOut || run.spawnError || run.status !== 0) {
     return { ok: false, ...classifySpawnFailure({ ...run, timeoutMs }) };
   }
   return parseClaudeCliOutput(run.stdout);
 }
 
-/**
- * EXPERIMENTAL — Codex CLI execution. Follows OpenAI's documented `codex exec --json`
- * non-interactive interface (JSONL events on stdout; the agent's reply arrives as an
- * item.completed event with item.type "agent_message"). If the interface differs on
- * your version, this ONE function is the only thing to fix. Detection (detectCodex)
- * gates it: orgs without a working codex never route jobs here.
- */
+/** Supported App Server execution, bound to the person who paired the connection. */
 export async function executeCodex(
   spawner: Spawner,
   prompt: string,
   timeoutMs: number,
+  personal?: { userId: string; signal?: AbortSignal; onDelta?: (text: string) => void; tools?: CodexFeatureTools },
 ): Promise<BridgeExecutionResult> {
-  const run = await spawner.run(
-    "codex",
-    ["exec", "--json", "--skip-git-repo-check", prompt.slice(0, 100_000)],
-    { input: "", timeoutMs },
-  );
-  if (run.timedOut || run.spawnError || run.status !== 0) {
-    return { ok: false, ...classifySpawnFailure({ ...run, timeoutMs }) };
-  }
-  let text = "";
-  let model: string | null = null;
-  for (const line of String(run.stdout).split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith("{")) continue;
-    try {
-      const event = JSON.parse(trimmed) as {
-        item?: { type?: string; text?: string };
-        model?: string;
-      };
-      if (event?.item?.type === "agent_message" && typeof event.item.text === "string") text = event.item.text;
-      if (typeof event?.model === "string") model = event.model;
-    } catch {
-      // Ignore non-JSON lines.
-    }
-  }
-  if (!text) {
-    return { ok: false, errorClass: "cli_error", errorMessage: "Codex CLI produced no agent_message output." };
-  }
-  return { ok: true, text, model: model ?? "codex-cli", usage: { inputTokens: 0, outputTokens: 0 } };
+  if (!personal?.userId || !spawner.codexSession) return { ok: false, errorClass: "not_authenticated", errorMessage: "Pair your own connection and update the connector to use Codex App Server." };
+  return spawner.codexSession(prompt, { ...personal, timeoutMs });
 }
 
 /* ------------------------------------------------------------------ */
@@ -294,6 +262,8 @@ export async function executeCodex(
 
 type ClaimedJob = {
   jobId: string;
+  userId?: string;
+  orgId?: string;
   leaseToken?: string;
   feature?: string;
   messages?: Record<string, unknown>;
@@ -317,20 +287,24 @@ export class AiBridgeCapability implements ConnectorCapability {
 
   constructor(private readonly options: AiBridgeCapabilityOptions = {}) {}
 
-  private refreshEngines(ctx: CapabilityContext, force = false): EngineMap {
+  private async refreshEngines(ctx: CapabilityContext, force = false): Promise<EngineMap> {
     const maxAge = this.options.engineRefreshMs ?? AI_BRIDGE_ENGINE_REFRESH_MS;
     if (force || ctx.clock.now() - this.enginesDetectedAt >= maxAge) {
-      this.engines = detectEngines(ctx.spawner);
+      this.engines = detectEngines(ctx.spawner, ctx.config.userId ?? undefined);
+      if (this.engines.codex?.available && ctx.config.userId && ctx.spawner.codexSession) {
+        const test = await ctx.spawner.codexSession("", { userId: ctx.config.userId, timeoutMs: AI_BRIDGE_DETECT_TIMEOUT_MS, signal: ctx.signal, testOnly: true });
+        this.engines.codex.authenticated = test.ok ? true : test.errorClass === "not_authenticated" ? false : null;
+      }
       this.enginesDetectedAt = ctx.clock.now();
     }
     return this.engines;
   }
 
   async detect(ctx: CapabilityContext): Promise<CapabilityDetection> {
-    const engines = this.refreshEngines(ctx, true);
+    const engines = await this.refreshEngines(ctx, true);
     const parts: string[] = [];
     if (engines.claude?.available) parts.push(`Claude Code ${engines.claude.version ?? ""}`.trim());
-    if (engines.codex?.available) parts.push(`Codex ${engines.codex.version ?? ""} (experimental)`.trim());
+    if (engines.codex?.available) parts.push(`Codex ${engines.codex.version ?? ""} (${engines.codex.authenticated === true ? "signed in" : engines.codex.authenticated === false ? "personal sign-in required" : "authentication not checked"})`.trim());
     if (parts.length === 0) {
       return {
         available: false,
@@ -345,10 +319,10 @@ export class AiBridgeCapability implements ConnectorCapability {
   async start(ctx: CapabilityContext): Promise<void> {
     const claimInterval = this.options.claimIntervalMs ?? AI_BRIDGE_CLAIM_INTERVAL_MS;
     const jobsUrl = cloudUrl(ctx.config.baseUrl, ctx.endpoints.aiBridgeJobs);
-    this.refreshEngines(ctx, true);
+    await this.refreshEngines(ctx, true);
 
     while (!ctx.signal.aborted) {
-      this.refreshEngines(ctx);
+      await this.refreshEngines(ctx);
       let job: ClaimedJob | null = null;
       try {
         const claim = await ctx.transport.postJson(jobsUrl, {}, { token: ctx.config.deviceToken });
@@ -368,6 +342,9 @@ export class AiBridgeCapability implements ConnectorCapability {
         await ctx.clock.sleep(claimInterval, ctx.signal);
         continue;
       }
+      if (!ctx.config.userId || job.userId !== ctx.config.userId || job.orgId !== ctx.config.orgId) {
+        throw new ConnectorAuthError("The request does not belong to this personal connection. Re-pair and update Vantage.");
+      }
 
       const prompt = String(job.messages?.prompt ?? "");
       const timeoutMs = jobTimeoutMs(job.messages, this.options.defaultJobTimeoutMs);
@@ -380,10 +357,28 @@ export class AiBridgeCapability implements ConnectorCapability {
         ctx.log(
           `ai-bridge: job ${job.jobId} (${job.feature ?? "chat"}, ${Math.round(timeoutMs / 1000)}s budget) → ${engine}`,
         );
-        outcome =
-          engine === "claude"
-            ? await executeClaude(ctx.spawner, prompt, timeoutMs)
-            : await executeCodex(ctx.spawner, prompt, timeoutMs);
+        {
+          const controller = new AbortController();
+          const stopped = () => controller.abort();
+          ctx.signal.addEventListener("abort", stopped, { once: true });
+          if (ctx.signal.aborted) controller.abort();
+          const checkLease = async () => {
+            while (!controller.signal.aborted) {
+              await ctx.clock.sleep(claimInterval, controller.signal);
+              if (controller.signal.aborted) return;
+              try {
+                const response = await ctx.transport.postJson(jobsUrl, { jobId: job!.jobId, leaseToken: job!.leaseToken }, { token: ctx.config.deviceToken, method: "PUT" });
+                if (!response.ok || response.data.active !== true) controller.abort();
+              } catch { controller.abort(); }
+            }
+          };
+          const checking = checkLease();
+          try {
+            const personal = { userId: ctx.config.userId, signal: controller.signal, tools: personalFeatureToolRegistry(ctx.transport, async () => ctx.config) };
+            outcome = engine === "claude" ? await executeClaude(ctx.spawner, prompt, timeoutMs, personal) : await executeCodex(ctx.spawner, prompt, timeoutMs, personal);
+          }
+          finally { controller.abort(); ctx.signal.removeEventListener("abort", stopped); await checking; }
+        }
       }
       try {
         await ctx.transport.postJson(

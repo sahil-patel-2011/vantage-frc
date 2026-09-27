@@ -46,7 +46,7 @@ export default function FeaturesPage() {
             <header className="lux-section-head">
               <h2 id="product-show-title">The workspaces and the tools inside them.</h2>
               <p>
-                Every tool listed here ships today. Ask AI works across all four when a team turns it on.
+                Explore the tools in each workspace. AI assistants require a connected provider or a personal local connection.
               </p>
             </header>
             <ProductHubCatalog />

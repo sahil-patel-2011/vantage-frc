@@ -6,6 +6,7 @@ import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { crossProductHref } from "../lib/products/products";
 import type { Me, MembershipOption } from "./app-shell-model";
+import { useRef } from "react";
 
 /**
  * The team you are in, rendered as the control that changes it.
@@ -102,6 +103,7 @@ export function AppShellTopbar({
   onWorkspaceSwitch: (nextOrgId: string) => void;
   onSignOut: () => void;
 }) {
+  const accountInitialFocus = useRef<"first" | "last">("first");
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
@@ -122,6 +124,7 @@ export function AppShellTopbar({
               <i />
               <i />
             </span>
+            <span className="soft-menu-label">Menu</span>
           </button>
         )}
         <div className="soft-page-head">
@@ -204,7 +207,7 @@ export function AppShellTopbar({
         </a>
         <a
           className="soft-icon-btn soft-notif"
-          href="/notifications"
+          href={withOrgHref("/notifications", orgId || null)}
           aria-label={unreadCount >= 1 ? `Notifications, ${unreadCount} unread` : "Notifications"}
         >
           <Icon name="bell" />
@@ -215,14 +218,22 @@ export function AppShellTopbar({
             className="soft-avatar soft-avatar-btn"
             type="button"
             aria-label="Account menu"
+            id="account-menu-trigger"
+            aria-controls={accountMenuOpen ? "account-menu-popup" : undefined}
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
-            onClick={onToggleAccount}
+            onClick={() => { accountInitialFocus.current = "first"; onToggleAccount(); }}
+            onKeyDown={event => {
+              if (!accountMenuOpen && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+                event.preventDefault(); accountInitialFocus.current = event.key === "ArrowUp" ? "last" : "first"; onToggleAccount();
+              }
+            }}
           >
             {me.image ? <img src={me.image} alt="" /> : initial}
           </button>
           <AppShellAccountMenu
             open={accountMenuOpen}
+            initialFocus={accountInitialFocus.current}
             me={me}
             accountLabel={accountLabel}
             orgLabel={orgLabel}

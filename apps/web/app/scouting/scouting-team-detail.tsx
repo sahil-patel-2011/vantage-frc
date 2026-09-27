@@ -50,7 +50,7 @@ export function ScoutingTeamDetail({
     stats.push({ label: "Plays defense", value: `${Math.round(profile.defenseRate * 100)}% of matches` });
   }
   if (profile.disabledRate > 0) {
-    stats.push({ label: "Died", value: `${Math.round(profile.disabledRate * 100)}% of matches` });
+    stats.push({ label: "Breakdown reported", value: `${Math.round(profile.disabledRate * 100)}% of matches` });
   }
 
   return (

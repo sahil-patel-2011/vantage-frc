@@ -64,6 +64,7 @@ function loadScript(secret: string) {
   type FolderRow = { id: string; name: string; parent: string | null; trashed: boolean; sharing: string };
   type FileRow = { id: string; name: string; parent: string; mime: string; content: string; trashed: boolean; updated: Date };
   let seq = 0;
+  let lockHeld = false;
   const folders = new Map<string, FolderRow>();
   const files = new Map<string, FileRow>();
   const props = new Map<string, string>();
@@ -134,7 +135,7 @@ function loadScript(secret: string) {
       getScriptProperties: () => ({ getProperty: (key: string) => props.get(key) ?? null, setProperty: (key: string, value: string) => props.set(key, value) }),
     },
     SpreadsheetApp: { getActiveSpreadsheet: () => book },
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: { getScriptLock: () => ({ hasLock: () => lockHeld, waitLock() { if (lockHeld) throw new Error("Nested script lock"); lockHeld = true; }, releaseLock() { lockHeld = false; } }) },
     Utilities: {
       // Apps Script returns signed bytes (-128..127).
       computeHmacSha256Signature: (value: string, key: string) =>
@@ -149,7 +150,7 @@ function loadScript(secret: string) {
   };
   const factory = new Function(
     ...Object.keys(globals),
-    `${appsScriptSource(secret)}\nreturn { doPost, doGet };`,
+    `${appsScriptSource(secret)}\nreturn { doPost, doGet, seedLegacyArchive: () => vantageDriveSetup_({team: 'Team 6925',shareWithLink: true}) };`,
   ) as (...args: unknown[]) => { doPost: (e: unknown) => { text: string }; doGet: () => { text: string } };
   const script = factory(...Object.values(globals));
   return { script, sheets, addFile, folders };
@@ -255,8 +256,8 @@ describe("the Apps Script bridge", () => {
   });
 });
 
-describe("photos and videos through the same script", () => {
-  it("sets up an organized folder, tiles what people add, and passes its own test", async () => {
+describe("retired photo and video storage", () => {
+  it("rejects new storage setup while retaining read access to existing records", async () => {
     const secret = newAppsScriptSecret();
     const loaded = loadScript(secret);
     const bridge = new AppsScriptBridge(URL_OK, secret, { fetchImpl: googleFetch(loaded.script).impl });
@@ -267,7 +268,10 @@ describe("photos and videos through the same script", () => {
     expect(early.passed).toBe(false);
     expect(early.steps.at(-1)?.detail).toMatch(/Set up folder/);
 
-    const setup = await setUpDriveMedia(bridge, { team: "Team 6925", rootId: "", shareWithLink: true });
+    await expect(setUpDriveMedia(bridge, { team: "Team 6925", rootId: "", shareWithLink: true })).rejects.toThrow(/no longer supported/);
+    expect(loaded.folders.size).toBe(0);
+    // Existing operator records are an archive, seeded before the retired API is exercised.
+    const setup = loaded.script.seedLegacyArchive();
     expect(setup.root.name).toBe("Vantage media - Team 6925");
     expect(setup.folders.map((folder) => folder.name)).toEqual([
       "Match videos",
@@ -277,8 +281,7 @@ describe("photos and videos through the same script", () => {
       "CAD renders",
       "Other",
     ]);
-    // Running setup again reuses the same folders instead of making duplicates.
-    await setUpDriveMedia(bridge, { team: "Team 6925", rootId: "", shareWithLink: null });
+    await expect(setUpDriveMedia(bridge, { team: "Team 6925", rootId: "", shareWithLink: null })).rejects.toThrow(/no longer supported/);
     expect([...loaded.folders.values()].filter((folder) => folder.name === "Robot photos")).toHaveLength(1);
 
     loaded.addFile("Robot photos", "bumper.jpg", "image/jpeg");

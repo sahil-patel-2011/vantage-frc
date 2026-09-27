@@ -7,6 +7,7 @@ import { failJson, json, readOrgIdFromRequest, requireUser } from "../../../../.
 import { syncMirror } from "../../../../../lib/mirror/mirror-sync";
 import { connectedTargetDefs, readCopyStates } from "../../../../../lib/mirror/mirror-targets";
 import { createRateLimiter } from "../../../../../lib/rate-limit";
+import { queueReadableHubSync } from "../../../../../lib/google-sheets/hub-jobs";
 
 export const maxDuration = 120;
 
@@ -59,14 +60,6 @@ async function runAutoSync(orgId: string, runnerId: string, callerIsRunner: bool
     await syncMirror(client, orgId, { targets, userId: callerIsRunner ? runnerId : null, lastHashes });
   }).catch(() => undefined);
 
-  // The team's sheet in the platform's VantageFRC folder, when the hub is configured.
-  // (syncTeamToHub reads the hub address itself and does nothing when there is none.)
-  if (process.env.VANTAGE_SHEETS_HUB_SECRET) {
-    await withRls({ userId: runnerId, orgId }, async (client) => {
-      await requireWorkbookManager(client, orgId, runnerId);
-      await syncTeamToHub(client, orgId);
-    }).catch(() => undefined);
-  }
 }
 
 /** POST /api/integrations/sheets/auto  { orgId }  — any member; returns at once, syncs after. */
@@ -77,8 +70,9 @@ export async function POST(request: Request) {
     if (!isUuid(orgId)) throw new HttpError(400, "A valid orgId is required.", "invalid_team");
     const runnerId = await syncRunner(orgId, user.id);
     if (!(await autoLimiter.allow(orgId))) return json({ queued: false, reason: "recent" }, 202);
+    const hubQueued = process.env.VANTAGE_SHEETS_HUB_SECRET ? await queueReadableHubSync(orgId) : false;
     after(() => runAutoSync(orgId, runnerId, runnerId === user.id));
-    return json({ queued: true }, 202);
+    return json({ queued: true, hubQueued }, 202);
   } catch (error) {
     return failJson(error);
   }

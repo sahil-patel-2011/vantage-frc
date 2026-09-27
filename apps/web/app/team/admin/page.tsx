@@ -3,6 +3,9 @@ import { teamAdminShellCopy, teamAdminSetupSteps } from "../../../lib/team/team-
 import TeamAdminClient from "../team-admin-client";
 import "../team-admin.css";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
+import { auth } from "@vantage/core";
+import { withRls } from "@vantage/db";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Team admin",
@@ -44,5 +47,17 @@ export default async function TeamAdminPage({
       </main>
     );
   }
+  const session = await auth.api.getSession({ headers: await headers() });
+  const allowed = session ? await withRls({ userId: session.user.id, orgId }, async client =>
+    (await client.query<{ allowed: boolean }>("SELECT has_org_capability($1::uuid,'manage_members') AS allowed", [orgId])).rows[0]?.allowed === true,
+  ) : false;
+  if (!allowed) return (
+    <main className="module-page team-admin-page soft-gate">
+      <PageHeader title="Team admin" description="Manage your team's people and invitations." />
+      <EmptyState title="Team administrator access required" description="Your team role does not include managing people or invitations.">
+        <Button as="a" href={`/dashboard?orgId=${encodeURIComponent(orgId)}`}>Back to Home</Button>
+      </EmptyState>
+    </main>
+  );
   return <TeamAdminClient orgId={orgId} />;
 }

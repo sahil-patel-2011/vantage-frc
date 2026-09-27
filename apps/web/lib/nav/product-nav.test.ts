@@ -15,6 +15,12 @@ import {
 } from "./product-nav";
 
 describe("product-nav", () => {
+  it("preserves the selected inbox team in bell links and account team switching", () => {
+    expect(withOrgHref("/notifications", "team-a")).toBe("/notifications?orgId=team-a");
+    expect(withSelectedOrgHref("/notifications?orgId=team-a", "team-b")).toBe("/notifications?orgId=team-b");
+    expect(withOrgHref("/dashboard", "team-a")).toBe("/dashboard?orgId=team-a");
+    expect(withSelectedOrgHref("/dashboard?orgId=team-a", "team-b")).toBe("/dashboard?orgId=team-b");
+  });
   it("exposes flat pillar groups (no Settings accordion)", () => {
     // Media is a tool set under Business › Outreach; AI is the "Ask AI" control.
     // Neither is a place you go, so neither is a row in the panel.
@@ -22,9 +28,8 @@ describe("product-nav", () => {
       "Home",
       "Competition",
       "Team",
-      "Logistics",
-      "Business",
       "Build",
+      "Business",
     ]);
   });
 
@@ -41,9 +46,8 @@ describe("product-nav", () => {
     expect(PILLAR_SHEET_LINKS.map((link) => link.label)).toEqual([
       "Competition",
       "Team",
-      "Logistics",
-      "Business",
       "Build",
+      "Business",
       "Ask AI",
     ]);
     expect(PILLAR_SHEET_LINKS.find((l) => l.label === "Ask AI")?.href).toBe("/ai?tab=chat");
@@ -82,14 +86,15 @@ describe("product-nav", () => {
     );
     expect(byLabel.Home).toEqual([]);
     // Plus the pit TV, which had no menu entry at all.
-    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Robot check", "Pit TV"]);
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scout", "Teams", "Strategy", "Pit", "Pit TV"]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
       "/competition?tab=scouting",
+      "/competition?tab=teams",
       "/competition?tab=strategy",
       "/competition?tab=match-checklist",
       "/display",
     ]);
-    expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Work", "Playbook"]);
+    expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Work", "Logistics", "Playbook"]);
     expect(byLabel.Business?.map((entry) => entry.label)).toEqual([
       "Money",
       "Sponsors",
@@ -97,11 +102,8 @@ describe("product-nav", () => {
       "Outreach",
     ]);
     expect(byLabel.Build?.map((entry) => entry.label)).toEqual(["CAD", "Code", "Robot"]);
-    expect(byLabel.Logistics?.map((entry) => entry.label)).toEqual([
-      "Packing",
-      "Duties",
-      "Visit invites",
-    ]);
+    expect(byLabel.Logistics).toBeUndefined();
+    expect(byLabel.Team).toContainEqual({ href: "/team?tab=logistics", label: "Logistics" });
     for (const group of PRODUCT_NAV_GROUPS) {
       const sub = panelSubLinks(group);
       expect(sub.length).toBeLessThanOrEqual(5);
@@ -138,12 +140,12 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
     expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / AI keys");
     expect(breadcrumbForPath("/kickoff")).toBe("Build / Kickoff");
-    expect(breadcrumbForPath("/logistics")).toBe("Logistics");
+    expect(breadcrumbForPath("/logistics")).toBe("Team / Logistics");
     expect(breadcrumbForPath("/packing")).toBe("Competition / Packing");
-    expect(breadcrumbForPath("/duties")).toBe("Logistics / Duties");
-    expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit invites");
+    expect(breadcrumbForPath("/duties")).toBe("Team / Duties");
+    expect(breadcrumbForPath("/visit-invites")).toBe("Team / Visit invites");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
-    expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
+    expect(breadcrumbForPath("/scouting")).toBe("Competition / Scout");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Forms");
     expect(breadcrumbForPath("/competition")).toBe("Competition");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");
@@ -164,7 +166,7 @@ describe("product-nav", () => {
       ),
     ).toBe(false);
     expect(findNavMatch("/scouting/forms")?.item.label).toBe("Forms");
-    expect(findNavMatch("/match-checklist")?.item.label).toBe("Robot check");
+    expect(findNavMatch("/match-checklist")?.item.label).toBe("Pit");
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {

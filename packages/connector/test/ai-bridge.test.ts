@@ -109,9 +109,10 @@ describe("ported CLI output parsing (must match bridge.mjs semantics)", () => {
     });
   });
 
-  it("picks engines honoring requests and claude-first preference", () => {
+  it("picks personal Codex by default and honors explicit engine requests", () => {
     const both = { claude: { available: true }, codex: { available: true } };
-    expect(pickEngine(both, null)).toBe("claude");
+    expect(pickEngine(both, null)).toBe("codex");
+    expect(pickEngine(both, "claude")).toBe("claude");
     expect(pickEngine(both, "codex")).toBe("codex");
     expect(pickEngine({ codex: { available: true } }, null)).toBe("codex");
     expect(pickEngine({}, "claude")).toBeNull();
@@ -121,7 +122,7 @@ describe("ported CLI output parsing (must match bridge.mjs semantics)", () => {
 describe("engine detection through the injected spawner", () => {
   it("reports claude with version + auth state when the CLI answers", () => {
     const spawner = new FakeSpawner({ sync: claudeInstalledSync });
-    const report = detectClaude(spawner);
+    const report = detectClaude(spawner, "person-a");
     expect(report).toEqual({ available: true, version: "2.1.241", authenticated: true });
   });
 
@@ -139,10 +140,10 @@ describe("engine detection through the injected spawner", () => {
         "claude auth status": { error: false, status: 0, stdout: "Logged in as someone", stderr: "" },
       },
     });
-    expect(detectClaude(spawner).authenticated).toBeNull();
+    expect(detectClaude(spawner, "person-a").authenticated).toBeNull();
   });
 
-  it("marks codex experimental with the trailing version token", () => {
+  it("reports the version without claiming that the personal account is authenticated", () => {
     const spawner = new FakeSpawner({
       sync: { "codex --version": { error: false, status: 0, stdout: "codex-cli 0.29.0\n", stderr: "" } },
     });
@@ -150,7 +151,6 @@ describe("engine detection through the injected spawner", () => {
       available: true,
       version: "0.29.0",
       authenticated: null,
-      experimental: true,
     });
   });
 });
@@ -160,7 +160,7 @@ describe("executeClaude flag contract", () => {
     const spawner = new FakeSpawner({
       run: () => ({ status: 0, stdout: SUCCESS_FIXTURE, stderr: "", timedOut: false }),
     });
-    const result = await executeClaude(spawner, "why did auton fail?", 90_000);
+    const result = await executeClaude(spawner, "why did auton fail?", 90_000, { userId: "person-a" });
     expect(result.ok).toBe(true);
     const call = spawner.runCalls[0]!;
     expect(call.command).toBe("claude");
@@ -178,6 +178,14 @@ describe("executeClaude flag contract", () => {
     expect(call.args).not.toContain("--bare");
     expect(call.input).toBe("why did auton fail?"); // prompt via stdin, not argv
     expect(call.timeoutMs).toBe(90_000);
+    expect(call.personalUserId).toBe("person-a");
+  });
+  it("never probes authentication or executes through an unpaired shared profile", async () => {
+    const spawner = new FakeSpawner({ sync: claudeInstalledSync });
+    expect(detectClaude(spawner).authenticated).toBe(false);
+    expect(spawner.syncCalls).toEqual(["claude --version"]);
+    expect(await executeClaude(spawner, "hi", 90_000)).toMatchObject({ ok: false, errorClass: "not_authenticated" });
+    expect(spawner.runCalls).toHaveLength(0);
   });
 });
 
@@ -192,6 +200,7 @@ const config: ConnectorConfig = {
   deviceToken: "tok",
   deviceId: "dev",
   orgId: "org",
+  userId: "person-a",
   capabilities: { "ai-bridge": true },
 };
 
@@ -213,6 +222,7 @@ describe("AiBridgeCapability job loop", () => {
     const jobs: Array<Record<string, unknown>> = [
       {
         jobId: "job-1",
+        userId: "person-a", orgId: "org",
         leaseToken: "lease-1",
         feature: "chat",
         messages: { prompt: "why did auton fail?", timeoutMs: 240_000 },
@@ -259,7 +269,7 @@ describe("AiBridgeCapability job loop", () => {
 
   it("reports failed with the bridge taxonomy when the CLI is rate limited", async () => {
     const jobs: Array<Record<string, unknown>> = [
-      { jobId: "job-2", leaseToken: "lease-2", feature: "chat", messages: { prompt: "hi" } },
+      { jobId: "job-2", userId: "person-a", orgId: "org", leaseToken: "lease-2", feature: "chat", messages: { prompt: "hi" } },
     ];
     const transport = new FakeTransport([
       {
@@ -293,7 +303,7 @@ describe("AiBridgeCapability job loop", () => {
 
   it("reports an honest cli_error when no installed engine can serve the job", async () => {
     const jobs: Array<Record<string, unknown>> = [
-      { jobId: "job-3", leaseToken: "lease-3", messages: { prompt: "hi" } },
+      { jobId: "job-3", userId: "person-a", orgId: "org", leaseToken: "lease-3", messages: { prompt: "hi" } },
     ];
     const transport = new FakeTransport([
       {

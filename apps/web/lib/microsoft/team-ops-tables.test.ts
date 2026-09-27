@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { contentHash } from "../mirror/mirror-hash";
 import { OPS_TABLES, buildAllTables, buildOpsTables } from "./team-ops-tables";
-import type { WorkbookSource } from "./workbook-schema";
+import { MAX_ROWS_PER_TABLE, type WorkbookSource } from "./workbook-schema";
+import type { PoolClient } from "@neondatabase/serverless";
+import { loadOpsTables } from "./team-ops-tables";
 
 const NOW = new Date("2026-09-24T12:00:00Z");
 
@@ -20,6 +22,13 @@ function source(ops: WorkbookSource["ops"] = {}): WorkbookSource {
 }
 
 describe("team tables", () => {
+  it("fails denied or oversized reads instead of treating them as empty records", async () => {
+    const denied = { query: async () => { throw new Error("permission denied"); } } as unknown as PoolClient;
+    await expect(loadOpsTables(denied, "org")).rejects.toThrow("permission denied");
+    const oversized = { query: async () => ({ rows: Array.from({ length: MAX_ROWS_PER_TABLE + 1 }, (_, index) => ({ id: String(index) })) }) } as unknown as PoolClient;
+    await expect(loadOpsTables(oversized, "org")).rejects.toThrow(/additional capacity/);
+    expect(() => buildOpsTables({ Tasks: Array.from({ length: MAX_ROWS_PER_TABLE + 1 }, (_, index) => ({ id: String(index) })) })).toThrow(/additional capacity/);
+  });
   it("every table starts with id and ends with updated_at and source, like the rest of the workbook", () => {
     for (const table of OPS_TABLES) {
       expect(table.columns[0], table.entity).toBe("id");
@@ -33,6 +42,14 @@ describe("team tables", () => {
       expect(table.columns.join(" "), table.entity).not.toMatch(/email|birth|dob/i);
       expect(table.sql, table.entity).not.toMatch(/\.email|date_of_birth/i);
     }
+  });
+
+  it("preserves ledger inclusion and source provenance rather than summing every Finance row", () => {
+    const source = { id: "money-1", type: "expense", amount_usd: 12.5, counts_in_balance: false, source_kind: "bom", source_id: "part-1" };
+    const finance = buildOpsTables({ Finance: [source] }).find((table) => table.spec.entity === "Finance")!;
+    const row = Object.fromEntries(finance.spec.columns.map((column, index) => [column, finance.rows[0]![index]]));
+    expect(row).toMatchObject(source);
+    expect(OPS_TABLES.find((table) => table.entity === "Finance")!.sql).toContain("f.counts_in_balance");
   });
 
   it("puts rows in the table's column order and makes a missing table an empty one", () => {

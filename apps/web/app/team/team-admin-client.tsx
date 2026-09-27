@@ -37,6 +37,7 @@ import "./team-access-requests.css";
 import "./team-admin.css";
 import { TeamSettingsNav } from "../../components/team-settings-nav";
 import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
+import { ReadableSyncStatus } from "../../components/readable-sync-status";
 
 function isTeamAdminSnapshot(value: unknown): value is TeamAdminSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -167,7 +168,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`, timeout),
       ]);
       const data = await response.json();
-      if (response.status === 401 || response.status === 403) {
+      if (["auth", "reauth", "forbidden"].includes(classifyLoadFailure({ status: response.status, message: data.error }))) {
         denied(response.status, typeof data.error === "string" ? data.error : "");
         return;
       }
@@ -177,7 +178,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       if (!response.ok) setMessage(data.error);
 
       const membersData = await membersResponse.json();
-      if (membersResponse.status === 401 || membersResponse.status === 403) {
+      if (["auth", "reauth", "forbidden"].includes(classifyLoadFailure({ status: membersResponse.status, message: membersData.error }))) {
         denied(membersResponse.status, membersData.error ?? "Could not load members");
         return;
       }
@@ -658,6 +659,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onCopyLink={(id, url) => void copyInviteLink(id, url)}
         onAct={(inviteId, action) => void act(inviteId, action)}
       />
+
+      <ReadableSyncStatus orgId={orgId} />
 
       <TeamAdminAccessPanel
         accessRequests={accessRequests}

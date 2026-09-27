@@ -1,15 +1,13 @@
-import { createHash, randomBytes } from "node:crypto";
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { readdir, readFile, rm, stat } from "node:fs/promises";
 import http from "node:http";
 import { networkInterfaces } from "node:os";
 import path from "node:path";
 import {
-  formatBytes,
   isValidSha256,
   lanUrlsFor,
   parseRange,
-  quotaDecision,
   sha256Hex,
   shardRelPath,
   timingSafeEqualHex,
@@ -20,21 +18,20 @@ import {
 
 /**
  * The real content-addressed HTTP item server — a faithful port of the serving half of
- * packages/storage-node/server.mjs (PUT/GET/HEAD/DELETE /items/<sha256> + /health), kept
+ * packages/storage-node/server.mjs (archive GET/HEAD/DELETE /items/<sha256> + /health), kept
  * in its own module so nothing here loads unless the storage-node capability actually
- * starts. All request DECISIONS (auth compare, quota, ranges, sharding) are the pure
+ * starts. Authentication, ranges and sharding use the pure
  * helpers in ../storage-node.ts; this file is the streaming plumbing around them.
  *
  * Serving contract (unchanged):
  *  - Callers authenticate with the access key minted at enable time; only its sha256 hash
  *    is kept here, and the cloud hands the key only to signed-in members of the team.
- *  - Content addressing: the URL sha256 must match the bytes, verified on every write.
+ *  - New photo/video uploads are retired. Existing archive files remain available.
  */
 
 const NODE_VERSION = "0.1.0";
 
 const itemsRoot = (dir: string) => path.join(dir, "items");
-const tmpRoot = (dir: string) => path.join(dir, "tmp");
 const itemPath = (dir: string, sha: string) => path.join(itemsRoot(dir), shardRelPath(sha));
 const metaPath = (dir: string, sha: string) => `${itemPath(dir, sha)}.json`;
 
@@ -70,7 +67,7 @@ async function scanStore(dir: string): Promise<StorageServerState> {
           shas.add(file);
           usedBytes += info.size;
         } catch {
-          /* unreadable entry: treated as absent, scrub will report it missing */
+          /* unreadable entry: archive requests will report it missing */
         }
       }
     }
@@ -92,7 +89,7 @@ function corsHeaders(): Record<string, string> {
   // library on the hosted app origin must be able to call this LAN/funnel URL.
   return {
     "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, HEAD, PUT, DELETE, OPTIONS",
+    "access-control-allow-methods": "GET, HEAD, DELETE, OPTIONS",
     "access-control-allow-headers": "authorization, content-type, range",
     "access-control-expose-headers": "content-range, accept-ranges, content-length, etag",
   };
@@ -129,81 +126,8 @@ export function createStorageItemServer(options: {
   name: string;
   log?: (message: string) => void;
 }): http.Server {
-  const { dir, accessKeyHash, quotaBytes, state, name } = options;
+  const { dir, accessKeyHash, state, name } = options;
   const log = options.log ?? (() => {});
-
-  async function handlePut(req: http.IncomingMessage, res: http.ServerResponse, sha: string): Promise<void> {
-    if (state.shas.has(sha)) {
-      // Content-addressed: same sha == same bytes. Idempotent success.
-      req.resume();
-      sendJson(res, 200, { sha256: sha, alreadyStored: true });
-      return;
-    }
-    const declared = req.headers["content-length"] != null ? Number(req.headers["content-length"]) : null;
-    const decision = quotaDecision({
-      usedBytes: state.usedBytes,
-      incomingBytes: Number.isFinite(declared) ? declared : null,
-      quotaBytes,
-    });
-    if (!decision.allowed) {
-      sendJson(res, 507, {
-        error: `Disk quota exceeded: ${formatBytes(decision.remainingBytes)} of ${formatBytes(quotaBytes)} remaining.`,
-      });
-      req.destroy();
-      return;
-    }
-
-    await mkdir(tmpRoot(dir), { recursive: true });
-    const tmpFile = path.join(tmpRoot(dir), `${sha}.${randomBytes(6).toString("hex")}.part`);
-    const hasher = createHash("sha256");
-    let written = 0;
-    const sink = createWriteStream(tmpFile, { flags: "wx" });
-    try {
-      await new Promise<void>((resolve, reject) => {
-        req.on("data", (chunk: Buffer) => {
-          written += chunk.length;
-          if (written > decision.remainingBytes) {
-            reject(new Error("quota"));
-            return;
-          }
-          hasher.update(chunk);
-          if (!sink.write(chunk)) req.pause();
-        });
-        sink.on("drain", () => req.resume());
-        req.on("end", () => sink.end(resolve));
-        req.on("error", reject);
-        sink.on("error", reject);
-      });
-      const actualSha = hasher.digest("hex");
-      if (actualSha !== sha) {
-        await rm(tmpFile, { force: true });
-        sendJson(res, 409, { error: `Content hash mismatch: body is ${actualSha}, URL says ${sha}. Nothing stored.` });
-        return;
-      }
-      const finalPath = itemPath(dir, sha);
-      await mkdir(path.dirname(finalPath), { recursive: true });
-      await rename(tmpFile, finalPath);
-      const contentType =
-        typeof req.headers["content-type"] === "string" && req.headers["content-type"]
-          ? req.headers["content-type"].slice(0, 200)
-          : "application/octet-stream";
-      await writeFile(
-        metaPath(dir, sha),
-        JSON.stringify({ contentType, byteSize: written, storedAt: new Date().toISOString() }),
-      );
-      state.shas.add(sha);
-      state.usedBytes += written;
-      sendJson(res, 201, { sha256: sha, byteSize: written, contentType });
-    } catch (error) {
-      await rm(tmpFile, { force: true }).catch(() => {});
-      if (error instanceof Error && error.message === "quota") {
-        sendJson(res, 507, { error: `Disk quota exceeded mid-upload (${formatBytes(quotaBytes)} quota). Nothing stored.` });
-        req.destroy();
-        return;
-      }
-      throw error;
-    }
-  }
 
   async function handleGet(req: http.IncomingMessage, res: http.ServerResponse, sha: string): Promise<void> {
     const file = itemPath(dir, sha);
@@ -220,7 +144,9 @@ export function createStorageItemServer(options: {
       "content-type": typeof meta.contentType === "string" ? meta.contentType : "application/octet-stream",
       "accept-ranges": "bytes",
       etag: `"${sha}"`,
-      "cache-control": "private, max-age=31536000, immutable",
+      "cache-control": "private, no-store",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "default-src 'none'; sandbox",
     };
     const range = parseRange(req.headers.range, info.size);
     if (range === "invalid") {
@@ -272,7 +198,12 @@ export function createStorageItemServer(options: {
           return;
         }
         if (url.pathname === "/health") {
-          sendJson(res, 200, { ok: true, name, version: NODE_VERSION });
+          if (req.method !== "GET" && req.method !== "HEAD") {
+            req.resume();
+            sendJson(res, 410, { error: "Storage setup and uploads are retired." });
+            return;
+          }
+          sendJson(res, 200, { ok: true, name, version: NODE_VERSION, archiveOnly: true });
           return;
         }
         const match = /^\/items\/([0-9a-f]{64})$/.exec(url.pathname);
@@ -288,10 +219,10 @@ export function createStorageItemServer(options: {
           return;
         }
 
-        if (req.method === "PUT") return await handlePut(req, res, sha);
+        if (["PUT", "POST", "PATCH"].includes(req.method ?? "")) { req.resume(); sendJson(res, 410, { error: "Photo/video uploads are no longer supported." }); return; }
         if (req.method === "GET" || req.method === "HEAD") return await handleGet(req, res, sha);
         if (req.method === "DELETE") return await handleDelete(res, sha);
-        sendJson(res, 405, { error: "Method not allowed" }, { allow: "GET, HEAD, PUT, DELETE, OPTIONS" });
+        sendJson(res, 405, { error: "Method not allowed" }, { allow: "GET, HEAD, DELETE, OPTIONS" });
       } catch (error) {
         log(`storage-node: request failed — ${error instanceof Error ? error.message : String(error)}`);
         if (!res.headersSent) sendJson(res, 500, { error: "Storage node internal error" });
@@ -301,11 +232,8 @@ export function createStorageItemServer(options: {
   });
 }
 
-/** Default `serve` implementation for StorageNodeCapability: scan, listen, report. */
+/** Legacy archive access: scan existing files and listen without deleting partial uploads. */
 export async function startStorageItemServer(options: StorageServeOptions): Promise<StorageServerHandle> {
-  await mkdir(itemsRoot(options.dir), { recursive: true });
-  await rm(tmpRoot(options.dir), { recursive: true, force: true }).catch(() => {});
-  await mkdir(tmpRoot(options.dir), { recursive: true });
   const state = await scanStore(options.dir);
   const server = createStorageItemServer({
     dir: options.dir,

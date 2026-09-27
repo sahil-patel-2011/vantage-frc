@@ -286,7 +286,7 @@ describe("combined heartbeat", () => {
     await supervisor.stop();
   });
 
-  it("delivers per-capability heartbeat-response instructions (storage scrub contract)", async () => {
+  it("does not restart retired media hosting even when a legacy config enables it", async () => {
     const cap = new FakeCapability("storage-node");
     const transport = heartbeatTransport({
       capabilities: { "storage-node": { pendingShas: ["a".repeat(64)] } },
@@ -298,7 +298,8 @@ describe("combined heartbeat", () => {
     });
     supervisor.start();
     await flushMicrotasks();
-    expect(cap.lastHeartbeatPayload).toEqual({ pendingShas: ["a".repeat(64)] });
+    expect(cap.starts).toBe(0);
+    expect(supervisor.status().capabilities[0]).toMatchObject({ enabled: false, state: "disabled" });
     await supervisor.stop();
   });
 

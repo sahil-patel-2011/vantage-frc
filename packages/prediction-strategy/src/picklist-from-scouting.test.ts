@@ -14,7 +14,7 @@ import { rankByWeightedZScores, type MetricWeight } from "./zscore-picklist";
 function rows(teamKey: string, totals: readonly (number | "dead")[], extra: Partial<ScoutedMatchRow> = {}) {
   return totals.map((total, index) =>
     total === "dead"
-      ? { teamKey, matchKey: `qm${index}`, disabled: true, ...extra }
+      ? { teamKey, matchKey: `qm${index}`, disabled: true, total: 0, ...extra }
       : { teamKey, matchKey: `qm${index}`, teleop: total, ...extra },
   ) as ScoutedMatchRow[];
 }

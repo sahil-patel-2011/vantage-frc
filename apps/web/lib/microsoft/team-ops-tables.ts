@@ -4,16 +4,15 @@
  * workbook (lib/microsoft/workbook-schema): `id` first (the Postgres key), readable
  * snake_case columns, ISO-8601 UTC times, `updated_at` and `source` last.
  *
- * Every table is read in its own savepoint on the caller's withRls client, so a table this
- * deployment has not migrated yet (or one the caller may not read) is an empty table, never
- * a failed sync. Only what the caller could already see in Vantage comes back.
+ * Reads use the caller's withRls client. A missing table or denied query fails the sync
+ * before any workbook is replaced; a failed read must never erase a previous copy.
  *
  * Kept out: email addresses, dates of birth and anything else a teammate's profile holds
  * privately. A member is a name and a team role.
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
-import { withSavepoint } from "@vantage/db";
+import { shardWorkbookCells } from "./long-text";
 import {
   MAX_ROWS_PER_TABLE,
   buildSyncInfoTable,
@@ -44,7 +43,7 @@ type OpsTableDef = {
   sql: string;
 };
 
-const ISO = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
+const ISO = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 
 const ROLE_LABEL = `CASE m.role::text WHEN 'owner' THEN 'Owner' WHEN 'admin' THEN 'Mentor or coach'
                    WHEN 'scout' THEN 'Student' WHEN 'viewer' THEN 'Parent or guest' ELSE m.role::text END`;
@@ -104,10 +103,11 @@ export const OPS_TABLES: OpsTableDef[] = [
   },
   {
     entity: "Finance",
-    description: "Money in and out: every recorded income and expense, by season and category.",
-    columns: ["id", "season_year", "type", "amount_usd", "occurred_at", "category", "description", "created_at", "updated_at", "source"],
+    description: "Recorded ledger income and expenses by season and category; counts_in_balance identifies records included in totals, with source links for supporting records.",
+    columns: ["id", "season_year", "type", "amount_usd", "occurred_at", "category", "description", "counts_in_balance", "source_kind", "source_id", "created_at", "updated_at", "source"],
     sql: `SELECT f.id::text AS id, f.season_year, f.type::text AS type, f.amount_usd::float8 AS amount_usd,
                  ${ISO("f.occurred_at")} AS occurred_at, c.name AS category, f.description,
+                 f.counts_in_balance, f.source_kind, f.source_id::text AS source_id,
                  ${ISO("f.created_at")} AS created_at, ${ISO("f.created_at")} AS updated_at, f.source::text AS source
             FROM finance_transactions f
             LEFT JOIN finance_categories c ON c.id = f.category_id
@@ -157,16 +157,14 @@ export const OPS_TABLES: OpsTableDef[] = [
 
 export type OpsRows = Partial<Record<OpsEntity, Record<string, unknown>[]>>;
 
-/** Read every team table. A table that cannot be read (not migrated, not allowed) comes back empty. */
-export async function loadOpsTables(client: PoolClient, orgId: string): Promise<OpsRows> {
+/** Read every team table; permission, schema and capacity failures remain visible. */
+export async function loadOpsTables(client: PoolClient, orgId: string, options: { strict?: boolean } = {}): Promise<OpsRows> {
+  if (options.strict === false) throw new Error("Workbook sync requires verified reads; empty fallbacks are not supported.");
   const out: OpsRows = {};
   for (const table of OPS_TABLES) {
-    out[table.entity] = await withSavepoint(
-      client,
-      async () =>
-        (await client.query<Record<string, unknown>>(`${table.sql} LIMIT ${MAX_ROWS_PER_TABLE + 1}`, [orgId])).rows,
-      [] as Record<string, unknown>[],
-    );
+    const rows = (await client.query<Record<string, unknown>>(`${table.sql} LIMIT ${MAX_ROWS_PER_TABLE + 1}`, [orgId])).rows;
+    if (rows.length > MAX_ROWS_PER_TABLE) throw new Error(`Readable workbook requires additional capacity: ${table.entity}.`);
+    out[table.entity] = rows;
   }
   return out;
 }
@@ -175,10 +173,11 @@ function opsSpec(table: OpsTableDef): TableSpec {
   return { entity: table.entity, sheet: table.entity, table: `Vantage${table.entity}`, columns: table.columns };
 }
 
-/** The team tables, in catalog order. Rows keep the query's order, capped like every table. */
+/** The team tables, in catalog order. Capacity failures cannot produce partial copies. */
 export function buildOpsTables(rows: OpsRows | undefined): BuiltTable[] {
   return OPS_TABLES.map((table) => {
-    const source = (rows?.[table.entity] ?? []).slice(0, MAX_ROWS_PER_TABLE);
+    const source = rows?.[table.entity] ?? [];
+    if (source.length > MAX_ROWS_PER_TABLE) throw new Error(`Readable workbook requires additional capacity: ${table.entity}.`);
     const built: CellValue[][] = source.map((row) => table.columns.map((column) => toCell(row[column])));
     return { spec: opsSpec(table), rows: built };
   });
@@ -197,6 +196,7 @@ const CORE_DESCRIPTIONS: Record<string, string> = {
   PitScouting: "Every pit scouting entry, one row per robot.",
   PickList: "The team's pick lists, one row per ranked team.",
   SyncInfo: "When this copy was last updated, and a check value for comparing copies.",
+  LongText: "Lossless continuations for long values. Each JSON text part is ordered by id and part; edit the original in Vantage.",
 };
 
 export const CATALOG_COLUMNS = ["id", "description", "primary_key", "rows", "columns", "updated_at", "source"];
@@ -208,7 +208,7 @@ export function buildCatalogTable(tables: BuiltTable[], now: Date): BuiltTable {
     [
       table.spec.sheet,
       opsTableDescription(table.spec.entity) ?? CORE_DESCRIPTIONS[table.spec.entity] ?? "",
-      "id",
+      table.spec.entity === "LongText" ? "id, part" : "id",
       table.rows.length,
       table.spec.columns.join(", "),
       at,
@@ -222,8 +222,9 @@ export function buildCatalogTable(tables: BuiltTable[], now: Date): BuiltTable {
  * Every table a team's copy holds, in tab order: the event and scouting tables, the team's own
  * records, the Tables catalog, then SyncInfo. Deterministic for a given source and clock.
  */
-export function buildAllTables(source: WorkbookSource, now: Date): BuiltTable[] {
+export function buildAllTables(source: WorkbookSource, now: Date, options: { shard?: boolean } = {}): BuiltTable[] {
   const core = buildWorkbookTables(source, now).filter((table) => table.spec.entity !== "SyncInfo");
-  const data = [...core, ...buildOpsTables(source.ops as OpsRows | undefined)];
+  const raw = [...core, ...buildOpsTables(source.ops as OpsRows | undefined)];
+  const data = options.shard === false ? raw : shardWorkbookCells(raw);
   return [...data, buildCatalogTable(data, now), buildSyncInfoTable(source, data, now)];
 }

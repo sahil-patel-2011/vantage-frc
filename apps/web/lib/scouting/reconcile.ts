@@ -18,13 +18,11 @@
  *    split by, and says why.
  */
 
-import { inferRoleForFieldKey, type ScoutFieldRoleMap } from "@vantage/prediction-strategy";
+import type { ScoutFieldRoleMap } from "@vantage/prediction-strategy";
+import { DIRECT_TOTAL_KEYS, matchRowTotal, onePerMatch, scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
 
 /** Alliance-total gap at or above this fraction gets a review flag. */
 export const REVIEW_DELTA_PCT = 0.15;
-
-/** Roles whose numeric answers are points a robot put on the board. */
-const SCORING_ROLES = new Set(["auto_score", "teleop_score", "endgame"]);
 
 /** Keys a scout payload (or a TBA alliance breakdown) may use for the total. */
 const TOTAL_POINTS_ALIASES = ["totalPoints", "total_points", "totalScore", "points"] as const;
@@ -57,16 +55,18 @@ export type ReconcileMatchRow = {
 };
 
 /** How one robot's scouted point estimate was derived — shown, never hidden. */
-export type RobotEstimateBasis = "total" | "roles";
+export type RobotEstimateBasis = "total" | "formula";
 
 export type ReconcileRobot = {
   teamKey: string;
-  /** Median across the scouts who covered this robot; null when nobody did. */
+  /** Mean across the scouts who covered this robot; null when nobody did. */
   estimate: number | null;
   basis: RobotEstimateBasis | null;
   /** Payload keys that fed the estimate, so a coach can audit the number. */
   fields: string[];
   scoutCount: number;
+  /** Retain disagreements instead of hiding the range behind an average. */
+  range?: [number, number] | null;
   entryIds: string[];
 };
 
@@ -194,55 +194,40 @@ export function officialAllianceFoulPoints(
   return null;
 }
 
-/**
- * One scout entry's point estimate for one robot.
- * Prefers an explicit total-points answer; otherwise sums the numeric answers
- * whose strategy role scores points (the same role ladder the scout→strategy
- * bridge uses). Returns null when the payload carries no scoring number at all —
- * a form full of checkboxes must not read as "this robot scored 0".
- */
+/** Points use the same recorded-total or configured-formula model as robot profiles. */
 export function robotEstimateFromPayload(
   payload: Record<string, unknown> | null | undefined,
-  roles?: ScoutFieldRoleMap,
+  _roles?: ScoutFieldRoleMap,
+  formulas: readonly OrgValueFormula[] = [],
 ): { points: number; basis: RobotEstimateBasis; fields: string[] } | null {
   if (!payload || typeof payload !== "object") return null;
-  for (const alias of TOTAL_POINTS_ALIASES) {
-    const value = numeric(payload[alias]);
-    if (value != null) return { points: value, basis: "total", fields: [alias] };
-  }
-  let points = 0;
-  const fields: string[] = [];
-  for (const key of Object.keys(payload)) {
-    const role = roles?.[key] ?? inferRoleForFieldKey(key);
-    if (!SCORING_ROLES.has(role)) continue;
-    const value = numeric(payload[key]);
-    if (value == null) continue;
-    points += value;
-    fields.push(key);
-  }
-  if (!fields.length) return null;
-  return { points, basis: "roles", fields };
+  const converted = scoutedRowsFromEntries([{ teamKey: "robot", matchKey: "match", payload }], formulas);
+  if (!converted.ok) return null;
+  const points = matchRowTotal(converted.rows[0]!);
+  if (points == null) return null;
+  const fields = converted.source === "recorded"
+    ? DIRECT_TOTAL_KEYS.filter(key => typeof payload[key] === "number" && Number.isFinite(payload[key]))
+    : [...new Set(formulas.flatMap(formula => formulaFields(formula.expression)))];
+  return { points, basis: converted.source === "recorded" ? "total" : "formula", fields };
 }
 
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1]! + sorted[middle]!) / 2
-    : sorted[middle]!;
+function formulaFields(expression: OrgValueFormula["expression"]): string[] {
+  if (expression.op === "field") return [expression.field];
+  return "args" in expression && Array.isArray(expression.args) ? expression.args.flatMap(formulaFields) : [];
 }
 
 const teamLabel = (teamKey: string) => teamKey.replace(/^frc/i, "") || teamKey;
 
 /**
  * Combines every scout entry for one robot into a single estimate. Multiple
- * scouts on one robot are reconciled by median, so one bad sheet cannot drag the
- * alliance total on its own.
+ * scouts on one robot are combined by mean, as in profiles and match logs.
+ * The range and raw report links retain conflicting observations.
  */
 export function robotEstimate(
   teamKey: string,
   entries: ReconcileEntry[],
   roles?: ScoutFieldRoleMap,
+  formulas: readonly OrgValueFormula[] = [],
 ): ReconcileRobot {
   const points: number[] = [];
   const fields = new Set<string>();
@@ -250,7 +235,7 @@ export function robotEstimate(
   let basis: RobotEstimateBasis | null = null;
   for (const entry of entries) {
     entryIds.push(entry.entryId);
-    const estimate = robotEstimateFromPayload(entry.payload, roles);
+    const estimate = robotEstimateFromPayload(entry.payload, roles, formulas);
     if (!estimate) continue;
     points.push(estimate.points);
     for (const field of estimate.fields) fields.add(field);
@@ -259,7 +244,11 @@ export function robotEstimate(
   }
   return {
     teamKey,
-    estimate: points.length ? median(points) : null,
+    estimate: points.length ? matchRowTotal(onePerMatch(
+      entries.map(entry => scoutedRowsFromEntries([{ teamKey, matchKey: entry.matchKey, payload: entry.payload ?? {} }], formulas))
+        .flatMap(result => result.ok ? result.rows : []),
+    )[0]!) : null,
+    range: points.length ? [Math.min(...points), Math.max(...points)] : null,
     basis: points.length ? basis : null,
     fields: [...fields].sort(),
     scoutCount: points.length,
@@ -275,9 +264,10 @@ function reconcileAlliance(
   officialFoulPoints: number | null,
   roles?: ScoutFieldRoleMap,
   officialSource: OfficialSource | null = officialTotal == null ? null : "breakdown",
+  formulas: readonly OrgValueFormula[] = [],
 ): ReconcileAlliance {
   const robots = teamKeys.map((teamKey) =>
-    robotEstimate(teamKey, entriesByTeam.get(teamKey) ?? [], roles),
+    robotEstimate(teamKey, entriesByTeam.get(teamKey) ?? [], roles, formulas),
   );
   const scouted = robots.filter((robot) => robot.estimate != null);
   const ourTotal = scouted.length
@@ -371,6 +361,7 @@ export function reconcileMatch(
   match: ReconcileMatchRow,
   entries: ReconcileEntry[],
   roles?: ScoutFieldRoleMap,
+  formulas: readonly OrgValueFormula[] = [],
 ): ReconciledMatch {
   const entriesByTeam = new Map<string, ReconcileEntry[]>();
   for (const entry of entries) {
@@ -392,6 +383,7 @@ export function reconcileMatch(
       fromBreakdown != null ? officialAllianceFoulPoints(match.scoreBreakdown, which) : null,
       roles,
       fromBreakdown != null ? "breakdown" : finalScore != null ? "alliance_score" : null,
+      formulas,
     );
   };
   const red = side("red", match.redAlliance);
@@ -427,6 +419,7 @@ export function reconcileEvent(input: {
   matches: ReconcileMatchRow[];
   entries: ReconcileEntry[];
   roles?: ScoutFieldRoleMap;
+  formulas?: readonly OrgValueFormula[];
 }): ReconcileReport {
   const entriesByMatch = new Map<string, ReconcileEntry[]>();
   for (const entry of input.entries) {
@@ -438,7 +431,7 @@ export function reconcileEvent(input: {
 
   const matches = input.matches
     .filter((match) => match && typeof match.matchKey === "string" && match.matchKey)
-    .map((match) => reconcileMatch(match, entriesByMatch.get(match.matchKey) ?? [], input.roles));
+    .map((match) => reconcileMatch(match, entriesByMatch.get(match.matchKey) ?? [], input.roles, input.formulas));
 
   const comparable: number[] = [];
   let comparedAlliances = 0;

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
 import {
   buildOnboardingStepMeta,
+  buildOnboardingPendingPlan,
   defaultFocusForRole,
   emptyOnboardingDraft,
   isAdultRole,
@@ -29,6 +30,7 @@ import {
 } from "../../lib/funding-profile";
 import { legalConsentMessage } from "../../lib/legal";
 import { safeAppPath } from "../../lib/security/safe-navigation";
+import { signOutAndRedirect } from "../../lib/sign-out";
 import { OnboardingLoadShell } from "./onboarding-chrome";
 import { LandingPanel } from "./onboarding-landing";
 import {
@@ -446,8 +448,7 @@ export default function OnboardingClient() {
 
   async function signOut() {
     setBusy(true);
-    await fetch("/api/auth/sign-out", { method: "POST" }).catch(() => undefined);
-    window.location.assign("/signin");
+    await signOutAndRedirect("/signin");
   }
 
   if (loadStatus !== "ready" || !state) {
@@ -468,6 +469,12 @@ export default function OnboardingClient() {
   const setupStep = step === "pending" || step === "done" ? null : step;
   const onTeamAlready = state?.accessStatus === "approved" || state?.accessStatus === "invited";
   const teamName = state?.lockedOrgName || state?.workspaceOrgName || null;
+  const pendingPlan = buildOnboardingPendingPlan({
+    accessStatus: state?.accessStatus,
+    teamNumber: state?.preferredTeamNumber ?? null,
+    orgName: teamName,
+    adult,
+  });
   const headerCopy =
     step === "done"
       ? // The owner's hand-off only: an invited mentor was told to "bring your team" with a
@@ -477,9 +484,13 @@ export default function OnboardingClient() {
         : { eyebrow: "ALL SET", title: "You're in.", sub: "Home shows what to do now. Open it when you are ready." }
       : step === "pending"
         ? {
-            eyebrow: "WAITING ON YOUR TEAM",
-            title: "Your profile is ready. Team access is next.",
-            sub: "A team number never lets you in by itself. A team owner or administrator must approve this account.",
+            eyebrow: pendingPlan.eyebrow,
+            title: pendingPlan.headline,
+            sub: pendingPlan.primaryAction.kind === "claim"
+              ? "Create the team workspace if you are authorized to represent this team."
+              : pendingPlan.kind === "invited"
+                ? "Your profile is saved. Join with the invitation sent to your verified email."
+                : "Your profile is saved. Join by invitation or request access to an existing team.",
           }
         : onTeamAlready && state.isTeamHead
           ? {

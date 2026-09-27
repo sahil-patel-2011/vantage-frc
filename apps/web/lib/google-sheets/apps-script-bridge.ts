@@ -9,13 +9,14 @@
  *   spreadsheet_url / name   what the script reported on the connect ping
  *
  * Requests: one "write" per sync (split only past MAX_CELLS_PER_SCRIPT_CALL cells), one
- * "read" per import. Apps Script runs under the owner's account with no Sheets API quota to
- * spend; its own limits (30 simultaneous runs, 6 minutes per run) are far above one team's
- * sync. A redirect is only followed to Google's own script.googleusercontent.com.
+ * "read" per import. Apps Script has account-wide creation and execution limits. Daily
+ * quota waits belong to durable jobs; short transient retries are bounded here.
+ * A redirect is only followed to Google's own script.googleusercontent.com.
  */
 
 import { createHmac } from "node:crypto";
 import { IMPORT_TABLES, type WorkbookReader, type WorkbookTableRead, type WorkbookTableRef } from "../microsoft/workbook-import";
+import { LONG_TEXT_SHEET, longTextResolver } from "../microsoft/long-text";
 import type { CellValue, TableSpec } from "../microsoft/workbook-schema";
 import type { WorkbookTarget } from "../microsoft/workbook-sync";
 import { APPS_SCRIPT_MIN_VERSION, isAppsScriptSecret, isAppsScriptUrl } from "./apps-script-source";
@@ -51,11 +52,16 @@ const bridgeError = (
   publicMessage: string,
   code: string,
   status: number | null = null,
-) => new GoogleSheetsError(kind, publicMessage, status, code, null, publicMessage);
+  retryAfterMs: number | null = null,
+) => new GoogleSheetsError(kind, publicMessage, status, code, retryAfterMs, publicMessage);
 
-export type BridgeOptions = { fetchImpl?: typeof fetch; now?: () => number; timeoutMs?: number };
+export type BridgeOptions = { fetchImpl?: typeof fetch; now?: () => number; timeoutMs?: number; maxAttempts?: number; sleep?: (ms: number) => Promise<void>; random?: () => number };
+const RETRY_SAFE_ACTIONS = new Set(["ping", "team.ensure", "team.layout", "workspace.ensure", "team.stamp", "read", "write", "recovery.write", "recovery.read", "recovery.inspect"]);
 
 export class AppsScriptBridge {
+  private readonly maxAttempts: number;
+  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly random: () => number;
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => number;
   private readonly timeoutMs: number;
@@ -70,10 +76,23 @@ export class AppsScriptBridge {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.now = options.now ?? Date.now;
     this.timeoutMs = options.timeoutMs ?? 90_000;
+    this.maxAttempts = Math.max(1, Math.min(options.maxAttempts ?? 3, 5));
+    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.random = options.random ?? Math.random;
   }
 
   /** Signed POST; follows Google's one redirect to the script's output. */
   async call<T extends { ok: boolean; error?: string }>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+      try { return await this.callOnce<T>(action, payload); }
+      catch (error) {
+        if (!(error instanceof GoogleSheetsError) || error.code === "daily_quota" || !RETRY_SAFE_ACTIONS.has(action) || !["unavailable", "throttled"].includes(error.kind) || attempt + 1 >= this.maxAttempts) throw error;
+        await this.sleep(Math.min(32_000, Math.max(error.retryAfterMs ?? 0, 1000 * 2 ** attempt + Math.floor(this.random() * 1000))));
+      }
+    }
+  }
+
+  private async callOnce<T extends { ok: boolean; error?: string }>(action: string, payload: Record<string, unknown>): Promise<T> {
     const body = asciiJson({ action, ts: this.now(), ...payload });
     const sig = createHmac("sha256", this.secret).update(body).digest("hex");
     let response = await this.send(`${this.url}?sig=${sig}`, { method: "POST", body, headers: { "content-type": "text/plain;charset=utf-8" } });
@@ -115,6 +134,12 @@ export class AppsScriptBridge {
     }
     if (!data || data.ok !== true) {
       const error = String(data?.error ?? "unknown");
+      const details = data as { code?: unknown; retryAfterMs?: unknown };
+      if (details?.code === "daily_quota" || /limit exceeded.*spreadsheet|^service invoked too many times:|too many times.*(?:day|daily)|daily.*quota/i.test(error)) {
+        const delay = typeof details?.retryAfterMs === "number" && Number.isFinite(details.retryAfterMs)
+          ? Math.max(1000, Math.min(86_400_000, details.retryAfterMs)) : 86_400_000;
+        throw bridgeError("throttled", "Google's daily allowance is in use. Your setup progress is saved and will resume automatically.", "daily_quota", null, delay);
+      }
       if (error === "signature") {
         throw bridgeError("auth_expired", "Your Google Sheet's script has a different secret from the one Vantage saved. Press Disconnect, then connect again and paste the secret from the VANTAGE_SECRET line of your script.", "signature");
       }
@@ -122,8 +147,9 @@ export class AppsScriptBridge {
         throw bridgeError("unavailable", "The Apps Script refused the request as out of date. Try again.", "stale");
       }
       if (/too many|simultaneous|rate/i.test(error)) {
-        throw bridgeError("throttled", "Google asked the Apps Script to slow down. The Excel copy keeps working; Google catches up on the next sync.", "script_throttled");
+        throw bridgeError("throttled", "Google asked Vantage to slow down. Saved work will resume after a delay.", "script_throttled");
       }
+      if (/timed out|timeout|could not.*lock|service.*unavailable/i.test(error)) throw bridgeError("unavailable", "Google could not finish this operation. Setup will resume from saved progress.", "script_unavailable");
       throw bridgeError("bad_request", `The Apps Script reported a problem: ${error.slice(0, 200)}`, "script_error");
     }
     return data;
@@ -189,7 +215,7 @@ export class AppsScriptBridge {
 }
 
 /** One team's spreadsheet in hub mode. `key` is the team's id; viewers get read access. */
-export type HubTeam = { key: string; number: number | null; name: string; title?: string; viewers?: string[] };
+export type HubTeam = { key: string; number: number | null; name: string; title?: string; viewers?: string[]; rootKey?: string; testRun?: string };
 
 export type HubTeamBook = {
   id: string;
@@ -238,9 +264,12 @@ export class AppsScriptTarget implements WorkbookTarget, WorkbookReader {
 
   async readTable(ref: WorkbookTableRef): Promise<WorkbookTableRead | null> {
     if (!this.reads) {
-      const sheets = [...new Set([...IMPORT_TABLES.map((table) => table.sheet), ref.sheet])];
+      const sheets = [...new Set([...IMPORT_TABLES.map((table) => table.sheet), ref.sheet, LONG_TEXT_SHEET])];
       const data = await this.bridge.call<{ ok: boolean; values?: Record<string, unknown[][] | null> }>("read", { ...this.scope(), sheets });
       this.reads = data.values ?? {};
+      const continuations = this.reads[LONG_TEXT_SHEET] ?? [];
+      const restore = longTextResolver(continuations[0] ?? [], continuations.slice(1));
+      for (const name of sheets) if (name !== LONG_TEXT_SHEET && this.reads[name]) this.reads[name] = this.reads[name]!.map((row) => row.map(restore));
     }
     const values = this.reads[ref.sheet];
     if (!values) return null;

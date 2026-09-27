@@ -61,7 +61,8 @@ export function LogisticsTripsPanel({
           className="log-grid-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const fd = new FormData(e.currentTarget);
+            const form = e.currentTarget;
+            const fd = new FormData(form);
             void run(
               {
                 action: "create_trip",
@@ -76,7 +77,7 @@ export function LogisticsTripsPanel({
                 endsOn: String(fd.get("endsOn") ?? "") || null,
               },
               "trip",
-            ).then(() => e.currentTarget.reset());
+            ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
           <input name="title" placeholder="Trip title" required />
@@ -157,7 +158,8 @@ export function LogisticsTripsPanel({
                 className="log-grid-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
+                  const form = e.currentTarget;
+            const fd = new FormData(form);
                   void run(
                     {
                       action: "create_hotel",
@@ -173,7 +175,7 @@ export function LogisticsTripsPanel({
                       notes: String(fd.get("notes") ?? ""),
                     },
                     `hotel:${trip.id}`,
-                  ).then(() => e.currentTarget.reset());
+                  ).then((saved) => { if (saved !== false) form.reset(); });
                 }}
               >
                 <input name="name" placeholder="Hotel name" required />
@@ -240,7 +242,8 @@ export function LogisticsTripsPanel({
                 className="log-grid-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
+                  const form = e.currentTarget;
+            const fd = new FormData(form);
                   const starts = String(fd.get("startsAt") ?? "");
                   void run(
                     {
@@ -258,7 +261,7 @@ export function LogisticsTripsPanel({
                       sortOrder: 0,
                     },
                     "leg",
-                  ).then(() => e.currentTarget.reset());
+                  ).then((saved) => { if (saved !== false) form.reset(); });
                 }}
               >
                 <select name="kind" defaultValue="depart_home">
@@ -381,7 +384,8 @@ function HotelBlock({
           className="log-grid-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const fd = new FormData(e.currentTarget);
+            const form = e.currentTarget;
+            const fd = new FormData(form);
             void run(
               {
                 action: "upsert_room",
@@ -393,7 +397,7 @@ function HotelBlock({
                 notes: String(fd.get("notes") ?? ""),
               },
               `room:${hotel.id}`,
-            ).then(() => e.currentTarget.reset());
+            ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
           <input name="roomLabel" placeholder="Room label" required />

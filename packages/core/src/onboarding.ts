@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepointOrThrow } from "@vantage/db/savepoint";
 import { assertLegalAccepted, recordLegalAcceptance } from "./legal";
 import { acceptMyOrganizationInvite } from "./membership";
+import { assertMinimumAge } from "./eligibility";
 
 export const GENDER_OPTIONS = [
   "female",
@@ -257,6 +258,7 @@ export function parseDob(value: string): Date {
   if (dob.getTime() > todayUtc) throw new Error("Date of birth cannot be in the future.");
   const oldest = Date.UTC(today.getUTCFullYear() - 120, today.getUTCMonth(), today.getUTCDate());
   if (dob.getTime() < oldest) throw new Error("Date of birth is out of range.");
+  assertMinimumAge(dob, today);
   return dob;
 }
 

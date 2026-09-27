@@ -102,4 +102,11 @@ for (const file of files) {
   }
 }
 
+// New tables must acquire transactional recovery capture in the same release.
+// Provider-managed neon_auth is outside the application's writable schema.
+if (!process.exitCode && (await pool.query("SELECT to_regprocedure('install_recovery_capture()') AS capture")).rows[0]?.capture) {
+  await pool.query("SELECT install_recovery_capture()");
+  const missing = await pool.query("SELECT schema_name,table_name FROM recovery_coverage WHERE NOT rows_covered OR NOT truncation_covered");
+  if (missing.rowCount) { console.error("FAIL recovery coverage", missing.rowCount); process.exitCode = 1; }
+}
 await pool.end();

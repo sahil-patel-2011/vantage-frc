@@ -13,6 +13,7 @@
  */
 
 import { sparklinePath } from "../intel/lovat-lookup";
+import { combineObservations, type ObservationConflict } from "./observations";
 
 export type ScoutRow = {
   matchKey?: string | null;
@@ -60,6 +61,7 @@ export type ScoutBreakdown = {
   matches: number;
   fields: FieldBreakdown[];
   notes: Array<{ match: string; text: string }>;
+  disagreements?: ObservationConflict[];
 };
 
 const NOTE_KEYS = new Set(["notes", "note", "comments", "comment", "observations"]);
@@ -145,7 +147,8 @@ function fieldRank(field: FieldBreakdown): number {
 
 /** Build the breakdown for one team's scout rows. */
 export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
-  const sorted = [...rows].sort((a, b) => matchSortValue(a.matchKey) - matchSortValue(b.matchKey));
+  const combined = combineObservations(rows);
+  const sorted = combined.rows.sort((a, b) => matchSortValue(a.matchKey) - matchSortValue(b.matchKey));
   const order: string[] = [];
   const seen = new Set<string>();
   for (const row of sorted) {
@@ -159,14 +162,16 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
   const fields: FieldBreakdown[] = [];
   const notes: ScoutBreakdown["notes"] = [];
 
+  for (const row of rows) {
+    for (const [key, value] of Object.entries(row.payload)) {
+      if (NOTE_KEYS.has(key.toLowerCase()) && typeof value === "string" && value.trim()) {
+        notes.push({ match: matchKeyLabel(row.matchKey), text: value.trim() });
+      }
+    }
+  }
+
   for (const key of order) {
     if (NOTE_KEYS.has(key.toLowerCase())) {
-      for (const row of sorted) {
-        const text = row.payload[key];
-        if (typeof text === "string" && text.trim()) {
-          notes.push({ match: matchKeyLabel(row.matchKey), text: text.trim() });
-        }
-      }
       continue;
     }
 
@@ -237,5 +242,8 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
   }
 
   fields.sort((a, b) => fieldRank(a) - fieldRank(b));
-  return { matches: sorted.filter((row) => row.matchKey).length, fields, notes };
+  return { matches: sorted.filter((row) => row.matchKey).length, fields, notes,
+    ...(combined.conflicts.some((item) => !NOTE_KEYS.has(item.field.toLowerCase())) ? {
+      disagreements: combined.conflicts.filter((item) => !NOTE_KEYS.has(item.field.toLowerCase())),
+    } : {}) };
 }

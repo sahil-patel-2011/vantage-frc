@@ -1,10 +1,9 @@
-import { CAPABILITY_IDS, isCapabilityId, type CapabilityId } from "./capability.js";
+import { ACTIVE_CAPABILITY_IDS, isCapabilityId, type CapabilityId } from "./capability.js";
 import { joinPath, readIfExists, type FileSystemLike } from "./ports.js";
 
 /**
- * One config file for the whole connector: one pairing, one device token, one machine —
- * with per-capability toggles. Stored at ~/.vantage/connector.json with mode 0600
- * (the same directory and permission discipline as the AI bridge's ai-bridge.json).
+ * Each personal profile owns its pairing and capability settings. Unscoped paths are
+ * retained only for explicit legacy migration; the Node CLI requires a personal profile.
  */
 
 export type CapabilityToggleMap = Partial<Record<CapabilityId, boolean>>;
@@ -17,6 +16,8 @@ export type ConnectorConfig = {
   deviceToken: string;
   deviceId: string | null;
   orgId: string | null;
+  /** The person who paired this connector. Legacy configurations must re-pair AI. */
+  userId?: string | null;
   /** Absent id = disabled. Nothing runs until a human turns it on. */
   capabilities: CapabilityToggleMap;
   /** Extra user-configured OpenAI-compatible base URLs to probe for local models. */
@@ -33,16 +34,23 @@ export type ConnectorConfig = {
 export const CONNECTOR_CONFIG_FILENAME = "connector.json";
 export const LEGACY_BRIDGE_CONFIG_FILENAME = "ai-bridge.json";
 
-export function connectorConfigDir(home: string): string {
-  return joinPath(home, ".vantage");
+export function normalizePersonalProfile(profile: string): string {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile)) {
+    throw new Error("--profile must be your Vantage user ID from Personal connections.");
+  }
+  return profile.toLowerCase();
 }
 
-export function connectorConfigPath(home: string): string {
-  return joinPath(home, ".vantage", CONNECTOR_CONFIG_FILENAME);
+export function connectorConfigDir(home: string, profile?: string): string {
+  return profile ? joinPath(home, ".vantage", "profiles", normalizePersonalProfile(profile)) : joinPath(home, ".vantage");
 }
 
-export function legacyBridgeConfigPath(home: string): string {
-  return joinPath(home, ".vantage", LEGACY_BRIDGE_CONFIG_FILENAME);
+export function connectorConfigPath(home: string, profile?: string): string {
+  return joinPath(connectorConfigDir(home, profile), CONNECTOR_CONFIG_FILENAME);
+}
+
+export function legacyBridgeConfigPath(home: string, profile?: string): string {
+  return joinPath(connectorConfigDir(home, profile), LEGACY_BRIDGE_CONFIG_FILENAME);
 }
 
 /** Fresh pairings start with every capability off — enabling each one is a human choice. */
@@ -51,11 +59,11 @@ export function defaultCapabilities(): CapabilityToggleMap {
 }
 
 export function isCapabilityEnabled(config: ConnectorConfig, id: CapabilityId): boolean {
-  return config.capabilities[id] === true;
+  return id !== "storage-node" && config.capabilities[id] === true;
 }
 
 export function enabledCapabilities(config: ConnectorConfig): CapabilityId[] {
-  return CAPABILITY_IDS.filter((id) => isCapabilityEnabled(config, id));
+  return ACTIVE_CAPABILITY_IDS.filter((id) => isCapabilityEnabled(config, id));
 }
 
 /** Pure toggle — returns a new config, never mutates. */
@@ -101,6 +109,7 @@ export function parseConnectorConfig(raw: unknown): ConnectorConfig | null {
     deviceToken,
     deviceId: asString(value.deviceId),
     orgId: asString(value.orgId),
+    ...(value.userId !== undefined ? { userId: asString(value.userId) } : {}),
     capabilities: sanitizeToggles(value.capabilities),
   };
   if (value.localModels && typeof value.localModels === "object") {
@@ -161,27 +170,37 @@ export function adoptLegacyBridgeConfig(raw: unknown, nowIso: string): Connector
     deviceId: asString(value.deviceId),
     orgId: asString(value.orgId),
     capabilities: { "ai-bridge": true },
+    ...(asString(value.userId) ? { userId: asString(value.userId)! } : {}),
     adopted: { from: "ai-bridge", at: nowIso },
   };
 }
 
-export async function loadConnectorConfig(fs: FileSystemLike, home: string): Promise<ConnectorConfig | null> {
-  const raw = await readIfExists(fs, connectorConfigPath(home));
+export async function loadConnectorConfig(fs: FileSystemLike, home: string, profile?: string): Promise<ConnectorConfig | null> {
+  const raw = await readIfExists(fs, connectorConfigPath(home, profile));
   if (raw === null) return null;
+  let config: ConnectorConfig | null;
   try {
-    return parseConnectorConfig(JSON.parse(raw));
+    config = parseConnectorConfig(JSON.parse(raw));
   } catch {
     return null;
   }
+  if (config && profile && config.userId?.toLowerCase() !== normalizePersonalProfile(profile)) {
+    throw new Error("This pairing belongs to another person. Pair your own profile.");
+  }
+  return config;
 }
 
 export async function saveConnectorConfig(
   fs: FileSystemLike,
   home: string,
   config: ConnectorConfig,
+  profile?: string,
 ): Promise<void> {
-  await fs.mkdir(connectorConfigDir(home), { recursive: true });
-  const path = connectorConfigPath(home);
+  if (profile && config.userId?.toLowerCase() !== normalizePersonalProfile(profile)) {
+    throw new Error("The approving account does not match this personal profile. Pair with your own account.");
+  }
+  await fs.mkdir(connectorConfigDir(home, profile), { recursive: true });
+  const path = connectorConfigPath(home, profile);
   await fs.writeFile(path, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
   // Belt-and-braces on filesystems where writeFile mode is ignored (pre-existing file).
   if (fs.chmod) await fs.chmod(path, 0o600).catch(() => {});
@@ -202,11 +221,12 @@ export async function loadOrAdoptConnectorConfig(
   fs: FileSystemLike,
   home: string,
   now: () => number = Date.now,
+  profile?: string,
 ): Promise<LoadOrAdoptResult | null> {
-  const existing = await loadConnectorConfig(fs, home);
+  const existing = await loadConnectorConfig(fs, home, profile);
   if (existing) return { config: existing, adopted: false };
 
-  const legacyRaw = await readIfExists(fs, legacyBridgeConfigPath(home));
+  const legacyRaw = await readIfExists(fs, legacyBridgeConfigPath(home, profile));
   if (legacyRaw === null) return null;
   let parsed: unknown;
   try {
@@ -216,6 +236,6 @@ export async function loadOrAdoptConnectorConfig(
   }
   const adopted = adoptLegacyBridgeConfig(parsed, new Date(now()).toISOString());
   if (!adopted) return null;
-  await saveConnectorConfig(fs, home, adopted);
+  await saveConnectorConfig(fs, home, adopted, profile);
   return { config: adopted, adopted: true };
 }

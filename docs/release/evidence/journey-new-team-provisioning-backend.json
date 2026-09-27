@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "environment": "local vantage_release_test PostgreSQL17",
+  "productionAcceptance": false,
+  "observedAt": "2026-09-26T21:29:17.291Z",
+  "job": {
+    "org_id": "e6048770-61f0-48a6-b555-069a1a8d8f03",
+    "state": "ready",
+    "phase": "ready",
+    "completed_phases": [
+      "team",
+      "workspace",
+      "tools",
+      "sheets",
+      "recovery",
+      "verify"
+    ],
+    "resources": {
+      "folderId": "1kNO4s1u8Hc0iXqcZxZjhSW5of96mdyPF",
+      "workbooks": {
+        "Team": {
+          "id": "1J9N_UOf0SZq9LH5UxfZj_aBN6202aob7ikrqC7N1Oss",
+          "hash": "b60de41adc5a9581012b9973d3316f0f0130849f3446e7b7021de0679574b6b7",
+          "schemaVersion": 2
+        },
+        "Build": {
+          "id": "1pmoTD2WbJFSQZsCZysyQcRwXw2afuY9EGa3k37Nv10s",
+          "hash": "14695dd21ab050378d0d1fa1ccbeab2a9d0a62a07d8a75a61fb17b74b4e21365",
+          "schemaVersion": 2
+        },
+        "Business": {
+          "id": "1si8mQ7JEKyUo_DiwsOJ-EO_OrlEFXxF53r0tT_HgsnA",
+          "hash": "d4771feef6c4a5c227187861961651d5e38c73ae630fc31bcb8b36b626fd2b31",
+          "schemaVersion": 2
+        },
+        "Start Here": {
+          "id": "1wYw287dx6_Dy-WTT_16LrVnOtz2KLUu1fSdfKQlwBpY",
+          "hash": "203637dc61aba4174d3644968ad9ef137b9b82e70376ccd5672254e73d83bc76",
+          "schemaVersion": 2
+        },
+        "Competition": {
+          "id": "1Jm7EplWfqUdoWBCc1ZMUwnadeDwiaYahmbS8tWZAbyY",
+          "hash": "c5961d8e742b77f587811292b7d9e2ed97658e9892a7947c8f99a345a839c04d",
+          "schemaVersion": 2
+        }
+      },
+      "recoveryCheckpointId": "5b52b783-9a1e-48e6-a8e5-b2b3d97e8df5"
+    },
+    "attempts": 10,
+    "verified_at": "2026-09-26 17:26:52.239096-04",
+    "created_at": "2026-09-26 17:05:34.91361-04",
+    "updated_at": "2026-09-26 17:26:52.239096-04"
+  },
+  "organizationCountForSyntheticNumber": "1",
+  "repairedRetryStartedAt": "2026-09-26T21:19:53.779Z",
+  "retryToDatabaseReadinessMs": 418460,
+  "fiveMinuteTargetMet": false,
+  "liveLoadProof": false,
+  "notes": [
+    "Organization and owner were created only through browser claim flow",
+    "Five Google workbooks passed values and layout read-back before readiness",
+    "Real encrypted local snapshot and journal writes were verified in isolated operator-owned Google test resources",
+    "Earlier local runtime errors and repaired retry are preserved in browser evidence",
+    "No production configuration or release was opened"
+  ]
+}

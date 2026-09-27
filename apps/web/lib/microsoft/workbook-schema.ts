@@ -31,6 +31,7 @@ export type WorkbookEntity =
   | "Sponsors"
   | "RobotFailures"
   | "Batteries"
+  | "LongText"
   | "Tables"
   | "SyncInfo";
 
@@ -55,7 +56,8 @@ export const WORKBOOK_ENTITIES: WorkbookEntity[] = [
   "SyncInfo",
 ];
 
-export const WORKBOOK_SCHEMA_VERSION = 1;
+// Version 2 adds lossless long-text continuations and per-workspace catalogs.
+export const WORKBOOK_SCHEMA_VERSION = 3;
 export const MAX_PAYLOAD_COLUMNS = 60;
 export const MAX_ROWS_PER_TABLE = 20_000;
 /** Excel's per-cell text limit is 32,767 characters. */
@@ -164,17 +166,17 @@ export type WorkbookSource = {
  *  - Text that Excel would treat as a formula (leading = + - @, or a tab/CR) gets a leading
  *    apostrophe, so a scout note like "=HYPERLINK(...)" stays text. Plain negative numbers
  *    written as text ("-3") are left alone.
- *  - Text is capped at Excel's 32,767-character cell limit.
+ *  - Long text remains intact until the workbook's lossless sharding pass.
  *  - Non-finite numbers become "".
  */
 export function toCell(value: unknown): CellValue {
   if (value === null || value === undefined) return "";
   if (typeof value === "number") return Number.isFinite(value) ? value : "";
   if (typeof value === "boolean") return value;
-  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "bigint") return value.toString();
   let text = typeof value === "string" ? value : JSON.stringify(value);
   if (/^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text)) text = `'${text}`;
-  return text.length > MAX_CELL_TEXT ? text.slice(0, MAX_CELL_TEXT) : text;
+  return text;
 }
 
 /** Code-unit order: identical on every machine and locale (localeCompare is not). */
@@ -251,9 +253,8 @@ function spec(entity: WorkbookEntity, columns: string[]): TableSpec {
 }
 
 function cap<T>(rows: T[]): { rows: T[]; truncated: number } {
-  return rows.length > MAX_ROWS_PER_TABLE
-    ? { rows: rows.slice(0, MAX_ROWS_PER_TABLE), truncated: rows.length - MAX_ROWS_PER_TABLE }
-    : { rows, truncated: 0 };
+  if (rows.length > MAX_ROWS_PER_TABLE) throw new Error("Readable workbook requires additional capacity. The previous copy has not been replaced.");
+  return { rows, truncated: 0 };
 }
 
 export function buildTeamsTable(source: WorkbookSource): BuiltTable {

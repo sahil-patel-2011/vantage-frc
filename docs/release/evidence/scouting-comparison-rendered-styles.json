@@ -1,0 +1,62 @@
+[
+  {
+    "animationDuration": "0.38s",
+    "animationName": "scmp-grow",
+    "backgroundColor": "color(srgb 0.529804 0.663529 0.956863)",
+    "bar": {
+      "display": "block",
+      "height": 8,
+      "width": 196.36459350585935
+    },
+    "display": "block",
+    "fillRect": {
+      "height": 8,
+      "width": 171.23959350585938
+    },
+    "height": "8px",
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)",
+    "visibility": "visible",
+    "width": "171.24px"
+  },
+  {
+    "animationDuration": "0.38s",
+    "animationName": "scmp-grow",
+    "backgroundColor": "color(srgb 0.529804 0.663529 0.956863)",
+    "bar": {
+      "display": "block",
+      "height": 8,
+      "width": 196.36459350585935
+    },
+    "display": "block",
+    "fillRect": {
+      "height": 8,
+      "width": 196.36459350585935
+    },
+    "height": "8px",
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)",
+    "visibility": "visible",
+    "width": "196.365px"
+  },
+  {
+    "animationDuration": "0.38s",
+    "animationName": "scmp-grow",
+    "backgroundColor": "color(srgb 0.529804 0.663529 0.956863)",
+    "bar": {
+      "display": "block",
+      "height": 8,
+      "width": 196.36459350585935
+    },
+    "display": "block",
+    "fillRect": {
+      "height": 8,
+      "width": 182.65625
+    },
+    "height": "8px",
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)",
+    "visibility": "visible",
+    "width": "182.656px"
+  }
+]

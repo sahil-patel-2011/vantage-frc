@@ -1,0 +1,17 @@
+{
+  "verifiedAt": "2026-09-26T18:34:34.994Z",
+  "bridgeProtocol": 5,
+  "deployedScriptVersion": 9,
+  "workbookCount": 5,
+  "initialMs": 269233,
+  "elapsedMs": 328397,
+  "retryReusedResources": true,
+  "verifiedValues": true,
+  "verifiedLayout": true,
+  "verifiedLongText": true,
+  "longTextCharacters": 75000,
+  "resourceState": "existing controlled test folder and five workbooks reused",
+  "earlierInitialCreationMs": 60883,
+  "load": "one controlled team; load acceptance remains outstanding",
+  "latestSourceResourceLookupFixDeployed": false
+}

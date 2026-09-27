@@ -3,7 +3,7 @@ import { validateDraft } from "../../../lib/scouting/form-builder";
 import { defaultQuestions } from "./forms-model";
 
 describe("form-builder starter drafts", () => {
-  it("starts a pit form with drivetrain, language, experience, and photos — not claimed scoring", () => {
+  it("starts a pit form with drivetrain, language and experience without media storage", () => {
     const questions = defaultQuestions("pit");
     expect(questions.map((question) => question.label)).toEqual([
       "Drivetrain",
@@ -11,7 +11,6 @@ describe("form-builder starter drafts", () => {
       "Drivetrain motors",
       "Driver seasons of experience",
       "Coach seasons of experience",
-      "Robot images",
       "Notes",
     ]);
     expect(questions.map((question) => question.kind)).toEqual([
@@ -20,7 +19,6 @@ describe("form-builder starter drafts", () => {
       "short",
       "number",
       "number",
-      "robot_image",
       "free",
     ]);
     expect(questions.every((question) => question.role === "none" || question.role === "notes")).toBe(

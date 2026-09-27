@@ -1,0 +1,142 @@
+{
+  "date": "2026-09-26",
+  "tabId": "781731108",
+  "checks": [
+    {
+      "name": "Home saved board and island",
+      "result": "pass",
+      "observed": "My Home, Morgan, saved Team todos and synthetic Riley task remain. Desktop 1280x665: island392x59.33; four links48px high and Apps48x48."
+    },
+    {
+      "name": "Hamburger and search",
+      "result": "pass",
+      "observed": "Five workspace rows with descriptions visible within665px desktop. Search Logistics returns Team Logistics and actual team search area; clearing/Escape dismisses drawer."
+    },
+    {
+      "name": "Account keyboard",
+      "result": "partial-failure",
+      "steps": [
+        {
+          "key": "ArrowDown",
+          "focus": "Team 6925Mentor or coach✓"
+        },
+        {
+          "key": "End",
+          "focus": "Sign out"
+        },
+        {
+          "key": "Home",
+          "focus": "Account and settings"
+        },
+        {
+          "key": "s typeahead",
+          "focus": "Navigation unexpectedly changed to Competition Scout"
+        },
+        {
+          "key": "Escape after unexpected navigation",
+          "focus": "Page root"
+        }
+      ],
+      "issue": "Typing s from Account and settings activated global Scout navigation rather than account-menu typeahead."
+    },
+    {
+      "name": "Account Tab dismissal",
+      "result": "pass",
+      "observed": "Tab closes account popup and focuses Home link after trigger."
+    },
+    {
+      "name": "Island editor keyboard and cancel",
+      "result": "pass",
+      "observed": {
+        "editorBackFocus": {
+          "label": null,
+          "text": "Save"
+        },
+        "editorForwardFocus": {
+          "label": "Close",
+          "text": ""
+        },
+        "editorDismiss": {
+          "dialogOpen": false,
+          "focus": "Choose your bottom bar apps",
+          "tabs": [
+            "Home",
+            "Event day",
+            "Scout",
+            "Stats"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Competition Teams",
+      "result": "pass",
+      "observed": "Teams tab selected through section control; existing event Teams dashboard renders fixture teams without changing scout data."
+    },
+    {
+      "name": "Team Logistics",
+      "result": "pass",
+      "observed": "Team > Logistics opens within selected Team6925; existing synthetic trips and checklist remain visible."
+    },
+    {
+      "name": "Build workspace",
+      "result": "pass",
+      "observed": "Build opens through workspace menu with Kickoff, CAD, Code and Robot sections in Team6925."
+    },
+    {
+      "name": "Business workspace",
+      "result": "pass",
+      "observed": "Fresh native AX Business link opens Team6925 Business overview with saved synthetic sponsor25/grant50 records. Initial Playwright link click closed menu without navigating; native AX retry after fresh state succeeded."
+    },
+    {
+      "name": "Return Home",
+      "result": "pass",
+      "observed": "Home menu navigation restores Team6925 in URL and My Home saved board with synthetic Riley task."
+    },
+    {
+      "name": "Competition workspace",
+      "result": "pass",
+      "observed": "Hamburger Competition opens Event day for Team6925. After data load, real event result16matches, travel fixture, coverage148 reports and readiness links render."
+    },
+    {
+      "name": "Competition arrow navigation",
+      "result": "pass",
+      "observed": "ArrowRight from Event day selects/focuses Scout and updates tab=scouting while preserving Team6925."
+    }
+  ],
+  "screenshots": [
+    "ui-final-home-desktop.png",
+    "ui-final-menu-desktop.png",
+    "ui-final-account-desktop.png",
+    "ui-final-account-typeahead-failure.png",
+    "ui-final-island-editor-desktop.png",
+    "ui-final-competition-teams-desktop.png",
+    "ui-final-team-logistics-desktop.png",
+    "ui-final-business-desktop.png"
+  ],
+  "errors": [],
+  "mutations": false,
+  "viewportOverride": false,
+  "scope": "Local scratch acceptance server, existing Morgan Journey Team6925 session, desktop1280x665, build before final bell-scope/typeahead repairs",
+  "generatedAt": "2026-09-27T01:28:29.683Z",
+  "productionAcceptance": false,
+  "unverified": [
+    "Phone viewport: root owns subsequent pass",
+    "Preference save/failure mutation",
+    "Notification read/unread and cross-tab mutations: root owns tests",
+    "Final rebuild fixes for notification href and account typeahead"
+  ],
+  "confirmedIssues": [
+    {
+      "name": "Account typeahead global shortcut conflict",
+      "observed": "s pressed while Account and settings focused navigated to Competition Scout rather than selecting Support tickets",
+      "screenshot": "ui-final-account-typeahead-failure.png",
+      "status": "Reported for root repair and rebuild"
+    },
+    {
+      "name": "Notification href loses selected organization",
+      "observed": "Rendered bell href=/notifications although selectedTeam6925; ORG_EXEMPT_HREFS excludes scope",
+      "status": "Root confirms source repair; pending final rebuild verification"
+    }
+  ]
+}

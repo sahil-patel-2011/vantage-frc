@@ -1,0 +1,15 @@
+{
+  "date":"2026-09-26",
+  "observedAtUTC":"2026-09-27T00:07:07Z",
+  "environment":"Production-built LOCAL app http://127.0.0.1:3417; isolated vantage_release_test; deployed production unchanged",
+  "actor":"Existing Morgan Journey shared Chrome session; no identity change",
+  "receiverTab":"781731064",
+  "status":"blocked_external_browser_control",
+  "attempt":"Resume existing receiver tab through CUA before genuine reload of latest bulk-paste repair",
+  "blocker":"Google Chrome automation is blocked because another extension UI is open on the page. The browser requires that UI to be completed or dismissed before automation can continue.",
+  "actionsCompleted":"No app reload, new part4 replay, bulk paste, new Save, authentication change, injected state or attempted bypass occurred during this rerun.",
+  "unverified":["Latest multiline import repair through browser","Remaining final replay part4 completion","Two complete four-code bulk replays","Fresh server acknowledgement, personal count and observation history after latest restart"],
+  "preservedEvidence":"Previously captured four actual QR parts/images and eight-observation reassembly proof remain unchanged. Earlier individual transfer completed once and partial replay reached3of4. Original bulk failure remains in journey-scouting-production-build-offline-repaired.json.",
+  "next":"After browser control is restored externally, genuinely reload latest build, finish part4 replay, then paste the same four actual captured codes twice through normal UI and verify one report with unchanged history.",
+  "productionCompletionClaim":false
+}

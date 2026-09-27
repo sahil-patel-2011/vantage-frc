@@ -1,0 +1,293 @@
+{
+  "journey": "scouting collection, recovery, reporting, profiles, comparisons and handoff",
+  "date": "2026-09-26",
+  "environment": {
+    "url": "http://127.0.0.1:3417",
+    "database": "vantage_release_test",
+    "production": false,
+    "browser": "Chrome shared test profile; own tab 781731034",
+    "authentication": "Existing normal UI Morgan Journey session; no session injection or identity change",
+    "actor": "journey-mentor-20260926@example.test",
+    "organization": "6925a000-0000-4000-8000-000000000001",
+    "event": "2026gacmp"
+  },
+  "safety": {
+    "syntheticOnly": true,
+    "externalMessagesSent": false,
+    "databaseMutationsOutsideUI": false,
+    "configurationEdited": false,
+    "existingRecordsDeleted": false,
+    "sourcePolicyChanged": false,
+    "cameraPermissionRequested": false
+  },
+  "retainedRecords": [
+    {
+      "kind": "Uploaded match report",
+      "match": "2026gacmp_qm33",
+      "team": "frc1678",
+      "note": "[Synthetic scouting journey 2026-09-26] Refresh recovery test; no real match observation.",
+      "answers": {
+        "autoPoints": 1,
+        "teleopCycles": 1,
+        "endgame": "park",
+        "totalPoints": 7,
+        "brokeDown": "no",
+        "confidence": "Sure",
+        "fouls": "missing, not recorded zero"
+      },
+      "observations": {
+        "version": 1,
+        "eventCount": 6
+      },
+      "savedAt": "2026-09-26T22:12:34Z"
+    },
+    {
+      "kind": "Unsaved local draft",
+      "match": "2026gacmp_qm34",
+      "team": "frc148",
+      "note": "[Synthetic scouting journey 2026-09-26] Undo and missing-value draft only.",
+      "autoPoints": 1,
+      "recordedActions": 4,
+      "submitted": false
+    },
+    {
+      "kind": "Unsaved local recovery retest draft",
+      "match": "2026gacmp_qm35",
+      "team": "frc217",
+      "note": "[Synthetic scouting journey 2026-09-26] Clock and active-selection recovery retest; draft only.",
+      "autoPoints": 1,
+      "recordedActions": 2,
+      "submitted": false,
+      "timer": "Started through UI; elapsed continued across genuine reloads"
+    },
+    {
+      "kind": "Unsaved rapid sequence retest draft",
+      "match": "2026gacmp_qm35",
+      "team": "frc2056",
+      "note": "[Synthetic scouting journey 2026-09-26] Rapid counter and clock recovery retest; draft only.",
+      "autoPoints": 1,
+      "recordedActions": 2,
+      "submitted": false,
+      "timer": "Start click did not visibly begin countdown after rapid robot selection"
+    },
+    {
+      "kind": "Actual outage queued report, then server acknowledged",
+      "match": "2026gacmp_qm36",
+      "team": "frc7457",
+      "note": "[Synthetic scouting journey 2026-09-26] Actual server-outage save and QR handoff test; no real match observation.",
+      "answers": {
+        "confidence": "Sure",
+        "fouls": "missing",
+        "brokeDown": "no",
+        "teleopCycles": 1,
+        "autoPoints": 1,
+        "endgame": "park",
+        "totalPoints": 9
+      },
+      "observations": {
+        "eventCount": 6,
+        "version": 1
+      },
+      "submitted": true,
+      "serverExportRowCount": 1
+    }
+  ],
+  "checks": [
+    {
+      "id": "draft-refresh-values",
+      "status": "passed_bounded",
+      "steps": [
+        "Change Notes, Auto points and Teleop cycles",
+        "Observe draft saved",
+        "Reload actual browser page",
+        "Return to Qual33/team1678"
+      ],
+      "evidence": "Both counters and exact synthetic note restored with three recorded actions. This proves refresh recovery of values, not a browser-process crash or every field type."
+    },
+    {
+      "id": "draft-refresh-selection",
+      "status": "passed_after_fix",
+      "evidence": "After latest genuine reload and distinct labeled Qual35/team217 draft, refresh automatically restores exact Qual35/team217Red1, note and running clock. Counter restores when Draft saved just now was observed."
+    },
+    {
+      "id": "match-timer-refresh",
+      "status": "passed_after_fix_bounded",
+      "evidence": "Actual refresh restores running Auto15→Auto9, later Teleop1:42→1:35 with exact active match/robot and label. Default15/135 timing remains a limitation pending verified season configuration. Browser-process crash not performed."
+    },
+    {
+      "id": "upload-and-profile",
+      "status": "passed_bounded",
+      "evidence": "Actual Save this match produced Uploaded1 entry, Saved1678 Qual33, Online0queued. Saved report expanded correct answers. Team1678 profile supporting matches shows Qual33 total7, auto1, teleop1 and exact synthetic note. Event observed count rose from144 to145."
+    },
+    {
+      "id": "observations-saved-viewer",
+      "status": "passed_after_fix",
+      "initialFailure": "Draft review6actions but saved Timeline said No timed actions were recorded on this report.",
+      "retest": "Genuine page reload after parent patch; same existing report now expands Timeline Review6recorded actions with original device timestamps and all six before/after observations. No replacement report created.",
+      "screenshot": "docs/release/evidence/scouting-report-history.png"
+    },
+    {
+      "id": "observation-csv-export",
+      "status": "passed_after_fix",
+      "initialFailure": "Actual UI CSV download145rows had only answer columns; no versioned action history.",
+      "retest": "Fresh actual UI download after parent patch includes Observation history (versioned JSON). Own unique synthetic row parses version1/events6, including IDs, ISO timestamps and beforeExists/afterExists.145rows and exactly one matching synthetic report.",
+      "downloadPath": "C:/Users/sahil/Downloads/2026gacmp-match-scouting (1).csv"
+    },
+    {
+      "id": "counter-correction-history",
+      "status": "passed_bounded",
+      "evidence": "New unsaved labeled Qual34/team148 draft: increment1, increment2, decrement1. Review retains original events plus 2→1 correction and times. Missing first value is Not recorded, not zero. No general undo control was exposed."
+    },
+    {
+      "id": "profile-real-search-samples",
+      "status": "passed_bounded",
+      "evidence": "Robots search1678 narrows list to team1678 and displays8matches and raw supporting matches. Initial UI mean47.1/Q11total0 was subsequently traced to health adjustment, not proof of an explicitly recorded raw zero. Final rerun now shows mean48.6 and Q11total12, consistent with reconciliation. Scheduled unobserved rows say not scouted; synthetic Qual33 missing foul is em dash. Official columns identify alliance score."
+    },
+    {
+      "id": "with-against-context",
+      "status": "passed_bounded",
+      "evidence": "Selecting6925 displays Allied with6925 not enough matches (0; needs2) and Against6925 average46 (3; needs2). Source confirms relative context chips, not a table filter. All supporting matches intentionally remain visible."
+    },
+    {
+      "id": "three-team-comparison",
+      "status": "passed_bounded",
+      "evidence": "Selected1678,6925,254 through actual profile Add to comparison. Compare robots region shows all three using shared scales and real sample counts8/8/13."
+    },
+    {
+      "id": "comparison-navigation-persistence",
+      "status": "passed_after_fix",
+      "evidence": "After creating1678/6925/254 comparison, Match→Robots retains all3andFind a team254. Genuine reload then Robots retains same three teams and search254. Screenshot scouting-comparison-persistence.png."
+    },
+    {
+      "id": "comparison-three-team-copy",
+      "status": "passed_after_fix",
+      "evidence": "Initial repaired view described three robots rather than asking for a third. Final phase correction now warns that a complete phase split is missing, directs roles to recorded capabilities/raw reports, and labels adjusted-average/risk estimates as unverified predictions."
+    },
+    {
+      "id": "reconciliation-unified-total",
+      "status": "passed_after_fix_bounded",
+      "initialFailure": "Same Team1678 Qual11 report: Robots profile total0, Trust & coverage reconciliation scouted12. Red alliance reconciliation sums72.",
+      "evidence": "Fresh healthy-cache genuine reload: same Q11/team1678 supporting profile total12 and Trust & coverage scouted12. Profile mean48.6 over8matches. Red reconciliation sum72 retains component1678=12,254=12,148=48. No replacement report created; duplicate-mean/range fixtures not tested in this browser rerun."
+    },
+    {
+      "id": "phase-units-and-total",
+      "status": "passed_after_fix_bounded",
+      "initialFailure": "Team1678 profile formerly labeled whole-match remainder as Teleop39.3pts and missing Endgame as0.",
+      "evidence": "Final genuine UI rerun: Auto9.4points/8observed matches, TeleopUnknown/0 and EndgameUnknown/0. Profile states phase averages may use different matches and do not form shares of total. Comparison1678/6925/254 uses same values/sample counts, warns complete phase split missing, and labels estimated risk as not a verified prediction."
+    },
+    {
+      "id": "coverage-empty-conflicts",
+      "status": "passed_read_only",
+      "evidence": "Conflicts exposes truthful No disagreements for this event yet. Trust & coverage shows145covered,71gaps,0assignedwaiting,67%coverage; Morgan1entry0checked and Riley144entries0checked both No checks. No conflict-resolution or assignment mutation tested."
+    },
+    {
+      "id": "supporting-match-link",
+      "status": "passed_bounded",
+      "evidence": "Clicked actual1report reconciliation link for Qual11/team1678. Canonical competition redirect preserves scoutTab/matchKey/teamKey and form visibly says Scouting1678 Qual11 Red2."
+    },
+    {
+      "id": "qr-negative-code",
+      "status": "passed_bounded",
+      "evidence": "QR handoff exposes empty local waiting queue, sender and receiver controls. Synthetic XXXX-XXXX request rejected with Unknown handoff code for this team."
+    },
+    {
+      "id": "offline-successful-qr-transfer",
+      "status": "not_verified",
+      "blocker": "Actual coordinated local server outage: report saved and queue visible. QR handoff opened, but clicking Show handoff QR reached browser ERR_CONNECTION_REFUSED on same URL, before embedded payload capture. Dev HMR shell reload is a possible cause, not proven. Successful production-build cached-shell QR generation/import still required."
+    },
+    {
+      "id": "console-errors",
+      "status": "passed_bounded",
+      "evidence": "Captured tab error/warning logs empty through completed checks. Initial transient Could not load scouting status disappeared after genuine reload; not proof of all network requests or all app routes."
+    },
+    {
+      "id": "rapid-draft-counter-update",
+      "status": "passed_after_synchronous_scroll_fix_bounded",
+      "finalRetest": "Fresh genuine reload: immediate firstAuto taps onQ36/team67andQ36/team254 now registerAuto1/Review1before any other field. Both full labeled drafts retain counters/history/ownclock/context after reload; switchback67→254 restores distinctAuto1vs2, ownnotes and3vs4actions. Detailed bounded evidence journey-scouting-synchronous-scroll-retest.json. Initial failures below retained.",
+      "evidence": "First rapid selectQ35/team217→fillnote→counterincrement→startclock→refresh sequence retained note/clock/context but counter empty and review1action. One locator timeout occurred amid parent edits/HMR. Repeat explicit increment then Draft saved just now→refresh retained Auto1/review2actions. Cannot attribute first anomaly without stable-build reproduction. Distinct Q35/team2056 repeat: select robot, fill note, increment Auto, click Start timer. Snapshot then showed Auto1/note/two actions but timer still Start match timer when auto starts. Reload retained counter/note/context. This narrows repeat anomaly to immediate clock start after selection; it is not a repeatable counter loss."
+    },
+    {
+      "id": "saved-history-layout",
+      "status": "passed_after_fix_bounded",
+      "evidence": "Genuine reload of parent fix: Stats and Timeline now stack within sidebar. Notes and observation timestamps readable at1265px desktop. Captured scouting-report-history-stacked.png. Phone layout not tested."
+    },
+    {
+      "id": "actual-server-outage-save-reconnect",
+      "status": "passed_bounded",
+      "steps": [
+        "Genuine reload while local3417 healthy; verify Morgan account menu and saved draft",
+        "Root stops actual local3417 listener, verified not listening",
+        "Save prepared Q36/team7457 exactly once through UI",
+        "Observe Saved7457 Qual36, Online1queued, Your reports1waiting to upload and Sync pending1",
+        "Browser loses app shell with ERR_CONNECTION_REFUSED while attempting QR",
+        "Root restarts local server; reload normal app twice; queue eventually0",
+        "Download actual UI export and inspect unique synthetic row; inspect Robot7457 supporting Q36"
+      ],
+      "evidence": "Fresh server CSV146rows/one unique outage note; Auto1,Teleop1,Park,total9,No breakdown,Sure and missingFouls preserved. Versioned observations parse version1/events6 with original IDs and ISOtimestamps. Robot7457 supportingQ36displays9,1,1,missing foul and note;10observed matches/mean14.4. No second Save/replay performed, so exactly-one row only proves this journey, not generalized dedup.",
+      "downloadPath": "C:/Users/sahil/Downloads/2026gacmp-match-scouting (2).csv",
+      "screenshot": "docs/release/evidence/scouting-outage-upload-profile.png"
+    },
+    {
+      "id": "outage-saved-list-personal-count",
+      "status": "passed_after_environment_repair",
+      "initialFailure": "After successful server ack and genuine second reload, personal recent list omitted Q36/7457 and showedMorgan1 despite CSV/profile data.",
+      "evidence": "After root repaired dev dependencies/cache, genuine full reload completes normal Morgan session. Online0queued; Your reports2atthisevent; actual recent-list buttons include Q36/7457 and Q33/1678. Existing Q36 expands exact answers and six original timestamped actions."
+    },
+    {
+      "id": "offline-application-shell",
+      "status": "failed_local_dev_unverified_production",
+      "evidence": "During actual server outage, normal QR view opened from loaded Match page. After Show handoff QR attempt, Chrome showed ERR_CONNECTION_REFUSED at unchanged canonical app URL. Possible dev HMR reload; not attributed as production defect without production-build test.",
+      "screenshot": "docs/release/evidence/scouting-offline-shell-failure.png"
+    },
+    {
+      "id": "final-post-reconnect-personal-count-reload",
+      "status": "passed_after_environment_repair",
+      "evidence": "Parent requested final genuine reload for Match personal count. Normal reload currently remains Opening your team / Your team / account? beyond UI wait and independent source-read work, so final freshest count not yet available. Prior post-reconnect Morgan UI completed and showed count1/Q33only while serverCSV/profile acknowledgedQ36. No identity or configuration change. Tab console now shows repeated Internal Next.js error: Router action dispatched before initialization, dispatchAppRouterAction→hmrRefresh→WebSocket.handleMessage at22:37:22–22:37:39UTC. This narrows final UI blocker to dev HMR initialization; stable build retest required.",
+      "dom": "docs/release/evidence/scouting-final-reload-opening-team.txt",
+      "screenshot": "docs/release/evidence/scouting-final-reload-opening-team.png",
+      "logs": "docs/release/evidence/scouting-final-reload-errors.json"
+    }
+  ],
+  "unverified": [
+    "Real browser-process crash recovery",
+    "Successful QR encode/decode/import/idempotent replay with device ownership",
+    "Cross-user and cross-team offline isolation",
+    "Duplicate reports and conflict resolution",
+    "Complete custom field types including timers, positions and paths",
+    "Changing global event or per-source policy; avoided disrupting parallel agent sessions",
+    "Phone/tablet layout, keyboard and reduced-motion acceptance",
+    "Scouting partner grants and revocation",
+    "Pick lists and match briefing saved/offline",
+    "Sheets recovery of observation history",
+    "Production scouting journey and required acceptance load"
+  ],
+  "finalRerun": {
+    "environment": "Fresh-cache healthy Turbopack after dependency repair; local development only; same normal Morgan browser session",
+    "rapidDraft": {
+      "match": "2026gacmp_qm34",
+      "team": "frc4613",
+      "note": "[Synthetic scouting journey 2026-09-26] Immediate autosave final retest; draft only.",
+      "submitted": false,
+      "initialRapidFailure": "Select robot, fill note, click Auto+, Teleop+, Start timer. Visible result Auto missing, Teleop1, exact note, Auto15seconds, Review2 rather than3. Loss happened before reload. Genuine reload retained this state and running Auto3seconds.",
+      "warmedRecovery": "Subsequent explicit Auto+ visibly produced1/Teleop1/Review3. Immediate genuine reload retained both counters, exact note, Q34/team4613Blue3 and running timer Teleop1:49→1:41. This verifies warmed update recovery but does not erase initial rapid input loss.",
+      "screenshot": "docs/release/evidence/scouting-immediate-autosave-recovery.png"
+    },
+    "qrOnline": "Normal online QR panel displays Nothing waiting on this phone, receiver scan/code controls and0queued. No successful queued payload/import asserted.",
+    "comparison": {
+      "teams": [1678,6925,254],
+      "autoPoints": [9.4,10.8,10.0],
+      "autoSampleCounts": [8,8,13],
+      "inlineWidths": ["87.2093%","100%","93.0233%"],
+      "computedWidthsPx": [171.24,196.365,182.656],
+      "trackDimensionsPx": [196.3646,8],
+      "computedStyle": "Fill8pxhigh/displayblock/opacity1/visible; blue color(srgb0.5298040.6635290.956863); transform identity; animation scmp-grow0.38s. Common numeric scale passes; screenshot captured gray-looking tracks, visual discrepancy reported without diagnosing CSS failure.",
+      "screenshot": "docs/release/evidence/scouting-comparison-settled-rerun.png",
+      "renderedStyleEvidence": "docs/release/evidence/scouting-comparison-rendered-styles.json"
+    },
+    "savedReports": "Fresh normal reload showsMorgan2,Q36/7457,Q33/1678,Online0queued; existing Q36Timeline retains6 original observations.",
+    "domEvidence": ["docs/release/evidence/scouting-score-profile-rerun.txt","docs/release/evidence/scouting-score-reconciliation-rerun.txt","docs/release/evidence/scouting-qr-online-rerun.txt"],
+    "remaining": "Rapid selection input loss passed bounded final retest after synchronous layout scroll fix; prior failures retained. Successful offline QR and stable production-build cached-shell test remain unverified. Original local dev HMR errors and outage shell failure retained above; production not tested.",
+    "synchronousScrollRetest": "docs/release/evidence/journey-scouting-synchronous-scroll-retest.json"
+  },
+  "completion": "partial_local_acceptance_evidence; unresolved failures and unverified requirements prevent production-complete claim"
+}

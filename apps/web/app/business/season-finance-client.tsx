@@ -390,7 +390,7 @@ function LiveDesk({
   const hasPlan = rollup.plannedIncomeCents > 0 || rollup.plannedSpendCents > 0 || view.funding.length > 0;
   return (
     <>
-      <BalancePanel orgId={view.orgId} />
+      <BalancePanel orgId={view.orgId} refreshKey={view} />
 
       {/* No "What to log next" row: each of its buttons repeated the button on its own section
           ("Add money in", "Log a receipt"), and "Open purchase orders" repeated the Orders chip. */}
@@ -770,12 +770,14 @@ const LEDGER_CSV_COLUMNS: readonly CsvColumn<UnifiedLedgerEntry>[] = [
  * fundraisers, funding desk, and grants). No stored balance column exists
  * anywhere, and rows already mirrored onto the ledger are never counted twice.
  */
-function BalancePanel({ orgId }: { orgId: string }) {
+function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveView }) {
   const [balance, setBalance] = useState<FinanceBalanceView | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setFailed(false);
+    setBalance(null);
     (async () => {
       try {
         const response = await fetch(`/api/finance/balance?${new URLSearchParams({ orgId }).toString()}`);
@@ -793,7 +795,7 @@ function BalancePanel({ orgId }: { orgId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [orgId]);
+  }, [orgId, refreshKey]);
 
   // usdToBalance: API returns USD numbers; reuse the file's cents formatter.
   const usd = (amount: number) => money(Math.round(amount * 100));

@@ -1,0 +1,83 @@
+{
+  "journey": "Build and Business repaired-boundary retest",
+  "checkedAtUtc": "2026-09-26T22:50:49Z",
+  "environment": "local acceptance, http://127.0.0.1:3417, isolated vantage_release_test",
+  "productionAcceptance": false,
+  "identity": "Morgan Journey, journey-mentor-20260926@example.test, Team 6925 admin and mentor",
+  "organizationId": "6925a000-0000-4000-8000-000000000001",
+  "browserTabId": "781731042",
+  "method": "Normal authenticated UI through CUA with the existing shared Morgan session. No authentication switching, session injection, direct API mutations, database writes, real payments, external messages, source edits, server restarts, or time manipulation.",
+  "status": "all_requested_repaired_boundaries_passed_locally",
+  "originalEvidencePreserved": "docs/release/evidence/journey-build-business-workflows.json",
+  "recordsPreserved": true,
+  "checks": [
+    {
+      "id": "sponsor-contribution-api",
+      "status": "passed",
+      "route": "/business?tab=sponsors&orgId=6925a000-0000-4000-8000-000000000001",
+      "steps": "Observed existing Journey Synthetic Sponsor 20260926 with recorded contribution $0. Submitted exactly one Cash contribution of $25 with an explicit simulation-only description through Record contribution.",
+      "evidence": "Done/Saved notice; form cleared; sponsor recorded $25; sponsor moved to Active; team sponsor total $25; fundraising actual $75 comprising $25 sponsors and $50 grants. Money table independently fetched exactly one +$25 Sponsor row with the simulation description.",
+      "description": "JOURNEY RERUN 20260926 — synthetic Cash 25 acceptance fixture; no real payment.",
+      "httpEvidence": "POST /api/business 201; GET /api/business 200; GET /api/finance/balance 200",
+      "screenshot": "journey-sponsor-contribution-rerun.png"
+    },
+    {
+      "id": "finance-stale-balance",
+      "status": "passed",
+      "route": "/business?tab=finance&orgId=6925a000-0000-4000-8000-000000000001",
+      "fixture": "Journey rerun 20260926 - finance balance refresh",
+      "steps": "Observed baseline Money in $85, Money out $3.75, Balance $81.25 and matching Season money. Added clearly synthetic Other income funding with planned $100, received $5, date 2026-09-26, and an explicit local-fixture note. Did not reload or leave the Money tab after saving.",
+      "evidence": "Team money immediately updated to Money in $90, Money out $3.75, Balance $86.25; Season money updated to Received $90, Committed $3.75, Money on hand $86.25. Every entry increased from five to six rows and contains exactly one +$5 funding row. Planned $100 remained excluded from received totals. Funding form reset to empty name/notes and zero planned/received values.",
+      "httpEvidence": "POST /api/business/finance 200 followed by GET /api/finance/balance 200, with no manual page reload",
+      "screenshot": "journey-finance-balance-rerun.png"
+    },
+    {
+      "id": "pit-cooldown-readiness-positive",
+      "status": "passed",
+      "fixture": "JOURNEY-TEST-BATTERY-20260926",
+      "steps": "Existing battery charge displayed Sep 26, 6:20 PM. At the current time, its naturally elapsed cooldown displayed Cool — test now, Competition ready 0 and Cart ready 0. Logged a fresh Resistance test through UI with synthetic 12.8 V / 10 mΩ values and a note explicitly identifying simulated values. New log displayed Sep 26, 6:49 PM. Did not backdate data, alter time, or recharge the battery.",
+      "evidence": "After save, Competition ready 1, Cart ready 1, Need attention 0, Cooling 0; cart Ready with Tested after cooldown; fleet Event ready. Fresh Pit route showed pack READY with 12.80 V / 10.0 mΩ and just-now reading, Batteries 1/1, release GO, no issues or overdue work. Competition Event day -> Batteries Fleet readiness reopened the same fresh ready counts and pack state. The Competition Event day page itself has no separate aggregate readiness count; its battery entry opens the shared Build battery view.",
+      "httpEvidence": "POST /api/batteries 200; subsequent GET /api/batteries 200; fresh GET /api/pit 200; Competition battery entry GET /api/batteries 200",
+      "priorNegativeEvidencePreserved": [
+        "journey-pit-cooldown-go.png",
+        "journey-battery-cooldown-fixed.png",
+        "journey-pit-cooldown-fixed.png"
+      ],
+      "screenshots": [
+        "journey-battery-ready-rerun.png",
+        "journey-pit-ready-rerun.png"
+      ]
+    },
+    {
+      "id": "triage-unexplained-confidence",
+      "status": "passed",
+      "route": "/pit-repair-triage?orgId=6925a000-0000-4000-8000-000000000001",
+      "fixture": "Journey Test Washer repair 20260926",
+      "steps": "Used visible navigation search for repair, opened Repair triage, reviewed existing resolved synthetic repair, and expanded Recommendation rules.",
+      "evidence": "No numerical confidence shown. Report explicitly labels Rule-based recommendation, says rules use time/spare stock/recorded history and do not estimate repair-success probability, and requires human robot review. Expanded rules disclose swap below 12 minutes, repair from 20 minutes, recurrence after 3 failures. Supporting values shown: 30 minutes, 0 prior FMEA failures, 1 matched spare. Current stock 0 and historical matched spare 1 remain distinguishable.",
+      "httpEvidence": "GET /api/pit-repair-triage 200",
+      "screenshot": "journey-repair-rules-rerun.png"
+    }
+  ],
+  "browserErrorsAndWarnings": [],
+  "unresolvedOriginalGaps": [
+    "purchase-quantity-ui",
+    "money-commitment-spend-labels",
+    "inventory-zero-value",
+    "tool-catalog-disconnection",
+    "sponsor-task-link",
+    "maintenance-task-owner",
+    "grant-award-amount-input",
+    "grant-owned-workflow"
+  ],
+  "otherObservedCopy": [
+    "Repair triage still offers an optional external Photo URL field; this bounded retest did not exercise it or determine removal scope.",
+    "Battery fleet charge-vent reminder still says Last log is a charge after the fresh resistance test; safety vent guidance is retained but that literal description does not match Recent activity."
+  ],
+  "limitations": [
+    "This closes four repaired boundaries locally; it does not establish the full connected-workflow matrix or production acceptance.",
+    "Battery measurements are explicitly synthetic fixtures, not a claim about physical robot readiness.",
+    "Screenshots are viewport captures; supporting totals, field resets and request statuses were also observed in DOM snapshots and bounded local server logs."
+  ],
+  "cleanup": "Synthetic records retained. Browser tab 781731042 released after saving evidence; no shared identity change or original failed-evidence modification."
+}

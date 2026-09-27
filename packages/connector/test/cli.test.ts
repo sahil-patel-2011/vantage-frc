@@ -3,6 +3,7 @@ import {
   buildStatusSnapshot,
   formatAge,
   formatStatusText,
+  extractPersonalProfile,
   parseCliArgs,
   runCli,
   type CliHost,
@@ -122,6 +123,29 @@ async function readJson(fs: MemoryFileSystem, path: string): Promise<Record<stri
 /* ------------------------------------------------------------------ */
 
 describe("parseCliArgs", () => {
+  it("extracts and validates personal profiles in any argument position", () => {
+    const profile = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    expect(extractPersonalProfile(["mcp", "--profile", profile.toUpperCase()])).toEqual({ argv: ["mcp"], profile });
+    expect(extractPersonalProfile(["--profile", "../alice", "--status"]).error).toMatch(/profile/);
+    expect(extractPersonalProfile(["--profile"]).error).toMatch(/profile/);
+    expect(extractPersonalProfile(["--profile", profile, "--profile", profile]).error).toMatch(/only once/);
+  });
+
+  it("reads only the requested person's status and keeps device tokens out of output", async () => {
+    const fs = new MemoryFileSystem();
+    const profile = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    await saveConnectorConfig(fs, HOME, { ...paired, userId: profile }, profile);
+    const host = makeHost({ argv: ["--profile", profile, "--status", "--json"], fs });
+    expect(await runCli(host)).toBe(0);
+    const snapshot = JSON.parse(host.out.join("\n"));
+    expect(snapshot.paired).toBe(true);
+    expect(snapshot.configPath).toBe(connectorConfigPath(HOME, profile));
+    expect(host.out.join("\n")).not.toContain(paired.deviceToken);
+    const other = makeHost({ argv: ["--profile", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "--status", "--json"], fs });
+    expect(await runCli(other)).toBe(0);
+    expect(JSON.parse(other.out.join("\n")).paired).toBe(false);
+  });
+
   it("defaults to running the supervisor", () => {
     expect(parseCliArgs([])).toEqual({ kind: "run" });
   });
@@ -143,11 +167,8 @@ describe("parseCliArgs", () => {
   });
 
   it("parses capability toggles and rejects unknown ids", () => {
-    expect(parseCliArgs(["--enable", "storage-node"])).toEqual({
-      kind: "toggle",
-      id: "storage-node",
-      enabled: true,
-    });
+    expect(parseCliArgs(["--enable", "storage-node"])).toMatchObject({ kind: "usage-error", message: expect.stringContaining("no longer offered") });
+    expect(parseCliArgs(["--disable", "storage-node"])).toEqual({ kind: "toggle", id: "storage-node", enabled: false });
     expect(parseCliArgs(["--disable", "mcp"])).toEqual({ kind: "toggle", id: "mcp", enabled: false });
     const unknown = parseCliArgs(["--enable", "turbo"]);
     expect(unknown.kind).toBe("usage-error");
@@ -190,6 +211,13 @@ describe("help and version", () => {
 });
 
 describe("--status on a machine that has never been set up", () => {
+  it("keeps the personal profile in every suggested recovery command", async () => {
+    const profile = "11111111-1111-4111-8111-111111111111";
+    const fixture = makeHost({ argv: ["--profile", profile, "--status"] });
+    expect(await runCli(fixture)).toBe(0);
+    expect(fixture.out.join("\n")).toContain(`vantage-connector --profile ${profile} --setup`);
+    expect(fixture.out.join("\n")).not.toContain("`vantage-connector --setup`");
+  });
   it("reports not-paired / no-heartbeat instead of zeros", async () => {
     const host = makeHost({ argv: ["--status"] });
     expect(await runCli(host)).toBe(0);
@@ -199,7 +227,7 @@ describe("--status on a machine that has never been set up", () => {
     expect(text).toContain("nothing runs until this machine is paired and a capability is enabled.");
     // Every capability listed, all off, none pretending to have been detected.
     expect(text).toContain("ai-bridge");
-    expect(text).toContain("storage-node");
+    expect(text).not.toContain("storage-node");
     expect(text).not.toMatch(/\bready\b/);
     // Read-only: status must never create the config it is reporting on.
     expect(host.fs.files.size).toBe(0);

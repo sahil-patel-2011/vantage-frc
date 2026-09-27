@@ -29,7 +29,7 @@ const stages = [
     id: "3",
     title: "Scout at the venue",
     detail:
-      "Match and pit forms keep working when Wi-Fi drops. Photos compress before upload. Tablets pass entries to each other by QR code, no Wi-Fi needed. Everything syncs when signal returns.",
+      "Match and pit forms save entries on the device when Wi-Fi drops. Tablets can pass entries by QR code without Wi-Fi, then upload when connected. Add external match-video links and timestamped notes for review.",
   },
   {
     id: "4",

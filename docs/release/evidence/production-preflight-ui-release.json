@@ -1,0 +1,122 @@
+{
+  "scope": "Previously pulled deployed production metadata; live read-only database-role check repeated. Missing/protected metadata still requires provider/runtime validation.",
+  "rows": [
+    {
+      "name": "DATABASE_URL",
+      "status": "PASS",
+      "note": "Configured; live workflow acceptance remains required."
+    },
+    {
+      "name": "DATABASE_AUTH_URL",
+      "status": "UNVERIFIED",
+      "note": "Protected value requires runtime verification; metadata presence is insufficient."
+    },
+    {
+      "name": "DATABASE_WORKER_URL",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "DATABASE_AI_BRIDGE_URL",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "BETTER_AUTH_SECRET",
+      "status": "UNVERIFIED",
+      "note": "Protected value requires runtime verification; metadata presence is insufficient."
+    },
+    {
+      "name": "BETTER_AUTH_URL",
+      "status": "PASS",
+      "note": "Configured; live workflow acceptance remains required."
+    },
+    {
+      "name": "NEXT_PUBLIC_APP_URL",
+      "status": "PASS",
+      "note": "Configured; live workflow acceptance remains required."
+    },
+    {
+      "name": "NEXT_PUBLIC_SITE_URL",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "CRON_SECRET",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "RESEND_API_KEY",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "AUTH_EMAIL_FROM",
+      "status": "UNVERIFIED",
+      "note": "Protected value requires runtime verification; metadata presence is insufficient."
+    },
+    {
+      "name": "TBA_AUTH_KEY",
+      "status": "UNVERIFIED",
+      "note": "Protected value requires runtime verification; metadata presence is insufficient."
+    },
+    {
+      "name": "RECOVERY_ENCRYPTION_KEY",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "EXPORT_ENCRYPTION_KEY",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "MFA_ENCRYPTION_KEY",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "MFA_RECOVERY_PEPPER",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "VANTAGE_SHEETS_HUB_SECRET",
+      "status": "UNVERIFIED",
+      "note": "Protected value requires runtime verification; metadata presence is insufficient."
+    },
+    {
+      "name": "RATE_LIMIT_REDIS_URL",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "RATE_LIMIT_REDIS_TOKEN",
+      "status": "FAIL",
+      "note": "Required platform setting is missing."
+    },
+    {
+      "name": "DATABASE_URL role",
+      "status": "FAIL",
+      "note": "Runtime connection has excessive privileges or lacks the expected role."
+    },
+    {
+      "name": "DATABASE_AUTH_URL role",
+      "status": "UNVERIFIED",
+      "note": "A readable dedicated runtime connection is required for role verification."
+    },
+    {
+      "name": "DATABASE_WORKER_URL role",
+      "status": "UNVERIFIED",
+      "note": "A readable dedicated runtime connection is required for role verification."
+    },
+    {
+      "name": "DATABASE_AI_BRIDGE_URL role",
+      "status": "UNVERIFIED",
+      "note": "A readable dedicated runtime connection is required for role verification."
+    }
+  ],
+  "checkedAt": "2026-09-27T01:41:47.275Z",
+  "result": "blocked"
+}

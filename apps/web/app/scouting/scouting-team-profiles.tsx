@@ -17,6 +17,8 @@ import { ScoutingTeamDetail } from "./scouting-team-detail";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { offlineSnapshotUser } from "../../lib/offline/identity";
+import { readRobotViewState, robotViewStorageKey, writeRobotViewState } from "../../lib/scouting/robot-view-state";
 import "./scouting-team-profiles.css";
 
 /**
@@ -62,6 +64,26 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [compare, setCompare] = useState<string[]>([]);
   /** When true and exactly two teams are selected, show the split-view deep dive. */
   const [splitView, setSplitView] = useState(false);
+  const [savedContext, setSavedContext] = useState<{ orgId: string; eventKey: string | null; key: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSavedContext(null);
+    void offlineSnapshotUser(orgId).then(user => {
+      if (cancelled || !user) return;
+      const key = robotViewStorageKey(user, orgId, eventKey);
+      const saved = readRobotViewState(key);
+      setSort(saved?.sort ?? "fit"); setSelected(saved?.selected ?? null); setQuery(saved?.query ?? "");
+      setCompare(saved?.compare ?? []); setSplitView(saved?.splitView ?? false);
+      setSavedContext({ orgId, eventKey, key });
+    });
+    return () => { cancelled = true; };
+  }, [orgId, eventKey]);
+
+  useEffect(() => {
+    if (!savedContext || savedContext.orgId !== orgId || savedContext.eventKey !== eventKey) return;
+    writeRobotViewState(savedContext.key, { sort, selected, query, compare, splitView });
+  }, [savedContext, orgId, eventKey, sort, selected, query, compare, splitView]);
 
   const toggleCompare = (teamKey: string) =>
     setCompare((current) =>

@@ -1,0 +1,68 @@
+{
+  "checkedAt": "2026-09-26T23:54:39.378184Z",
+  "productionAcceptance": false,
+  "npmDependencyTreeExitCode": 0,
+  "resolvedRootVersions": {
+    "vitest": "4.1.11",
+    "vite": "8.3.1",
+    "workflow": "4.8.9"
+  },
+  "workflowPatches": {
+    "nanoid": "5.1.16",
+    "undici": "7.29.0"
+  },
+  "audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 4,
+    "high": 0,
+    "critical": 0,
+    "total": 4
+  },
+  "remaining": [
+    {
+      "name": "@esbuild-kit/core-utils",
+      "severity": "moderate",
+      "fixAvailable": {
+        "name": "drizzle-kit",
+        "version": "0.18.1",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "@esbuild-kit/esm-loader",
+      "severity": "moderate",
+      "fixAvailable": {
+        "name": "drizzle-kit",
+        "version": "0.18.1",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "drizzle-kit",
+      "severity": "moderate",
+      "fixAvailable": {
+        "name": "drizzle-kit",
+        "version": "0.18.1",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "esbuild",
+      "severity": "moderate",
+      "fixAvailable": {
+        "name": "drizzle-kit",
+        "version": "0.18.1",
+        "isSemVerMajor": true
+      }
+    }
+  ],
+  "scope": "Dependency installation and resolution, followed by repository checks. Four moderate advisories remain in the Drizzle development-tool chain; no known high or critical advisories in this npm audit. This is not a security audit or production acceptance.",
+  "implementation": "Pin current Workflow at the root as well as web so npm workspace overrides actually apply. Keep Workflow 4.8.9; no audit-force downgrade to Workflow 2.0.6 or Drizzle 0.18.1. Explicit Vite peer dependency keeps Vitest startup reproducible.",
+  "sources": [
+    "https://github.com/advisories/GHSA-28wg-ghj8-5hjv",
+    "https://github.com/advisories/GHSA-4cwx-7wf7-3272",
+    "https://github.com/advisories/GHSA-82fw-gwwq-j7x9",
+    "https://github.com/npm/cli/issues/9659"
+  ]
+}

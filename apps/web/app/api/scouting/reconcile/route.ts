@@ -11,7 +11,7 @@ import {
   type ReconcileMatchRow,
   type ReconciledMatch,
 } from "../../../../lib/scouting/reconcile";
-import { loadScoutFieldRoles } from "../../../../lib/strategy/scout-field-roles";
+import type { OrgValueFormula } from "../../../../lib/scouting/scouted-ratings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         );
       }
 
-      const [matches, entries, roles] = await Promise.all([
+      const [matches, entries, formulas] = await Promise.all([
         client.query<ReconcileMatchRow>(
           `SELECT match_key AS "matchKey", match_number AS "matchNumber",
                   comp_level AS "compLevel", red_alliance AS "redAlliance",
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
             WHERE e.org_id = $1::uuid AND e.event_key = $2::text`,
           [orgId, eventKey],
         ),
-        loadScoutFieldRoles(client, orgId, eventKey),
+        client.query<OrgValueFormula>(`SELECT name, expression FROM org_value_formulas WHERE org_id = $1::uuid ORDER BY name`, [orgId]),
       ]);
 
       if (!matches.rows.length) {
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
       const report = reconcileEvent({
         matches: matches.rows,
         entries: entries.rows,
-        roles,
+        formulas: formulas.rows,
       });
 
       const withShares: ReconciledMatchWithShares[] = report.matches

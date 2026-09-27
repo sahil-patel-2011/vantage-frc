@@ -94,14 +94,14 @@ export async function GET(request: Request) {
            LEFT JOIN LATERAL (
              SELECT
                count(*) FILTER (WHERE kind IN ('match', 'practice'))::int AS cycle_count,
-               (SELECT internal_resistance_mohm FROM battery_logs l WHERE l.battery_id = p.id AND l.internal_resistance_mohm IS NOT NULL ORDER BY l.created_at DESC LIMIT 1) AS last_resistance,
-               (SELECT resting_voltage FROM battery_logs l WHERE l.battery_id = p.id AND l.resting_voltage IS NOT NULL ORDER BY l.created_at DESC LIMIT 1) AS last_voltage,
+               (SELECT internal_resistance_mohm FROM battery_logs l WHERE l.battery_id = p.id AND l.org_id = p.org_id AND (l.resting_voltage IS NOT NULL OR l.internal_resistance_mohm IS NOT NULL) ORDER BY l.created_at DESC, l.id DESC LIMIT 1) AS last_resistance,
+               (SELECT resting_voltage FROM battery_logs l WHERE l.battery_id = p.id AND l.org_id = p.org_id AND (l.resting_voltage IS NOT NULL OR l.internal_resistance_mohm IS NOT NULL) ORDER BY l.created_at DESC, l.id DESC LIMIT 1) AS last_voltage,
                max(created_at) FILTER (WHERE resting_voltage IS NOT NULL OR internal_resistance_mohm IS NOT NULL) AS last_measured_at,
                max(created_at) FILTER (WHERE kind IN ('match', 'practice')) AS last_used_at,
                max(created_at) FILTER (WHERE kind IN ('charge', 'storage_charge')) AS last_charged_at,
                max(created_at) FILTER (
                  WHERE kind NOT IN ('charge', 'storage_charge')
-                   AND (resting_voltage IS NOT NULL OR internal_resistance_mohm IS NOT NULL)
+                   AND resting_voltage IS NOT NULL AND internal_resistance_mohm IS NOT NULL
                ) AS last_tested_at
              FROM battery_logs l WHERE l.battery_id = p.id
            ) agg ON true
@@ -137,6 +137,9 @@ export async function GET(request: Request) {
           lastRestingVoltage: pack.lastRestingVoltage,
           lastInternalResistanceMohm: pack.lastInternalResistanceMohm,
           now,
+          lastChargedAt: pack.lastChargedAt,
+          lastUsedAt: pack.lastUsedAt,
+          lastTestedAt: pack.lastTestedAt,
         });
         const slot = cartSlot({
           status: pack.status,
@@ -160,7 +163,7 @@ export async function GET(request: Request) {
           competitionReady: enriched.filter((p) => p.readiness.ready).length,
           needAttention: enriched.filter((p) => p.status === "active" && (!p.readiness.ready || p.health.status !== "good")).length,
           retired: enriched.filter((p) => p.status === "retired").length,
-          cartReady: enriched.filter((p) => p.cartSlot.kind === "ready").length,
+          cartReady: enriched.filter((p) => p.cartSlot.kind === "ready" && p.readiness.ready).length,
           cartCooling: enriched.filter((p) => p.cartSlot.kind === "cooling").length,
         },
       };

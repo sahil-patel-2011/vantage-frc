@@ -47,6 +47,7 @@ export async function POST(request: Request) {
       deviceToken: token,
       deviceId: row.device_id,
       orgId: row.approved_org_id,
+      userId: row.approved_user_id,
     });
   } catch (error) {
     await client.query("ROLLBACK");

@@ -13,8 +13,10 @@ import { getAiBridgePool } from "./pool";
  * harmless — the adapter is only constructed when a covering device is online.
  */
 export function createBridgeTransport(): SubscriptionBridgeTransport {
+  const ownership = new Map<string, { orgId: string; userId: string }>();
   return {
     async enqueue(input) {
+      if (!input.userId) throw new Error("A personal connection requires a signed-in requester.");
       const result = await getAiBridgePool().query<{ id: string }>(
         // timeoutMs rides inside messages: the device clamps and honors it, and the
         // claim function (0488) grows the job lease from it for long jobs.
@@ -29,10 +31,14 @@ export function createBridgeTransport(): SubscriptionBridgeTransport {
           input.requestedEngine,
         ],
       );
-      return { jobId: result.rows[0]!.id };
+      const jobId = result.rows[0]!.id;
+      ownership.set(jobId, { orgId: input.orgId, userId: input.userId });
+      return { jobId };
     },
 
     async poll(jobId): Promise<BridgeJobStatus> {
+      const owner = ownership.get(jobId);
+      if (!owner) return { state: "expired", errorClass: "queue_expired", errorMessage: "Job is not owned by this request." };
       const result = await getAiBridgePool().query<{
         state: BridgeJobStatus["state"];
         result: BridgeJobStatus["result"];
@@ -41,8 +47,8 @@ export function createBridgeTransport(): SubscriptionBridgeTransport {
       }>(
         `SELECT state, result, error_class AS "errorClass", error_message AS "errorMessage"
            FROM ai_bridge_jobs
-          WHERE id = $1::uuid`,
-        [jobId],
+          WHERE id = $1::uuid AND org_id = $2::uuid AND requested_by = $3::uuid`,
+        [jobId, owner.orgId, owner.userId],
       );
       const row = result.rows[0];
       if (!row) return { state: "expired", errorClass: "queue_expired", errorMessage: "Job not found." };
@@ -50,6 +56,8 @@ export function createBridgeTransport(): SubscriptionBridgeTransport {
     },
 
     async abandon(jobId) {
+      const owner = ownership.get(jobId);
+      if (!owner) return;
       // Only a still-queued job is cancelled; a leased one finishes on the device and
       // its (discarded) result costs nothing extra to record.
       await getAiBridgePool().query(
@@ -57,8 +65,8 @@ export function createBridgeTransport(): SubscriptionBridgeTransport {
             SET state = 'expired', completed_at = now(),
                 error_class = 'queue_expired',
                 error_message = 'The web caller stopped waiting for this job.'
-          WHERE id = $1::uuid AND state = 'queued'`,
-        [jobId],
+          WHERE id = $1::uuid AND org_id = $2::uuid AND requested_by = $3::uuid AND state IN ('queued', 'leased')`,
+        [jobId, owner.orgId, owner.userId],
       );
     },
   };

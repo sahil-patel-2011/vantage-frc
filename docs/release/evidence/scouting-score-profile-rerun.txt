@@ -1,0 +1,578 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - button "Menu and search"
+  - button "Team 6925 — switch team":
+    - generic: Team 6925
+  - link "Open the Scouting app":
+    - /url: /api/handoff/start?to=scouting&path=%2Fscout&orgId=6925a000-0000-4000-8000-000000000001
+    - text: Scouting
+    - generic: app
+    - generic: ↗
+  - link "Ask AI":
+    - /url: /ai?tab=chat&orgId=6925a000-0000-4000-8000-000000000001
+  - link "Notifications, 1 unread":
+    - /url: /notifications
+    - generic: "1"
+  - button "Account menu": M
+- main:
+  - heading "Competition" [level=1]
+  - tablist "Competition sections":
+    - tab "Event day"
+    - tab "Scouting" [selected]
+    - tab "Strategy"
+    - tab "Robot check"
+  - navigation "Tools in Scouting":
+    - button "Forms"
+    - link "Coverage":
+      - /url: /scout-coverage-live?orgId=6925a000-0000-4000-8000-000000000001
+    - link "Shifts":
+      - /url: /shift-balancer?orgId=6925a000-0000-4000-8000-000000000001
+    - button "More tools"
+  - button "How Scouting works":
+    - generic: "?"
+  - strong: Peachtree District Championship
+  - generic: Online · 0 queued
+  - navigation "Scouting views":
+    - button "Match"
+    - button "Pit"
+    - button "Robots"
+    - button "More":
+      - text: More
+      - generic: ▾
+  - region "What your scouting says":
+    - heading "24 robots watched" [level=2]
+    - paragraph: Points your scouts recorded, averaged per match. Best fit orders them by what you say you are looking for.
+    - group "Sort robots":
+      - button "Best fit" [pressed]
+      - button "Pick order"
+      - button "Average"
+      - button "Team number"
+    - generic "Scouting at a glance":
+      - term: Robots watched
+      - definition:
+        - strong: "24"
+        - generic: 146 robot-matches scouted
+      - term: Field average
+      - definition:
+        - strong: "37.3"
+        - generic: points per match
+      - term: Top robot
+      - definition:
+        - strong: "6925"
+        - generic: 63.0 a match
+      - term: Improving
+      - definition:
+        - strong: "4"
+        - generic: trending up late
+      - term: Reliability risk
+      - definition:
+        - strong: "6"
+        - generic: broke down in 10%+ of matches
+    - figure "Field comparison":
+      - text: Field comparison
+      - generic: points per match, highest first
+      - list:
+        - 'listitem "Team 6925: 63.0 a match"':
+          - generic: "6925"
+          - generic: "63.0"
+        - 'listitem "Team 118: 55.4 a match"':
+          - generic: "118"
+          - generic: "55.4"
+        - 'listitem "Team 254: 55.2 a match"':
+          - generic: "254"
+          - generic: "55.2"
+        - 'listitem "Team 2056: 54.2 a match"':
+          - generic: "2056"
+          - generic: "54.2"
+        - 'listitem "Team 33: 52.9 a match"':
+          - generic: "33"
+          - generic: "52.9"
+        - 'listitem "Team 67: 51.3 a match"':
+          - generic: "67"
+          - generic: "51.3"
+        - 'listitem "Team 971: 48.9 a match"':
+          - generic: "971"
+          - generic: "48.9"
+        - 'listitem "Team 1678: 48.6 a match"':
+          - generic: "1678"
+          - generic: "48.6"
+        - 'listitem "Team 1114: 46.7 a match"':
+          - generic: "1114"
+          - generic: "46.7"
+        - 'listitem "Team 148: 46.3 a match"':
+          - generic: "148"
+          - generic: "46.3"
+        - 'listitem "Team 1323: 40.7 a match"':
+          - generic: "1323"
+          - generic: "40.7"
+        - 'listitem "Team 195: 37.5 a match"':
+          - generic: "195"
+          - generic: "37.5"
+        - 'listitem "Team 2767: 37.3 a match"':
+          - generic: "2767"
+          - generic: "37.3"
+        - 'listitem "Team 217: 33.0 a match"':
+          - generic: "217"
+          - generic: "33.0"
+        - 'listitem "Team 1619: 31.5 a match"':
+          - generic: "1619"
+          - generic: "31.5"
+        - 'listitem "Team 2481: 29.0 a match"':
+          - generic: "2481"
+          - generic: "29.0"
+        - 'listitem "Team 3310: 27.8 a match"':
+          - generic: "3310"
+          - generic: "27.8"
+        - 'listitem "Team 4613: 24.6 a match"':
+          - generic: "4613"
+          - generic: "24.6"
+        - 'listitem "Team 5406: 24.3 a match"':
+          - generic: "5406"
+          - generic: "24.3"
+        - 'listitem "Team 3005: 19.7 a match"':
+          - generic: "3005"
+          - generic: "19.7"
+        - 'listitem "Team 6800: 19.4 a match"':
+          - generic: "6800"
+          - generic: "19.4"
+        - 'listitem "Team 8033: 19.2 a match"':
+          - generic: "8033"
+          - generic: "19.2"
+        - 'listitem "Team 7457: 14.8 a match"':
+          - generic: "7457"
+          - generic: "14.8"
+        - 'listitem "Team 9999: 14.4 a match"':
+          - generic: "9999"
+          - generic: "14.4"
+      - generic: avg 37.3
+    - region "What you are looking for":
+      - heading "What are you looking for?" [level=3]
+      - generic: Total points
+      - slider "How much total points matters": "1"
+      - generic: Normal
+      - generic: Does the same thing every match
+      - slider "How much does the same thing every match matters": "0.6"
+      - generic: Normal
+      - generic: Finishes the match
+      - slider "How much finishes the match matters": "0.6"
+      - generic: Normal
+      - generic: Endgame climb
+      - slider "How much endgame climb matters": "0.4"
+      - generic: A little
+      - generic: Auto points
+      - slider "How much auto points matters": "0.3"
+      - generic: A little
+      - generic: Defense effectiveness
+      - slider "How much defense effectiveness matters": "0"
+      - generic: Ignore
+    - region "Compare robots":
+      - heading "Comparing 1678 vs 6925 vs 254" [level=3]
+      - button "Clear"
+      - article:
+        - generic: "1678"
+        - strong: "48.6"
+        - generic: per match
+        - button "Remove 1678 from the comparison": ×
+        - list:
+          - generic: Auto
+          - generic "8 matches with recorded auto points":
+            - text: "9.4"
+            - generic: (8)
+          - generic: Teleop
+          - generic "0 matches with recorded teleop points":
+            - text: Unknown
+            - generic: (0)
+          - generic: Endgame
+          - generic "0 matches with recorded endgame points":
+            - text: Unknown
+            - generic: (0)
+        - generic: Bad day → good day
+        - generic: 43–63
+        - term: Matches
+        - definition: "8"
+        - term: Consistency
+        - definition: Steady
+        - term: Trend
+        - definition: Flat
+        - term: Broke down
+        - definition: 13%
+        - paragraph: 1678 — 48.6 a match, and does it every match
+      - article:
+        - generic: "6925"
+        - strong: "63.0"
+        - generic: per match
+        - button "Remove 6925 from the comparison": ×
+        - paragraph: Highest scoring here
+        - list:
+          - generic: Auto
+          - generic "8 matches with recorded auto points":
+            - text: "10.8"
+            - generic: (8)
+          - generic: Teleop
+          - generic "0 matches with recorded teleop points":
+            - text: Unknown
+            - generic: (0)
+          - generic: Endgame
+          - generic "0 matches with recorded endgame points":
+            - text: Unknown
+            - generic: (0)
+        - generic: Bad day → good day
+        - generic: 58–68
+        - term: Matches
+        - definition: "8"
+        - term: Consistency
+        - definition: Steady
+        - term: Trend
+        - definition: Flat
+        - term: Broke down
+        - definition: 0%
+        - paragraph: 6925 — 63 a match, and does it every match
+      - article:
+        - generic: "254"
+        - strong: "55.2"
+        - generic: per match
+        - button "Remove 254 from the comparison": ×
+        - list:
+          - generic: Auto
+          - generic "13 matches with recorded auto points":
+            - text: "10.0"
+            - generic: (13)
+          - generic: Teleop
+          - generic "0 matches with recorded teleop points":
+            - text: Unknown
+            - generic: (0)
+          - generic: Endgame
+          - generic "0 matches with recorded endgame points":
+            - text: Unknown
+            - generic: (0)
+        - generic: Bad day → good day
+        - generic: 54–62
+        - term: Matches
+        - definition: "13"
+        - term: Consistency
+        - definition: Very consistent
+        - term: Trend
+        - definition: Improving
+        - term: Broke down
+        - definition: 8%
+        - paragraph: 254 — scoring 7.8 more per match than they were early on
+      - figure "Recorded phase points averages over observed matches; absent values are unknown":
+        - text: Recorded phase points
+        - generic: averages over observed matches; absent values are unknown
+        - generic "1678 · Auto 9.4 points · 8 matches"
+        - generic "6925 · Auto 10.8 points · 8 matches"
+        - generic "254 · Auto 10.0 points · 13 matches"
+        - generic: Auto
+        - generic "1678 · Teleop Unknown points · 0 matches"
+        - generic "6925 · Teleop Unknown points · 0 matches"
+        - generic "254 · Teleop Unknown points · 0 matches"
+        - generic: Teleop
+        - generic "1678 · Endgame Unknown points · 0 matches"
+        - generic "6925 · Endgame Unknown points · 0 matches"
+        - generic "254 · Endgame Unknown points · 0 matches"
+        - generic: Endgame
+      - figure "Match by match total points, in order":
+        - text: Match by match
+        - generic: total points, in order
+        - img "Match by match totals for each robot"
+        - generic: Match 1
+        - generic: Match 13
+      - list:
+        - listitem: "1678"
+        - listitem: "6925"
+        - listitem: "254"
+      - strong: "164"
+      - generic: sum of adjusted averages
+      - strong: 155–192
+      - generic: bad day → good day
+      - strong: 30.1 · Unknown · Unknown
+      - generic: auto · teleop · endgame
+      - strong: 19%
+      - generic: estimated breakdown risk*
+      - strong: 2/3
+      - generic: reliable climbs
+      - paragraph: A complete phase split is missing. Assign roles using recorded capabilities and raw reports. *Risk assumes independent breakdowns; this is not a verified match prediction.
+    - generic: Find a team
+    - searchbox "Find a team" [active]: "1678"
+    - list:
+      - 'button "1678 48.6 a match 1678''s scored total, match by match: 62, 62, 12, 66, 53, 65, 62, 7 Steady Broke down in 13% of matches Beats 69% of the field" [pressed]':
+        - generic: "1678"
+        - strong: "48.6"
+        - generic: a match
+        - 'img "1678''s scored total, match by match: 62, 62, 12, 66, 53, 65, 62, 7"'
+        - generic: Steady
+        - generic: Broke down in 13% of matches
+        - generic: Beats 69% of the field
+      - paragraph: 1678 — 48.6 a match, and does it every match
+    - complementary "Team 1678 detail":
+      - generic: Team
+      - heading "1678" [level=3]
+      - strong: "48.6"
+      - generic: points per match
+      - button "Remove from comparison" [pressed]: ✓
+      - paragraph: 1678 — 48.6 a match, and does it every match
+      - figure "Match trend total points, in order":
+        - generic: Match trend total points, in order
+        - 'img "Match by match: 62, 62, 12, 66, 53, 65, 62, 7"':
+          - generic: "0"
+          - generic: "35"
+          - generic: "70"
+          - generic: M1
+          - generic: M8
+      - figure "Recorded phase points separate observed samples":
+        - generic: Recorded phase points separate observed samples
+        - paragraph: No complete phase split was recorded. These phase averages may use different matches and do not form shares of the total.
+        - term: Auto
+        - definition: 9.4 · 8 matches
+        - term: Teleop
+        - definition: Unknown · 0 matches
+        - term: Endgame
+        - definition: Unknown · 0 matches
+      - term: Matches watched
+      - definition: "8"
+      - term: Consistency
+      - definition: Steady
+      - term: Bad day / good day
+      - definition: 43 – 63
+      - term: Climbs
+      - definition: 38% of matches
+      - term: Breakdown reported
+      - definition: 13% of matches
+      - region "Team 1678 match by match":
+        - heading "Match by match" [level=4]
+        - paragraph: Our scouts = what our entries recorded. Official = the alliance’s posted score.
+        - generic "Our scouts’ total, 8 matches":
+          - generic: Average
+          - strong: "48.6"
+        - generic: Best
+        - strong: "66"
+        - generic: Worst
+        - strong: "7"
+        - generic: Last 3
+        - strong: "44.7"
+        - generic: With or against
+        - combobox "With or against":
+          - option "Pick a team…" [selected]
+          - option "254 (9 shared)"
+          - option "2481 (7 shared)"
+          - option "6925 (6 shared)"
+          - option "1114 (5 shared)"
+          - option "217 (4 shared)"
+          - option "1323 (4 shared)"
+          - option "3005 (4 shared)"
+          - option "67 (3 shared)"
+          - option "118 (3 shared)"
+          - option "148 (3 shared)"
+          - option "971 (3 shared)"
+          - option "4613 (3 shared)"
+          - option "33 (2 shared)"
+          - option "1619 (2 shared)"
+          - option "2767 (2 shared)"
+          - option "3310 (2 shared)"
+          - option "5406 (2 shared)"
+          - option "7457 (2 shared)"
+          - option "195 (1 shared)"
+          - option "6800 (1 shared)"
+          - option "8033 (1 shared)"
+          - option "9999 (1 shared)"
+        - region "Matches":
+          - table:
+            - rowgroup:
+              - row "Match Alliance With Against Official (alliance) Total (our scouts) Auto points (our scouts) Teleop cycles (our scouts) Fouls (our scouts) Notes Video":
+                - columnheader "Match"
+                - columnheader "Alliance"
+                - columnheader "With"
+                - columnheader "Against"
+                - columnheader "Official (alliance)"
+                - columnheader "Total (our scouts)"
+                - columnheader "Auto points (our scouts)"
+                - columnheader "Teleop cycles (our scouts)"
+                - columnheader "Fouls (our scouts)"
+                - columnheader "Notes"
+                - columnheader "Video"
+            - rowgroup:
+              - row "Q2 Blue 8033 · 3005 2481 · 3310 · 971 L 121–123 62 11 12 0":
+                - rowheader "Q2"
+                - cell "Blue": Blue
+                - cell "8033 · 3005"
+                - cell "2481 · 3310 · 971"
+                - cell "L 121–123":
+                  - generic: L 121–123
+                - cell "62"
+                - cell "11"
+                - cell "12"
+                - cell "0"
+                - cell
+                - cell
+              - row "Q3 Red 2767 · 1114 254 · 67 · 3310 W 138–128 62 11 12 5":
+                - rowheader "Q3"
+                - cell "Red": Red
+                - cell "2767 · 1114"
+                - cell "254 · 67 · 3310"
+                - cell "W 138–128":
+                  - generic: W 138–128
+                - cell "62"
+                - cell "11"
+                - cell "12"
+                - cell "5"
+                - cell
+                - cell
+              - row "Q11 Red 254 · 148 118 · 217 · 2481 W 169–129 12 10 12 0 Stopped moving mid-match.":
+                - rowheader "Q11"
+                - cell "Red": Red
+                - cell "254 · 148"
+                - cell "118 · 217 · 2481"
+                - cell "W 169–129":
+                  - generic: W 169–129
+                - cell "12"
+                - cell "10"
+                - cell "12"
+                - cell "0"
+                - cell "Stopped moving mid-match."
+                - cell
+              - row "Q13 Blue 2481 · 254 6925 · 4613 · 5406 W 144–122 66 11 13 0":
+                - rowheader "Q13"
+                - cell "Blue": Blue
+                - cell "2481 · 254"
+                - cell "6925 · 4613 · 5406"
+                - cell "W 144–122":
+                  - generic: W 144–122
+                - cell "66"
+                - cell "11"
+                - cell "13"
+                - cell "0"
+                - cell
+                - cell
+              - row "Q15 Blue 3005 · 254 1114 · 67 · 971 L 121–152 53 9 11 0":
+                - rowheader "Q15"
+                - cell "Blue": Blue
+                - cell "3005 · 254"
+                - cell "1114 · 67 · 971"
+                - cell "L 121–152":
+                  - generic: L 121–152
+                - cell "53"
+                - cell "9"
+                - cell "11"
+                - cell "0"
+                - cell
+                - cell
+              - row "Q19 Blue 254 · 2481 7457 · 217 · 6925 L 141–145 65 11 13 0":
+                - rowheader "Q19"
+                - cell "Blue": Blue
+                - cell "254 · 2481"
+                - cell "7457 · 217 · 6925"
+                - cell "L 141–145":
+                  - generic: L 141–145
+                - cell "65"
+                - cell "11"
+                - cell "13"
+                - cell "0"
+                - cell
+                - cell
+              - row "Q24 Blue 118 · 971 9999 · 2481 · 254 W 182–102 62 11 12 1":
+                - rowheader "Q24"
+                - cell "Blue": Blue
+                - cell "118 · 971"
+                - cell "9999 · 2481 · 254"
+                - cell "W 182–102":
+                  - generic: W 182–102
+                - cell "62"
+                - cell "11"
+                - cell "12"
+                - cell "1"
+                - cell
+                - cell
+              - row "Q25 Red 6925 · 1114 1323 · 3005 · 6800 W 171–85 not scouted":
+                - rowheader "Q25"
+                - cell "Red": Red
+                - cell "6925 · 1114"
+                - cell "1323 · 3005 · 6800"
+                - cell "W 171–85":
+                  - generic: W 171–85
+                - cell "not scouted"
+                - cell
+                - cell
+                - cell
+                - cell
+                - cell
+              - row "Q26 Blue 2767 · 3005 1114 · 2481 · 254 L 116–122 not scouted":
+                - rowheader "Q26"
+                - cell "Blue": Blue
+                - cell "2767 · 3005"
+                - cell "1114 · 2481 · 254"
+                - cell "L 116–122":
+                  - generic: L 116–122
+                - cell "not scouted"
+                - cell
+                - cell
+                - cell
+                - cell
+                - cell
+              - row "Q27 Blue 148 · 5406 254 · 1114 · 4613 W 142–132 not scouted":
+                - rowheader "Q27"
+                - cell "Blue": Blue
+                - cell "148 · 5406"
+                - cell "254 · 1114 · 4613"
+                - cell "W 142–132":
+                  - generic: W 142–132
+                - cell "not scouted"
+                - cell
+                - cell
+                - cell
+                - cell
+                - cell
+              - row "Q30 Blue 195 · 2481 217 · 33 · 118 L 111–165 not scouted":
+                - rowheader "Q30"
+                - cell "Blue": Blue
+                - cell "195 · 2481"
+                - cell "217 · 33 · 118"
+                - cell "L 111–165":
+                  - generic: L 111–165
+                - cell "not scouted"
+                - cell
+                - cell
+                - cell
+                - cell
+                - cell
+              - row "Q33 Red 1323 · 217 33 · 1619 · 6925 not posted 7 1 1 — [Synthetic scouting journey 2026-09-26] Refresh recovery test; no real match observation.":
+                - rowheader "Q33"
+                - cell "Red": Red
+                - cell "1323 · 217"
+                - cell "33 · 1619 · 6925"
+                - cell "not posted"
+                - cell "7"
+                - cell "1"
+                - cell "1"
+                - cell "—"
+                - cell "[Synthetic scouting journey 2026-09-26] Refresh recovery test; no real match observation."
+                - cell
+              - row "Q34 Blue 1323 · 4613 6925 · 148 · 1619 not posted not scouted":
+                - rowheader "Q34"
+                - cell "Blue": Blue
+                - cell "1323 · 4613"
+                - cell "6925 · 148 · 1619"
+                - cell "not posted"
+                - cell "not scouted"
+                - cell
+                - cell
+                - cell
+                - cell
+                - cell
+              - row "Q36 Blue 1323 · 254 6925 · 7457 · 67 not posted not scouted":
+                - rowheader "Q36"
+                - cell "Blue": Blue
+                - cell "1323 · 254"
+                - cell "6925 · 7457 · 67"
+                - cell "not posted"
+                - cell "not scouted"
+                - cell
+                - cell
+                - cell
+                - cell
+                - cell
+        - paragraph:
+          - link "Add a match note":
+            - /url: /match-notes-timeline?orgId=6925a000-0000-4000-8000-000000000001
+- button "Open Next.js Dev Tools":
+- alert

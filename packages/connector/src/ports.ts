@@ -55,8 +55,9 @@ export type SpawnRunResult = {
 
 /** Child-process port. Injected so engine detection and job execution are testable. */
 export type Spawner = {
+  codexSession?(prompt: string, opts: { userId: string; timeoutMs: number; signal?: AbortSignal; onDelta?: (text: string) => void; testOnly?: boolean; tools?: import("./codex-app-server.js").CodexFeatureTools }): Promise<import("./codex-app-server.js").CodexTurnResult>;
   /** Short synchronous probe (version/auth checks). */
-  runSync(command: string, args: string[], opts?: { timeoutMs?: number; input?: string }): SpawnSyncResult;
+  runSync(command: string, args: string[], opts?: { timeoutMs?: number; input?: string; personalUserId?: string }): SpawnSyncResult;
   /**
    * Long-running job execution: writes `input` to stdin, kills the process at `timeoutMs`.
    * Implementations default cwd to a temp dir so a CLI never picks up a project's
@@ -65,7 +66,7 @@ export type Spawner = {
   run(
     command: string,
     args: string[],
-    opts: { input?: string; timeoutMs: number; cwd?: string },
+    opts: { input?: string; timeoutMs: number; cwd?: string; personalUserId?: string; signal?: AbortSignal },
   ): Promise<SpawnRunResult>;
 };
 

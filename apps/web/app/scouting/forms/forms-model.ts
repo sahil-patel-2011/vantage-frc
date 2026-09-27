@@ -26,7 +26,6 @@ export function defaultQuestions(type: EntryType): DraftQuestion[] {
       newDraftQuestion({ label: "Drivetrain motors", kind: "short" }),
       newDraftQuestion({ label: "Driver seasons of experience", kind: "number" }),
       newDraftQuestion({ label: "Coach seasons of experience", kind: "number" }),
-      newDraftQuestion({ label: "Robot images", kind: "robot_image" }),
       newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
     ];
   }

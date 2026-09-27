@@ -13,6 +13,8 @@ export const CAPABILITY_IDS = [
 ] as const;
 
 export type CapabilityId = (typeof CAPABILITY_IDS)[number];
+/** Legacy storage identifiers remain readable, but new connectors do not offer media hosting. */
+export const ACTIVE_CAPABILITY_IDS = CAPABILITY_IDS.filter((id) => id !== "storage-node");
 
 export function isCapabilityId(value: unknown): value is CapabilityId {
   return typeof value === "string" && (CAPABILITY_IDS as readonly string[]).includes(value);

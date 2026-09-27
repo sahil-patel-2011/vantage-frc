@@ -1,6 +1,6 @@
 "use client";
 
-import type { PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { defaultIslandLabelList } from "../lib/nav/island-preferences";
@@ -211,10 +211,30 @@ export function AppShellIslandEditor({
   onReset: () => void;
   onSave: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    dialog?.querySelector<HTMLButtonElement>('header button')?.focus();
+    return () => {
+      if (dialog?.contains(document.activeElement) || document.activeElement === document.body) {
+        const trigger = document.querySelector<HTMLElement>('.soft-island-edit');
+        (trigger ?? previous)?.focus();
+      }
+    };
+  }, [open]);
   if (!open) return null;
   return (
-    <div className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title">
-      <button className="soft-island-editor-scrim" type="button" aria-label="Close island customization" onClick={onClose} />
+    <div ref={dialogRef} className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title"
+      onKeyDown={event => {
+        if (event.key !== "Tab") return;
+        const items = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]),a[href]')];
+        const first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }}>
+      <button className="soft-island-editor-scrim" tabIndex={-1} type="button" aria-label="Close island customization" onClick={onClose} />
       <section>
         <header>
           <div>
@@ -236,7 +256,7 @@ export function AppShellIslandEditor({
         <div className="soft-island-choice-grid">
           {visibleIslandCatalog.map((item) => {
             const selected = islandDraft.includes(item.href);
-            const disabled = !selected && islandDraft.length >= 4;
+            const disabled = islandSaving || (!selected && islandDraft.length >= 4);
             return (
               <button
                 className={selected ? "selected" : ""}
@@ -253,7 +273,7 @@ export function AppShellIslandEditor({
         </div>
         {islandMessage ? <p className="soft-island-editor-error" role="alert">{islandMessage}</p> : null}
         <footer>
-          <button type="button" onClick={onReset}>Reset</button>
+          <button type="button" disabled={islandSaving} onClick={onReset}>Reset</button>
           <button className="primary" type="button" disabled={islandDraft.length !== 4 || islandSaving} onClick={onSave}>
             {islandSaving ? "Saving…" : "Save"}
           </button>

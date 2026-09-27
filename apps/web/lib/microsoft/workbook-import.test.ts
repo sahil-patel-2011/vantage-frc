@@ -205,7 +205,9 @@ describe("normalizeWorkbookTimestamp", () => {
   it("reads what the export wrote, and what Excel may have turned it into", () => {
     expect(normalizeWorkbookTimestamp("2026-09-21T18:00:00Z")).toBe(T0);
     expect(normalizeWorkbookTimestamp("2026-09-21 18:00:00")).toBe(T0);
-    expect(normalizeWorkbookTimestamp("2026-09-21T18:00:00.999Z")).toBe(T0);
+    expect(normalizeWorkbookTimestamp("2026-09-21T18:00:00.999Z")).toBe("2026-09-21T18:00:00.999Z");
+    expect(normalizeWorkbookTimestamp("2026-09-21 20:00:00.123456+02")).toBe("2026-09-21T18:00:00.123456Z");
+    expect(normalizeWorkbookTimestamp("2026-09-21T18:00:00.000000Z")).toBe(T0);
     // 2026-09-21T18:00:00Z as an Excel serial date.
     const serial = Date.UTC(2026, 8, 21, 18) / 86_400_000 + 25569;
     expect(normalizeWorkbookTimestamp(serial)).toBe(T0);
@@ -330,6 +332,18 @@ describe("diffWorkbook", () => {
     expect(t.conflicts).toEqual([
       { entity: "PickList", rowId: P1, label: "Team 254 (Cheesy Poofs)", fields: ["notes"], workbookUpdatedAt: T0, vantageUpdatedAt: T1 },
     ]);
+  });
+
+  it("rejects a stale edit when the database changed by one microsecond", () => {
+    const source = makeSource();
+    source.pickEntries[0]!.updatedAt = "2026-09-21T18:00:00.123456Z";
+    const reads = exported(source);
+    setCell(reads.PickList, P1, "notes", "stale note");
+    source.pickEntries[0]!.updatedAt = "2026-09-21T18:00:00.123457Z";
+    source.pickEntries[0]!.version = "2026-09-21 18:00:00.123457+00";
+    const t = table(diffWorkbook(reads, source), "PickList");
+    expect(t.changes).toEqual([]);
+    expect(t.conflicts).toMatchObject([{ rowId: P1, workbookUpdatedAt: "2026-09-21T18:00:00.123456Z", vantageUpdatedAt: "2026-09-21T18:00:00.123457Z" }]);
   });
 
   it("treats a cleared or garbled updated_at as a conflict, and an untouched stale row as nothing", () => {

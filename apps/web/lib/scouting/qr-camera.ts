@@ -3,6 +3,7 @@
 // Bundled with the page, not loaded on the tap: with no signal (the only time a QR handoff is
 // needed) an on-demand chunk could not download, so "Show handoff QR" did nothing at all.
 import QRCode from "qrcode";
+import jsQR from "jsqr";
 
 type BarcodeDetectorLike = {
   detect(source: ImageBitmapSource): Promise<Array<{ rawValue: string }>>;
@@ -44,7 +45,6 @@ async function detectWithBarcodeApi(video: HTMLVideoElement): Promise<string | n
 }
 
 async function detectWithJsQr(video: HTMLVideoElement, canvas: HTMLCanvasElement): Promise<string | null> {
-  const jsQR = (await import("jsqr")).default;
   const width = video.videoWidth;
   const height = video.videoHeight;
   if (!width || !height) return null;

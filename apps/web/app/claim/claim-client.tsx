@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
-import { EmptyState, FormGrid, FormRow, PageHeader, Button } from "../../components/ui";
+import { FormGrid, FormRow, PageHeader, Button } from "../../components/ui";
 import {
   CLAIM_ATTESTATION_MISSING_MESSAGE,
   TEAM_CLAIM_STATEMENT_VERSION,
@@ -12,6 +13,7 @@ import {
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 
 export default function ClaimWorkspaceClient() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [teamNumber, setTeamNumber] = useState("");
@@ -22,7 +24,7 @@ export default function ClaimWorkspaceClient() {
   const [legalError, setLegalError] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
-  const [orgId, setOrgId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const consentComplete = legalConsentComplete({ terms: termsAccepted, privacy: privacyAccepted });
   const typedTeam = teamNumber.trim();
@@ -46,6 +48,8 @@ export default function ClaimWorkspaceClient() {
       setAuthorizedError(CLAIM_ATTESTATION_MISSING_MESSAGE);
       return;
     }
+    setSubmitting(true);
+    try {
     const response = await fetch("/api/organizations/claim", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -66,7 +70,10 @@ export default function ClaimWorkspaceClient() {
       setAlreadyClaimed(/already has a Vantage workspace/i.test(message));
       return;
     }
-    setOrgId(data.id);
+    router.push(`/team-setup?orgId=${encodeURIComponent(data.id)}`);
+    } catch {
+      setError("Could not reach Vantage. Check your connection and try again.");
+    } finally { setSubmitting(false); }
   }
 
   return (
@@ -75,16 +82,6 @@ export default function ClaimWorkspaceClient() {
         title="Claim your FRC team"
         description="Verified accounts can create one team per unused TBA team number. Members still join by exact-email invite. STIMS remains official FIRST registration."
       />
-      {orgId ? (
-        <EmptyState
-          title="Team created"
-          description="Invite your scouts next. Import Notion or ICS from Bring your season."
-        >
-            <Button as="a" variant="primary" href={`/migrate?orgId=${encodeURIComponent(orgId)}`}>
-              Bring your season
-            </Button>
-        </EmptyState>
-      ) : (
         <FormGrid>
           <FormRow label="Team name">
             <input value={name} onChange={(event) => setName(event.target.value)} />
@@ -143,14 +140,13 @@ export default function ClaimWorkspaceClient() {
               <a href={teamClaimReportHref(typedTeam)}>Report a team claimed without authorization</a>.
             </p>
           ) : null}
-          <Button type="button" variant="primary" disabled={!canSubmit} onClick={() => void submit()}>
-            Claim team
+          <Button type="button" variant="primary" disabled={!canSubmit || submitting} onClick={() => void submit()}>
+            {submitting ? "Creating team…" : "Create team"}
           </Button>
           <p className="app-muted">
             <a href={teamClaimReportHref(typedTeam)}>Report a team claimed without authorization</a>
           </p>
         </FormGrid>
-      )}
     </main>
   );
 }

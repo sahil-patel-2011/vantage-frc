@@ -582,7 +582,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "files",
     title: "Files — the team drive and your own space",
     summary:
-      "Every member gets a private space; the team gets a shared one. Upload anything, make folders, share by link or to an email address.",
+      "Every member gets a private space; the team gets a shared one. Store supported documents, make folders, and share permitted records. Photo/video uploads and storage setup are retired.",
     category: "team",
     keywords: ["files", "drive", "upload", "share", "link", "video", "flyer", "pdf", "personal", "my files", "shared with me"],
     relatedHref: "/files",
@@ -606,7 +606,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Where the bytes go",
         body: [
-          "Small files are stored in Vantage. Large files go to your team's storage node if one is paired, or to object storage once your deployment has it configured — the upload dialog tells you which.",
+          "Supported documents use the configured document workflow. New photo/video uploads and storage-node setup are unavailable; previously stored records are retained. Use Match Video Index for external video links.",
         ],
       },
     ],
@@ -1220,7 +1220,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "reimbursements",
     title: "Reimbursements — pay members back",
     summary:
-      "File a claim with a receipt photo, the treasurer works the approve/deny/paid queue, and only paid claims touch the team ledger.",
+      "File a claim with a PDF receipt, the treasurer works the approve/deny/paid queue, and only paid claims touch the team ledger.",
     category: "business",
     keywords: [
       "reimburse",
@@ -1237,7 +1237,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Filing a claim",
         body: [
-          "Enter the amount, what it was for, and attach a photo of the receipt — phone shots are downscaled in the browser before upload so they land under the size cap even on venue Wi-Fi.",
+          "Enter the amount, what it was for, and attach a PDF receipt. Export or scan the receipt as a PDF before attaching it. Existing image receipts remain readable.",
           "A draft is visible only to you. Submit it when the receipt is attached; withdrawing a submitted claim returns it to draft.",
         ],
       },
@@ -1354,9 +1354,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "media-library",
     slug: "media-library",
-    title: "Media library — team photos and video",
+    title: "Media library — previous records",
     summary:
-      "Upload the team's photos and clips into albums with honest size caps — 8 MB photos after downscale, 4 MiB videos on the hosted cloud path.",
+      "Photo/video uploads and storage setup are retired. Previously stored records are retained; external match-video links remain supported.",
     category: "media",
     keywords: [
       "media library",
@@ -1371,18 +1371,18 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/media-library",
     sections: [
       {
-        heading: "Uploading",
+        heading: "Existing records",
         body: [
-          "Photos (JPEG/PNG/WebP) are downscaled in the browser before upload and land under the 8 MB in-database cap; hosted-cloud videos (MP4/WebM) are capped at 4 MiB because Vercel rejects larger bodies. Longer clips belong in the team's Google Drive folder.",
-          "Thumbnails and video poster frames are generated on your device; duplicates are caught by content hash instead of stored twice.",
-          "Bigger videos belong in the team's Google Drive folder or on YouTube via the Match Video Index.",
+          "New photo/video uploads, capture and recording are unavailable. This change does not delete existing files or metadata.",
+          "Existing files can be read only where their original storage remains available and your account is authorized.",
+          "Use Match Video Index to save a supported external video link, timestamps and notes.",
         ],
       },
       {
         heading: "Organizing and finding",
         body: [
-          "Group items into albums, and filter by album and the details recorded on upload (event, subteam, and where an item came from).",
-          "An over-cap upload is refused with the real size and the real cap in the message — nothing is silently compressed server-side.",
+          "Use the event, team and timestamps on external match-video records to find relevant footage.",
+          "Supported documents and CAD artifacts remain separate from retired media storage.",
         ],
       },
     ],

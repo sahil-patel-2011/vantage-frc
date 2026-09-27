@@ -14,9 +14,9 @@
   --vt-muted-light: #9ca3af;
   --vt-line: #e5e7eb;
   --vt-line-soft: #f3f4f6;
-  --vt-blue: #2563eb;
-  --vt-blue-light: #3b82f6;
-  --vt-blue-soft: #eff6ff;
+  --vt-blue: var(--brand-blue);
+  --vt-blue-light: var(--brand-blue);
+  --vt-blue-soft: var(--brand-blue-soft);
   --vt-blue-tint: #dbeafe;
   --vt-green: #059669;
   --vt-green-soft: #d1fae5;
@@ -43,24 +43,9 @@
 
 /* Light palette only. Dark mode keeps the tokens in system.css. */
 html[data-theme="light"] body.has-app-shell {
-  --bg: var(--vt-bg);
-  --surface: var(--vt-surface);
-  --ink: var(--vt-ink);
-  --muted: var(--vt-muted);
-  --accent: var(--vt-blue);
-  --accent-ink: #fff;
-  --accent-soft: var(--vt-blue-soft);
-  --line: var(--vt-line);
-  --radius: var(--vt-radius);
-  --radius-sm: var(--vt-radius-sm);
-  --radius-xs: var(--vt-radius-xs);
-  --font-sans: var(--vt-font);
-  --shadow: var(--vt-shadow);
-  --shadow-lift: var(--vt-shadow-md);
-  --shadow-pop: var(--vt-shadow-lg);
-  background-color: var(--vt-bg) !important;
+  background-color: var(--bg) !important;
   background-image: none !important;
-  font-family: var(--vt-font) !important;
+  font-family: var(--font-sans) !important;
 }
 
 body.has-app-shell {

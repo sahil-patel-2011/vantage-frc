@@ -2,7 +2,7 @@
 // gates, Event Day pit flags, FMEA/risk register signals, and readiness widgets.
 // Canonical store is battery_packs + battery_logs (see migration 0153_battery_canonical).
 
-import { batteryHealth, type BatteryHealth, type HealthStatus } from "./battery";
+import { batteryHealth, competitionReadiness, type BatteryHealth, type HealthStatus } from "./battery";
 
 /** Pit UI historically used "service"; packs use "quarantine". */
 export type PitBatteryStatus = "active" | "service" | "retired";
@@ -19,6 +19,9 @@ export type FleetPackInput = {
   resistanceMilliohms: number | null;
   cycleCount?: number | null;
   ageMonths?: number | null;
+  lastChargedAt?: string | null;
+  lastUsedAt?: string | null;
+  lastTestedAt?: string | null;
   now?: number;
 };
 
@@ -56,10 +59,6 @@ export type BatteryFmeaSignal = {
   href: string;
 };
 
-const READY_MAX_AGE_MS = 18 * 60 * 60 * 1_000;
-const READY_MIN_VOLTAGE = 12.5;
-const READY_MAX_RESISTANCE = 25;
-
 export function packStatusToPit(status: string): PitBatteryStatus {
   if (status === "quarantine" || status === "service") return "service";
   if (status === "retired") return "retired";
@@ -82,18 +81,19 @@ export function classifyMatchReady(input: {
   resistanceMilliohms: number | null;
   measuredAt?: string | null;
   healthStatus?: HealthStatus;
+  lastChargedAt?: string | null;
+  lastUsedAt?: string | null;
+  lastTestedAt?: string | null;
   now?: number;
 }): BatteryGate {
   const pitStatus = packStatusToPit(input.status);
   if (pitStatus !== "active") return "unread";
-  if (input.healthStatus === "retire") return "review";
   if (input.voltage == null && input.resistanceMilliohms == null) return "unread";
-  if (input.measuredAt && (input.now ?? Date.now()) - new Date(input.measuredAt).getTime() > READY_MAX_AGE_MS) {
-    return "review";
-  }
-  const voltageOk = input.voltage == null || input.voltage >= READY_MIN_VOLTAGE;
-  const resistanceOk = input.resistanceMilliohms == null || input.resistanceMilliohms <= READY_MAX_RESISTANCE;
-  return voltageOk && resistanceOk ? "ready" : "review";
+  const readiness = competitionReadiness({ status: "active", health: { status: input.healthStatus ?? batteryHealth({ restingVoltage: input.voltage, internalResistanceMohm: input.resistanceMilliohms }).status },
+    lastMeasuredAt: input.measuredAt ?? null, lastRestingVoltage: input.voltage, lastInternalResistanceMohm: input.resistanceMilliohms,
+    lastChargedAt: input.lastChargedAt, lastUsedAt: input.lastUsedAt, lastTestedAt: input.lastTestedAt,
+    now: new Date(input.now ?? Date.now()) });
+  return readiness.ready ? "ready" : "review";
 }
 
 export function summarizeFleet(packs: FleetPackInput[]): FleetReliability {
@@ -112,6 +112,9 @@ export function summarizeFleet(packs: FleetPackInput[]): FleetReliability {
       measuredAt: pack.measuredAt,
       healthStatus: health.status,
       now: pack.now,
+      lastChargedAt: pack.lastChargedAt,
+      lastUsedAt: pack.lastUsedAt,
+      lastTestedAt: pack.lastTestedAt,
     });
     return { ...pack, pitStatus, gate, health };
   });
@@ -154,7 +157,7 @@ export function batteryPitFlags(fleet: FleetReliability, orgId: string): Battery
     flags.push({
       severity: "critical",
       title: "No match-ready battery",
-      detail: "Active packs need a fresh reading (≥12.5 V, ≤25 mΩ, measured within 18h) before release.",
+      detail: "Active packs need fresh voltage and resistance readings, a logged charge, full cooldown, and a test after cooldown before release.",
       evidence: hrefEvidence,
     });
   } else if (fleet.readyCount === 1 && fleet.activeCount > 1) {
@@ -262,4 +265,4 @@ export function batteryReadinessChecklist(fleet: FleetReliability) {
 }
 
 export const BATTERY_READY_RULE =
-  "Active + measured in the last 18 hours + at least 12.5 V + at most 25 mΩ (and not past retire IR)";
+  "Active + acceptable health + voltage and resistance measured within 18 hours + at least 12.5 V + at most 25 mΩ + charged after last use + full 15-minute cooldown + test after cooldown";

@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./repository": "./src/repository.ts",
     "./qr-handoff": "./src/qr-handoff.ts",
+    "./qr-transfer": "./src/qr-transfer.ts",
     "./coverage": "./src/coverage.ts",
     "./identity": "./src/identity.ts",
     "./org-isolation": "./src/org-isolation.ts",

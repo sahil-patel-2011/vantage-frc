@@ -13,6 +13,7 @@
  */
 
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import { completePhaseBreakdown, phasePointValue, phaseSampleCount, pointValue } from "./scouting-points-display";
 
 const PHASES = [
   { key: "auto", label: "Auto", value: (p: ScoutedTeamProfile) => p.meanAuto, color: "var(--chart-phase-auto)" },
@@ -156,6 +157,11 @@ function polarArc(start: number, end: number): string {
 }
 
 function PhaseDonut({ profile }: { profile: ScoutedTeamProfile }) {
+  if (!completePhaseBreakdown(profile)) {
+    return <div><p className="sdc-empty">No complete phase split was recorded. These phase averages may use different matches and do not form shares of the total.</p>
+      <dl className="sdc-donut-legend">{PHASES.map(phase => <div key={phase.key}><dt>{phase.label}</dt><dd>{pointValue(phasePointValue(profile, phase.key))} · {phaseSampleCount(profile, phase.key)} matches</dd></div>)}</dl>
+    </div>;
+  }
   const parts = PHASES.map((phase) => ({ ...phase, raw: Math.max(0, phase.value(profile)) }));
   const total = parts.reduce((sum, part) => sum + part.raw, 0) || 1;
   const shares = parts.map((part) => part.raw / total);
@@ -217,7 +223,7 @@ export function ScoutingDetailCharts({ profile }: { profile: ScoutedTeamProfile 
       </figure>
       <figure className="sdc-chart">
         <figcaption>
-          Points by phase <span>share of average</span>
+          Recorded phase points <span>{completePhaseBreakdown(profile) ? "share of average" : "separate observed samples"}</span>
         </figcaption>
         <PhaseDonut profile={profile} />
       </figure>

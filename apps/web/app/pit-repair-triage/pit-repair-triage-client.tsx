@@ -15,6 +15,9 @@ import {
 import { OfflineBanner } from "../../components/offline-banner";
 import {
   TRIAGE_STATUSES,
+  SWAP_TIME_THRESHOLD_MIN,
+  FIX_TIME_THRESHOLD_MIN,
+  CHRONIC_FAILURE_COUNT,
   mainBreakerTripCue,
   canBusDropoutCue,
   needsReinspectionBeforeQueue,
@@ -76,10 +79,6 @@ const STATUS_LABEL: Record<TriageStatus, string> = {
   staged: "Staged",
   resolved: "Resolved",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<PitRepairTriageView, { status: "live" }>;
 
@@ -560,7 +559,7 @@ function ReportsList({
                 <Badge tone={DECISION_TONE[report.decision]}>{triageDecisionLabel(report.decision)}</Badge>
                 <strong className="prt-report-title">{report.title}</strong>
                 <small className="app-muted">
-                  {report.subsystemName} · {STATUS_LABEL[report.status]} · confidence {pct(report.confidence)}
+                  {report.subsystemName} · {STATUS_LABEL[report.status]} · Rule-based recommendation
                 </small>
               </div>
               {canDeletePitRepairReport({ role: view.role, userId: view.userId, authorId: report.recordedBy }) ? (
@@ -586,6 +585,10 @@ function ReportsList({
               </a>
             ) : null}
             <small className="app-muted">{report.rationale}</small>
+            <p className="app-muted">These rules use time, spare stock and recorded failure history. They do not estimate the probability of a successful repair. Review the robot before releasing it.</p>
+            <details><summary>Recommendation rules</summary>
+              <p>Consider swapping below {SWAP_TIME_THRESHOLD_MIN} minutes, repairing from {FIX_TIME_THRESHOLD_MIN} minutes, and a recurring issue after {CHRONIC_FAILURE_COUNT} recorded failures. A missing spare limits the available choices.</p>
+            </details>
             <small className="app-muted">
               {report.minutesUntilNextMatch} min to next match · {report.priorFailureCount} prior FMEA failure(s) ·{" "}
               {report.sparesAvailable} spare(s) matched
@@ -697,7 +700,6 @@ function LogFailureForm({
       subsystemName: "",
       title: "",
       symptomNote: "",
-      photoUrl: "",
       minutesUntilNextMatch: "",
       relatedFmeaFailureId: "",
       matchedInventoryItemId: "",
@@ -721,7 +723,6 @@ function LogFailureForm({
           subsystemName: form.subsystemName,
           title: form.title,
           symptomNote: form.symptomNote || undefined,
-          photoUrl: form.photoUrl || undefined,
           minutesUntilNextMatch: Number(form.minutesUntilNextMatch) || 0,
           relatedFmeaFailureId: form.relatedFmeaFailureId || undefined,
           matchedInventoryItemId: form.matchedInventoryItemId || undefined,
@@ -760,9 +761,6 @@ function LogFailureForm({
               </option>
             ))}
           </select>
-        </FormRow>
-        <FormRow label="Photo URL (optional)">
-          <input value={form.photoUrl} onChange={set("photoUrl")} placeholder="https://…" />
         </FormRow>
       </FormGrid>
       <FormRow label="Symptom note (optional)">

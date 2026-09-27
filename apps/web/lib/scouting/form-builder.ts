@@ -58,11 +58,6 @@ export const ANSWER_KIND_OPTIONS: Array<{
     hint: "Swerve, west coast, tank, mecanum, or other",
   },
   {
-    kind: "robot_image",
-    label: "Robot images",
-    hint: "Upload or capture pit photos for this team",
-  },
-  {
     kind: "counter",
     label: "Counter",
     hint: "Huge +1 and bulk (+5 / +10) taps with one-level undo",

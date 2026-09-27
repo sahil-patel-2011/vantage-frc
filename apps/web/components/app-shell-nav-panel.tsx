@@ -24,12 +24,20 @@ const MEMBER_QUICK: Array<{ label: string; path: string; icon: IconName; href: (
   { label: "Announcements", path: "/announcements", icon: "bell", href: (orgId) => withOrgHref("/announcements", orgId) },
 ];
 
+const WORKSPACE_COPY: Record<string, string> = {
+  Home: "Your boards, next match, and personal work",
+  Competition: "Event day, scouting, teams, strategy, and pit",
+  Team: "People, calendar, work, playbook, and logistics",
+  Build: "Design, code, parts, and robot readiness",
+  Business: "Finance, sponsors, grants, and outreach",
+};
+
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
   const root = event.currentTarget;
   const focusable = [
     ...root.querySelectorAll<HTMLElement>(
-      'a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])',
+      'a[href],button:not([disabled]),input:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',
     ),
   ].filter((node) => node.offsetParent !== null || node === document.activeElement);
   if (focusable.length === 0) return;
@@ -136,6 +144,8 @@ export function AppShellNavPanel({
       ) : null}
       <aside
         className={`soft-drawer ${navOpen ? "open" : ""}`}
+        role="dialog"
+        aria-modal={navOpen ? true : undefined}
         aria-label="Product navigation"
         onKeyDown={navOpen ? keepTabInsidePanel : undefined}
       >
@@ -204,6 +214,7 @@ export function AppShellNavPanel({
                       role="option"
                       aria-selected={row.orgId === orgId}
                       href={switchWorkspaceHref(row.orgId)}
+                      data-full-reload
                       onClick={() => {
                         onWorkspaceSwitch(row.orgId);
                         closeNav();
@@ -374,116 +385,54 @@ export function AppShellNavPanel({
             ) : null}
             {/* A student or parent gets the few places their day uses first, and the rest folded:
                 a scout's menu listed 23 destinations and not My Day. */}
-            {memberView ? (
-              <div className="soft-drawer-quick" aria-label="Your match day">
-                {MEMBER_QUICK.filter((entry) => navHrefAllowed(entry.path)).map((entry) => (
+            <p className="soft-menu-section-label">Workspaces</p>
+            {visibleNavGroups.map((group) => {
+              const item = group.items[0];
+              if (!item || item.state === "planned") return null;
+              const isActive = activeGroupLabel === group.label;
+              const sub = panelSubLinks(group).filter((entry) => navHrefAllowed(entry.href));
+              return (
+                <div key={group.label} className="soft-nav-group">
                   <a
-                    key={entry.label}
-                    className="soft-drawer-hub"
-                    href={entry.href(orgId)}
-                    aria-current={islandTabIsActive(pathname, pathSearch, entry.href(null)) ? "page" : undefined}
+                    className={`soft-drawer-hub soft-workspace-row${isActive ? " is-active" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                    href={withOrgHref(item.href, orgId)}
                     onClick={closeNav}
                   >
-                    <i>
-                      <Icon name={entry.icon} />
-                    </i>
-                    <span>{entry.label}</span>
+                    <i><Icon name={group.icon} /></i>
+                    <span><strong>{item.label}</strong><small>{WORKSPACE_COPY[group.label]}</small></span>
+                    <Icon name="chevron" />
+                  </a>
+                  {isActive && sub.length > 0 ? (
+                    <details className="soft-workspace-sections">
+                      <summary>Sections in {group.label}</summary>
+                      <div className="soft-nav-items">
+                        {sub.map((entry) => (
+                          <a
+                            key={entry.href}
+                            href={withOrgHref(entry.href, orgId)}
+                            aria-current={islandTabIsActive(pathname, pathSearch, entry.href) ? "page" : undefined}
+                            onClick={closeNav}
+                          >
+                            <span>{entry.label}</span><Icon name="chevron" />
+                          </a>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
+                </div>
+              );
+            })}
+            {memberView ? (
+              <div className="soft-drawer-quick" aria-label="Your match day">
+                <p className="soft-menu-section-label">Quick access</p>
+                {MEMBER_QUICK.filter((entry) => entry.label !== "Home" && entry.label !== "Strategy" && navHrefAllowed(entry.path)).map((entry) => (
+                  <a key={entry.label} href={entry.href(orgId)} onClick={closeNav}>
+                    <Icon name={entry.icon} /><span>{entry.label}</span>
                   </a>
                 ))}
               </div>
             ) : null}
-            {memberView ? (
-              <details className="soft-drawer-more">
-                <summary>Everything else</summary>
-            {visibleNavGroups.map((group) => {
-              const item = group.items[0];
-              if (!item || item.state === "planned") return null;
-              const isActive = activeGroupLabel === group.label;
-              const sub = panelSubLinks(group).filter((entry) => navHrefAllowed(entry.href));
-              const toneStyle = { ["--tone" as string]: group.tone };
-              return (
-                <div key={group.label} className="soft-nav-group" style={toneStyle}>
-                  <a
-                    className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
-                    aria-current={isActive ? "page" : undefined}
-                    href={withOrgHref(item.href, orgId)}
-                    onClick={closeNav}
-                  >
-                    <i>
-                      <Icon name={group.icon} />
-                    </i>
-                    <span>{item.label}</span>
-                  </a>
-                  {sub.length > 0 ? (
-                    <div className="soft-nav-items">
-                      {sub.map((entry) => (
-                        <a
-                          key={entry.href}
-                          href={withOrgHref(entry.href, orgId)}
-                          aria-current={
-                            islandTabIsActive(pathname, pathSearch, entry.href) ? "page" : undefined
-                          }
-                          onClick={closeNav}
-                        >
-                          <span>{entry.label}</span>
-                          {/* Every row that takes you somewhere says so. These
-                              were bare words in a list, indistinguishable from
-                              the group headings above them. */}
-                          <Icon name="chevron" />
-                        </a>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-              </details>
-            ) : (
-              <>
-            {visibleNavGroups.map((group) => {
-              const item = group.items[0];
-              if (!item || item.state === "planned") return null;
-              const isActive = activeGroupLabel === group.label;
-              const sub = panelSubLinks(group).filter((entry) => navHrefAllowed(entry.href));
-              const toneStyle = { ["--tone" as string]: group.tone };
-              return (
-                <div key={group.label} className="soft-nav-group" style={toneStyle}>
-                  <a
-                    className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
-                    aria-current={isActive ? "page" : undefined}
-                    href={withOrgHref(item.href, orgId)}
-                    onClick={closeNav}
-                  >
-                    <i>
-                      <Icon name={group.icon} />
-                    </i>
-                    <span>{item.label}</span>
-                  </a>
-                  {sub.length > 0 ? (
-                    <div className="soft-nav-items">
-                      {sub.map((entry) => (
-                        <a
-                          key={entry.href}
-                          href={withOrgHref(entry.href, orgId)}
-                          aria-current={
-                            islandTabIsActive(pathname, pathSearch, entry.href) ? "page" : undefined
-                          }
-                          onClick={closeNav}
-                        >
-                          <span>{entry.label}</span>
-                          {/* Every row that takes you somewhere says so. These
-                              were bare words in a list, indistinguishable from
-                              the group headings above them. */}
-                          <Icon name="chevron" />
-                        </a>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-              </>
-            )}
           </nav>
         )}
         {/* Settings, split the way people ask for them: "my stuff" and "the

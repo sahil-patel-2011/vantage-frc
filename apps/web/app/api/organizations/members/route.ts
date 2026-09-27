@@ -28,7 +28,8 @@ async function session() {
 const fail = (error: unknown) =>
   Response.json(
     { error: publicErrorMessage(error, "Member request failed") },
-    { status: 400 },
+    { status: error instanceof Error && error.message === "Authentication required" ? 401
+      : error instanceof Error && error.message === "Organization administrator access required" ? 403 : 400 },
   );
 
 export async function GET(request: Request) {

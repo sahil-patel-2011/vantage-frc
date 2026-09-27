@@ -1,10 +1,10 @@
 "use client";
 
-import { needsShortCodeHandoff, type ScoutQrRecord } from "@vantage/scouting/qr-handoff";
+import { type ScoutQrRecord } from "@vantage/scouting/qr-handoff";
+import { encodeScoutQrFrames } from "@vantage/scouting/qr-transfer";
 import { useEffect, useRef, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
 import {
-  encodePendingQrPayload,
   listPendingEntries,
   mergeQrHandoffIntoOutbox,
   publishPendingShortCodeHandoff,
@@ -52,7 +52,9 @@ export default function ScoutHandoffPanel({
   const abortRef = useRef<AbortController | null>(null);
   const [paste, setPaste] = useState("");
   const [qrImage, setQrImage] = useState("");
-  const [qrText, setQrText] = useState("");
+  const [qrFrames, setQrFrames] = useState<string[]>([]);
+  const [frameIndex, setFrameIndex] = useState(0);
+  const qrText = qrFrames[frameIndex] ?? "";
   const [shortCode, setShortCode] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
   const [lastSyncedCount, setLastSyncedCount] = useState(0);
@@ -63,7 +65,7 @@ export default function ScoutHandoffPanel({
 
   async function refreshPending() {
     try {
-      const pending = await listPendingEntries();
+      const pending = await listPendingEntries(orgId);
       setPendingCount(eventKey ? pending.filter((row) => row.eventKey === eventKey).length : pending.length);
     } catch {
       setPendingCount(0);
@@ -89,7 +91,7 @@ export default function ScoutHandoffPanel({
       document.removeEventListener("visibilitychange", again);
       window.clearInterval(tick);
     };
-  }, [eventKey]);
+  }, [eventKey, orgId]);
 
   useEffect(() => {
     void refreshPending();
@@ -99,7 +101,7 @@ export default function ScoutHandoffPanel({
       const stream = video?.srcObject as MediaStream | null;
       stream?.getTracks().forEach((track) => track.stop());
     };
-  }, [eventKey]);
+  }, [eventKey, orgId]);
 
   // Said in the card as well as passed up: the page showed it far from the button, so a tap
   // that failed looked like a tap that did nothing.
@@ -114,7 +116,11 @@ export default function ScoutHandoffPanel({
     onMessage?.(message);
   }
 
-  async function afterMerge(result: { accepted: number; replaced: number; ignored: number }) {
+  async function afterMerge(result: { accepted: number; replaced: number; ignored: number; transfer?: { received: number; total: number } }) {
+    if (result.transfer) {
+      tellReceive(`Saved ${result.transfer.received} of ${result.transfer.total} codes on this device. Scan the remaining codes to finish; no report is uploaded until all codes arrive.`);
+      return;
+    }
     await refreshPending();
     const taken = result.accepted + result.replaced;
     const got = taken
@@ -172,8 +178,10 @@ export default function ScoutHandoffPanel({
     setBusy(true);
     setQrImage("");
     setShortCode("");
+    setQrFrames([]);
+    setFrameIndex(0);
     try {
-      const pending = await listPendingEntries();
+      const pending = await listPendingEntries(orgId);
       const scoped = (eventKey ? pending.filter((row) => row.eventKey === eventKey) : pending).map(
         (entry): ScoutQrRecord => ({
           clientId: entry.clientId,
@@ -192,31 +200,40 @@ export default function ScoutHandoffPanel({
         tellSend("Nothing to hand off: every match on this phone has been sent.");
         return;
       }
-      if (forceShortCode || needsShortCodeHandoff(scoped)) {
+      if (forceShortCode) {
         if (!navigator.onLine) {
-          tellSend(
-            "Too many matches for one QR code, and a short code needs signal. Sync when you have signal, or hand off after each match so the code stays small.",
-          );
+          tellSend("A short code needs signal. Use Show handoff QR to transfer every code offline.");
           return;
         }
         const published = await publishPendingShortCodeHandoff(orgId, { eventKey: eventKey ?? undefined });
         setShortCode(published.userCode);
-        setQrText(published.qrPayload);
+        setQrFrames([published.qrPayload]);
         setQrImage(await renderQrDataUrl(published.qrPayload));
         tellSend(
           `Code ${published.userCode} holds ${plural(published.recordCount, "match", "matches")}. It works for 15 minutes.`,
         );
       } else {
-        const payload = await encodePendingQrPayload({ eventKey: eventKey ?? undefined });
-        setQrText(payload);
-        setQrImage(await renderQrDataUrl(payload));
-        tellSend(`This code holds ${plural(scoped.length, "match", "matches")}. Your teammate scans it.`);
+        const frames = await encodeScoutQrFrames(scoped);
+        setQrFrames(frames);
+        setQrImage(await renderQrDataUrl(frames[0]!));
+        tellSend(frames.length === 1
+          ? `This code holds ${plural(scoped.length, "match", "matches")}. Your teammate scans it.`
+          : `${plural(scoped.length, "match", "matches")} with full action history uses ${frames.length} codes. Your teammate scans every code; no signal is needed.`);
       }
     } catch {
       tellSend("Could not make the code. Try again, or sync when you have signal.");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function showFrame(index: number) {
+    setBusy(true);
+    setFrameIndex(index);
+    setQrImage("");
+    try { setQrImage(await renderQrDataUrl(qrFrames[index]!)); }
+    catch { tellSend("The image could not render. Copy this code as text below to transfer it."); }
+    finally { setBusy(false); }
   }
 
   async function startScan() {
@@ -316,12 +333,17 @@ export default function ScoutHandoffPanel({
           </p>
         ) : null}
 
-        {qrImage ? (
+        {qrText ? (
           <figure className="scout-qr-figure">
-            <img src={qrImage} alt="Scouting handoff QR code" width={280} height={280} />
+            {qrImage ? <img src={qrImage} alt={`Scouting handoff QR code ${frameIndex + 1} of ${qrFrames.length}`} width={280} height={280} /> : null}
+            {qrFrames.length > 1 ? <div className="scout-qr-actions">
+              <Button variant="secondary" type="button" disabled={busy || frameIndex === 0} onClick={() => void showFrame(frameIndex - 1)}>Previous code</Button>
+              <span role="status">Code {frameIndex + 1} of {qrFrames.length}</span>
+              <Button variant="secondary" type="button" disabled={busy || frameIndex + 1 === qrFrames.length} onClick={() => void showFrame(frameIndex + 1)}>Next code</Button>
+            </div> : null}
             <figcaption>
               <p className="app-muted">Your teammate opens QR handoff and taps Scan a teammate&apos;s code.</p>
-              <details>
+              <details open={!qrImage}>
                 <summary>Can&apos;t scan? Copy the code as text</summary>
                 <textarea readOnly value={qrText} rows={3} aria-label="Handoff code as text" />
               </details>
@@ -331,9 +353,9 @@ export default function ScoutHandoffPanel({
 
         {hasQueue ? (
           <details className="scout-qr-more">
-            <summary>Too many matches to fit in one code?</summary>
+            <summary>Use a short code instead</summary>
             <p className="app-muted">
-              A short code holds any number of matches, but making one needs signal on this phone.
+              A short code needs a working connection on both phones. The QR sequence above works without signal and preserves the same reports and action history.
             </p>
             <Button variant="secondary" type="button" disabled={busy || !online} onClick={() => void buildShareQr(true)}>
               Get a short code
@@ -374,9 +396,9 @@ export default function ScoutHandoffPanel({
         <canvas ref={canvasRef} className="scout-qr-canvas" hidden />
 
         <label className="scout-qr-manual">
-          Or type the 8-letter code
-          <input
-            type="text"
+          Paste QR code text (one or more codes), or type the 8-letter code
+          <textarea
+            rows={3}
             value={paste}
             onChange={(event) => setPaste(event.target.value)}
             placeholder="AB3D-EF7H"

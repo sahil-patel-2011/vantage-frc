@@ -9,6 +9,7 @@ import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
 import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
 import { isKnownAppPath } from "./lib/nav/app-route-roots";
 import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
+import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -272,16 +273,14 @@ export async function proxy(request: NextRequest) {
   // Run before public routes and auth: nobody can use paused media endpoints.
   if (isPausedMediaRoute(pathname, request.nextUrl.searchParams.get("tab")) ||
       (!MEDIA_ENABLED && request.method === "POST" && (
-        // Receipts stay open: they are small, shrunk photos that money depends on.
+        // Document receipts have their own PDF-only validation. Legacy images stay readable.
         pathname === "/api/business/assets" || pathname === "/api/branding/logo"
       ))) {
     /*
       A page gets a page. This used to answer page requests with the same JSON
       as the API, so a student tapping "Match video" in the menu saw a raw
       `{"error":…,"code":"media_paused"}` object where the page should be. The
-      menu still links these tools — the pause is one boolean away from being
-      lifted, and hiding them would mean re-listing every one on the way back —
-      so the page they land on has to explain itself.
+      retired links still need a useful explanation.
 
       Redirected, not rewritten. A rewrite kept the address the person asked
       for, which read nicely, but it meant the server rendered the app shell
@@ -373,6 +372,17 @@ export async function proxy(request: NextRequest) {
     return postOnboardingRedirect(request);
   }
 
+  if (!isPendingWorkspacePath(pathname)) {
+    const requestedOrg = await requestedProvisioningTeam(request, request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null);
+    const pendingOrg = await withRls({ userId: session.user.id, ...(requestedOrg ? { orgId: requestedOrg } : {}) },
+      client => pendingProvisioningTeam(client, session.user.id, requestedOrg));
+    if (pendingOrg) {
+      const setup = `/team-setup?orgId=${encodeURIComponent(pendingOrg)}`;
+      if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Your team setup must finish before this action is available.", code: "TEAM_SETUP_REQUIRED", setup }, { status: 409, headers: { "cache-control": "private, no-store" } });
+      return NextResponse.redirect(new URL(setup, request.url), 307);
+    }
+  }
+
   // Remember the team a page was opened for, and fill it in for team pages that arrive
   // without one (lib/nav/remembered-team.ts). Pages still check membership themselves.
   if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
@@ -422,5 +432,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.well-known/workflow/).*)"],
 };

@@ -27,6 +27,7 @@ export type ApprovedPairing = {
   deviceToken: string;
   deviceId: string | null;
   orgId: string | null;
+  userId?: string | null;
 };
 
 export type PairingState =
@@ -140,6 +141,7 @@ export class PairingFlow {
           deviceToken: data.deviceToken,
           deviceId: typeof data.deviceId === "string" ? data.deviceId : null,
           orgId: typeof data.orgId === "string" ? data.orgId : null,
+          ...(typeof data.userId === "string" ? { userId: data.userId } : {}),
         },
       };
       return this.stateValue;
@@ -180,6 +182,7 @@ export function configFromPairing(
     deviceToken: approved.deviceToken,
     deviceId: approved.deviceId,
     orgId: approved.orgId,
+    ...(approved.userId ? { userId: approved.userId } : {}),
     capabilities: options.capabilities ?? defaultCapabilities(),
   };
 }

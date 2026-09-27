@@ -8,7 +8,7 @@
  * question under the question's own label.
  */
 import type { PoolClient } from "@neondatabase/serverless";
-import { isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
+import { ACTION_HISTORY_KEY, isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
 import { matchLabelFromKey } from "../matches/no-next-match";
 import { scoutOptionLabel } from "./option-label";
 
@@ -59,7 +59,7 @@ export function exportColumns(fields: readonly ScoutExportField[], rows: readonl
 
 export function matchScoutingCsv(input: { fields: readonly ScoutExportField[]; rows: readonly ScoutExportRow[] }): string {
   const columns = exportColumns(input.fields, input.rows);
-  const header = ["Match", "Team", "Scout", ...columns.map((field) => field.label || field.key), "How sure", "Saved at"];
+  const header = ["Match", "Team", "Scout", ...columns.map((field) => field.label || field.key), "How sure", "Saved at", "Observation history (versioned JSON)"];
   const lines = [header.map((value) => cell(value)).join(",")];
   for (const row of input.rows) {
     lines.push(
@@ -70,6 +70,7 @@ export function matchScoutingCsv(input: { fields: readonly ScoutExportField[]; r
         ...columns.map((field) => scoutAnswerText(row.payload?.[field.key])),
         row.confidence ? (CONFIDENCE[row.confidence] ?? row.confidence) : "",
         row.savedAt ?? "",
+        row.payload?.[ACTION_HISTORY_KEY] === undefined ? "" : JSON.stringify(row.payload[ACTION_HISTORY_KEY]),
       ]
         .map((value) => cell(value))
         .join(","),

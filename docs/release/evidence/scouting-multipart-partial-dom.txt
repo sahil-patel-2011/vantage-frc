@@ -1,0 +1,63 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - button "Menu and search"
+  - button "Team 6925 — switch team":
+    - generic: Team 6925
+  - status:
+    - link "Sync pending (1)":
+      - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001
+    - button "Retry all"
+  - link "Open the Scouting app":
+    - /url: /scout?orgId=6925a000-0000-4000-8000-000000000001
+    - text: Scouting
+    - generic: app
+    - generic: ↗
+  - link "Ask AI":
+    - /url: /ai?tab=chat&orgId=6925a000-0000-4000-8000-000000000001
+  - link "Notifications, 2 unread":
+    - /url: /notifications
+    - generic: "2"
+  - button "Account menu": M
+- main:
+  - heading "Competition" [level=1]
+  - tablist "Competition sections":
+    - tab "Event day"
+    - tab "Scouting" [selected]
+    - tab "Strategy"
+    - tab "Robot check"
+  - navigation "Tools in Scouting":
+    - button "Forms"
+    - link "Coverage":
+      - /url: /scout-coverage-live?orgId=6925a000-0000-4000-8000-000000000001
+    - link "Shifts":
+      - /url: /shift-balancer?orgId=6925a000-0000-4000-8000-000000000001
+    - button "More tools"
+  - button "How Scouting works":
+    - generic: "?"
+  - strong: Peachtree District Championship
+  - generic: Online · 0 queued
+  - navigation "Scouting views":
+    - button "Match"
+    - button "Pit"
+    - button "Robots"
+    - button "QR handoff":
+      - text: QR handoff
+      - generic: ▾
+  - region "Send from this phone":
+    - heading "Send from this phone" [level=2]
+    - status:
+      - strong: 1 match saved here, not sent yet.
+      - text: No signal? Show this code to a teammate whose phone has signal. Their phone sends it to the team.
+    - button "Show handoff QR"
+    - generic "Use a short code instead"
+  - region "Take a teammate's matches":
+    - heading "Take a teammate's matches" [level=2]
+    - paragraph: Their phone has no signal? Scan the code on their screen, and this phone sends their matches to the team.
+    - button "Scan a teammate's code"
+    - text: Paste code text, or type the 8-letter code
+    - textbox "Paste code text, or type the 8-letter code":
+      - /placeholder: AB3D-EF7H
+    - button "Take these matches" [disabled]
+    - status: Saved 1 of 4 codes on this device. Scan the remaining codes to finish; no report is uploaded until all codes arrive.
+- alert

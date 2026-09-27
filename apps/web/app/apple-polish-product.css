@@ -1,286 +1,235 @@
-/* Apple-inspired polish. Visual treatment only: no layout semantics or
-   product behavior live here. Split per surface so each sheet is imported
-   from exactly one style bundle (a sheet in two chunk groups loses its
-   <link> on hot reload). */
-
-/* ── Signed-in product, light theme ────────────────────────────────────── */
-html[data-theme="light"] body.has-app-shell {
-  --bg: #f5f5f7;
-  --surface: #ffffff;
-  --surface-2: #f2f2f7;
-  --ink: #1d1d1f;
-  --muted: #6e6e73;
-  --line: #dedee3;
-  --line-soft: rgba(29, 29, 31, .08);
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-soft: #eaf1ff;
-  --accent-ink: #ffffff;
-  --radius-xs: 10px;
-  --radius-sm: 14px;
+/* Shared product finish. Palette comes from system.css in both themes. */
+body.has-app-shell {
+  --radius-xs: 8px;
+  --radius-sm: 12px;
   --radius: 20px;
-  --radius-lg: 26px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .025), 0 8px 24px rgba(0, 0, 0, .045);
-  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .035), 0 16px 38px rgba(0, 0, 0, .075);
-  --shadow-pop: 0 8px 22px rgba(0, 0, 0, .08), 0 24px 60px rgba(0, 0, 0, .12);
-  --glow: none;
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
-  --vt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
-  background-color: #f5f5f7 !important;
+  --radius-lg: 24px;
+  --shadow: 0 1px 3px rgba(16,32,44,.04), 0 4px 14px rgba(16,32,44,.025);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --control-h: 48px;
+  padding-top: 72px !important;
+  background-color: var(--bg) !important;
   background-image: none !important;
-  color: #1d1d1f;
+  color: var(--ink);
   font-family: var(--font-sans) !important;
   font-size: 15px;
   line-height: 1.5;
-  letter-spacing: -.006em;
 }
-
 body.has-app-shell .soft-topbar {
-  height: 60px;
-  padding-inline: 18px;
-  background-color: rgba(245, 245, 247, .78);
-  border-bottom-color: rgba(29, 29, 31, .08);
+  height: 64px;
+  padding-inline: 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-soft);
   box-shadow: none;
-  backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: none;
 }
-
-body.has-app-shell .soft-page-head h1,
-body.has-app-shell .soft-topbar-title {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
-  font-weight: 650;
-  letter-spacing: -.025em;
-}
-
-body.has-app-shell .soft-icon-btn {
-  border-radius: 50%;
-}
-
-body.has-app-shell .soft-icon-btn:hover {
-  border-color: transparent;
-  background: rgba(29, 29, 31, .065);
-}
-
-body.has-app-shell .soft-avatar {
-  background: #2563eb;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
-}
-
+body.has-app-shell .soft-topbar-title { color: var(--ink); font-size: 16px; font-weight: 650; }
+body.has-app-shell .soft-topbar-actions { gap: 10px; }
+body.has-app-shell .soft-icon-btn { width: 48px; height: 48px; border-radius: 12px; }
+body.has-app-shell .soft-icon-btn:hover { background: var(--surface-2); border-color: transparent; }
+body.has-app-shell .soft-avatar { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+body.has-app-shell .soft-avatar-btn { width: 44px; height: 44px; min-height: 44px; }
+body.has-app-shell .soft-topbar-product { background: var(--surface); border-color: var(--line); color: var(--muted); box-shadow: none; }
 body.has-app-shell .vrail {
   width: 244px;
-  padding: 18px 14px;
-  background: rgba(255, 255, 255, .78);
-  border-right-color: rgba(29, 29, 31, .08);
-  backdrop-filter: saturate(180%) blur(22px);
+  padding: 24px 16px 16px;
+  gap: 18px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  backdrop-filter: none;
 }
-
-body.has-app-shell .vrail-mark {
-  font-size: 18px;
-  font-weight: 720;
-  letter-spacing: -.04em;
-}
-
-body.has-app-shell .vrail-search {
-  min-height: 40px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(118, 118, 128, .12);
-  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, .035);
-}
-
-body.has-app-shell .vrail-nav a,
-body.has-app-shell .vrail-foot {
-  min-height: 42px;
+body.has-app-shell .vrail-head { gap: 8px; padding: 0 8px; }
+body.has-app-shell .vrail-mark { display: flex; align-items: center; gap: 10px; font: 750 20px/1.3 var(--font-sans); letter-spacing: -.04em; }
+body.has-app-shell .vrail-org { padding-left: 38px; color: var(--muted); font-size: 12px; }
+body.has-app-shell .vrail-search { min-height: 48px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: none; }
+body.has-app-shell .vrail-nav { gap: 4px; }
+body.has-app-shell .vrail-label { padding: 0 12px 8px; font-size: 11px; letter-spacing: .08em; }
+body.has-app-shell .vrail-nav a, body.has-app-shell .vrail-foot {
+  min-height: 48px;
   padding-inline: 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 520;
-}
-
-body.has-app-shell .vrail-nav a[aria-current="page"] {
-  color: #1d1d1f;
-  background: #e8e8ed;
-  font-weight: 650;
-}
-
-body.has-app-shell .vrail-nav a[aria-current="page"] svg {
-  color: #2563eb;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
-  border-color: rgba(29, 29, 31, .08);
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: var(--shadow);
-  line-height: 1.55;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) {
-  padding: clamp(20px, 2.4vw, 28px);
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
-  :where(h2, h3, h4) {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
-  color: #1d1d1f;
-  font-weight: 650;
-  letter-spacing: -.025em;
-  text-wrap: balance;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
-  :where(p, li, small) {
-  line-height: 1.58;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(h2, h3) {
-  margin-bottom: 12px;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(p, ul, ol) {
-  margin-block: 0 16px;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card):hover {
-  border-color: rgba(29, 29, 31, .11);
-}
-
-body.has-app-shell :where(.app-page-header, .dash-home-header) h1 {
-  color: #1d1d1f;
-  font-weight: 720;
-  letter-spacing: -.045em;
-}
-
-body.has-app-shell :where(.app-page-header, .dash-home-header) p {
-  color: #6e6e73;
-}
-
-body.has-app-shell :where(.app-button, .soft-btn, .primary-action) {
-  border-radius: 999px;
-  font-weight: 650;
-  box-shadow: none;
-}
-
-body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary) {
-  color: #fff;
-  background: #2563eb;
-  border-color: #2563eb;
-}
-
-body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary):hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-}
-
-body.has-app-shell :where(input, select, textarea) {
-  border-color: rgba(29, 29, 31, .14);
-  background: #fff;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .02);
-}
-
-body.has-app-shell :where(input, select, textarea):focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
-  outline: 0;
-}
-
-body.has-app-shell .soft-island {
-  border-color: rgba(29, 29, 31, .1);
-  background: rgba(255, 255, 255, .76);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .12), inset 0 1px rgba(255, 255, 255, .7);
-  backdrop-filter: saturate(180%) blur(24px);
-}
-
-body.has-app-shell .soft-island a[aria-current="page"] {
-  color: #2563eb;
-  background: rgba(37, 99, 235, .1);
-}
-
-body.has-app-shell .soft-drawer,
-body.has-app-shell .soft-account-pop,
-body.has-app-shell .soft-island-editor > section {
-  border-color: rgba(29, 29, 31, .1);
-  /* Solid: menu text over page text read as one jumble at 94%. */
-  background: #fff;
-}
-
-body.has-app-shell .app-badge {
-  letter-spacing: .03em;
-}
-
-
-@media (max-width: 680px) {
-  body.has-app-shell .soft-topbar { height: 56px; }
-}
-
-/* Dark mode keeps system.css tokens. The rules above lock ink, cards, and
-   chrome to a light palette; this block puts them back on the theme. */
-html[data-theme="dark"] body.has-app-shell {
-  background-color: var(--bg) !important;
-  background-image: var(--glow) !important;
-  color: var(--ink);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-topbar {
-  background-color: color-mix(in srgb, var(--bg) 78%, transparent);
-  border-bottom-color: var(--line);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-page-head h1,
-html[data-theme="dark"] body.has-app-shell .soft-topbar-title,
-html[data-theme="dark"] body.has-app-shell :where(.app-page-header, .dash-home-header) h1,
-html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) :where(h2, h3, h4) {
-  color: var(--ink);
-}
-
-html[data-theme="dark"] body.has-app-shell :where(.app-page-header, .dash-home-header) p {
+  border-radius: 10px;
   color: var(--muted);
+  font: 550 14px/1.3 var(--font-sans);
 }
-
-html[data-theme="dark"] body.has-app-shell .soft-icon-btn:hover {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
-
-html[data-theme="dark"] body.has-app-shell .vrail {
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  border-right-color: var(--line);
-}
-
-html[data-theme="dark"] body.has-app-shell .vrail-search {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-  box-shadow: none;
-}
-
-html[data-theme="dark"] body.has-app-shell .vrail-nav a[aria-current="page"] {
-  color: var(--ink);
-  background: var(--accent-soft);
-}
-
-html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
-  border-color: var(--line);
+body.has-app-shell .vrail-nav a svg { width: 20px; height: 20px; }
+body.has-app-shell .vrail-nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 650; }
+body.has-app-shell .vrail-edit { min-height: 36px; font-size: 12px; }
+body.has-app-shell .vrail-quick + .vrail-quick { padding-top: 16px; border-top: 1px solid var(--line-soft); }
+body.has-app-shell :where(.app-card,.soft-panel,.soft-card,.dash-widget,.vt-card,.vt-stat-card) {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: var(--surface);
+  box-shadow: var(--shadow);
 }
-
-html[data-theme="dark"] body.has-app-shell :where(input, select, textarea) {
+body.has-app-shell :where(.app-card,.soft-panel,.soft-card,.vt-card,.vt-stat-card) { padding: clamp(18px,2vw,24px); }
+body.has-app-shell :where(.app-page-header,.dash-home-header) h1 { color: var(--ink); font: 700 clamp(25px,2.8vw,32px)/1.2 var(--font-sans); letter-spacing: -.035em; }
+body.has-app-shell :where(.app-page-header,.dash-home-header) p { color: var(--muted); line-height: 1.6; }
+body.has-app-shell :where(.app-card,.soft-panel,.soft-card,.dash-widget) :where(h2,h3,h4) { color: var(--ink); font-family: var(--font-sans); font-weight: 650; letter-spacing: -.02em; }
+body.has-app-shell :where(.app-button,.soft-btn,.primary-action) { border-radius: 10px; font-weight: 650; box-shadow: none; }
+body.has-app-shell :where(.app-button.primary,.soft-btn.primary,.primary-action,.is-primary) { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+body.has-app-shell :where(.app-button.primary,.soft-btn.primary,.primary-action,.is-primary):hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+body.has-app-shell :where(input,select,textarea) { border-color: var(--line); background: var(--surface); color: var(--ink); box-shadow: none; }
+body.has-app-shell :where(input,select,textarea):focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: none; }
+body.has-app-shell :where(a,button,[tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+body.has-app-shell .dash-home { max-width: 1240px; padding: 28px clamp(16px,3vw,36px); }
+body.has-app-shell .dash-home-header { margin-bottom: 24px; }
+body.has-app-shell .dash-now { border-color: var(--line); box-shadow: var(--shadow); }
+body.has-app-shell .dash-now .app-button { box-shadow: none; }
+body.has-app-shell .dash-widget.hero { background: var(--surface); }
+body.has-app-shell .product-hub { padding: 24px clamp(16px,3vw,32px); }
+body.has-app-shell .product-hub .hub-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  grid-template-areas: "identity sections actions" "tools tools tools";
+  align-items: center;
+  gap: 12px 20px;
+  margin: 0 0 24px;
+  padding-bottom: 14px;
   border-color: var(--line);
-  background: var(--surface);
-  color: var(--ink);
 }
-
-html[data-theme="dark"] body.has-app-shell .soft-island {
-  border-color: var(--line);
-  background: var(--island);
-  box-shadow: var(--shadow-pop);
+body.has-app-shell .hub-bar-id { grid-area: identity; }
+body.has-app-shell .hub-bar-id h1 { font: 700 22px/1.2 var(--font-sans); letter-spacing: -.03em; }
+body.has-app-shell .hub-bar .product-hub-tabs { grid-area: sections; overflow-x: auto; scrollbar-width: thin; }
+body.has-app-shell .hub-bar-end { grid-area: actions; }
+body.has-app-shell .hub-bar .hub-tool-strip { grid-area: tools; width: 100%; padding: 0; border: 0; }
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar { gap: 2px; width: auto; margin: 0; }
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button { min-width: 48px; min-height: 48px; padding: 10px 12px; font: 600 14px/1.2 var(--font-sans); color: var(--muted); white-space: nowrap; }
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); border-radius: 10px; }
+body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button::after { display: none; }
+body.has-app-shell .hub-tool-chip { border-radius: 8px; }
+body.has-app-shell .product-hub-panel > .is-embedded { padding: 0; margin: 0; max-width: none; }
+body.has-app-shell .product-hub-panel > .is-embedded > .app-page-header { display: none; }
+body.has-app-shell :where(.soft-drawer,.soft-account-pop,.soft-island-editor > section) { background: var(--surface); border-color: var(--line); }
+body.has-app-shell .soft-drawer { padding: 20px 16px; border-radius: 0 20px 20px 0; }
+body.has-app-shell .soft-nav-group .soft-nav-items { margin-left: 20px; border-left: 1px solid var(--line); }
+body.has-app-shell .soft-drawer-hub { min-height: 48px; border-radius: 10px; }
+body.has-app-shell .soft-nav-group a:not(.soft-drawer-hub) { min-height: 44px; }
+body.has-app-shell .soft-island { background: color-mix(in srgb,var(--surface) 82%,transparent); border-color: color-mix(in srgb,var(--line) 70%,transparent); border-radius: 999px; box-shadow: 0 8px 28px rgba(16,32,44,.12),0 2px 6px rgba(16,32,44,.04); backdrop-filter: blur(24px) saturate(1.25); }
+body.has-app-shell .soft-island a { min-width: 48px; min-height: 48px; border-radius: 999px; }
+body.has-app-shell .soft-island a span { display: block; font-size: 11px; }
+body.has-app-shell .soft-island a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+@media (max-width:1023px) {
+  body.has-app-shell { padding-bottom: calc(96px + var(--safe-bottom,0px)) !important; }
+  body.has-app-shell .soft-topbar { padding-inline: 12px; }
+  body.has-app-shell .product-hub .hub-bar { grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "sections actions" "tools tools"; gap: 10px; }
+  body.has-app-shell .hub-bar-id { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  body.has-app-shell .hub-tool-chip { min-height: 48px; min-width: 48px; }
+  body.has-app-shell .hub-bar .hub-tool-strip-row { mask-image: none; padding-right: 0; scrollbar-width: thin; }
 }
-
-html[data-theme="dark"] body.has-app-shell .soft-drawer,
-html[data-theme="dark"] body.has-app-shell .soft-account-pop,
-html[data-theme="dark"] body.has-app-shell .soft-island-editor > section {
-  border-color: var(--line);
-  background: var(--surface);
+@media (max-width:600px) {
+  body.has-app-shell { padding-top: 64px !important; }
+  body.has-app-shell .soft-topbar { height: 56px; }
+  body.has-app-shell .soft-topbar-actions { gap: 2px; }
+  body.has-app-shell .soft-topbar-product { display: none; }
+  body.has-app-shell .soft-ask-ai { display: none; }
+  body.has-app-shell .dash-home { padding: 20px 16px; }
+  body.has-app-shell .product-hub { padding: 16px 12px; }
+  body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button { padding-inline: 10px; font-size: 13px; }
+  body.has-app-shell .soft-drawer { width: min(360px,100vw); }
+  body.has-app-shell .soft-island { width: min(440px,calc(100vw - 24px)); bottom: calc(10px + var(--safe-bottom,0px)); }
 }
-
-/* On a phone the top bar sits over dense content scrolling right under it; see-through, a
-   page's chips showed through its title. Solid there unless the person chose the clear look. */
-@media (max-width: 720px) {
-  html:not([data-clarity="clear"]) body.has-app-shell .soft-topbar { background-color: var(--bg); }
+@media (prefers-reduced-motion:reduce) {
+  body.has-app-shell :where(.vrail-nav a,.soft-island a,.product-hub-tabs button) { animation: none; transition: none; }
+}
+/* The personal dynamic island and workspace menu are available at every width. */
+body.has-app-shell .notif-list li { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 12px; padding: 14px 16px; }
+body.has-app-shell .notif-row-main { min-width: 0; }
+body.has-app-shell .notif-row-main strong a { display: flex; align-items: center; min-height: 48px; }
+body.has-app-shell .notif-row-toggle { width: auto; min-width: 96px; min-height: 48px; align-self: start; border-radius: 12px; }
+body.has-app-shell .notif-related a { min-height: 48px; }
+body.has-app-shell .notif-toolbar :where(button,a) { min-width: 48px; min-height: 48px; }
+@media (max-width:600px) {
+  body.has-app-shell .notif-list li { grid-template-columns: minmax(0,1fr); gap: 6px; }
+  body.has-app-shell .notif-row-toggle { justify-self: start; }
+}
+body.has-app-shell { padding-left: 0 !important; padding-bottom: calc(88px + var(--safe-bottom,0px)) !important; }
+body.has-app-shell .soft-topbar { left: 0 !important; }
+body.has-app-shell .soft-island { display: flex !important; width: min(392px,calc(100vw - 24px)); gap: 2px; padding: 5px; bottom: calc(12px + var(--safe-bottom,0px)); z-index: 80; }
+body.has-app-shell .soft-island a { flex: 1; color: var(--ink); }
+body.has-app-shell .soft-island a svg { width: 20px; height: 20px; color: var(--muted); }
+body.has-app-shell .soft-island a[aria-current="page"] svg { color: var(--accent); }
+body.has-app-shell .soft-island a span { font-size: 10px; font-weight: 600; }
+body.has-app-shell .soft-island-edit { flex: 0 0 48px; width: 48px; min-height: 48px; border-radius: 999px; color: var(--muted); }
+body.has-app-shell .soft-island a:hover,body.has-app-shell .soft-island-edit:hover { background: color-mix(in srgb,var(--accent-soft) 80%,transparent); color: var(--accent); }
+body.has-app-shell .soft-island a:active,body.has-app-shell .soft-island-edit:active { transform: scale(.96); }
+body.has-app-shell .soft-avatar-btn { width: 48px; height: 48px; min-height: 48px; background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb,var(--accent) 15%,transparent); }
+body.has-app-shell .soft-account-pop { width: min(328px,calc(100vw - 24px)); max-height: calc(100dvh - 96px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 8px; border-radius: 20px; box-shadow: 0 12px 40px rgba(16,32,44,.14),0 2px 8px rgba(16,32,44,.04); }
+body.has-app-shell .soft-account-pop-head { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 6px; border-color: var(--line-soft); }
+body.has-app-shell .soft-account-pop-head > div { min-width: 0; flex: 1; }
+body.has-app-shell .soft-account-pop-head strong { font: 650 14px/1.4 var(--font-sans); }
+body.has-app-shell .soft-account-pop-head > div > span { font: 400 12px/1.5 var(--font-sans); }
+body.has-app-shell .soft-account-pop-head .soft-account-identity-avatar { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; background: var(--accent-soft); color: var(--accent); border-radius: 50%; font: 650 14px/1 var(--font-sans); }
+body.has-app-shell .soft-account-identity-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+body.has-app-shell .soft-account-pop a,body.has-app-shell .soft-account-pop button { min-height: 48px; padding: 10px 12px; gap: 10px; border-radius: 12px; font: 550 13px/1.4 var(--font-sans); }
+body.has-app-shell .soft-account-pop :where(a,button) > svg { flex: 0 0 18px; width: 18px; height: 18px; color: var(--muted); }
+body.has-app-shell .soft-account-pop :where(a,button) > span { flex: 1; min-width: 0; }
+body.has-app-shell .soft-account-pop :where(a,button) > svg:last-child { width: 14px; height: 14px; flex-basis: 14px; }
+body.has-app-shell .soft-account-teams { padding: 8px 0; border-color: var(--line-soft); }
+body.has-app-shell .soft-account-teams-label { padding: 6px 12px; font: 650 10px/1.4 var(--font-sans); }
+body.has-app-shell .soft-account-teams a strong { display: block; overflow-wrap: anywhere; font: 550 13px/1.4 var(--font-sans); }
+body.has-app-shell .soft-account-teams a small { display: block; margin-top: 2px; text-transform: none; font: 400 11px/1.4 var(--font-sans); }
+body.has-app-shell .soft-account-teams a .soft-account-selected { flex: 0 0 18px; font-size: 16px; color: var(--accent); }
+body.has-app-shell .soft-account-current-team { display: grid; gap: 3px; padding: 10px 12px; border-bottom: 1px solid var(--line-soft); margin-bottom: 6px; overflow-wrap: anywhere; }
+body.has-app-shell .soft-account-current-team strong { font-size: 13px; font-weight: 550; }
+body.has-app-shell .soft-account-current-team small { color: var(--muted); font-size: 11px; }
+body.has-app-shell .soft-account-signout { margin-top: 6px; border-top-color: var(--line-soft) !important; }
+body.has-app-shell .soft-menu-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: auto; padding-inline: 14px; background: var(--surface); border-color: var(--line); }
+body.has-app-shell .soft-menu-label { font: 600 13px/1 var(--font-sans); }
+body.has-app-shell .soft-drawer { width: min(410px,100vw); padding: 18px 18px calc(18px + var(--safe-bottom,0px)); }
+body.has-app-shell .soft-drawer-head { align-items: center; margin-bottom: 12px; }
+body.has-app-shell .soft-drawer-brand strong { font: 750 22px/1.2 var(--font-sans); letter-spacing: -.04em; }
+body.has-app-shell .soft-profile-block { background: var(--bg); border: 1px solid var(--line-soft); border-radius: 14px; box-shadow: none; margin-bottom: 12px; }
+body.has-app-shell .soft-profile-link .soft-avatar { width: 28px; height: 28px; font-size: 11px; }
+body.has-app-shell .soft-profile-link > div > span { display: none; }
+body.has-app-shell .soft-workspace-manager { margin-bottom: 0; }
+body.has-app-shell .soft-panel-search { min-height: 48px; margin-bottom: 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+body.has-app-shell .soft-panel-search:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+body.has-app-shell .soft-panel-search input:focus-visible { outline: none; }
+body.has-app-shell .soft-menu-section-label { margin: 0 0 8px; color: var(--muted); font: 650 11px/1.3 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+body.has-app-shell .soft-drawer-flat { display: grid; gap: 6px; }
+body.has-app-shell .soft-workspace-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 10px; border: 1px solid transparent; border-radius: 12px; color: var(--ink); }
+body.has-app-shell .soft-workspace-row > i { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px; background: var(--bg); color: var(--muted); }
+body.has-app-shell .soft-workspace-row > span { flex: 1; min-width: 0; display: grid; gap: 4px; }
+body.has-app-shell .soft-workspace-row strong { font: 650 15px/1.2 var(--font-sans); }
+body.has-app-shell .soft-workspace-row small { margin: 0; color: var(--muted); font: 400 12px/1.4 var(--font-sans); white-space: normal; text-transform: none; letter-spacing: normal; }
+body.has-app-shell .soft-workspace-row > svg { width: 16px; height: 16px; color: var(--muted); }
+body.has-app-shell .soft-workspace-row:hover { background: var(--bg); border-color: var(--line-soft); }
+body.has-app-shell .soft-workspace-row.is-active { background: var(--accent-soft); color: var(--accent); }
+body.has-app-shell .soft-workspace-row.is-active > i { background: var(--surface); color: var(--accent); }
+body.has-app-shell .soft-workspace-sections { margin: 4px 0 8px 48px; }
+body.has-app-shell .soft-workspace-sections > summary { min-height: 40px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--muted); font-size: 12px; }
+body.has-app-shell .soft-workspace-sections > summary::after { content: '+'; margin-left: auto; padding-right: 12px; font-size: 16px; }
+body.has-app-shell .soft-workspace-sections[open] > summary::after { content: '−'; }
+body.has-app-shell .soft-drawer-quick { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+body.has-app-shell .soft-drawer-quick > p { grid-column: 1 / -1; }
+body.has-app-shell .soft-drawer-quick > a { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-size: 13px; text-decoration: none; }
+body.has-app-shell .soft-drawer-quick > a svg { width: 18px; height: 18px; color: var(--accent); }
+body.has-app-shell .soft-drawer-settings { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+body.has-app-shell .soft-drawer-foot { margin-top: 12px; }
+body.has-app-shell .soft-drawer-flat .soft-nav-group,
+body.has-app-shell .soft-drawer-flat .soft-nav-group + .soft-nav-group { margin: 0; padding: 0; border: 0; }
+body.has-app-shell .soft-workspace-sections .soft-nav-items { margin-left: 0; }
+body.has-app-shell .soft-workspace-sections .soft-nav-items > a { min-height: 44px !important; }
+@media (max-width:600px) {
+  body.has-app-shell .soft-menu-btn { width: 48px; padding: 0; }
+  body.has-app-shell .soft-menu-label { display: none; }
+  body.has-app-shell .soft-drawer { padding-inline: 16px; }
+}
+@media print {
+  body.has-app-shell .soft-island { display: none !important; }
+}
+@supports not (backdrop-filter:blur(1px)) {
+  body.has-app-shell .soft-island { background: var(--surface); }
+}
+@media (prefers-reduced-transparency:reduce),(prefers-contrast:more) {
+  body.has-app-shell .soft-island { background: var(--surface); backdrop-filter: none; border-color: var(--muted); }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.has-app-shell :where(.soft-island,.soft-island a,.soft-island-edit,.soft-account-pop) { animation: none; transition: none; }
+  body.has-app-shell :where(.soft-island a,.soft-island-edit):active { transform: none; }
+}
+@media (forced-colors:active) {
+  body.has-app-shell :where(.soft-island,.soft-account-pop) { background: Canvas; border: 1px solid CanvasText; box-shadow: none; backdrop-filter: none; }
+  body.has-app-shell :where(.soft-island a,.soft-island-edit,.soft-account-pop a,.soft-account-pop button) { color: CanvasText; }
+  body.has-app-shell .soft-island a[aria-current="page"] { outline: 2px solid Highlight; outline-offset: -3px; }
 }

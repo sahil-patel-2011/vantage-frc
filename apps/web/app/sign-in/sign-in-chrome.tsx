@@ -53,8 +53,9 @@ export function SetupShell({ copy }: { copy: SignInSetupCopy }) {
   );
 }
 
-export function AccessFooter() {
+export function AccessFooter({ publicSignup = false }: { publicSignup?: boolean }) {
   const waitlistHref = useWaitlistHref();
+  if (publicSignup) return <p className="signin-waitlist">After email verification, you can create your team or join through an invitation or approved request.</p>;
   return (
     <p className="signin-waitlist">
       <span>Not invited yet? Only invited emails get a code.</span>

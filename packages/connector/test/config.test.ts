@@ -27,6 +27,38 @@ const paired: ConnectorConfig = {
 };
 
 describe("connector config save/load", () => {
+  const alice = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const bob = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+  it("isolates personal pairings and does not adopt the machine-wide legacy account", async () => {
+    const fs = new MemoryFileSystem();
+    await fs.writeFile(legacyBridgeConfigPath(HOME), JSON.stringify({ ...paired, userId: bob }));
+    expect(await loadOrAdoptConnectorConfig(fs, HOME, Date.now, alice)).toBeNull();
+    await saveConnectorConfig(fs, HOME, { ...paired, userId: alice }, alice.toUpperCase());
+    await saveConnectorConfig(fs, HOME, { ...paired, userId: bob, deviceToken: "bob-token" }, bob);
+    expect((await loadConnectorConfig(fs, HOME, alice))?.deviceToken).toBe(paired.deviceToken);
+    expect((await loadConnectorConfig(fs, HOME, bob))?.deviceToken).toBe("bob-token");
+    expect(fs.modes.get(connectorConfigPath(HOME, alice))).toBe(0o600);
+    expect(() => connectorConfigPath(HOME, "../other-person")).toThrow(/profile/);
+  });
+
+  it("rejects a different approving account and a replaced pairing file", async () => {
+    const fs = new MemoryFileSystem();
+    await expect(saveConnectorConfig(fs, HOME, { ...paired, userId: bob }, alice)).rejects.toThrow(/approving account/);
+    expect(fs.files.has(connectorConfigPath(HOME, alice))).toBe(false);
+    await fs.writeFile(connectorConfigPath(HOME, alice), JSON.stringify({ ...paired, userId: bob }));
+    await expect(loadConnectorConfig(fs, HOME, alice)).rejects.toThrow(/another person/);
+  });
+
+  it("adopts only the matching person's standalone pairing", async () => {
+    const fs = new MemoryFileSystem();
+    await fs.writeFile(legacyBridgeConfigPath(HOME, alice), JSON.stringify({ ...paired, userId: alice }));
+    const result = await loadOrAdoptConnectorConfig(fs, HOME, Date.now, alice);
+    expect(result?.adopted).toBe(true);
+    expect(result?.config.userId).toBe(alice);
+    expect(await loadConnectorConfig(fs, HOME, bob)).toBeNull();
+  });
+
   it("round-trips through the filesystem with mode 0600", async () => {
     const fs = new MemoryFileSystem();
     await saveConnectorConfig(fs, HOME, paired);

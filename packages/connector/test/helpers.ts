@@ -162,7 +162,7 @@ export const ok = (data: Record<string, unknown>, status = 200): JsonResponse =>
 /** Scripted spawner: exact `command arg0 arg1…` string → result. Unknown commands = not installed. */
 export class FakeSpawner implements Spawner {
   readonly syncCalls: string[] = [];
-  readonly runCalls: Array<{ command: string; args: string[]; input?: string; timeoutMs: number }> = [];
+  readonly runCalls: Array<{ command: string; args: string[]; input?: string; timeoutMs: number; personalUserId?: string }> = [];
   constructor(
     private readonly script: {
       sync?: Record<string, SpawnSyncResult>;
@@ -179,9 +179,9 @@ export class FakeSpawner implements Spawner {
   async run(
     command: string,
     args: string[],
-    opts: { input?: string; timeoutMs: number },
+    opts: { input?: string; timeoutMs: number; personalUserId?: string },
   ): Promise<SpawnRunResult> {
-    this.runCalls.push({ command, args, input: opts.input, timeoutMs: opts.timeoutMs });
+    this.runCalls.push({ command, args, input: opts.input, timeoutMs: opts.timeoutMs, personalUserId: opts.personalUserId });
     if (!this.script.run) return { status: null, stdout: "", stderr: "spawn ENOENT", timedOut: false, spawnError: true };
     return this.script.run(command, args, opts.input);
   }

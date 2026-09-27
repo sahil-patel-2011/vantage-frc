@@ -18,6 +18,7 @@ const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), {
   loading: () => <ScoutingLoadingSkeleton />,
 });
 const FormsClient = dynamic(() => import("../scouting/forms/forms-client"), { ssr: false });
+const IntelClient = dynamic(() => import("../intel/intel-client"), { ssr: false });
 const MatchChecklistClient = dynamic(() => import("../match-checklist/match-checklist-client"), {
   ssr: false,
 });
@@ -25,12 +26,15 @@ const PickClockClient = dynamic(() => import("../pick-clock/pick-clock-client"),
 const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), { ssr: false });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = ["command", "my-day", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"] as const;
+const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"] as const;
 
 export default function CompetitionHub() {
   return (
     <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
+        if (tab === "teams") {
+          return <HubOrgGate orgId={orgId} label="Teams">{() => <IntelClient variant="scouting" embedded />}</HubOrgGate>;
+        }
         if (tab === "command") {
           return (
             <HubOrgGate orgId={orgId} label="Event day">

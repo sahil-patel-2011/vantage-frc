@@ -1,6 +1,8 @@
 import { spawn, spawnSync } from "node:child_process";
 import { chmod, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { homedir, hostname, tmpdir } from "node:os";
+import { executePersonalCodex } from "./codex-rpc.js";
+import { personalEnvironment } from "./personal-environment.js";
 import type {
   Clock,
   FileSystemLike,
@@ -94,8 +96,13 @@ const DETECT_TIMEOUT_MS = 10_000;
 function runSyncImpl(
   command: string,
   args: string[],
-  opts?: { timeoutMs?: number; input?: string },
+  opts?: { timeoutMs?: number; input?: string; personalUserId?: string },
 ): SpawnSyncResult {
+  let env: Record<string, string> | undefined;
+  if (command === "claude" && args[0] !== "--version") {
+    try { env = personalEnvironment(opts?.personalUserId ?? "", "claude").env; }
+    catch { return { error: true, status: null, stdout: "", stderr: "Personal sign-in required." }; }
+  }
   // Direct spawn first (finds .exe on every platform). npm-style .cmd shims are not
   // found by CreateProcess, so retry through cmd.exe on Windows when that happens.
   // (Ported from bridge.mjs runSync.)
@@ -103,12 +110,16 @@ function runSyncImpl(
     encoding: "utf8",
     timeout: opts?.timeoutMs ?? DETECT_TIMEOUT_MS,
     input: opts?.input,
+    env,
+    windowsHide: true,
   });
   if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT" && process.platform === "win32") {
     result = spawnSync("cmd.exe", ["/d", "/s", "/c", command, ...args.map((a) => (a === "" ? '""' : a))], {
       encoding: "utf8",
       timeout: opts?.timeoutMs ?? DETECT_TIMEOUT_MS,
       input: opts?.input,
+      env,
+      windowsHide: true,
       windowsVerbatimArguments: false,
     });
   }
@@ -123,12 +134,18 @@ function runSyncImpl(
 function runImpl(
   command: string,
   args: string[],
-  opts: { input?: string; timeoutMs: number; cwd?: string },
+  opts: { input?: string; timeoutMs: number; cwd?: string; personalUserId?: string; signal?: AbortSignal },
 ): Promise<SpawnRunResult> {
+  if (opts.signal?.aborted) return Promise.resolve({ status: null, stdout: "", stderr: "Request cancelled.", timedOut: false });
+  let env: Record<string, string> | undefined;
+  if (command === "claude") {
+    try { env = personalEnvironment(opts.personalUserId ?? "", "claude").env; }
+    catch { return Promise.resolve({ status: null, stdout: "", stderr: "Personal sign-in required.", timedOut: false, spawnError: true }); }
+  }
   return new Promise((resolve) => {
     // cwd defaults to a temp dir so the CLI never picks up a project's CLAUDE.md or
     // settings (ported from bridge.mjs runJobCli).
-    const child = spawn(command, args, { cwd: opts.cwd ?? tmpdir(), stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(command, args, { cwd: opts.cwd ?? tmpdir(), env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     let stdout = "";
     let stderr = "";
     let timedOut = false;
@@ -136,14 +153,17 @@ function runImpl(
       timedOut = true;
       child.kill("SIGKILL");
     }, opts.timeoutMs);
+    const cancel = () => { child.kill("SIGKILL"); };
+    opts.signal?.addEventListener("abort", cancel, { once: true });
+    const cleanup = () => { clearTimeout(timer); opts.signal?.removeEventListener("abort", cancel); };
     child.on("error", (error) => {
-      clearTimeout(timer);
+      cleanup();
       resolve({ status: null, stdout, stderr: String(error), timedOut: false, spawnError: true });
     });
     child.stdout.on("data", (chunk: Buffer) => (stdout += chunk));
     child.stderr.on("data", (chunk: Buffer) => (stderr += chunk));
     child.on("close", (status) => {
-      clearTimeout(timer);
+      cleanup();
       resolve({ status, stdout, stderr, timedOut });
     });
     child.stdin.write(opts.input ?? "");
@@ -152,6 +172,7 @@ function runImpl(
 }
 
 export const nodeSpawner: Spawner = {
+  codexSession: executePersonalCodex,
   runSync: runSyncImpl,
   run: runImpl,
 };

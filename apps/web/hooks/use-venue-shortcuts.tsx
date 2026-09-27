@@ -30,7 +30,7 @@ export function useVenueShortcuts(orgId: string | null | undefined) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target;
       if (
         target instanceof HTMLInputElement ||
@@ -39,7 +39,7 @@ export function useVenueShortcuts(orgId: string | null | undefined) {
         (target instanceof HTMLElement && target.isContentEditable) ||
         // Inside any open dialog, letters belong to the dialog: "m" in a rename box once
         // navigated away to My Day and lost the name.
-        (target instanceof HTMLElement && target.closest('[role="dialog"], [aria-modal="true"]')) ||
+        (target instanceof HTMLElement && target.closest('[role="dialog"], [aria-modal="true"], [role="menu"], [role="menuitem"]')) ||
         document.querySelector('[aria-modal="true"]')
       ) {
         return;

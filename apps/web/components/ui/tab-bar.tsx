@@ -37,6 +37,17 @@ export function TabBar({
       className={[shell, className].filter(Boolean).join(" ")}
       role="tablist"
       aria-label={ariaLabel}
+      onKeyDown={(event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        const enabled = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="tab"]:not(:disabled)')];
+        const current = enabled.indexOf(event.target as HTMLButtonElement);
+        if (current < 0 || enabled.length === 0) return;
+        event.preventDefault();
+        const next = event.key === "Home" ? 0 : event.key === "End" ? enabled.length - 1
+          : (current + (event.key === "ArrowRight" ? 1 : -1) + enabled.length) % enabled.length;
+        enabled[next]?.focus();
+        enabled[next]?.click();
+      }}
     >
       {tabs.map((tab) => {
         const selected = tab.id === value;
@@ -46,6 +57,7 @@ export function TabBar({
             type="button"
             role="tab"
             aria-selected={selected}
+            tabIndex={selected ? 0 : -1}
             className={selected ? (variant === "toolbar" ? "primary" : "active") : undefined}
             disabled={tab.disabled}
             onClick={() => onChange(tab.id)}

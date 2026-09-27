@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-26",
+  "environment": "http://127.0.0.1:3417; vantage_release_test; local development only",
+  "actor": "Existing Morgan Journey normal shared browser session; unchanged identity",
+  "tab": "781731034",
+  "method": "Fresh genuine full reload. Semantic DOM locator button clicks. No artificial settling waits before first Auto tap; no coordinates, injected storage/auth, server/API writes or submitted reports.",
+  "status": "failed_bounded",
+  "contexts": [
+    {
+      "match": "Q34",
+      "team": 6925,
+      "note": "[Synthetic scouting journey 2026-09-26] Rapid context fix A Q34 team6925; draft only.",
+      "sequence": "Select6925 → Auto+ → Teleop+ → noteA → Start timer",
+      "result": "Auto empty/minus disabled; Teleop1; exact noteA; Auto15seconds; Review2 instead of3",
+      "reload": "Exact6925Red1/noteA/Teleop1/missingAuto/Review2 restored; running timer progressed to Teleop1:55"
+    },
+    {
+      "match": "Q34",
+      "team": 1323,
+      "note": "[Synthetic scouting journey 2026-09-26] Rapid context fix C Q34 team1323; draft only.",
+      "sequence": "Select1323 → Auto+ → immediate DOM snapshot before any other field action; then Teleop+ → noteC → Start timer",
+      "firstTapResult": "Exact1323Blue2 selected; Auto empty/minus disabled; no Review action history. No timeout occurred in this isolation.",
+      "result": "Teleop1/exactnoteC/Auto15seconds/Review2; Auto never registered",
+      "reload": "Exact1323Blue2/noteC/Teleop1/missingAuto/Review2 restored; running timer Auto5seconds"
+    },
+    {
+      "match": "Q34",
+      "team": 1678,
+      "note": "[Synthetic scouting journey 2026-09-26] Rapid context fix D Q34 team1678; draft only.",
+      "sequence": "Select1678 → Auto+ → Teleop+ → noteD → Start timer",
+      "result": "Auto empty/minus disabled; Teleop1; exact noteD; Auto15seconds; Review2 instead of3",
+      "reload": "Exact1678Blue1/noteD/Teleop1/missingAuto/Review2 restored; running timer Auto7seconds"
+    }
+  ],
+  "excludedInterruptedContext": "Attempted1619Red3 selection timed out waiting for CDP Input.dispatchMouseEvent but visibly changed to blank1619 draft. Not counted as a clean rapid sequence; no fields changed in that draft.",
+  "isolation": "Each subsequent fresh robot showed its own unique note and two history events, not the previous robot note. Return-switch isolation check stopped at parent request to release for another scroll fix; not fully verified.",
+  "parentFinding": "Parent reports instant form scroll remained scheduled in requestAnimationFrame; parent will move scroll into layout commit. This is source diagnosis from parent, not independently proven by this browser evidence.",
+  "artifacts": [
+    "docs/release/evidence/scouting-rapid-layout-retest-dom.json",
+    "docs/release/evidence/scouting-rapid-layout-retest.png"
+  ],
+  "release": "Browser tab preserved for follow-up; no further mutations. Existing uploaded reports remain2. Initial failures remain in main journey-scouting-workflows.json."
+}

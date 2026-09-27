@@ -33,6 +33,27 @@ function field(perTeam: number, teams = 12): ScoutedMatchRow[] {
 }
 
 describe("ratingsFromScouting", () => {
+  it("keeps partial scoring before a breakdown and never infers zero from a status alone", () => {
+    const [rating] = ratingsFromScouting([
+      { teamKey: "frc1678", matchKey: "qm11", total: 12, auto: 10, disabled: true },
+      { teamKey: "frc1678", matchKey: "qm12", disabled: true },
+    ]);
+    expect(rating).toMatchObject({ matches: 1, meanTotal: 12, meanAuto: 10, disabledRate: 1, phaseSamples: { auto: 1, teleop: 0, endgame: 0 } });
+  });
+
+  it("combines conflicting reports before averages, with independent phase samples", () => {
+    const [rating] = ratingsFromScouting([
+      { teamKey: "frc1", matchKey: "qm1", total: 12, auto: 10 },
+      { teamKey: "frc1", matchKey: "qm1", total: 20, auto: 14 },
+      { teamKey: "frc1", matchKey: "qm2", total: 0, auto: 0 },
+      { teamKey: "frc1", matchKey: "qm3", total: 30 },
+    ]);
+    expect(rating?.matches).toBe(3);
+    expect(rating?.meanTotal).toBeCloseTo(46 / 3);
+    expect(rating?.meanAuto).toBe(6);
+    expect(rating?.phaseSamples).toEqual({ auto: 2, teleop: 0, endgame: 0 });
+  });
+
   it("rates a team from its own scouted matches", () => {
     const ratings = ratingsFromScouting([
       row({ teamKey: "frc254", matchKey: "qm1", auto: 10, teleop: 30, endgame: 12 }),
@@ -65,14 +86,14 @@ describe("ratingsFromScouting", () => {
     // belongs in the expected contribution rather than being dropped.
     const ratings = ratingsFromScouting([
       row({ teamKey: "frc9", matchKey: "qm1", teleop: 40 }),
-      { teamKey: "frc9", matchKey: "qm2", disabled: true },
+      { teamKey: "frc9", matchKey: "qm2", disabled: true, total: 0 },
     ]);
 
     const rating = ratings[0]!;
     expect(rating.matches).toBe(2);
     expect(rating.meanTotal).toBe(20);
     expect(rating.disabledRate).toBe(0.5);
-    expect(rating.sampleNote).toContain("dead on the field");
+    expect(rating.sampleNote).toContain("reported breakdown");
   });
 
   it("does not let one robot be scouted twice for the same match", () => {

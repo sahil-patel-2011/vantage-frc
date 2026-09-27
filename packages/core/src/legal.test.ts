@@ -127,7 +127,7 @@ describe("the 2026-09-26 rewrite", () => {
   const accepted = { termsAcceptedAt: "2026-09-25", privacyAcceptedAt: "2026-09-25" };
 
   it("is the current version, effective the same day", () => {
-    expect(LEGAL_DOC_VERSION).toBe("2026-09-26.1");
+    expect(LEGAL_DOC_VERSION).toBe("2026-09-26.2");
     expect(LEGAL_EFFECTIVE_DATE).toBe("September 26, 2026");
   });
 

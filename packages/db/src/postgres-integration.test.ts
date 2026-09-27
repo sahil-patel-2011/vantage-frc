@@ -114,6 +114,7 @@ describeWithDatabase(
                 ($2::uuid, 'RLS Org Two', 'rls-org-two', 9002)`,
         [orgOne, orgTwo],
       );
+      await pool.query("INSERT INTO profiles(user_id,date_of_birth) VALUES($1,'2000-01-01'),($2,'2000-01-01')", [userOne, userTwo]);
       await pool.query(
         `INSERT INTO memberships (org_id, user_id, role)
          VALUES ($1::uuid, $2::uuid, 'owner'),

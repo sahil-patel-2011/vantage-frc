@@ -13,6 +13,7 @@
  */
 
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import { completePhaseBreakdown, phasePointValue } from "./scouting-points-display";
 
 export type AllianceMath = {
   /** Sum of the shrunk per-match totals. */
@@ -21,15 +22,15 @@ export type AllianceMath = {
   floor: number | null;
   ceiling: number | null;
   /** Points per phase, summed. */
-  auto: number;
-  teleop: number;
-  endgame: number;
+  auto: number | null;
+  teleop: number | null;
+  endgame: number | null;
   /** Chance at least one robot is dead in a given match, if rates are independent. */
   deadRisk: number;
   /** Robots with a recorded climb rate above half their matches. */
   climbers: number;
   /** How differently the robots spend their points, 0 (identical) to 1 (opposite). */
-  complementarity: number;
+  complementarity: number | null;
   /** The sentence a captain repeats out loud. */
   note: string;
 };
@@ -89,13 +90,16 @@ export function allianceMath(profiles: readonly ScoutedTeamProfile[]): AllianceM
   const deadRisk =
     1 - profiles.reduce((live, profile) => live * (1 - Math.min(Math.max(profile.disabledRate, 0), 1)), 1);
   const climbers = profiles.filter((profile) => (profile.climbRate ?? 0) > 0.5).length;
-  const complementarity = complementarityOf(profiles);
+  const allPhasesObserved = profiles.every(completePhaseBreakdown);
+  const complementarity = allPhasesObserved ? complementarityOf(profiles) : null;
 
   const numbers = profiles.map((profile) => teamNumber(profile.teamKey));
   const mixes = profiles.map(strongestPhase);
   const sameJob = new Set(mixes).size === 1;
-  const note = sameJob
-    ? `Both lean on ${mixes[0]} — ${numbers.join(" and ")} overlap, so this pairing needs a third robot that does something else.`
+  const note = !allPhasesObserved ? "A complete phase split is missing. Assign roles using recorded capabilities and raw reports." : sameJob
+    ? profiles.length === 2
+      ? `Both lean on ${mixes[0]}. Their strengths overlap; consider a third robot with complementary capabilities.`
+      : `All ${profiles.length} robots lean on ${mixes[0]}. Their strengths overlap; check whether the alliance covers the other scoring roles.`
     : `${profiles
         .map((profile, index) => `${numbers[index]} carries ${mixes[index]}`)
         .join(", ")} — the jobs are split.`;
@@ -104,9 +108,9 @@ export function allianceMath(profiles: readonly ScoutedTeamProfile[]): AllianceM
     total,
     floor,
     ceiling,
-    auto: profiles.reduce((sum, profile) => sum + profile.meanAuto, 0),
-    teleop: profiles.reduce((sum, profile) => sum + profile.meanTeleop, 0),
-    endgame: profiles.reduce((sum, profile) => sum + profile.meanEndgame, 0),
+    auto: profiles.some(profile => phasePointValue(profile, "auto") == null) ? null : profiles.reduce((sum, profile) => sum + profile.meanAuto, 0),
+    teleop: profiles.some(profile => phasePointValue(profile, "teleop") == null) ? null : profiles.reduce((sum, profile) => sum + profile.meanTeleop, 0),
+    endgame: profiles.some(profile => phasePointValue(profile, "endgame") == null) ? null : profiles.reduce((sum, profile) => sum + profile.meanEndgame, 0),
     deadRisk,
     climbers,
     complementarity,

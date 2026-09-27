@@ -1,200 +1,70 @@
-# AI Subscription Bridge
+# Personal Codex connections
 
-*For members who want the team's AI chats to run through their own Claude Code subscription, and the contributors who maintain the bridge. Last updated 2026-08-24.*
+Last updated September 26, 2026.
 
-A team member (typically a mentor) who already pays for **Claude Pro/Max** — which includes the
-Claude Code CLI — or **ChatGPT** — which includes the Codex CLI — can serve the team's AI from
-their own always-on computer: *interactive chat* by default, or — if they flip the device's
-coverage to **Everything** — every AI feature across the entire platform. The bridge is a tiny
-local service that executes queued jobs through the locally-authenticated CLI under
-**subscription** auth, so those turns cost the team **$0 in API usage**.
+Each connection belongs to the person who pairs it. Other members' requests never run through that person's device or subscription. Use a separate profile for each Vantage user on a shared computer.
 
-It mirrors the CAD relay / storage-node pairing architecture: an 8-character pairing code, a
-sha256-hashed device token, heartbeats, and SECURITY DEFINER job-lease functions
-(`packages/db/migrations/0486_ai_bridge.sql`).
+## Connect Vantage to your local Codex
 
-## Honest terms & limits (read before pairing)
+Open **Team → Personal connections** at `/team/ai-bridge`. Copy your Vantage user ID and the commands shown there. Install Node 22 or later and the official Codex CLI.
 
-- **It is the pairer's subscription on the pairer's machine.** Every bridged turn draws from that
-  person's Claude Pro/Max or ChatGPT plan — there is no team pool and nothing is unlimited.
-- Subscription plans have **usage windows and rate limits**, and the providers' own terms govern
-  this use: [Anthropic consumer terms](https://www.anthropic.com/legal/consumer-terms) ·
-  [OpenAI terms of use](https://openai.com/policies/terms-of-use). Review whether bridged team use
-  fits your plan before pairing.
-- When the CLI reports a rate limit, Vantage surfaces the provider's message **verbatim**
-  (including the reset time when present) and the turn **falls back to the team's configured AI
-  keys** automatically (`degraded: bridge-rate-limited`).
-- **Coverage is the pairer's choice** (`/team/ai-bridge`, per device, `0488` migration):
-  - `chat` (default) — only **interactive chat-class features** route through the bridge (see
-    `BRIDGE_CHAT_FEATURES` in `packages/agent/src/resolve-chat-adapter.ts`: chat, writer,
-    troubleshoot-coach). Long/batch features (dreams, Bugbot scans, season reports) use the
-    team's own keys — they run for minutes and would burn the plan's usage window.
-  - `everything` — **every AI feature platform-wide** rides the subscription while the device is
-    online, including long jobs (season reports, CAD plans, nightly dreams, digests — worker jobs
-    included). Heavy jobs enqueue the `BRIDGE_HEAVY_CLI_TIMEOUT_MS` budget (~210 s), the job lease
-    grows to match, and the web waits out the poll budget (~240 s, overridable — see *Function
-    duration* below) before falling back. This burns the plan's usage window fastest; when the
-    plan rate-limits, everything falls back to the team's keys until it resets.
-- Bridged prompts include team context and execute on the pairer's machine. Revoking the device
-  on `/team/ai-bridge` stops that immediately.
-
-## How a turn flows
-
-1. A chat-class request resolves its model. If the org has a bridge device with
-   `prefer_when_online = true` and a heartbeat under 3 minutes old, the **bridge is tried first**;
-   the normal key chain is resolved alongside as the fall-through target.
-2. The web server enqueues an `ai_bridge_jobs` row (queue, **not** the request's RLS transaction —
-   the device polls on its own connection) and polls with backoff, bounded at ~75 s.
-3. The bridge service claims the job (2-minute lease), builds nothing — the prompt document is
-   already assembled server-side (system + delimited team context + user message, size-capped) —
-   and runs the CLI.
-4. `done` → the answer returns with the CLI-reported model and token usage, metered through the
-   existing metering path at **$0 cost**. `failed`/`expired`/timeout → the resolution **falls
-   through to the normal key chain** and the result metadata says why
-   (`bridge-offline` | `bridge-timeout` | `bridge-rate-limited`).
-5. A queued job older than **120 s expires** server-side, so the web caller never waits forever.
-
-## Function duration (deployment constraint — read before enabling `everything`)
-
-A bridged turn holds the HTTP request open while the pairer's CLI works, so every AI route that
-can be bridged declares `export const maxDuration = 300`: `/api/season-report`, `/api/cad`,
-`/api/code`, `/api/ai-insights`, `/api/match-debrief`, `/api/grants/assist`,
-`/api/grants/writing`, `/api/learning/predictions`, `/api/agent-narration/explain`,
-`/api/agent/autonomous`.
-
-**That 300 s only takes effect on a hosting plan whose maximum Node function duration is at
-least 300 s.** The ceiling is the plan's, not this repo's — check the limit for the Vercel plan
-this project actually deploys on before turning a device's coverage to `everything`.
-
-**If the plan caps function duration below the bridge's poll budget, set the override.** Left
-unset, the platform kills the function before the bridge answers *and* before the fall-through
-to the team's own keys runs, so the user sees a 504 and the keys they paid for are never tried:
+Download `/vantage-ai-bridge.mjs` from your Vantage installation. Replace `USER_ID` with the ID shown in Personal connections:
 
 ```sh
-# 60 s function cap → give up ~10 s inside it
-VANTAGE_BRIDGE_MAX_WAIT_MS=50000
+node vantage-ai-bridge.mjs --profile USER_ID --setup --url https://vantagefrc.vercel.app
+node vantage-ai-bridge.mjs --profile USER_ID --codex-login
+node vantage-ai-bridge.mjs --profile USER_ID --test
+node vantage-ai-bridge.mjs --profile USER_ID
 ```
 
-With the override, a heavy bridged job that has not finished in time falls through to the
-team's configured keys with `degraded: bridge-timeout` — slower and not free, but an answer.
+After the setup command, enter its pairing code in **your own** Vantage account. Approval by a different account is rejected locally. Then run login, test and the connector.
 
-## Setup on the always-on machine
+The login uses a dedicated Codex home. It does not reuse the computer's ordinary Codex login. Credentials remain on this device. Pairing records are in `~/.vantage/profiles/USER_ID/ai-bridge.json`; provider homes are also scoped to your Vantage ID. Protect the operating-system account and these directories.
 
-Requirements: Node 18+ and at least one signed-in CLI.
+`--test` checks the personal ChatGPT account through Codex App Server and verifies the server heartbeat identity without running a model turn. A version check alone does not establish connection readiness. `--status` reports engine and authentication detection; Vantage shows actual heartbeat and failure states.
+
+## Connect your Codex terminal to Vantage
+
+After pairing, register the stdio MCP server with the complete local file path:
 
 ```sh
-# Claude Pro/Max (verified path)
-claude --version           # install: https://docs.anthropic.com/en/docs/claude-code
-claude auth login          # sign in with the subscription account
-claude auth status         # {"loggedIn": true, ...}
-
-# ChatGPT / Codex (EXPERIMENTAL path — see caveat below)
-codex --version            # install: https://developers.openai.com/codex/cli
-codex login
+codex mcp add vantage -- node "/absolute/path/vantage-ai-bridge.mjs" --profile USER_ID --mcp
 ```
 
-Pair and run (the service is a single stdlib-only file — no npm install needed):
+The server uses newline-delimited JSON-RPC. Tools cover connector status, scouting, scouting schemas, inventory availability, knowledge search, CAD briefs, event readiness, purchase-request proposals and CAD-brief proposals.
 
-```sh
-cd packages/ai-bridge
-node bridge.mjs --setup --url https://your-vantage-host   # prints an 8-char code
-# approve the code at https://your-vantage-host/team/ai-bridge
-node bridge.mjs                                           # run the bridge loop
-node bridge.mjs --status                                  # engine detection report
-```
+Inputs cannot select another user or organization. The server derives identity from the device and rechecks membership, age eligibility, revocation and team AI controls on every call. Existing application services run under the person's permissions.
 
-Config (device token, org, host) is stored at `~/.vantage/ai-bridge.json` (mode 0600).
-Heartbeats run every 60 s and report engine availability, version, and sign-in state — the team
-page shows exactly what the machine reported, or "No heartbeat yet" until it does.
+Write tools create pending proposals. Review and confirm them in Vantage before an action runs. A purchase proposal never places an order or spends money. Tools do not expose SQL, Google operator credentials or arbitrary platform shell commands.
 
-### Run at boot — Linux (systemd)
+## How Vantage requests run
 
-`/etc/systemd/system/vantage-ai-bridge.service`:
+1. Vantage selects an eligible, recently connected device belonging to the requesting person.
+2. The server stores the submitted request in a personal queue and issues a bounded lease.
+3. The connector checks job, user and organization identity.
+4. Codex App Server starts a new ephemeral thread, streams the answer and uses permitted Vantage tools. Shell, local filesystem and unrelated conversation access are disabled.
+5. Cancellation, membership loss or revocation invalidates the lease. The connector interrupts the request; the server rejects an obsolete result.
 
-```ini
-[Unit]
-Description=Vantage AI subscription bridge
-After=network-online.target
-Wants=network-online.target
+Interactive chat uses a preferred personal device. A person's `everything` setting permits longer requests **made by that person**. Background work without a requesting person cannot use a subscription connection.
 
-[Service]
-Type=simple
-# Must run as the user whose CLI subscription login it uses.
-User=mentor
-ExecStart=/usr/bin/node /home/mentor/vantage-frc/packages/ai-bridge/bridge.mjs
-Restart=on-failure
-RestartSec=10
+After a bridge failure, existing configured API routing may supply an answer and report the degradation. Those calls have separate costs and limits. There is no team-wide subscription fallback or promise of unlimited provider usage.
 
-[Install]
-WantedBy=multi-user.target
-```
+The standalone bridge also supports an isolated Claude Code login with `--claude-login`. Codex is the default when both engines are available; an explicit requested engine is honored. Claude execution disables local tools and session persistence.
 
-```sh
-sudo systemctl daemon-reload
-sudo systemctl enable --now vantage-ai-bridge
-journalctl -u vantage-ai-bridge -f
-```
+The full `vantage-connector` CLI requires `--profile USER_ID` for setup, status, settings, its run loop and MCP. It can adopt a matching standalone pairing from that profile. It never adopts another person's machine-wide pairing. Media storage is retired and cannot be enabled.
 
-### Run at boot — Windows
+## Restarts and revocation
 
-Task Scheduler (no extra software):
+Task Scheduler or systemd launches must include the complete script path and `--profile USER_ID`, running in that person's operating-system session. Keep provider credentials in that profile. Do not use one mentor's subscription to serve a team.
 
-1. Task Scheduler → *Create Task…* → run only when the pairing user is logged on (the CLI's
-   sign-in lives in that profile).
-2. Trigger: *At log on*. Action: Program `node`, arguments
-   `C:\path\to\vantage-frc\packages\ai-bridge\bridge.mjs`.
-3. Settings: enable *If the task fails, restart every 1 minute*.
+Restart after updating the file. Re-pair when the pairing is revoked or invalid. Revocation in Vantage takes effect on the next server access.
 
-(Alternatively `nssm install vantage-ai-bridge node ...\bridge.mjs` to run it as a service —
-still under the account that holds the CLI login.)
+## Operator configuration and release evidence
 
-## CLI invocations (verified vs experimental)
+Configure `DATABASE_AI_BRIDGE_URL` with the restricted `vantage_pairing` role. Application tools use the request role and personal identity. A database-owner connection must not serve normal requests.
 
-**Claude Code — verified against 2.1.241 on Windows:**
+Heavy requests need a host duration longer than the polling budget. `VANTAGE_BRIDGE_MAX_WAIT_MS` bounds waiting within that duration. Provider availability and usage limits remain part of connection readiness.
 
-```sh
-claude -p --output-format json --tools "" --no-session-persistence \
-  --disable-slash-commands --setting-sources ""   # prompt on stdin
-```
+Evidence includes profile isolation, actual PostgreSQL access-rejection checks, installed App Server protocol/schema checks, unsigned-in account rejection and a real downloadable MCP subprocess round trip. Authenticated subscriber execution, browser pairing, confirmed actions and production restart/cancellation journeys still need acceptance evidence.
 
-- `--tools ""` disables all tool use — pure chat turns only.
-- Output is a single JSON object: `is_error`, `result` (the text),
-  `usage.input_tokens`/`usage.output_tokens`, and `modelUsage` keyed by the answering model id.
-- **The CLI exits 0 even on errors** — failures must be read from the JSON
-  (`packages/agent/test/subscription-bridge.test.ts` carries a verbatim captured fixture).
-- Never pass `--bare`: it restricts auth to `ANTHROPIC_API_KEY` and would bypass the
-  subscription OAuth that is the whole point of the bridge.
-
-**Codex CLI — EXPERIMENTAL:** the Codex CLI was not installed on the machine this bridge was
-built on, so `executeCodex()` in `packages/ai-bridge/bridge.mjs` follows OpenAI's documented
-`codex exec --json` non-interactive interface and is deliberately isolated in one small function.
-Engine detection (`codex --version`) gates it: jobs only route to codex when the CLI is actually
-present, and any interface mismatch is a one-function fix.
-
-## Server pieces
-
-| Piece | Path |
-| --- | --- |
-| Migration (tables, RLS, claim/complete functions) | `packages/db/migrations/0486_ai_bridge.sql` |
-| Migration (`coverage` column, long-job lease) | `packages/db/migrations/0488_ai_bridge_full_coverage.sql` |
-| Device routes (public, token-authed) | `apps/web/app/api/ai-bridge/device/{pair/start,pair/poll,heartbeat,jobs}` |
-| Approval + status routes (session) | `apps/web/app/api/ai-bridge/{pair/approve,status}` |
-| Queue transport (pairing pool) | `apps/web/lib/ai-bridge/{pool,transport}.ts` |
-| Adapter + resolver integration | `packages/agent/src/{subscription-bridge-adapter,resolve-chat-adapter}.ts` |
-| Team UI | `apps/web/app/team/ai-bridge/` |
-
-Environment: `DATABASE_AI_BRIDGE_URL` (a `vantage_pairing`-role connection; falls back to
-`DATABASE_CAD_RELAY_URL`, and to the app URL in development) and, on hosts that cap function
-duration below the poll budget, `VANTAGE_BRIDGE_MAX_WAIT_MS` (see *Function duration* above).
-
-To activate the bridge for a chat route, pass the transport when resolving the adapter:
-
-```ts
-import { createBridgeTransport } from "@/lib/ai-bridge/transport";
-const { adapter, provenance, degraded } = await resolveOrgChatAdapterWithProvenance(client, {
-  orgId, userId, feature: "chat", promptCachingEnabled,
-  bridgeTransport: createBridgeTransport(),
-});
-// after adapter.complete(...): (adapter as SubscriptionBridgeChatAdapter).lastDegraded
-// says whether the turn fell through, and provenance/model reflect what answered.
-```
+See [release status](release/STATUS.md) and the [completion matrix](release/completion-matrix.md).

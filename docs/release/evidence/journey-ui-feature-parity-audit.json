@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "auditedAtUtc": "2026-09-27T01:28:36Z",
+  "agent": "team_invitation_journey",
+  "baselineRevision": "5568db5c6cf7b3bacabbd5dbd75a583145c135cc",
+  "comparison": "Working tree shared navigation and hubs versus HEAD. Root was concurrently implementing changes; this is evidence for the source inspected at the stated time.",
+  "status": "source_audit_complete_with_open_findings",
+  "browserVerificationPerformed": false,
+  "productionAcceptance": false,
+  "scope": {
+    "applicationEdits": false,
+    "configurationEdits": false,
+    "browserInteractions": false,
+    "databaseMutations": false,
+    "checks": ["Existing destinations", "Permission wiring", "Dashboard saved boards", "Embedded Teams and Logistics", "Specialist connectors", "Inventory and finance service paths", "Duplicate navigation", "Back behavior"]
+  },
+  "destinationParity": {
+    "headUniqueLegacyHrefCount": 210,
+    "workingTreeUniqueLegacyHrefCount": 214,
+    "removedLegacyHrefs": [],
+    "addedLegacyHrefs": ["/duties", "/logistics", "/scout/teams", "/visit-invites"],
+    "method": "Read git show HEAD:apps/web/lib/nav/hubs.ts and the working source, extract each literal legacyHref, compare unique values.",
+    "primaryNavigation": ["Home", "Competition", "Team", "Build", "Business"],
+    "competitionPrimarySections": ["Event day", "Scout", "Teams", "Strategy", "Pit"],
+    "legacyRedirects": "apps/web/lib/nav/legacy-redirects.ts unchanged against HEAD; existing org-scoped redirect construction retained.",
+    "directPages": ["/logistics", "/scout/teams", "/packing", "/duties", "/visit-invites", "/cad/connections", "/connectors/github"]
+  },
+  "sourcePreserved": [
+    {
+      "feature": "Saved Home boards",
+      "evidence": ["apps/web/app/dashboard/dashboard-client.tsx:36", "apps/web/app/dashboard/dashboard-client.tsx:358", "apps/web/app/dashboard/use-dashboard-home-state.ts:129", "apps/web/app/dashboard/use-dashboard-board-ops.ts:332", "apps/web/app/api/dashboards/route.ts:268"],
+      "finding": "DashboardHomeView remains mounted. Snapshot/home reads and board mutations use /api/dashboards. Dashboard, dashboard libraries and its API have no working-tree diff against HEAD. Real quick task and scouting actions remain /api/todos and ScoutingClient.",
+      "browserVerifiedAfterRedesign": false
+    },
+    {
+      "feature": "Team Logistics",
+      "evidence": ["apps/web/app/team/team-hub.tsx", "apps/web/app/logistics/logistics-client.tsx:29", "apps/web/app/logistics/logistics-client.tsx:53", "apps/web/app/logistics/logistics-client.tsx:196", "apps/web/app/logistics/logistics-client.tsx:261"],
+      "finding": "Hub embeds the existing LogisticsClient; /api/logistics, role-filtered checklist, management panels, offline snapshots and standalone /logistics remain. TeamOpsNav is suppressed when embedded.",
+      "browserVerifiedAfterRedesign": false
+    },
+    {
+      "feature": "Competition Teams",
+      "evidence": ["apps/web/app/competition/competition-hub.tsx:36", "apps/web/app/intel/intel-client.tsx:50", "apps/web/app/intel/intel-client.tsx:218", "apps/web/app/intel/intel-client.tsx:326", "apps/web/app/intel/intel-client.tsx:447", "apps/web/app/scout/teams/page.tsx"],
+      "finding": "Hub embeds the same IntelClient scouting variant as the preserved direct route. Intel CSS is imported by the client. Real roster, team lookup, source filtering, notes, comparison and pick-list service paths remain.",
+      "browserVerifiedAfterRedesign": false
+    },
+    {
+      "feature": "Specialist CAD and code",
+      "evidence": ["apps/web/app/build/build-hub.tsx:53", "apps/web/app/build/build-hub.tsx:60", "apps/web/app/cad/cad-client.tsx:80", "apps/web/app/cad/cad-ready-view.tsx:177", "apps/web/app/cad/connections/page.tsx", "apps/web/app/code/code-client.tsx:182", "apps/web/app/code/code-client.tsx:242", "apps/web/app/connectors/github/github-client.tsx:54"],
+      "finding": "Existing CAD/code components are unchanged against HEAD and remain embedded in Build. Onshape editing, Fusion desktop pairing, GitHub connection, repository/file selection and job API paths remain. This does not prove live provider credentials, a paired desktop or actual editor execution.",
+      "browserVerifiedAfterRedesign": false
+    },
+    {
+      "feature": "Financial and inventory transactions",
+      "evidence": ["apps/web/app/business/business-client.tsx", "apps/web/app/business/season-finance-client.tsx:106", "apps/web/app/business/season-finance-client.tsx:217", "apps/web/app/api/inventory/route.ts:149", "apps/web/app/api/inventory/route.ts:216", "apps/web/lib/orders/receive-to-inventory.ts:123", "apps/web/app/api/orders/route.ts:164"],
+      "finding": "Business retains actual finance, sponsor, grant and order clients and APIs. Inventory mutations retain membership checks, RLS and unified parts ledger. Inventory API and receive-to-inventory service are unchanged against HEAD. Prior bounded local purchase/receive/repair and ledger journey evidence is recorded separately and predates this redesign audit.",
+      "priorJourneyEvidence": "docs/release/evidence/journey-build-business-workflows.json",
+      "browserVerifiedAfterRedesign": false
+    },
+    {
+      "feature": "Permission gates and personal shortcuts",
+      "evidence": ["apps/web/components/product-hub.tsx:152", "apps/web/components/product-hub.tsx:209", "apps/web/lib/nav/hub-access-filter.ts", "apps/web/lib/nav/hubs.ts:560", "apps/web/components/app-shell.tsx:441", "apps/web/components/app-shell.tsx:340"],
+      "finding": "Hub filtering, owner/admin settings gates, sponsor-funding filtering, saved personal island preferences and API-level membership/RLS code remain. Selected-team context findings below prevent claiming full permission acceptance from preservation alone.",
+      "crossTeamNegativeBrowserProof": false
+    }
+  ],
+  "openFindings": [
+    {
+      "id": "UI-PARITY-ORG-CONTEXT",
+      "priority": "P1",
+      "verification": "source_inference_requires_browser_reproduction",
+      "sources": ["apps/web/components/app-shell.tsx:139", "apps/web/components/app-shell.tsx:197", "apps/web/components/app-shell-model.ts:267", "apps/web/components/product-hub.tsx:178", "apps/web/components/product-hub.tsx:194", "apps/web/components/product-hub.tsx:199", "apps/web/app/intel/intel-client.tsx:112", "apps/web/app/logistics/logistics-client.tsx:80"],
+      "issue": "The shared shell soft-navigates same-route team-switch links and updates its topbar org. ProductHubShell initializes orgId only on the hub effect and its URL follower only updates tab. The newly embedded Teams and Logistics clients likewise read org on mount. A same-route org switch may retain the previous team's data or mutation identity while the address and topbar show the new team.",
+      "requiredProof": "With one normally authenticated member belonging to two synthetic teams, switch team without changing hub pathname; verify hub context, data, permission reads and subsequent reversible mutations all use the new org. Repeat Back/Forward.",
+      "recommendation": "Follow org changes alongside tabs and remount or reset embedded clients by selected org. Abort/ignore stale loads and invalidate user/org caches. Preserve actual service authorization; do not inject sessions or bypass the UI."
+    },
+    {
+      "id": "UI-PARITY-ACCESS-ORG",
+      "priority": "P2",
+      "verification": "confirmed_source_wiring_not_browser_verified",
+      "sources": ["apps/web/lib/nav/use-client-access.ts:32", "apps/web/lib/nav/me-request.ts:56", "apps/web/app/api/me/route.ts:13", "apps/web/app/api/me/route.ts:59"],
+      "issue": "useClientAccessProfile uses requestMe(), which fetches /api/me without orgId. The API uses the first membership when orgId is absent. ProductHubShell and Business can therefore use a different team's allowlist or sponsor-funding rules on a selected-team URL. This is a retained baseline defect rather than proof of a redesign-created server authorization bypass.",
+      "recommendation": "Scope permission reads and shared cache keys to requesting user and selected org, revalidate on team change, and verify allowlisted members on two teams with different permissions."
+    },
+    {
+      "id": "UI-PARITY-BACK",
+      "priority": "P2",
+      "verification": "confirmed_source_behavior_not_browser_verified",
+      "sources": ["apps/web/components/app-shell.tsx:672", "apps/web/components/app-shell-model.ts:166", "apps/web/lib/nav/soft-navigation.ts", "apps/web/lib/nav/use-follow-url.ts", "apps/web/lib/nav/url-change.ts"],
+      "issue": "The visible shell Back action pushes a fixed parent href. Its helper receives pathname and org only, so preceding filters, tab query and scroll position are not preserved. Existing shared navigation helpers perform soft routing and URL-change notifications, but do not maintain a return-state/scroll history.",
+      "recommendation": "Use validated in-app navigation history with a safe direct-link fallback and restore relevant filters/scroll, then verify phone detail-to-list journeys."
+    },
+    {
+      "id": "UI-PARITY-TEAMS-SHELL",
+      "priority": "P2",
+      "verification": "confirmed_source_markup_not_browser_verified",
+      "sources": ["apps/web/app/intel/intel-client.tsx:129", "apps/web/app/intel/intel-client.tsx:536", "apps/web/app/intel/intel-chrome.tsx:94"],
+      "issue": "Embedded Teams loading/error branches still use IntelShell, which always renders a main landmark and Research title. Under ProductHubShell this creates nested main landmarks and inconsistent Teams/Research state labels.",
+      "recommendation": "Pass embedded and scouting-variant context through IntelShell; use a section for embedded states and preserve standalone Research behavior."
+    },
+    {
+      "id": "UI-PARITY-SEARCH-ALIASES",
+      "priority": "P3",
+      "verification": "read_only_runtime_command_catalog_verified",
+      "sources": ["apps/web/lib/nav/command-search.ts:393", "apps/web/lib/nav/command-search.ts:395", "apps/web/lib/nav/command-search.ts:407", "apps/web/lib/nav/command-search.ts:456", "apps/web/lib/nav/hubs.ts:243"],
+      "issue": "Adding Team Logistics leaves separate search destinations for /team?tab=logistics and /logistics, plus corresponding hub/direct Duties and Visit invites aliases. Catalog deduplication compares literal hrefs rather than canonical destinations.",
+      "observedPairs": [["/team?tab=logistics", "/logistics"], ["/team?tab=duties", "/duties"], ["/team?tab=visit-invites", "/visit-invites"]],
+      "recommendation": "Preserve direct URLs while showing one canonical Team destination in search, merging existing travel/hotel/duty/RSVP synonyms."
+    }
+  ],
+  "resolvedDuringInspection": [
+    {
+      "initialConcern": "Embedded Teams might omit Intel CSS.",
+      "resolution": "apps/web/app/intel/intel-client.tsx:50 imports ./intel.css; no missing stylesheet finding."
+    },
+    {
+      "initialConcern": "IntelRelatedStrip remains unconditionally emitted and might visibly duplicate hub navigation.",
+      "resolution": "apps/web/app/product-hub.css:135 suppresses .product-hub-panel .product-hub-related with display:none !important. No visible duplication was demonstrated. Optional !embedded markup gating can preserve the standalone strip, but is unnecessary to fix visibility."
+    }
+  ],
+  "regressionTests": {
+    "command": "npm test -- apps/web/lib/nav/hubs.test.ts apps/web/lib/nav/product-nav.test.ts apps/web/lib/nav/command-search.test.ts apps/web/lib/nav/hub-access-filter.test.ts apps/web/lib/nav/route-coverage.test.ts",
+    "exitCode": 0,
+    "filesPassed": 5,
+    "testsPassed": 115,
+    "testsSkipped": 5,
+    "durationSeconds": 1.63,
+    "skipExplanation": "Five existing skipIf(!MEDIA_ENABLED) cases: four hubs cases and one Media library command-search case. No tests/assertions were edited or newly skipped. Several skipped cases also bundle non-media destinations; source preservation and the passing route-coverage suite do not substitute for live workflows.",
+    "warning": "Existing Vite native-config CommonJS/ESM compatibility warning; test execution succeeded."
+  },
+  "completionLimits": [
+    "This evidence proves bounded source preservation and navigation regressions only, not functional completion of every feature.",
+    "No browser operation was performed while root reserved the browser/runtime.",
+    "Accessibility, responsive layouts, provider execution, cross-role rejection and after-redesign connected workflows still require normal UI verification.",
+    "No production release or production acceptance is claimed."
+  ]
+}

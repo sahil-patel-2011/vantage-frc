@@ -1,5 +1,5 @@
 import {
-  CAPABILITY_IDS,
+  ACTIVE_CAPABILITY_IDS as CAPABILITY_IDS,
   isCapabilityId,
   type CapabilityContext,
   type CapabilityDetection,
@@ -13,6 +13,7 @@ import {
   legacyBridgeConfigPath,
   loadConnectorConfig,
   loadOrAdoptConnectorConfig,
+  normalizePersonalProfile,
   saveConnectorConfig,
   setCapabilityEnabled,
   type ConnectorConfig,
@@ -28,7 +29,8 @@ import {
 } from "./runtime-state.js";
 import { ConnectorSupervisor, type CapabilityRunState, type SupervisorEvent } from "./supervisor.js";
 import { CONNECTOR_VERSION, defaultBaseUrl } from "./version.js";
-import { connectorStatusToolRegistry, runConnectorMcp } from "./mcp.js";
+import { combineToolRegistries, connectorStatusToolRegistry, runConnectorMcp } from "./mcp.js";
+import { personalFeatureToolRegistry } from "./feature-tools.js";
 
 /**
  * Headless CLI host for the connector — what a mentor actually runs on the always-on shop
@@ -58,6 +60,8 @@ export type CliStdio = {
 export type CliHost = {
   argv: string[];
   home: string;
+  /** Vantage user UUID; scopes pairing, adoption and runtime state on shared computers. */
+  profile?: string;
   /** This computer's name, used when pairing a fresh machine. */
   machineName: string;
   env: Record<string, string | undefined>;
@@ -90,6 +94,20 @@ export type CliHost = {
 /* ------------------------------------------------------------------ */
 /* Argument parsing (pure)                                             */
 /* ------------------------------------------------------------------ */
+
+export function extractPersonalProfile(argv: readonly string[]): { argv: string[]; profile?: string; error?: string } {
+  const remaining: string[] = [];
+  let profile: string | undefined;
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index]!;
+    if (token !== "--profile") { remaining.push(token); continue; }
+    if (profile) return { argv: [], error: "Specify --profile only once." };
+    const value = argv[++index];
+    try { profile = normalizePersonalProfile(value ?? ""); }
+    catch (error) { return { argv: [], error: error instanceof Error ? error.message : "Invalid personal profile." }; }
+  }
+  return { argv: remaining, ...(profile ? { profile } : {}) };
+}
 
 export type CliCommand =
   | { kind: "run" }
@@ -167,6 +185,7 @@ export function parseCliArgs(argv: readonly string[]): CliCommand {
     if (token === "--enable" || token === "--disable" || token === "enable" || token === "disable") {
       const value = argv[i + 1];
       const enabled = token === "--enable" || token === "enable";
+      if (enabled && value === "storage-node") return { kind: "usage-error", message: "Photo and video storage is no longer offered. Existing files are preserved." };
       if (!value) {
         return {
           kind: "usage-error",
@@ -224,7 +243,10 @@ export function parseCliArgs(argv: readonly string[]): CliCommand {
 
 export function helpText(configPath: string): string {
   return [
-    `Vantage connector ${CONNECTOR_VERSION} — one paired machine, six toggleable capabilities.`,
+    `Vantage connector ${CONNECTOR_VERSION} — personal pairing and capability settings.`,
+    "",
+    "Add --profile <your Vantage user ID> to setup, status, capability and MCP commands.",
+    "Copy your user ID from Vantage → Personal connections.",
     "",
     "  vantage-connector                       run every enabled capability until Ctrl+C",
     "  vantage-connector --setup [--url URL] [--force]",
@@ -232,7 +254,7 @@ export function helpText(configPath: string): string {
     "  vantage-connector --status [--json]     pairing, capabilities, detection, last heartbeat",
     "  vantage-connector --enable <capability>",
     "  vantage-connector --disable <capability>",
-    "  vantage-connector mcp                   stdio MCP server for Claude Code / Cursor",
+    "  vantage-connector mcp                   stdio MCP server for Codex and compatible clients",
     "  vantage-connector --version",
     "",
     `Capabilities: ${CAPABILITY_IDS.join(", ")}`,
@@ -255,6 +277,7 @@ export type CliCapabilityStatus = {
 };
 
 export type CliStatusSnapshot = {
+  profile?: string;
   connectorVersion: string;
   generatedAt: string;
   configPath: string;
@@ -305,6 +328,10 @@ function ageBetween(fromIso: string | null, toIso: string): string | null {
   return formatAge(to - from);
 }
 
+function connectorCommand(profile: string | undefined, args = ""): string {
+  return `vantage-connector${profile ? ` --profile ${profile}` : ""}${args ? ` ${args}` : ""}`;
+}
+
 export function formatStatusText(snapshot: CliStatusSnapshot): string {
   const lines: string[] = [`Vantage connector ${snapshot.connectorVersion}`];
   lines.push(`  config file   ${snapshot.configPath}${snapshot.paired ? "" : " (not created yet)"}`);
@@ -321,7 +348,7 @@ export function formatStatusText(snapshot: CliStatusSnapshot): string {
     }
     lines.push(`  machine name  ${snapshot.machineName}`);
   } else {
-    lines.push("  pairing       not paired yet — run `vantage-connector --setup` to pair this machine");
+    lines.push(`  pairing       not paired yet — run \`${connectorCommand(snapshot.profile, "--setup")}\` to pair your profile`);
     if (snapshot.legacyBridgeAvailable) {
       lines.push("                this machine already runs the AI bridge; --setup adopts that pairing instead of");
       lines.push("                asking for a new code.");
@@ -346,7 +373,7 @@ export function formatStatusText(snapshot: CliStatusSnapshot): string {
   if (!snapshot.paired) {
     lines.push("  nothing runs until this machine is paired and a capability is enabled.");
   } else if (snapshot.capabilities.every((capability) => !capability.enabled)) {
-    lines.push(`  nothing is enabled — turn one on with \`vantage-connector --enable <capability>\`.`);
+    lines.push(`  nothing is enabled — turn one on with \`${connectorCommand(snapshot.profile, "--enable <capability>")}\`.`);
   }
 
   lines.push("");
@@ -422,10 +449,10 @@ async function detectOnce(
 async function loadConfigOrExplain(
   host: CliHost,
 ): Promise<{ config: ConnectorConfig; adopted: boolean } | null> {
-  const result = await loadOrAdoptConnectorConfig(host.fs, host.home, () => host.clock.now());
+  const result = await loadOrAdoptConnectorConfig(host.fs, host.home, () => host.clock.now(), host.profile);
   if (result) return result;
-  host.io.err("Not paired yet — run `vantage-connector --setup` to pair this machine.");
-  host.io.err(`(config: ${connectorConfigPath(host.home)})`);
+  host.io.err(`Not paired yet — run \`${connectorCommand(host.profile, "--setup")}\` to pair your profile.`);
+  host.io.err(`(config: ${connectorConfigPath(host.home, host.profile)})`);
   return null;
 }
 
@@ -436,11 +463,11 @@ async function loadConfigOrExplain(
 export async function buildStatusSnapshot(host: CliHost): Promise<CliStatusSnapshot> {
   // Status is READ-ONLY: it never adopts (which would write connector.json), it only
   // reports that an adoptable bridge pairing is sitting there.
-  const config = await loadConnectorConfig(host.fs, host.home);
+  const config = await loadConnectorConfig(host.fs, host.home, host.profile);
   const legacyBridgeAvailable =
-    config === null && (await fileExists(host.fs, legacyBridgeConfigPath(host.home)));
+    config === null && (await fileExists(host.fs, legacyBridgeConfigPath(host.home, host.profile)));
   const capabilities = host.createCapabilities();
-  const runtime = await readRuntimeState(host.fs, host.home);
+  const runtime = await readRuntimeState(host.fs, host.home, host.profile);
   const lastRun = new Map(runtime?.capabilities.map((entry) => [entry.id, entry]) ?? []);
 
   const entries: CliCapabilityStatus[] = [];
@@ -476,8 +503,9 @@ export async function buildStatusSnapshot(host: CliHost): Promise<CliStatusSnaps
 
   return {
     connectorVersion: CONNECTOR_VERSION,
+    ...(host.profile ? { profile: host.profile } : {}),
     generatedAt: nowIso(host),
-    configPath: connectorConfigPath(host.home),
+    configPath: connectorConfigPath(host.home, host.profile),
     machineName: config?.machineName ?? host.machineName,
     paired: config !== null,
     baseUrl: config?.baseUrl ?? null,
@@ -509,20 +537,20 @@ async function runStatus(host: CliHost, json: boolean): Promise<number> {
 }
 
 async function runSetup(host: CliHost, requestedBaseUrl: string | null, force: boolean): Promise<number> {
-  const existing = await loadOrAdoptConnectorConfig(host.fs, host.home, () => host.clock.now());
+  const existing = await loadOrAdoptConnectorConfig(host.fs, host.home, () => host.clock.now(), host.profile);
   if (existing?.adopted) {
     // The whole point of adoption: a member already running the standalone AI bridge is
     // NOT sent through pairing again — their device token carries over untouched.
     host.io.out(
       `Adopted the AI bridge pairing already on this machine (${existing.config.machineName} → ${existing.config.baseUrl}).`,
     );
-    host.io.out(`Config written to ${connectorConfigPath(host.home)} with ai-bridge enabled; ai-bridge.json is left in place.`);
-    host.io.out("Add more capabilities with `vantage-connector --enable <capability>`, then run `vantage-connector`.");
+    host.io.out(`Config written to ${connectorConfigPath(host.home, host.profile)} with ai-bridge enabled; ai-bridge.json is left in place.`);
+    host.io.out(`Add more capabilities with \`${connectorCommand(host.profile, "--enable <capability>")}\`, then run \`${connectorCommand(host.profile)}\`.`);
     return 0;
   }
   if (existing && !force) {
     host.io.out(`Already paired with ${existing.config.baseUrl} as "${existing.config.machineName}".`);
-    host.io.out("Run `vantage-connector --status` to see it, or `vantage-connector --setup --force` to pair again.");
+    host.io.out(`Run \`${connectorCommand(host.profile, "--status")}\` to see it, or \`${connectorCommand(host.profile, "--setup --force")}\` to pair again.`);
     return 0;
   }
 
@@ -548,7 +576,7 @@ async function runSetup(host: CliHost, requestedBaseUrl: string | null, force: b
     host.io.out(`  Pairing code:  ${started.userCode}`);
     host.io.out(`  Approve at:    ${started.verificationUri}`);
     host.io.out("");
-    host.io.out("Waiting for an owner or admin to approve (10 minute window)…");
+    host.io.out("Waiting for you to approve in your Vantage account (10 minute window)…");
   }
   const final = await flow.waitForApproval();
   if (final.phase !== "approved") {
@@ -569,18 +597,18 @@ async function runSetup(host: CliHost, requestedBaseUrl: string | null, force: b
     ...(existing?.config.storage ? { storage: existing.config.storage } : {}),
     ...(existing?.config.cadRelay ? { cadRelay: existing.config.cadRelay } : {}),
   };
-  await saveConnectorConfig(host.fs, host.home, config);
-  host.io.out(`Paired. Config saved to ${connectorConfigPath(host.home)} (owner-only, mode 0600).`);
+  await saveConnectorConfig(host.fs, host.home, config, host.profile);
+  host.io.out(`Paired. Config saved to ${connectorConfigPath(host.home, host.profile)} (owner-only, mode 0600).`);
   const enabled = enabledCapabilities(config);
   if (enabled.length === 0) {
     host.io.out("Nothing is enabled yet — choose what this machine should do:");
     for (const capability of host.createCapabilities()) {
-      host.io.out(`  vantage-connector --enable ${pad(capability.id, 14)}${capability.label}`);
+      host.io.out(`  ${connectorCommand(host.profile, `--enable ${pad(capability.id, 14)}${capability.label}`)}`);
     }
   } else {
     host.io.out(`Enabled capabilities kept: ${enabled.join(", ")}.`);
   }
-  host.io.out("Then start it with: vantage-connector");
+  host.io.out(`Then start it with: ${connectorCommand(host.profile)}`);
   return 0;
 }
 
@@ -595,8 +623,8 @@ async function runToggle(host: CliHost, id: CapabilityId, enabled: boolean): Pro
     return 0;
   }
   const next = setCapabilityEnabled(loaded.config, id, enabled);
-  await saveConnectorConfig(host.fs, host.home, next);
-  host.io.out(`${enabled ? "Enabled" : "Disabled"} ${id} (${label}). Saved to ${connectorConfigPath(host.home)}.`);
+  await saveConnectorConfig(host.fs, host.home, next, host.profile);
+  host.io.out(`${enabled ? "Enabled" : "Disabled"} ${id} (${label}). Saved to ${connectorConfigPath(host.home, host.profile)}.`);
 
   if (enabled && capability) {
     // Tell the mentor immediately whether this machine can actually do the thing, rather
@@ -616,7 +644,10 @@ async function runMcp(host: CliHost): Promise<number> {
   }
   // Editors launch this on demand; there is no supervisor in this process, so the status
   // tool answers from the same snapshot `--status --json` prints, refreshed per call.
-  const registry = connectorStatusToolRegistry(() => buildStatusSnapshot(host));
+  const registry = combineToolRegistries(
+    connectorStatusToolRegistry(() => buildStatusSnapshot(host)),
+    personalFeatureToolRegistry(host.transport, () => loadConnectorConfig(host.fs, host.home, host.profile)),
+  );
   runConnectorMcp(registry, stdio);
   await new Promise<void>((resolve) => {
     const unregister = host.onShutdown(() => {
@@ -633,7 +664,7 @@ async function runSupervisor(host: CliHost): Promise<number> {
   const { config, adopted } = loaded;
   if (adopted) {
     host.io.out(
-      `Adopted the AI bridge pairing on this machine — ai-bridge is enabled and ${connectorConfigPath(host.home)} now owns the pairing.`,
+      `Adopted the AI bridge pairing on this machine — ai-bridge is enabled and ${connectorConfigPath(host.home, host.profile)} now owns the pairing.`,
     );
   }
 
@@ -642,7 +673,7 @@ async function runSupervisor(host: CliHost): Promise<number> {
     // Still worth running: the heartbeat is how the team sees this machine is alive. But
     // say plainly that it will do no work.
     host.io.out("No capabilities are enabled — this connector will only heartbeat.");
-    host.io.out(`Enable one with \`vantage-connector --enable <capability>\` (${CAPABILITY_IDS.join(", ")}).`);
+    host.io.out(`Enable one with \`${connectorCommand(host.profile, "--enable <capability>")}\` (${CAPABILITY_IDS.join(", ")}).`);
   }
 
   const supervisor = new ConnectorSupervisor({
@@ -678,7 +709,7 @@ async function runSupervisor(host: CliHost): Promise<number> {
   let writeChain: Promise<void> = Promise.resolve();
   const persist = (): Promise<void> => {
     state.capabilities = snapshotFromStatus(supervisor.status());
-    writeChain = writeChain.then(() => writeRuntimeState(host.fs, host.home, { ...state }).catch(() => {}));
+    writeChain = writeChain.then(() => writeRuntimeState(host.fs, host.home, { ...state }, host.profile).catch(() => {}));
     return writeChain;
   };
 
@@ -716,7 +747,7 @@ async function runSupervisor(host: CliHost): Promise<number> {
       case "auth-revoked":
         host.io.err(event.detail);
         // Not a crash to retry: only a human re-pairing can fix a revoked token.
-        stop(1, "Stopping: this device must be paired again (`vantage-connector --setup --force`).");
+        stop(1, `Stopping: this device must be paired again (\`${connectorCommand(host.profile, "--setup --force")}\`).`);
         break;
       case "stopped":
         break;
@@ -743,11 +774,14 @@ async function runSupervisor(host: CliHost): Promise<number> {
 
 /** Runs one CLI invocation and resolves with the process exit code. Never throws. */
 export async function runCli(host: CliHost): Promise<number> {
-  const command = parseCliArgs(host.argv);
   try {
+    const scoped = extractPersonalProfile(host.argv);
+    if (scoped.error) { host.io.err(scoped.error); return 1; }
+    if (scoped.profile) host = { ...host, profile: scoped.profile };
+    const command = parseCliArgs(scoped.argv);
     switch (command.kind) {
       case "help":
-        host.io.out(helpText(connectorConfigPath(host.home)));
+        host.io.out(helpText(connectorConfigPath(host.home, host.profile)));
         return 0;
       case "version":
         host.io.out(CONNECTOR_VERSION);

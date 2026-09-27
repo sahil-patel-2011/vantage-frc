@@ -533,3 +533,18 @@
   background: var(--surface);
   box-shadow: 0 -8px 0 0 var(--bg, var(--surface)), 0 6px 14px -8px rgba(12, 17, 24, 0.28);
 }
+
+.scout-action-history { margin-top: 16px; max-width: 100%; }
+.scout-action-history summary { min-height: 48px; padding: 12px; cursor: pointer; }
+.scout-action-history summary:focus-visible { outline: 2px solid var(--accent, #0f766e); outline-offset: 2px; }
+.scout-action-history ol { max-height: 360px; overflow: auto; padding-left: 24px; }
+.scout-action-history li { padding: 8px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.scout-action-history time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.scout-report-viewer .scout-report-tabs { grid-template-columns: minmax(0, 1fr); }
+.scout-report-viewer .scout-report-tabs section { min-width: 0; }
+.scout-report-viewer .scout-report-tabs dl div { display: block; }
+.scout-report-viewer .scout-report-tabs dt { font-weight: 600; }
+.scout-report-viewer .scout-report-tabs dd { margin: 2px 0 10px; line-height: 1.5; overflow-wrap: anywhere; }
+.scout-report-viewer .scout-action-history li { display: block; }
+.scout-report-viewer .scout-action-history time { display: block; white-space: nowrap; }
+.scout-report-viewer .scout-action-history p { margin: 6px 0; line-height: 1.5; }

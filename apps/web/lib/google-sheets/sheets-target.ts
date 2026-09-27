@@ -23,6 +23,7 @@
  */
 
 import { IMPORT_TABLES, type WorkbookReader, type WorkbookTableRead, type WorkbookTableRef } from "../microsoft/workbook-import";
+import { LONG_TEXT_SHEET, longTextResolver } from "../microsoft/long-text";
 import type { CellValue, TableSpec } from "../microsoft/workbook-schema";
 import type { WorkbookTarget } from "../microsoft/workbook-sync";
 import { GoogleSheetsClient, GoogleSheetsError, SHEETS_API_BASE } from "./google-api";
@@ -209,22 +210,27 @@ export class GoogleSheetsTarget implements WorkbookTarget, WorkbookReader {
   async readTable(ref: WorkbookTableRef): Promise<WorkbookTableRead | null> {
     if (!this.sheets.has(ref.sheet)) return null;
     if (!this.reads) {
-      const wanted = [...new Set([...IMPORT_TABLES.map((table) => table.sheet), ref.sheet])].filter((sheet) =>
+      const wanted = [...new Set([...IMPORT_TABLES.map((table) => table.sheet), ref.sheet, LONG_TEXT_SHEET])].filter((sheet) =>
         this.sheets.has(sheet),
       );
       const params = new URLSearchParams({ valueRenderOption: "UNFORMATTED_VALUE", dateTimeRenderOption: "FORMATTED_STRING" });
-      for (const sheet of wanted) params.append("ranges", `${quoteSheet(sheet)}!A1:ZZ${MAX_ROWS_READ + 1}`);
+      // Read one extra row so a capacity limit is detectable rather than silently truncating.
+      for (const sheet of wanted) params.append("ranges", `${quoteSheet(sheet)}!A1:ZZ${MAX_ROWS_READ + 2}`);
       const data = await this.client.request<{ valueRanges?: Array<{ values?: unknown[][] }> }>(
         "GET",
         `${this.base}/values:batchGet?${params.toString()}`,
       );
       this.reads = new Map(wanted.map((sheet, i) => [sheet, data?.valueRanges?.[i]?.values ?? []]));
+      const continuations = this.reads.get(LONG_TEXT_SHEET) ?? [];
+      if (continuations.length > MAX_ROWS_READ + 1) throw new Error("LongText exceeded the readable import capacity. No fragments were imported.");
+      const restore = longTextResolver(continuations[0] ?? [], continuations.slice(1));
+      for (const name of wanted) if (name !== LONG_TEXT_SHEET) this.reads.set(name, this.reads.get(name)!.map((row) => row.map(restore)));
     }
     const values = this.reads.get(ref.sheet) ?? [];
     const headers = values[0] ?? [];
     const width = headers.length;
     // Google trims trailing empty cells; pad rows back to the header width.
-    const rows = values.slice(1).map((row) => {
+    const rows = values.slice(1, MAX_ROWS_READ + 1).map((row) => {
       const out = row.slice(0, Math.max(width, row.length));
       while (out.length < width) out.push("");
       return out;

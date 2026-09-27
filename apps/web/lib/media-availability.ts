@@ -1,9 +1,9 @@
-/** Reversible storage-saving switch. No stored media or schemas are deleted. */
+/** New photo/video storage is not offered. Existing records are preserved. */
 export const MEDIA_ENABLED: boolean = false;
-export const MEDIA_PAUSED_MESSAGE = "Media and photo/video uploads are temporarily paused to save storage.";
+export const MEDIA_PAUSED_MESSAGE = "Photo and video uploads are not supported. Add an external match-video link instead.";
 
 const MEDIA_TOOLS = new Set([
-  "media", "media-kit", "media-library", "video", "video-analysis", "match-video-index",
+  "media", "media-kit", "media-library",
   "content-calendar", "content-drafts", "content-reminders",
 ]);
 

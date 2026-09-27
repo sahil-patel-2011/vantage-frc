@@ -32,7 +32,8 @@
  * then becomes that index.
  */
 
-export const APPS_SCRIPT_VERSION = 4;
+export const APPS_SCRIPT_VERSION = 7;
+export const APPS_SCRIPT_WORKSPACE_VERSION = 7;
 /** Hub mode (one spreadsheet per team in a VantageFRC folder) needs this version. */
 export const APPS_SCRIPT_HUB_VERSION = 3;
 /** The oldest script Vantage still talks to (spreadsheet sync only). */
@@ -91,8 +92,8 @@ export function appsScriptSource(secret: string, options: { appUrl?: string | nu
  * keep up to date. For every team (hub): paste it into a new project at script.google.com.
  * Then Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone.
  * Vantage signs every request with the secret below; anything unsigned is refused, so the
- * web app address alone cannot read or change anything. It only touches this spreadsheet
- * and the one "Vantage media" Drive folder it makes (or the folder you pick in Vantage).
+ * web app address alone cannot read or change anything. It manages Vantage team workbooks
+ * and encrypted recovery copies in the operator's VantageFRC folder.
  * Keep the secret private — it is what makes the address safe to share.
  */
 const VANTAGE_SECRET = "${secret}";
@@ -100,6 +101,49 @@ const VANTAGE_VERSION = ${APPS_SCRIPT_VERSION};
 // Where "Connect to Vantage" sends the platform owner (empty for a team's own script).
 const VANTAGE_APP_URL = "${appUrl}";
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+// Personal Gmail: all Vantage creations share one conservative rolling-day ledger.
+// This measures this bridge's attempts, not Google's remaining quota or other scripts.
+const VANTAGE_CREATE_LIMIT = 250;
+const VANTAGE_QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
+const VANTAGE_CREATE_LEDGER = "VANTAGE_CREATE_LEDGER";
+
+function vantageQuotaError_(retryAfterMs) {
+  const error = new Error("Google's daily spreadsheet creation allowance is in use. Setup progress is saved and will resume automatically.");
+  error.code = "daily_quota";
+  error.retryAfterMs = Math.max(1000, Math.min(VANTAGE_QUOTA_WINDOW_MS, retryAfterMs));
+  return error;
+}
+
+function vantageCreateSpreadsheet_(title) {
+  const lock = LockService.getScriptLock();
+  const acquired = !lock.hasLock();
+  if (acquired) lock.waitLock(30000);
+  try {
+    // Recover a create that succeeded before its response or registration was lost.
+    const existing = DriveApp.getFilesByName(title);
+    if (existing.hasNext()) return SpreadsheetApp.openById(existing.next().getId());
+    const props = PropertiesService.getScriptProperties();
+    const now = Date.now();
+    const stored = props.getProperty(VANTAGE_CREATE_LEDGER);
+    const ledger = stored ? JSON.parse(stored) : { attempts: [], blockedUntil: 0 };
+    if (!Array.isArray(ledger.attempts) || ledger.attempts.some((at) => !Number.isFinite(at)) || !Number.isFinite(ledger.blockedUntil)) throw new Error("Spreadsheet quota ledger needs operator attention.");
+    ledger.attempts = ledger.attempts.filter((at) => at > now - VANTAGE_QUOTA_WINDOW_MS).sort((a, b) => a - b);
+    if (ledger.blockedUntil > now) throw vantageQuotaError_(ledger.blockedUntil - now);
+    if (ledger.attempts.length >= VANTAGE_CREATE_LIMIT) throw vantageQuotaError_(ledger.attempts[0] + VANTAGE_QUOTA_WINDOW_MS - now);
+    // Reserve before calling Google. An ambiguous failure still consumes a reservation.
+    ledger.attempts.push(now);
+    props.setProperty(VANTAGE_CREATE_LEDGER, JSON.stringify(ledger));
+    try { return SpreadsheetApp.create(title); }
+    catch (error) {
+      if (/limit exceeded.*spreadsheet|^service invoked too many times:|too many times.*(?:day|daily)|daily.*quota/i.test(String(error.message || error))) {
+        ledger.blockedUntil = now + VANTAGE_QUOTA_WINDOW_MS;
+        props.setProperty(VANTAGE_CREATE_LEDGER, JSON.stringify(ledger));
+        throw vantageQuotaError_(VANTAGE_QUOTA_WINDOW_MS);
+      }
+      throw error;
+    }
+  } finally { if (acquired) lock.releaseLock(); }
+}
 
 function doPost(e) {
   try {
@@ -120,18 +164,31 @@ function doPost(e) {
       return vantageReply_({ ok: true, version: VANTAGE_VERSION, hub: true, name: hub.getName(), url: hub.getUrl(), indexUrl: index.getUrl() });
     }
     if (request.action === "team.ensure") return vantageReply_(vantageTeamEnsure_(request.team || {}));
+    if (request.action === "team.layout") return vantageReply_(vantageTeamLayout_(request.team || {}, request.sheets || []));
+    if (request.action === "workspace.ensure") return vantageReply_(vantageWorkspaceEnsure_(request.team || {}));
+    if (request.action === "recovery.write") return vantageReply_(vantageRecoveryWrite_(request));
+    if (request.action === "recovery.read") return vantageReply_(vantageRecoveryRead_(request));
+    if (request.action === "recovery.inspect") return vantageReply_(vantageRecoveryInspect_(request));
     if (request.action === "team.stamp") {
       return vantageReply_(vantageTeamStamp_(request.team || {}, String(request.hash || ""), request.order || []));
     }
     if (request.action === "write") return vantageReply_(vantageWrite_(vantageBook_(request), request.items || []));
     if (request.action === "read") return vantageReply_(vantageRead_(vantageBook_(request), request.sheets || []));
-    if (request.action === "drive.setup") return vantageReply_(vantageDriveSetup_(request));
+    if (request.action === "drive.setup") return vantageReply_({ ok: false, error: "Photo and video storage setup is no longer supported." });
     if (request.action === "drive.list") return vantageReply_(vantageDriveList_(request));
     if (request.action === "drive.test") return vantageReply_(vantageDriveTest_());
     return vantageReply_({ ok: false, error: "unknown action" });
   } catch (err) {
-    return vantageReply_({ ok: false, error: String((err && err.message) || err).slice(0, 300) });
+    return vantageReply_({ ok: false, error: String((err && err.message) || err).slice(0, 300),
+      code: err && err.code === "daily_quota" ? "daily_quota" : undefined,
+      retryAfterMs: err && err.code === "daily_quota" ? err.retryAfterMs : undefined });
   }
+}
+
+// Run manually in the operator's editor to verify the existing Google authorization.
+function vantageOperatorCheck() {
+  const folder = vantageHubFolder_();
+  Logger.log(JSON.stringify({ version: VANTAGE_VERSION, folderId: folder.getId() }));
 }
 
 function doGet() {
@@ -174,12 +231,11 @@ function vantageWrite_(book, items) {
         const range = sheet.getRange(item.startRow, 1, rows, width);
         // Text stays text: without this, Sheets would turn a timestamp or "00123" into a
         // date or a number on the way in. Numbers and true/false keep their own types.
-        try {
-          range.setNumberFormats(item.values.map((row) => row.map((cell) => (typeof cell === "string" ? "@" : "General"))));
-        } catch (formatError) {
-          // Formatting is a nicety; the values still land.
-        }
-        range.setValues(item.values);
+        range.setNumberFormats(item.values.map((row) => row.map((cell) => (typeof cell === "string" ? "@" : "General"))));
+        // An apostrophe prevents formula execution and is not part of the value read back
+        // by Sheets. Preserve a user's leading apostrophe by escaping it too.
+        range.setValues(item.values.map((row) => row.map((cell) =>
+          typeof cell === "string" && /^[=+\\-@']/.test(cell) ? "'" + cell : cell)));
         cells += rows * width;
       }
       if (item.startRow === 1) {
@@ -228,12 +284,10 @@ function vantageHubFolder_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty(VANTAGE_HUB_KEY);
   if (id) {
-    try {
-      const found = DriveApp.getFolderById(id);
-      if (!found.isTrashed()) return found;
-    } catch (missing) {
-      // Deleted: make a new one below.
-    }
+    // An access or quota failure does not establish deletion. Retain the registered
+    // resource and retry; only an explicitly trashed folder may be replaced.
+    const found = DriveApp.getFolderById(id);
+    if (!found.isTrashed()) return found;
   }
   const existing = DriveApp.getFoldersByName(VANTAGE_HUB_FOLDER);
   const folder = existing.hasNext() ? existing.next() : DriveApp.createFolder(VANTAGE_HUB_FOLDER);
@@ -245,6 +299,116 @@ function vantageTeamKey_(team) {
   const key = String(team.key || "").replace(/[^A-Za-z0-9-]/g, "").slice(0, 64);
   if (!key) throw new Error("A team key is required.");
   return key;
+}
+
+function vantageWorkspaceFolder_(team) {
+  let root = vantageHubFolder_();
+  if (team.testRun) {
+    if (!/^[a-f0-9-]{36}$/.test(String(team.testRun)) || String(team.rootKey || team.key) !== "test-" + team.testRun) throw new Error("Invalid isolated test workspace.");
+    root = vantageSubfolder_(vantageSubfolder_(root, "Tests", true), String(team.testRun), true);
+  }
+  const teams = vantageSubfolder_(root, "Teams", true);
+  const rootKey = vantageTeamKey_({ key: team.rootKey || team.key });
+  const props = PropertiesService.getScriptProperties();
+  const property = "VANTAGE_TEAM_FOLDER_" + rootKey;
+  const known = props.getProperty(property);
+  const title = (team.number ? String(team.number) + " - " : "") + String(team.name || "Team").slice(0, 80) + " - " + rootKey;
+  if (known) {
+    const folder = DriveApp.getFolderById(known);
+    if (!folder.isTrashed()) return folder;
+  }
+  const folder = vantageSubfolder_(teams, title, true);
+  props.setProperty(property, folder.getId());
+  return folder;
+}
+
+function vantageWorkspaceEnsure_(team) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const folder = vantageWorkspaceFolder_(team);
+    vantageSubfolder_(vantageHubFolder_(), "Recovery", true);
+    return { ok: true, folderId: folder.getId(), folderUrl: folder.getUrl() };
+  } finally { lock.releaseLock(); }
+}
+
+// Recovery is operator-only, separate from readable team books. IDs and offsets are
+// supplied by persistent application jobs; retries overwrite the same cells.
+function vantageRecoveryBook_(key, create, testRun) {
+  if (!/^[A-Za-z0-9-]{1,64}$/.test(key)) throw new Error("Invalid recovery book key.");
+  if (testRun && !/^[a-f0-9-]{36}$/.test(String(testRun))) throw new Error("Invalid isolated recovery test.");
+  const props = PropertiesService.getScriptProperties();
+  const property = "VANTAGE_RECOVERY_" + (testRun ? "TEST_" + testRun + "_" : "") + key;
+  const known = props.getProperty(property);
+  if (known) {
+    const file = DriveApp.getFileById(known);
+    if (!file.isTrashed()) return SpreadsheetApp.openById(known);
+  }
+  if (!create) throw new Error("Recovery workbook not found.");
+  let root = vantageHubFolder_();
+  if (testRun) root = vantageSubfolder_(vantageSubfolder_(root, "Tests", true), String(testRun), true);
+  const folder = vantageSubfolder_(root, "Recovery", true);
+  const title = "Vantage Recovery - " + (testRun ? "TEST-" + testRun + " - " : "") + key;
+  const files = folder.getFilesByName(title);
+  const book = files.hasNext() ? SpreadsheetApp.openById(files.next().getId()) : vantageCreateSpreadsheet_(title);
+  props.setProperty(property, book.getId());
+  DriveApp.getFileById(book.getId()).moveTo(folder);
+  return book;
+}
+function vantageRecoveryTab_(id) {
+  if (!/^[A-Za-z0-9-]{1,90}$/.test(id)) throw new Error("Invalid recovery record ID.");
+  return "R-" + id;
+}
+function vantageRecoveryWrite_(request) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const book = vantageRecoveryBook_(String(request.bookKey || ""), true, request.testRun);
+    const name = vantageRecoveryTab_(String(request.id || ""));
+    const offset = Number(request.offset || 0);
+    if (!Number.isInteger(offset) || offset < 0) throw new Error("Invalid recovery offset.");
+    const parts = request.parts || [];
+    if (!Array.isArray(parts) || parts.length > 20 || parts.some((part) => typeof part !== "string" || part.length > 40000 || !/^[A-Za-z0-9+/]*={0,2}$/.test(part))) throw new Error("Invalid recovery parts.");
+    const sheet = book.getSheetByName(name) || book.insertSheet(name);
+    const rows = Math.max(2, offset + parts.length + 1);
+    if (sheet.getMaxRows() < rows) sheet.insertRowsAfter(sheet.getMaxRows(), rows - sheet.getMaxRows());
+    if (offset === 0) {
+      sheet.clearContents();
+      sheet.getRange(1, 1, 1, 2).setValues([["Envelope", JSON.stringify(request.envelope)]]);
+      sheet.setFrozenRows(1);
+      // Limit unused grid space so sharding reflects actual cells.
+      if (sheet.getMaxColumns() > 2) sheet.deleteColumns(3, sheet.getMaxColumns() - 2);
+    }
+    if (parts.length) sheet.getRange(offset + 2, 1, parts.length, 2).setValues(parts.map((value, i) => [offset + i, value]));
+    if (request.final) {
+      if (sheet.getMaxRows() > rows) sheet.deleteRows(rows + 1, sheet.getMaxRows() - rows);
+      const protection = sheet.protect().setDescription("Vantage encrypted recovery. Edit through the recovery service only.");
+      protection.removeEditors(protection.getEditors());
+      if (protection.canDomainEdit()) protection.setDomainEdit(false);
+    }
+    return { ok: true, id: book.getId() };
+  } finally { lock.releaseLock(); }
+}
+function vantageRecoveryRead_(request) {
+  const book = vantageRecoveryBook_(String(request.bookKey || ""), false, request.testRun);
+  const sheet = book.getSheetByName(vantageRecoveryTab_(String(request.id || "")));
+  if (!sheet) throw new Error("Recovery record not found.");
+  const envelope = JSON.parse(sheet.getRange(1, 2).getValue());
+  const offset = Number(request.offset || 0);
+  const limit = Number(request.limit || 20);
+  if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error("Invalid recovery page.");
+  const count = Math.max(0, Math.min(limit, sheet.getLastRow() - 1 - offset));
+  const rows = count ? sheet.getRange(offset + 2, 1, count, 2).getValues() : [];
+  return { ok: true, envelope: envelope, parts: rows.filter((row) => row[1] !== "").map((row) => ({ index: Number(row[0]), value: String(row[1]) })) };
+}
+function vantageRecoveryInspect_(request) {
+  const book = vantageRecoveryBook_(String(request.bookKey || ""), false, request.testRun);
+  const file = DriveApp.getFileById(book.getId());
+  const sheet = book.getSheetByName(vantageRecoveryTab_(String(request.id || "")));
+  if (!sheet) throw new Error("Recovery record not found.");
+  return { ok: true, id: book.getId(), sharingAccess: String(file.getSharingAccess()),
+    viewers: file.getViewers().length, externalEditors: file.getEditors().filter((user) => user.getEmail() !== file.getOwner().getEmail()).length,
+    protected: sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).length > 0 };
 }
 
 function vantageTeamTitle_(team) {
@@ -263,21 +427,26 @@ function vantageTeamBook_(team, create) {
   const id = props.getProperty("VANTAGE_BOOK_" + key);
   const title = vantageTeamTitle_(team);
   if (id) {
-    try {
-      const file = DriveApp.getFileById(id);
-      if (!file.isTrashed()) {
-        const book = SpreadsheetApp.openById(id);
-        if (book.getName() !== title) book.rename(title);
-        return { book: book, created: false };
-      }
-    } catch (missing) {
-      // Deleted or unreachable: make a new one below.
+    const file = DriveApp.getFileById(id);
+    if (!file.isTrashed()) {
+      const book = SpreadsheetApp.openById(id);
+      if (book.getName() !== title) book.rename(title);
+      if (team.rootKey) file.moveTo(vantageWorkspaceFolder_(team));
+      return { book: book, created: false };
     }
   }
   if (!create) return null;
-  const book = SpreadsheetApp.create(title);
-  DriveApp.getFileById(book.getId()).moveTo(vantageHubFolder_());
+  const folder = team.rootKey ? vantageWorkspaceFolder_(team) : vantageHubFolder_();
+  const existing = folder.getFilesByName(title);
+  // A crash between create() and property registration leaves a uniquely named file.
+  // Recover it by its stable key rather than creating another workbook on retry.
+  const pendingTitle = "Vantage pending workbook - " + key;
+  const pending = DriveApp.getFilesByName(pendingTitle);
+  const book = existing.hasNext() ? SpreadsheetApp.openById(existing.next().getId())
+    : pending.hasNext() ? SpreadsheetApp.openById(pending.next().getId()) : vantageCreateSpreadsheet_(pendingTitle);
   props.setProperty("VANTAGE_BOOK_" + key, book.getId());
+  DriveApp.getFileById(book.getId()).moveTo(folder);
+  if (book.getName() !== title) book.rename(title);
   // A new file holds none of the old data: forget what was written to the old one, so the
   // next sync fills it instead of calling it unchanged. Its sharing starts over too.
   props.deleteProperty("VANTAGE_HASH_" + key);
@@ -355,11 +524,7 @@ function vantageTeamEnsure_(team) {
     const key = vantageTeamKey_(team);
     if (found.created) vantageAbout_(found.book, team, "");
     vantageShare_(found.book, team);
-    try {
-      vantageIndexUpdate_(team, found.book, props.getProperty("VANTAGE_AT_" + key) || "");
-    } catch (indexError) {
-      // The index is a convenience; the team's spreadsheet is what matters.
-    }
+    vantageIndexUpdate_(team, found.book, props.getProperty("VANTAGE_AT_" + key) || "");
     return {
       ok: true,
       id: found.book.getId(),
@@ -375,21 +540,32 @@ function vantageTeamEnsure_(team) {
 }
 
 function vantageTeamStamp_(team, hash, order) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
   const key = vantageTeamKey_(team);
   const found = vantageTeamBook_(team, false);
   if (!found) return { ok: false, error: "No spreadsheet for this team yet." };
   const at = new Date().toISOString();
   const props = PropertiesService.getScriptProperties();
-  props.setProperty("VANTAGE_HASH_" + key, hash.slice(0, 64));
-  props.setProperty("VANTAGE_AT_" + key, at);
   vantageAbout_(found.book, team, at);
   vantageFormatBook_(found.book, order);
-  try {
-    vantageIndexUpdate_(team, found.book, at);
-  } catch (indexError) {
-    // The index is a convenience; the team's spreadsheet is what matters.
-  }
+  vantageIndexUpdate_(team, found.book, at);
+  props.setProperty("VANTAGE_HASH_" + key, hash.slice(0, 64));
+  props.setProperty("VANTAGE_AT_" + key, at);
   return { ok: true, at: at };
+  } finally { lock.releaseLock(); }
+}
+
+function vantageTeamLayout_(team, names) {
+  const found = vantageTeamBook_(team, false);
+  if (!found) throw new Error("No spreadsheet for this team yet.");
+  const layout = {};
+  for (const name of names) {
+    const sheet = found.book.getSheetByName(String(name));
+    layout[name] = sheet ? { frozenRows: sheet.getFrozenRows(), frozenColumns: sheet.getFrozenColumns(), filtered: Boolean(sheet.getFilter()) } : null;
+  }
+  return { ok: true, layout: layout };
 }
 
 // ---------------------------------------------------------------- database layout
@@ -404,18 +580,10 @@ function vantageFormatBook_(book, order) {
   const names = (Array.isArray(order) ? order : []).map(String).filter((name) => name && name !== "About").slice(0, 60);
   for (const name of names) {
     const sheet = book.getSheetByName(name);
-    if (!sheet) continue;
-    try {
-      vantageFormatTable_(book, sheet);
-    } catch (formatError) {
-      // The data is in; the layout is a nicety.
-    }
+    if (!sheet) throw new Error("A required table is missing: " + name);
+    vantageFormatTable_(book, sheet);
   }
-  try {
-    vantageSummary_(book);
-  } catch (summaryError) {
-    // The tables are what matter; the summary is built from them.
-  }
+  vantageSummary_(book);
   const about = book.getSheetByName("About");
   const ordered = (about ? ["About"] : []).concat(book.getSheetByName("Summary") ? ["Summary"] : [], names);
   let position = 1;
@@ -498,47 +666,69 @@ function vantageFormatTable_(book, sheet) {
 
 // ---------------------------------------------------------------- summary
 // Live formulas over the named tables (tbl_<Tab>), so the numbers follow the data between
-// updates and anyone can see how each one is worked out. A table that is missing reads 0.
+// updates and anyone can see how each one is worked out. Only this book's tables
+// contribute measures. Missing tables and failed formulas never become recorded zeroes.
 function vantageCol_(table, column) {
   return "INDEX(tbl_" + table + ",0,MATCH(\\"" + column + "\\",INDEX(tbl_" + table + ",1,0),0))";
 }
 
 function vantageSummary_(book) {
-  const rowsOf = (table) => "=IFERROR(MAX(ROWS(tbl_" + table + ")-1,0),0)";
-  const sumOf = (table, column) => "=IFERROR(SUM(" + vantageCol_(table, column) + "),0)";
-  const countOf = (table, column, value) => "=IFERROR(COUNTIF(" + vantageCol_(table, column) + ",\\"" + value + "\\"),0)";
+  const financeSheet = book.getSheetByName("Finance");
+  const financeHeaders = financeSheet ? financeSheet.getRange(1, 1, 1, financeSheet.getLastColumn()).getValues()[0] : [];
+  const financeInclusionAvailable = financeHeaders.indexOf("counts_in_balance") >= 0;
+  const rowsOf = (table) => "=MAX(ROWS(tbl_" + table + ")-1,0)";
+  const sumOf = (table, column) => "=SUM(" + vantageCol_(table, column) + ")";
+  const countOf = (table, column, value) => "=COUNTIF(" + vantageCol_(table, column) + ",\\"" + value + "\\")";
   const sumIf = (table, column, value, amount) =>
-    "=IFERROR(SUMIF(" + vantageCol_(table, column) + ",\\"" + value + "\\"," + vantageCol_(table, amount) + "),0)";
-  const rows = [
+    "SUMIFS(" + vantageCol_(table, amount) + "," + vantageCol_(table, column) + ",\\"" + value + "\\"," + vantageCol_(table, "counts_in_balance") + ",TRUE)";
+  const candidates = [
     ["Team", "Members", rowsOf("Members"), "Everyone on the team"],
     ["Team", "Hours logged", sumOf("Hours", "hours"), "Total of the hours column in Hours"],
-    ["Team", "Open tasks", "=IFERROR(COUNTA(" + vantageCol_("Tasks", "status") + ")-1-COUNTIF(" + vantageCol_("Tasks", "status") + ",\\"done\\"),0)", "Tasks not marked done"],
+    ["Team", "Open tasks", "=COUNTA(" + vantageCol_("Tasks", "status") + ")-1-COUNTIF(" + vantageCol_("Tasks", "status") + ",\\"done\\")", "Tasks not marked done"],
     ["Team", "Calendar entries", rowsOf("Calendar"), "Practices, meetings and events"],
-    ["Money", "Income (USD)", sumIf("Finance", "type", "income", "amount_usd"), "Finance rows of type income"],
-    ["Money", "Expenses (USD)", sumIf("Finance", "type", "expense", "amount_usd"), "Finance rows of type expense"],
-    ["Money", "Balance (USD)", "=C6-C7", "Income minus expenses"],
+    ["Money", "Income (USD)", "=" + sumIf("Finance", "type", "income", "amount_usd"), "Income ledger rows with counts_in_balance TRUE, across seasons"],
+    ["Money", "Expenses (USD)", "=" + sumIf("Finance", "type", "expense", "amount_usd"), "Expense ledger rows with counts_in_balance TRUE, across seasons"],
+    ["Money", "Recorded balance (USD)", "=" + sumIf("Finance", "type", "income", "amount_usd") + "-" + sumIf("Finance", "type", "expense", "amount_usd"), "Included income minus included expenses; supporting records are in Finance"],
     ["Money", "Active sponsors", countOf("Sponsors", "status", "active"), "Sponsors with status active"],
     ["Competition", "Teams at the event", rowsOf("Teams"), "Teams at the active event"],
     ["Competition", "Matches", rowsOf("Matches"), "Matches at the active event"],
-    ["Competition", "Match scouting entries", rowsOf("MatchScouting"), "One per robot per match"],
-    ["Competition", "Pit scouting entries", rowsOf("PitScouting"), "One per robot"],
+    ["Competition", "Match scouting entries", rowsOf("MatchScouting"), "Submitted reports; multiple scouts may report the same robot and match"],
+    ["Competition", "Pit scouting entries", rowsOf("PitScouting"), "Submitted pit reports; multiple reports may describe one robot"],
     ["Robot", "Failures logged", rowsOf("RobotFailures"), "Every logged robot failure"],
     ["Robot", "Batteries in use", countOf("Batteries", "status", "active"), "Batteries with status active"],
   ];
+  const rows = candidates.filter((row) => {
+    if (String(row[2]).indexOf("tbl_Finance") >= 0 && !financeInclusionAvailable) return false;
+    const dependencies = Array.from(String(row[2]).matchAll(/tbl_([A-Za-z0-9_]+)/g), (match) => match[1]);
+    return dependencies.every((name) => Boolean(book.getSheetByName(name)));
+  });
+  // Older deployed clients can still refresh their readable records. Without
+  // the inclusion column their totals are unavailable, rather than fabricated.
+  if (financeSheet && !financeInclusionAvailable) rows.push(["Money", "Included ledger totals", "Unavailable", "This older copy lacks counts_in_balance. Refresh from the current Vantage version for included ledger totals."]);
+  if (!rows.length) rows.push(["Workspace", "Table catalog", "", "See Tables and SyncInfo for this workspace's resources and freshness"]);
   const sheet = book.getSheetByName("Summary") || book.insertSheet("Summary", 1);
-  sheet.clear();
+  sheet.clearContents();
   const header = [["area", "measure", "value", "how it is worked out"]];
   sheet.getRange(1, 1, 1, 4).setValues(header);
   sheet.getRange(2, 1, rows.length, 4).setValues(rows);
   sheet.getRange(1, 1, 1, 4).setFontWeight("bold").setFontColor("#FFFFFF").setBackground("#1F3A5F");
   sheet.getRange(2, 3, rows.length, 1).setNumberFormat("#,##0.##");
-  sheet.getRange(6, 3, 3, 1).setNumberFormat("$#,##0.00");
+  rows.forEach((row, index) => {
+    if (String(row[1]).indexOf("(USD)") >= 0) sheet.getRange(index + 2, 3, 1, 1).setNumberFormat("$#,##0.00");
+  });
   sheet.setFrozenRows(1);
   sheet.setColumnWidth(1, 120);
   sheet.setColumnWidth(2, 200);
   sheet.setColumnWidth(3, 120);
   sheet.setColumnWidth(4, 320);
   sheet.setTabColor("#6B7280");
+  SpreadsheetApp.flush();
+  const values = sheet.getRange(2, 3, rows.length, 1).getDisplayValues();
+  for (let index = 0; index < values.length; index++) {
+    if (String(rows[index][2]).startsWith("=") && (!values[index][0] || String(values[index][0]).startsWith("#"))) {
+      throw new Error("Summary formula verification failed: " + rows[index][1]);
+    }
+  }
 }
 
 // ---------------------------------------------------------------- team index
@@ -550,6 +740,10 @@ const VANTAGE_INDEX_NAME = "VantageFRC - Team index";
 const VANTAGE_INDEX_HEADERS = ["team_number", "team_name", "spreadsheet", "last_updated", "spreadsheet_id", "key"];
 
 function vantageIndexBook_() {
+  const lock = LockService.getScriptLock();
+  const acquired = !lock.hasLock();
+  if (acquired) lock.waitLock(30000);
+  try {
   const props = PropertiesService.getScriptProperties();
   const active = SpreadsheetApp.getActiveSpreadsheet();
   if (active) {
@@ -566,19 +760,17 @@ function vantageIndexBook_() {
   }
   const id = props.getProperty(VANTAGE_INDEX_KEY);
   if (id) {
-    try {
-      if (!DriveApp.getFileById(id).isTrashed()) return SpreadsheetApp.openById(id);
-    } catch (missing) {
-      // Deleted: make a new one below.
-    }
+    if (!DriveApp.getFileById(id).isTrashed()) return SpreadsheetApp.openById(id);
   }
-  const book = SpreadsheetApp.create(VANTAGE_INDEX_NAME);
+  const book = vantageCreateSpreadsheet_(VANTAGE_INDEX_NAME);
   DriveApp.getFileById(book.getId()).moveTo(vantageHubFolder_());
   props.setProperty(VANTAGE_INDEX_KEY, book.getId());
   return book;
+  } finally { if (acquired) lock.releaseLock(); }
 }
 
 function vantageIndexUpdate_(team, book, lastSyncAt) {
+  if (team.testRun) return;
   const index = vantageIndexBook_();
   const sheet = index.getSheetByName("Teams") || index.insertSheet("Teams", 0);
   const width = VANTAGE_INDEX_HEADERS.length;

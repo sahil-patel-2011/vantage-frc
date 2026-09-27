@@ -4,6 +4,7 @@
  * app-route-roots.test.ts fails when a folder is added to app/ without being listed here.
  */
 export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
+  ".well-known",
   "account",
   "admin",
   "ai",
@@ -233,6 +234,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "support",
   "tasks",
   "team",
+  "team-setup",
   "team-health-dashboard",
   "team-tags",
   "terms",

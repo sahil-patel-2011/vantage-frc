@@ -11,6 +11,7 @@ export type SignInAuthStatus = {
   /** Mirrors `AuthCapabilityReport` — derived, not a literal. See packages/core/src/public-signup.ts. */
   waitlistOnly: boolean;
   publicSignup: boolean;
+  localAcceptanceSignup?: boolean;
   databaseConfigured: boolean;
   emailOtpAvailable: boolean;
   email2faEnforced: boolean;

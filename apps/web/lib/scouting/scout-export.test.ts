@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { ACTION_HISTORY_KEY, recordScoutAction } from "@vantage/scouting";
+import { parseCsvRows } from "@vantage/import";
 import { loadMatchScoutingExport, matchScoutingCsv, scoutAnswerText } from "./scout-export";
 
 describe("matchScoutingCsv", () => {
@@ -25,9 +27,9 @@ describe("matchScoutingCsv", () => {
       ],
     });
     const lines = csv.replace(/^\uFEFF/, "").trim().split("\r\n");
-    expect(lines[0]).toBe("Match,Team,Scout,Auto points,Endgame,Left the line,legacyNote,How sure,Saved at");
-    expect(lines[1]).toBe("Qual 1,195,Riley,12,Climb,Yes,'=cmd,Very sure,2026-09-26 14:02 UTC");
-    expect(lines[2]).toBe("Qual 2,118,Team scout,,,,,,");
+    expect(lines[0]).toBe("Match,Team,Scout,Auto points,Endgame,Left the line,legacyNote,How sure,Saved at,Observation history (versioned JSON)");
+    expect(lines[1]).toBe("Qual 1,195,Riley,12,Climb,Yes,'=cmd,Very sure,2026-09-26 14:02 UTC,");
+    expect(lines[2]).toBe("Qual 2,118,Team scout,,,,,,,");
     expect(lines).toHaveLength(3);
   });
 
@@ -35,6 +37,13 @@ describe("matchScoutingCsv", () => {
     expect(scoutAnswerText(["swerve", "tank"])).toBe("Swerve; Tank");
     expect(scoutAnswerText(null)).toBe("");
     expect(scoutAnswerText(-2)).toBe(-2);
+  });
+  it("preserves timestamped observation JSON and explicit zero in the actual CSV", () => {
+    const payload = recordScoutAction({}, { autoPoints: 0 }, { id: "action-1", at: "2026-09-26T12:00:00Z" });
+    const csv = matchScoutingCsv({ fields, rows: [{ matchKey: "event_qm1", teamKey: "frc1", scoutName: "Synthetic", confidence: "normal", payload, savedAt: null }] });
+    const parsed = parseCsvRows(csv);
+    expect(parsed[0]!["Auto points"]).toBe("0");
+    expect(JSON.parse(parsed[0]!["Observation history (versioned JSON)"]!)).toEqual(payload[ACTION_HISTORY_KEY]);
   });
 });
 

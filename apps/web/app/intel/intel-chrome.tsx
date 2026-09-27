@@ -62,6 +62,7 @@ export function IntelShell({
   errorStatus,
   onRetry,
   children,
+  embedded = false,
 }: {
   orgId?: string | null;
   shell: IntelShellKind;
@@ -69,7 +70,9 @@ export function IntelShell({
   errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
+  embedded?: boolean;
 }) {
+  const Container = embedded ? "section" : "main";
   const copy = intelShellCopy(shell);
   const setup = shell === "setup" ? intelSetupSteps(orgId)[0] : null;
   const failure =
@@ -91,10 +94,10 @@ export function IntelShell({
       : null;
 
   return (
-    <main className="module-page intel-page soft-gate">
+    <Container className={`module-page intel-page soft-gate ${embedded ? "is-embedded" : ""}`}>
       <PageHeader
-        breadcrumbs="Competition / Research"
-        title="Research"
+        breadcrumbs={embedded ? "Competition / Teams" : "Competition / Research"}
+        title={embedded ? "Teams" : "Research"}
         /* Not copy.description — that is the empty state's line, and it is
            printed again by the EmptyState directly below this header. */
         description={INTEL_PAGE_DESCRIPTION}
@@ -127,6 +130,6 @@ export function IntelShell({
           </Button>
         ) : null}
       </EmptyState>
-    </main>
+    </Container>
   );
 }

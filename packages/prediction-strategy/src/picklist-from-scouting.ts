@@ -73,8 +73,8 @@ export function metricRowFromProfile(profile: ScoutedTeamProfile): TeamMetricRow
       // outrank a season of solid ones, which is what `shrinkage.ts` exists
       // to prevent and what ranking a raw average would undo.
       totalPoints: profile.shrunkTotal,
-      autoPoints: profile.meanAuto,
-      teleopPoints: profile.meanTeleop,
+      autoPoints: profile.phaseSamples?.auto === 0 ? null : profile.meanAuto,
+      teleopPoints: profile.phaseSamples?.teleop === 0 ? null : profile.meanTeleop,
       endgameClimb: profile.climbRate,
       defenseEffectiveness: profile.defenseRate > 0 ? profile.defenseRate : null,
       consistency: consistencyScore(profile.consistency?.dispersion),

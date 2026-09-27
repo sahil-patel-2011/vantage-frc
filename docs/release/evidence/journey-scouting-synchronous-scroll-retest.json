@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-26",
+  "environment": "http://127.0.0.1:3417; isolated vantage_release_test; local development only",
+  "actor": "Morgan Journey existing normal UI session; no identity change",
+  "tab": "781731034",
+  "status": "passed_after_fix_bounded",
+  "method": "Fresh genuine full reload after synchronous layout scrolling change. Semantic DOM locator robot selection immediately followed by Auto+ and DOM snapshot before other fields. No artificial settling waits, coordinates, injected state or submitted reports.",
+  "drafts": [
+    {
+      "match": "2026gacmp_qm36",
+      "team": "frc67",
+      "note": "[Synthetic scouting journey 2026-09-26] Synchronous scroll fix A Q36 team67; draft only.",
+      "firstTap": "Auto1, minus enabled, Review1 before any other field action; previous note absent",
+      "completed": "Auto1/Teleop1/exactnoteA/Review3/Auto15seconds",
+      "reload": "ExactQ36/team67Red3, both counters, note and3actions restored; running timer Auto9seconds"
+    },
+    {
+      "match": "2026gacmp_qm36",
+      "team": "frc254",
+      "note": "[Synthetic scouting journey 2026-09-26] Synchronous scroll fix B Q36 team254; draft only.",
+      "firstTap": "Auto1, minus enabled, Review1 before any other field action; previous note absent",
+      "completed": "Auto2/Teleop1/exactnoteB/Review4/Auto15seconds. Additional explicit Auto increment distinguishes this draft for isolation.",
+      "reload": "ExactQ36/team254Blue3, both counters, note and4actions restored; running timer Auto5seconds"
+    }
+  ],
+  "switchIsolation": {
+    "backTo67": "Auto1/Teleop1/noteA/Review3 restored; independent running timerTeleop1:30",
+    "backTo254": "Auto2/Teleop1/noteB/Review4 restored; independent running timerTeleop1:48",
+    "interruptedAction": "Selection back to67 returned CDP Input.dispatchMouseEvent timeout, but subsequent actual DOM already showed correct67 draft. Did not repeat click or add field writes; confirmed visible result."
+  },
+  "retainedInitialFailures": "Previous failed rapid contexts and missing first Auto events remain documented in journey-scouting-rapid-layout-retest.json and journey-scouting-workflows.json. This pass supersedes current rapid defect status but preserves history.",
+  "safety": "No submits, external messages, production changes, auth switch, code/config changes or database writes outside UI. Existing uploaded report count remains2; both new synthetic drafts preserved.",
+  "artifacts": ["docs/release/evidence/scouting-synchronous-scroll-retest-dom.json","docs/release/evidence/scouting-synchronous-scroll-retest.png"],
+  "limits": "Two fresh robot/match contexts, immediate first-tap and subsequent recovery/switch isolation only. No production browser-process crash, distinct-user/device offline isolation or successful QR transfer claim.",
+  "released": true
+}

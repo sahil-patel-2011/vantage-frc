@@ -1,10 +1,12 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertAccountAgeConfirmed } from "./eligibility";
 
 export async function claimFrcTeamWorkspace(
   client: PoolClient,
   actorUserId: string,
   input: { name: string; slug: string; teamNumber: number },
 ): Promise<string> {
+  await assertAccountAgeConfirmed(client, actorUserId);
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)) {
     throw new Error("Slug must use lowercase letters, numbers, and hyphens");
   }

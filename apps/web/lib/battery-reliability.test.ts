@@ -12,6 +12,22 @@ const orgId = "11111111-1111-4111-8111-111111111111";
 const now = Date.parse("2026-07-17T18:00:00.000Z");
 
 describe("battery reliability bridge", () => {
+  it("never releases a cooling pack or one tested before the full cooldown", () => {
+    const values = { status: "active", voltage: 12.8, resistanceMilliohms: 10, measuredAt: new Date(now).toISOString(), now,
+      lastChargedAt: new Date(now - 60_000).toISOString(), lastUsedAt: null, lastTestedAt: new Date(now - 120_000).toISOString() };
+    expect(classifyMatchReady(values)).toBe("review");
+    const chargedAt = new Date(now - 16 * 60_000).toISOString();
+    expect(classifyMatchReady({ ...values, lastChargedAt: chargedAt, lastTestedAt: new Date(now - 15 * 60_000).toISOString() })).toBe("review");
+    expect(classifyMatchReady({ ...values, lastChargedAt: chargedAt, lastTestedAt: new Date(now - 30_000).toISOString() })).toBe("ready");
+    expect(classifyMatchReady({ ...values, lastChargedAt: chargedAt, lastTestedAt: new Date(now - 30_000).toISOString(), lastUsedAt: new Date(now).toISOString() })).toBe("review");
+  });
+  it("requires recorded readings and valid measurement time", () => {
+    const values = { status: "active", voltage: 12.8, resistanceMilliohms: 10, measuredAt: new Date(now).toISOString(), now };
+    expect(classifyMatchReady({ ...values, measuredAt: "invalid" })).toBe("review");
+    expect(classifyMatchReady({ ...values, measuredAt: new Date(now + 1).toISOString() })).toBe("review");
+    expect(classifyMatchReady({ ...values, resistanceMilliohms: null })).toBe("review");
+    expect(classifyMatchReady({ ...values, resistanceMilliohms: 19 })).toBe("review");
+  });
   it("maps quarantine ↔ service for pit UI", () => {
     expect(packStatusToPit("quarantine")).toBe("service");
     expect(pitStatusToPack("service")).toBe("quarantine");
@@ -22,7 +38,7 @@ describe("battery reliability bridge", () => {
       classifyMatchReady({
         status: "active",
         voltage: 12.7,
-        resistanceMilliohms: 19,
+        resistanceMilliohms: 12,
         measuredAt: new Date(now - 60 * 60 * 1000).toISOString(),
         now,
       }),
