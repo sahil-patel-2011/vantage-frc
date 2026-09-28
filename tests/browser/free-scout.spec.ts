@@ -87,9 +87,9 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     expect(box!.width).toBeGreaterThanOrEqual(48);
     expect(box!.height).toBeGreaterThanOrEqual(48);
     await show.click();
-    await expect(drawer.getByRole("link", { name: "Scouting", exact: true })).toBeVisible();
+    await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeVisible();
     await drawer.getByRole("button", { name: "Show Team tools" }).click();
-    await expect(drawer.getByRole("link", { name: "Scouting", exact: true })).toBeHidden();
+    await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeHidden();
     await expect(drawer.getByRole("link", { name: "Chat", exact: true })).toBeVisible();
     await drawer.getByRole("combobox").fill("logistics");
     await expect(drawer.getByRole("option").filter({ hasText: /Logistics|Travel/ }).first()).toBeVisible();

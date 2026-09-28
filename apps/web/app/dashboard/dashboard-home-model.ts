@@ -133,6 +133,7 @@ export function homeNowAction(input: {
   dutyTitle?: string | null;
   clockedIn?: boolean;
   openTodos?: number;
+  mineTodos?: number;
   /** The next thing on today's calendar, already formatted. */
   nextEventToday?: { title: string; whenLabel: string } | null;
 }): HomeNowAction {
@@ -204,13 +205,16 @@ export function homeNowAction(input: {
 
   const todos = input.openTodos ?? 0;
   if (Number.isInteger(todos) && todos > 0) {
+    const mine = input.mineTodos ?? 0;
     return {
-      title: todos === 1 ? "One thing on your list" : `${todos} things on your list`,
+      title: mine > 0
+        ? mine === 1 ? "One task assigned to you" : `${mine} tasks assigned to you`
+        : todos === 1 ? "One open team task" : `${todos} open team tasks`,
       // No sentence here: the heading counts them and the button opens them.
       // "Open Todos and knock one out." sat between the two saying neither.
       detail: "",
       href: "/todos",
-      cta: "Open todos",
+      cta: "Open tasks",
     };
   }
   return {
@@ -271,6 +275,7 @@ export function homeNowFromWidgets(input: {
   const todoItems = Array.isArray(todoData?.items) ? todoData.items.length : 0;
   const openTodos =
     typeof todoData?.open === "number" && Number.isFinite(todoData.open) ? Number(todoData.open) : todoItems;
+  const mineTodos = typeof todoData?.mine === "number" && Number.isFinite(todoData.mine) ? Number(todoData.mine) : 0;
   const hours = byType("hours_month");
   const clockedIn = hours?.openSession === true;
   const scoutRaw = myDay?.scoutDuty as
@@ -294,6 +299,7 @@ export function homeNowFromWidgets(input: {
     dutyTitle,
     clockedIn,
     openTodos,
+    mineTodos,
     nextEventToday: nextEventToday(byType("calendar_today"), input.now ?? new Date()),
   });
 }
