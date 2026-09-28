@@ -49,7 +49,7 @@ import type {
 } from "./dashboard-board-types";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
-import { homeHeaderDetail, homeNowFromWidgets } from "./dashboard-home-model";
+import { homeHeaderDetail, homeNowFromWidgets, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
@@ -550,9 +550,7 @@ export function DashboardHomeView(props: {
       )}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId && !(setupHero && !editing && displayLayout.some((item) => item.type === "onboarding_checklist"))
-        ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} />
-        : null}
+      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {showRoleStrip ? (
@@ -608,7 +606,8 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard ? (
+      {dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
+      showStandaloneSetupBanner({ editing, displayLayout }) ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 
