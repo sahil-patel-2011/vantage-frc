@@ -849,10 +849,7 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 }
 
 /* First-login onboarding + invite / join */
-.onboarding-page{min-height:100dvh;display:grid;place-items:center;padding:28px 16px;background:
-  radial-gradient(120% 80% at 10% 0%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 50%),
-  radial-gradient(90% 70% at 90% 10%,color-mix(in srgb,var(--accent) 6%,transparent),transparent 45%),
-  var(--bg);color:var(--ink);font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
+.onboarding-page{min-height:100dvh;display:grid;place-items:center;padding:28px 16px;background:var(--bg);color:var(--ink);font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
 .onboarding-card{width:min(100%,520px);padding:28px 26px 24px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);box-shadow:0 14px 40px rgba(21,32,51,.07)}
 .onboarding-brand{display:flex;justify-content:center;margin-bottom:14px}
 .onboarding-card h1{margin:0;text-align:center;font-size:var(--title-display);letter-spacing:var(--tracking-display)}

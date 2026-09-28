@@ -118,7 +118,7 @@ export function ProfileForm({
       <fieldset className="onboarding-account-fields">
         <legend>Only you can see this</legend>
         <p className="onboarding-team-profile-hint">
-          Both are required, and both stay on your account: teammates and team leaders never see them. Your birthday tells Vantage whether this is a student account, which gets extra protections.
+          Required, and only on your account. Teammates never see them. Your birthday tells Vantage whether this is a student account.
         </p>
         <label>
           <span>Date of birth <small className="onboarding-required">Required</small></span>

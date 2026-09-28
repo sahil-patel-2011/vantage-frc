@@ -347,9 +347,22 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(verify);
   }
 
-  const onboardingGate = await withRls({ userId: session.user.id }, (client) =>
-    getOnboardingGate(client, session.user.id),
-  ).catch(() => ({ onboardingComplete: false, workspaceApproved: false, accessStatus: "none" as const }));
+  let onboardingGate: Awaited<ReturnType<typeof getOnboardingGate>>;
+  try {
+    onboardingGate = await withRls({ userId: session.user.id }, (client) =>
+      getOnboardingGate(client, session.user.id),
+    );
+  } catch {
+    // A failed check is not an unfinished profile. Treating it as one sent
+    // people who had already finished setup back through it on every page.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Vantage could not reach your team records. Try again." },
+        { status: 503, headers: { "cache-control": "private, no-store" } },
+      );
+    }
+    return NextResponse.next();
+  }
 
   if (!onboardingGate.onboardingComplete) {
     if (

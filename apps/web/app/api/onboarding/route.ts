@@ -84,7 +84,7 @@ export async function GET() {
     return privateJson(state);
   } catch (error) {
     return Response.json(
-      { error: publicErrorMessage(error, "Could not load onboarding state.") },
+      { error: publicErrorMessage(error, "Setup could not open. Try again.") },
       { status: 500 },
     );
   }
