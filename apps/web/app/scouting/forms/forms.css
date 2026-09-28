@@ -447,7 +447,8 @@
 .sfb-status-published .sfb-status-pill,
 .sfb-status-inline.sfb-status-published strong {
   color: var(--positive);
-  background: color-mix(in srgb, var(--positive) 12%, var(--surface));
+  /* 6%, not 12%: small bold green text needs 4.5:1 on its own tint. */
+  background: color-mix(in srgb, var(--positive) 6%, var(--surface));
   border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
 }
 

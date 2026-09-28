@@ -419,7 +419,12 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
           {view.summary.totalGoal > 0 && attainment != null ? (
             <div
               className="soft-track fr-track"
-              aria-label={`${attainment}% of combined fundraiser goals`}
+              role="progressbar"
+              aria-label="Combined fundraiser goals"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.min(100, Math.max(0, attainment))}
+              aria-valuetext={`${attainment}% of combined fundraiser goals`}
             >
               <i style={{ width: `${Math.min(100, Math.max(0, attainment))}%` }} />
             </div>

@@ -99,6 +99,11 @@ export default function AppShell() {
   const panelCloseRef = useRef<HTMLButtonElement>(null);
   const searchRequestId = useRef(0);
   const islandQueryOpened = useRef(false);
+  // Late-arriving preferences never overwrite an editor already open, and a stale save never
+  // lands after a newer one (or after the editor closed).
+  const islandPreferenceRevision = useRef(0);
+  const islandDraftRevision = useRef(0);
+  const islandSaveAbort = useRef<AbortController | null>(null);
   const islandPressTimer = useRef<number | null>(null);
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
@@ -344,15 +349,22 @@ export default function AppShell() {
   }), [me.userId, orgId]);
 
   useEffect(() => {
-    void fetch("/api/navigation/preferences", { cache: "no-store" })
+    const controller = new AbortController();
+    const revision = islandPreferenceRevision.current;
+    const draftRevision = islandDraftRevision.current;
+    void fetch("/api/navigation/preferences", {
+      cache: "no-store",
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]),
+    })
       .then(async (response) => (response.ok ? response.json() as Promise<{ tabs?: unknown }> : null))
       .then((data) => {
-        if (!data) return;
+        if (!data || controller.signal.aborted || revision !== islandPreferenceRevision.current) return;
         const tabs = resolveIslandTabs(data.tabs).map((item) => item.href);
         setIslandHrefs(tabs);
-        setIslandDraft(tabs);
+        if (draftRevision === islandDraftRevision.current) setIslandDraft(tabs);
       })
       .catch(() => undefined);
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -360,6 +372,7 @@ export default function AppShell() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("island") === "1" || params.get("customize") === "island") {
       islandQueryOpened.current = true;
+      islandDraftRevision.current++;
       setIslandDraft(islandHrefs);
       setIslandMessage("");
       setIslandEditorOpen(true);
@@ -367,11 +380,19 @@ export default function AppShell() {
   }, [pathname, islandHrefs]);
 
   function openIslandEditor() {
+    islandDraftRevision.current++;
+    islandSaveAbort.current?.abort();
+    setIslandSaving(false);
     setIslandDraft(islandHrefs);
     setIslandMessage("");
     setNavOpen(false);
     setIslandEditorOpen(true);
   }
+
+  useEffect(() => {
+    if (!islandEditorOpen) islandSaveAbort.current?.abort();
+    return () => { islandSaveAbort.current?.abort(); };
+  }, [islandEditorOpen]);
 
   useEffect(
     () => () => {
@@ -631,16 +652,20 @@ export default function AppShell() {
 
   async function saveIsland() {
     if (islandDraft.length !== 4 || islandSaving) return;
+    islandPreferenceRevision.current++;
     setIslandSaving(true);
     setIslandMessage("");
+    const controller = new AbortController();
+    islandSaveAbort.current = controller;
     try {
       const response = await fetch("/api/navigation/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tabs: islandDraft }),
-        signal: AbortSignal.timeout(8_000),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]),
       });
       const data = await response.json() as { tabs?: unknown; error?: string };
+      if (controller.signal.aborted) return;
       if (!response.ok) {
         setIslandMessage(data.error ?? "Could not save the island.");
         return;
@@ -650,9 +675,10 @@ export default function AppShell() {
       setIslandDraft(tabs);
       setIslandEditorOpen(false);
     } catch {
+      if (controller.signal.aborted) return;
       setIslandMessage("Could not save the island. Check your connection and try again.");
     } finally {
-      setIslandSaving(false);
+      if (islandSaveAbort.current === controller) setIslandSaving(false);
     }
   }
 

@@ -50,7 +50,7 @@ test("failed sign-out can be retried; successful sign-out revokes the session an
   expect((await context.request.get("/api/me", { headers: { cookie: `${originalSession!.name}=${originalSession!.value}` } })).status()).toBe(401);
   expect((await context.cookies()).some((cookie) => cookie.name === "vantage-team")).toBe(false);
   const count = await page.evaluate(() => new Promise<number>((resolve, reject) => {
-    const open = indexedDB.open("vantage-feature-cache", 1);
+    const open = indexedDB.open("vantage-feature-cache"); // whatever version the app has upgraded it to
     open.onsuccess = () => {
       const db = open.result;
       const request = db.transaction("snapshots").objectStore("snapshots").count();

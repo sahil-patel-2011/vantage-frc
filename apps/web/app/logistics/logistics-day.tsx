@@ -136,7 +136,15 @@ export function LogisticsDayPanel({
             <p className="app-muted">Check items off as you go. Mentors see mentor items; students see student items.</p>
           </div>
           {checklistStats.total > 0 ? (
-            <div className="log-progress" aria-label={`${checklistStats.percent}% complete`}>
+            <div
+              className="log-progress"
+              role="progressbar"
+              aria-label="Checklist"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={checklistStats.percent}
+              aria-valuetext={`${checklistStats.percent}% complete`}
+            >
               <div className="log-progress-bar" style={{ width: `${checklistStats.percent}%` }} />
               <span>
                 {checklistStats.done}/{checklistStats.total}

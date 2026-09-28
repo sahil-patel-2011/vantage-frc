@@ -94,7 +94,15 @@ export function FundraisingGlance({
       </div>
 
       {hasGoal && attainment != null ? (
-        <div className="soft-track biz-fundraising-track" aria-label={`${attainment}% of fundraising goal`}>
+        <div
+          className="soft-track biz-fundraising-track"
+          role="progressbar"
+          aria-label="Fundraising goal"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.max(0, Math.min(100, attainment))}
+          aria-valuetext={`${attainment}% of fundraising goal`}
+        >
           <i style={{ width: `${attainment}%` }} />
         </div>
       ) : (
