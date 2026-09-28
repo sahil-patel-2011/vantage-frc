@@ -12,7 +12,7 @@
  */
 import {
   PRODUCT_HUBS,
-  directToolHref,
+  hubHref,
   type HubTabDef,
   type ProductHubDef,
 } from "./hubs";
@@ -107,7 +107,7 @@ const KEYWORDS: Record<string, string[]> = {
     "attendance", "who is here", "who is coming", "coming tonight", "roster", "present",
     "people", "members", "rsvp", "headcount",
   ],
-  "team:hours": ["hours", "kiosk", "shop hours", "time"],
+  "team:hours": ["hours", "clock in", "kiosk", "shop hours", "time", "sign in"],
   "team:hours-self-view": ["my hours", "my time", "how many hours"],
   "team:mentor-hours": ["mentor hours", "adult hours", "volunteer time"],
   "team:onboarding-buddy": ["onboarding", "buddy", "new member", "mentor pairing"],
@@ -392,10 +392,8 @@ const STANDALONE: CommandEntry[] = [
   { id: "home", label: "Home", context: "Vantage", href: "/dashboard", kind: "destination", keywords: ["home", "dashboard", "start", "overview"], featured: true },
   { id: "logistics", label: "Travel & logistics", context: "Team · Calendar", href: "/team?tab=logistics", kind: "destination", keywords: ["logistics", "travel", "hotel", "rooming", "bus", "trip", "lodging"] },
   { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
-  { id: "duties", label: "Duties", context: "Team · Calendar", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
+  { id: "duties", label: "Duties", context: "Team · Calendar", href: "/team?tab=duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
   { id: "free-scout", label: "Scout without an event", context: "Competition · Scouting", href: "/competition?tab=scouting&mode=free", kind: "destination", keywords: ["practice scouting", "no event", "video scouting", "manual scouting"] },
-  // Same Scout, as the installable phone frame. Not a second app in the top bar or island.
-  { id: "scout-phone", label: "Install scouting", context: "Competition · Scout", href: "/scout", kind: "destination", keywords: ["install", "home screen", "add to home", "phone frame"] },
   // Four complete features — API, offline support, browser specs — that no
   // menu pointed at. They were reachable only by typing the URL, which the
   // route-coverage rule was supposed to catch and did not: it counted a route
@@ -460,8 +458,9 @@ export function commandCatalog(): CommandEntry[] {
 
   const add = (entry: CommandEntry) => {
     const teamAlias: Record<string, string> = {
-      // Logistics is drawn inside Team. Duties and visit invites are their own pages.
       "/logistics": "/team?tab=logistics",
+      "/duties": "/team?tab=duties",
+      "/visit-invites": "/team?tab=visit-invites",
     };
     entry = { ...entry, href: teamAlias[entry.href] ?? entry.href };
     const existing = byHref.get(entry.href);
@@ -485,7 +484,7 @@ export function commandCatalog(): CommandEntry[] {
         id: `${hub.id}:${tab.id}`,
         label: tab.label,
         context: tabContext(hub, tab),
-        href: directToolHref(hub, tab),
+        href: hubHref(hub.href, tab.id),
         kind: "destination",
         keywords: [...(KEYWORDS[`${hub.id}:${tab.id}`] ?? [])],
         featured: tab.featured || !tab.group,

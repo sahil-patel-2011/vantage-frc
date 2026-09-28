@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
-import { EMBEDDED_HUB_TABS } from "../../lib/nav/hubs";
 import { ScoutingLoadingSkeleton } from "../scouting/scouting-chrome";
 import "../product-hub.css";
 import "../scouting/scouting.css";
@@ -27,7 +26,7 @@ const PickClockClient = dynamic(() => import("../pick-clock/pick-clock-client"),
 const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), { ssr: false });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = EMBEDDED_HUB_TABS.competition;
+const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"] as const;
 
 export default function CompetitionHub() {
   return (

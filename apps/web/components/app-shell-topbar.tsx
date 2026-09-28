@@ -4,6 +4,7 @@ import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { crossProductHref } from "../lib/products/products";
 import type { Me, MembershipOption } from "./app-shell-model";
 
 /**
@@ -176,6 +177,21 @@ export function AppShellTopbar({
       </div>
       <div className="soft-topbar-actions">
         <ShellOutboxStatus orgId={orgId || null} />
+        {/* The Scouting product, one tap away and already signed in. */}
+        <a
+          className="soft-topbar-product"
+          href={crossProductHref("scouting", "/scout", orgId || null)}
+          title="Open the Scouting app — fast match entry, team lookup, predictions and the pick list"
+          aria-label="Open the Scouting app"
+        >
+          {/* Named as its own app so it is not mistaken for the Scout tab in the bottom bar. */}
+          Scouting<span className="soft-topbar-product-suffix"> app</span>
+          {/* An arrow: it opens the separate Scouting app. On a phone "Scouting" alone sat beside
+              the team name like a role badge or a tab. */}
+          <span className="soft-topbar-product-arrow" aria-hidden="true">
+            ↗
+          </span>
+        </a>
         <a
           className="soft-icon-btn soft-ask-ai"
           data-tour="ask-ai"

@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
-import { EMBEDDED_HUB_TABS } from "../../lib/nav/hubs";
 import { FinanceInAiPanel } from "./finance-in-ai-panel";
 import "../product-hub.css";
 import "../chat/chat.css";
@@ -22,7 +21,18 @@ const AutonomousAgentPanel = dynamic(
 );
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = EMBEDDED_HUB_TABS.ai;
+const EMBEDDED_TABS = [
+  "chat",
+  "agent",
+  "budgets",
+  "writer",
+  "code",
+  "bugbot",
+  "memory",
+  "governance",
+  "finance",
+  "decisions",
+] as const;
 
 export default function AiHub() {
   return (

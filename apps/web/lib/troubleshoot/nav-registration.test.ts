@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { commandCatalog, searchCommands } from "../nav/command-search";
 import { hubById, hubNestedTabs, hubWorkbenchId } from "../nav/hubs";
 
-const HREF = "/troubleshoot";
+const HREF = "/build?tab=troubleshoot";
 const catalog = commandCatalog();
 
 describe("Get-unstuck navigation", () => {
@@ -41,7 +41,7 @@ describe("Get-unstuck navigation", () => {
 
   it("does not steal the deploy log from someone searching for it", () => {
     expect(searchCommands("deploy log", catalog, { limit: 1 })[0]?.href).toBe(
-      "/code-deploy-log",
+      "/build?tab=code-deploy-log",
     );
   });
 });

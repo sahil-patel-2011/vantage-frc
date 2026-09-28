@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { EmptyState } from "../../components/ui";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
-import { EMBEDDED_HUB_TABS } from "../../lib/nav/hubs";
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
 import "./calendar/team-calendar.css";
@@ -59,7 +58,7 @@ function MessagesTab({ orgId }: { orgId: string }) {
 }
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = EMBEDDED_HUB_TABS.team;
+const EMBEDDED_TABS = ["calendar", "logistics", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"] as const;
 
 export default function TeamHub() {
   return (

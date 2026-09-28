@@ -13,7 +13,7 @@
  * footer only.
  */
 
-import { NAV_HUBS, PRODUCT_HUBS, directToolHref, hubPrimaryTabs } from "./hubs";
+import { NAV_HUBS, PRODUCT_HUBS, hubPrimaryTabs } from "./hubs";
 
 export type NavItemState = "setup" | "planned";
 
@@ -202,6 +202,8 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
+  // The Scouting product (its own frame, same data) — pinnable to the island.
+  { href: "/scout", label: "Scouting app", icon: "scout" },
 ];
 
 /**
@@ -296,7 +298,7 @@ export function cmdkNavCatalog(): ProductNavItem[] {
     const icon = group?.icon ?? "grid";
     for (const tab of hub.tabs) {
       items.push({
-        href: directToolHref(hub, tab),
+        href: `${hub.href}?tab=${tab.id}`,
         label: tab.label,
         icon,
       });
@@ -364,7 +366,7 @@ export function findNavMatch(
           hubBest = {
             group,
             item: {
-              href: directToolHref(hub, tab),
+              href: `${hub.href}?tab=${tab.id}`,
               label: tab.label,
               icon: group.icon,
             },

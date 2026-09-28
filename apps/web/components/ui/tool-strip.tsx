@@ -146,9 +146,9 @@ export function ToolStrip({
   const renderChip = (item: ToolStripItem) => {
     const active = item.id === value;
     const className = `hub-tool-chip${active ? " is-active" : ""}`;
-    if (item.href) {
+    if (item.href && !active) {
       return (
-        <a key={item.id} className={className} href={item.href} aria-current={active ? "page" : undefined}>
+        <a key={item.id} className={className} href={item.href}>
           {item.label}
         </a>
       );
@@ -175,10 +175,10 @@ export function ToolStrip({
         {blurb ? <small>{blurb}</small> : <small />}
       </>
     );
-    if (item.href) {
+    if (item.href && !active) {
       return (
         <li key={item.id}>
-          <a href={item.href} aria-current={active ? "page" : undefined}>{body}</a>
+          <a href={item.href}>{body}</a>
         </li>
       );
     }

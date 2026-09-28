@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HelpTip } from "./help-tip";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
@@ -86,7 +86,7 @@ export function HubLegacyRedirect({
   const def = hub.tabs.find((entry) => entry.id === tab);
   const href = def?.legacyHref ? withOrgHref(def.legacyHref, orgId) : null;
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (href) window.location.replace(href);
   }, [href]);
 
@@ -119,7 +119,7 @@ export function HubLegacyRedirect({
 
 /** Manual open card when a hub already resolved the destination href. */
 export function HubLegacyOpen({ label, href }: { label: string; href: string }) {
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (href) window.location.replace(href);
   }, [href]);
 

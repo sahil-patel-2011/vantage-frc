@@ -23,7 +23,6 @@
 .product-hub .product-hub-tabs.soft-tab-bar button[aria-selected="true"] {
   color: var(--ink);
   background: transparent;
-  font-weight: 700;
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 /* Visible tool switcher for a workbench — replaces a <select> whose options
@@ -487,8 +486,7 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
   margin: 0;
   white-space: nowrap;
   color: var(--ink);
-  font: 700 26px/1.12 var(--font-source-sans), ui-sans-serif;
-  letter-spacing: -0.03em;
+  font: 700 var(--title-3)/1.2 var(--font-source-sans), ui-sans-serif;
 }
 .hub-bar-id .breadcrumbs {
   min-width: 0;
@@ -635,28 +633,4 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
-}
-
-/* One content region on shop tools. Related chips and next-action rows were a
-   second and third toolbar. Those destinations stay in search.
-   Event day, My Day, scouting, and the pit keep their next step: the match
-   clock does not leave time to search for the checklist. */
-.product-hub-related,
-.edc-next-actions {
-  display: none !important;
-}
-.edc-page .product-hub-related,
-.scout-page .product-hub-related,
-.mcl-page .product-hub-related,
-.pit-page .product-hub-related,
-.myday-related {
-  display: flex !important;
-}
-.edc-page .edc-next-actions,
-.scout-page .edc-next-actions,
-.mcl-page .edc-next-actions,
-.pit-page .edc-next-actions,
-.myday-next-actions,
-.prt-next-actions {
-  display: block !important;
 }
