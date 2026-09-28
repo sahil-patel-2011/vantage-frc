@@ -128,8 +128,10 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           transform: `translate3d(${box.left}px, ${box.top}px, 0)`,
           width: `${box.width}px`,
           height: `${box.height}px`,
-          // The phone's read-only stack flows in board order and sizes cards to their content.
-          "--dash-order": item.y,
+          // Read mode keeps the saved columns and order, but lets each card fit its content.
+          // Edit mode still uses the precise saved cell positions and dimensions.
+          gridColumn: editing ? undefined : `${item.x + 1} / span ${item.w}`,
+          "--dash-order": item.y * 12 + item.x,
           "--dash-min-h": `${box.height}px`,
         } as CSSProperties
       }

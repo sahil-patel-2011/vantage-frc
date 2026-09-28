@@ -54,6 +54,13 @@
 }
 
 .data-source-degraded-banner.compact {
-  padding: 10px 12px;
+  align-items: center;
+  padding: 11px 14px;
   margin-bottom: 10px;
 }
+.data-source-degraded-banner.compact > div { gap: 2px; }
+.data-source-degraded-banner.compact .app-badge { justify-self: start; }
+.data-source-degraded-banner.compact details { margin-top: 3px; font-size: 12px; }
+.data-source-degraded-banner.compact summary { width: fit-content; cursor: pointer; font-weight: 650; }
+.data-source-degraded-banner.compact details p { margin-top: 6px; max-width: 85ch; }
+.data-source-degraded-banner.compact .app-button { min-height: 44px; }

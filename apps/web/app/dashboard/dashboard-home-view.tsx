@@ -625,7 +625,7 @@ export function DashboardHomeView(props: {
       <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
 
       {meLoaded && orgId && tbaConfigured !== false ? (
-        <DataSourceDegradedBanner health={dataSourceHealth} canOpenTeamData={canOpenTeamData} />
+        <DataSourceDegradedBanner health={dataSourceHealth} compact canOpenTeamData={canOpenTeamData} />
       ) : null}
 
       {orgId || editing ? (
