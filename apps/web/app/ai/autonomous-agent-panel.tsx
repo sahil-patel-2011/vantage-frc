@@ -9,6 +9,7 @@ import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { AIAttribution, ModelProvenance, Button } from "../../components/ui";
 import { resolveCutoffErrorCode, UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
+import { agentRunStoppedUnexpectedly } from "../../lib/ai/agent-run-status";
 import "./autonomous-agent.css";
 
 type RunSummary = {
@@ -52,7 +53,8 @@ function classifyShell(input: {
   return "ready";
 }
 
-function labelAgentRunStatus(status: string): string {
+function labelAgentRunStatus(status: string, interrupted = false): string {
+  if (interrupted) return "Stopped unexpectedly";
   switch (status) {
     case "running":
       return "Working";
@@ -250,16 +252,12 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
     <div className="aa-page">
       <header className="aa-header">
         <div>
-          <p className="aa-eyebrow">Autonomous agent</p>
-          <h1>Give the AI a job</h1>
+          <h1>Give AI a task</h1>
           <p>
-            It looks things up for you and shows each step. It only opens websites your team allows.
+            See each step. It only opens sites your team allows.
           </p>
         </div>
         <div className="aa-header-actions">
-          <Button as="a" variant="secondary" href={hubHref("/ai", "chat", orgId)}>
-            Chat
-          </Button>
           <Button as="a" variant="secondary" href={hubHref("/ai", "budgets", orgId)}>
             Budgets
           </Button>
@@ -286,7 +284,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         </section>
       ) : null}
 
-      {shell === "setup_required" && !selectedRun ? (
+      {shell === "setup_required" ? (
         <section className="app-card soft-panel aa-empty">
           <h2>AI isn&apos;t on for your team yet</h2>
           <p>
@@ -347,7 +345,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                   >
                     <strong>{run.goal.slice(0, 80)}{run.goal.length > 80 ? "…" : ""}</strong>
                     <span>
-                      {labelAgentRunStatus(run.status)} · {run.stepCount} steps
+                      {labelAgentRunStatus(run.status, agentRunStoppedUnexpectedly(run))} · {run.stepCount} steps
                       {run.provider ? ` · ${run.provider}` : ""}
                     </span>
                   </button>
@@ -367,8 +365,8 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           ) : (
             <>
               <div className="aa-status-row">
-                <span className={`aa-status aa-status--${selectedRun.status}`}>
-                  {labelAgentRunStatus(selectedRun.status)}
+                <span className={`aa-status aa-status--${agentRunStoppedUnexpectedly(selectedRun) ? "failed" : selectedRun.status}`}>
+                  {labelAgentRunStatus(selectedRun.status, agentRunStoppedUnexpectedly(selectedRun))}
                 </span>
               </div>
               {/* Which endpoint actually ran this goal. Sits above the step log so a
@@ -384,6 +382,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                     : ""}
                   {selectedRun.errorMessage}
                 </p>
+              ) : null}
+              {agentRunStoppedUnexpectedly(selectedRun) ? (
+                <p className="aa-error" role="status">This request stopped before finishing. Run the goal again.</p>
               ) : null}
               <ol className="aa-steps">
                 {steps.map((step) => (

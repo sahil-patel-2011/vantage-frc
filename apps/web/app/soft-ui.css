@@ -377,22 +377,22 @@ body.soft-nav-panel-open .soft-island{
   /* Slightly smaller and a touch more translucent than it was: it floats over
      the page, so it should read as glass rather than a second toolbar. The
      blur below is what keeps text legible at this opacity. */
-  display:flex;align-items:stretch;gap:2px;width:min(384px,calc(100vw - 32px));
-  padding:5px;border-radius:26px;background:var(--island);
+  display:flex;align-items:stretch;gap:1px;width:min(352px,calc(100vw - 32px));
+  padding:4px;border-radius:30px;background:var(--island);
   border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
   box-shadow:var(--shadow-pop);
   backdrop-filter:saturate(1.8) blur(22px);
   touch-action:manipulation;
 }
 .soft-island a{
-  position:relative;flex:1 1 0;display:grid;justify-items:center;gap:3px;
-  min-width:0;min-height:48px;padding:7px 4px;border-radius:var(--radius-lg);
-  color:var(--muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
+  position:relative;flex:1 1 0;display:grid;justify-items:center;gap:2px;
+  min-width:0;min-height:48px;padding:5px 3px;border-radius:26px;
+  color:var(--muted);text-decoration:none;font:600 11px/1.1 var(--font-source-sans),ui-sans-serif;
   transition:background .18s ease,color .18s ease,transform .18s ease;
   border:0;background:transparent;cursor:pointer;place-content:center;
 }
 .soft-island a:active{transform:scale(.96)}
-.soft-island a svg{width:22px;height:22px}
+.soft-island a svg{width:20px;height:20px}
 .soft-island a[aria-current="page"]{
   color:var(--accent);background:var(--accent-soft);
 }
@@ -413,8 +413,8 @@ body.soft-nav-panel-open .soft-island{
 .soft-island-editor-error{margin:10px 0 0;color:#b42318;font-size:12px;font-weight:700}
 .soft-island-editor footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.soft-island-editor footer a,.soft-island-editor footer button{min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.soft-island-editor footer a{color:var(--accent)}.soft-island-editor footer a:first-child{margin-right:auto}.soft-island-editor footer button.primary{border-color:var(--accent);color:var(--accent-ink);background:var(--accent)}.soft-island-editor footer button:disabled{opacity:.5;cursor:not-allowed}
 @media(min-width:980px){
-  .soft-island{bottom:calc(18px + var(--safe-bottom));width:min(440px,calc(100vw - 48px))}
-  body.has-app-shell{padding-bottom:calc(100px + var(--safe-bottom)) !important}
+  .soft-island{bottom:calc(14px + var(--safe-bottom));width:min(360px,calc(100vw - 48px))}
+  body.has-app-shell{padding-bottom:calc(88px + var(--safe-bottom)) !important}
 }
 @media(max-width:620px){
   .soft-island-editor{padding-inline:0}
@@ -1525,15 +1525,15 @@ body.has-app-shell{
 .soft-drawer-brand strong{font-size:16px}
 .soft-nav-group a:not(.soft-drawer-hub),.soft-nav-group span.planned{min-height:40px;padding:6px 10px;font-size:13px}
 .soft-island{
-  gap:2px;padding:5px;max-width:calc(100vw - 32px);
+  gap:1px;padding:4px;max-width:calc(100vw - 32px);
   box-shadow:var(--shadow-pop);
 }
 .soft-island a{
-  display:grid;justify-items:center;gap:2px;min-width:0;min-height:48px;padding:7px 4px;border-radius:var(--radius-lg);
-  color:var(--muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
+  display:grid;justify-items:center;gap:2px;min-width:0;min-height:48px;padding:5px 3px;border-radius:26px;
+  color:var(--muted);text-decoration:none;font:600 11px/1.1 var(--font-source-sans),ui-sans-serif;
   background:transparent;border:0;cursor:pointer;place-content:center;
 }
-.soft-island a svg{width:22px;height:22px}
+.soft-island a svg{width:20px;height:20px}
 .soft-island a[aria-current="page"]{
   color:var(--accent);background:var(--accent-soft);
 }

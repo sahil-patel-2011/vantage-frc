@@ -9,6 +9,14 @@ import { HIDDEN_ON_HOME_SHORT, type HiddenOnHomeReason } from "../../lib/dashboa
 import { widgetLockReason } from "./dashboard-canvas";
 import type { BoardMeta, BoardState, PaletteRow } from "./dashboard-board-types";
 
+/** A saved Setup widget already offers the same action as the setup banner. */
+export function showStandaloneSetupBanner(input: {
+  editing: boolean;
+  displayLayout: readonly Pick<DashboardWidgetLayout, "type">[];
+}): boolean {
+  return input.editing || !input.displayLayout.some((item) => item.type === "onboarding_checklist");
+}
+
 /**
  * Every catalog entry with a reason it cannot be added, so nothing fails
  * silently. A card already on the board that Home is not showing right now says

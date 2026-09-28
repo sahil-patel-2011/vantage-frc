@@ -7,8 +7,18 @@ import {
   homeNowAction,
   homeNowFromWidgets,
   nextEventToday,
+  showStandaloneSetupBanner,
 } from "./dashboard-home-model";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
+
+describe("showStandaloneSetupBanner", () => {
+  it("keeps one setup action on a saved board without hiding personal first-week work", () => {
+    const setupWidget = [{ type: "onboarding_checklist" }] as const;
+    expect(showStandaloneSetupBanner({ editing: false, displayLayout: setupWidget })).toBe(false);
+    expect(showStandaloneSetupBanner({ editing: true, displayLayout: setupWidget })).toBe(true);
+    expect(showStandaloneSetupBanner({ editing: false, displayLayout: [{ type: "next_match" }] })).toBe(true);
+  });
+});
 
 describe("homeHeaderDetail", () => {
   it("names the loading, no-team, event, and quiet-home states without engineering words", () => {
