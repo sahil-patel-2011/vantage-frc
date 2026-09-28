@@ -82,6 +82,13 @@ order, one transaction each. On failure it stops, logs to `scripts/migration-fai
    `scripts/run-migrations.mjs`; `npm run db:generate` only generates Drizzle artifacts. Expect a
    long `APPLY`/`OK` stream on first run.
 5. Re-run to verify it prints only `SKIP` lines (idempotent).
+   Before promoting a revision that adds tables, run
+   `node scripts/audit-live-schema.mjs <private-production-env-file>` against the
+   deployment database. Its `pending` list must be empty and its named tables
+   must be present. A passing build does not apply SQL migrations to production.
+   Durable provisioning and recovery also require a separate
+   `DATABASE_WORKER_URL` using a login that inherits `vantage_worker`; the
+   app's request connection is not a substitute for this worker credential.
 6. Check `npm run deploy:preflight` — it warns for the exact 24 frozen historical
    duplicate-number prefixes and fails any new or expanded collision. Duplicates *do* apply (the
    runner keys on the full filename), but same-number files apply in alphabetical-slug order; do not

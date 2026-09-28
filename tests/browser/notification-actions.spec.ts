@@ -40,7 +40,13 @@ test("notification counts follow the team, opening clears seen items, and change
     await page.goto(`/dashboard?orgId=${homeOrg}`);
     await expect(page.locator(".soft-notif")).toHaveAttribute("aria-label", `Notifications, ${session.unreadNotificationCount} unread`);
     await page.locator(".soft-notif").click();
-    await expect(page.getByRole("list", { name: "Inbox" })).toContainText(title);
+    const inbox = page.getByRole("list", { name: "Inbox" });
+    await expect(inbox).toContainText(title);
+    // Acknowledgment follows actual visibility; scroll both scoped rows into view.
+    for (const [id, label] of [[ids[0], title], [ids[1], `${title} global`]] as const) {
+      await inbox.getByText(label, { exact: true }).scrollIntoViewIfNeeded();
+      await expect.poll(async () => (await pool.query("SELECT read_at FROM notifications WHERE id=$1", [id])).rows[0].read_at).not.toBeNull();
+    }
     await expect(page.locator(".soft-notif")).toHaveAttribute("aria-label", "Notifications");
     expect((await pool.query("SELECT read_at FROM notifications WHERE id=$1", [ids[4]])).rows[0].read_at).toBeNull();
     const row = page.getByRole("list", { name: "Inbox" }).getByRole("listitem").filter({ has: page.getByText(title, { exact: true }) });

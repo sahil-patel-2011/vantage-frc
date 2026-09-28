@@ -92,7 +92,8 @@ describe("homeNowAction", () => {
       href: "/hours-self-view",
       cta: "Open My Hours",
     });
-    expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 things on your list");
+    expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 open team tasks");
+    expect(homeNowAction({ orgId: "org-1", openTodos: 3, mineTodos: 1 }).title).toBe("One task assigned to you");
     expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");
     expect(homeNowAction({ orgId: "org-1" }).quiet).toBe(true);
   });

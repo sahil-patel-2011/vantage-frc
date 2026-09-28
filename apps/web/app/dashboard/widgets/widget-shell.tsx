@@ -4,6 +4,7 @@ import { useContext, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
 import { EmptyState } from "../../../components/ui";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 import { type EmptyHint, liveLinkLabel, studentWidgetDescription } from "./widget-empty-copy";
 import { WidgetsLoadedContext } from "./widgets-loaded";
 
@@ -76,8 +77,7 @@ function WidgetEmptyState({
   orgId: string;
   lead?: boolean;
 }) {
-  const withOrg = (path: string) =>
-    orgId ? `${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : path;
+  const withOrg = (path: string) => withOrgHref(path, orgId || null);
   // Every match played: the next useful look is where the team finished, not a dead card.
   const eventOver = type === "next_match" && /are played/.test(message ?? "");
   // Not on this event's schedule: usually the wrong event. A lead can change it from here;

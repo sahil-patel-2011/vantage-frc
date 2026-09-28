@@ -550,7 +550,9 @@ export function DashboardHomeView(props: {
       )}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
+      {orgId && !(setupHero && !editing && displayLayout.some((item) => item.type === "onboarding_checklist"))
+        ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} />
+        : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {showRoleStrip ? (

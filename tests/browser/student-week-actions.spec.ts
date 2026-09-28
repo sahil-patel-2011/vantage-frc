@@ -54,7 +54,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
       [/You.re in the shop/i, /Open My Hours/i],
       [/You.re on duty/i, /See duties/i],
       [/You.re scouting next/i, /Scout \d+/i],
-      [/thing(s)? on your list|One thing on your list/i, /Open todos/i],
+      [/open team task|tasks? assigned to you/i, /Open tasks/i],
     ]);
     // Polled, because the card is allowed to change once: it says it is
     // working out what is next until the widgets land. What must never be true
