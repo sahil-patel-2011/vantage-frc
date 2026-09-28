@@ -188,6 +188,55 @@
   min-height: 0;
 }
 
+/* The saved grid is for arranging cards. Reading it should not reserve every empty
+   card's edit-mode height: Setup could occupy four rows to say one sentence. */
+.dash-home .dash-grid-wrap:not(.editing) { min-height: 0; }
+.dash-home .dash-pgrid[data-editing="false"][data-flow="false"] {
+  display: grid;
+  grid-template-columns: repeat(var(--dash-cols), minmax(0, 1fr));
+  grid-auto-flow: row;
+  align-items: start;
+  gap: var(--dash-gap);
+  height: auto !important;
+}
+.dash-home .dash-pgrid[data-editing="false"][data-flow="false"] > .dash-grid-item {
+  position: relative;
+  inset: auto;
+  transform: none !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0;
+  order: var(--dash-order, 0);
+}
+.dash-home .dash-pgrid[data-editing="false"][data-flow="false"] > .dash-grid-item .dash-widget-hit,
+.dash-home .dash-pgrid[data-editing="false"][data-flow="false"] > .dash-grid-item .dash-widget,
+.dash-home .dash-pgrid[data-editing="false"][data-flow="false"] > .dash-grid-item .app-card {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+.dash-home .dash-pgrid[data-editing="false"] .dash-widget.is-empty .soft-empty-compact,
+.dash-home .dash-pgrid[data-editing="false"] .dash-widget.is-empty .dash-empty {
+  min-height: 0;
+}
+
+/* Empty cards still deserve a surface; the old page-colored panel looked unfinished. */
+body.has-app-shell .dash-home .dash-widget.app-card.is-empty {
+  background: var(--surface);
+}
+
+/* One calm work summary, without a bordered card inside another bordered card. */
+.dash-home > .dash-now { border-radius: 20px; }
+.dash-home > .dash-role-strip { border-radius: 20px; }
+.dash-home > .dash-role-strip li a {
+  min-height: 48px;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+}
+.dash-home > .dash-role-strip li a:hover { transform: none; box-shadow: none; }
+.dash-home > .dash-role-strip li a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
 @media (max-width: 720px) {
   .dash-home.match-leads > .dash-first-week,
   .dash-home.match-leads > .dash-role-strip {

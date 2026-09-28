@@ -21,12 +21,26 @@ export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamD
       aria-live="polite"
     >
       <div>
-        <span className="app-badge setup">{health.mode === "stale" ? "May be out of date" : "Using saved copy"}</span>
+        <span className="app-badge setup">
+          {health.mode === "stale" ? "May be out of date" : health.usingLastGoodCache ? "Using saved copy" : "Data unavailable"}
+        </span>
         <strong>{health.bannerTitle}</strong>
-        <p>{health.bannerDetail}</p>
-        {health.usingLastGoodCache ? (
-          <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
-        ) : null}
+        {compact ? (
+          <>
+            <p>{health.usingLastGoodCache ? "Saved rankings and schedule remain available." : "Rankings and schedule are unavailable for now."}</p>
+            <details>
+              <summary>What happened</summary>
+              <p>{health.bannerDetail}</p>
+            </details>
+          </>
+        ) : (
+          <>
+            <p>{health.bannerDetail}</p>
+            {health.usingLastGoodCache ? (
+              <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
+            ) : null}
+          </>
+        )}
       </div>
       {canOpenTeamData ? (
         <Button as="a" variant="secondary" href={health.teamDataHref}>

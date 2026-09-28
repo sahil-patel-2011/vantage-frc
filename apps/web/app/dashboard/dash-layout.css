@@ -92,4 +92,7 @@
   .dash-home.scan-workbench > .dash-now,
   .dash-home.scan-workbench > .dash-role-strip,
   .dash-home.scan-workbench > .dash-ready-cue { margin-bottom: 16px; }
+
+  /* A source failure is a page-wide status, not a second card in the left rail. */
+  .dash-home.scan-workbench > .data-source-degraded-banner { grid-column: 1 / -1; }
 }
