@@ -57,7 +57,9 @@ test("notification counts follow the team, opening clears seen items, and change
     await page.reload();
     await expect(page.locator(".soft-notif b")).toHaveCount(0);
     const remaining = await pool.query("SELECT id FROM notifications WHERE id=ANY($1::uuid[]) AND read_at IS NULL", [ids]);
-    expect(remaining.rows.map((row) => row.id).sort()).toEqual(ids.slice(2, 4).sort());
+    // A deleted announcement is hidden from the live inbox, so opening the
+    // inbox and marking visible rows read must not acknowledge it.
+    expect(remaining.rows.map((row) => row.id).sort()).toEqual(ids.slice(2, 5).sort());
   } finally {
     await pool.query("DELETE FROM notifications WHERE id=ANY($1::uuid[])", [ids]);
     await pool.query("DELETE FROM organizations WHERE id=$1 AND name=$2", [otherOrg, title]);
