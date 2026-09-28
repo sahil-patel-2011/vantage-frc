@@ -16,7 +16,7 @@ const steps = [
   },
   {
     title: "Connect once",
-    copy: "Sign in to Onshape in the browser, or open Fusion 360 with the Vantage desktop app. That is the whole setup.",
+    copy: "Connect an Onshape account or configure the local Fusion connector. Select a document and check the connection before starting a job.",
   },
   {
     title: "Approve each step",
@@ -33,8 +33,8 @@ export default function CadFeaturePage() {
           <p className="lux-kicker">CAD agent</p>
           <h1>CAD starts with a brief.</h1>
           <p>
-            You confirm a short design brief first. Connect Onshape with one click, or Fusion 360 through the
-            Vantage desktop app. Nothing changes in your CAD until a person on your team approves the step.
+            Confirm a design brief, connect Onshape or a local Fusion installation, and select your document.
+            CAD editing stays in those specialist tools. Nothing changes in your CAD until a person on your team approves the step.
           </p>
           <MarketingRouteActions
             companion={{ href: "/features", label: "All features", variant: "secondary" }}

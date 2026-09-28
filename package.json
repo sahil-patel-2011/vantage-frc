@@ -36,6 +36,7 @@
     "dev:otp": "node scripts/dev-otp.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "latest",
     "@next/eslint-plugin-next": "latest",
     "@playwright/test": "latest",
@@ -44,13 +45,20 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "eslint-plugin-react-hooks": "latest",
+    "fake-indexeddb": "^6.2.5",
     "globals": "latest",
     "tsx": "latest",
     "typescript": "latest",
     "typescript-eslint": "latest",
-    "vitest": "latest"
+    "vite": "^8.1.4",
+    "vitest": "^4.1.11",
+    "workflow": "4.8.9"
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "nanoid@5.1.6": "5.1.16",
+    "undici@7.28.0": "7.29.0"
   }
 }

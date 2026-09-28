@@ -78,15 +78,16 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
         title={hasGuide ? "App manual" : "Help centre"}
         description={
           hasGuide
-            ? "Two views of the same manual: searchable how-to articles, and a section-by-section walk of every hub."
-            : "Searchable how-to articles for every hub — getting started, scouting, AI keys, and Chat limits. Also available from Cmd+K."
+            ? "Guides for every part of Vantage."
+            : "Find an answer or get in touch."
         }
       >
         <nav className="product-hub-related" aria-label="Related account tools">
           <a href="/whats-new">What’s new</a>
           <a href="/support">Support tickets</a>
+          <a href="/report-bug">Report a bug</a>
           {!hasGuide ? (
-            <a href="/docs?view=sections">Section-by-section guide</a>
+            <a href="/docs?view=sections">App manual</a>
           ) : null}
         </nav>
       </PageHeader>

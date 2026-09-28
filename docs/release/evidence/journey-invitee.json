@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "journey": "invited-person",
+  "environment": "isolated local app",
+  "appUrl": "http://127.0.0.1:3417",
+  "account": "journey-invite-20260926@example.test",
+  "status": "passed_existing_team_invitation_and_privacy_regression_after_fixes",
+  "execution": {
+    "browserExecuted": true,
+    "realEmailDelivery": false,
+    "invitationSource": "Actual Copy link generated through existing Team 6925 owner UI by team_invitation_journey",
+    "tokenStoredInPublicEvidence": false,
+    "otpStoredInPublicEvidence": false,
+    "sessionsOrMembershipsInjected": false
+  },
+  "requestedChecks": [
+    "Open actual UI-created invitation link",
+    "Reject a signed-in mismatched email",
+    "Verify invited email through normal sign-in UI",
+    "Complete age/profile/policy onboarding",
+    "Accept exactly the assigned invitation role",
+    "Reach the invited team dashboard",
+    "Verify accepted invite and membership through read-only database query",
+    "Attempt UI access to administration beyond assigned role and verify refusal"
+  ],
+  "sourceTrace": {
+    "invitationUi": "apps/web/app/invite/invite-client.tsx",
+    "preview": "apps/web/app/api/invites/preview/route.ts",
+    "acceptance": "apps/web/app/api/invites/accept/route.ts",
+    "onboarding": "apps/web/app/onboarding/onboarding-client.tsx",
+    "service": "packages/core/src/membership.ts",
+    "sql": [
+      "packages/db/migrations/0005_secure_membership.sql",
+      "packages/db/migrations/0686_accept_invite_by_verified_email.sql",
+      "packages/db/migrations/0696_team_provisioning.sql"
+    ]
+  },
+  "prerequisites": [
+    "Shared CUA browser slot granted by root",
+    "Actual invitation created through normal team UI",
+    "Local email-code mailbox read only after UI sends code",
+    "No production external recipients"
+  ],
+  "sourceOnlyConcern": "Invitation API lacks an explicit completed-age-profile check; account_age_eligible currently permits unknown DOB. This has not been tested through UI.",
+  "results": [
+    {
+      "check": "Wrong account",
+      "status": "pass",
+      "evidence": "Genuine invite opened as owner@example.test showed Wrong account, matching intended invitation email, switch-account action, and no accept button."
+    },
+    {
+      "check": "Local invited-email verification",
+      "status": "pass",
+      "evidence": "Requested sign-in code through normal browser UI; supported local dev helper read afterward. Returned to genuine invitation. No real email delivery."
+    },
+    {
+      "check": "Missing DOB membership boundary",
+      "status": "pass",
+      "evidence": "Synthetic acceptance attempt was refused: Finish your profile first; age 13+. DB verified 0 memberships, pending invite, DOB and both legal acceptance timestamps null."
+    },
+    {
+      "check": "Missing DOB error presentation",
+      "status": "failed_then_fix_pending_retest",
+      "evidence": "All HTTP 403 responses were treated as wrong email, showing invited and signed-in address equal. Root implemented explicit error codes and profile action; this journey has not rerun that UI yet."
+    },
+    {
+      "check": "Adult onboarding and role acceptance",
+      "status": "pass",
+      "evidence": "Saved Jordan Journey, adult DOB, Student role and both simulated legal consents through normal three-step onboarding. Normal onboarding accepted the email-specific scout invitation. No separate fabricated invite/session/membership."
+    },
+    {
+      "check": "Team dashboard",
+      "status": "pass",
+      "evidence": "Open Home rendered Good afternoon, Jordan, Team 6925, real My Home saved-board UI, first-week actions and next match. Screenshot saved."
+    },
+    {
+      "check": "Student administration boundary",
+      "status": "failed_high_severity",
+      "evidence": "After normal owner sign-out then invitee sign-in, /team/admin rendered the previous owner cached invite form, synthetic invitation emails, Access and Send password reset actions. Status said Could not refresh the people list. Showing the last copy on this device. No administrative mutation attempted."
+    }
+  ],
+  "scope": "Authorized separate existing Team 6925 invitation journey; new-team creation and provisioning remain independently unverified.",
+  "invitationTeam": "Existing Team 6925",
+  "databaseBaseline": {
+    "observedAt": "2026-09-26T16:34:32.805237-04:00",
+    "database": "vantage_release_test",
+    "queryMode": "read-only, aggregate counts only",
+    "inviteeAccounts": 0,
+    "invitations": 1,
+    "memberships": 0,
+    "invitationTokensRead": false
+  },
+  "databaseReadback": {
+    "database": "vantage_release_test",
+    "queryMode": "read-only",
+    "emailVerified": true,
+    "onboardingComplete": true,
+    "ageEligible": true,
+    "termsVersion": "2026-09-26.2",
+    "privacyVersion": "2026-09-26.2",
+    "membershipRole": "scout",
+    "invitedRole": "scout",
+    "inviteStatus": "accepted",
+    "acceptedByCorrectPerson": true,
+    "orgId": "6925a000-0000-4000-8000-000000000001"
+  },
+  "screenshots": [
+    "docs/release/evidence/journey-invitee-dashboard.png",
+    "docs/release/evidence/journey-invitee-admin-denial-initial-fix.png",
+    "docs/release/evidence/journey-invitee-admin-denial-after-owner-switch.png"
+  ],
+  "failureScreenshot": "Attempted full-page and viewport capture of stale admin cache; both timed out in browser CDP. DOM snapshot evidence above remains recorded.",
+  "finalBrowserState": "Tab 781730963, scout-authenticated /team/admin displaying Team administrator access required; no signout after final proof.",
+  "liveProductionVerified": false,
+  "databaseProofConnection": {
+    "database": "vantage_release_test",
+    "host": "127.0.0.1",
+    "port": 55439,
+    "source": "Explicit read-only psql command arguments from delegated test instructions, not process.env or .env.development.local",
+    "recheckedAt": "2026-09-26T20:51:17.6598653Z",
+    "recheckPassed": true
+  },
+  "privacyRegression": {
+    "rerunAt": "2026-09-26T20:58:48.2672243Z",
+    "status": "pass",
+    "localOnly": true,
+    "startupIssue": {
+      "observed": "After restart, code request was rejected as unauthorized",
+      "resolved": "Root persisted correct 127.0.0.1:3417 auth origins and vantage_release_test startup configuration; normal code requests and verification then succeeded",
+      "authBypassed": false
+    },
+    "firstScoutGate": {
+      "denial": "Team administrator access required",
+      "inviteFormCount": 0,
+      "createInviteButtons": 0,
+      "passwordResetButtons": 0
+    },
+    "sequence": [
+      "Real scout sign-in through requested local email code",
+      "Scout Team admin denial",
+      "Normal account-menu scout sign-out",
+      "Normal owner sign-in through separately requested local email code",
+      "Owner Team admin loaded current People (3), Waiting to join (1), invite controls and owner role",
+      "Normal account-menu owner sign-out",
+      "Normal scout sign-in through new local code request",
+      "Scout Team admin denied with no prior owner invite details or controls"
+    ],
+    "finalScoutGate": {
+      "denialVisible": true,
+      "createInviteButtons": 0,
+      "mentorInviteEmailCount": 0,
+      "passwordResetButtons": 0,
+      "memberAccessButtons": 0
+    },
+    "permissionOrCacheInjected": false,
+    "teamSettingsMutated": false,
+    "previousHighSeverityFailure": "Historical reproduction preserved above; current exact owner-to-scout shared-browser rerun passes after server gate and cache isolation fixes",
+    "remainingObservation": "The previously accepted invite context continued to show on generic sign-in during this rerun. Root notified; this does not affect the demonstrated current admin privacy denial.",
+    "screenshots": [
+      "docs/release/evidence/journey-invitee-admin-denial-initial-fix.png",
+      "docs/release/evidence/journey-invitee-admin-denial-after-owner-switch.png"
+    ],
+    "databaseReadback": "Read-only recheck on vantage_release_test / 127.0.0.1:55439 confirms adult profile, current legal versions, accepted scout invitation and scout membership unchanged."
+  }
+}

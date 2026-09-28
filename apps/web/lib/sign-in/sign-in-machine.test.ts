@@ -311,6 +311,14 @@ describe("invite context preservation", () => {
     const secondCode = run(second, { type: "code_sent", now: NOW });
     expect(signInStepCopy(secondCode).sub).toContain("s***@team254.org");
   });
+
+  it("offers account creation and accurate code delivery when signup is enabled", () => {
+    const identity = initialSignInState({ email: "new@example.test" });
+    expect(signInStepCopy(identity, null, true).sub).toContain("create an account");
+    const code = run(identity, { type: "code_sent", now: NOW, email: "new@example.test" });
+    expect(signInStepCopy(code, null, true).sub).toBe("Enter the 6-digit code sent to new@example.test.");
+    expect(signInStepCopy(identity, "You’re joining Team 254", true).sub).toContain("address the invite was sent to");
+  });
 });
 
 describe("an address with no invite", () => {

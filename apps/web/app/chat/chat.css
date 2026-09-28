@@ -70,9 +70,11 @@
   color: var(--ink);
   font-weight: 800;
 }
+/* Chat settings (links + memory controls) open under the conversation from one button at every
+   width, as they already did on tablets; the thread list and the conversation keep the row. */
 .ch-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 14px;
   align-items: start;
   min-height: min(70vh, 720px);
@@ -369,22 +371,19 @@
   margin: 0;
   font-size: 12px;
 }
-.ch-context-toggle {
+.ch-context {
   display: none;
+}
+.ch-context.open {
+  display: grid;
+  grid-column: 1 / -1;
+}
+.ch-context-toggle {
+  display: inline-flex;
 }
 @media (max-width: 1100px) {
   .ch-layout {
     grid-template-columns: 200px minmax(0, 1fr);
-  }
-  .ch-context {
-    display: none;
-  }
-  .ch-context.open {
-    display: grid;
-    grid-column: 1 / -1;
-  }
-  .ch-context-toggle {
-    display: inline-flex;
   }
 }
 @media (max-width: 720px) {

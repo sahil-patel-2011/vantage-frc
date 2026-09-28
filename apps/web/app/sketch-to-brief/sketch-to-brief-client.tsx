@@ -423,14 +423,6 @@ export default function SketchToBriefClient() {
         <LogSketchForm busy={busy} mutate={mutate} />
         <SketchList view={view} busy={busy} mutate={mutate} />
         <BriefList view={view} kickoffHref={kickoffHref} cadHref={cadHref} />
-        <Panel className="sketch-to-brief-tip" aria-label="Sketch-to-Brief tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep{" "}
-            <a href={kickoffHref}>Kickoff</a> rule notes and design priorities aligned with brief
-            grounding, then model the mechanism in <a href={cadHref}>CAD</a>.
-          </p>
-        </Panel>
       </div>
     </main>
   );

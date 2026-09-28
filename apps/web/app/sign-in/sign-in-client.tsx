@@ -113,7 +113,7 @@ export default function SignInClient({
   const emailAvailable = !emailOtpSetupRequired(status);
   const unavailable = signInUnavailableCopy({ google: googleAvailable, email: emailAvailable });
   const inviteHeadline = inviteToken ? inviteJoiningHeadline(invitePreview) : null;
-  const stepCopy = signInStepCopy(flow, inviteHeadline);
+  const stepCopy = signInStepCopy(flow, inviteHeadline, status.publicSignup);
 
   useEffect(() => {
     if (flow.step !== "code") return;
@@ -571,7 +571,7 @@ export default function SignInClient({
     if (failureKind === "wrong_code") codeRef.current?.focus();
   }, [failureKind, flow.failedAttempts]);
 
-  const hint = invitedOnlyHint(flow);
+  const hint = status.publicSignup ? null : invitedOnlyHint(flow);
   const working = busy !== "idle";
   const notInvited = flow.step !== "identity" && flow.failure?.kind === "not_authorized";
   const waitlistHref = useWaitlistHref();
@@ -610,6 +610,9 @@ export default function SignInClient({
       }
     >
       <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
+      {status.localAcceptanceSignup ? (
+        <p role="status">Local acceptance test: accounts use an isolated test database. Production signup remains closed.</p>
+      ) : null}
       {unavailable ? <SetupShell copy={unavailable} /> : null}
 
       {recoveryOpen ? null : (
@@ -681,7 +684,7 @@ export default function SignInClient({
             onEditEmail={() => dispatch({ type: "edit_email" })}
             onResend={() => void resend()}
             onSwitchAccount={(href) => void signOutAndRedirect(href)}
-            inviteHelp={flow.channel === "email-otp" && !inviteToken ? { waitlistHref } : null}
+            inviteHelp={flow.channel === "email-otp" && !inviteToken && !status.publicSignup ? { waitlistHref } : null}
           />
         )}
       </div>
@@ -726,7 +729,7 @@ export default function SignInClient({
         {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
             "No code?" help with the same link; a second one under it was noise. */}
         {/* "Only invited emails get a code" is about codes; the password view has none. */}
-        {notInvited || flow.step === "code" || passwordPanel !== "closed" ? null : <AccessFooter />}
+        {notInvited || flow.step === "code" ? null : <AccessFooter publicSignup={status.publicSignup} />}
       </div>
     </SignInCard>
   );

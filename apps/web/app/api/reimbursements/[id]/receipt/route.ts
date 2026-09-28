@@ -4,6 +4,7 @@ import {
   auditPayload,
   evaluateReceiptUpload,
   isUuid,
+  isPdfReceiptBytes,
   MAX_RECEIPT_BYTES,
   writeReimbursementAudit,
 } from "../../../../../lib/finance/reimbursements";
@@ -60,9 +61,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 /**
- * Attach (or replace) the receipt photo. The client downscales the phone camera
- * shot first — see lib/scouting/media-downscale.ts — so the cap is a backstop,
- * not the normal path. Only the filer may attach, and only while the claim is
+ * Attach (or replace) a PDF receipt document. Only the filer or an authorized
+ * administrator may attach, and only while the claim is
  * still theirs to change; once approved the evidence is frozen.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -75,23 +75,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     form = await request.formData();
   } catch {
-    return Response.json({ error: "Upload a receipt photo as multipart form data." }, { status: 400 });
+    return Response.json({ error: "Upload a PDF receipt as multipart form data." }, { status: 400 });
   }
   const orgId = form.get("orgId");
   if (typeof orgId !== "string" || !isUuid(orgId)) {
     return Response.json({ error: "orgId is required" }, { status: 400 });
   }
   const file = form.get("receipt");
-  if (!(file instanceof File)) return Response.json({ error: "No receipt photo was attached." }, { status: 400 });
+  if (!(file instanceof File)) return Response.json({ error: "No PDF receipt was attached." }, { status: 400 });
   // Check the declared size before reading the body into memory.
   if (file.size > MAX_RECEIPT_BYTES) {
     const verdict = evaluateReceiptUpload({ mediaType: file.type, byteSize: file.size });
-    return Response.json({ error: verdict.ok ? "That photo is too large." : verdict.reason }, { status: 413 });
+    return Response.json({ error: verdict.ok ? "That document is too large." : verdict.reason }, { status: 413 });
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const verdict = evaluateReceiptUpload({ mediaType: file.type, byteSize: bytes.length });
   if (!verdict.ok) return Response.json({ error: verdict.reason }, { status: 400 });
+  if (!isPdfReceiptBytes(bytes)) return Response.json({ error: "The file's PDF format could not be recognized. Export the receipt as a PDF and try again." }, { status: 400 });
   const checksum = createHash("sha256").update(bytes).digest("hex");
   const filename = (file.name || "receipt").slice(0, 200);
 

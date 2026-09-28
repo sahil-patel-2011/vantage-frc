@@ -1,5 +1,6 @@
 /** Waitlist-only access helpers for Vantage auth. */
 import { createSqlPool } from "@vantage/db/pool";
+import { isPublicSignupOpen } from "./public-signup";
 import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import {
   PLATFORM_OWNER_EMAIL_DEFAULT,
@@ -15,6 +16,7 @@ export type AuthEmailAccessReason =
   | "platform_owner"
   | "existing_user"
   | "pending_invite"
+  | "public_signup"
   | "denied";
 
 export type AuthEmailAccess = {
@@ -46,6 +48,9 @@ export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAc
   }
   if (!isDatabaseConfigured()) {
     return { allowed: false, reason: "denied", email: normalized };
+  }
+  if (isPublicSignupOpen()) {
+    return { allowed: true, reason: "public_signup", email: normalized };
   }
   const connectionString = authConnectionString();
   if (!connectionString) {

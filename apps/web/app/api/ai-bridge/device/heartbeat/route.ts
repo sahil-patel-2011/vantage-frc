@@ -17,13 +17,15 @@ export async function POST(request: Request) {
       body.engines && typeof body.engines === "object" && JSON.stringify(body.engines).length <= MAX_ENGINES_JSON
         ? body.engines
         : null;
-    const result = await getAiBridgePool().query<{ id: string; orgId: string; name: string }>(
+    const result = await getAiBridgePool().query<{ id: string; orgId: string; userId: string; name: string }>(
       `UPDATE ai_bridge_devices
           SET last_heartbeat_at = now(), status = 'online', updated_at = now(),
               bridge_version = COALESCE($2, bridge_version),
               engines = COALESCE($3::jsonb, engines)
         WHERE token_hash = $1 AND revoked_at IS NULL
-        RETURNING id, org_id AS "orgId", name`,
+          AND account_age_eligible(paired_by)
+          AND EXISTS(SELECT 1 FROM memberships m WHERE m.org_id=ai_bridge_devices.org_id AND m.user_id=ai_bridge_devices.paired_by)
+        RETURNING id, org_id AS "orgId", paired_by AS "userId", name`,
       [
         createHash("sha256").update(token).digest("hex"),
         body.bridgeVersion ?? null,
@@ -34,8 +36,8 @@ export async function POST(request: Request) {
     if (!device) return Response.json({ error: "Device token is invalid or revoked" }, { status: 401 });
     const queue = await getAiBridgePool().query<{ queued: string }>(
       `SELECT COUNT(*)::text AS queued FROM ai_bridge_jobs
-        WHERE org_id = $1::uuid AND state = 'queued'`,
-      [device.orgId],
+        WHERE org_id = $1::uuid AND requested_by = $2::uuid AND state = 'queued'`,
+      [device.orgId, device.userId],
     );
     return Response.json({
       ok: true,

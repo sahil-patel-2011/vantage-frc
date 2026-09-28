@@ -20,7 +20,7 @@ import {
   type MatchNotesTimelineShellKind,
 } from "../../lib/match-notes-timeline/match-notes-timeline-related";
 import type { MatchNoteCategory, MatchNotePhase } from "../../lib/match-notes-timeline/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -213,9 +213,6 @@ export default function MatchNotesTimelineClient() {
     include: [...MATCH_NOTES_TIMELINE_RELATED_INCLUDE],
   });
   const competitionHref = hubWorkbenchHref("competition", "match-notes-timeline", orgId);
-  const scheduleHref = withOrgHref("/schedule", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -354,14 +351,6 @@ export default function MatchNotesTimelineClient() {
       <div className="match-notes-timeline-layout">
         <LogNoteForm busy={busy} mutate={mutate} />
         {shell === "ready" ? <Timelines view={view} busy={busy} mutate={mutate} /> : null}
-        <Panel className="match-notes-timeline-tip" aria-label="Match Note Timeline tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep match labels aligned with <a href={scheduleHref}>Schedule</a>, ground debriefs in{" "}
-            <a href={strategyHref}>Strategy</a>, and pair clock notes with{" "}
-            <a href={scoutingHref}>Scouting</a> rows.
-          </p>
-        </Panel>
       </div>
     </main>
   );

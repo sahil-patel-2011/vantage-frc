@@ -29,11 +29,15 @@ test("a signed-in account with no team is told what is happening, once", async (
 
   const main = page.locator("main");
   await expect(
-    page.getByRole("heading", { name: "Your profile is ready. Team access is next." }),
+    page.getByRole("heading", { name: "Your profile is ready. Join your team next." }),
   ).toBeVisible();
 
   // The reason, in the words of somebody who has just been stopped.
-  await expect(main).toContainText("A team number never lets you in by itself");
+  await expect(main).toContainText("Knowing a team number never opens someone else's team");
+  await expect(main.getByRole("button", { name: "Review my team request" })).toBeVisible();
+  await expect(main.getByRole("link", { name: "Have an invite?" })).toBeVisible();
+  await expect(main).not.toContainText("Nobody has set up Team 6925");
+  await expect(main).not.toContainText("Every owner and admin on that team got");
 
   // No engineering vocabulary on the one screen a blocked person reads.
   await expect(main).not.toContainText("pick a team first");

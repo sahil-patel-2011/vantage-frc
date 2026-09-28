@@ -77,8 +77,12 @@ describeWithDatabase("withSavepoint against real Postgres", () => {
   });
 
   afterAll(async () => {
-    client?.release();
-    await pool?.end();
+    try {
+      if (client) {
+        await client.query("ROLLBACK");
+        await client.query("DROP TABLE IF EXISTS savepoint_probe,loop_probe");
+      }
+    } finally { client?.release(); await pool?.end(); }
   });
 
   /** The premise. Without this, none of the rest of the work is warranted. */

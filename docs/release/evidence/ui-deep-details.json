@@ -1,0 +1,206 @@
+{
+  "checkedAt": "2026-09-27T03:00:07.899Z",
+  "scope": "Local synthetic/scratch verification after candidate CI failures; no production acceptance",
+  "productionAcceptance": false,
+  "originalRemoteRun": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36287059784",
+  "changes": [
+    "Preserved five workspaces, saved Home boards and all prior hub destinations",
+    "Added actual selected event context; compacted Event day header",
+    "Phone Home editing removes duplicate context until editor closes",
+    "Team-access missing-workspace copy requires explicit server evidence, not a preferred number",
+    "Waitlist timeout preserves details and supports a deduplicated retry",
+    "Marketing describes optional personal Codex/provider keys accurately",
+    "Team picker uses standard link semantics; Competition disclosure and links48px",
+    "Late initial preferences cannot replace edits or newer saved island choices",
+    "Unavailable selected personal shortcuts are individually removable",
+    "Browser fixtures require seeded CI authentication; student pairing uses actual member fixture",
+    "External video links/analysis stay enabled while uploads/capture/storage remain removed"
+  ],
+  "checks": [
+    {
+      "name": "Full repository unit suite",
+      "result": "passed",
+      "filesPassed": 1497,
+      "filesSkipped": 15,
+      "testsPassed": 11188,
+      "testsSkipped": 40,
+      "durationSeconds": 220.78,
+      "log": "vantage-ui-final-unit.log",
+      "notes": "Final header layout/island follow-up checked separately in focused browser/build and final CI. Conditional PostgreSQL tests ran separately."
+    },
+    {
+      "name": "Repository lint and all workspace types",
+      "result": "passed",
+      "logs": [
+        "vantage-ui-final-lint.log",
+        "vantage-ui-final-types.log"
+      ],
+      "notes": "Subsequent changed shell/tests passed focused eslint; final production build also checks web types."
+    },
+    {
+      "name": "Actual PostgreSQL",
+      "result": "passed",
+      "database": "vantage_schema_test_20260927",
+      "testsPassed": 3,
+      "files": [
+        "packages/core/src/onboarding-postgres.test.ts",
+        "packages/db/src/invitation-age-integration.test.ts",
+        "apps/web/lib/notifications/inbox-integration.test.ts"
+      ],
+      "notes": "All writes inside rolled-back transactions; restrictions and negative cases retained."
+    },
+    {
+      "name": "Initial focused navigation repair",
+      "result": "passed",
+      "testsPassed": 24,
+      "log": "vantage-ui-browser-corrections.log"
+    },
+    {
+      "name": "Calendar repair",
+      "result": "passed",
+      "testsPassed": 7,
+      "notes": "Adjacent-month date handling retained; click Today restores actual current month."
+    },
+    {
+      "name": "Broader browser repair",
+      "result": "failed then repaired",
+      "testsPassed": 25,
+      "testsFailed": 1,
+      "log": "vantage-ui-browser-wide-corrections.log",
+      "finding": "Hours cache read raced initial snapshot; fixed by waiting for actual person/organization IndexedDB record."
+    },
+    {
+      "name": "Deep details browser run",
+      "result": "failed then repaired",
+      "testsPassed": 23,
+      "testsFailed": 1,
+      "log": "vantage-ui-deep-details-browser.log",
+      "finding": "Fast Home reset/remove test exercised intentional same-position double-tap guard; separate last-card target retains production guard."
+    },
+    {
+      "name": "Stale generated development-cache run",
+      "result": "invalid environment; not acceptance",
+      "testsPassed": 2,
+      "testsFailed": 5,
+      "testsSkipped": 4,
+      "log": "vantage-ui-retry-browser.log",
+      "finding": "404 Home/API responses from stale Next cache; preserved diagnostic cache outside project. No source assertion bypass."
+    },
+    {
+      "name": "Fresh-cache Home and waitlist rerun",
+      "result": "passed",
+      "testsPassed": 11,
+      "log": "vantage-ui-retry-browser-clean.log",
+      "notes": "Includes actual20-second timeout, retained field values and successful second submission using controlled endpoint."
+    },
+    {
+      "name": "Final shell and island follow-up",
+      "result": "failed then repaired",
+      "testsPassed": 14,
+      "testsFailed": 1,
+      "log": "vantage-ui-final-island-browser.log",
+      "finding": "Browser floating-coordinate subtraction yielded47.999969px for48px. Compare hundredths of CSS pixels;48px requirement retained."
+    },
+    {
+      "name": "Final island race/removal and target rerun",
+      "result": "passed",
+      "testsPassed": 4,
+      "log": "vantage-ui-final-island-rerun.log"
+    },
+    {
+      "name": "Student connector pairing UI",
+      "result": "passed",
+      "testsPassed": 1,
+      "testsSkipped": 0,
+      "log": "vantage-ui-student-pairing-browser.log",
+      "notes": "Correct actual seeded member; prior nonexistent student role mistakenly selected no-team fixture. Does not prove real provider/device pairing."
+    },
+    {
+      "name": "Final compact Event day context",
+      "result": "passed",
+      "testsPassed": 1,
+      "log": "vantage-ui-event-context-browser.log",
+      "notes": "Real owner session and /api/command selected-event response; one Competition h1."
+    },
+    {
+      "name": "Unavailable shortcut keyboard removal",
+      "result": "passed",
+      "testsPassed": 1,
+      "log": "vantage-ui-unavailable-focus-browser.log",
+      "notes": "Enter removes the unavailable shortcut and moves focus to a surviving choice within the modal; no permission change."
+    },
+    {
+      "name": "Final production build and lint",
+      "result": "passed",
+      "buildId": "eV3IvdW2-rvFmfWWMqpSy",
+      "pages": 746,
+      "logs": [
+        "vantage-ui-release-build.log",
+        "vantage-ui-release-lint.log"
+      ],
+      "notes": "All platform credentials masked for local build; no Vercel deployment."
+    },
+    {
+      "name": "Built feature-map HTTP walk",
+      "result": "passed-bounded",
+      "routes": 187,
+      "owner": {
+        "http200": 182,
+        "expectedPermission404": 5,
+        "unexpectedFailures": 0
+      },
+      "platformAdmin": {
+        "http200": 187,
+        "notFound": 0,
+        "unexpectedFailures": 0
+      },
+      "logs": [
+        "vantage-ui-feature-http-walk.log",
+        "vantage-ui-feature-http-platform-walk.log"
+      ],
+      "notes": "Real scratch owner and platform sessions, GET only, restricted database roles. HTTP status proof does not prove every client action."
+    },
+    {
+      "name": "Final built Event day visual",
+      "result": "passed-bounded",
+      "actor": "Morgan Journey, synthetic local account",
+      "viewports": [
+        "desktop",
+        "390x844",
+        "320x568 account check on preceding built UI"
+      ],
+      "notes": "Final compact header identifies same Peachtree event as Home; one h1, no horizontal overflow at390; final captured browser warnings/errors empty. Earlier source-identical account/drawer/island geometry checks retained."
+    }
+  ],
+  "remaining": [
+    "Full final CI rerun",
+    "Physical-device/screen-reader/zoom/forced-color matrix",
+    "Representative FRC first-use task timing and mistakes; no universal90–100% score",
+    "Full production preflight, recovery/retention/load/provider gates"
+  ],
+  "buildId": "eV3IvdW2-rvFmfWWMqpSy",
+  "screenshots": [
+    "ui-event-day-release-desktop.png",
+    "ui-event-day-release-phone.png",
+    "ui-account-current-build-phone.png",
+    "ui-hamburger-current-build-phone.png"
+  ],
+  "accessibilityFollowup": {
+    "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+    "productionAcceptance": false,
+    "zeroAutomaticallyDetectedViolations": true,
+    "scanStates": 12,
+    "viewports": [
+      1280,
+      390
+    ],
+    "evidence": "ui-accessibility-audit.json",
+    "quality": "Local lint, all workspace types, 746-page production build passed. CI development-only eviction checked separately.",
+    "browser": {
+      "accessibilityAndShellTestsPassed": 6,
+      "repairedCiJourneyTestsPassed": 11,
+      "skips": 0
+    },
+    "remoteCandidate": "ci-ui-candidate.json#followup9f"
+  }
+}

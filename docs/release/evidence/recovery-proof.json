@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "checkpoint-2026-09-26T15-34-49.018Z",
+  "googleVerifiedAt": "2026-09-26T16:44:41.827Z",
+  "isolatedRestoreVerifiedAt": "2026-09-26T16:47:58.742Z",
+  "tableCount": 719,
+  "countsMatch": true,
+  "transport": "operator-owned Google recovery workbook",
+  "encryption": "AES-256-GCM; separately held keys",
+  "integrity": "1f482f1f81cf06a09539e2f04c363a92cb111dca5cc8cfd0bb2a6a451a768516",
+  "productionAccessOpened": false,
+  "limits": [
+    "Row counts verified; representative workflows and sequence checks remain pending.",
+    "Automatic snapshot retention and journal replay remain pending."
+  ]
+}

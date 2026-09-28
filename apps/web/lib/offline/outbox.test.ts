@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_OUTBOX_ADAPTERS,
   enqueueOutboxItem,
@@ -8,7 +8,12 @@ import {
   nextBackoffMs,
   newOutboxClientId,
   syncOutbox,
+  markOutboxItem,
+  dropOutboxItem,
 } from "./outbox";
+
+const identity = vi.hoisted(() => ({ user: "person-a" as string | null }));
+vi.mock("./identity", () => ({ offlineSnapshotUser: async () => identity.user }));
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 
@@ -89,6 +94,7 @@ describe("offline outbox", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
+    identity.user = "person-a";
     installMemoryIndexedDb();
   });
 
@@ -110,6 +116,28 @@ describe("offline outbox", () => {
     const result = await syncOutbox({ orgId: ORG, fetchImpl: globalThis.fetch, online: true });
     expect(result).toEqual({ synced: 1, conflicts: 0, remaining: 0 });
     expect(await listOutbox(ORG)).toEqual([]);
+  });
+
+  it("keeps two people's queued work separate on the same team and preserves legacy rows", async () => {
+    const tables = installMemoryIndexedDb();
+    await enqueueOutboxItem({ clientId: "a", feature: "chat_message", orgId: ORG, payload: { body: "A private draft" } });
+    tables.get("writes")!.set("legacy", { clientId: "legacy", orgId: ORG, payload: { body: "Unidentified older draft" }, status: "queued" });
+    identity.user = "person-b";
+    expect(await listOutbox(ORG)).toEqual([]);
+    await markOutboxItem("a", { status: "synced" });
+    await dropOutboxItem("a");
+    await expect(enqueueOutboxItem({ clientId: "a", feature: "chat_message", orgId: ORG, payload: {} })).rejects.toThrow("another account");
+    const send = vi.fn();
+    expect(await syncOutbox({ orgId: ORG, online: true, fetchImpl: send })).toEqual({ synced: 0, conflicts: 0, remaining: 0 });
+    expect(send).not.toHaveBeenCalled();
+    await enqueueOutboxItem({ clientId: "b", feature: "chat_message", orgId: ORG, payload: { body: "B private draft" } });
+    expect((await listOutbox(ORG)).map(row => row.clientId)).toEqual(["b"]);
+    identity.user = "person-a";
+    expect((await listOutbox(ORG)).map(row => [row.clientId, row.status])).toEqual([["a", "queued"]]);
+    expect(tables.get("writes")!.has("legacy")).toBe(true);
+    identity.user = null;
+    expect(await listOutbox(ORG)).toEqual([]);
+    await expect(enqueueOutboxItem({ clientId: "anonymous", feature: "chat_message", orgId: ORG, payload: {} })).rejects.toThrow("Sign in");
   });
 
   it("routes packing, batteries, pit, season-task, and calendar writes to their product APIs", () => {

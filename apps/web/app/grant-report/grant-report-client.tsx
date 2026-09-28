@@ -261,8 +261,6 @@ export default function GrantReportClient() {
   });
   const businessHref = hubWorkbenchHref("business", "grant-report", orgId);
   const grantsHref = hubHref("/business", "grants", orgId);
-  const impactHref = hubHref("/business", "impact", orgId);
-  const workbenchHref = withOrgHref("/team/grants", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -418,14 +416,6 @@ export default function GrantReportClient() {
       <div className="grant-report-layout">
         <EligibleGrants view={view} busy={busy} mutate={mutate} />
         <Reports view={view} busy={busy} mutate={mutate} />
-        <Panel className="grant-report-tip" aria-label="Grant Report tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Mark awards in <a href={grantsHref}>Grants</a>, draft language in{" "}
-            <a href={workbenchHref}>Grants workbench</a>, and ground outreach in{" "}
-            <a href={impactHref}>Community Impact</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

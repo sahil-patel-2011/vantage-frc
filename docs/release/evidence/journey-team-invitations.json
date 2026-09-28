@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "journey": "Create a new team, complete setup, and invite synthetic teammates",
+  "agent": "team_invitation_journey",
+  "environment": {
+    "origin": "http://127.0.0.1:3417",
+    "database": "vantage_release_test",
+    "production": false
+  },
+  "status": "functional-new-team-journey-passed-after-repairs-timing-target-open",
+  "browserJourneyPassed": true,
+  "existingTeamInvitationJourney": {
+    "status": "passed-invitation-creation-and-refresh",
+    "ownerEmail": "owner@example.test",
+    "organizationId": "6925a000-0000-4000-8000-000000000001",
+    "teamNumber": 6925,
+    "newTeamCreationProof": false,
+    "runtimeAuthMetadata": {
+      "waitlistOnly": true,
+      "publicSignup": false,
+      "databaseConfigured": true,
+      "emailOtpAvailable": true,
+      "email2faEnforced": false,
+      "passwordSignInAvailable": true,
+      "googleSignInAvailable": false
+    },
+    "metadataEvidenceMethod": "Read-only HTTP GET; browser navigation to the JSON endpoint was blocked by Chrome.",
+    "emailProviderVerifiedLocal": true,
+    "observedSteps": [
+      "Owner normal UI requested OTP and entered the local development code.",
+      "Owner reached real saved My Home for Team 6925.",
+      "Team admin showed local delivery banner: Email is off here.",
+      "Created Student invitation for journey-invite-20260926@example.test.",
+      "Copied actual Student invitation URL through UI Copy link and saved privately.",
+      "Created Mentor or coach invitation for journey-mentor-20260926@example.test.",
+      "Copied actual Mentor invitation URL through UI Copy link and saved privately.",
+      "Refreshed the page and read back Waiting to join (2), Student and Mentor or coach roles, and expiration October 3."
+    ],
+    "verifiedAt": "2026-09-26T20:35:16.6570272Z",
+    "externalEmailDeliveryProof": false,
+    "screenshotStatus": "Capture failed with a browser CDP timeout; no screenshot is counted as evidence."
+  },
+  "firstFailedBoundary": "Unverified new team can enter Home and the invitation form before workspace, tools, Sheets, recovery and verification phases complete.",
+  "sourcePreconditions": [
+    "Use an authenticated synthetic person with an age-eligible saved profile who does not already own a workspace.",
+    "The team number must be present in teams_ref and unused in organizations. Do not create a real production team claim.",
+    "Team creation requires separate Terms and Privacy consent and the current team authorization attestation.",
+    "Verify the active email provider is local-mailbox before inviting synthetic recipients; development mode can send external mail when provider credentials are configured.",
+    "Local provisioning requires Google bridge protocol 6. Current release evidence describes deployed protocol 5/version 9, so genuine setup must expose this dependency rather than counting it as passed.",
+    "Recovery completion requires a verified Google snapshot and exported recovery events through the fixed initial setup boundary."
+  ],
+  "expectedUiSequence": [
+    "Normal UI sign-in or sign-up",
+    "Complete profile and onboarding",
+    "/claim: enter clearly labeled test team name, slug and unused synthetic reference number",
+    "/team-setup: persistent phases and read-back verification",
+    "Immediate redirect to /dashboard only after ready",
+    "/team/admin?invite=1: create scout and admin invitations",
+    "Read back pending invitations and role labels",
+    "Private handoff of invitation links to invitee agent"
+  ],
+  "plannedRecipients": [
+    {
+      "email": "journey-invite-20260926@example.test",
+      "uiRole": "Student",
+      "storedRole": "scout",
+      "created": true
+    },
+    {
+      "email": "journey-mentor-20260926@example.test",
+      "uiRole": "Mentor or coach",
+      "storedRole": "admin",
+      "created": true
+    }
+  ],
+  "observedSteps": [],
+  "readBackEvidence": [
+    {
+      "method": "Visible Team admin UI after page reload",
+      "waitingCount": 2,
+      "recipients": [
+        {
+          "email": "journey-invite-20260926@example.test",
+          "role": "Student",
+          "status": "Waiting to join",
+          "expires": "October 3"
+        },
+        {
+          "email": "journey-mentor-20260926@example.test",
+          "role": "Mentor or coach",
+          "status": "Waiting to join",
+          "expires": "October 3"
+        }
+      ]
+    }
+  ],
+  "testResources": [
+    {
+      "email": "journey-invite-20260926@example.test",
+      "idTracking": "Exact invitation ID recorded privately by coordinating agent in journey-invitation-resource-ids.json.",
+      "organizationId": "6925a000-0000-4000-8000-000000000001",
+      "kind": "organization_invitation",
+      "role": "scout"
+    },
+    {
+      "email": "journey-mentor-20260926@example.test",
+      "idTracking": "Exact invitation ID recorded privately by coordinating agent in journey-invitation-resource-ids.json.",
+      "organizationId": "6925a000-0000-4000-8000-000000000001",
+      "kind": "organization_invitation",
+      "role": "admin"
+    },
+    {
+      "organizationId": "e6048770-61f0-48a6-b555-069a1a8d8f03",
+      "teamSlug": "vantage-journey-test-99991-20260926",
+      "teamName": "Vantage Journey Test 99991 - Synthetic",
+      "cleanup": "Preserve pending proof; coordinator must track any Google resources before targeted cleanup.",
+      "teamNumber": 99991,
+      "kind": "synthetic_organization"
+    },
+    {
+      "email": "journey-invite-20260926@example.test",
+      "idTracking": "Coordinator must read exact scoped invitation ID for cleanup.",
+      "kind": "organization_invitation",
+      "role": "scout",
+      "organizationId": "e6048770-61f0-48a6-b555-069a1a8d8f03"
+    },
+    {
+      "email": "journey-mentor-20260926@example.test",
+      "idTracking": "Coordinator must read exact scoped invitation ID for cleanup.",
+      "kind": "organization_invitation",
+      "role": "admin",
+      "organizationId": "e6048770-61f0-48a6-b555-069a1a8d8f03"
+    }
+  ],
+  "inviteeHandoff": {
+    "available": true,
+    "privateCredentialLocation": "C:/Users/sahil/.codex/secure/vantage-recovery/journey-invitation-links-20260926.json",
+    "invitationTokensIncludedInThisReport": false
+  },
+  "restrictions": [
+    "No direct database writes, session injection, source changes, app restarts or API shortcuts by this journey agent.",
+    "No real inboxes, production team edits, existing resource deletion or fabricated setup success. Invitation mutations target only the authorized isolated Team 6925 fixture.",
+    "Browser actions use cua_repl and normal authentication only while the shared browser slot is granted."
+  ],
+  "claimNavigationAudit": {
+    "status": "source-reviewed-new-team-claim-path-verified-in-browser",
+    "browserProof": true,
+    "canCreateOrgUsedToGateUi": false,
+    "currentClaimUiCondition": "accessStatus='none', preferred team number present, and self-selected role mentor/coach/parent",
+    "existingTeamRequestCondition": "accessStatus='pending' preserves owner/admin approval",
+    "noTeamNumberAction": "Add a team number",
+    "sourceLocations": [
+      {
+        "line": 156,
+        "path": "apps/web/app/onboarding/onboarding-client.tsx",
+        "behavior": "Non-approved completed profiles render the pending panel."
+      },
+      {
+        "line": 236,
+        "path": "apps/web/app/onboarding/onboarding-client.tsx",
+        "behavior": "adult derives from self-selected team role, not birth date."
+      },
+      {
+        "line": 403,
+        "path": "apps/web/lib/onboarding/step-model.ts",
+        "behavior": "No workspace plus number and adult role exposes Claim this team."
+      },
+      {
+        "line": 157,
+        "path": "apps/web/app/onboarding/onboarding-pending.tsx",
+        "behavior": "Claim action links to /claim."
+      },
+      {
+        "line": 480,
+        "path": "apps/web/app/onboarding/onboarding-client.tsx",
+        "behavior": "Generic pending header incorrectly implies an existing team must approve a new team founder."
+      },
+      {
+        "line": 458,
+        "path": "packages/core/src/onboarding.ts",
+        "behavior": "canCreateOrg is platform-admin-only metadata but is not consumed by current onboarding UI."
+      }
+    ],
+    "recommendations": [
+      "Use the pending plan kind for the header so no_workspace and no_team do not claim existing-team approval is required.",
+      "Align server canCreateOrg metadata with actual claim eligibility: verified account, saved age eligibility, and no existing owned workspace.",
+      "If consuming canCreateOrg for navigation, preserve existing-team approval and invitation paths and revalidate permissions on the server.",
+      "Reconcile self-declared adult-role presentation with the plan age-13-plus eligibility; current server claim accepts age-eligible people independent of selected role."
+    ]
+  },
+  "newTeamJourney": {
+    "status": "functional-claim-provision-home-invitations-passed-after-repairs",
+    "browserJourneyPassed": true,
+    "person": "journey-signup-20260926@example.test",
+    "name": "Alex Journey",
+    "selectedRole": "Mentor",
+    "dateOfBirthFixture": "2000-01-01",
+    "teamNumber": 99991,
+    "teamName": "Vantage Journey Test 99991 - Synthetic",
+    "teamSlug": "vantage-journey-test-99991-20260926",
+    "organizationId": "e6048770-61f0-48a6-b555-069a1a8d8f03",
+    "sourceOfAccount": "Normal authenticated signup and onboarding handed off from signup agent.",
+    "sourceOfReference": "Coordinator-created labeled synthetic reference fixture in isolated local database.",
+    "verifiedAt": "2026-09-26T21:07:32.3788503Z",
+    "observedSteps": [
+      "Clicked the actual Claim this team link after normal onboarding.",
+      "Entered synthetic team name, URL slug and root-provided reference 99991.",
+      "Submitted separate Terms/Privacy checkboxes and synthetic test-team authorization.",
+      "Actual UI redirected to /team-setup with stable new organization ID.",
+      "Creating your team was marked Done; remaining phases waited.",
+      "Refreshed setup and observed the same persistent phase state.",
+      "Navigated to Home before setup readiness; real saved My Home loaded and displayed Invite your team and 0 of 4 done.",
+      "Clicked actual Invite people link; enabled Team admin invitation form loaded for Alex Journey as owner.",
+      "Did not submit invitations on the unverified new team.",
+      "Returned to setup; same unfinished phases remained visible.",
+      "After coordinator repair/restart, direct Home navigation redirected to the same team setup instead of exposing Home.",
+      "After coordinator repair/restart, direct Team admin navigation redirected to the same team setup instead of exposing invitation controls.",
+      "Persisted terminal workflow failure became visible with a real Retry setup action.",
+      "Clicked Retry setup once; the UI briefly showed Resuming then the same failure state returned.",
+      "On repaired runtime, second actual Retry advanced through real workspace, tools, Google Sheets, recovery and verification phases.",
+      "Refreshed during workbook creation; the same organization and completed phase progress persisted.",
+      "The application automatically redirected to real saved My work Home after readiness, without another navigation action.",
+      "Used the actual Home Invite people link after verified readiness.",
+      "Created Student/scout and Mentor/admin invitations using the ready new-team UI.",
+      "Copied both actual invitation links through UI Copy link and stored them in a separate private handoff file.",
+      "Refreshed Team admin and read back both pending recipients and the correct roles and expiration date."
+    ],
+    "provisioningStateVisible": {
+      "completedPhases": [
+        "team",
+        "workspace",
+        "tools",
+        "sheets",
+        "recovery",
+        "verify"
+      ],
+      "ready": true,
+      "waitingPhases": [],
+      "headline": "Home"
+    },
+    "screenshotEvidence": [
+      "journey-new-team-progress.png",
+      "journey-new-team-unready-invitations.png",
+      "journey-new-team-ready-home.png"
+    ],
+    "resourcesVerified": [],
+    "actualGoogleReadBackPassed": true,
+    "automaticReadyRedirectPassed": true,
+    "newTeamInvitationsCreated": true,
+    "navigationGate": {
+      "result": "baseline-failed-repaired-page-redirects-passed",
+      "proposedCorrection": "Enforce persisted provisioning readiness for new-team application routes and mutations, while preserving legacy organizations without a provisioning job and permitted setup/status/retry routes.",
+      "exposedInvitationForm": true,
+      "exposedHome": true,
+      "retest": {
+        "apiMutationGateIndependentlyTested": false,
+        "homeRedirectedToSameSetupOrganization": true,
+        "result": "passed-page-redirects",
+        "invitationPageRedirectedToSameSetupOrganization": true,
+        "checkedAt": "2026-09-26T21:17:08.4549182Z"
+      }
+    },
+    "coordinatorDiagnosis": {
+      "reportedBy": "coordinating agent",
+      "issue": "Inherited empty VERCEL_URL was treated as a deployed workflow origin and caused Invalid URL before first provisioning step.",
+      "nextAction": "Resume the existing organization through visible Retry setup, then recheck readiness gates and duplicate-resource prevention.",
+      "fixStatus": "Coordinator is restarting local dev and configuring verified protocol 6 Google bridge and recovery test resources.",
+      "independentlyVerifiedByThisAgent": false
+    },
+    "retryEvidence": {
+      "failureVisible": "Your setup needs attention. Background setup stopped. Retry to resume your saved progress.",
+      "result": "Resuming appeared, then the same failure and Retry button returned.",
+      "organizationIdUnchanged": true,
+      "errorCause": "Unverified; coordinator is inspecting the new run or prior-run status reconciliation.",
+      "actualButtonClicked": "Retry setup",
+      "attemptsByThisAgent": 1
+    },
+    "verifiedProvisioning": {
+      "elapsedToVerifiedMs": 418460,
+      "automaticNavigationObserved": true,
+      "repairedRetryStartedAt": "2026-09-26T21:19:53.779Z",
+      "allSixPhasesCompleted": true,
+      "verificationScope": "One real synthetic team with Google protocol6 and encrypted test recovery configured; excludes earlier repair/configuration downtime and does not prove load target.",
+      "fiveMinuteTargetPassed": false,
+      "fiftyTeamLoadTestPassed": false,
+      "applicationPhaseReadBackPassed": true,
+      "realGoogleResources": true,
+      "databaseVerifiedAt": "2026-09-26T21:26:52.239Z",
+      "databaseTimingEvidenceReportedBy": "Coordinating agent read-only PostgreSQL query",
+      "minimumWaitEnforced": false,
+      "homeObservedAt": "2026-09-26T21:27:40.679Z",
+      "homeObservationUpperBoundMs": 466900
+    },
+    "invitationScreenshotStatus": "Final refreshed invitation screenshot capture timed out; visible DOM read-back succeeded and ready Home screenshot is saved.",
+    "invitationHandoff": {
+      "privateCredentialLocation": "C:/Users/sahil/.codex/secure/vantage-recovery/journey-invitation-links-team99991-20260926.json",
+      "tokensPrinted": false,
+      "persistenceVerifiedAfterRefresh": true,
+      "acceptanceVerifiedByThisAgent": false,
+      "recipients": [
+        {
+          "email": "journey-invite-20260926@example.test",
+          "uiLabel": "Student",
+          "status": "Waiting to join",
+          "role": "scout",
+          "expires": "October 3"
+        },
+        {
+          "email": "journey-mentor-20260926@example.test",
+          "uiLabel": "Mentor or coach",
+          "status": "Waiting to join",
+          "role": "admin",
+          "expires": "October 3"
+        }
+      ]
+    }
+  },
+  "productionAcceptancePassed": false
+}

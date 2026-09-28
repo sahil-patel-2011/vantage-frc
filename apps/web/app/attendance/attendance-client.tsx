@@ -259,7 +259,7 @@ function MemberOneTap({
                       eventId: event.id,
                       userId: member.userId,
                       personName: member.name.trim(),
-                      role,
+                      role: member.attendanceRole ?? role,
                       hours: hours === "" ? null : Number(hours),
                     },
                     `tap-on:${member.userId}`,
@@ -383,7 +383,7 @@ function SessionDetail({
                     type="button"
                     className="att-chip"
                     disabled={busy}
-                    onClick={() => addPerson(member.name, role, member.userId)}
+                    onClick={() => addPerson(member.name, member.attendanceRole ?? role, member.userId)}
                   >
                     {member.name}
                   </button>
@@ -501,6 +501,7 @@ function SessionDetail({
 }
 
 export default function AttendanceClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<AttendanceView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -659,7 +660,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         )
       : null;
     return (
-      <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
+      <Root className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
           <>
             <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
@@ -685,13 +686,13 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
+      <Root className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
           <>
             <PageHeader
@@ -708,7 +709,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
@@ -768,7 +769,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   );
 
   return (
-    <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <PageHeader
           breadcrumbs="Team / Attendance"
@@ -977,6 +978,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           </div>
         </>
       )}
-    </main>
+    </Root>
   );
 }

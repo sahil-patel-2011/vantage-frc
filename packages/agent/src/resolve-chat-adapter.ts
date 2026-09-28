@@ -718,7 +718,7 @@ export async function resolveOrgChatAdapterWithProvenance(
   // qualify on any preferred device; every other feature qualifies only on a device
   // whose subscriber opted into coverage='everything' (0488) — that is the "run all of
   // Vantage on my Claude account" switch.
-  if (input.bridgeTransport && input.feature) {
+  if (input.bridgeTransport && input.feature && input.userId) {
     try {
       const devices = await client.query<{
         engines: Record<string, { available?: boolean } | undefined> | null;
@@ -733,9 +733,9 @@ export async function resolveOrgChatAdapterWithProvenance(
                 prefer_when_online AS "preferWhenOnline",
                 (to_jsonb(ai_bridge_devices) ->> 'coverage') AS coverage
            FROM ai_bridge_devices
-          WHERE org_id = $1::uuid AND revoked_at IS NULL
+          WHERE org_id = $1::uuid AND paired_by = $2::uuid AND revoked_at IS NULL
           ORDER BY last_heartbeat_at DESC NULLS LAST`,
-        [input.orgId],
+        [input.orgId, input.userId],
       );
       const interactive = BRIDGE_CHAT_FEATURES.has(input.feature);
       const covering = devices.rows.filter(
@@ -747,10 +747,10 @@ export async function resolveOrgChatAdapterWithProvenance(
           Date.now() - new Date(row.lastHeartbeatAt).getTime() < BRIDGE_ONLINE_WINDOW_MS,
       );
       const engines = online?.engines ?? {};
-      const engine = engines.claude?.available
-        ? ("claude" as const)
-        : engines.codex?.available
-          ? ("codex" as const)
+      const engine = engines.codex?.available
+        ? ("codex" as const)
+        : engines.claude?.available
+          ? ("claude" as const)
           : null;
       if (online && engine) {
         const adapter = new SubscriptionBridgeChatAdapter({

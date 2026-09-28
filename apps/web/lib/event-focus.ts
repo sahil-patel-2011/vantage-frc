@@ -38,7 +38,7 @@ export function buildEventFocus(
     actions: [
       { label: "Brief", href: view.next.links.briefing, emphasis: "primary" },
       { label: "Checklist", href: view.next.links.checklist, emphasis: "secondary" },
-      { label: "Event day", href: view.next.links.command, emphasis: "secondary" },
+      // No "Event day" here: it is a bottom-bar app and in the menu, one tap away already.
     ],
   };
 }

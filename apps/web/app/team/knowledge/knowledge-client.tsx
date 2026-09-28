@@ -82,6 +82,7 @@ function filterPages(pages: KnowledgePageSummary[], q: string): KnowledgePageSum
 
 
 export default function KnowledgeClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<KnowledgeWikiView | null>(null);
   const [error, setError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -372,7 +373,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         },
       );
       return (
-        <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
+        <Root className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
           {!embedded ? (
             <header className="kb-hero">
               <div>
@@ -394,11 +395,11 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
               </Button>
             ) : null}
           </EmptyState>
-        </main>
+        </Root>
       );
     }
     return (
-      <main className="module-page kb-page">
+      <Root className="module-page kb-page">
         {!embedded ? (
           <header className="kb-hero">
             <div>
@@ -409,13 +410,13 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         ) : null}
         <OfflineBanner feature="Playbook" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Loading…" aria-busy />
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page kb-page">
+      <Root className="module-page kb-page">
         {!embedded ? (
           <header className="kb-hero">
             <div>
@@ -436,12 +437,12 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   return (
-    <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <header className="kb-hero">
           <div>
@@ -943,6 +944,6 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
           </div>
         </section>
       ) : null}
-    </main>
+    </Root>
   );
 }

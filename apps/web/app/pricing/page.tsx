@@ -6,7 +6,7 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Cost — Vantage",
   description:
-    "Vantage is free for every FRC team, with every feature included. AI runs on your team's own key; a free Google Gemini key works. Access is invite-only while we bring teams on.",
+    "Vantage is free for FRC teams. Connect personal Codex or use a personal or team AI provider key. External provider charges are separate.",
   path: "/pricing",
 });
 
@@ -24,8 +24,12 @@ const STEPS = [
     body: "An owner or admin adds it under AI keys. Keys are encrypted and never shown again, not even to you.",
   },
   {
+    title: "Or connect personal Codex",
+    body: "Pair your own computer from Personal connections. Requests use your Codex account on that device; credentials stay there. Your provider's subscription, usage limits and charges apply separately.",
+  },
+  {
     title: "Set a limit",
-    body: "The provider bills your team directly. Set a monthly cap there, and a per-member cap in Vantage.",
+    body: "The provider bills the account that supplies the key. Use provider spending controls and Vantage's per-member limits for API requests.",
   },
 ] as const;
 
@@ -36,7 +40,7 @@ const QUESTIONS = [
   },
   {
     q: "Do we have to use AI?",
-    a: "No. Everything except the AI assistants works without a key. Add one whenever you want.",
+    a: "No. Vantage's team tools work without AI. If you want an assistant, connect your own Codex account or add a provider key.",
   },
   {
     q: "Can students use their own key?",
@@ -55,10 +59,10 @@ export default function PricingPage() {
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
           <p className="lux-kicker">What it costs</p>
-          <h1>Free for every team. Bring your own AI key.</h1>
+          <h1>Free for every team. Connect your own AI.</h1>
           <p>
-            Every feature is included, with no plans and no card. The only thing that can cost money is AI, and that runs
-            on your team&rsquo;s own key, so you see the bill and you set the limit.
+            Vantage has no subscription charge and requires no card. Optional AI uses a personal or team provider key,
+            or your own paired Codex account. External providers set their own prices and usage limits.
           </p>
           <MarketingRouteActions companion={{ href: "#ai-keys", label: "How AI keys work" }} />
         </section>

@@ -15,7 +15,7 @@ const LEAVES = [
 
 for (const leaf of LEAVES) {
   test(`${leaf.path} paints a heading instead of leftover VANTAGE chrome`, async ({ page }) => {
-    await page.goto(leaf.path);
+    await page.goto(leaf.path, { waitUntil: "domcontentloaded" });
     await expect(page.locator("body")).not.toContainText("Application error");
     await expect(page.getByRole("heading", { level: 1 }).filter({ hasText: leaf.heading })).toBeVisible({
       timeout: 20_000,

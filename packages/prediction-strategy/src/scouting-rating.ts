@@ -37,6 +37,8 @@ import { matchSdFromDistribution } from "./score-uncertainty";
 export type ScoutedMatchRow = {
   teamKey: string;
   matchKey: string;
+  /** Whole-match points; null means the total was not observed or cannot be computed. */
+  total?: number | null;
   auto?: number | null;
   teleop?: number | null;
   endgame?: number | null;
@@ -46,6 +48,9 @@ export type ScoutedMatchRow = {
   defense?: boolean;
   /** Recorded as completing the season's endgame climb. */
   climbed?: boolean;
+  /** Retained disagreement evidence after combining reports for a robot and match. */
+  reportCount?: number;
+  totalRange?: [number, number] | null;
 };
 
 export type ScoutingConfidence = "low" | "medium" | "high";
@@ -57,6 +62,8 @@ export type ScoutedTeamRating = {
   meanAuto: number;
   meanTeleop: number;
   meanEndgame: number;
+  /** Each phase uses only matches that actually recorded that phase. */
+  phaseSamples?: { auto: number; teleop: number; endgame: number };
   /** Mean total per match, before shrinkage. */
   meanTotal: number;
   /** Mean total pulled toward the field, by how thin the evidence is. */
@@ -124,7 +131,7 @@ function sampleNoteFor(matches: number, disabled: number): string {
   const plural = matches === 1 ? "match" : "matches";
   const base = `From your scouting: ${matches} ${plural}`;
   if (disabled === 0) return `${base}.`;
-  const deadClause = disabled === 1 ? "one of them dead on the field" : `${disabled} of them dead on the field`;
+  const deadClause = disabled === 1 ? "a reported breakdown in one" : `reported breakdowns in ${disabled}`;
   return `${base}, ${deadClause} — that is in the average.`;
 }
 
@@ -136,19 +143,57 @@ function sampleNoteFor(matches: number, disabled: number): string {
  * it breaks is one of the most useful things scouting knows about it.
  */
 function rowHasSignal(row: ScoutedMatchRow): boolean {
-  if (row.disabled) return true;
-  return row.auto != null || row.teleop != null || row.endgame != null;
+  return scoutedMatchTotal(row) != null;
 }
 
-function phaseTotal(row: ScoutedMatchRow): number {
-  return (row.auto ?? 0) + (row.teleop ?? 0) + (row.endgame ?? 0);
+export function scoutedMatchTotal(row: ScoutedMatchRow): number | null {
+  if (row.total !== undefined) return finite(row.total) ? row.total : null;
+  const parts = [row.auto, row.teleop, row.endgame].filter(finite);
+  return parts.length ? parts.reduce((sum, value) => sum + value, 0) : null;
+}
+
+function finite(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+/** Combine reports before computing event averages; retain their score range. */
+export function combineScoutedMatchRows(rows: readonly ScoutedMatchRow[]): ScoutedMatchRow[] {
+  const groups = new Map<string, ScoutedMatchRow[]>();
+  for (const row of rows) {
+    if (!row.teamKey) continue;
+    const key = row.matchKey ? `${row.teamKey}|${row.matchKey}` : `${row.teamKey}|unknown:${groups.size}`;
+    const list = groups.get(key) ?? [];
+    list.push(row); groups.set(key, list);
+  }
+  const observedMean = (values: (number | null | undefined)[]) => {
+    const observed = values.filter(finite);
+    return observed.length ? mean(observed) : null;
+  };
+  return [...groups.values()].map(list => {
+    const first = list[0]!;
+    if (list.length === 1) return { ...first };
+    const totals = list.map(scoutedMatchTotal).filter(finite);
+    const climbs = list.map(row => row.climbed).filter(value => typeof value === "boolean");
+    return {
+      teamKey: first.teamKey, matchKey: first.matchKey,
+      total: observedMean(totals),
+      auto: observedMean(list.map(row => row.auto)),
+      teleop: observedMean(list.map(row => row.teleop)),
+      endgame: observedMean(list.map(row => row.endgame)),
+      disabled: list.filter(row => row.disabled).length * 2 >= list.length,
+      defense: list.some(row => row.defense),
+      ...(climbs.length ? { climbed: climbs.some(Boolean) } : {}),
+      reportCount: list.reduce((sum, row) => sum + (row.reportCount ?? 1), 0),
+      totalRange: totals.length ? [Math.min(...totals), Math.max(...totals)] : null,
+    };
+  });
 }
 
 /** Fewer rows than this and the field median is not a fair yardstick for "impossible". */
 export const MIN_ROWS_FOR_PLAUSIBILITY = 12;
 
 function rowTotal(row: ScoutedMatchRow): number {
-  return row.disabled ? 0 : (row.auto ?? 0) + (row.teleop ?? 0) + (row.endgame ?? 0);
+  return scoutedMatchTotal(row) ?? 0;
 }
 
 /**
@@ -174,6 +219,7 @@ export function implausibleScoutRows(rows: readonly ScoutedMatchRow[]): ScoutedM
  * (implausibleScoutRows) are left out.
  */
 export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTeamRating[] {
+  rows = combineScoutedMatchRows(rows);
   const implausible = new Set(implausibleScoutRows(rows));
   const byTeam = new Map<string, ScoutedMatchRow[]>();
   for (const row of rows) {
@@ -214,10 +260,10 @@ export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTe
     let defense = 0;
 
     for (const row of list) {
-      autos.push(row.auto ?? 0);
-      teleops.push(row.teleop ?? 0);
-      endgames.push(row.endgame ?? 0);
-      totals.push(row.disabled ? 0 : phaseTotal(row));
+      if (finite(row.auto)) autos.push(row.auto);
+      if (finite(row.teleop)) teleops.push(row.teleop);
+      if (finite(row.endgame)) endgames.push(row.endgame);
+      totals.push(scoutedMatchTotal(row)!);
       if (row.climbed != null) {
         climbRecorded += 1;
         if (row.climbed) climbs += 1;
@@ -246,6 +292,7 @@ export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTe
       meanAuto: mean(stat.autos),
       meanTeleop: mean(stat.teleops),
       meanEndgame: mean(stat.endgames),
+      phaseSamples: { auto: stat.autos.length, teleop: stat.teleops.length, endgame: stat.endgames.length },
       meanTotal: mean(stat.totals),
       shrunkTotal: shrunk.get(teamKey)?.shrunk ?? mean(stat.totals),
       climbRate: stat.climbRecorded > 0 ? stat.climbs / stat.climbRecorded : null,

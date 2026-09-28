@@ -21,8 +21,8 @@ const SURFACES = [
   },
   {
     path: "/team/ai-bridge",
-    heading: "Claude Code",
-    crumb: "Team / Claude Code",
+    heading: "Personal Codex",
+    crumb: "Team / Personal Codex",
     ready: "Pair this computer",
   },
 ] as const;

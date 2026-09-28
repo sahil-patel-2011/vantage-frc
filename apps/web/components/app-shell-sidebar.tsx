@@ -1,13 +1,13 @@
 "use client";
 
 import { Icon } from "./icon";
-import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../lib/nav/product-nav";
+import { findNavMatch, withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../lib/nav/product-nav";
 
 /**
  * Persistent left rail for wide screens.
  *
  * The drawer/⌘K overlay stays the way you *search* the product; this rail is
- * the way you *move* between the six pillars without opening anything. It is
+ * the way you move between the five workspaces without opening anything. It is
  * rendered on every page and hidden below 1024px by CSS, so narrow screens keep
  * the island + drawer they already had.
  */
@@ -48,6 +48,7 @@ export function AppShellSidebar({
   islandTabs: IslandTabDefinition[];
   onEditApps: () => void;
 }) {
+  const activeWorkspace = findNavMatch(pathname)?.group.label;
   const rows = visibleNavGroups
     .flatMap((group) => (group.items[0] ? [group.items[0]] : []))
     .filter((item) => navHrefAllowed(item.href));
@@ -60,7 +61,7 @@ export function AppShellSidebar({
   return (
     <aside className="vrail" aria-label="Primary">
       <div className="vrail-head">
-        <span className="vrail-mark">Vantage</span>
+        <span className="vrail-mark"><img src="/vantage-mark.svg" alt="" width={28} height={28} />Vantage</span>
         <span className="vrail-org">{orgLabel}</span>
       </div>
 
@@ -70,12 +71,13 @@ export function AppShellSidebar({
         {shortcutHint ? <kbd>{shortcutHint}</kbd> : null}
       </button>
 
-      <nav className="vrail-nav" aria-label="Pillars">
+      <nav className="vrail-nav" aria-label="Workspaces">
+        <span className="vrail-label">Workspace</span>
         {rows.map((item) => (
           <a
             key={item.href}
             href={withOrgHref(item.href, orgId)}
-            aria-current={isCurrent(item.href, pathname, pathSearch) ? "page" : undefined}
+            aria-current={activeWorkspace === item.label ? "page" : undefined}
           >
             <Icon name={item.icon} />
             <span>{item.label}</span>
@@ -83,8 +85,8 @@ export function AppShellSidebar({
         ))}
       </nav>
 
-      <nav className="vrail-nav vrail-quick" aria-label="Your apps">
-        <span className="vrail-label">Your apps</span>
+      <nav className="vrail-nav vrail-quick" aria-label="Your shortcuts">
+        <span className="vrail-label">Your shortcuts</span>
         {pinned.map((item) => (
           <a
             key={item.href}
@@ -97,7 +99,7 @@ export function AppShellSidebar({
           </a>
         ))}
         <button className="vrail-edit" type="button" data-tour="island" onClick={onEditApps}>
-          Edit apps
+          Customize shortcuts
         </button>
       </nav>
 

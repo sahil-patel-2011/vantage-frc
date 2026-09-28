@@ -9,6 +9,7 @@ export type OfflineSnapshotState<T> = {
   cachedAt: string | null;
   offline: boolean;
   loading: boolean;
+  cacheError: string | null;
   refresh: () => Promise<void>;
 };
 
@@ -26,6 +27,7 @@ export function useOfflineSnapshot<T>(
   const [data, setData] = useState<T | null>(null);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cacheError, setCacheError] = useState<string | null>(null);
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
 
@@ -38,9 +40,14 @@ export function useOfflineSnapshot<T>(
       try {
         const next = await fetcherRef.current();
         setData(next);
-        const at = new Date().toISOString();
-        setCachedAt(at);
-        await putFeatureSnapshot(feature, orgId, next, variant);
+        try {
+          await putFeatureSnapshot(feature, orgId, next, variant);
+          setCachedAt(new Date().toISOString());
+          setCacheError(null);
+        } catch (error) {
+          setCachedAt(null);
+          setCacheError(error instanceof Error ? error.message : "Could not update the offline copy.");
+        }
         setLoading(false);
         return;
       } catch {
@@ -59,7 +66,7 @@ export function useOfflineSnapshot<T>(
     void refresh();
   }, [refresh]);
 
-  return { data, cachedAt, offline: !online, loading, refresh };
+  return { data, cachedAt, offline: !online, loading, cacheError, refresh };
 }
 
 export function offlineBannerLabel(cachedAt: string | null, now = new Date()): string {

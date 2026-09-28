@@ -126,7 +126,7 @@ describe("offline file bytes", () => {
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.reason).toMatch(/200 MB/);
+    expect(result.reason).toMatch(/2 GB/);
   });
 
   it("formats usage for the Files banner", () => {

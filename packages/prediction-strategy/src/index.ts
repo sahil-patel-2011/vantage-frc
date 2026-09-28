@@ -68,6 +68,8 @@ export {
   canStandAlone,
   ratingsByTeam,
   ratingsFromScouting,
+  combineScoutedMatchRows,
+  scoutedMatchTotal,
 } from "./scouting-rating";
 export type {
   ScoutedMatchRow,

@@ -1,0 +1,163 @@
+{
+  "journey": "New user signup, email verification, age/profile/policy onboarding, and Home",
+  "environment": "Local development server with isolated vantage_release_test PostgreSQL database",
+  "baseUrl": "http://127.0.0.1:3417",
+  "actor": {
+    "email": "journey-signup-20260926@example.test",
+    "dateOfBirth": "2000-01-01",
+    "synthetic": true
+  },
+  "status": "local_signup_profile_and_consent_passed_team_claim_handed_off",
+  "observedCapabilities": {
+    "waitlistOnly": true,
+    "publicSignup": false,
+    "databaseConfigured": true,
+    "emailOtpAvailable": true,
+    "email2faEnforced": false,
+    "passwordSignInAvailable": true,
+    "googleSignInAvailable": false
+  },
+  "capabilitiesEvidence": "Read-only GET /api/auth/status returned these baseline capability values before the explicitly isolated local acceptance mode was introduced on 2026-09-26.",
+  "productionPrerequisiteBlocker": "Production self-service signup remains closed pending production acceptance. Neither production signup configuration nor a production verification flag was changed. The initial local closed-gate rejection was independently verified before the development-only local acceptance continuation.",
+  "localAcceptanceContinuation": {
+    "environment": "Development only; loopback origins, all database URLs point to dedicated local vantage_release_test:55439, no hosted Vercel runtime",
+    "observedCapabilities": {
+      "waitlistOnly": false,
+      "publicSignup": true,
+      "localAcceptanceSignup": true,
+      "databaseConfigured": true,
+      "emailOtpAvailable": true,
+      "email2faEnforced": false,
+      "passwordSignInAvailable": true,
+      "googleSignInAvailable": false
+    },
+    "visibleBanner": "Local acceptance test: accounts use an isolated test database. Production signup remains closed.",
+    "actorProfile": {
+      "firstName": "Alex",
+      "lastName": "Journey",
+      "teamRole": "Mentor",
+      "dateOfBirth": "2000-01-01",
+      "gender": "Prefer not to say",
+      "teamNumber": 99991,
+      "teamReference": "Vantage Journey Test Team (synthetic local fixture)",
+      "focus": "Competition"
+    },
+    "steps": [
+      {
+        "step": "Actor isolation",
+        "result": "Passed",
+        "observation": "Signed out of the preceding scout actor through the real Account menu and confirmed public marketing returned."
+      },
+      {
+        "step": "New-user account and email verification",
+        "result": "Passed locally",
+        "observation": "Started from marketing Sign in, verified the explicit local acceptance banner, entered the unique synthetic address, requested an OTP through the UI, read the correctly configured dev-only OTP afterward, and submitted it through the code textbox. The genuine new account reached onboarding. Production email delivery is not covered."
+      },
+      {
+        "step": "Adult profile",
+        "result": "Passed locally",
+        "observation": "Filled the synthetic profile and saved it through Continue. The browser's native date control required month/day/year keyboard segments to record 2000-01-01; read-only DOM validation confirmed the correct value. Step 2 then appeared."
+      },
+      {
+        "step": "Team choice",
+        "result": "Passed locally",
+        "observation": "Entered the supplied synthetic reference number 99991, retained Competition focus, and saved with Continue. The final summary displayed FRC 99991 and Mentor."
+      },
+      {
+        "step": "Separate policy consent",
+        "result": "Passed locally for the synthetic test actor",
+        "observation": "Submit access request was disabled without consent and stayed disabled with only Terms checked, displaying the Privacy Policy requirement. Checking Privacy separately enabled submission. This records test UI behavior and is not acceptance on behalf of a real person."
+      },
+      {
+        "step": "Complete profile and claim handoff",
+        "result": "Passed locally",
+        "observation": "Selected Submit access request through the UI. The completed state showed 'Nobody has set up Team 99991 on Vantage', 'Profile saved', and Claim this team linking to /claim. No team organization or membership was manufactured. Stopped before claim and handed the authenticated browser tab to the team-creation agent."
+      },
+      {
+        "step": "Client console",
+        "result": "No captured errors or warnings in the bounded continuation",
+        "observation": "Browser dev.logs for error and warn levels returned an empty array after completion."
+      }
+    ],
+    "handoff": {
+      "browser": "Chrome 2",
+      "tabId": "781730963",
+      "url": "http://127.0.0.1:3417/onboarding?next=%2Fdashboard",
+      "visibleAction": "Claim this team",
+      "destination": "/claim",
+      "signedInActor": "journey-signup-20260926@example.test",
+      "claimPerformedBySignupAgent": false
+    },
+    "uiIssue": "Even while publicSignup=true in the explicit local test mode, sign-in/code copy still says only invited addresses receive codes and sends new teams to the waitlist. The local mode banner is accurate; capability-derived main copy remains a release follow-up."
+  },
+  "plannedUiSteps": [
+    "Open the marketing site and locate its signup or access entry point.",
+    "Enter the unique synthetic email through the actual sign-in interface.",
+    "After the normal UI OTP request, read only the dev OTP using scripts/dev-otp.mjs and submit it through the UI.",
+    "Record the actual rejection or continue through age/profile and separate policy consent if the existing authorized flow permits it.",
+    "Verify actual navigation to Home only if the user has legitimately completed signup and workspace access."
+  ],
+  "sourceChecks": [
+    {
+      "file": "packages/core/src/public-signup.ts",
+      "finding": "The readiness and explicit signup switches both must be satisfied; no local test override exists."
+    },
+    {
+      "file": "packages/core/src/index.ts",
+      "finding": "Uninvited OTP requests return success while suppressing delivery. The user-create hook separately rejects unauthorized new addresses with FORBIDDEN and WAITLIST_ONLY. A code-sent screen is not signup success."
+    },
+    {
+      "file": "apps/web/app/api/onboarding/route.ts",
+      "finding": "Completion requires an authenticated session, date of birth, profile fields, and separate true Terms and Privacy consent values."
+    },
+    {
+      "file": "packages/core/src/onboarding.ts",
+      "finding": "Profile validation calls assertMinimumAge; the minimum is 13. Home access additionally requires workspace membership or platform administration."
+    }
+  ],
+  "browserEvidence": [
+    {
+      "step": "Actor isolation",
+      "result": "Passed",
+      "observation": "Opened the normal Account menu and selected Sign out for the previous owner@example.test actor. The browser returned to public marketing Home. No owner's session was reused."
+    },
+    {
+      "step": "Marketing account entry",
+      "result": "Passed for the current closed release",
+      "observation": "Public Home displayed Join the waitlist, Already invited? Sign in, and the explicit notice that joining does not create an account. Selected its Sign in link."
+    },
+    {
+      "step": "Normal email code request",
+      "result": "Passed",
+      "observation": "Entered the synthetic email and clicked Email me a sign-in code. The UI displayed Check your email and 'If journey-signup-20260926@example.test is on a Vantage team, a 6-digit code is on its way.' This conditional screen was not treated as successful signup or actual delivered email."
+    },
+    {
+      "step": "Actual new-user signup rejection",
+      "result": "Closed-release gate passed; complete self-service signup blocked",
+      "observation": "Read the dev OTP only after the normal UI request with node --env-file=apps/web/.env.development.local scripts/dev-otp.mjs. Submitted it through the 6-digit sign-in code textbox. The real result was the heading 'You’re not on a team yet', with invite-only explanatory text and Join the waitlist / Use a different email actions. No OTP value is retained in this evidence."
+    },
+    {
+      "step": "No onboarding access after rejection",
+      "result": "Passed",
+      "observation": "Navigated to the real /onboarding route after the rejection. It redirected to /signin?next=%2Fonboarding and displayed the unauthenticated Sign in form."
+    },
+    {
+      "step": "Client error inspection",
+      "result": "No captured console errors or warnings in this bounded journey",
+      "observation": "Browser dev.logs with error and warn levels returned an empty array after the actual rejection. This is not a whole-app clean-console claim."
+    }
+  ],
+  "notVerified": [
+    "Successful new-user self-service signup in production; local acceptance signup passed",
+    "Email delivery and verification in production",
+    "Under-13 and exact age-boundary browser rejection; the synthetic adult profile passed",
+    "Redirect from new-user onboarding to Home"
+  ],
+  "safety": {
+    "realRecipientsUsed": false,
+    "authSessionManufactured": false,
+    "databaseModifiedDirectly": false,
+    "productionGateChanged": false,
+    "productionAcceptanceClaimed": false
+  }
+}

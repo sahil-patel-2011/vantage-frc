@@ -9,6 +9,12 @@ import {
 } from "./account-links";
 
 describe("marketing account links", () => {
+  it("offers account creation only when the live signup gate is open, retaining member links", () => {
+    for (const links of [marketingHeaderLinks, marketingHeroLinks]) {
+      expect(links(false, true)).toEqual([{ href: "/signin", label: "Create your account", primary: true }]);
+      expect(links(true, true)).toEqual([{ href: "/dashboard", label: "Open your team", primary: true }]);
+    }
+  });
   it("sends a guest to sign in and the waitlist", () => {
     expect(marketingHeaderLinks(false).map((link) => link.label)).toEqual([
       "Sign in",

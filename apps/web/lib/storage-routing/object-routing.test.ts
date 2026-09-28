@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { MEDIA_ENABLED } from "../media-availability";
 import { decideStorageRoute, planFiles } from "./decide";
 import { defaultRoutingPolicy } from "./policy";
 import { objectStoreStatus, driveObjectKey, presignObjectGet } from "./object-store";
@@ -27,7 +26,7 @@ describe("object storage as a third routing destination", () => {
   it("is never chosen when the caller does not pass it (old callers unchanged)", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
-      contentClass: "video",
+      contentClass: "document",
       policy,
       node: null,
       cloudCapBytes: CLOUD_CAP,
@@ -35,7 +34,7 @@ describe("object storage as a third routing destination", () => {
     expect(decision.destination).toBe("refused");
   });
 
-  it.skipIf(!MEDIA_ENABLED)("still prefers the team's own node when the node can take the file", () => {
+  it("rejects video even when an old node is online and object storage is configured", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
       contentClass: "video",
@@ -44,13 +43,14 @@ describe("object storage as a third routing destination", () => {
       cloudCapBytes: CLOUD_CAP,
       objectStore: configured,
     });
-    expect(decision.destination).toBe("node");
+    expect(decision.destination).toBe("refused");
+    expect(decision.reason).toContain("external match-video link");
   });
 
-  it.skipIf(!MEDIA_ENABLED)("takes a big file object storage can hold but nothing else can", () => {
+  it("takes a big file object storage can hold but nothing else can", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
-      contentClass: "video",
+      contentClass: "document",
       policy,
       node: null,
       cloudCapBytes: CLOUD_CAP,
@@ -89,10 +89,10 @@ describe("object storage as a third routing destination", () => {
     expect(decision.destination).toBe("cloud");
   });
 
-  it.skipIf(!MEDIA_ENABLED)("says WHY object storage was unavailable when it refuses", () => {
+  it("says WHY object storage was unavailable when it refuses", () => {
     const decision = decideStorageRoute({
       byteSize: 300 * 1024 * 1024,
-      contentClass: "video",
+      contentClass: "document",
       policy,
       node: null,
       cloudCapBytes: CLOUD_CAP,
@@ -102,11 +102,11 @@ describe("object storage as a third routing destination", () => {
     expect(decision.reason).toContain("Object storage is not configured");
   });
 
-  it.skipIf(!MEDIA_ENABLED)("plans a whole selection with the object destination in play", () => {
+  it("plans a whole selection with the object destination in play", () => {
     const entries = planFiles(
       [
         { name: "notes.txt", contentType: "text/plain", byteSize: 900 },
-        { name: "match.mp4", contentType: "video/mp4", byteSize: 900 * 1024 * 1024 },
+        { name: "manual.pdf", contentType: "application/pdf", byteSize: 900 * 1024 * 1024 },
       ],
       policy,
       null,

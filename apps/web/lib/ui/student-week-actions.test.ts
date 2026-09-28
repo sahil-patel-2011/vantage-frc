@@ -61,7 +61,9 @@ describe("student-week action path", () => {
     expect(ready).toContain("Save on this phone");
     expect(ready).not.toMatch(/The Blue Alliance|Connect TBA/);
     const client = readFileSync(join(WEB, "app/scouting/scouting-client.tsx"), "utf8");
-    expect(client).toMatch(/putFeatureSnapshot\("scouting"/);
+    expect(client).toMatch(/persistScoutingSnapshot\(orgId, (?:fresh|data)\)/);
+    const persistence = readFileSync(join(WEB, "lib/scouting/snapshot.ts"), "utf8");
+    expect(persistence).toMatch(/putFeatureSnapshot\("scouting"/);
     expect(client).toMatch(/AbortSignal\.timeout\(FEATURE_API_TIMEOUT_MS\)/);
     expect(client).toMatch(/response\.status === 401 \|\| response\.status === 403/);
   });

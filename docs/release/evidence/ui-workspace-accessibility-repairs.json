@@ -1,0 +1,196 @@
+{
+  "scope": "Actual restricted scratch owner and feature data; diagnostics and repairs remain distinct from full production acceptance.",
+  "originalWorkspaceScan": {
+    "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+    "states": 5,
+    "violations": [
+      {
+        "id": "landmark-main-is-top-level",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".tc-page"
+            ],
+            "summary": "Fix any of the following:\n  The main landmark is contained in another landmark."
+          }
+        ]
+      },
+      {
+        "id": "landmark-no-duplicate-main",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".product-hub"
+            ],
+            "summary": "Fix any of the following:\n  Document has more than one main landmark"
+          }
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".product-hub"
+            ],
+            "summary": "Fix any of the following:\n  The landmark must have a unique aria-label, aria-labelledby, or title to make landmarks distinguishable"
+          }
+        ]
+      },
+      {
+        "id": "landmark-main-is-top-level",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".kick-page"
+            ],
+            "summary": "Fix any of the following:\n  The main landmark is contained in another landmark."
+          }
+        ]
+      },
+      {
+        "id": "landmark-no-duplicate-main",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".product-hub"
+            ],
+            "summary": "Fix any of the following:\n  Document has more than one main landmark"
+          }
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".product-hub"
+            ],
+            "summary": "Fix any of the following:\n  The landmark must have a unique aria-label, aria-labelledby, or title to make landmarks distinguishable"
+          }
+        ]
+      },
+      {
+        "id": "aria-required-children",
+        "impact": "critical",
+        "nodes": [
+          {
+            "target": [
+              ".soft-tab-bar"
+            ],
+            "summary": "Fix any of the following:\n  Element has children which are not allowed: button[aria-haspopup]"
+          }
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          {
+            "target": [
+              "button[aria-label=\"Scout team 2481, red 2\"] > small"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.39 (foreground color: #ffffff, background color: #d86a67, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          {
+            "target": [
+              "button[aria-label=\"Scout team 3005, red 3\"] > small"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.39 (foreground color: #ffffff, background color: #d86a67, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          {
+            "target": [
+              "button[aria-label=\"Scout team 1323, blue 1\"] > small"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.41 (foreground color: #ffffff, background color: #5e8cd1, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          {
+            "target": [
+              "button[aria-label=\"Scout team 6925, blue 2\"] > small"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.41 (foreground color: #ffffff, background color: #5e8cd1, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          {
+            "target": [
+              "button[aria-label=\"Scout team 7457, blue 3\"] > small"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.41 (foreground color: #ffffff, background color: #5e8cd1, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "scope": "Read-only actual scratch owner, production build. Default axe rules, no exclusions. Does not establish full workflow or assistive-technology acceptance."
+  },
+  "subsequentHeadingScan": {
+    "buildId": "PQMq_CPJAXeUAnABn80Yv",
+    "states": 20,
+    "violations": [
+      {
+        "state": "/team-390",
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": [
+          {
+            "target": [
+              ".tc-day:nth-child(1) > h3"
+            ],
+            "summary": "Fix any of the following:\n  Heading order invalid"
+          }
+        ]
+      }
+    ],
+    "scope": "Actual scratch owner, production build, loopback only. Default complete axe rule set; no exclusions. Automatic checks are not full WCAG conformance."
+  },
+  "repairs": [
+    "Embedded Calendar, Work and Kickoff use sections within the single workspace main landmark.",
+    "Ordinary help and bulk actions are siblings of the tablist.",
+    "Scout selection and Done states keep readable tile text without applying opacity to the entire tile.",
+    "Calendar day headings follow the workspace heading at level two.",
+    "Embedded Build shows the existing season selector as a visible 48px control without duplicating it."
+  ],
+  "readinessFailure": {
+    "testsFailed": 2,
+    "log": "vantage-ui-accessibility-data-ready.log",
+    "reason": "Build season selector existed in a hidden embedded page header; retaining a visible-data readiness assertion caught the inaccessible control."
+  },
+  "repairedReadyStates": {
+    "testsPassed": 2,
+    "states": 20,
+    "log": "vantage-ui-accessibility-data-ready-retry.log",
+    "environment": "Next.js development, real restricted scratch authentication and actual feature data",
+    "axe": "Default complete rule set, no rule or region exclusions"
+  },
+  "workspaceRegression": {
+    "testsPassed": 21,
+    "log": "vantage-ui-workspace-regressions.log",
+    "scope": "Calendar, single-heading journeys, scouting and workspace accessibility before the final explicit data-readiness assertions."
+  },
+  "boundedBrowserHarness": {
+    "shard": "1/1",
+    "maxFiles": 1,
+    "planned": 2,
+    "reported": 2,
+    "groups": 2,
+    "exactCoverage": true,
+    "result": "passed",
+    "stats": {
+      "startTime": "2026-09-27T03:50:53.815Z",
+      "duration": 30075.98095703125,
+      "expected": 2,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "unitTestsPassed": 9,
+    "unitScope": "Two coverage-helper cases plus seven origin/environment guards",
+    "liveLog": "vantage-browser-coverage-harness-live.log",
+    "execution": "Two whole-file groups each start and stop a fresh Playwright-managed development server, then merge reports; planned and actual case identities must match exactly.",
+    "limitations": "The two-case local proof is not a completed full remote CI run."
+  }
+}

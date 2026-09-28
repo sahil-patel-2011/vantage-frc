@@ -29,6 +29,51 @@ describe("matchKeyLabel", () => {
 });
 
 describe("buildScoutBreakdown", () => {
+  it("summarizes lap timers by match, keeps empty averages unknown, and leaves raw laps unchanged", () => {
+    const fields = [{ key: "cycles", label: "Cycle timing", type: "timer" as const, config: { mode: "lap" } }];
+    const source = [
+      { matchKey: "x_qm1", payload: { cycles: [10, 20] }, fields },
+      { matchKey: "x_qm1", payload: { cycles: [20, 30] }, fields },
+      { matchKey: "x_qm2", payload: { cycles: [] }, fields },
+      { matchKey: "x_qm3", payload: {}, fields },
+      { matchKey: "x_qm4", payload: { cycles: [-1, 4] }, fields },
+    ];
+    const result = buildScoutBreakdown(source);
+    expect(result.fields.find(field => field.key === "cycles.averageLapSeconds")).toMatchObject({
+      label: "Cycle timing · Average lap", mean: 20, evidence: { unit: "seconds", answered: 1, missing: 3, disagreements: 1 },
+    });
+    expect(result.fields.find(field => field.key === "cycles.totalSeconds")).toMatchObject({ mean: 20, evidence: { answered: 2, missing: 2 } });
+    expect(result.fields.find(field => field.key === "cycles.lapCount")).toMatchObject({ mean: 1, evidence: { unit: "laps" } });
+    expect(source[0]!.payload.cycles).toEqual([10, 20]);
+  });
+  it("exposes numeric evidence without counting missing values as zero or duplicate reports as matches", () => {
+    const result = buildScoutBreakdown([
+      { matchKey: "x_qm1", payload: { duration: 0 }, fields: [{ key: "duration", label: "Defense time", type: "timer", helpText: "Time spent defending." }] },
+      { matchKey: "x_qm1", payload: { duration: 4 } },
+      { matchKey: "x_qm2", payload: { duration: 10 } },
+      { matchKey: "x_qm3", payload: {} },
+    ]);
+    const field = result.fields[0]!;
+    expect(field).toMatchObject({ label: "Defense time", mean: 6, evidence: { unit: "seconds", definition: "Time spent defending.", answered: 2, missing: 1, disagreements: 1 } });
+    expect(field.evidence.samples).toEqual([
+      { match: "Q1", matchKey: "x_qm1", value: 2, reports: [0,4] },
+      { match: "Q2", matchKey: "x_qm2", value: 10, reports: [10] },
+      { match: "Q3", matchKey: "x_qm3", value: null, reports: [] },
+    ]);
+  });
+  it("keeps tied selections out of rates and exposes their conflicting answers", () => {
+    const result = buildScoutBreakdown([
+      { matchKey: "x_qm1", payload: { climbed: true } },
+      { matchKey: "x_qm1", payload: { climbed: false } },
+      { matchKey: "x_qm2", payload: { climbed: false } },
+    ]);
+    expect(result.fields[0]).toMatchObject({ kind: "rate", rate: 0, total: 1, evidence: { answered: 1, missing: 1, disagreements: 1 } });
+    expect(result.fields[0]!.evidence.samples[0]).toMatchObject({ value: null, reports: [true,false] });
+  });
+  it("does not turn field positions into average scoring numbers", () => {
+    const result = buildScoutBreakdown([{ matchKey: "x_qm1", payload: { position: 12 }, fields: [{ key: "position", label: "Start", type: "field_position" }] }]);
+    expect(result.fields).toEqual([]);
+  });
   const breakdown = buildScoutBreakdown(rows);
 
   it("reads the fields the form actually collects, in match order", () => {

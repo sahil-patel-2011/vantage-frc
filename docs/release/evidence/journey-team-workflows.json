@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "journey": "Invited mentor: Team work, calendar, people, logistics, packing, and saved Home",
+  "checkedAt": "2026-09-26T22:19:02Z",
+  "environment": "Local development server with isolated vantage_release_test PostgreSQL database",
+  "baseUrl": "http://127.0.0.1:3417",
+  "account": "Controlled Morgan Journey fixture, journey-mentor-20260926@example.test",
+  "organizationId": "6925a000-0000-4000-8000-000000000001",
+  "browser": "Chrome visible UI through cua_repl, own tab 781731031",
+  "status": "partial_with_confirmed_defects",
+  "productionAcceptance": false,
+  "identityChanged": false,
+  "recordsPreserved": true,
+  "steps": [
+    { "action": "Create team todo", "result": "Passed", "observed": "Journey 20260926 - inspect pit checklist created with notes, Morgan assignee, and requested due date 2026-09-27." },
+    { "action": "Update task ownership and status", "result": "Passed", "observed": "Start changed To do to Doing. Reassigned Morgan to Riley. Mark done changed to Done. Reload preserved Done and Riley. Reopen and reload preserved To do and Riley." },
+    { "action": "Open todo deep link", "result": "Passed", "observed": "Legacy /todos link redirected to Team Work retaining todoId and orgId." },
+    { "action": "Check unified work totals", "result": "Failed until refresh", "observed": "Open summary remained 0 after creation and status updates; page reload correctly showed Open 1 for the reopened todo." },
+    { "action": "Inspect todo history and dependencies", "result": "Completion gap", "observed": "Team Work and deep-linked todo expose status, assignee, due date and notes, but no history or dependency controls. Separate build board remains linked as owning board." },
+    { "action": "Create and update calendar event", "result": "Passed", "observed": "Journey 20260926 - pit preparation review created for Sep26 19:00, roll call unchecked. I'm going RSVP saved; location updated to Synthetic test pit - acceptance only. Event remained on calendar and Home My day." },
+    { "action": "Open People roster", "result": "Passed", "observed": "Four fixture members shown; Morgan correctly identified as Mentor or coach in roster." },
+    { "action": "Create attendance event and mark Morgan present", "result": "Partial", "observed": "Journey 20260926 - synthetic attendance saved. Present count 1, credited hours 2, season presence 1 event/2h. Attendance record incorrectly labels Morgan Student although roster says Mentor or coach." },
+    { "action": "Create logistics trip", "result": "Partial", "observed": "Journey 20260926 - synthetic local practice trip saved for Sep27 at Acceptance test shop. Browser throws null reset error after successful save." },
+    { "action": "Add travel leg", "result": "Partial", "observed": "Journey 20260926 - leave test shop saved for Sep27 08:00 with Synthetic shop entrance meeting point. Appeared in Logistics next trip and Team Calendar Coming up. Null reset error repeats after successful save." },
+    { "action": "Add and complete shared trip checklist item", "result": "Partial", "observed": "Journey 20260926 - verify synthetic packing manifest created for Everyone and completed to 1/1, 100%. Null reset error repeats on item creation." },
+    { "action": "Create packing list and fulfill request", "result": "Passed", "observed": "Journey 20260926 - synthetic load-out seeded 111 items. Synthetic inspection card requested, accepted into master list, marked packed. Reload preserved 1/112 packed, request queue 0 pending, and Morgan/time attribution on checked item." },
+    { "action": "Edit and save personal Home board", "result": "Passed", "observed": "Added Team todos widget through Edit Home. Home saved notice shown. Reload retained widget with actual todo deep link, Riley assignee, 1 open/0 mine/0 overdue; calendar event remained in My day." }
+  ],
+  "recordReferences": {
+    "todoId": "1c46047e-384b-4230-a31d-17aae67fc256",
+    "dashboardBoardId": "667db89b-88a0-4f4e-b848-75dfc6a057dd",
+    "calendarEvent": "Journey 20260926 - pit preparation review",
+    "attendanceEvent": "Journey 20260926 - synthetic attendance",
+    "trip": "Journey 20260926 - synthetic local practice trip",
+    "travelLeg": "Journey 20260926 - leave test shop",
+    "packingList": "Journey 20260926 - synthetic load-out",
+    "packingItem": "Journey 20260926 - synthetic inspection card"
+  },
+  "apiEvidenceFromServerLog": [
+    { "path": "/api/todos", "methods": ["GET", "POST"], "status": 200 },
+    { "path": "/api/work-items", "methods": ["GET"], "status": 200 },
+    { "path": "/api/team/calendar", "methods": ["GET", "POST"], "status": 200 },
+    { "path": "/api/attendance", "methods": ["GET", "POST"], "status": 200 },
+    { "path": "/api/logistics", "methods": ["GET", "POST"], "status": 200 },
+    { "path": "/api/packing", "methods": ["GET", "POST"], "status": 200 },
+    { "path": "/api/dashboards", "methods": ["GET"], "status": 200, "note": "Home and snapshot modes both observed." },
+    { "path": "/api/dashboards", "methods": ["POST"], "status": 201, "note": "Saved personal Home board with added Team todos widget." }
+  ],
+  "confirmedDefects": [
+    { "severity": "medium", "route": "/logistics", "trigger": "Add trip, Add travel time, Add item", "observed": "Each mutation succeeds but browser console throws TypeError: Cannot read properties of null (reading reset).", "consoleTimestamps": ["2026-09-26T22:14:46.858Z", "2026-09-26T22:15:12.176Z", "2026-09-26T22:15:26.009Z"] },
+    { "severity": "medium", "route": "/team?tab=attendance", "trigger": "Mark invited mentor present through one-tap roll", "observed": "Attendance attendee labeled Student despite known mentor roster role." },
+    { "severity": "medium", "route": "/team?tab=todos", "trigger": "Create or update todo", "observed": "Unified work summary does not refresh until page reload." }
+  ],
+  "completionGaps": [
+    "No task history/dependency controls discovered on Team Work or the direct todo link.",
+    "Canonical task consolidation remains incomplete: Team Work explicitly links separate owning boards for build tasks and milestones.",
+    "Logistics remains a separate primary navigation destination rather than being within Team."
+  ],
+  "screenshots": [
+    "docs/release/evidence/journey-team-attendance.png",
+    "docs/release/evidence/journey-team-packing.png",
+    "docs/release/evidence/journey-team-home.png"
+  ],
+  "limitations": [
+    "No production credentials, real bookings, purchases, external messages or source changes were performed.",
+    "Synthetic fixture mutations only; records preserved for inspection.",
+    "No separate attendee identity or cross-team permissions journey in this segment.",
+    "Due date was submitted through UI but exact stored date was not independently inspected.",
+    "Chat, Playbook, learning, full travel rooming/on-duty, and offline behavior are not proved by these checks."
+  ]
+}

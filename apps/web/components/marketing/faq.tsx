@@ -8,42 +8,15 @@ function faqAnchor(question: string) {
 }
 
 const faqs = [
-  {
-    q: "What is Vantage?",
-    a: "Free, invite-only software that runs an FRC team's season in one place: offline scouting, team lookup, match predictions and pick lists, CAD from a pasteable link and build books, the calendar, chat, pit and shop ops, money and outreach. One Google or email-code login for every student and mentor.",
-  },
-  {
-    q: "What does a new student see first?",
-    a: "Home, then what to do now — scout a match, paste a CAD link, or open team ops. Mentors invite exact emails. If you were not invited, join the waitlist instead of creating an account.",
-  },
-  {
-    q: "Where is everything?",
-    a: "On a phone, four tabs: Home, Matches, Scout and Stats. On a laptop, four workspaces: Team (calendar, chat, people, work), Build (kickoff, CAD, code, robot), Competition (event day, scouting, strategy, robot check) and Business (money, sponsors, grants, outreach). Search finds any tool by name.",
-  },
-  {
-    q: "Do we have to use AI?",
-    a: "No. Scouting, predictions, pick lists, the calendar, the budget and every other tool work without it. If you turn it on, Ask AI answers from your team's own data and the public FRC record, cites what it used, and says when it does not know.",
-  },
-  {
-    q: "We already scout with an app or a spreadsheet. Why switch?",
-    a: "Scouting is where the season's decisions start, not where they end. In Vantage the same scouting entries feed team lookup, match predictions, the pick list and the drive team's briefing — next to the calendar, the build and the budget, so nothing gets copied between apps.",
-  },
-  {
-    q: "Does scouting work offline?",
-    a: "Yes. Match and pit forms stay on the tablet, tablets pass entries to each other by QR code, and everything syncs when you reconnect.",
-  },
-  {
-    q: "What is the assembly manual?",
-    a: "Point it at your Onshape assembly and it produces a step-by-step build book — parts, cuts, drill and tap sizes, pictures — like a LEGO manual for your robot. Anything the CAD does not specify is marked for you to confirm rather than guessed.",
-  },
-  {
-    q: "How much does it cost?",
-    a: "Nothing. Every feature is free for every team, with no plans and no card. AI runs on your team's own key (a free Google Gemini key works), so the provider bills you directly and you set the limit. Or use no AI at all.",
-  },
-  {
-    q: "Is team data private?",
-    a: "Yes. Access is invite-only, each team sees only its own data, and a member's personal files are private even from mentors. Your team can export its records at any time. One thing to know: what goes through Vantage's AI features (the prompt, the context sent with it and the answer) may be used to improve Vantage's own models, unless your team turns that off. An owner or admin can switch it off for the whole team in one place. It is never sold. The Privacy Policy has the details.",
-  },
+  { q: "What is Vantage?", a: "Vantage is a shared workspace for FRC teams. It brings scouting and strategy together with team coordination, robot development, learning and business records. Home connects your personal work to Competition, Team, Build and Business." },
+  { q: "What does a new student see first?", a: "After accepting an invitation and completing onboarding, members start on Home. The team controls their role and access. Vantage is for people aged 13 and older; new teams currently join the waitlist." },
+  { q: "Where is everything?", a: "The menu organizes Home, Competition, Team, Build and Business on phones and computers. The bottom island holds personal shortcuts and Apps. Logistics is inside Team; scouting, team profiles, strategy and the pit are inside Competition." },
+  { q: "Do we have to use AI?", a: "No. Scouting collection, task management, calendars, inventory and finance do not require an AI connection. AI assistants need a supported provider key or your own paired Codex account. Codex connections belong to the person, and their credentials stay on their device." },
+  { q: "We already scout with an app or a spreadsheet. Why switch?", a: "Vantage puts scouting reports, team profiles, pick lists and match planning next to the rest of your team's work. You can evaluate that workflow before changing your tools. Onshape, Fusion and GitHub remain separate specialist environments connected to Vantage." },
+  { q: "Does scouting work offline?", a: "Prepare your forms while online. Supported scouting forms save entries on the device when the connection drops; queued reports upload when you reconnect. QR transfer supports exchanging scouting reports. Signing in, connecting services and other server-backed features still need a connection." },
+  { q: "What is the assembly manual?", a: "Build-book tools organize assembly information from connected CAD. Generated instructions need your team's review for completeness, dimensions, materials and safety. A connection does not replace CAD expertise or engineering checks." },
+  { q: "How much does it cost?", a: "Vantage currently has no subscription charge and requires no card. Optional AI uses personal Codex or a personal or team provider key. External providers set their own subscription charges, usage limits and prices." },
+  { q: "Is team data private?", a: "Team roles and permissions control access inside the app. Structured match scouting is shared with other signed-in Vantage teams by default, including past reports; an owner or admin can turn sharing off. Scout identities, free text and private notes are excluded. Necessary operator access and service providers are described in the Privacy Policy. PostgreSQL is the live database, with copies in the operator's Google account, including encrypted sensitive recovery records. AI prompts, supplied context and responses may be used to improve Vantage's models unless the team opts out; an owner or admin manages that preference. See the Privacy Policy for retention and withdrawal details." },
 ];
 
 export function FAQ() {

@@ -201,8 +201,8 @@ describe("scouting sharpening a prediction that already has official numbers", (
         scouted: ratingsFromScouting([
           { teamKey: "frc1", matchKey: "qm1", teleop: 30 },
           { teamKey: "frc1", matchKey: "qm2", teleop: 30 },
-          { teamKey: "frc1", matchKey: "qm3", disabled: true },
-          { teamKey: "frc1", matchKey: "qm4", disabled: true },
+          { teamKey: "frc1", matchKey: "qm3", disabled: true, total: 0 },
+          { teamKey: "frc1", matchKey: "qm4", disabled: true, total: 0 },
         ])[0],
       },
       ...partners,
@@ -234,9 +234,9 @@ describe("scouting sharpening a prediction that already has official numbers", (
       {
         ...base,
         scouted: ratingsFromScouting([
-          { teamKey: "frc1", matchKey: "qm1", disabled: true },
-          { teamKey: "frc1", matchKey: "qm2", disabled: true },
-          { teamKey: "frc1", matchKey: "qm3", disabled: true },
+          { teamKey: "frc1", matchKey: "qm1", disabled: true, total: 0 },
+          { teamKey: "frc1", matchKey: "qm2", disabled: true, total: 0 },
+          { teamKey: "frc1", matchKey: "qm3", disabled: true, total: 0 },
         ])[0],
       },
       ...partners,

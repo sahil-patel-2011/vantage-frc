@@ -45,10 +45,10 @@ export default function OpenGraphImage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 68, fontWeight: 800, lineHeight: 1.05, letterSpacing: -2, maxWidth: 980 }}>
-            Your season stops living in spreadsheets.
+            Your whole team. One connected season.
           </div>
           <div style={{ fontSize: 30, opacity: 0.85 }}>
-            Free software for FRC teams: scouting, strategy, build and business in one login.
+            Scouting, team work, robot development and business. Built for FRC.
           </div>
         </div>
       </div>

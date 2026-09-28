@@ -141,7 +141,8 @@ function StatusTiles({ view }: { view: LiveView }) {
   );
 }
 
-export default function PrototypeTrackerClient(_props: { embedded?: boolean } = {}) {
+export default function PrototypeTrackerClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const embed = useHubEmbed();
   const [view, setView] = useState<PrototypeTrackerView | null>(null);
   const [error, setError] = useState("");
@@ -297,7 +298,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
         )
       : null;
     return (
-      <main className="module-page ptk-page">
+      <Root className="module-page ptk-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Prototype-to-Decision Tracker"
@@ -321,13 +322,13 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page ptk-page">
+      <Root className="module-page ptk-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Prototype-to-Decision Tracker"
@@ -341,7 +342,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
@@ -351,7 +352,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
   const hasTests = view.tests.length > 0;
 
   return (
-    <main className="module-page ptk-page">
+    <Root className="module-page ptk-page">
       <PageHeader
         breadcrumbs={crumbs}
         title="Prototype-to-Decision Tracker"
@@ -440,7 +441,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
 
         <DecisionsList view={view} busy={busy} mutate={mutate} />
       </div>
-    </main>
+    </Root>
   );
 }
 

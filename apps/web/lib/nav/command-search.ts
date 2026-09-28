@@ -457,6 +457,12 @@ export function commandCatalog(): CommandEntry[] {
   const byHref = new Map<string, CommandEntry>();
 
   const add = (entry: CommandEntry) => {
+    const teamAlias: Record<string, string> = {
+      "/logistics": "/team?tab=logistics",
+      "/duties": "/team?tab=duties",
+      "/visit-invites": "/team?tab=visit-invites",
+    };
+    entry = { ...entry, href: teamAlias[entry.href] ?? entry.href };
     const existing = byHref.get(entry.href);
     if (existing) {
       // Two names for one place is the confusion we are removing. Keep the

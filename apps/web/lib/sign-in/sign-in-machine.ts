@@ -258,13 +258,14 @@ export function canSubmitCode(state: SignInFlowState, now: number): boolean {
 export function signInStepCopy(
   state: Pick<SignInFlowState, "step" | "channel" | "email" | "emailHint">,
   inviteHeadline?: string | null,
+  publicSignup = false,
 ): { title: string; sub: string } {
   const invite = inviteHeadline?.trim() || null;
   if (state.step === "code") {
     const target =
       state.channel === "email-2fa" ? state.emailHint : state.email || state.emailHint;
     // A first sign-in cannot promise a code was sent: codes only go to invited addresses.
-    const conditional = state.channel === "email-otp" && !invite;
+    const conditional = state.channel === "email-otp" && !invite && !publicSignup;
     return {
       title: invite ?? "Check your email",
       sub: conditional
@@ -286,8 +287,8 @@ export function signInStepCopy(
     title: invite ?? "Sign in",
     sub: invite
       ? "Sign in with the address the invite was sent to, then accept."
-      : // A new mentor presses Sign in first: say who gets a code before they wait for one.
-        "Use the email your team invited. We’ll send it a 6-digit code.",
+      : publicSignup ? "Enter your email to sign in or create an account. You must be 13 or older."
+        : "Use the email your team invited. We’ll send it a 6-digit code.",
   };
 }
 

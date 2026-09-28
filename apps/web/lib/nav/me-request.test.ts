@@ -8,7 +8,7 @@ import { forgetMe, requestMe } from "./me-request";
  * count is what these assert.
  */
 function stubFetch(impl: () => Promise<Response>) {
-  const spy = vi.fn(impl);
+  const spy = vi.fn<typeof fetch>(impl);
   vi.stubGlobal("fetch", spy);
   return spy;
 }
@@ -39,6 +39,25 @@ describe("requestMe", () => {
     ]);
   });
 
+  it("never shares permission answers between selected teams", async () => {
+    const fetchSpy = stubFetch(async () => okResponse({ hubAccess: [] }));
+    await Promise.all([requestMe("team-a"), requestMe("team-b"), requestMe("team-a")]);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls.map(call => call[0])).toEqual(["/api/me?orgId=team-a", "/api/me?orgId=team-b"]);
+  });
+
+  it("does not recache an old person's pending answer after the session is forgotten", async () => {
+    let finishOld!: (response: Response) => void;
+    const fetchSpy = stubFetch(() => new Promise(resolve => { finishOld = resolve; }));
+    const old = requestMe("team-a");
+    forgetMe();
+    fetchSpy.mockImplementation(async () => okResponse({ userId: "new-person" }));
+    expect((await requestMe("team-a")).data).toEqual({ userId: "new-person" });
+    finishOld(okResponse({ userId: "old-person" }));
+    await old;
+    expect((await requestMe("team-a")).data).toEqual({ userId: "new-person" });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
   it("makes one request for callers that ask at the same time", async () => {
     const fetchSpy = stubFetch(async () => okResponse({ orgId: "org-1" }));
 

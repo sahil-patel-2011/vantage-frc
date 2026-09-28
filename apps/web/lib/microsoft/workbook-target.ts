@@ -60,6 +60,7 @@ import { XLSX_CONTENT_TYPE, minimalXlsx } from "./minimal-xlsx";
 import { type CellValue, type TableSpec, columnLetter } from "./workbook-schema";
 import type { WorkbookReader, WorkbookTableRead, WorkbookTableRef } from "./workbook-import";
 import type { WorkbookTarget } from "./workbook-sync";
+import { LONG_TEXT_SHEET, longTextResolver } from "./long-text";
 
 /** rows/add payload size. Microsoft gives no hard cap; 500 keeps each request small. */
 export const ROWS_PER_REQUEST = 500;
@@ -236,6 +237,17 @@ export class GraphWorkbookTarget implements WorkbookTarget, WorkbookReader {
    * moved or widened is still read correctly; extra columns come back as extra headers.
    */
   async readTable(ref: WorkbookTableRef): Promise<WorkbookTableRead | null> {
+    const data = await this.readRawTable(ref);
+    if (!data || ref.sheet === LONG_TEXT_SHEET) return data;
+    this.longTextRead ??= this.readRawTable({ sheet: LONG_TEXT_SHEET, table: "VantageLongText" });
+    const parts = await this.longTextRead;
+    if (parts?.truncated) throw new Error("LongText exceeded the readable import capacity. No fragments were imported.");
+    const restore = longTextResolver(parts?.headers ?? [], parts?.rows ?? []);
+    return { ...data, rows: data.rows.map((row) => row.map(restore)) };
+  }
+
+  private longTextRead?: Promise<WorkbookTableRead | null>;
+  private async readRawTable(ref: Pick<WorkbookTableRef, "sheet" | "table">): Promise<WorkbookTableRead | null> {
     if (!this.tables.has(ref.table)) return null;
     const header = await this.graph.request<{ values?: unknown[][] }>(
       "GET",

@@ -1,3 +1,4 @@
+import { insertSponsorContribution } from "../../../lib/business/sponsor-contribution";
 import type { PoolClient } from "@neondatabase/serverless";
 import { assertHubTabAccess, assertSponsorsAllowed, auth, emitPreferredNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -486,18 +487,11 @@ export async function POST(request: Request) {
           if (!sponsorId || !receivedOn) throw new Error("Sponsor and received date are required");
           const contributionType = body.contributionType === "in_kind" ? "in_kind" : "cash";
           const amountUsd = dollars(body.amountCents);
-          const inserted = await client.query<{ id: string }>(
-            `INSERT INTO sponsor_contributions(
-               org_id, sponsor_id, season_year, type, amount_usd, estimated_value_usd,
-               received_at, description, created_by
-             ) SELECT $1,id,$3,$4::sponsor_contribution_type,
-                      CASE WHEN $4 = 'cash' THEN $5 ELSE NULL END,
-                      CASE WHEN $4 <> 'cash' THEN $5 ELSE NULL END,
-                      $6::date,$7,$8 FROM sponsors WHERE id = $2 AND org_id = $1 RETURNING id`,
-            [orgId, sponsorId, seasonYear, contributionType, amountUsd, receivedOn, text(body.description, 1_000), session.user.id],
-          );
-          if (!inserted.rows[0]) throw new Error("Sponsor not found");
-          entityId = inserted.rows[0].id;
+          entityId = await insertSponsorContribution(client, {
+            orgId, sponsorId, seasonYear, contributionType, amountUsd, receivedOn,
+            description: text(body.description, 1_000), userId: session.user.id,
+          });
+          if (!entityId) throw new Error("Sponsor not found");
           await syncSponsorContributionMoney(client, {
             orgId,
             contributionId: entityId,

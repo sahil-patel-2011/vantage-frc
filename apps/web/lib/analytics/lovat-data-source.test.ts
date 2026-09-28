@@ -51,7 +51,7 @@ describe("sourceAllowsTeam", () => {
 
 describe("copy", () => {
   it("uses student chrome and a setup hint when nothing is picked", () => {
-    expect(analyticsSourceLabel("own")).toBe("Our scouting");
+    expect(analyticsSourceLabel("own")).toBe("Our robot");
     expect(analyticsSourceDetail({ mode: "selected", teamKeys: [], eventKeys: [] })).toContain("Needs setup");
     expect(analyticsSourceIssue({ mode: "selected", teamKeys: [], eventKeys: [] }, "frc1").kind).toBe("needs_selected");
     expect(analyticsSourceIssue({ mode: "own", teamKeys: [], eventKeys: [] }, null).kind).toBe("needs_own_team");

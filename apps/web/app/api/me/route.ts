@@ -3,7 +3,7 @@ import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
-import { LIVE_NOTIFICATION_SQL } from "../../../lib/notifications/live-sql";
+import { unreadNotificationCount } from "../../../lib/notifications/inbox-store";
 
 export async function GET(request: Request) {
   try {
@@ -16,13 +16,11 @@ export async function GET(request: Request) {
     }
 
     const profile = await withRls({ userId: session.user.id }, async (client) => {
-      // The shell reads /api/me on every page load: the admin flag, account age,
-      // unread-notification count and profile arrive in ONE round trip (they
-      // were four sequential queries). Each is still its own RLS-scoped read.
+      // Read account metadata together. Count notifications after selecting the
+      // active membership so the badge uses exactly the same scope as its inbox.
       const self = await client.query<{
         platformAdmin: boolean;
         createdAt: string | null;
-        unreadCount: string;
         firstName: string | null;
         displayName: string | null;
         preferredTeamNumber: number | null;
@@ -33,10 +31,6 @@ export async function GET(request: Request) {
       }>(
         `SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=$1::uuid) AS "platformAdmin",
                 (SELECT created_at::text FROM users WHERE id=$1::uuid) AS "createdAt",
-                (SELECT count(*)::text FROM notifications
-                 WHERE user_id=$1::uuid AND read_at IS NULL
-                   AND ($2::uuid IS NULL OR org_id IS NULL OR org_id=$2::uuid)
-                   AND ${LIVE_NOTIFICATION_SQL}) AS "unreadCount",
                 p.first_name AS "firstName",
                 p.display_name AS "displayName",
                 p.preferred_team_number AS "preferredTeamNumber",
@@ -46,7 +40,7 @@ export async function GET(request: Request) {
                 (p.user_id IS NOT NULL) AS "hasProfile"
          FROM (SELECT 1) AS one
          LEFT JOIN profiles p ON p.user_id=$1::uuid`,
-        [session.user.id, requestedOrg],
+        [session.user.id],
       );
       const selfRow = self.rows[0];
       const memberships = await client.query<{
@@ -66,6 +60,8 @@ export async function GET(request: Request) {
         requestedOrg
           ? memberships.rows.find((row) => row.orgId === requestedOrg)
           : memberships.rows[0] ?? null;
+      // The same count, scope and live filter as the inbox itself (lib/notifications/inbox-store).
+      const unreadCount = await unreadNotificationCount(client, session.user.id, activeMembership?.orgId ?? null);
       let unreadMessageCount = 0;
       if (activeMembership?.orgId) {
         // A savepoint, not a bare try/catch: a failed read here (chat tables
@@ -176,7 +172,7 @@ export async function GET(request: Request) {
           role: row.role,
         })),
         memberSince: selfRow?.createdAt ?? null,
-        unreadNotificationCount: Number(selfRow?.unreadCount ?? 0),
+        unreadNotificationCount: unreadCount,
         unreadMessageCount,
         profile: selfRow?.hasProfile
           ? {

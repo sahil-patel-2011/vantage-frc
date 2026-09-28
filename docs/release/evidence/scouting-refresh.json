@@ -1,0 +1,301 @@
+{
+  "date": "2026-09-27",
+  "scope": "Scouting evidence, simpler collection/results UI and default-on structured sharing including historical reports. Local verification, not production acceptance.",
+  "baseRevision": "4dc038b67f9864d5866f15063cb61276a7287221",
+  "buildId": "2zy5nnytd6bPxY6e5z56q",
+  "sourceSha256": {
+    ".github/workflows/web.yml": "63b0fab748b6c4d00c89e68b4bceae8e8efc4dd4b12ed8d2fc843648e3efbfce",
+    "apps/web/app/analytics/data-source-picker.tsx": "2a06eba2d591aa0663436ddc6ccc4bbbebe5af2043dd18918eb6ccf2b9ce9b04",
+    "apps/web/app/api/intel/teams/route.ts": "e6b2a51c145f8281651a43561aebb61125d841e60ee442027a95287d1b5721c8",
+    "apps/web/app/intel/intel-client.tsx": "46f72f85ad241f36f057081002617037d556c74a6be3f0a19f119798c8084cdc",
+    "apps/web/app/intel/intel-ready-view.tsx": "718cd83529d11b6dd12500a76a6e62eff32092d730e3f7efd74cf6e55d88ba88",
+    "apps/web/app/intel/intel-scout-breakdown.tsx": "a33a0b15d2b5bdaf3df77bf0973f4a4bc77014417b11abc367327eeecf6901e4",
+    "apps/web/app/intel/intel.css": "d95058dc8d07fa580ee27bcd52805512b247d91e2cb1cc39db5c4054bd6fbf92",
+    "apps/web/app/scout/scouting-home.tsx": "061a7cc4b0acc852d9b2363e62de7057733b55c9d7780328d95a5007dc2ecddb",
+    "apps/web/app/scouting/match-timer.tsx": "9fb1c52394856051577d99137522db2fa1a897636fa319bb9e824709d9d14b05",
+    "apps/web/app/scouting/scouting-ready-view.tsx": "f6ca1bc1f9a14d2a0d1bd8ae491f08b3da2a3326c5f76897c3cb0bf5293cfcda",
+    "apps/web/app/scouting/scouting-team-profiles.tsx": "7f81ba08bf6ec5d73ef3557c15937171d136ead98d8a03e87fda9619c834921f",
+    "apps/web/components/marketing/faq.tsx": "29e4054e7f4d1499b231c2687a036416b01c012bade099f277c60953006560d0",
+    "apps/web/lib/analytics/lovat-data-source.test.ts": "97ebf0fc3302731a3c146175cec825319c5e52c8fe1d082505ea2b26b74357ae",
+    "apps/web/lib/analytics/lovat-data-source.ts": "056fb3fdcc0b15f20494ef4a6cc7fbec133fc6362f9db3a4e2aea54e8d57e7b0",
+    "apps/web/lib/intel/intel-related.ts": "2d1c76ef7c29a060ae519ce22176c207cbee6557a0196f510061f8b89a5c3bfb",
+    "apps/web/lib/legal/documents.ts": "887ba816b0f124f07368c72ae2b140b8cef6c15bc0486a6164c0e21c771f4b8e",
+    "apps/web/lib/scouting/match-clock.test.ts": "bcc6a6dbfca4ef3e1d7bbc3a298d6c838fab56bc2a130319b7796340178efea5",
+    "apps/web/lib/scouting/match-clock.ts": "8ebecae0d36dd91bb1d64b2f880015a45a0e0412d8ad3a7c9d181e25b72507d2",
+    "apps/web/lib/scouting/scout-breakdown.test.ts": "df7ddf7be026078064dbaee425604e862a717fef5c4f531375f1ebeea42172be",
+    "apps/web/lib/scouting/scout-breakdown.ts": "a218494de53d89756330cd7c39e8c9bd1d25bdaed8bbe0ee66294edd2e887338",
+    "apps/web/lib/scouting/team-profiles.ts": "5fb5882a04147b17df6ccd581b9c8404c62319fd788c12586f3cc4b64f634902",
+    "packages/core/src/legal.test.ts": "444d29649f252957c0aabec0e76c7361f6bde3548c9650f0878e26593016bff5",
+    "packages/core/src/legal.ts": "821312560583f4cbeb873f71e71854d41ee00fc41b044fa6c7f5d0e52869ad07",
+    "packages/intel-research/src/repository.ts": "b905361cdd538666efad9673a2a7aa3eeee0d87de2dedf5bfb62abb3bfdb88cd",
+    "packages/intel-research/src/types.ts": "cd47babbb4b3030442f33bdc7d13dc6986819c4a24eab39a0af90fb73358688f",
+    "tests/browser/scouting-robots.spec.ts": "a6ae1a6a43157430d27cf05004468b4ee5edd517a7430d05dba5c44f36076501",
+    "apps/web/app/api/scouting/shared/route.ts": "ab6d01a2a16ac4a9b29923a73b0f61c8cc8876f7ad00f8e31b19b9743bf5a554",
+    "apps/web/app/api/scouting/sharing/route.ts": "fc756c14ea13dc2dad8e1ff25a797f4fb6827626ec59609849fde4474facdaf7",
+    "apps/web/app/intel/scout-observation-explorer.tsx": "ebab4fb926ab9b2264e3c4aee42410333d797d5c484eba5327258dc64a0fb0ec",
+    "apps/web/app/intel/scout-position-evidence.tsx": "ecc11238e387c9c6c90d7294c2e6ef486a34e57a30da7ff9db8bd29f55767547",
+    "apps/web/app/intel/shared-scout-observations.tsx": "5aaf2b100368a1bbda1775f6a82d6294cc3e7f891e966d5eab45c61927df4fc9",
+    "apps/web/app/scouting/scouting-sharing.css": "b64e4aedb5ba4b0281896aff246cb8939cc167d5ee40df45cb03fe3268371d88",
+    "apps/web/app/scouting/scouting-sharing.tsx": "9f8d49e67120f45b0477e1e82bad5f5c0c55331639cd4f6a43cc032ce9d19d9d",
+    "apps/web/lib/scouting/observation-scope.test.ts": "9a99f162539458c0f7d8f198f7dd831882f36196b11614d87037aa3cf4e7e1b4",
+    "apps/web/lib/scouting/observation-scope.ts": "c48d21e9c8da0b1d685dbcc7d29212240d19a772e614de2549253b0288b78ddf",
+    "apps/web/lib/scouting/team-profiles.test.ts": "8d33308f2139068c3f0f9ce3195704d07dfe7e96b333036afb6ae920b0135c68",
+    "packages/db/migrations/0706_scouting_network.sql": "322b6ccdfce5d03d93deb7d56bf3a39379ba739806b4a2ded5bd21362aca1753",
+    "packages/db/src/scouting-network.integration.test.ts": "94e7276338d39821cd42ac703ae92ec78c5617f120606da250f9eedeb13692d1",
+    "tests/browser/scouting-evidence.spec.ts": "c50d0b4e254936e12f4bac4baeb5344503f9973f5f2c29f3f33c50a968d1ff1c"
+  },
+  "planSha256": "d52c7f3cab6e07b612b80f243dcff4741dd6c7737907e22180f8ede2b14791cb",
+  "checks": {
+    "repositoryLint": "passed, exit 0",
+    "workspaceTypes": "passed, exit 0",
+    "unitFilesPassed": 1500,
+    "unitFilesSkipped": 16,
+    "unitTestsPassed": 11200,
+    "unitTestsSkipped": 41,
+    "unitDurationSeconds": 112.77,
+    "migrationStaticChecks": {
+      "files": 2,
+      "tests": 15,
+      "status": "passed"
+    },
+    "productionBuild": {
+      "pages": 748,
+      "status": "passed"
+    },
+    "postgres": {
+      "database": "vantage_schema_test_20260927",
+      "host": "127.0.0.1:55439",
+      "migration": "0706 applied locally; final constrained functions reapplied locally before test",
+      "integrationTests": 1,
+      "status": "passed",
+      "boundary": "SET LOCAL ROLE vantage_app; private-source RLS, nonmember/scout denial, restricted payload, owner opt-out/re-enable and recovery trigger",
+      "recoveryCapturedTables": 612,
+      "recoveryUncoveredTables": 0,
+      "limitation": "This proves capture coverage, not Sheets synchronization or restore."
+    }
+  },
+  "builtBrowser": {
+    "stats": {
+      "startTime": "2026-09-27T12:52:23.483Z",
+      "duration": 30865.888,
+      "expected": 15,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "cases": [
+      {
+        "name": "intel-shell.spec.ts / Research is a student lookup, not an engineering wall",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1153,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "intel-shell.spec.ts / Overnight brief keeps one primary and related in the header",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 901,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-evidence.spec.ts / shared reports travel through the real API and disappear after owner opt-out",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 2387,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-evidence.spec.ts / scouting evidence is usable at 390px",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 3182,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-evidence.spec.ts / scouting evidence is usable at 1280px",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 3262,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-evidence.spec.ts / owner can change the real sharing setting and restore it",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 864,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-evidence.spec.ts / a scout can inspect sharing but cannot change it",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 721,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / shows one row per robot, with the number and the shape of its matches",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1894,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / names what kind of robot each one is, rather than only how many points",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1767,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / never calls a robot's own alternation a trend",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1615,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / sorts by pick order, average and team number",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1573,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / Best fit ranks on more than points, and is the order that opens",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 2643,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / the weights are yours, and they change the order in front of you",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 2882,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-robots.spec.ts / a weighting survives a reload, because a pick meeting is not one page view",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 3382,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "scouting-shell.spec.ts / Scouting hub still loads after the panel split",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1378,
+            "errors": []
+          }
+        ]
+      }
+    ]
+  },
+  "accessibility": {
+    "scans": 6,
+    "widths": [
+      390,
+      1280
+    ],
+    "scope": ".intel-observation-explorer",
+    "states": [
+      "Expanded metric evidence",
+      "Expanded original match report",
+      "Private notes"
+    ],
+    "violations": 0,
+    "rulesExcluded": [],
+    "limitation": "Automated scoped scans and horizontal-overflow checks. Full app conformance, manual screen-reader use and aesthetic scores are not established."
+  },
+  "screenshots": [
+    "screenshots/scouting-results-desktop.png",
+    "screenshots/scouting-results-phone.png"
+  ],
+  "previousFailures": [
+    "Origin comparison used Next internal host; repaired with the existing requestOrigin helper.",
+    "Match selector ambiguity and existing tests needing to expand weight controls; assertions retained.",
+    "Two-team fixture omitted password auth policy, then hit its creation-trigger conflict; repaired with explicit policy upsert."
+  ],
+  "limitations": [
+    "Full browser CI results from earlier UI revisions are not claimed for this source.",
+    "Chrome extension UI blocked the separate manual browser pass; no bypass attempted.",
+    "Shared numeric/categorical/position/path projections exclude free text, identities, notes, action histories, media and unrecognized types; multi-counter object sharing remains unsupported.",
+    "Per-source/form-version results stay separate; partner dataset grants and normalized combined shared rankings remain unfinished.",
+    "No main merge, production schema change, signup opening or Vercel deployment. Original release gates in STATUS.md still apply."
+  ]
+}

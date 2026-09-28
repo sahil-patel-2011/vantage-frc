@@ -420,6 +420,7 @@ function NewSessionForm({
 }
 
 export default function PracticeClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<DriverPracticeView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -514,7 +515,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
 
   if (!view) {
     return (
-      <main className="practice-page">
+      <Root className="practice-page">
         <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
@@ -562,13 +563,13 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
             <p className="practice-muted">Loading practice planner…</p>
           )}
         </div>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="practice-page">
+      <Root className="practice-page">
         <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
@@ -583,7 +584,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
           <p className="practice-muted">{view.message}</p>
           <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </div>
-      </main>
+      </Root>
     );
   }
 
@@ -601,7 +602,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   });
 
   return (
-    <main className={`practice-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`practice-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <>
           <TeamOpsNav orgId={orgId} active="practice" />
@@ -738,6 +739,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
           ) : null}
         </div>
       )}
-    </main>
+    </Root>
   );
 }

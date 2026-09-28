@@ -37,8 +37,8 @@ export type MeResult = {
   data: unknown;
 };
 
-let inFlight: { key: string; promise: Promise<MeResult> } | null = null;
-let settled: { key: string; at: number; result: MeResult } | null = null;
+const inFlight = new Map<string, Promise<MeResult>>();
+const settled = new Map<string, { at: number; result: MeResult }>();
 let generation = 0;
 
 /** Undefined follows the current page; explicit null requests the account default. */
@@ -49,21 +49,24 @@ export function sessionOrgId(orgId?: string | null): string {
 
 /** Drops the shared answer. For tests, and for a sign-out or team switch. */
 export function forgetMe(): void {
-  generation += 1;
-  inFlight = null;
-  settled = null;
+  generation++;
+  inFlight.clear();
+  settled.clear();
 }
 
-export async function requestMe(): Promise<MeResult> {
-  const key = sessionOrgId();
-  if (settled?.key === key && Date.now() - settled.at < FRESH_MS) return settled.result;
-  if (inFlight?.key === key) return inFlight.promise;
-  const requestGeneration = ++generation;
+/** One answer per selected team: a team switch never reuses another team's permissions. */
+export async function requestMe(orgId?: string | null): Promise<MeResult> {
+  const scope = sessionOrgId(orgId);
+  const cached = settled.get(scope);
+  if (cached && Date.now() - cached.at < FRESH_MS) return cached.result;
+  const pending = inFlight.get(scope);
+  if (pending) return pending;
+  const started = generation;
 
-  const promise = (async () => {
+  const request = (async () => {
     let result: MeResult;
     try {
-      const response = await fetch(key ? `/api/me?orgId=${encodeURIComponent(key)}` : "/api/me", {
+      const response = await fetch(scope ? `/api/me?orgId=${encodeURIComponent(scope)}` : "/api/me", {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
@@ -75,13 +78,13 @@ export async function requestMe(): Promise<MeResult> {
     // Recorded before the promise resolves, so a caller arriving in the gap
     // between this request finishing and its awaiters running gets the answer
     // rather than starting a second request.
-    if (generation === requestGeneration) {
-      settled = { key, at: Date.now(), result };
-      inFlight = null;
+    if (generation === started) {
+      settled.set(scope, { at: Date.now(), result });
+      inFlight.delete(scope);
     }
     return result;
   })();
 
-  inFlight = { key, promise };
-  return promise;
+  inFlight.set(scope, request);
+  return request;
 }

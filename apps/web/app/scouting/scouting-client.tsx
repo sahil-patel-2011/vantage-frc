@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useCallback, useEffect, useMemo, useState } from "react";
+import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { SyncEntry } from "@vantage/scouting";
-import { applyFormResetBehavior, validatePayload } from "@vantage/scouting";
-import { answersToSave } from "./scouting-form-answers";
+import { applyFormResetBehavior, recordScoutAction, validatePayload } from "@vantage/scouting";
+import { answersToSave } from "../../lib/scouting/entry-answers";
 import { FreeScoutView } from "./free-scout-view";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
@@ -14,10 +14,13 @@ import { apiErrorMessage } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { useOnline } from "../../lib/offline/use-online";
+import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
 import {
   clearScoutDraft,
   payloadHasDraftContent,
   readScoutDraft,
+  readActiveScoutDraft,
+  rememberActiveScoutDraft,
   scoutDraftStorageKey,
   writeScoutDraft,
 } from "../../lib/scouting/draft-autosave";
@@ -42,6 +45,7 @@ import {
 } from "../../lib/scouting/scouting-related";
 import { attachScoutingMedia } from "./scouting-media-actions";
 import {
+  lastMatchNote,
   myReports,
   openAssignment,
   type Bootstrap,
@@ -54,28 +58,10 @@ import {
 import { ScoutingReadyView } from "./scouting-ready-view";
 import { ScoutingShell } from "./scouting-chrome";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
+import { cacheLiveScouting } from "../../lib/scouting/live-cache";
 import "./scouting-qr.css";
-
-
-async function persistScoutingSnapshot(orgId: string, data: Bootstrap): Promise<void> {
-  if (!orgId) return;
-  try {
-    await putFeatureSnapshot("scouting", orgId, data);
-    await putFeatureSnapshot("scouting", "_", data);
-  } catch {
-    // Live Scouting already painted; IndexedDB is best-effort.
-  }
-}
-
-/** After the last match on the schedule, the confirmation says so instead of naming a "next". */
-function lastMatchNote(matches: Bootstrap["matches"], savedMatchKey: string): string | null {
-  const saved = matches.find((match) => match.matchKey === savedMatchKey);
-  if (!saved) return null;
-  return (saved.compLevel ?? "qm") === "qm"
-    ? "That was the last qualification match. Playoff matches show up here when they are posted."
-    : "That was the last match on the schedule.";
-}
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const searchParams = useSearchParams();
@@ -86,13 +72,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
+  const [loadedDraftKey, setLoadedDraftKey] = useState<string | null>(null);
   // True once the scout changes an answer for the robot on screen. Only then is a draft kept:
   // a report loaded to be corrected, or answers carried over from the last robot, are not a
   // draft, and "Draft saved just now" right after Save read as if nothing had been saved.
   const [userEdited, setUserEdited] = useState(false);
   const editPayload = useCallback((next: Record<string, unknown> | ((current: Record<string, unknown>) => Record<string, unknown>)) => {
     setUserEdited(true);
-    setPayload(next);
+    const identity = { id: crypto.randomUUID(), at: new Date().toISOString() };
+    setPayload((current) => recordScoutAction(current, typeof next === "function" ? next(current) : next, identity));
   }, []);
   // Robots saved on this phone since the page opened, with what was saved, so going back to one
   // loads it before the team's list catches up.
@@ -179,9 +167,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, [online]);
 
   const refreshCounts = useCallback(async () => {
-    setCounts(await pendingCounts());
+    setCounts(await pendingCounts(orgId));
     setQuarantine(await listQuarantine(orgId));
   }, [orgId]);
+  useScoutQueueRefresh(refreshCounts);
   const loadTrust = useCallback(async (eventKey: string | null | undefined) => {
     if (!orgId || !eventKey || !navigator.onLine) return;
     try {
@@ -307,8 +296,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
-          await cacheEvent(orgId, fresh);
-          await persistScoutingSnapshot(orgId, fresh);
+          const cacheNotice = await cacheLiveScouting(orgId, fresh);
+          if (cacheNotice) setMessage(cacheNotice);
           await loadTrust(fresh.eventKey);
         } else if (cached) {
           setMessage("Using the last copy on this phone — could not refresh.");
@@ -391,12 +380,21 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   // never chosen from an old copy on the phone that forgot what you already scouted.
   useEffect(() => {
     if (!settled || holdAutoPick || !data || matchKey || searchParams.get("matchKey")) return;
+    if (data.scoutIdentity?.userId && data.eventKey && !searchParams.get("teamKey") && !searchParams.get("scoutTab")) {
+      const active = readActiveScoutDraft({ userId: data.scoutIdentity.userId, orgId, eventKey: data.eventKey });
+      if (active && (active.type === "pit" || data.matches.some(match => match.matchKey === active.matchKey))) {
+        setTab(active.type);
+        setMatchKey(active.matchKey);
+        setTeamKey(active.teamKey);
+        return;
+      }
+    }
     const assignment = openAssignment(data, Date.now());
     if (assignment) {
       setMatchKey(assignment.matchKey);
       setTeamKey(assignment.teamKey);
     }
-  }, [settled, holdAutoPick, data, matchKey, searchParams]);
+  }, [settled, holdAutoPick, data, matchKey, searchParams, orgId]);
 
   // A robot picked by hand (or by the app) lets the picker choose again after the next save.
   useEffect(() => {
@@ -444,19 +442,23 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const draftKey = useMemo(
     () =>
       scoutDraftStorageKey({
+        userId: data?.scoutIdentity?.userId,
         orgId,
         eventKey: data?.eventKey ?? "",
         entryType: type,
         matchKey,
         teamKey,
       }),
-    [orgId, data?.eventKey, type, matchKey, teamKey],
+    [orgId, data?.eventKey, data?.scoutIdentity?.userId, type, matchKey, teamKey],
   );
 
   // A new robot: its draft if there is one, a report asked for by "Fix it" or Edit, or a fresh
   // form with the answers the form keeps from the last robot (formResetBehavior). Those used to
   // be wiped here, one render after Save set them.
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Restore before the new robot's controls can receive a tap. A passive reset
+    // could replace an answer entered immediately after choosing the robot.
+    setLoadedDraftKey(draftKey);
     setUserEdited(false);
     // A note about the robot that was on screen does not carry over to the next one.
     setMessage((current) =>
@@ -502,7 +504,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       editingRef.current = null;
       setEntryClientId(stableClientId());
     }
-    if (editingRef.current || userEdited || type !== "match" || !draftKey) return;
+    if (loadedDraftKey !== draftKey || editingRef.current || userEdited || type !== "match" || !draftKey) return;
     const storedTeam = normalizeTeamKey(teamKey);
     const report = mine.find(
       (entry) => entry.type === "match" && entry.matchKey === matchKey && entry.teamKey === storedTeam && entry.clientId,
@@ -522,26 +524,31 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setMessage(
       `You already scouted ${teamNumberOf(storedTeam ?? teamKey)} in this match. Change what's wrong, then Save; it replaces your report.`,
     );
-  }, [draftKey, mine, savedHere, userEdited, type, matchKey, teamKey]);
+  }, [draftKey, loadedDraftKey, mine, savedHere, userEdited, type, matchKey, teamKey]);
 
   // A draft is only what the scout typed: never a report loaded to be corrected.
   useEffect(() => {
-    if (!draftKey || !userEdited || !payloadHasDraftContent(payload)) return;
+    // A commit that changed the robot still contains the previous form's state.
+    // It must never write those answers under the newly selected robot's key.
+    if (!draftKey || loadedDraftKey !== draftKey || !userEdited || !payloadHasDraftContent(payload)) return;
     setDraftDirty(true);
-    const timer = window.setTimeout(() => {
+    {
       const savedAt = writeScoutDraft(draftKey, {
         payload,
         confidence,
         matchKey,
         teamKey,
       });
+      if (savedAt && data?.scoutIdentity?.userId && data.eventKey) {
+        rememberActiveScoutDraft({ userId: data.scoutIdentity.userId, orgId, eventKey: data.eventKey },
+          { key: draftKey, type, matchKey, teamKey });
+      }
       if (savedAt) {
         setDraftSavedAt(savedAt);
         setDraftDirty(false);
       }
-    }, 600);
-    return () => window.clearTimeout(timer);
-  }, [draftKey, userEdited, payload, confidence, matchKey, teamKey]);
+    }
+  }, [draftKey, loadedDraftKey, userEdited, payload, confidence, matchKey, teamKey, data?.scoutIdentity?.userId, data?.eventKey, orgId, type]);
 
   async function submit() {
     const storedTeam = normalizeTeamKey(teamKey);
@@ -574,7 +581,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       source,
       updatedAt: new Date().toISOString(),
     };
-    await queueEntry(entry);
+    try {
+      await queueEntry(entry);
+    } catch (error) {
+      setMessage(error instanceof Error ? `Not saved yet. ${error.message}` : "Not saved yet. Device storage is unavailable; keep this form open and retry.");
+      return;
+    }
     setLastSaved({ clientId: entryClientId, matchKey, teamKey, payload: answers, confidence });
     if (type === "match") {
       setSavedHere((current) => [
@@ -670,6 +682,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     message: string;
   }) {
     const key = scoutDraftStorageKey({
+      userId: data?.scoutIdentity?.userId,
       orgId,
       eventKey: data?.eventKey ?? "",
       entryType: report.type,
@@ -730,12 +743,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     );
   }
 
-  function attachMedia(file: File, options?: { fieldKey?: string; tags?: string[] }) {
-    return attachScoutingMedia(file, options, {
-      orgId, eventKey: data?.eventKey, teamKey, entryClientId,
-      setMessage, refreshCounts, sync,
-    });
-  }
+  const attachMedia = (file: File, options?: { fieldKey?: string; tags?: string[] }) =>
+    attachScoutingMedia(file, options, { orgId, eventKey: data?.eventKey, teamKey, entryClientId, setMessage, refreshCounts, sync });
 
   async function retryQuarantineItem(clientId: string) {
     await retryQuarantined(clientId);
@@ -796,8 +805,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       return;
     }
     setData(body);
-    await cacheEvent(orgId, body);
-    setMessage("Starter match and pit forms are ready.");
+    try {
+      await cacheEvent(orgId, body);
+      setMessage("Starter match and pit forms are ready.");
+    } catch (error) {
+      setMessage(`Starter forms are ready online. ${error instanceof Error ? error.message : "Could not update the offline copy."}`);
+    }
   }
 
   async function reviewConflict(id: string, status: "resolved" | "dismissed") {
@@ -867,8 +880,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
-          await cacheEvent(orgId, fresh);
-          await persistScoutingSnapshot(orgId, fresh);
+          const cacheNotice = await cacheLiveScouting(orgId, fresh);
+          if (cacheNotice) setMessage(cacheNotice);
           await loadTrust(fresh.eventKey);
         } else {
           setFetchFailed(true);
@@ -890,9 +903,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     pendingMedia: counts.media,
   });
 
-  if (searchParams.get("mode") === "free" && data?.scoutIdentity?.userId) {
-    return <FreeScoutView key={`${orgId}:${data.scoutIdentity.userId}`} orgId={orgId} userId={data.scoutIdentity.userId} />;
-  }
+  const freeUserId = searchParams.get("mode") === "free" ? data?.scoutIdentity?.userId : undefined;
+  if (freeUserId) return <FreeScoutView key={`${orgId}:${freeUserId}`} orgId={orgId} userId={freeUserId} />;
 
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (

@@ -1,6 +1,8 @@
 import { evaluateFormula, type FormulaExpression } from "@vantage/scouting";
 import {
   ratingsFromScouting,
+  combineScoutedMatchRows,
+  scoutedMatchTotal,
   type ScoutedMatchRow,
   type ScoutedTeamRating,
 } from "@vantage/prediction-strategy";
@@ -126,6 +128,21 @@ function climbed(payload: Record<string, unknown>): boolean | null {
   return null;
 }
 
+/** Ranking never turns a missing answer, malformed formula or division by zero into points. */
+export function observedFormulaValue(expression: FormulaExpression | null, payload: Record<string, unknown>): number | null {
+  if (!expression || typeof expression !== "object") return null;
+  if (expression.op === "constant") return Number.isFinite(expression.value) ? expression.value : null;
+  if (expression.op === "field") {
+    const value = payload[expression.field];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+  if (!["add", "subtract", "multiply", "divide", "min", "max"].includes(expression.op) || !Array.isArray(expression.args) || !expression.args.length) return null;
+  const values = expression.args.map(arg => observedFormulaValue(arg, payload));
+  if (values.some(value => value == null) || (expression.op === "divide" && values.slice(1).some(value => value === 0))) return null;
+  const value = evaluateFormula(expression, payload);
+  return Number.isFinite(value) ? value : null;
+}
+
 export function scoutedRowsFromEntries(
   entries: readonly ScoutEntryRow[],
   formulas: readonly OrgValueFormula[],
@@ -162,17 +179,19 @@ export function scoutedRowsFromEntries(
       climbed: climbed(payload) ?? undefined,
     };
     if (hasPhases) {
+      const phases = {
+        auto: observedFormulaValue(auto, payload),
+        teleop: observedFormulaValue(teleop, payload),
+        endgame: observedFormulaValue(endgame, payload),
+      };
+      const missing = (auto && phases.auto == null) || (teleop && phases.teleop == null) || (endgame && phases.endgame == null);
       return {
         ...base,
-        auto: auto ? evaluateFormula(auto, payload) : null,
-        teleop: teleop ? evaluateFormula(teleop, payload) : null,
-        endgame: endgame ? evaluateFormula(endgame, payload) : null,
+        ...phases,
+        total: total ? observedFormulaValue(total, payload) : missing ? null : (phases.auto ?? 0) + (phases.teleop ?? 0) + (phases.endgame ?? 0),
       };
     }
-    // One formula for the whole match: put it in teleop so the total is right.
-    // The phase split is presentational, and claiming a split we were not
-    // given would be inventing one.
-    return { ...base, teleop: evaluateFormula(total!, payload) };
+    return { ...base, total: observedFormulaValue(total, payload) };
   });
 
   return {
@@ -184,8 +203,10 @@ export function scoutedRowsFromEntries(
   };
 }
 
-const DIRECT_TOTAL_KEYS = ["totalPoints", "total_points", "points", "score"] as const;
+export const DIRECT_TOTAL_KEYS = ["totalPoints", "total_points", "totalScore", "points", "score"] as const;
 const DIRECT_AUTO_KEYS = ["autoPoints", "auto_points"] as const;
+const DIRECT_TELEOP_KEYS = ["teleopPoints", "teleop_points"] as const;
+const DIRECT_ENDGAME_KEYS = ["endgamePoints", "endgame_points"] as const;
 
 function directNumber(payload: Record<string, unknown>, keys: readonly string[]): number | null {
   for (const key of keys) {
@@ -196,15 +217,12 @@ function directNumber(payload: Record<string, unknown>, keys: readonly string[])
 }
 
 /**
- * Rows from points the scouts recorded themselves. Null unless at least half
- * the entries carry a recorded total — a form that only sometimes has one is
- * not a basis for ranking. Auto is kept when recorded; the rest of the total
- * sits in teleop, because the form did not split it and inventing a split
- * would be making numbers up.
+ * Rows from points the scouts recorded themselves. A missing total stays null.
+ * Recorded phase points remain independent; a total never becomes a teleop estimate.
  */
 export function directPointRows(entries: readonly ScoutEntryRow[]): ScoutedMatchRow[] | null {
   const withTotal = entries.filter((entry) => directNumber(entry.payload ?? {}, DIRECT_TOTAL_KEYS) != null);
-  if (withTotal.length === 0 || withTotal.length * 2 < entries.length) return null;
+  if (withTotal.length === 0) return null;
   return entries.map((entry) => {
     const payload = entry.payload ?? {};
     const totalPoints = directNumber(payload, DIRECT_TOTAL_KEYS);
@@ -215,8 +233,10 @@ export function directPointRows(entries: readonly ScoutEntryRow[]): ScoutedMatch
       disabled: flag(payload, DISABLED_KEYS),
       defense: flag(payload, DEFENSE_KEYS),
       climbed: climbed(payload) ?? undefined,
-      auto: totalPoints != null ? autoPoints : null,
-      teleop: totalPoints != null ? totalPoints - (autoPoints ?? 0) : null,
+      total: totalPoints,
+      auto: autoPoints,
+      teleop: directNumber(payload, DIRECT_TELEOP_KEYS),
+      endgame: directNumber(payload, DIRECT_ENDGAME_KEYS),
     };
   });
 }
@@ -237,64 +257,25 @@ export function compareMatchOrder(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
-function meanOf(values: ReadonlyArray<number | null | undefined>): number | null {
-  const real = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-  if (!real.length) return null;
-  return real.reduce((sum, value) => sum + value, 0) / real.length;
-}
-
 /**
  * One row per robot per match, in match order.
  *
  * Every screen that shows "our scouting" for a robot starts here, so two
  * scouts on one robot count once and the same way everywhere: each phase is
  * the average of what they recorded; the robot counts as disabled when at
- * least half of them said so (and then scores 0); defense or a climb counts
+ * least half of them said so; observed points remain recorded; defense or a climb counts
  * when anyone saw it. Rows come back sorted by match (Qual 2 before Qual 10),
  * which is what a trend or a sparkline needs; sorting by the key's text put
  * Qual 10-19 before Qual 2.
  */
 export function onePerMatch(rows: readonly ScoutedMatchRow[]): ScoutedMatchRow[] {
-  const groups = new Map<string, ScoutedMatchRow[]>();
-  const order: string[] = [];
-  for (const row of rows) {
-    if (!row.teamKey) continue;
-    const key = `${row.teamKey}|${row.matchKey}`;
-    const list = groups.get(key);
-    if (list) list.push(row);
-    else {
-      groups.set(key, [row]);
-      order.push(key);
-    }
-  }
-  const merged: ScoutedMatchRow[] = order.map((key) => {
-    const list = groups.get(key)!;
-    const first = list[0]!;
-    if (list.length === 1) return { ...first };
-    const disabledVotes = list.filter((row) => row.disabled).length;
-    const climbs = list.map((row) => row.climbed).filter((value): value is boolean => typeof value === "boolean");
-    return {
-      teamKey: first.teamKey,
-      matchKey: first.matchKey,
-      auto: meanOf(list.map((row) => row.auto)),
-      teleop: meanOf(list.map((row) => row.teleop)),
-      endgame: meanOf(list.map((row) => row.endgame)),
-      disabled: disabledVotes * 2 >= list.length,
-      defense: list.some((row) => row.defense),
-      ...(climbs.length ? { climbed: climbs.some(Boolean) } : {}),
-    };
-  });
+  const merged = combineScoutedMatchRows(rows);
   return merged.sort(
     (a, b) => compareMatchOrder(a.matchKey, b.matchKey) || a.teamKey.localeCompare(b.teamKey),
   );
 }
 
-/** The points one reduced row stands for: 0 when disabled, else the phases summed. Null with nothing recorded. */
+/** Keep observed points when a robot broke down partway through the match. */
 export function matchRowTotal(row: ScoutedMatchRow): number | null {
-  if (row.disabled) return 0;
-  const parts = [row.auto, row.teleop, row.endgame].filter(
-    (value): value is number => typeof value === "number" && Number.isFinite(value),
-  );
-  if (!parts.length) return null;
-  return parts.reduce((sum, value) => sum + value, 0);
+  return scoutedMatchTotal(row);
 }

@@ -33,6 +33,8 @@ import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
+import { listenInboxUpdates } from "../lib/notifications/inbox-events";
+import { watchSessionBoundary } from "../lib/offline/identity";
 import { isKnownAppPath } from "../lib/nav/app-route-roots";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import {
@@ -106,6 +108,8 @@ export default function AppShell() {
   const [locationTick, setLocationTick] = useState(0);
 
   const activeNav = findNavMatch(pathname);
+  // Another person signing in on this device (another tab) ends this tab's session view.
+  useEffect(() => { watchSessionBoundary(); }, []);
   const activeGroupLabel = activeNav?.group.label;
 
   const openNav = useCallback((options?: { focusSearch?: boolean }) => {
@@ -329,6 +333,15 @@ export default function AppShell() {
     window.addEventListener(NOTIFICATIONS_CHANGED, update);
     return () => window.removeEventListener(NOTIFICATIONS_CHANGED, update);
   }, [orgId, pathname]);
+
+  // The inbox publishes read changes (this tab and others) on its own channel; the bell follows
+  // them for this person and the team in view.
+  useEffect(() => listenInboxUpdates((data) => {
+    if (!me.userId || data.userId !== me.userId) return;
+    if ((data.orgId ?? "") !== (orgId ?? "")) return;
+    notificationRevision.current += 1;
+    setUnreadCount(Math.max(0, data.unreadCount));
+  }), [me.userId, orgId]);
 
   useEffect(() => {
     void fetch("/api/navigation/preferences", { cache: "no-store" })

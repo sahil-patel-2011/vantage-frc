@@ -173,6 +173,7 @@ function MyDayShell({
   cachedAt?: string | null;
   children?: ReactNode;
 }) {
+  const Root = embedded ? "section" : "main";
   const actions = myDayNextActions({
     orgId,
     shell,
@@ -203,7 +204,7 @@ function MyDayShell({
   const scheduleHref = withOrgHref("/schedule", orgId);
 
   return (
-    <main className={`module-page myday-page soft-gate${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page myday-page soft-gate${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Live ops"
@@ -254,11 +255,12 @@ function MyDayShell({
         ) : null}
       </EmptyState>
       {shell === "ready" && !embedded ? <MyDayNextActionsPanel actions={actions} /> : null}
-    </main>
+    </Root>
   );
 }
 
 export default function MyDayClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const cockpit = useCockpitPrefs();
   const [view, setView] = useState<MyDayView | null>(null);
   const [error, setError] = useState("");
@@ -443,7 +445,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       });
 
   return (
-    <main className={`module-page myday-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page myday-page${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Live ops"
@@ -517,7 +519,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       ) : null}
 
       {embedded ? null : <MyDayNextActionsPanel actions={nextActions} />}
-    </main>
+    </Root>
   );
 }
 

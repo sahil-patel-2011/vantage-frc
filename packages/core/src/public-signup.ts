@@ -1,89 +1,64 @@
-/**
- * When, and whether, anyone can sign themselves up.
- *
- * Vantage has been invite-only since it existed: a platform admin provisions a
- * team and its owner, owners invite exact addresses, and everyone else lands on
- * the waitlist. That is not an incidental default — it is the reason a team can
- * put student names into this product at all, and `waitlistOnly: true` was a
- * literal type so nothing could flip it by accident.
- *
- * Opening it is a real decision with a date attached, so this makes it a real
- * switch with a date attached, and requires **two independent things** to be
- * true before the doors open:
- *
- *   1. The planned date has passed.
- *   2. Somebody set `VANTAGE_PUBLIC_SIGNUP=open` on the deployment.
- *
- * Either alone does nothing. A stray environment variable cannot open sign-up
- * early, and the date arriving cannot open it without a human deciding to.
- * Both are deliberately boring to satisfy, and both are easy to reverse: unset
- * the variable and it is closed again on the next boot.
- *
- * Until then every caller sees exactly what it saw before.
- */
-
-/**
- * The earliest date public sign-up may open, as a plain `YYYY-MM-DD`.
- *
- * The requested launch date is December 1, 2026. The operator switch remains
- * independent so the date cannot bypass unfinished production acceptance.
- */
-export const PUBLIC_SIGNUP_EARLIEST = "2026-12-01";
-
-/** The value `VANTAGE_PUBLIC_SIGNUP` must hold. Anything else stays closed. */
+/** December 1, 2026 at midnight in America/New_York; readiness is still required. */
+export const PUBLIC_SIGNUP_EARLIEST = "2026-12-01T05:00:00.000Z";
 export const PUBLIC_SIGNUP_ENV_VALUE = "open";
 
-function earliestAsDate(): Date {
-  // Midnight UTC on the planned day.
-  return new Date(`${PUBLIC_SIGNUP_EARLIEST}T00:00:00Z`);
-}
-
-/**
- * Has the planned date arrived? Separate from the switch so a status screen can
- * say "scheduled, not yet" and "scheduled, waiting on the operator" as the
- * different things they are.
- */
 export function publicSignupDateReached(now: Date = new Date()): boolean {
-  const earliest = earliestAsDate();
-  if (Number.isNaN(earliest.getTime()) || Number.isNaN(now.getTime())) return false;
-  return now.getTime() >= earliest.getTime();
+  return Number.isFinite(now.getTime()) && now.getTime() >= Date.parse(PUBLIC_SIGNUP_EARLIEST);
 }
 
 export function publicSignupEnvEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return (env.VANTAGE_PUBLIC_SIGNUP ?? "").trim().toLowerCase() === PUBLIC_SIGNUP_ENV_VALUE;
 }
 
-/** Both conditions, or closed. */
-export function isPublicSignupOpen(
-  now: Date = new Date(),
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  return publicSignupEnvEnabled(env) && publicSignupDateReached(now);
+/** Exercise real signup against an isolated local database without asserting production readiness. */
+export function isLocalAcceptanceSignup(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.VANTAGE_LOCAL_ACCEPTANCE_SIGNUP !== "1" || env.NODE_ENV !== "development" || env.VERCEL === "1") return false;
+  const loopback = (hostname: string) => ["localhost", "127.0.0.1", "[::1]"].includes(hostname);
+  try {
+    const origins = [env.BETTER_AUTH_URL, env.NEXT_PUBLIC_APP_URL].filter((value): value is string => Boolean(value?.trim()));
+    if (!origins.length || !origins.every(value => {
+      const origin = new URL(value);
+      return ["http:", "https:"].includes(origin.protocol) && loopback(origin.hostname);
+    })) return false;
+    const databases = [env.DATABASE_AUTH_URL, env.DATABASE_URL, env.POSTGRES_URL, env.DATABASE_ADMIN_URL,
+      env.DATABASE_WORKER_URL, env.DATABASE_PAIRING_URL, env.DATABASE_AI_BRIDGE_URL, env.DATABASE_TRAINING_URL,
+      env.MARKETING_DATABASE_URL, env.DATABASE_URL_UNPOOLED, env.POSTGRES_URL_NON_POOLING]
+      .filter((value): value is string => Boolean(value?.trim()));
+    return databases.length > 0 && databases.every(value => {
+      const database = new URL(value);
+      return ["postgres:", "postgresql:"].includes(database.protocol) && loopback(database.hostname)
+        && /(?:^|_)test(?:_|$)/.test(decodeURIComponent(database.pathname.slice(1)))
+        && !["host", "hostaddr", "service"].some(key => database.searchParams.has(key));
+    });
+  } catch { return false; }
+}
+
+export function isPublicSignupOpen(now: Date = new Date(), env: NodeJS.ProcessEnv = process.env): boolean {
+  return Number.isFinite(now.getTime()) && (isLocalAcceptanceSignup(env)
+    || (publicSignupDateReached(now) && publicSignupEnvEnabled(env) && env.VANTAGE_PRODUCTION_VERIFIED === "1"));
 }
 
 export type PublicSignupStatus = {
   open: boolean;
-  /** `YYYY-MM-DD` the switch becomes available. */
   earliest: string;
   dateReached: boolean;
   envEnabled: boolean;
-  /** One line for an operator, naming what is still holding it closed. */
+  readinessVerified: boolean;
+  localAcceptance: boolean;
   reason: string;
 };
 
-export function publicSignupStatus(
-  now: Date = new Date(),
-  env: NodeJS.ProcessEnv = process.env,
-): PublicSignupStatus {
+export function publicSignupStatus(now: Date = new Date(), env: NodeJS.ProcessEnv = process.env): PublicSignupStatus {
   const dateReached = publicSignupDateReached(now);
   const envEnabled = publicSignupEnvEnabled(env);
-  const open = envEnabled && dateReached;
-  const reason = open
-    ? "Public sign-up is open."
-    : !dateReached && !envEnabled
-      ? `Invite-only. Public sign-up is scheduled for ${PUBLIC_SIGNUP_EARLIEST} and still needs VANTAGE_PUBLIC_SIGNUP=open.`
-      : !dateReached
-        ? `Invite-only until ${PUBLIC_SIGNUP_EARLIEST}. The switch is set; the date has not arrived.`
-        : `Invite-only. The date has passed — set VANTAGE_PUBLIC_SIGNUP=open to allow sign-up.`;
-  return { open, earliest: PUBLIC_SIGNUP_EARLIEST, dateReached, envEnabled, reason };
+  const readinessVerified = env.VANTAGE_PRODUCTION_VERIFIED === "1";
+  const localAcceptance = isLocalAcceptanceSignup(env);
+  const open = isPublicSignupOpen(now, env);
+  const reason = !Number.isFinite(now.getTime()) ? "Signup is closed because the server clock is invalid."
+    : localAcceptance ? "Local acceptance signup is enabled for an isolated test database. Production remains unverified."
+    : !dateReached ? "Public sign-up is scheduled for December 1, 2026 (Eastern Time), subject to production verification. Contact vantagefrc@gmail.com for early access."
+    : open ? "Public sign-up is open."
+    : !readinessVerified ? "Public sign-up is closed until production verification passes (VANTAGE_PRODUCTION_VERIFIED=1)."
+    : "Production is verified. Set VANTAGE_PUBLIC_SIGNUP=open to allow sign-up.";
+  return { open, earliest: PUBLIC_SIGNUP_EARLIEST, dateReached, envEnabled, readinessVerified, localAcceptance, reason };
 }

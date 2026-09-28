@@ -13,6 +13,7 @@ import {
 } from "../../lib/sign-in";
 import type { InvitePreview } from "../../lib/invite";
 import { inviteBannerBody } from "./sign-in-model";
+import { EARLY_ACCESS_HREF } from "../../components/marketing/launch-availability";
 
 export function SignInCard({
   titleId,
@@ -53,11 +54,12 @@ export function SetupShell({ copy }: { copy: SignInSetupCopy }) {
   );
 }
 
-export function AccessFooter() {
+export function AccessFooter({ publicSignup = false }: { publicSignup?: boolean }) {
   const waitlistHref = useWaitlistHref();
+  if (publicSignup) return <p className="signin-waitlist">After email verification, you can create your team or join through an invitation or approved request.</p>;
   return (
     <p className="signin-waitlist">
-      <span>Not invited yet? Only invited emails get a code.</span>
+      <span>Team signup is planned for December 1, 2026. Until then, use your invitation or <a href={EARLY_ACCESS_HREF}>contact us for early access</a>.</span>
       <a className="signin-waitlist-btn" href={waitlistHref}>
         Join the waitlist
       </a>

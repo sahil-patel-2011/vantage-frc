@@ -14,6 +14,7 @@
  */
 
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import { phasePointValue, pointValue } from "./scouting-points-display";
 import { CONSISTENCY_LABEL } from "@vantage/prediction-strategy";
 import "./scouting-split-compare.css";
 
@@ -24,19 +25,19 @@ function teamNumberLabel(teamKey: string): string {
 type Phase = {
   key: "auto" | "teleop" | "endgame";
   label: string;
-  value: (p: ScoutedTeamProfile) => number;
+  value: (p: ScoutedTeamProfile) => number | null;
 };
 
 const PHASES: Phase[] = [
-  { key: "auto", label: "Auto", value: (p) => p.meanAuto },
-  { key: "teleop", label: "Teleop", value: (p) => p.meanTeleop },
-  { key: "endgame", label: "Endgame", value: (p) => p.meanEndgame },
+  { key: "auto", label: "Auto", value: (p) => phasePointValue(p, "auto") },
+  { key: "teleop", label: "Teleop", value: (p) => phasePointValue(p, "teleop") },
+  { key: "endgame", label: "Endgame", value: (p) => phasePointValue(p, "endgame") },
 ];
 
 type MetricRow = {
   label: string;
-  left: number;
-  right: number;
+  left: number | null;
+  right: number | null;
   format?: (v: number) => string;
   higherIsBetter: boolean;
 };
@@ -56,7 +57,7 @@ export function ScoutingSplitCompare({
 }) {
   const phaseMax = Math.max(
     1,
-    ...PHASES.map((ph) => Math.max(ph.value(left), ph.value(right))),
+    ...PHASES.map((ph) => Math.max(ph.value(left) ?? 0, ph.value(right) ?? 0)),
   );
 
   const seriesMax = niceMax(
@@ -66,10 +67,10 @@ export function ScoutingSplitCompare({
   const metrics: MetricRow[] = [
     { label: "Avg / match", left: left.meanTotal, right: right.meanTotal, higherIsBetter: true },
     { label: "Matches", left: left.matches, right: right.matches, higherIsBetter: true },
-    { label: "Auto", left: left.meanAuto, right: right.meanAuto, higherIsBetter: true },
-    { label: "Teleop", left: left.meanTeleop, right: right.meanTeleop, higherIsBetter: true },
-    { label: "Endgame", left: left.meanEndgame, right: right.meanEndgame, higherIsBetter: true },
-    { label: "Climb rate", left: left.climbRate ?? 0, right: right.climbRate ?? 0, format: pct, higherIsBetter: true },
+    { label: "Auto", left: phasePointValue(left, "auto"), right: phasePointValue(right, "auto"), higherIsBetter: true },
+    { label: "Teleop", left: phasePointValue(left, "teleop"), right: phasePointValue(right, "teleop"), higherIsBetter: true },
+    { label: "Endgame", left: phasePointValue(left, "endgame"), right: phasePointValue(right, "endgame"), higherIsBetter: true },
+    { label: "Climb rate", left: left.climbRate, right: right.climbRate, format: pct, higherIsBetter: true },
     { label: "Disabled", left: left.disabledRate, right: right.disabledRate, format: pct, higherIsBetter: false },
     { label: "Defense", left: left.defenseRate, right: right.defenseRate, format: pct, higherIsBetter: true },
   ];
@@ -116,18 +117,19 @@ export function ScoutingSplitCompare({
 
       {/* Phase comparison bars — mirrored outward from center */}
       <div className="ssv-phase-section">
-        <h4 className="ssv-section-title">Points by phase</h4>
+        <h4 className="ssv-section-title">Recorded phase points</h4>
+        <p>Each phase uses its own observed matches; missing phases are unknown.</p>
         <div className="ssv-phase-grid">
           {PHASES.map((phase) => {
             const lv = phase.value(left);
             const rv = phase.value(right);
-            const lPct = (lv / phaseMax) * 100;
-            const rPct = (rv / phaseMax) * 100;
-            const lWins = lv >= rv;
+            const lPct = ((lv ?? 0) / phaseMax) * 100;
+            const rPct = ((rv ?? 0) / phaseMax) * 100;
+            const lWins = lv != null && rv != null ? lv >= rv : undefined;
             return (
               <div key={phase.key} className="ssv-phase-row">
                 <div className="ssv-phase-left">
-                  <span className="ssv-phase-val" data-winner={lWins}>{lv.toFixed(1)}</span>
+                  <span className="ssv-phase-val" data-winner={lWins}>{pointValue(lv)}</span>
                   <span className="ssv-phase-bar-left">
                     <span className="ssv-phase-fill" data-phase={phase.key} style={{ width: `${lPct}%` }} />
                   </span>
@@ -137,7 +139,7 @@ export function ScoutingSplitCompare({
                   <span className="ssv-phase-bar-right">
                     <span className="ssv-phase-fill" data-phase={phase.key} style={{ width: `${rPct}%` }} />
                   </span>
-                  <span className="ssv-phase-val" data-winner={!lWins}>{rv.toFixed(1)}</span>
+                  <span className="ssv-phase-val" data-winner={lWins == null ? undefined : !lWins}>{pointValue(rv)}</span>
                 </div>
               </div>
             );
@@ -158,13 +160,13 @@ export function ScoutingSplitCompare({
           </thead>
           <tbody>
             {metrics.map((m) => {
-              const leftWinsMetric = m.higherIsBetter ? m.left >= m.right : m.left <= m.right;
+              const leftWinsMetric = m.left != null && m.right != null ? (m.higherIsBetter ? m.left >= m.right : m.left <= m.right) : undefined;
               const fmt = m.format ?? ((v: number) => v.toFixed(1));
               return (
                 <tr key={m.label}>
-                  <td className="ssv-mv-left" data-winner={leftWinsMetric || undefined}>{fmt(m.left)}</td>
+                  <td className="ssv-mv-left" data-winner={leftWinsMetric || undefined}>{m.left == null ? "Unknown" : fmt(m.left)}</td>
                   <td className="ssv-mv-label">{m.label}</td>
-                  <td className="ssv-mv-right" data-winner={!leftWinsMetric || undefined}>{fmt(m.right)}</td>
+                  <td className="ssv-mv-right" data-winner={leftWinsMetric == null ? undefined : !leftWinsMetric || undefined}>{m.right == null ? "Unknown" : fmt(m.right)}</td>
                 </tr>
               );
             })}

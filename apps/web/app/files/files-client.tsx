@@ -366,7 +366,7 @@ export default function FilesClient() {
       <OfflineBanner feature="Files" fromCache={fromCache} cachedAt={cachedAt} />
       {activeOrgId && offlineBytes > 0 ? (
         <p className="app-muted drive-offline-usage">
-          {formatOfflineUsage(offlineBytes)} of files kept on this device ({FILE_BYTES_CAP_LABEL} max).
+          {formatOfflineUsage(offlineBytes)} of files kept on this device, within {FILE_BYTES_CAP_LABEL}. <a href="/account?tab=appearance">Manage offline storage</a>.
         </p>
       ) : null}
       <ScopeNotice />

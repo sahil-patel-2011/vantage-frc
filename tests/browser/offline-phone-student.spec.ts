@@ -76,6 +76,7 @@ async function failedRefreshKeepsBoard(
   options: {
     path: string;
     api: string;
+    feature: string;
     body: unknown;
     heading: string | RegExp;
     keep: RegExp | string;
@@ -106,6 +107,19 @@ async function failedRefreshKeepsBoard(
   // whose CSS hides the inner page header. Assert the painted board heading.
   await expect(page.getByRole("heading", { name: options.heading, exact: true })).toBeVisible();
   await expect(page.locator("body")).toContainText(options.keep);
+  // The shell can repeat the team name before the board arrives. Wait for the
+  // actual person-scoped snapshot transaction before interrupting the server.
+  await expect.poll(() => page.evaluate(feature => new Promise<boolean>(resolve => {
+    const request = indexedDB.open("vantage-feature-cache", 2);
+    request.onerror = () => resolve(false);
+    request.onsuccess = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("snapshots")) { db.close(); resolve(false); return; }
+      const read = db.transaction("snapshots", "readonly").objectStore("snapshots").getAll();
+      read.onsuccess = () => { db.close(); resolve(read.result.some(row => row.feature === feature && row.userId === "user-1" && row.orgId === "org-1")); };
+      read.onerror = () => { db.close(); resolve(false); };
+    };
+  }), options.feature), { message: "The authenticated person's board is saved before the failed refresh" }).toBe(true);
   fail = true;
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: options.heading, exact: true })).toBeVisible();
@@ -115,14 +129,27 @@ async function failedRefreshKeepsBoard(
 }
 
 test.describe("offline phone student boards keep the last copy", () => {
-  test.beforeEach(async ({ context }) => {
+  test.beforeEach(async ({ context, page }) => {
     await signInFixture(context);
+    // This isolated failure-injection spec mocks its boards. Give those boards
+    // an explicit authenticated person as well: an auth-fixture cookie alone
+    // intentionally cannot authorize API reads or private device caches.
+    await page.route("**/api/me**", route => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        authenticated: true, userId: "user-1", name: "Phone Snapshot Scout",
+        orgId: "org-1", orgName: "Phone Snapshot Team", teamNumber: 1234, role: "member",
+        memberships: [{ orgId: "org-1", orgName: "Phone Snapshot Team", teamNumber: 1234, role: "member" }],
+      }),
+    }));
   });
 
   test("Hours keeps the last board after a failed refresh", async ({ page }) => {
     await failedRefreshKeepsBoard(page, {
       path: "/hours?orgId=org-1",
       api: "**/api/hours**",
+      feature: "hours",
       body: HOURS_READY,
       heading: "Shop hours",
       keep: /Phone Snapshot Team/,
@@ -133,6 +160,7 @@ test.describe("offline phone student boards keep the last copy", () => {
     await failedRefreshKeepsBoard(page, {
       path: "/batteries?orgId=org-1",
       api: "**/api/batteries**",
+      feature: "batteries",
       body: BATTERIES_READY,
       heading: "Add a battery",
       keep: /Active packs/,
@@ -143,6 +171,7 @@ test.describe("offline phone student boards keep the last copy", () => {
     await failedRefreshKeepsBoard(page, {
       path: "/fmea?orgId=org-1",
       api: "**/api/fmea**",
+      feature: "fmea",
       body: FMEA_LIVE,
       heading: "No failures logged yet",
       keep: /The riskiest item shows here once there is one/,
@@ -153,6 +182,7 @@ test.describe("offline phone student boards keep the last copy", () => {
     await failedRefreshKeepsBoard(page, {
       path: "/event-readiness?orgId=org-1",
       api: "**/api/event-readiness**",
+      feature: "event-readiness",
       body: EVENT_READINESS_SETUP,
       heading: "Event Readiness",
       keep: /Pick an event to track readiness/,

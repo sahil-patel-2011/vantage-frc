@@ -1,0 +1,56 @@
+{
+  "auditDate": "2026-09-26",
+  "scope": "Read-only reread after root's shared-shell and inbox implementation changes, before final build",
+  "browserExecuted": false,
+  "productionAcceptance": false,
+  "sourceEdited": false,
+  "closedInSource": [
+    "Final apple-polish-product.css overrides island width to 392px, z-index to 80, and island/account targets to 48px.",
+    "Account popup focuses menu items, supports arrows/Home/End/typeahead, and dismisses on Tab/Escape with focus handling.",
+    "Island editor focuses Close, contains Tab, and returns focus to Apps on dismissal.",
+    "Island saving is bounded, cancellable, ignores aborted results, and disables choices/Reset while saving.",
+    "Opening shell overlays now closes the other overlay state.",
+    "Search request generation increments on clear and close, invalidating older responses.",
+    "Notification list loading guards request generation and team/filter scope.",
+    "Notification count/list/read mutations share authenticated personal/team SQL scope.",
+    "Repeat folding now includes body and destination, preserving distinct links."
+  ],
+  "remainingCasesReportedToRoot": [
+    {
+      "file": "apps/web/app/notifications/notifications-client.tsx",
+      "line": 272,
+      "case": "Mark an already-read visible row unread. It was never in seenIds, so the new observer can immediately mark it read again. Explicit manual unread needs an observer exemption."
+    },
+    {
+      "file": "apps/web/app/notifications/notifications-client.tsx",
+      "line": 239,
+      "case": "Change filter or refresh while automatic read acknowledgment is in flight. Cleanup marks stopped, successful PATCH returns without publishing, and pre-added seenIds may prevent retry; confirm badge/list eventually reconcile."
+    },
+    {
+      "file": "apps/web/app/notifications/notifications-client.tsx",
+      "line": 272,
+      "case": "Folded repeat toggle performs separate patch/load calls. Verify a partial failure stops or remains visible rather than being overwritten by a later success."
+    },
+    {
+      "file": "apps/web/components/app-shell.tsx",
+      "line": 319,
+      "case": "Read a personal notification while two tabs select different teams. Personal rows contribute to both badges, but exact-org broadcast matching currently refreshes only one."
+    },
+    {
+      "file": "apps/web/app/notifications/notifications-client.tsx",
+      "line": 73,
+      "case": "Two inbox tabs in the same team: one changes read state. Shell badge receives broadcast but inbox list has no subscriber, so visible row state may remain stale."
+    }
+  ],
+  "nextVerification": [
+    "Run existing-session local browser checklist from ui-shell-code-audit.json after root announces final server ready.",
+    "Use only CUA UI, preserve current Morgan account, and keep all mutations limited to explicitly authorized synthetic fixtures.",
+    "Record current computed dimensions, keyboard focus transitions, screen captures, and notification before/after states.",
+    "Keep browser transport failures separate from app assertions."
+  ],
+  "limitations": [
+    "These are code-based functional cases while implementation continues, not observed final-browser failures.",
+    "Root reports passing real scratch PostgreSQL notification scope/read/history/isolation checks; this agent did not independently rerun those tests.",
+    "No production actions, external messages, account switches, or sign-outs."
+  ]
+}

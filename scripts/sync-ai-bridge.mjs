@@ -1,0 +1,13 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import ts from "typescript";
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const sources = ["packages/connector/src/mcp.ts", "packages/connector/src/feature-tools.ts", "packages/connector/src/codex-app-server.ts", "packages/connector/src/node/personal-environment.ts", "packages/connector/src/node/codex-rpc.ts"];
+const code = sources.map((path) => ts.transpileModule(read(path).replace(/^import .*;\r?\n/gm, "").replaceAll("CONNECTOR_VERSION", "BRIDGE_VERSION"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText).join("\n");
+const start = "// BEGIN GENERATED PERSONAL CODEX\n";
+const end = "// END GENERATED PERSONAL CODEX";
+const path = new URL("../packages/ai-bridge/bridge.mjs", import.meta.url);
+let bridge = readFileSync(path, "utf8").replaceAll("\r\n", "\n");
+if (bridge.includes(start)) bridge = bridge.slice(0, bridge.indexOf(start)) + start + code + end + bridge.slice(bridge.indexOf(end) + end.length);
+if (!bridge.includes(start)) throw new Error("The standalone bridge needs its generated-code marker.");
+writeFileSync(path, bridge);
+writeFileSync(new URL("../apps/web/public/vantage-ai-bridge.mjs", import.meta.url), bridge);

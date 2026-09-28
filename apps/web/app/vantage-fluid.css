@@ -239,6 +239,7 @@ textarea {
    of rise, then still. Duration is 0ms when motion is reduced, so the
    keyframes finish on the resting state and nothing is left translated. */
 @keyframes page-arrive {
+  /* Keep text at full contrast, including content arriving during the entrance. */
   from { transform: translateY(8px); }
   to { transform: none; }
 }

@@ -51,7 +51,7 @@ export const PREVIEW_LIST_CAP = 500;
 
 // ------------------------------------------------------------------ reading Postgres
 
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS"Z"'`;
+const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`;
 
 export type Reads = Partial<Record<ImportEntity, WorkbookTableRead | null>>;
 

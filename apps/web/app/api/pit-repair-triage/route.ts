@@ -116,6 +116,7 @@ export async function POST(request: Request) {
 
       switch (action) {
         case "log-failure": {
+          if (trimmedOrNull(body.photoUrl, 2000)) throw new Error("New photo attachments are unavailable. Describe the failure in notes.");
           const subsystemName = trimmedOrNull(body.subsystemName, 200);
           const title = trimmedOrNull(body.title, 200);
           if (!subsystemName) throw new Error("subsystemName is required");
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
             subsystemName,
             title,
             symptomNote: trimmedOrEmpty(body.symptomNote, 4000),
-            photoUrl: trimmedOrNull(body.photoUrl, 2000),
+            photoUrl: null,
             minutesUntilNextMatch: nonNegativeInt(body.minutesUntilNextMatch),
             relatedFmeaFailureId: trimmedOrNull(body.relatedFmeaFailureId, 64),
             matchedInventoryItemId: trimmedOrNull(body.matchedInventoryItemId, 64),

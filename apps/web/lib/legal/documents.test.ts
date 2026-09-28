@@ -252,7 +252,8 @@ describe("legal documents", () => {
     expect(section, "the Terms page links to #governing-law").toBeDefined();
     const text = (section?.paragraphs ?? []).join(" ");
     // It must not invent a jurisdiction nobody chose.
-    expect(text).toMatch(/not yet designated/i);
+    expect(text).not.toMatch(/deliberate blank|not yet designated/i);
+    expect(text).toMatch(/No mandatory arbitration/i);
     // And it must not read as a waiver of rights the reader already has.
     expect(text).toMatch(/local consumer-protection law/i);
   });
@@ -299,7 +300,7 @@ describe("legal documents", () => {
       expect(ai).toMatch(/Ollama|own computer or server/i);
       expect(ai).toMatch(/Claude Code on a paired computer/i);
       expect(ai).toMatch(/invited to a sponsored promotion/i);
-      expect(textOf(TERMS_OF_SERVICE, "ai")).toMatch(/Claude Code on a computer a mentor paired/i);
+      expect(textOf(TERMS_OF_SERVICE, "ai")).toMatch(/own Codex or Claude Code on a paired computer/i);
     });
 
     it("says a team with AI off sends nothing", () => {
@@ -311,8 +312,9 @@ describe("legal documents", () => {
     });
   });
 
-  it("says photo and video uploads are paused while they are", () => {
-    expect(whole(PRIVACY_POLICY)).toMatch(/photo and video uploads are paused/i);
+  it("states the upload boundary and age eligibility", () => {
+    expect(whole(PRIVACY_POLICY)).toMatch(/does not accept photo or video uploads/i);
+    expect(whole(PRIVACY_POLICY)).toMatch(/age 13 and older/i);
   });
 
   it("discloses the second adult in adult-student direct messages", () => {

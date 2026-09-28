@@ -203,7 +203,7 @@ export function AppShellTopbar({
         </a>
         <a
           className="soft-icon-btn soft-notif"
-          href={withOrgHref("/notifications", orgId)}
+          href={withOrgHref("/notifications", orgId || null)}
           aria-label={unreadCount >= 1 ? `Notifications, ${unreadCount} unread` : "Notifications"}
         >
           <Icon name="bell" />

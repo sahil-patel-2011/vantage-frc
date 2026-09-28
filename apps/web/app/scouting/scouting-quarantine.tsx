@@ -4,6 +4,7 @@ import { Button, Panel } from "../../components/ui";
 import { mediaKindLabel } from "../../lib/scouting/media-downscale";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import { matchLabelFromKey } from "../../lib/matches/no-next-match";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 
 export function quarantineItemLabel(item: QuarantinedItem): string {
   if (item.kind === "entry") {
@@ -26,6 +27,7 @@ export function ScoutQuarantinePanel({
   onRetry: (clientId: string) => void;
   onDiscard: (clientId: string) => void;
 }) {
+  items = items.filter((item) => item.kind === "entry" || MEDIA_ENABLED);
   if (!items.length) return null;
   return (
     <Panel

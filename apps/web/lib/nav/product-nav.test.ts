@@ -15,6 +15,12 @@ import {
 } from "./product-nav";
 
 describe("product-nav", () => {
+  it("preserves the selected inbox team in bell links and account team switching", () => {
+    expect(withOrgHref("/notifications", "team-a")).toBe("/notifications?orgId=team-a");
+    expect(withSelectedOrgHref("/notifications?orgId=team-a", "team-b")).toBe("/notifications?orgId=team-b");
+    expect(withOrgHref("/dashboard", "team-a")).toBe("/dashboard?orgId=team-a");
+    expect(withSelectedOrgHref("/dashboard?orgId=team-a", "team-b")).toBe("/dashboard?orgId=team-b");
+  });
   it("exposes flat pillar groups (no Settings accordion)", () => {
     // Media is a tool set under Business › Outreach; AI is the "Ask AI" control.
     // Neither is a place you go, so neither is a row in the panel.
@@ -80,9 +86,10 @@ describe("product-nav", () => {
     );
     expect(byLabel.Home).toEqual([]);
     // Plus the pit TV, which had no menu entry at all.
-    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scouting", "Strategy", "Pit"]);
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scout", "Teams", "Strategy", "Pit"]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
       "/competition?tab=scouting",
+      "/competition?tab=teams",
       "/competition?tab=strategy",
       "/competition?tab=match-checklist",
     ]);
@@ -136,7 +143,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/duties")).toBe("Team / Duties");
     expect(breadcrumbForPath("/visit-invites")).toBe("Team / Visit invites");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
-    expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
+    expect(breadcrumbForPath("/scouting")).toBe("Competition / Scout");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Forms");
     expect(breadcrumbForPath("/competition")).toBe("Competition");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");

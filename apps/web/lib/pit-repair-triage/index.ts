@@ -107,7 +107,7 @@ export function triageRepair(input: TriageInput): TriageResult {
   return {
     decision: "swap",
     confidence: 0.5,
-    rationale: `${minutes} min is borderline for a full fix — swap in the spare to guarantee readiness for the next match, then troubleshoot the failed part afterward.`,
+      rationale: `${minutes} min is borderline for a full fix — consider the spare, inspect and test the robot, then troubleshoot the failed part afterward.`,
     prestageRecommended: true,
   };
 }

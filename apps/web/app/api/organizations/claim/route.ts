@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { parseClaimAttestation, recordTeamClaimAttestation } from "../../../../lib/claim/attestation";
 import { anonymizeIp, clientIp } from "../../../../lib/rate-limit";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { startTeamProvisioning } from "../../../../lib/provisioning/start";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -74,9 +75,11 @@ export async function POST(request: Request) {
         teamNumber,
         ipHash,
       });
+      await client.query("INSERT INTO team_provisioning_jobs(org_id,requested_by) VALUES($1::uuid,$2::uuid) ON CONFLICT(org_id) DO NOTHING", [orgId, session.user.id]);
       return orgId;
     });
-    return Response.json({ id }, { status: 201 });
+    await startTeamProvisioning(id, session.user.id);
+    return Response.json({ id, provisioning: true }, { status: 201 });
   } catch (error) {
     // Deploys do not run migrations. Until 0672 is applied the statement cannot
     // be stored, so the claim is refused (and rolled back) with a plain reason

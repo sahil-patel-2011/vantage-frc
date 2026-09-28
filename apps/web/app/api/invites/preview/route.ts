@@ -59,14 +59,17 @@ export async function GET(request: Request) {
       const consent = await client.query<{
         termsAcceptedAt: string | null;
         privacyAcceptedAt: string | null;
+        ageConfirmed: boolean;
       }>(
         `SELECT terms_accepted_at::text AS "termsAcceptedAt",
-                privacy_accepted_at::text AS "privacyAcceptedAt"
+                privacy_accepted_at::text AS "privacyAcceptedAt",
+                (date_of_birth IS NOT NULL AND date_of_birth <= (CURRENT_DATE - interval '13 years')::date) AS "ageConfirmed"
          FROM profiles WHERE user_id = $1::uuid`,
         [session.user.id],
       );
       return {
         preview,
+        profileRequired: consent.rows[0]?.ageConfirmed !== true,
         legalRequired: inviteLegalRequired({
           termsAcceptedAt: consent.rows[0]?.termsAcceptedAt ?? null,
           privacyAcceptedAt: consent.rows[0]?.privacyAcceptedAt ?? null,
@@ -93,6 +96,7 @@ export async function GET(request: Request) {
       signedIn: true,
       emailMismatch,
       legalRequired: result.legalRequired,
+      profileRequired: result.profileRequired,
       sessionEmail: session.user.email ?? null,
     });
   } catch (error) {

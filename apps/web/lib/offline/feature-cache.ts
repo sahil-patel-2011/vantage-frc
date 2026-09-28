@@ -250,8 +250,11 @@ export type OfflineFeature =
   | "season-finance"
   | "partner-placements";
 
+import { offlineSnapshotUser } from "./identity";
+import { cacheJsonBytes, checkCacheSpace } from "./storage-budget";
+
 const DB_NAME = "vantage-feature-cache";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = "snapshots";
 let signedOut = false;
 
@@ -259,6 +262,7 @@ export type FeatureSnapshot<T> = {
   key: string;
   feature: OfflineFeature;
   orgId: string;
+  userId: string;
   data: T;
   cachedAt: string;
 };
@@ -269,16 +273,25 @@ export function featureCacheKey(feature: OfflineFeature, orgId: string, variant 
   return extra ? `${feature}:${org}:${extra}` : `${feature}:${org}`;
 }
 
+export function personalFeatureCacheKey(userId: string, feature: OfflineFeature, orgId: string, variant = ""): string {
+  return `${userId}:${featureCacheKey(feature, orgId, variant)}`;
+}
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "key" });
+      } else if (event.oldVersion < 2) {
+        // Legacy rows have no authenticated owner. Discard only these read caches;
+        // scouting drafts and unsent outboxes are separate databases.
+        request.transaction!.objectStore(STORE).clear();
       }
     };
     request.onsuccess = () => resolve(request.result);
+    request.onblocked = () => reject(new Error("Close the other Vantage tab to update private read caches."));
     request.onerror = () => reject(request.error ?? new Error("IndexedDB open failed"));
   });
 }
@@ -296,18 +309,26 @@ export async function putFeatureSnapshot<T>(
   data: T,
   variant = "",
 ): Promise<void> {
+  // Nothing is written once sign-out has started (a save still in flight must not leave a view
+  // behind), and each snapshot belongs to the person who saved it.
   if (typeof indexedDB === "undefined" || signedOut) return;
+  const userId = await offlineSnapshotUser(orgId);
+  if (!userId || signedOut) return;
+  await checkCacheSpace(cacheJsonBytes(data));
   const db = await openDatabase();
-  if (signedOut) { db.close(); return; }
-  const store = db.transaction(STORE, "readwrite").objectStore(STORE);
-  const row: FeatureSnapshot<T> = {
-    key: featureCacheKey(feature, orgId, variant),
-    feature,
-    orgId: orgId.trim() || "_",
-    data,
-    cachedAt: new Date().toISOString(),
-  };
-  await requestValue(store.put(row));
+  try {
+    if (signedOut) return;
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    const row: FeatureSnapshot<T> = {
+      key: personalFeatureCacheKey(userId, feature, orgId, variant),
+      feature,
+      orgId: orgId.trim() || "_",
+      userId,
+      data,
+      cachedAt: new Date().toISOString(),
+    };
+    await requestValue(store.put(row));
+  } finally { db.close(); }
 }
 
 export async function getFeatureSnapshot<T>(
@@ -316,19 +337,35 @@ export async function getFeatureSnapshot<T>(
   variant = "",
 ): Promise<FeatureSnapshot<T> | null> {
   if (typeof indexedDB === "undefined") return null;
+  const userId = await offlineSnapshotUser(orgId);
+  if (!userId) return null;
   const db = await openDatabase();
-  const store = db.transaction(STORE, "readonly").objectStore(STORE);
-  const row = await requestValue<FeatureSnapshot<T> | undefined>(
-    store.get(featureCacheKey(feature, orgId, variant)),
-  );
-  return row ?? null;
+  try {
+    const store = db.transaction(STORE, "readonly").objectStore(STORE);
+    const row = await requestValue<FeatureSnapshot<T> | undefined>(
+      store.get(personalFeatureCacheKey(userId, feature, orgId, variant)),
+    );
+    return row?.userId === userId ? row : null;
+  } finally { db.close(); }
 }
 
 export async function clearFeatureSnapshot(feature: OfflineFeature, orgId: string, variant = ""): Promise<void> {
   if (typeof indexedDB === "undefined") return;
+  const userId = await offlineSnapshotUser(orgId);
+  if (!userId) return;
   const db = await openDatabase();
-  const store = db.transaction(STORE, "readwrite").objectStore(STORE);
-  await requestValue(store.delete(featureCacheKey(feature, orgId, variant)));
+  try {
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    await requestValue(store.delete(personalFeatureCacheKey(userId, feature, orgId, variant)));
+  } finally { db.close(); }
+}
+
+/** Remove last-good read caches when a person leaves a shared browser. */
+export async function clearFeatureSnapshots(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  const db = await openDatabase();
+  try { await requestValue(db.transaction(STORE, "readwrite").objectStore(STORE).clear()); }
+  finally { db.close(); }
 }
 
 /** Clear downloaded views on shared devices, without touching unsent reports or drafts. */

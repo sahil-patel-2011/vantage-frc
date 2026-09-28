@@ -6,7 +6,8 @@
  * default workbench is the hub row itself). Nested tools stay on the hub
  * ToolStrip and Cmd+K — never dumped into All.
  *
- * Pillars: Competition · Team · Build · Business (+ Home).
+ * Workspaces: Home · Competition · Team · Build · Business.
+ * Logistics belongs to Team; existing standalone URLs remain supported.
  * Media folded into Business › Outreach; AI is the persistent "Ask AI"
  * control and its settings live under Settings. Settings live in the drawer
  * footer only.
@@ -88,6 +89,8 @@ const TONE = { tone: "var(--tone-blue)", toneBg: "" } as const;
 
 /** Public and platform routes never inherit a team's navigation context. */
 export const ORG_EXEMPT_HREFS = new Set([
+  // Account, Security, Docs and Support keep the selected team (support tickets and the team's
+  // membership are per team); public pages and the platform console never carry one.
   "/",
   "/terms",
   "/privacy",
@@ -207,7 +210,10 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
  * Soft-UI pillars for Search (⌘K) shortcuts — hub roots only.
  */
 export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
-  ...PRODUCT_NAV_GROUPS.filter((group) => group.label !== "Home").flatMap((group) => group.items),
+  { href: "/competition", label: "Competition", icon: "swords" },
+  { href: "/team", label: "Team", icon: "users" },
+  { href: "/build", label: "Build", icon: "cube" },
+  { href: "/business", label: "Business", icon: "clipboard" },
   { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
 ];
 

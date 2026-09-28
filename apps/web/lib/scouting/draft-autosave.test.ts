@@ -6,24 +6,31 @@ import {
 } from "./draft-autosave";
 
 describe("scoutDraftStorageKey", () => {
-  it("builds an org-scoped key and refuses empty team context", () => {
+  it("builds a personal org-scoped key and refuses empty team context", () => {
     expect(
       scoutDraftStorageKey({
+        userId: "person-a",
         orgId: "org-1",
         eventKey: "2026nysu",
         entryType: "match",
         matchKey: "qm12",
         teamKey: "frc254",
       }),
-    ).toBe("vantage-scout-draft:org-1:2026nysu:match:qm12:frc254");
+    ).toBe("vantage-scout-draft-person:person-a:org-1:2026nysu:match:qm12:frc254");
     expect(
       scoutDraftStorageKey({
+        userId: "person-a",
         orgId: "org-1",
         eventKey: "2026nysu",
         entryType: "pit",
         teamKey: "",
       }),
     ).toBeNull();
+  });
+  it("separates two scouts on the same robot and never adopts unidentified older drafts", () => {
+    const context = { orgId: "org-1", eventKey: "2026nysu", entryType: "match" as const, matchKey: "qm12", teamKey: "frc254" };
+    expect(scoutDraftStorageKey(context)).toBeNull();
+    expect(scoutDraftStorageKey({ ...context, userId: "a" })).not.toBe(scoutDraftStorageKey({ ...context, userId: "b" }));
   });
 });
 

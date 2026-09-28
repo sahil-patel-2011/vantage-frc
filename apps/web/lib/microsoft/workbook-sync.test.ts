@@ -10,6 +10,7 @@ import {
   writeWorkbookTables,
 } from "./workbook-sync";
 import { buildWorkbookTables } from "./workbook-schema";
+import { OPS_TABLES } from "./team-ops-tables";
 
 // ---------------------------------------------------------------------------
 // TEST-ONLY in-memory WorkbookTarget. Never used by product code: the real target is
@@ -51,12 +52,16 @@ const USER = "6925a000-0000-4000-8000-000000000002";
 type Recorded = { sql: string; params: unknown[] };
 
 /** A fake withRls client that answers the sync's queries from fixtures, by SQL shape. */
-function fakeClient(options: { locked?: boolean } = {}) {
+function fakeClient(options: { locked?: boolean; failOps?: boolean } = {}) {
   const log: Recorded[] = [];
   const client = {
     async query(sql: string, params: unknown[] = []) {
       log.push({ sql, params });
       const rows = (r: unknown[]) => ({ rows: r, rowCount: r.length });
+      if (OPS_TABLES.some((table) => sql.startsWith(table.sql))) {
+        if (options.failOps) throw new Error("Workbook source read denied");
+        return rows([]);
+      }
       if (sql.includes("pg_try_advisory_xact_lock")) return rows([{ locked: options.locked ?? true }]);
       if (sql.includes("INSERT INTO workbook_sync_runs")) return rows([{ id: "run-1" }]);
       if (sql.includes("FROM organizations o")) {
@@ -118,6 +123,16 @@ function fakeClient(options: { locked?: boolean } = {}) {
 const fixedClock = () => new Date("2026-09-22T12:00:00Z");
 
 describe("syncOrgWorkbook", () => {
+  it("does not open or overwrite the previous workbook after a failed database read", async () => {
+    let opened = false;
+    const target = new InMemoryWorkbookTarget();
+    target.tables.set("VantageTasks", { sheet: "Tasks", columns: ["id"], rows: [["preserved-task"]] });
+    const previous = target.snapshot();
+    await expect(syncOrgWorkbook(fakeClient({ failOps: true }).client, ORG, { openTarget: async () => { opened = true; return target; } }))
+      .rejects.toThrow("Workbook source read denied");
+    expect(opened).toBe(false);
+    expect(target.snapshot()).toBe(previous);
+  });
   it("is idempotent: syncing twice leaves an identical workbook", async () => {
     const target = new InMemoryWorkbookTarget();
     const first = await syncOrgWorkbook(fakeClient().client, ORG, { openTarget: async () => target, userId: USER, now: fixedClock });
@@ -147,7 +162,7 @@ describe("syncOrgWorkbook", () => {
     expect(scouting.rows[0]!.slice(-2)).toEqual([12, "climb"]);
     const picks = target.tables.get("VantagePickList")!;
     expect(picks.rows[0]![0]).toBe("entry-1");
-    expect(picks.rows[0]![picks.columns.indexOf("updated_at")]).toBe("2026-09-21T18:00:00Z");
+    expect(picks.rows[0]![picks.columns.indexOf("updated_at")]).toBe("2026-09-21T18:00:00.5Z");
   });
 
   it("records the run and clears the connection error on success", async () => {
@@ -246,7 +261,8 @@ describe("summarizeOutcomes", () => {
 
 describe("normalizeTimestamp", () => {
   it("turns Postgres timestamptz text into ISO UTC", () => {
-    expect(normalizeTimestamp("2026-09-21 18:00:00.123+00")).toBe("2026-09-21T18:00:00Z");
+    expect(normalizeTimestamp("2026-09-21 18:00:00.123+00")).toBe("2026-09-21T18:00:00.123Z");
+    expect(normalizeTimestamp("2026-09-21 20:00:00.123456+02")).toBe("2026-09-21T18:00:00.123456Z");
     expect(normalizeTimestamp("2026-09-21 20:00:00+02")).toBe("2026-09-21T18:00:00Z");
     expect(normalizeTimestamp(null)).toBeNull();
   });

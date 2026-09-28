@@ -1,0 +1,115 @@
+{
+  "journey": "Shared UI refresh read-only browser verification",
+  "date": "2026-09-26 local / 2026-09-27 UTC",
+  "environment": "http://127.0.0.1:3417 local acceptance server",
+  "productionAcceptance": false,
+  "browser": { "id": "1", "type": "Chrome extension", "profile": "Sahil", "tabId": "781731072" },
+  "identity": "Existing Morgan Journey session, Team 6925, no identity switch",
+  "method": "CUA only, read-only navigation and screenshots. No saved settings, records, accounts, or sign-in changes.",
+  "status": "desktop_checks_passed_remaining_checks_blocked_by_browser_control",
+  "checks": [
+    {
+      "name": "Saved Home board retained",
+      "status": "passed",
+      "evidence": "Fresh own Home tab showed Good evening Morgan, My Home board, and existing saved Next match, My day, and Team todos widgets. The synthetic Riley-owned todo and 7 PM calendar event remain visible. No dashboard replacement or invented summary was observed.",
+      "screenshot": "ui-home-desktop.png"
+    },
+    {
+      "name": "Desktop dynamic island",
+      "status": "passed",
+      "evidence": "Desktop viewport screenshot visibly shows floating rounded bottom navigation with Home, Event day, Scout, Stats and Apps. Active Home uses a restrained teal surface; Competition navigation later highlights Event day.",
+      "screenshot": "ui-home-desktop.png"
+    },
+    {
+      "name": "Five workspace hamburger menu",
+      "status": "passed",
+      "evidence": "Menu opens a labeled Product navigation dialog with profile, team, search, Home, Competition, Team, Build and Business rows and plain workspace descriptions. Settled menu width 410px, x0, no horizontal overflow. At the current short desktop height of about 609px, Business sits below the visible fold and the menu scrolls; root has already tightened header/profile/row spacing for a later build. Initial capture occurred mid-animation and was replaced by the settled screenshot.",
+      "screenshot": "ui-menu-desktop.png"
+    },
+    {
+      "name": "Keyboard menu navigation",
+      "status": "passed",
+      "evidence": "Menu initially focuses search with visible teal focus. Native Tab moved to Home link, then Competition link; Return navigated to Competition and closed the dialog. Focus labels and hrefs were read from visible DOM elements."
+    },
+    {
+      "name": "Competition section navigation",
+      "status": "passed",
+      "evidence": "Competition exposes Event day, Scout, Teams, Strategy and Pit. Normal Teams tab click loads search and 24 event teams with existing real fixture ratings and scouting counts. Floating bottom island remains visible.",
+      "screenshot": "ui-competition-teams-desktop.png"
+    },
+    {
+      "name": "Team Logistics normal menu navigation",
+      "status": "blocked_by_browser_control",
+      "evidence": "After opening the menu on Competition Teams, Team link was visibly present. Playwright click timed out on CDP Runtime.evaluate. A fresh AX read succeeded, then one accessibility click on the actual Team link timed out on Input.dispatchMouseEvent. Team destination was not reached, so Logistics is not asserted."
+    },
+    {
+      "name": "Phone viewport layout and island",
+      "status": "blocked_by_browser_control",
+      "evidence": "Read supported viewport capability documentation and attempted one 390x844 viewport set after browser-control failures. It timed out at 15 seconds and reset the CUA kernel before a phone screenshot or layout state was returned. Whether the override partially applied is unknown. Per root instruction, no further browser action or viewport retry/reset was attempted."
+    },
+    {
+      "name": "Competition keyboard arrow navigation",
+      "status": "not_reached",
+      "evidence": "Parent requested this after the successful Tab/Return test; browser control failed before the arrow-key check."
+    }
+  ],
+  "screenshots": ["ui-home-desktop.png", "ui-menu-desktop.png", "ui-competition-teams-desktop.png"],
+  "remaining": [
+    "Verify Team -> Logistics through menu on the final build",
+    "Verify phone layout and dynamic island; check and clear any partial viewport override",
+    "Check Competition tab arrow navigation",
+    "Recheck compact menu spacing and final help copy after root rebuild"
+  ],
+  "browserControlLimitations": "Failures occurred in browser CDP control. They are not evidence of app runtime defects. Own tab 781731072 was left for root after explicit stop instruction; no further browser actions or identity changes.",
+  "sourceEdits": false,
+  "recordMutations": false,
+  "overallStatus": "local_ui_checks_passed_bounded",
+  "rootVerification": {
+    "checkedAt": "2026-09-27T00:41:43Z",
+    "browserId": "2",
+    "tabId": "781731028",
+    "identity": "Existing Morgan Journey session and Team 6925; synthetic local acceptance data",
+    "method": "CUA normal menu/island/tab interactions only; no record, account or preference mutations",
+    "finalBuild": "npm run build --workspace=@vantage/web exited 0; compilation, TypeScript and 746 static pages completed",
+    "localBuildId": "Gp6FuAqMnmmDqQ8b-DFkS",
+    "checks": [
+      {
+        "name": "Compact final desktop hamburger",
+        "status": "passed",
+        "evidence": "Final build displays all five workspace rows and their descriptions together in the default approximately 1280x665 viewport, including Business. Account and team switching, search, settings and shortcut editing remain available. Current Competition sections use a collapsed disclosure.",
+        "screenshot": "ui-menu-final.png"
+      },
+      {
+        "name": "Final desktop Home and dynamic island",
+        "status": "passed",
+        "evidence": "Normal Home menu navigation preserves My Home, Peachtree District Championship and the existing Next match/My day/Team todos widgets. Bottom Home/Event day/Scout/Stats/Apps navigation is visibly present.",
+        "screenshot": "ui-home-final-desktop.png"
+      },
+      {
+        "name": "Final phone Home, island and hamburger",
+        "status": "passed",
+        "evidence": "Supported 390x844 viewport shows readable single-column Home and all island labels. The final phone menu shows all five workspace rows, search, team selector and settings without horizontal clipping. Temporary viewport override was reset after testing.",
+        "screenshots": ["ui-home-final-phone.png", "ui-menu-final-phone.png"]
+      },
+      {
+        "name": "Team to Logistics through final phone menu",
+        "status": "passed",
+        "evidence": "Normal Team menu click retains orgId. Logistics tab loads the existing synthetic departure, 1/2 checklist, trips and travel leg. Embedded view has no duplicate TeamOpsNav. How Logistics works opens the new accurate guidance and closes normally.",
+        "screenshot": "ui-logistics-final-phone.png"
+      },
+      {
+        "name": "Phone keyboard section navigation and Teams roster",
+        "status": "passed",
+        "evidence": "Before the compact CSS-only rebuild, Left from Logistics focused and selected Work with tab=todos; Right from Event day selected Scout and then Teams, with corresponding URL/selection updates. Teams displayed 24 actual synthetic fixture teams and readable teal bars. Final build preserves the same tab component and Teams roster behavior.",
+        "screenshot": "ui-teams-phone.png"
+      }
+    ],
+    "supersedesAgentRemaining": "Root completed the Team/Logistics, phone layout and arrow-key checks that the agent could not reach due to browser-control timeouts, then verified final compact menu/help copy. Original agent limitations above remain historical evidence.",
+    "openFinding": {
+      "name": "Selected event coherence",
+      "status": "unresolved_release_check",
+      "evidence": "Normal Event day navigation displayed No event linked although Home showed Peachtree District Championship, the team calendar listed its matches and Teams loaded its roster. No event setting was mutated during this read-only UI run. Requires service/configuration diagnosis before event-day acceptance."
+    },
+    "bounds": "Local shared-shell UI proof only. Complete detail views, filter/scroll recovery, dark-mode/contrast/reduced-motion acceptance, all feature workflows and production repetition remain open. The island's personalization behavior was retained in source but preferences were not mutated in this read-only run."
+  }
+}

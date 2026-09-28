@@ -75,6 +75,7 @@ function ChemistryNextActionsPanel({ actions }: { actions: ChemistryNextAction[]
 
 function ChemistryShell({
   orgId,
+  embedded = false,
   shell,
   error,
   errorStatus,
@@ -85,6 +86,7 @@ function ChemistryShell({
   children,
 }: {
   orgId?: string | null;
+  embedded?: boolean;
   shell: ChemistryShellKind;
   error?: string;
   /** HTTP status of the failed load, so an expired session offers sign-in over Retry. */
@@ -95,6 +97,7 @@ function ChemistryShell({
   cachedAt?: string | null;
   children?: ReactNode;
 }) {
+  const Root = embedded ? "section" : "main";
   const copy = chemistryShellCopy(shell);
   const setup = shell === "setup" ? chemistrySetupSteps(orgId)[0] : null;
   const failure =
@@ -117,7 +120,7 @@ function ChemistryShell({
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
-    <main className="module-page chem-page chem-workbench soft-gate">
+    <Root className="module-page chem-page chem-workbench soft-gate">
       <PageHeader
         breadcrumbs="Competition / Chemistry"
         title="Alliance chemistry"
@@ -157,16 +160,18 @@ function ChemistryShell({
           </Button>
         ) : null}
       </EmptyState>
-    </main>
+    </Root>
   );
 }
 
 export default function ChemistryClient({
   orgId: initialOrgId,
+  embedded = false,
 }: {
   orgId?: string;
   embedded?: boolean;
 } = {}) {
+  const Root = embedded ? "section" : "main";
   const [orgId, setOrgId] = useState(initialOrgId?.trim() ?? "");
   const [view, setView] = useState<ChemistryView | null>(null);
   const [error, setError] = useState("");
@@ -376,6 +381,7 @@ export default function ChemistryClient({
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
       <ChemistryShell
+        embedded={embedded}
         orgId={view?.orgId ?? (orgId || null)}
         shell={shell}
         errorStatus={errorStatus}
@@ -412,7 +418,7 @@ export default function ChemistryClient({
   const emptyCopy = chemistryShellCopy("empty");
 
   return (
-    <main className="module-page chem-page chem-workbench">
+    <Root className="module-page chem-page chem-workbench">
       <PageHeader
         breadcrumbs="Competition / Chemistry"
         title="Alliance chemistry"
@@ -443,7 +449,7 @@ export default function ChemistryClient({
       ) : null}
 
       {showTiles && chemistry ? (
-        <div className="chem-kpis" aria-label="Chemistry counts">
+        <div className="chem-kpis" role="group" aria-label="Chemistry counts">
           <article>
             <strong>{formatChemistryMetric(seatCount, true)}</strong>
             <small>alliance seats</small>
@@ -723,6 +729,6 @@ export default function ChemistryClient({
       ) : null}
 
       <ChemistryNextActionsPanel actions={readyActions} />
-    </main>
+    </Root>
   );
 }

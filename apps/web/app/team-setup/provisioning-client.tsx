@@ -1,0 +1,73 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "../../components/ui";
+import { PROVISIONING_FACTS, PROVISIONING_PHASES, provisioningReady, type ProvisioningStatus } from "../../lib/provisioning/model";
+
+export function ProvisioningClient({ orgId, initial }: { orgId: string; initial: ProvisioningStatus }) {
+  const router = useRouter();
+  const [job, setJob] = useState(initial);
+  const [tip, setTip] = useState(0);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    async function refresh() {
+      try {
+        const response = await fetch(`/api/organizations/provisioning?orgId=${encodeURIComponent(orgId)}`, { signal: controller.signal, cache: "no-store" });
+        if (!response.ok) throw new Error("Setup status is unavailable. We will try again.");
+        const next = await response.json() as ProvisioningStatus;
+        if (controller.signal.aborted) return;
+        setJob(next);
+        setConnectionError(null);
+        if (provisioningReady(next)) {
+          router.replace(`/dashboard?orgId=${encodeURIComponent(orgId)}`);
+          return;
+        }
+      } catch {
+        if (!controller.signal.aborted) setConnectionError("Waiting for a connection. Your setup progress is saved.");
+      }
+      if (!controller.signal.aborted) timer = setTimeout(() => void refresh(), 2000);
+    }
+    void refresh();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [orgId, router]);
+  useEffect(() => {
+    const timer = setInterval(() => setTip((value) => (value + 1) % PROVISIONING_FACTS.length), 12000);
+    return () => clearInterval(timer);
+  }, []);
+  async function retry() {
+    setRetrying(true);
+    try {
+      const response = await fetch("/api/organizations/provisioning", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orgId }) });
+      if (!response.ok) throw new Error("Could not resume setup. Refresh for the latest status or contact support.");
+      setJob((current) => ({ ...current, state: "queued", error: null, retryAfterAt: null }));
+      setConnectionError(null);
+    } catch (error) { setConnectionError((error as Error).message); }
+    finally { setRetrying(false); }
+  }
+  const phase = PROVISIONING_PHASES.find((item) => item.id === job.phase);
+  return <main className="provisioning-page">
+    <div className="provisioning-card">
+      <svg className={`provisioning-ring ${job.state === "failed" || job.state === "waiting" ? "is-stopped" : ""}`} viewBox="0 0 80 80" aria-hidden="true">
+        <circle className="ring-track" cx="40" cy="40" r="32" />
+        <circle className="ring-motion" cx="40" cy="40" r="32" />
+      </svg>
+      <h1>{job.state === "failed" ? "Your setup needs attention" : job.state === "waiting" ? "Your setup is waiting" : "Setting up your team"}</h1>
+      <p className="app-muted">You can refresh or leave this page; progress is saved.</p>
+      <p role="status" aria-live="polite">{job.state === "failed" || job.state === "waiting" ? job.error : phase?.label ?? "Checking your setup"}</p>
+      {job.state === "waiting" && job.retryAfterAt ? <p>Next automatic attempt: <time dateTime={job.retryAfterAt}>{new Date(job.retryAfterAt).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time></p> : null}
+      <ol className="provisioning-phases" aria-label="Setup phases">
+        {PROVISIONING_PHASES.map((item) => <li key={item.id} aria-current={item.id === job.phase ? "step" : undefined}>
+          <span aria-hidden="true">{job.completedPhases.includes(item.id) ? "✓" : "○"}</span>
+          {item.label}<span className="app-muted">{job.completedPhases.includes(item.id) ? "Done" : item.id === job.phase ? job.state === "waiting" ? "Waiting" : job.state === "failed" ? "Needs attention" : "In progress" : "Waiting"}</span>
+        </li>)}
+      </ol>
+      {connectionError ? <p role="alert">{connectionError}</p> : null}
+      {job.state === "failed" ? <Button variant="primary" disabled={retrying} onClick={() => void retry()}>{retrying ? "Resuming…" : "Retry setup"}</Button> : null}
+      <p className="provisioning-tip">{PROVISIONING_FACTS[tip]}</p>
+      <a href="mailto:vantagefrc@gmail.com">Contact support</a>
+    </div>
+  </main>;
+}

@@ -1,0 +1,91 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- complementary "Primary":
+  - generic: Vantage
+  - generic: Your team
+  - button "Search":
+    - generic: Search
+  - navigation "Pillars":
+    - link "Home":
+      - /url: /dashboard
+      - generic: Home
+    - link "Competition":
+      - /url: /competition
+      - generic: Competition
+    - link "Team":
+      - /url: /team
+      - generic: Team
+    - link "Logistics":
+      - /url: /logistics
+      - generic: Logistics
+    - link "Business":
+      - /url: /business
+      - generic: Business
+    - link "Build":
+      - /url: /build
+      - generic: Build
+  - navigation "Your apps":
+    - generic: Your apps
+    - link "Scout":
+      - /url: /competition?tab=scouting
+      - generic: Scout
+    - link "Stats":
+      - /url: /rankings
+      - generic: Stats
+    - button "Edit apps"
+  - navigation "Shortcuts":
+    - generic: Shortcuts
+    - link "Ask AI":
+      - /url: /ai?tab=chat
+      - generic: Ask AI
+  - link "Settings":
+    - /url: /account
+    - generic: Settings
+- banner:
+  - button "Menu and search"
+  - button "Your team — switch team":
+    - generic: Your team
+  - link "Open the Scouting app":
+    - /url: /api/handoff/start?to=scouting&path=%2Fscout
+    - text: Scouting
+    - generic: app
+    - generic: ↗
+  - link "Ask AI":
+    - /url: /ai?tab=chat
+  - link "Notifications":
+    - /url: /notifications
+  - button "Account menu": "?"
+- navigation "Primary apps":
+  - link "Home":
+    - /url: /dashboard
+    - generic: Home
+  - link "Event day":
+    - /url: /competition
+    - generic: Event day
+  - link "Scout":
+    - /url: /competition?tab=scouting
+    - generic: Scout
+  - link "Stats":
+    - /url: /rankings
+    - generic: Stats
+  - button "Choose your bottom bar apps":
+    - generic: Apps
+- main:
+  - heading "Competition" [level=1]
+  - tablist "Competition sections":
+    - tab "Event day" [selected]
+    - tab "Scouting"
+    - tab "Strategy"
+    - tab "Robot check"
+  - navigation "Tools in Event day":
+    - button "My Day"
+    - link "Pre-match briefing":
+      - /url: /briefing
+    - link "Pit TV":
+      - /url: /display?from=event-day
+    - button "More tools"
+  - button "How Event day works":
+    - generic: "?"
+  - generic: Loading
+  - heading "Opening your team" [level=2]
+  - paragraph: This only takes a moment.

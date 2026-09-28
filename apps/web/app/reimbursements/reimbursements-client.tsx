@@ -4,11 +4,7 @@
  * Reimbursements — the surface a treasurer-parent actually opens.
  *
  * Three jobs, top to bottom:
- *  1. File a claim: amount, what it was for, and a photo of the receipt. The
- *     photo is downscaled IN THE BROWSER before upload (the pure geometry maths
- *     are imported read-only from lib/scouting/media-downscale.ts) so a 12 MP
- *     phone shot lands under the server cap instead of being rejected on a
- *     venue's hotel wifi.
+ *  1. File a claim: amount, what it was for, and a PDF receipt document.
  *  2. Work the queue: approve, deny, mark paid. Only an owner/admin sees those
  *     buttons, and only a PAID claim moves the team's balance.
  *  3. "Season money at a glance": budget versus actual by category, and the
@@ -39,10 +35,6 @@ import {
   type ReimbursementSummary,
   type ReimbursementsView,
 } from "../../lib/finance/reimbursements";
-import {
-  DOWNSCALE_JPEG_QUALITY,
-  downscaleDimensions,
-} from "../../lib/scouting/media-downscale";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -71,41 +63,6 @@ function shortDate(value: string | null): string | null {
   return Number.isNaN(parsed.getTime())
     ? null
     : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
-/**
- * Re-encode a phone photo down to the shared max edge before upload.
- *
- * The geometry and quality constants come from lib/scouting/media-downscale.ts
- * (imported, not copied) — the canvas work has to live here because that module
- * is deliberately DOM-free so it stays unit-testable in node. On any failure the
- * original file is returned unchanged and the server cap does the rejecting.
- */
-async function downscaleReceipt(file: File): Promise<Blob> {
-  if (!file.type.startsWith("image/") || typeof createImageBitmap !== "function") return file;
-  try {
-    const bitmap = await createImageBitmap(file);
-    try {
-      const { width, height, scaled } = downscaleDimensions(bitmap.width, bitmap.height);
-      if (!scaled && file.size <= MAX_RECEIPT_BYTES) return file;
-      if (width < 1 || height < 1) return file;
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (!context) return file;
-      context.drawImage(bitmap, 0, 0, width, height);
-      const encoded = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", DOWNSCALE_JPEG_QUALITY),
-      );
-      if (!encoded || encoded.size === 0) return file;
-      return encoded.size < file.size ? encoded : file;
-    } finally {
-      bitmap.close();
-    }
-  } catch {
-    return file;
-  }
 }
 
 type Status = "loading" | "ready" | "error";
@@ -248,9 +205,7 @@ export default function ReimbursementsClient() {
       return;
     }
     const verdict = evaluateReceiptUpload({ mediaType: file.type, byteSize: file.size });
-    // Only the TYPE is refused up front — an oversized photo is still accepted
-    // here because the browser downscale below usually brings it under the cap.
-    if (!verdict.ok && !/limit/i.test(verdict.reason)) {
+    if (!verdict.ok) {
       setError(verdict.reason);
       setReceipt(null);
       return;
@@ -281,12 +236,12 @@ export default function ReimbursementsClient() {
       if (!created.ok || !body.id) throw new Error(body.error ?? "Could not file that reimbursement.");
 
       if (receipt) {
-        const prepared = await downscaleReceipt(receipt);
+        const prepared = receipt;
         const verdict = evaluateReceiptUpload({ mediaType: prepared.type, byteSize: prepared.size });
         if (!verdict.ok) throw new Error(verdict.reason);
         const form = new FormData();
         form.set("orgId", orgId);
-        form.set("receipt", prepared, receipt.name || "receipt.jpg");
+        form.set("receipt", prepared, receipt.name || "receipt.pdf");
         const uploaded = await fetch(`/api/reimbursements/${body.id}/receipt`, { method: "POST", body: form });
         if (!uploaded.ok) {
           const failure = (await uploaded.json().catch(() => null)) as { error?: string } | null;
@@ -303,7 +258,7 @@ export default function ReimbursementsClient() {
       setNotice(
         receipt
           ? "Saved as a draft with its receipt. Submit it when you are ready."
-          : "Saved as a draft. Attach the receipt photo, then submit it.",
+          : "Saved as a draft. Attach the PDF receipt, then submit it.",
       );
       load();
     } catch (cause: unknown) {
@@ -352,12 +307,12 @@ export default function ReimbursementsClient() {
       setBusy(true);
       setError(null);
       try {
-        const prepared = await downscaleReceipt(file);
+        const prepared = file;
         const verdict = evaluateReceiptUpload({ mediaType: prepared.type, byteSize: prepared.size });
         if (!verdict.ok) throw new Error(verdict.reason);
         const form = new FormData();
         form.set("orgId", orgId);
-        form.set("receipt", prepared, file.name || "receipt.jpg");
+        form.set("receipt", prepared, file.name || "receipt.pdf");
         const response = await fetch(`/api/reimbursements/${id}/receipt`, { method: "POST", body: form });
         if (!response.ok) {
           const failure = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -505,12 +460,11 @@ export default function ReimbursementsClient() {
               </label>
               <div className="rb-form-actions">
                 {<label className="rb-receipt-pick">
-                  {receipt ? `Receipt: ${receipt.name} (${formatBytes(receipt.size)})` : "Add receipt photo"}
+                  {receipt ? `Receipt: ${receipt.name} (${formatBytes(receipt.size)})` : "Add PDF receipt"}
                   <input
                     ref={receiptInput}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    capture="environment"
+                    accept="application/pdf,.pdf"
                     onChange={(event) => pickReceipt(event.target.files?.[0] ?? null)}
                   />
                 </label>}
@@ -525,8 +479,7 @@ export default function ReimbursementsClient() {
                 </button>
               </div>
               <p className="rb-meta">
-                {`Photos are shrunk before upload to fit the ${formatBytes(MAX_RECEIPT_BYTES)} limit.`}
-                {" "}Add a receipt photo to submit; without one the claim stays a draft.
+                {`Attach a PDF receipt up to ${formatBytes(MAX_RECEIPT_BYTES)} to submit. Without one the claim stays a draft.`}
               </p>
             </div>
           </Panel>
@@ -720,8 +673,7 @@ function ClaimRow({
             {request.hasReceipt ? "Replace receipt" : "Add receipt"}
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
-              capture="environment"
+              accept="application/pdf,.pdf"
               disabled={busy}
               onChange={(event) => {
                 const file = event.target.files?.[0];

@@ -42,8 +42,8 @@ export default function StrategyFeaturePage() {
             companion={{ href: "#frc-assistant", label: "See the assistant", variant: "secondary" }}
           />
           {/* The right half of the first screen was empty on a laptop: show the product there. */}
-          <div className="lux-route-hero-visual" aria-hidden="true">
-            <ProductFrame id="predict" />
+          <div className="lux-route-hero-visual">
+            <ProductFrame id="predict" headingLevel={2} />
           </div>
         </header>
 
@@ -51,8 +51,8 @@ export default function StrategyFeaturePage() {
           <div className="lux-content">
             <header>
               <span className="section-id">ASK AI</span>
-              <h2 id="assistant-title">Ask about your event. See where every answer came from.</h2>
-              <p>Built from public match data and your scouts. An event with no data says so.</p>
+              <h2 id="assistant-title">Ask about your event. Review the evidence.</h2>
+              <p>Optional AI uses your connected account or provider key. Check cited sources and review suggestions before acting.</p>
             </header>
             <div className="assistant-story-grid">
               <div className="assistant-job-grid">

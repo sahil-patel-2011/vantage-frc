@@ -1,0 +1,421 @@
+{
+  "date": "2026-09-27",
+  "productionChanged": false,
+  "signupEarliest": "2026-12-01T05:00:00.000Z",
+  "requiresProductionVerification": true,
+  "checks": {
+    "unit": {
+      "filesPassed": 1502,
+      "testsPassed": 11209,
+      "filesSkipped": 16,
+      "testsSkipped": 41,
+      "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36328963807"
+    },
+    "additionalTests": "New live-cache tests and final affected regression checks passed separately; see DEVICE-AND-LAUNCH.md.",
+    "lint": "passed",
+    "workspaceTypes": "passed in candidate CI",
+    "productionBuild": "candidate CI and exact local 748-page build passed",
+    "browser": {
+      "initialSettings": 4,
+      "developmentFinal": 6,
+      "productionCandidate": {
+        "passed": 10,
+        "failed": 3,
+        "findings": [
+          "Early-access footer hidden in password mode: fixed and replayed in development",
+          "New test used nonexistent scout fixture role: corrected to member and passed",
+          "Existing sign-in test assumes development email OTP; masked production preview has no email provider"
+        ]
+      },
+      "productionFinal": {
+        "passed": 11,
+        "failed": 0
+      },
+      "adminDateFollowup": {
+        "passed": 2,
+        "failed": 0
+      },
+      "fullCandidate": {
+        "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36328016492",
+        "attempt": 1,
+        "result": "failed",
+        "completed": 405,
+        "passed": 400,
+        "skipped": 5,
+        "failedTests": 0,
+        "missing": 9,
+        "reason": "Final group in shard 8 did not start: webServer readiness timed out after 180 seconds. Coverage verification failed correctly."
+      },
+      "localMissingGroup": {
+        "result": "one outdated assertion identified",
+        "reason": "The admin checklist test expected two conditions; December 1 adds a third. Updated to assert all three and exact open-state agreement, then both admin cases passed on the built app."
+      },
+      "rerunAttempt2": "Cancelled after identifying the stale checklist assertion locally; it would still run the old assertion.",
+      "fullFinal": {
+        "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36328963807",
+        "sourceRevision": "0063d23a141b5dc89c6f477612c58eaf47290faa",
+        "result": "CI success with one retry-only pass",
+        "planned": 414,
+        "reported": 414,
+        "passedDirectly": 408,
+        "passedOnRetry": 1,
+        "skipped": 5,
+        "failed": 0,
+        "exactCoverage": true,
+        "coverage": [
+          {
+            "shard": "1/8",
+            "maxFiles": 6,
+            "planned": 54,
+            "reported": 54,
+            "groups": 4,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:17:55.528Z",
+              "duration": 304110.5380859375,
+              "expected": 54,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          },
+          {
+            "shard": "2/8",
+            "maxFiles": 6,
+            "planned": 61,
+            "reported": 61,
+            "groups": 3,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:18:08.804Z",
+              "duration": 369941.47509765625,
+              "expected": 61,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          },
+          {
+            "shard": "3/8",
+            "maxFiles": 6,
+            "planned": 41,
+            "reported": 41,
+            "groups": 3,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:17:55.506Z",
+              "duration": 209665.0400390625,
+              "expected": 38,
+              "skipped": 3,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          },
+          {
+            "shard": "4/8",
+            "maxFiles": 6,
+            "planned": 52,
+            "reported": 52,
+            "groups": 4,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:18:40.565Z",
+              "duration": 327516.3430175781,
+              "expected": 51,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 1
+            }
+          },
+          {
+            "shard": "5/8",
+            "maxFiles": 6,
+            "planned": 53,
+            "reported": 53,
+            "groups": 2,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:17:56.075Z",
+              "duration": 231473.05102539062,
+              "expected": 53,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          },
+          {
+            "shard": "6/8",
+            "maxFiles": 6,
+            "planned": 55,
+            "reported": 55,
+            "groups": 3,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:18:15.645Z",
+              "duration": 170825.39599609375,
+              "expected": 55,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          },
+          {
+            "shard": "7/8",
+            "maxFiles": 6,
+            "planned": 47,
+            "reported": 47,
+            "groups": 3,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:17:56.948Z",
+              "duration": 230555.52587890625,
+              "expected": 47,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          },
+          {
+            "shard": "8/8",
+            "maxFiles": 6,
+            "planned": 51,
+            "reported": 51,
+            "groups": 4,
+            "exactCoverage": true,
+            "result": "passed",
+            "stats": {
+              "startTime": "2026-09-27T15:17:54.965Z",
+              "duration": 471589.1721191406,
+              "expected": 49,
+              "skipped": 2,
+              "unexpected": 0,
+              "flaky": 0
+            }
+          }
+        ],
+        "findings": [
+          {
+            "stats": {
+              "total": 54,
+              "expected": 54,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 0,
+              "ok": true
+            },
+            "findings": [],
+            "shard": 1
+          },
+          {
+            "stats": {
+              "total": 61,
+              "expected": 61,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 0,
+              "ok": true
+            },
+            "findings": [],
+            "shard": 2
+          },
+          {
+            "stats": {
+              "total": 41,
+              "expected": 38,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 3,
+              "ok": true
+            },
+            "findings": [
+              {
+                "outcome": "skipped",
+                "title": "FEATURE_MAP product routes render without a 500",
+                "file": "feature-map-walk.spec.ts",
+                "annotations": [
+                  {
+                    "type": "skip",
+                    "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                    "location": {
+                      "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                      "line": 83,
+                      "column": 10
+                    }
+                  }
+                ]
+              },
+              {
+                "outcome": "skipped",
+                "title": "an event later today shows on the card, and goes when it is removed",
+                "file": "home-knows-tonight.spec.ts",
+                "annotations": [
+                  {
+                    "type": "skip",
+                    "description": "the next match leads Home today",
+                    "location": {
+                      "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                      "line": 77,
+                      "column": 8
+                    }
+                  }
+                ]
+              },
+              {
+                "outcome": "skipped",
+                "title": "the card does not reach past today to find something to say",
+                "file": "home-knows-tonight.spec.ts",
+                "annotations": [
+                  {
+                    "type": "skip",
+                    "description": "the next match leads Home today",
+                    "location": {
+                      "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                      "line": 153,
+                      "column": 8
+                    }
+                  }
+                ]
+              }
+            ],
+            "shard": 3
+          },
+          {
+            "stats": {
+              "total": 52,
+              "expected": 51,
+              "unexpected": 0,
+              "flaky": 1,
+              "skipped": 0,
+              "ok": false
+            },
+            "findings": [
+              {
+                "outcome": "flaky",
+                "title": "Lineup coverage still loads after the Saturday shell pass",
+                "file": "lineup-shell.spec.ts",
+                "annotations": []
+              }
+            ],
+            "shard": 4
+          },
+          {
+            "stats": {
+              "total": 53,
+              "expected": 53,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 0,
+              "ok": true
+            },
+            "findings": [],
+            "shard": 5
+          },
+          {
+            "stats": {
+              "total": 55,
+              "expected": 55,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 0,
+              "ok": true
+            },
+            "findings": [],
+            "shard": 6
+          },
+          {
+            "stats": {
+              "total": 47,
+              "expected": 47,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 0,
+              "ok": true
+            },
+            "findings": [],
+            "shard": 7
+          },
+          {
+            "stats": {
+              "total": 51,
+              "expected": 49,
+              "unexpected": 0,
+              "flaky": 0,
+              "skipped": 2,
+              "ok": true
+            },
+            "findings": [
+              {
+                "outcome": "skipped",
+                "title": "Home What to do now CTA is a real click",
+                "file": "student-week-gui.spec.ts",
+                "annotations": [
+                  {
+                    "type": "skip",
+                    "description": "the next match leads Home today",
+                    "location": {
+                      "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                      "line": 50,
+                      "column": 10
+                    }
+                  }
+                ]
+              },
+              {
+                "outcome": "skipped",
+                "title": "a real key is accepted, shown only by its last four characters, and never returned",
+                "file": "tinyfish-key-never-returned.spec.ts",
+                "annotations": [
+                  {
+                    "type": "skip",
+                    "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                    "location": {
+                      "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                      "line": 74,
+                      "column": 8
+                    }
+                  }
+                ]
+              }
+            ],
+            "shard": 8
+          }
+        ]
+      },
+      "lineupReplay": {
+        "passed": 2,
+        "failed": 0,
+        "retries": 0,
+        "mode": "local production build, unchanged assertions",
+        "durationsSeconds": [
+          2.5,
+          2.2
+        ],
+        "diagnosis": "CI trace records 34571.039 ms for the development document response. The 45-second test deadline ended while coverage requests were pending. Root cause of the development response delay is not established; retry-only CI result is retained."
+      }
+    },
+    "accessibility": "Phone, desktop and explicit dark-theme reduced-motion scans of the storage panel: zero violations. No horizontal overflow in the dark phone check.",
+    "preflightFollowup": {
+      "testsPassed": 4,
+      "lint": "passed",
+      "runtimeCodeChanged": false,
+      "correction": "Recognize the existing Gmail SMTP provider as an alternative to Resend; protected values remain unverified."
+    }
+  },
+  "limitations": [
+    "Browser storage estimates are approximate; selected GB budget does not reserve space",
+    "Service-worker app-shell assets are not pruned by the setting",
+    "Synced queues clear automatically, saved read caches remain available",
+    "Original production release gates remain unresolved"
+  ],
+  "ci": "Complete: all planned cases accounted for; one retry-only pass and five skips retained.",
+  "copyFollowup": "Removed permanent invite-only claims from search/social metadata; six marketing test files / 36 tests and targeted lint passed.",
+  "sourceRevision": "0063d23a141b5dc89c6f477612c58eaf47290faa",
+  "productionPreflight": "production-preflight-device-launch.json"
+}

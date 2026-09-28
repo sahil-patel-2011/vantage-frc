@@ -61,7 +61,8 @@ export function LogisticsManagePanel({
           className="log-grid-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const fd = new FormData(e.currentTarget);
+            const form = e.currentTarget;
+            const fd = new FormData(form);
             void run(
               {
                 action: "add_checklist_item",
@@ -71,7 +72,7 @@ export function LogisticsManagePanel({
                 label: String(fd.get("label") ?? ""),
               },
               "add-chk",
-            ).then(() => e.currentTarget.reset());
+            ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
           <select name="tripId" defaultValue={trip?.id ?? ""}>
@@ -127,7 +128,8 @@ export function LogisticsManagePanel({
           className="log-grid-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const fd = new FormData(e.currentTarget);
+            const form = e.currentTarget;
+            const fd = new FormData(form);
             void run(
               {
                 action: "upsert_contact",
@@ -141,7 +143,7 @@ export function LogisticsManagePanel({
                 sortOrder: Number(fd.get("sortOrder") ?? 0),
               },
               "contact",
-            ).then(() => e.currentTarget.reset());
+            ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
           <input name="name" placeholder="Name" required />
@@ -180,7 +182,8 @@ export function LogisticsManagePanel({
           className="log-grid-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const fd = new FormData(e.currentTarget);
+            const form = e.currentTarget;
+            const fd = new FormData(form);
             const starts = String(fd.get("startsAt") ?? "");
             const ends = String(fd.get("endsAt") ?? "");
             void run(
@@ -197,7 +200,7 @@ export function LogisticsManagePanel({
                 notes: String(fd.get("notes") ?? ""),
               },
               "onduty",
-            ).then(() => e.currentTarget.reset());
+            ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
           <select name="tripId" defaultValue={trip?.id ?? ""}>

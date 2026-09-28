@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "environment": "isolated local browser-journey PostgreSQL17 database",
+  "productionAcceptance": false,
+  "checkpoint": "checkpoint-2026-09-26T21-11-33.486Z",
+  "googleVerifiedAt": "2026-09-26T21:12:53.342Z",
+  "googleOnlyRestoreVerifiedAt": "2026-09-26T21:16:52.473Z",
+  "tables": 614,
+  "countsMatch": true,
+  "testRun": "404b5e7f-42cd-4ef4-a1ed-1e96252a4c07",
+  "encryption": "AES-256-GCM; separately held keys",
+  "bridge": {
+    "protocol": 6,
+    "deploymentVersion": 10,
+    "authenticationAndAccessUnchanged": true,
+    "signedPingVerified": true
+  },
+  "limits": [
+    "One local checkpoint; no production operating-cycle proof",
+    "Row counts and integrity verified; journal replay, sequences, retention and credential revocation remain open",
+    "Browser provisioning is still under test"
+  ]
+}

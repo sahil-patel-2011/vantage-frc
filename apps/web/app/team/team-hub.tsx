@@ -12,6 +12,7 @@ import "../practice/practice.css";
 import "./knowledge/knowledge.css";
 import "../batteries/batteries.css";
 import "../todos/todos.css";
+import "../logistics/logistics.css";
 
 const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false });
 const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false });
@@ -21,6 +22,7 @@ const KnowledgeClient = dynamic(() => import("./knowledge/knowledge-client"), { 
 const AttendanceClient = dynamic(() => import("../attendance/attendance-client"), { ssr: false });
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
 const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
+const LogisticsClient = dynamic(() => import("../logistics/logistics-client"), { ssr: false });
 
 function MessagesTab({ orgId }: { orgId: string }) {
   const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
@@ -56,12 +58,15 @@ function MessagesTab({ orgId }: { orgId: string }) {
 }
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = ["calendar", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"] as const;
+const EMBEDDED_TABS = ["calendar", "logistics", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"] as const;
 
 export default function TeamHub() {
   return (
     <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
+        if (tab === "logistics") {
+          return <HubOrgGate orgId={orgId} label="Logistics">{() => <LogisticsClient embedded />}</HubOrgGate>;
+        }
         if (tab === "calendar") {
           return (
             <HubOrgGate orgId={orgId} label="Calendar">

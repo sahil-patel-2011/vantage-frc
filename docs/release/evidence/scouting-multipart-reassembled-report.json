@@ -1,0 +1,128 @@
+{
+  "clientId": "45663597-199b-4553-8afc-bae174942bb0",
+  "eventKey": "2026gacmp",
+  "matchKey": "2026gacmp_qm36",
+  "teamKey": "frc1323",
+  "type": "match",
+  "schemaId": "6925a000-0000-4000-8000-000000000004",
+  "payload": {
+    "autoPoints": 0,
+    "teleopCycles": 2,
+    "totalPoints": 17,
+    "endgame": "none",
+    "brokeDown": "no",
+    "notes": "[Synthetic scouting journey 2026-09-26] Multipart QR outage retest; Q36 team1323; original zero/history must survive; no real match observation.",
+    "_observations": {
+      "version": 1,
+      "events": [
+        {
+          "id": "41c15598-03e7-4679-88f8-38bd0a99a497",
+          "at": "2026-09-26T23:57:58.136Z",
+          "changes": [
+            {
+              "field": "autoPoints",
+              "beforeExists": false,
+              "afterExists": true,
+              "before": null,
+              "after": 1
+            }
+          ]
+        },
+        {
+          "id": "64c63d5a-966a-4366-9ff5-7070a9c53cf5",
+          "at": "2026-09-26T23:57:59.141Z",
+          "changes": [
+            {
+              "field": "autoPoints",
+              "beforeExists": true,
+              "afterExists": true,
+              "before": 1,
+              "after": 0
+            }
+          ]
+        },
+        {
+          "id": "2217ee42-8390-43e2-aa5f-cb7aefe4d189",
+          "at": "2026-09-26T23:58:00.138Z",
+          "changes": [
+            {
+              "field": "teleopCycles",
+              "beforeExists": false,
+              "afterExists": true,
+              "before": null,
+              "after": 1
+            }
+          ]
+        },
+        {
+          "id": "463a9310-1a2f-477f-9330-92cb9ce49646",
+          "at": "2026-09-26T23:58:01.139Z",
+          "changes": [
+            {
+              "field": "teleopCycles",
+              "beforeExists": true,
+              "afterExists": true,
+              "before": 1,
+              "after": 2
+            }
+          ]
+        },
+        {
+          "id": "537585c6-8066-4ea2-9ef8-c12b8f643240",
+          "at": "2026-09-26T23:58:01.174Z",
+          "changes": [
+            {
+              "field": "totalPoints",
+              "beforeExists": false,
+              "afterExists": true,
+              "before": null,
+              "after": 17
+            }
+          ]
+        },
+        {
+          "id": "5535ce6a-fd3c-4389-bb8d-fba3d6add6e6",
+          "at": "2026-09-26T23:58:02.143Z",
+          "changes": [
+            {
+              "field": "endgame",
+              "beforeExists": false,
+              "afterExists": true,
+              "before": null,
+              "after": "none"
+            }
+          ]
+        },
+        {
+          "id": "567ea7b7-20ce-4415-ba44-aebfabedf9fd",
+          "at": "2026-09-26T23:58:03.140Z",
+          "changes": [
+            {
+              "field": "brokeDown",
+              "beforeExists": false,
+              "afterExists": true,
+              "before": null,
+              "after": "no"
+            }
+          ]
+        },
+        {
+          "id": "08d46030-ea9a-43cd-b048-3214cf50eaf2",
+          "at": "2026-09-26T23:58:03.170Z",
+          "changes": [
+            {
+              "field": "notes",
+              "beforeExists": false,
+              "afterExists": true,
+              "before": null,
+              "after": "[Synthetic scouting journey 2026-09-26] Multipart QR outage retest; Q36 team1323; original zero/history must survive; no real match observation."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "confidence": "high",
+  "source": "manual",
+  "updatedAt": "2026-09-26T23:59:13.519Z"
+}

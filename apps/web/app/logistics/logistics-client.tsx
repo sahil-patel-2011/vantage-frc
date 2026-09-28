@@ -26,7 +26,8 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve
 import { canActOnline, type ActionBody } from "./logistics-model";
 import { LogisticsTripsPanel } from "./logistics-trips";
 
-export default function LogisticsClient() {
+export default function LogisticsClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Container = embedded ? "section" : "main";
   const online = useOnline();
   const [view, setView] = useState<LogisticsView | null>(null);
   const [error, setError] = useState("");
@@ -84,7 +85,7 @@ export default function LogisticsClient() {
     async (body: ActionBody, key: string) => {
       if (!canActOnline(online, fromCache)) {
         setError("Reconnect to save changes (cached copy is read-only).");
-        return;
+        return false;
       }
       setBusyKey(key);
       setError("");
@@ -98,7 +99,7 @@ export default function LogisticsClient() {
         const data = (await response.json()) as LogisticsView & { error?: string };
         if (!response.ok) {
           setError(data.error ?? "Could not save");
-          return;
+          return false;
         }
         if ("status" in data) {
           setView(data);
@@ -115,8 +116,10 @@ export default function LogisticsClient() {
           await load();
         }
         setOkMessage("Saved.");
+        return true;
       } catch {
         setError("Network error — changes were not saved.");
+        return false;
       } finally {
         setBusyKey(null);
       }
@@ -135,6 +138,7 @@ export default function LogisticsClient() {
   if (error && !view) {
     return (
       <LogisticsShell
+        embedded={embedded}
         orgId={urlOrg}
         shell="error"
         error={error}
@@ -155,6 +159,7 @@ export default function LogisticsClient() {
   if (!view) {
     return (
       <LogisticsShell
+        embedded={embedded}
         orgId={urlOrg}
         shell={classifyLogisticsShell({ loading: !fetchFailed, fetchFailed })}
       />
@@ -164,6 +169,7 @@ export default function LogisticsClient() {
   if (view.status === "setup_required") {
     return (
       <LogisticsShell
+        embedded={embedded}
         orgId={orgIdParam}
         shell="setup"
         error={view.message}
@@ -212,7 +218,7 @@ export default function LogisticsClient() {
 
   if (!hasPlan) {
     return (
-      <LogisticsShell orgId={orgId} shell="empty" canManage={canManage}>
+      <LogisticsShell embedded={embedded} orgId={orgId} shell="empty" canManage={canManage}>
         <OfflineBanner
           feature="Logistics"
           fromCache={fromCache}
@@ -243,7 +249,7 @@ export default function LogisticsClient() {
   };
 
   return (
-    <main className="log-page">
+    <Container className={`log-page${embedded ? " is-embedded" : ""}`}>
       <PageHeader
         navPath="/logistics"
         title="Logistics"
@@ -255,7 +261,7 @@ export default function LogisticsClient() {
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="logistics" />
+      {!embedded ? <TeamOpsNav orgId={orgId} active="logistics" /> : null}
       <OfflineBanner
         feature="Logistics"
         fromCache={fromCache}
@@ -306,6 +312,6 @@ export default function LogisticsClient() {
         run={run}
         onSelectTrip={setSelectedTripId}
       />
-    </main>
+    </Container>
   );
 }

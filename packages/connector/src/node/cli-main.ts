@@ -4,10 +4,11 @@ import { resolve as resolvePath } from "node:path";
 import { AgentSyncCapability } from "../agent-sync.js";
 import { AiBridgeCapability } from "../ai-bridge.js";
 import { CadRelayCapability } from "../cad-relay.js";
-import { buildStatusSnapshot, parseCliArgs, runCli, type CliHost } from "../cli.js";
+import { buildStatusSnapshot, extractPersonalProfile, parseCliArgs, runCli, type CliHost } from "../cli.js";
 import { LocalModelsCapability } from "../local-models.js";
-import { McpCapability, connectorStatusToolRegistry } from "../mcp.js";
-import { StorageNodeCapability } from "../storage-node.js";
+import { McpCapability, combineToolRegistries, connectorStatusToolRegistry } from "../mcp.js";
+import { personalFeatureToolRegistry } from "../feature-tools.js";
+import { loadConnectorConfig } from "../config.js";
 import {
   fetchTransport,
   nodeClock,
@@ -80,9 +81,17 @@ function registerShutdown(watchStdin: boolean): (handler: (reason: string) => vo
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
-  const isMcp = parseCliArgs(argv).kind === "mcp";
+  const scoped = extractPersonalProfile(argv);
+  if (scoped.error) { process.stderr.write(`${scoped.error}\n`); return 1; }
+  const command = parseCliArgs(scoped.argv);
+  if (!scoped.profile && command.kind !== "help" && command.kind !== "version" && command.kind !== "usage-error") {
+    process.stderr.write("Use --profile <your Vantage user ID> from Personal connections. Each person must pair their own profile.\n");
+    return 1;
+  }
+  const isMcp = command.kind === "mcp";
   const host: CliHost = {
-    argv,
+    argv: scoped.argv,
+    profile: scoped.profile,
     home: nodeHome(),
     machineName: nodeMachineName(),
     env: process.env,
@@ -99,10 +108,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
       new CadRelayCapability(),
       new LocalModelsCapability(),
       new AgentSyncCapability(),
-      new StorageNodeCapability(),
       // The one tool this host serves over stdio, so the capability reports the real
       // surface instead of an empty registry.
-      new McpCapability({ registry: connectorStatusToolRegistry(() => buildStatusSnapshot(host)) }),
+      new McpCapability({ registry: combineToolRegistries(connectorStatusToolRegistry(() => buildStatusSnapshot(host)), personalFeatureToolRegistry(host.transport, () => loadConnectorConfig(host.fs, host.home, host.profile))) }),
     ],
     onShutdown: registerShutdown(isMcp),
     pid: process.pid,

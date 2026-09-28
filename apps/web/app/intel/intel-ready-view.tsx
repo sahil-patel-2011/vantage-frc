@@ -12,8 +12,8 @@ import {
 import { IntelNextActionsPanel } from "./intel-chrome";
 import { IntelLookupBoard } from "./intel-lookup-board";
 import { IntelLookupNotes } from "./intel-lookup-notes";
-import { IntelScoutBreakdown } from "./intel-scout-breakdown";
-import { buildScoutBreakdown } from "../../lib/scouting/scout-breakdown";
+import { ScoutObservationExplorer } from "./scout-observation-explorer";
+import { combineObservations } from "../../lib/scouting/observations";
 import {
   fieldStatsFromEventRows,
   scoutAveragesFromPayloads,
@@ -249,12 +249,6 @@ export function IntelReadyView({
         }
       : null);
   const findingCount = intel.findings.length;
-  // Match rows only — a pit note has no match to plot against.
-  const breakdown = buildScoutBreakdown(
-    scoutNotes
-      .filter((note) => note.matchKey)
-      .map((note) => ({ matchKey: note.matchKey, payload: note.payload })),
-  );
   const eventLabel = activeEvent?.eventName?.trim() || activeEvent?.eventKey || null;
 
   return (
@@ -298,20 +292,22 @@ export function IntelReadyView({
         </Panel>
       ) : null}
 
-      {scoutingFirst ? <IntelScoutBreakdown breakdown={breakdown} /> : null}
+      {scoutingFirst ? <ScoutObservationExplorer key={intel.team.teamKey + activeEvent?.eventKey} rows={scoutNotes} activeEventKey={activeEvent?.eventKey ?? null} /> : null}
 
+      <details className="intel-shared-scouting" open={!scoutingFirst}>
+      <summary>Official ratings and public research</summary>
       <IntelLookupBoard
         teamKey={intel.team.teamKey}
         event={eventRow}
         field={fieldStatsFromEventRows(fieldRatings ?? [])}
         scout={scoutAveragesFromPayloads(
           intel.team.teamKey,
-          scoutNotes.map((note) => note.payload),
+          combineObservations(scoutNotes.filter(note => note.matchKey && note.confidence !== "low" && (!activeEvent?.eventKey || note.eventKey === activeEvent.eventKey || note.matchKey.startsWith(activeEvent.eventKey + "_")))).rows.map((note) => note.payload),
         )}
         history={intel.trajectory.map((point) => point.epa)}
       />
 
-      {scoutingFirst ? null : <IntelScoutBreakdown breakdown={breakdown} />}
+      {scoutingFirst ? null : <ScoutObservationExplorer key={intel.team.teamKey + activeEvent?.eventKey} rows={scoutNotes} activeEventKey={activeEvent?.eventKey ?? null} />}
 
       {lookupNote && onSaveNote ? (
         <IntelLookupNotes note={lookupNote} busy={submitting} onSave={onSaveNote} />
@@ -319,7 +315,7 @@ export function IntelReadyView({
 
       <div className="intel-panels">
         <Panel>
-          <h3 style={{ marginTop: 0 }}>Robot profile</h3>
+          <h3 style={{ marginTop: 0 }}>Robot profile across recorded events</h3>
           <div className="intel-tag-row">
             {intel.archetypes.length ? (
               intel.archetypes.map((tag) => (
@@ -410,6 +406,7 @@ export function IntelReadyView({
         )}
       </Panel>
 
+      </details>
       <Panel style={{ minHeight: "auto" }}>
         <button type="button" className="text-button" onClick={onToggleTools}>
           {toolsOpen ? "Hide compare and pick tools" : "Compare alliance / save pick"}

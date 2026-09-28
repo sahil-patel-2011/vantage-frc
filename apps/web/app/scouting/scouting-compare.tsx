@@ -13,6 +13,7 @@
  */
 
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import { phasePointValue, phaseSampleCount, pointValue } from "./scouting-points-display";
 import { CONSISTENCY_LABEL } from "@vantage/prediction-strategy";
 import { allianceMath } from "./compare-alliance";
 import { ScoutingCompareCharts } from "./scouting-compare-charts";
@@ -24,12 +25,12 @@ export function teamNumberLabel(teamKey: string): string {
   return teamKey.replace(/^frc/i, "");
 }
 
-type Phase = { key: "auto" | "teleop" | "endgame"; label: string; value: (p: ScoutedTeamProfile) => number };
+type Phase = { key: "auto" | "teleop" | "endgame"; label: string; value: (p: ScoutedTeamProfile) => number | null };
 
 const PHASES: Phase[] = [
-  { key: "auto", label: "Auto", value: (p) => p.meanAuto },
-  { key: "teleop", label: "Teleop", value: (p) => p.meanTeleop },
-  { key: "endgame", label: "Endgame", value: (p) => p.meanEndgame },
+  { key: "auto", label: "Auto", value: (p) => phasePointValue(p, "auto") },
+  { key: "teleop", label: "Teleop", value: (p) => phasePointValue(p, "teleop") },
+  { key: "endgame", label: "Endgame", value: (p) => phasePointValue(p, "endgame") },
 ];
 
 export function ScoutingCompare({
@@ -45,7 +46,7 @@ export function ScoutingCompare({
 
   const phaseMax = Math.max(
     1,
-    ...profiles.flatMap((profile) => PHASES.map((phase) => phase.value(profile))),
+    ...profiles.flatMap((profile) => PHASES.map((phase) => phase.value(profile) ?? 0)),
   );
   const rangeFloor = Math.min(
     0,
@@ -103,10 +104,10 @@ export function ScoutingCompare({
                         <span
                           className="scmp-bar-fill"
                           data-phase={phase.key}
-                          style={{ width: `${(value / phaseMax) * 100}%` }}
+                          style={{ width: `${((value ?? 0) / phaseMax) * 100}%` }}
                         />
                       </span>
-                      <span className="scmp-phase-value">{value.toFixed(1)}</span>
+                      <span className="scmp-phase-value" title={`${phaseSampleCount(profile, phase.key)} matches with recorded ${phase.label.toLowerCase()} points`}>{pointValue(value)} <small>({phaseSampleCount(profile, phase.key)})</small></span>
                     </li>
                   );
                 })}
@@ -140,7 +141,7 @@ export function ScoutingCompare({
                 <div>
                   <dt>Trend</dt>
                   <dd>
-                    {profile.trend && profile.trend.direction !== "flat"
+                    {profile.trend == null ? "Unknown" : profile.trend.direction !== "flat"
                       ? profile.trend.direction === "up"
                         ? "Improving"
                         : "Scoring less lately"
@@ -166,7 +167,7 @@ export function ScoutingCompare({
           <div className="scmp-alliance-figures">
             <span>
               <strong>{alliance.total.toFixed(0)}</strong>
-              <small>together, per match</small>
+              <small>sum of adjusted averages</small>
             </span>
             {alliance.floor != null && alliance.ceiling != null ? (
               <span>
@@ -178,13 +179,13 @@ export function ScoutingCompare({
             ) : null}
             <span>
               <strong>
-                {alliance.auto.toFixed(0)} · {alliance.teleop.toFixed(0)} · {alliance.endgame.toFixed(0)}
+                {pointValue(alliance.auto)} · {pointValue(alliance.teleop)} · {pointValue(alliance.endgame)}
               </strong>
               <small>auto · teleop · endgame</small>
             </span>
             <span data-tone={alliance.deadRisk > 0.2 ? "risk" : undefined}>
               <strong>{Math.round(alliance.deadRisk * 100)}%</strong>
-              <small>chance one dies</small>
+              <small>estimated breakdown risk*</small>
             </span>
             <span>
               <strong>
@@ -193,7 +194,7 @@ export function ScoutingCompare({
               <small>reliable climbs</small>
             </span>
           </div>
-          <p className="scmp-alliance-note">{alliance.note}</p>
+          <p className="scmp-alliance-note">{alliance.note} *Risk assumes independent breakdowns; this is not a verified match prediction.</p>
         </footer>
       ) : null}
     </section>

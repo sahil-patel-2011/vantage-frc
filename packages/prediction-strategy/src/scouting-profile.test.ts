@@ -10,7 +10,7 @@ import type { ScoutedMatchRow } from "./scouting-rating";
 function rows(teamKey: string, totals: readonly (number | "dead")[]): ScoutedMatchRow[] {
   return totals.map((total, index) =>
     total === "dead"
-      ? { teamKey, matchKey: `qm${index}`, disabled: true }
+      ? { teamKey, matchKey: `qm${index}`, disabled: true, total: 0 }
       : { teamKey, matchKey: `qm${index}`, teleop: total },
   );
 }
@@ -160,7 +160,7 @@ describe("headline", () => {
       ...field(),
       ...rows("frcBREAKS", [40, "dead", 42, "dead", 41, 39]),
     ]);
-    expect(byTeam(profiles, "frcBREAKS").headline).toContain("dead on the field");
+    expect(byTeam(profiles, "frcBREAKS").headline).toContain("breakdown was reported");
   });
 
   it("says how much more scouting a thin team needs", () => {

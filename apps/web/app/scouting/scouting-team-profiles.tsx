@@ -17,7 +17,12 @@ import { ScoutingTeamDetail } from "./scouting-team-detail";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { offlineSnapshotUser } from "../../lib/offline/identity";
+import { readRobotViewState, robotViewStorageKey, writeRobotViewState } from "../../lib/scouting/robot-view-state";
 import "./scouting-team-profiles.css";
+import type { ObservedRobot } from "../../lib/scouting/team-profiles";
+import { ScoutObservationExplorer } from "../intel/scout-observation-explorer";
+import "../intel/intel.css";
 
 /**
  * What your scouting says, rather than how much of it you have done.
@@ -45,8 +50,9 @@ type View =
       basis: string;
       thin: number;
       eventKey: string;
+      observations?: ObservedRobot[];
     }
-  | { status: "empty" | "needs_formula" | "setup_required"; message: string };
+  | { status: "empty" | "needs_formula" | "setup_required"; message: string; observations?: ObservedRobot[] };
 
 type Sort = "fit" | "pick" | "average" | "number";
 
@@ -62,6 +68,26 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [compare, setCompare] = useState<string[]>([]);
   /** When true and exactly two teams are selected, show the split-view deep dive. */
   const [splitView, setSplitView] = useState(false);
+  const [savedContext, setSavedContext] = useState<{ orgId: string; eventKey: string | null; key: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSavedContext(null);
+    void offlineSnapshotUser(orgId).then(user => {
+      if (cancelled || !user) return;
+      const key = robotViewStorageKey(user, orgId, eventKey);
+      const saved = readRobotViewState(key);
+      setSort(saved?.sort ?? "fit"); setSelected(saved?.selected ?? null); setQuery(saved?.query ?? "");
+      setCompare(saved?.compare ?? []); setSplitView(saved?.splitView ?? false);
+      setSavedContext({ orgId, eventKey, key });
+    });
+    return () => { cancelled = true; };
+  }, [orgId, eventKey]);
+
+  useEffect(() => {
+    if (!savedContext || savedContext.orgId !== orgId || savedContext.eventKey !== eventKey) return;
+    writeRobotViewState(savedContext.key, { sort, selected, query, compare, splitView });
+  }, [savedContext, orgId, eventKey, sort, selected, query, compare, splitView]);
 
   const toggleCompare = (teamKey: string) =>
     setCompare((current) =>
@@ -128,7 +154,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     }
     if (sort === "pick") return view.pickOrder.length ? view.pickOrder : view.profiles;
     const copy = [...view.profiles];
-    if (sort === "average") return copy.sort((a, b) => b.shrunkTotal - a.shrunkTotal);
+    if (sort === "average") return copy.sort((a, b) => b.meanTotal - a.meanTotal);
     return copy.sort((a, b) => teamNumber(a.teamKey) - teamNumber(b.teamKey));
   }, [view, sort, weights]);
 
@@ -172,6 +198,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   }
 
   if (view.status !== "ready") {
+    if (view.observations?.length) return <ObservedRobots robots={view.observations} eventKey={eventKey} />;
     return (
       <EmptyState
         soft
@@ -229,6 +256,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
       </header>
 
       <ScoutingDashboardSummary profiles={view.profiles} />
+      {view.observations?.length ? <details className="intel-shared-scouting"><summary>Explore recorded capabilities and match reports</summary><ObservedRobots robots={view.observations} eventKey={eventKey} /></details> : null}
 
       <ScoutingFieldChart
         profiles={view.profiles}
@@ -237,9 +265,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         onSelect={setSelected}
       />
 
-      {sort === "fit" ? (
-        <PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} />
-      ) : null}
+      {sort === "fit" ? <details className="intel-shared-scouting"><summary>Adjust what makes a good pick</summary><PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} /></details> : null}
 
       {splitView && compareProfiles.length === 2 ? (
         <ScoutingSplitCompare
@@ -325,6 +351,16 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
  * read as ninety-fifth percentile. Only the actual top of the field gets a
  * "Top" label; everyone else is described against the field directly.
  */
+function ObservedRobots({ robots, eventKey }: { robots: ObservedRobot[]; eventKey: string | null }) {
+  const [teamKey, setTeamKey] = useState(robots[0]?.teamKey ?? "");
+  const robot = robots.find(item => item.teamKey === teamKey) ?? robots[0];
+  return <section className="stp-observations" aria-label="Recorded robot capabilities">
+    <header><h2>{robots.length} robots watched</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
+    <label>Robot<select value={robot?.teamKey ?? ""} onChange={event => setTeamKey(event.target.value)} style={{ minHeight: 48 }}>{[...robots].sort((a,b) => teamNumber(a.teamKey)-teamNumber(b.teamKey)).map(item => <option key={item.teamKey} value={item.teamKey}>Team {teamNumberLabel(item.teamKey)}</option>)}</select></label>
+    {robot ? <ScoutObservationExplorer key={robot.teamKey + eventKey} rows={robot.reports} activeEventKey={eventKey} /> : null}
+  </section>;
+}
+
 function rankLabel(percentile: number): string {
   const rounded = Math.round(percentile);
   if (rounded >= 90) return `Top ${Math.max(1, 100 - rounded)}%`;

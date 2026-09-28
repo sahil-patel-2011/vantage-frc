@@ -99,7 +99,7 @@ describe("product hubs", () => {
     }
   });
 
-  it("keeps Team workbenches to calendar, chat, people, work, and playbook", () => {
+  it("keeps logistics inside Team, under Calendar, beside its existing workbenches", () => {
     const team = hubById("team");
     expect(hubPrimaryTabs(team).map((tab) => tab.id)).toEqual([
       "calendar",
@@ -108,6 +108,7 @@ describe("product hubs", () => {
       "todos",
       "knowledge",
     ]);
+    expect(team.tabs.find((tab) => tab.id === "logistics")?.group).toBe("calendar");
     expect(team.tabs.find((tab) => tab.id === "knowledge")?.label).toBe("Playbook");
     expect(hubNestedTabs(team, "todos").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["practice", "batteries", "fmea", "season-planning-workspace"]),
@@ -150,6 +151,7 @@ describe("product hubs", () => {
     expect(hubPrimaryTabs(competition).map((tab) => tab.id)).toEqual([
       "command",
       "scouting",
+      "teams",
       "strategy",
       "match-checklist",
     ]);

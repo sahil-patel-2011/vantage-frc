@@ -55,6 +55,33 @@
   min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px;
   background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer;
 }
+
+.edc-context-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.edc-context-header > .edc-event-context { flex: 1 1 240px; }
+.edc-context-header > .edc-header-actions { flex: 0 1 auto; }
+.edc-event-context {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+.edc-event-context > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.edc-event-context > strong {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
 .edc-empty-actions button.dash-empty-cta:hover { text-decoration: none; filter: brightness(1.05); }
 .edc-empty-actions .dash-empty-cta.secondary { min-height: 44px; }
 

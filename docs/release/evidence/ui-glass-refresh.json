@@ -1,0 +1,131 @@
+{
+  "checkedAt": "2026-09-27T01:45:26.330Z",
+  "scope": "Local production-built shared shell, five workspaces and selected real-data views; synthetic test identity only",
+  "buildId": "M_xEbgvFdVhWUir9c-DjY",
+  "productionAcceptance": false,
+  "actor": "Morgan Journey (synthetic local test account)",
+  "browser": "Chrome; desktop plus viewport overrides, not physical-device emulation",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 665
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 320,
+      "height": 568
+    }
+  ],
+  "checks": [
+    {
+      "name": "Feature parity",
+      "result": "pass-source",
+      "details": "All 210 prior unique hub destinations retained; 4 additions. Real DashboardHomeView, saved board APIs, specialist clients and existing finance/inventory services preserved.",
+      "evidence": "journey-ui-feature-parity-audit.json"
+    },
+    {
+      "name": "Workspace organization",
+      "result": "pass",
+      "details": "Home, Competition, Team, Build, Business reachable; Team Logistics and Competition Teams retain actual clients.",
+      "evidence": "ui-final-desktop-checks.json"
+    },
+    {
+      "name": "Compact island",
+      "result": "pass",
+      "details": "392px desktop, 358px at390 viewport and288px at320 viewport; height59.33px; capsule999px radius. Four links and Apps are48px high; Apps48px wide."
+    },
+    {
+      "name": "Glass accessibility",
+      "result": "pass-bounded",
+      "details": "Normal CSS uses82% surface/24px blur; actual Windows reduced-transparency preference is true and the computed solid-white/blur-none fallback works. Forced-color and increased-contrast variants reviewed in source; native OS/assistive-technology matrix remains pending."
+    },
+    {
+      "name": "Account keyboard",
+      "result": "pass",
+      "details": "Initial focus; arrows/Home/End/Tab and Escape; final build s typeahead focuses Support tickets without Scout navigation, Space opens Support, Back returns to prior Home/team URL."
+    },
+    {
+      "name": "Account responsive layout",
+      "result": "pass",
+      "details": "Long team name wraps. Popup328px at390 viewport;296x472 at320x568, internal scroll with Sign out brought into view by End. No horizontal overflow; targets48px or taller."
+    },
+    {
+      "name": "Drawer focus and search",
+      "result": "pass",
+      "details": "Five described workspace rows56.125px at390 viewport. Escape returns focus to Menu. Desktop search clear/dismiss and editor initial focus/trap/Escape passed agent walkthrough."
+    },
+    {
+      "name": "Notification selected scope",
+      "result": "pass",
+      "details": "Two actual unread synthetic purchase alerts exist for Team6925. Opening acknowledges visible alerts, preserves two distinct order links/history and clears badge. Team99991 inbox is empty and has no badge; bell and Home URLs preserve selected team."
+    },
+    {
+      "name": "Explicit unread and cross-tab counts",
+      "result": "pass",
+      "details": "Manual Mark unread remains unread during current visit. A second Home tab shows1; Mark read clears counts in both open tabs without reload."
+    },
+    {
+      "name": "Notification controls",
+      "result": "pass",
+      "details": "Final read-toggle buttons96x48, All48x48, Unread70.32x48; desktop rows approximately122px with action beside content."
+    },
+    {
+      "name": "Same-route team switch",
+      "result": "pass",
+      "details": "Team6925 Logistics shows synthetic trips/checklists. Account switch to99991 retains tab=logistics, remounts with selected-team context and shows No trips; returning6925 restores its records."
+    },
+    {
+      "name": "Permission/cache isolation",
+      "result": "pass-test",
+      "details": "Selected-org permission request cache is keyed by team; forgetting a session prevents old pending person data reentering the cache. Actual PostgreSQL inbox tests reject other people's/team's manual changes and preserve read timestamps/history."
+    },
+    {
+      "name": "Browser diagnostics",
+      "result": "pass",
+      "details": "Root final tab and agent desktop tab reported no captured warning/error logs."
+    },
+    {
+      "name": "Personal shortcut persistence",
+      "result": "pass",
+      "details": "Actual normal UI Save changed only synthetic Morgan fourth shortcut Stats to Team. After a genuine reload Team remained; Reset/Save restored original Home/Event day/Scout/Stats. Existing saved My Home board remained intact."
+    }
+  ],
+  "resolvedFindings": [
+    "Account typeahead leaked into global Scout shortcut",
+    "Notification and Home links lost selected team via exemption",
+    "Same-route team switch could retain mounted data for prior team",
+    "Global permission request coalescing was not team-scoped",
+    "Repeated titles folded distinct body/link alerts",
+    "Notification stale loads and grouped writes could leave count/history inconsistent",
+    "Duplicate Logistics/Duties/Visit invites search destinations",
+    "Embedded Teams loading/error markup used nested main and Research heading"
+  ],
+  "remaining": [
+    "Full production preflight still blocked",
+    "Complete route-by-route workflow and WCAG acceptance",
+    "Physical phones/camera, screen readers, zoom, forced colors and all OS effect preferences",
+    "Representative FRC first-use task success/time/error measurements; no invented 90–100% usability score",
+    "Back filter+scroll restoration across all workflows/browsers; bounded current URL return passed"
+  ],
+  "screenshots": [
+    "ui-notifications-final-desktop.png",
+    "ui-notifications-empty-final-phone.png",
+    "ui-glass-home-final-phone.png",
+    "ui-account-final-desktop.png",
+    "ui-account-final-phone.png",
+    "ui-account-short-phone.png",
+    "ui-hamburger-final-phone.png",
+    "ui-island-preferences-persisted.png",
+    "ui-home-final-verified-desktop.png",
+    "ui-event-day-release-desktop.png"
+  ],
+  "followup": {
+    "checkedAt": "2026-09-27T03:00:07.899Z",
+    "buildId": "eV3IvdW2-rvFmfWWMqpSy",
+    "evidence": "ui-deep-details.json",
+    "scope": "Final compact event header and shell refinements; original14check records retain their own build identity"
+  }
+}

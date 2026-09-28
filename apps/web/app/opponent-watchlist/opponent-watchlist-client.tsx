@@ -16,7 +16,7 @@ import {
   type OpponentWatchlistShellKind,
 } from "../../lib/opponent-watchlist/opponent-watchlist-related";
 import type { WatchlistAlertType } from "../../lib/opponent-watchlist/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -260,9 +260,6 @@ export default function OpponentWatchlistClient() {
     include: [...OPPONENT_WATCHLIST_RELATED_INCLUDE],
   });
   const competitionHref = hubWorkbenchHref("competition", "opponent-watchlist", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const lineupHref = withOrgHref("/scouting/lineup", orgId);
 
   const mutate = useCallback(
@@ -392,16 +389,6 @@ export default function OpponentWatchlistClient() {
             <CoveragePriorityPanel view={view} lineupHref={lineupHref} />
           </>
         ) : null}
-        <Panel className="opponent-watchlist-tip" aria-label="Opponent Watchlist tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Watched teams sort earlier on{" "}
-            <a href={lineupHref}>Lineup &amp; Coverage</a>. Keep{" "}
-            <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, pair{" "}
-            <a href={epaAlertsHref}>Rating alerts</a> for event-to-event swings, and confirm field
-            notes in <a href={scoutingHref}>Scouting</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

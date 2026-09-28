@@ -9,9 +9,9 @@ import "./ai-bridge.css";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Claude Code",
+  title: "Personal Codex",
   description:
-    "Pair Claude Code on one computer so Ask AI can run through Claude Code in the terminal. No API key.",
+    "Connect your own Codex account and computer to your Vantage requests.",
 };
 
 export default async function AiBridgePage({
@@ -36,6 +36,7 @@ export default async function AiBridgePage({
   );
   return (
     <AiBridgeClient
+      userId={session.user.id}
       initialCode={params.code ?? ""}
       initialOrgId={params.orgId ?? null}
       organizations={orgs}

@@ -6,6 +6,7 @@
  * IndexedDB rule: open one transaction and enqueue every request synchronously.
  * Never await between opening the transaction and using it.
  */
+import { offlineSnapshotUser } from "./identity";
 
 export const OUTBOX_FEATURES = [
   "task_tick",
@@ -27,6 +28,8 @@ export type OutboxFeature = (typeof OUTBOX_FEATURES)[number];
 export type OutboxStatus = "queued" | "syncing" | "synced" | "conflict";
 
 export type OutboxItem<T = unknown> = {
+  /** Local ownership only; legacy rows without it remain preserved and hidden. */
+  ownerUserId?: string;
   clientId: string;
   feature: OutboxFeature;
   orgId: string;
@@ -78,25 +81,32 @@ function requestValue<T>(request: IDBRequest<T>): Promise<T> {
 export async function enqueueOutboxItem<T>(
   item: Omit<OutboxItem<T>, "queuedAt" | "status"> & { queuedAt?: string; status?: OutboxStatus },
 ): Promise<OutboxItem<T>> {
+  const ownerUserId = await offlineSnapshotUser(item.orgId);
+  if (!ownerUserId) throw new Error("Sign in before saving work on this device.");
+  if (typeof indexedDB === "undefined") throw new Error("This browser cannot save work offline.");
   const row: OutboxItem<T> = {
     ...item,
+    ownerUserId,
     queuedAt: item.queuedAt ?? new Date().toISOString(),
     status: item.status ?? "queued",
   };
-  if (typeof indexedDB === "undefined") return row;
   const db = await openDatabase();
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+  const previous = await requestValue(store.get(row.clientId)) as OutboxItem | undefined;
+  if (previous && previous.ownerUserId !== ownerUserId) throw new Error("This saved work belongs to another account.");
   await requestValue(store.put(row));
   return row;
 }
 
 export async function listOutbox(orgId?: string): Promise<OutboxItem[]> {
   if (typeof indexedDB === "undefined") return [];
+  const ownerUserId = await offlineSnapshotUser(orgId ?? "");
+  if (!ownerUserId) return [];
   const db = await openDatabase();
   const store = db.transaction(STORE, "readonly").objectStore(STORE);
   const rows = (await requestValue(store.getAll())) as OutboxItem[];
   const org = orgId?.trim();
-  return org ? rows.filter((row) => row.orgId === org) : rows;
+  return rows.filter(row => row.ownerUserId === ownerUserId && (!org || row.orgId === org));
 }
 
 export async function markOutboxItem(
@@ -104,18 +114,24 @@ export async function markOutboxItem(
   patch: Pick<OutboxItem, "status"> & { lastError?: string; serverCopy?: unknown },
 ): Promise<void> {
   if (typeof indexedDB === "undefined") return;
+  const ownerUserId = await offlineSnapshotUser("");
+  if (!ownerUserId) return;
   const db = await openDatabase();
   const tx = db.transaction(STORE, "readwrite");
   const store = tx.objectStore(STORE);
   const current = (await requestValue(store.get(clientId))) as OutboxItem | undefined;
-  if (!current) return;
+  if (!current || current.ownerUserId !== ownerUserId) return;
   await requestValue(store.put({ ...current, ...patch }));
 }
 
 export async function dropOutboxItem(clientId: string): Promise<void> {
   if (typeof indexedDB === "undefined") return;
+  const ownerUserId = await offlineSnapshotUser("");
+  if (!ownerUserId) return;
   const db = await openDatabase();
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+  const current = await requestValue(store.get(clientId)) as OutboxItem | undefined;
+  if (!current || current.ownerUserId !== ownerUserId) return;
   await requestValue(store.delete(clientId));
 }
 
@@ -172,6 +188,7 @@ export async function syncOutbox(input: {
   let synced = 0;
   let conflicts = 0;
   for (const item of queued) {
+    if (await offlineSnapshotUser(input.orgId) !== item.ownerUserId) break;
     const adapter = byFeature.get(item.feature);
     if (!adapter) continue;
     await markOutboxItem(item.clientId, { status: "syncing" });

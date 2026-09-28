@@ -41,6 +41,9 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     const message = String((error as Error | null)?.message ?? "");
+    if (error instanceof Error && (error as Error & { code?: string }).code === "AGE_ELIGIBILITY_REQUIRED") {
+      return Response.json({ error: message, code: "AGE_ELIGIBILITY_REQUIRED" }, { status: 403, headers: { "cache-control": "private, no-store" } });
+    }
     if ((error as Error & { status?: number }).status === 409) {
       return Response.json({ error: message }, { status: 409 });
     }

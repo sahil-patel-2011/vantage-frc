@@ -1,0 +1,3725 @@
+{
+  "checkedAt": "2026-09-27T00:02:16.858767Z",
+  "productionAcceptance": false,
+  "environment": "Isolated loopback clone of the719-table Google-restored production checkpoint; production unchanged",
+  "migrationResult": "0694\u20130704 passed without editing assertions or skipping missing migrations",
+  "cloneTables": 723,
+  "freshTables": 613,
+  "recoveryCoverage": {
+    "tables": 723,
+    "partitions": 0,
+    "sequences": 3,
+    "roles": 11,
+    "recoveryCoverageInstalled": true,
+    "capturedTables": 712,
+    "uncoveredTables": 0
+  },
+  "columnDifferences": [
+    {
+      "table": "public.attendance_entries",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [],
+      "different": [
+        {
+          "column": "hours",
+          "restoredClone": {
+            "name": "hours",
+            "type": "numeric(5,2)",
+            "identity": "",
+            "nullable": true,
+            "generated": ""
+          },
+          "fresh": {
+            "name": "hours",
+            "type": "numeric(6,2)",
+            "identity": "",
+            "nullable": true,
+            "generated": ""
+          }
+        }
+      ]
+    },
+    {
+      "table": "public.attendance_events",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [],
+      "different": [
+        {
+          "column": "credit_hours",
+          "restoredClone": {
+            "name": "credit_hours",
+            "type": "numeric(5,2)",
+            "identity": "",
+            "nullable": false,
+            "generated": ""
+          },
+          "fresh": {
+            "name": "credit_hours",
+            "type": "numeric(6,2)",
+            "identity": "",
+            "nullable": false,
+            "generated": ""
+          }
+        }
+      ]
+    },
+    {
+      "table": "public.member_onboarding_checks",
+      "missingFreshColumns": [
+        "check_key",
+        "completed_at",
+        "id"
+      ],
+      "retainedExtraColumns": [
+        "checked_at",
+        "item_key"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.member_onboarding_tracks",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "subteam_id"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.org_byok_routing_prefs",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "freebuff_model",
+        "use_platform_free_ai"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.org_match_schedule_state",
+      "missingFreshColumns": [
+        "our_match_count"
+      ],
+      "retainedExtraColumns": [
+        "match_count",
+        "notified_at"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.partner_placement_campaigns",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "updated_by"
+      ],
+      "different": [
+        {
+          "column": "end_on",
+          "restoredClone": {
+            "name": "end_on",
+            "type": "date",
+            "identity": "",
+            "nullable": false,
+            "generated": ""
+          },
+          "fresh": {
+            "name": "end_on",
+            "type": "date",
+            "identity": "",
+            "nullable": true,
+            "generated": ""
+          }
+        },
+        {
+          "column": "start_on",
+          "restoredClone": {
+            "name": "start_on",
+            "type": "date",
+            "identity": "",
+            "nullable": false,
+            "generated": ""
+          },
+          "fresh": {
+            "name": "start_on",
+            "type": "date",
+            "identity": "",
+            "nullable": true,
+            "generated": ""
+          }
+        }
+      ]
+    },
+    {
+      "table": "public.partner_program_settings",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [],
+      "different": [
+        {
+          "column": "pitch",
+          "restoredClone": {
+            "name": "pitch",
+            "type": "text",
+            "identity": "",
+            "nullable": false,
+            "generated": ""
+          },
+          "fresh": {
+            "name": "pitch",
+            "type": "text",
+            "identity": "",
+            "nullable": true,
+            "generated": ""
+          }
+        }
+      ]
+    },
+    {
+      "table": "public.profiles",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "email_bounce_reason",
+        "email_bounced_at"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.subteam_calendar_events",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "links",
+        "meeting_url"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.team_announcements",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "updated_at"
+      ],
+      "different": [
+        {
+          "column": "created_by",
+          "restoredClone": {
+            "name": "created_by",
+            "type": "uuid",
+            "identity": "",
+            "nullable": false,
+            "generated": ""
+          },
+          "fresh": {
+            "name": "created_by",
+            "type": "uuid",
+            "identity": "",
+            "nullable": true,
+            "generated": ""
+          }
+        }
+      ]
+    },
+    {
+      "table": "public.team_todos",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "links"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.user_email_preferences",
+      "missingFreshColumns": [],
+      "retainedExtraColumns": [
+        "daily_match_report"
+      ],
+      "different": []
+    },
+    {
+      "table": "public.visit_invite_rsvps",
+      "missingFreshColumns": [
+        "created_at"
+      ],
+      "retainedExtraColumns": [],
+      "different": []
+    }
+  ],
+  "constraintDifferences": [
+    {
+      "table": "public.admin_actions",
+      "restoredClone": [
+        [
+          "f",
+          "FOREIGN KEY (actor_user_id) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (target_org_id) REFERENCES organizations(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (target_user_id) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "f",
+          "FOREIGN KEY (actor_user_id) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (target_org_id) REFERENCES organizations(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (target_user_id) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.attendance_entries",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((hours IS NULL) OR (hours >= (0)::numeric)))"
+        ],
+        [
+          "c",
+          "CHECK ((role = ANY (ARRAY['student'::text, 'mentor'::text, 'other'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (event_id) REFERENCES attendance_events(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(person_name) >= 1) AND (char_length(person_name) <= 160)))"
+        ],
+        [
+          "c",
+          "CHECK (((hours IS NULL) OR (hours >= (0)::numeric)))"
+        ],
+        [
+          "c",
+          "CHECK ((role = ANY (ARRAY['student'::text, 'mentor'::text, 'other'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (event_id) REFERENCES attendance_events(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.attendance_events",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((credit_hours >= (0)::numeric))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['meeting'::text, 'build'::text, 'practice'::text, 'competition'::text, 'outreach'::text, 'other'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((season_year >= 1992) AND (season_year <= 3000)))"
+        ],
+        [
+          "c",
+          "CHECK ((credit_hours >= (0)::numeric))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['meeting'::text, 'build'::text, 'practice'::text, 'competition'::text, 'outreach'::text, 'other'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.feature_context_links",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((relation = ANY (ARRAY['informs'::text, 'implements'::text, 'validates'::text, 'blocks'::text, 'requires'::text, 'documents'::text, 'funds'::text, 'supplies'::text, 'derived_from'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((source_kind = ANY (ARRAY['strategy_match'::text, 'reference_team'::text, 'cad_job'::text, 'cad_artifact'::text, 'build_task'::text, 'inventory_item'::text, 'knowledge_page'::text, 'sponsor'::text, 'budget'::text, 'fmea_failure'::text, 'scout_entry'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((target_kind = ANY (ARRAY['strategy_match'::text, 'reference_team'::text, 'cad_job'::text, 'cad_artifact'::text, 'build_task'::text, 'inventory_item'::text, 'knowledge_page'::text, 'sponsor'::text, 'budget'::text, 'fmea_failure'::text, 'scout_entry'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, source_kind, source_id, target_kind, target_id, relation)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((relation = ANY (ARRAY['informs'::text, 'implements'::text, 'validates'::text, 'blocks'::text, 'requires'::text, 'documents'::text, 'funds'::text, 'supplies'::text, 'derived_from'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((source_kind = ANY (ARRAY['strategy_match'::text, 'reference_team'::text, 'cad_job'::text, 'cad_artifact'::text, 'build_task'::text, 'inventory_item'::text, 'purchase_request'::text, 'knowledge_page'::text, 'sponsor'::text, 'budget'::text, 'fmea_failure'::text, 'scout_entry'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((target_kind = ANY (ARRAY['strategy_match'::text, 'reference_team'::text, 'cad_job'::text, 'cad_artifact'::text, 'build_task'::text, 'inventory_item'::text, 'purchase_request'::text, 'knowledge_page'::text, 'sponsor'::text, 'budget'::text, 'fmea_failure'::text, 'scout_entry'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, source_kind, source_id, target_kind, target_id, relation)"
+        ]
+      ]
+    },
+    {
+      "table": "public.library_resources",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((((kind = 'link'::text) AND (url IS NOT NULL) AND (file_name IS NULL) AND (bytes IS NULL) AND (byte_size IS NULL) AND (sha256 IS NULL) AND (storage_location IS NULL) AND (node_item_id IS NULL) AND (status = 'ready'::text)) OR ((kind = 'file'::text) AND (url IS NULL) AND (file_name IS NOT NULL) AND (content_type IS NOT NULL) AND (storage_location IS NOT NULL) AND (byte_size IS NOT NULL) AND (sha256 IS NOT NULL))))"
+        ],
+        [
+          "c",
+          "CHECK (((byte_size IS NULL) OR (byte_size >= 1)))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((content_type IS NULL) OR ((char_length(content_type) >= 3) AND (char_length(content_type) <= 255) AND (content_type ~ '^\\S+/\\S+$'::text))))"
+        ],
+        [
+          "c",
+          "CHECK (((file_name IS NULL) OR ((char_length(file_name) >= 1) AND (char_length(file_name) <= 255))))"
+        ],
+        [
+          "c",
+          "CHECK (((kind = 'link'::text) OR ((storage_location = 'db'::text) AND (node_item_id IS NULL)) OR ((storage_location = 'node'::text) AND (node_item_id IS NOT NULL) AND (bytes IS NULL))))"
+        ],
+        [
+          "c",
+          "CHECK (((kind = 'link'::text) OR (status <> 'ready'::text) OR (storage_location <> 'db'::text) OR (bytes IS NOT NULL)))"
+        ],
+        [
+          "c",
+          "CHECK (((kind = 'link'::text) OR (storage_location <> 'db'::text) OR (byte_size <= 104857600)))"
+        ],
+        [
+          "c",
+          "CHECK (((node_item_id IS NULL) OR ((char_length(node_item_id) >= 1) AND (char_length(node_item_id) <= 200))))"
+        ],
+        [
+          "c",
+          "CHECK (((notes IS NULL) OR (char_length(notes) <= 4000)))"
+        ],
+        [
+          "c",
+          "CHECK (((sha256 IS NULL) OR (sha256 ~ '^[0-9a-f]{64}$'::text)))"
+        ],
+        [
+          "c",
+          "CHECK (((url IS NULL) OR ((char_length(url) <= 2048) AND (url ~ '^https?://'::text))))"
+        ],
+        [
+          "c",
+          "CHECK ((cardinality(tags) <= 20))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['file'::text, 'link'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((storage_location = ANY (ARRAY['db'::text, 'node'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((visibility = ANY (ARRAY['team'::text, 'restricted'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (folder_id) REFERENCES library_folders(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((((kind = 'link'::text) AND (url IS NOT NULL) AND (file_name IS NULL) AND (bytes IS NULL) AND (byte_size IS NULL) AND (sha256 IS NULL) AND (storage_location IS NULL) AND (node_item_id IS NULL) AND (status = 'ready'::text)) OR ((kind = 'file'::text) AND (url IS NULL) AND (file_name IS NOT NULL) AND (content_type IS NOT NULL) AND (storage_location IS NOT NULL) AND (byte_size IS NOT NULL) AND (sha256 IS NOT NULL))))"
+        ],
+        [
+          "c",
+          "CHECK (((byte_size IS NULL) OR (byte_size >= 1)))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((content_type IS NULL) OR (((char_length(content_type) >= 3) AND (char_length(content_type) <= 255)) AND (content_type ~ '^\\S+/\\S+$'::text))))"
+        ],
+        [
+          "c",
+          "CHECK (((file_name IS NULL) OR ((char_length(file_name) >= 1) AND (char_length(file_name) <= 255))))"
+        ],
+        [
+          "c",
+          "CHECK (((kind = 'link'::text) OR ((storage_location = 'db'::text) AND (node_item_id IS NULL)) OR ((storage_location = 'node'::text) AND (node_item_id IS NOT NULL) AND (bytes IS NULL))))"
+        ],
+        [
+          "c",
+          "CHECK (((kind = 'link'::text) OR (status <> 'ready'::text) OR (storage_location <> 'db'::text) OR (bytes IS NOT NULL)))"
+        ],
+        [
+          "c",
+          "CHECK (((kind = 'link'::text) OR (storage_location <> 'db'::text) OR (byte_size <= 104857600)))"
+        ],
+        [
+          "c",
+          "CHECK (((node_item_id IS NULL) OR ((char_length(node_item_id) >= 1) AND (char_length(node_item_id) <= 200))))"
+        ],
+        [
+          "c",
+          "CHECK (((notes IS NULL) OR (char_length(notes) <= 4000)))"
+        ],
+        [
+          "c",
+          "CHECK (((sha256 IS NULL) OR (sha256 ~ '^[0-9a-f]{64}$'::text)))"
+        ],
+        [
+          "c",
+          "CHECK (((url IS NULL) OR ((char_length(url) <= 2048) AND (url ~ '^https?://'::text))))"
+        ],
+        [
+          "c",
+          "CHECK ((cardinality(tags) <= 20))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['file'::text, 'link'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((storage_location = ANY (ARRAY['db'::text, 'node'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((visibility = ANY (ARRAY['team'::text, 'restricted'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (folder_id) REFERENCES library_folders(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.member_onboarding_checks",
+      "restoredClone": [
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id, user_id, track_key, item_key)"
+        ]
+      ],
+      "fresh": [
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, user_id, track_key, check_key)"
+        ]
+      ]
+    },
+    {
+      "table": "public.member_onboarding_tracks",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((source = ANY (ARRAY['subteam'::text, 'role'::text, 'focus'::text, 'manual'::text, 'general'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (subteam_id) REFERENCES team_subteams(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, user_id, track_key)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((source = ANY (ARRAY['welcome'::text, 'role'::text, 'focus'::text, 'subteam'::text, 'manual'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, user_id, track_key)"
+        ]
+      ]
+    },
+    {
+      "table": "public.org_byok_routing_prefs",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((freebuff_model IS NULL) OR (freebuff_model = ANY (ARRAY['glm/glm-5.3-flash'::text, 'mimo/mimo-2.5'::text, 'deepseek/deepseek-v4-flash'::text]))))"
+        ],
+        [
+          "c",
+          "CHECK ((mode = ANY (ARRAY['fixed'::text, 'automode'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((mode = ANY (ARRAY['fixed'::text, 'automode'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.org_match_schedule_state",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((match_count >= 0))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (event_key) REFERENCES events_ref(event_key) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((our_match_count >= 0))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (event_key) REFERENCES events_ref(event_key) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id, event_key)"
+        ]
+      ]
+    },
+    {
+      "table": "public.partner_placement_campaigns",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((season_year >= 2000) AND (season_year <= 3000)))"
+        ],
+        [
+          "c",
+          "CHECK ((amount_usd >= (0)::numeric))"
+        ],
+        [
+          "c",
+          "CHECK ((cardinality(surfaces) > 0))"
+        ],
+        [
+          "c",
+          "CHECK ((end_on >= start_on))"
+        ],
+        [
+          "c",
+          "CHECK ((payment_status = ANY (ARRAY['pending'::text, 'paid'::text, 'waived'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['draft'::text, 'approved'::text, 'active'::text, 'complete'::text, 'cancelled'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (asset_id) REFERENCES sponsor_assets(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (contribution_id) REFERENCES sponsor_contributions(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (package_id) REFERENCES partner_placement_packages(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (source_submission_id) REFERENCES partner_storefront_submissions(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (sponsor_id) REFERENCES sponsors(id) ON DELETE RESTRICT"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (contribution_id)"
+        ],
+        [
+          "u",
+          "UNIQUE (source_submission_id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 160)))"
+        ],
+        [
+          "c",
+          "CHECK (((end_on IS NULL) OR (start_on IS NULL) OR (end_on >= start_on)))"
+        ],
+        [
+          "c",
+          "CHECK (((link_url IS NULL) OR (link_url ~ '^https?://'::text)))"
+        ],
+        [
+          "c",
+          "CHECK (((season_year >= 2000) AND (season_year <= 3000)))"
+        ],
+        [
+          "c",
+          "CHECK ((amount_usd >= (0)::numeric))"
+        ],
+        [
+          "c",
+          "CHECK ((payment_status = ANY (ARRAY['pending'::text, 'paid'::text, 'waived'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['draft'::text, 'approved'::text, 'active'::text, 'complete'::text, 'cancelled'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((surfaces <@ ARRAY['dashboard_footer'::text, 'pit_footer'::text, 'business_wall'::text]))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (asset_id) REFERENCES sponsor_assets(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (contribution_id) REFERENCES sponsor_contributions(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (package_id) REFERENCES partner_placement_packages(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (source_submission_id) REFERENCES partner_storefront_submissions(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (sponsor_id) REFERENCES sponsors(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (contribution_id)"
+        ],
+        [
+          "u",
+          "UNIQUE (source_submission_id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.partner_placement_packages",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((duration_days >= 1) AND (duration_days <= 730)))"
+        ],
+        [
+          "c",
+          "CHECK ((cardinality(surfaces) > 0))"
+        ],
+        [
+          "c",
+          "CHECK ((price_usd >= (0)::numeric))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, name)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 120)))"
+        ],
+        [
+          "c",
+          "CHECK (((duration_days >= 1) AND (duration_days <= 730)))"
+        ],
+        [
+          "c",
+          "CHECK ((price_usd >= (0)::numeric))"
+        ],
+        [
+          "c",
+          "CHECK ((surfaces <@ ARRAY['dashboard_footer'::text, 'pit_footer'::text, 'business_wall'::text]))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, name)"
+        ]
+      ]
+    },
+    {
+      "table": "public.partner_program_settings",
+      "restoredClone": [
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id)"
+        ],
+        [
+          "u",
+          "UNIQUE (public_id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((payment_url IS NULL) OR (payment_url ~ '^https?://'::text)))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (org_id)"
+        ],
+        [
+          "u",
+          "UNIQUE (public_id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.partner_storefront_submissions",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (package_id) REFERENCES partner_placement_packages(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (reviewed_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(company_name) >= 1) AND (char_length(company_name) <= 160)))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(contact_email) >= 3) AND (char_length(contact_email) <= 320)))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(contact_name) >= 1) AND (char_length(contact_name) <= 160)))"
+        ],
+        [
+          "c",
+          "CHECK (((external_logo_url IS NULL) OR (external_logo_url ~ '^https?://'::text)))"
+        ],
+        [
+          "c",
+          "CHECK (((website IS NULL) OR (website ~ '^https?://'::text)))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (package_id) REFERENCES partner_placement_packages(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (reviewed_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.pick_list_entries",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((((drafted_alliance_seed IS NULL) AND (drafted_pick_slot IS NULL)) OR ((drafted_alliance_seed >= 1) AND (drafted_alliance_seed <= 8) AND (drafted_pick_slot = ANY (ARRAY['captain'::text, 'first'::text, 'second'::text])))))"
+        ],
+        [
+          "c",
+          "CHECK ((bucket = ANY (ARRAY['first_pick'::text, 'second_pick'::text, 'avoid'::text, 'unranked'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((rank > 0))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (added_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (drafted_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (pick_list_id) REFERENCES pick_lists(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (team_key) REFERENCES teams_ref(team_key)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (pick_list_id, rank) DEFERRABLE INITIALLY DEFERRED"
+        ],
+        [
+          "u",
+          "UNIQUE (pick_list_id, team_key)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((((drafted_alliance_seed IS NULL) AND (drafted_pick_slot IS NULL)) OR (((drafted_alliance_seed >= 1) AND (drafted_alliance_seed <= 8)) AND (drafted_pick_slot = ANY (ARRAY['captain'::text, 'first'::text, 'second'::text])))))"
+        ],
+        [
+          "c",
+          "CHECK ((bucket = ANY (ARRAY['first_pick'::text, 'second_pick'::text, 'avoid'::text, 'unranked'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((rank > 0))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (added_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (drafted_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (pick_list_id) REFERENCES pick_lists(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (team_key) REFERENCES teams_ref(team_key)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (updated_by) REFERENCES users(id)"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (pick_list_id, rank) DEFERRABLE INITIALLY DEFERRED"
+        ],
+        [
+          "u",
+          "UNIQUE (pick_list_id, team_key)"
+        ]
+      ]
+    },
+    {
+      "table": "public.sponsor_assets",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((height >= 1) AND (height <= 400)))"
+        ],
+        [
+          "c",
+          "CHECK (((width >= 1) AND (width <= 800)))"
+        ],
+        [
+          "c",
+          "CHECK ((media_type = 'image/png'::text))"
+        ],
+        [
+          "c",
+          "CHECK ((octet_length(bytes) <= 1048576))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'archived'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (reviewed_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (sponsor_id) REFERENCES sponsors(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, sponsor_id, checksum_sha256)"
+        ],
+        [
+          "u",
+          "UNIQUE (public_id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((byte_size >= 1) AND (byte_size <= 1048576)))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 160)))"
+        ],
+        [
+          "c",
+          "CHECK (((height >= 1) AND (height <= 400)))"
+        ],
+        [
+          "c",
+          "CHECK (((width >= 1) AND (width <= 800)))"
+        ],
+        [
+          "c",
+          "CHECK ((checksum_sha256 ~ '^[0-9a-f]{64}$'::text))"
+        ],
+        [
+          "c",
+          "CHECK ((media_type = 'image/png'::text))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'archived'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (reviewed_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (sponsor_id) REFERENCES sponsors(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, checksum_sha256)"
+        ],
+        [
+          "u",
+          "UNIQUE (public_id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.subteam_calendar_events",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((ends_at IS NULL) OR (ends_at >= starts_at)))"
+        ],
+        [
+          "c",
+          "CHECK (((rrule IS NULL) OR ((char_length(rrule) >= 8) AND (char_length(rrule) <= 400))))"
+        ],
+        [
+          "c",
+          "CHECK ((char_length(meeting_url) <= 500))"
+        ],
+        [
+          "c",
+          "CHECK ((jsonb_typeof(links) = 'array'::text))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['practice'::text, 'build'::text, 'deadline'::text, 'event'::text, 'meeting'::text, 'outreach'::text, 'other'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((recurrence_timezone ~ '^[A-Za-z0-9_+/-]{1,64}$'::text))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (attendance_event_id) REFERENCES attendance_events(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (milestone_id) REFERENCES season_milestones(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (series_id) REFERENCES subteam_calendar_events(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (subteam_id) REFERENCES team_subteams(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((ends_at IS NULL) OR (ends_at >= starts_at)))"
+        ],
+        [
+          "c",
+          "CHECK (((rrule IS NULL) OR ((char_length(rrule) >= 8) AND (char_length(rrule) <= 400))))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['practice'::text, 'build'::text, 'deadline'::text, 'event'::text, 'meeting'::text, 'outreach'::text, 'other'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((recurrence_timezone ~ '^[A-Za-z0-9_+/-]{1,64}$'::text))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (attendance_event_id) REFERENCES attendance_events(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (milestone_id) REFERENCES season_milestones(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (series_id) REFERENCES subteam_calendar_events(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (subteam_id) REFERENCES team_subteams(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.team_announcements",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK ((priority = ANY (ARRAY['normal'::text, 'important'::text, 'urgent'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK ((priority = ANY (ARRAY['normal'::text, 'important'::text, 'urgent'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.team_todos",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK ((jsonb_typeof(links) = 'array'::text))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['todo'::text, 'doing'::text, 'done'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (assignee_user_id) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (completed_by) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (subteam_id) REFERENCES team_subteams(id) ON DELETE SET NULL"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['todo'::text, 'doing'::text, 'done'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (assignee_user_id) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (completed_by) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (subteam_id) REFERENCES team_subteams(id) ON DELETE SET NULL"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.visit_invite_rsvps",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((party_size >= 1) AND (party_size <= 50)))"
+        ],
+        [
+          "c",
+          "CHECK (((user_id IS NOT NULL) OR (char_length(TRIM(BOTH FROM guest_name)) > 0)))"
+        ],
+        [
+          "c",
+          "CHECK ((response = ANY (ARRAY['going'::text, 'maybe'::text, 'no'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (visit_id) REFERENCES visit_invites(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((party_size >= 1) AND (party_size <= 50)))"
+        ],
+        [
+          "c",
+          "CHECK (((user_id IS NOT NULL) OR (char_length(TRIM(BOTH FROM guest_name)) > 0)))"
+        ],
+        [
+          "c",
+          "CHECK ((response = ANY (ARRAY['going'::text, 'maybe'::text, 'no'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (visit_id) REFERENCES visit_invites(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.visit_invites",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((capacity IS NULL) OR (capacity > 0)))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((ends_at IS NULL) OR (ends_at >= starts_at)))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['shop_tour'::text, 'demo_day'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'done'::text, 'cancelled'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (calendar_event_id) REFERENCES subteam_calendar_events(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((capacity IS NULL) OR ((capacity >= 1) AND (capacity <= 500))))"
+        ],
+        [
+          "c",
+          "CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))"
+        ],
+        [
+          "c",
+          "CHECK (((ends_at IS NULL) OR (ends_at >= starts_at)))"
+        ],
+        [
+          "c",
+          "CHECK ((kind = ANY (ARRAY['shop_tour'::text, 'demo_day'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'done'::text, 'cancelled'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (calendar_event_id) REFERENCES subteam_calendar_events(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (created_by) REFERENCES users(id)"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ]
+    },
+    {
+      "table": "public.workspace_access_requests",
+      "restoredClone": [
+        [
+          "c",
+          "CHECK (((crew_role IS NULL) OR (crew_role = ANY (ARRAY['scout'::text, 'driver'::text, 'operator'::text, 'mechanical'::text, 'electrical'::text, 'programming'::text, 'cad'::text, 'pit'::text, 'business'::text, 'other'::text]))))"
+        ],
+        [
+          "c",
+          "CHECK (((membership_role IS NULL) OR (membership_role = ANY (ARRAY['scout'::org_role, 'viewer'::org_role]))))"
+        ],
+        [
+          "c",
+          "CHECK (((role_description IS NULL) OR (char_length(role_description) <= 280)))"
+        ],
+        [
+          "c",
+          "CHECK ((primary_focus = ANY (ARRAY['competition'::text, 'build'::text, 'business'::text, 'leadership'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'declined'::text, 'withdrawn'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ]
+      ],
+      "fresh": [
+        [
+          "c",
+          "CHECK (((crew_role IS NULL) OR (crew_role = ANY (ARRAY['scout'::text, 'driver'::text, 'operator'::text, 'mechanical'::text, 'electrical'::text, 'programming'::text, 'cad'::text, 'pit'::text, 'business'::text, 'other'::text]))))"
+        ],
+        [
+          "c",
+          "CHECK (((role_description IS NULL) OR (char_length(role_description) <= 280)))"
+        ],
+        [
+          "c",
+          "CHECK ((primary_focus = ANY (ARRAY['competition'::text, 'build'::text, 'business'::text, 'leadership'::text])))"
+        ],
+        [
+          "c",
+          "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'declined'::text, 'withdrawn'::text])))"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL"
+        ],
+        [
+          "f",
+          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        ],
+        [
+          "p",
+          "PRIMARY KEY (id)"
+        ],
+        [
+          "u",
+          "UNIQUE (org_id, user_id)"
+        ]
+      ]
+    }
+  ],
+  "policyDifferences": [
+    {
+      "table": "public.attendance_entries",
+      "restoredClone": [
+        {
+          "check": "is_org_member(org_id)",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.attendance_events",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_checklist_checks",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()) AND (EXISTS ( SELECT 1\n   FROM logistics_checklist_items i\n  WHERE ((i.id = logistics_checklist_checks.item_id) AND (i.org_id = logistics_checklist_checks.org_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(user_id = current_app_user_id())"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()) AND (EXISTS ( SELECT 1\n   FROM logistics_checklist_items i\n  WHERE ((i.id = logistics_checklist_checks.item_id) AND (i.org_id = logistics_checklist_checks.org_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_checklist_items",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_emergency_contacts",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_hotels",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_on_duty",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_room_assignments",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_travel_legs",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.logistics_trips",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.member_onboarding_checks",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        }
+      ]
+    },
+    {
+      "table": "public.member_onboarding_tracks",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(is_org_member(org_id) AND (user_id = current_app_user_id()))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND (user_id = current_app_user_id()))"
+        }
+      ]
+    },
+    {
+      "table": "public.notifications",
+      "restoredClone": [
+        {
+          "check": "((type = 'announcement'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'direct_message'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'dues_assistance_followup'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'duty_assigned'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'grant_deadline_approaching'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'invite_accepted'::text) AND (org_id IS NOT NULL) AND ((payload ->> 'userId'::text) = (current_app_user_id())::text) AND (EXISTS ( SELECT 1\n   FROM memberships joiner\n  WHERE ((joiner.org_id = notifications.org_id) AND (joiner.user_id = current_app_user_id()) AND (joiner.created_at > (now() - '00:10:00'::interval))))) AND (EXISTS ( SELECT 1\n   FROM memberships lead\n  WHERE ((lead.org_id = notifications.org_id) AND (lead.user_id = notifications.user_id) AND (lead.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'match_alert'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'message_mention'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'product_update'::text) AND is_platform_admin())",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scout_pick_influence'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scout_strategy_seat'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scouting_coverage_gap'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scouting_disagreement_resolved'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'support_reply'::text) AND is_platform_admin())",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_access_approved'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM workspace_access_requests r\n  WHERE ((r.org_id = notifications.org_id) AND (r.user_id = notifications.user_id) AND (r.status = 'approved'::text)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_access_declined'::text) AND (org_id IS NULL) AND (EXISTS ( SELECT 1\n   FROM workspace_access_requests r\n  WHERE ((r.user_id = notifications.user_id) AND (r.status = 'declined'::text) AND has_org_role(r.org_id, ARRAY['owner'::org_role, 'admin'::org_role])))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_access_request'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_announcement'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_chat'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['calendar_event'::text, 'calendar_updated'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['purchase_request_submitted'::text, 'purchase_request_approved'::text, 'purchase_request_rejected'::text, 'purchase_request_assigned'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['sponsor_thank_you_due'::text, 'sponsor_renewal_due'::text, 'sponsor_followup_overdue'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['todo_assigned'::text, 'todo_completed'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(user_id = current_app_user_id())",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(user_id = current_app_user_id())"
+        },
+        {
+          "check": "true",
+          "command": "INSERT",
+          "roles": [
+            "vantage_billing"
+          ],
+          "using": null
+        }
+      ],
+      "fresh": [
+        {
+          "check": "((type = 'direct_message'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'dues_assistance_followup'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'duty_assigned'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'grant_deadline_approaching'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'invite_accepted'::text) AND (org_id IS NOT NULL) AND ((payload ->> 'userId'::text) = (current_app_user_id())::text) AND (EXISTS ( SELECT 1\n   FROM memberships joiner\n  WHERE ((joiner.org_id = notifications.org_id) AND (joiner.user_id = current_app_user_id()) AND (joiner.created_at > (now() - '00:10:00'::interval))))) AND (EXISTS ( SELECT 1\n   FROM memberships lead\n  WHERE ((lead.org_id = notifications.org_id) AND (lead.user_id = notifications.user_id) AND (lead.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'match_alert'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'message_mention'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'product_update'::text) AND is_platform_admin())",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scout_pick_influence'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scout_strategy_seat'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scouting_coverage_gap'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'scouting_disagreement_resolved'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_access_approved'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM workspace_access_requests r\n  WHERE ((r.org_id = notifications.org_id) AND (r.user_id = notifications.user_id) AND (r.status = 'approved'::text)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_access_declined'::text) AND (org_id IS NULL) AND (EXISTS ( SELECT 1\n   FROM workspace_access_requests r\n  WHERE ((r.user_id = notifications.user_id) AND (r.status = 'declined'::text) AND has_org_role(r.org_id, ARRAY['owner'::org_role, 'admin'::org_role])))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_access_request'::text) AND (org_id IS NOT NULL) AND has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_announcement'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = 'team_chat'::text) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['calendar_event'::text, 'calendar_updated'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['purchase_request_submitted'::text, 'purchase_request_approved'::text, 'purchase_request_rejected'::text, 'purchase_request_assigned'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['sponsor_thank_you_due'::text, 'sponsor_renewal_due'::text, 'sponsor_followup_overdue'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id) AND (m.role = ANY (ARRAY['owner'::org_role, 'admin'::org_role]))))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "((type = ANY (ARRAY['todo_assigned'::text, 'todo_completed'::text])) AND (org_id IS NOT NULL) AND is_org_member(org_id) AND (EXISTS ( SELECT 1\n   FROM memberships m\n  WHERE ((m.org_id = notifications.org_id) AND (m.user_id = notifications.user_id)))))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "(user_id = current_app_user_id())",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(user_id = current_app_user_id())"
+        },
+        {
+          "check": "true",
+          "command": "INSERT",
+          "roles": [
+            "vantage_billing"
+          ],
+          "using": null
+        }
+      ]
+    },
+    {
+      "table": "public.organizations",
+      "restoredClone": [
+        {
+          "check": "has_org_role(id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": "is_platform_admin()",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_platform_admin()",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_platform_admin()"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_platform_admin()"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(id)"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_platform_admin()"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": "is_platform_admin()",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_platform_admin()",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_platform_admin()"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(id)"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_platform_admin()"
+        }
+      ]
+    },
+    {
+      "table": "public.partner_placement_campaigns",
+      "restoredClone": [
+        {
+          "check": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (created_by = current_app_user_id()) AND (updated_by = current_app_user_id()))",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.partner_placement_packages",
+      "restoredClone": [
+        {
+          "check": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (created_by = current_app_user_id()))",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.partner_storefront_submissions",
+      "restoredClone": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        }
+      ]
+    },
+    {
+      "table": "public.sponsor_assets",
+      "restoredClone": [
+        {
+          "check": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) AND (created_by = current_app_user_id()))",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.team_announcements",
+      "restoredClone": [
+        {
+          "check": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR (created_by = current_app_user_id()))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR (created_by = current_app_user_id()))"
+        },
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])",
+          "command": "ALL",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR (created_by = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR (created_by = current_app_user_id()))",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR (created_by = current_app_user_id()))"
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR (created_by = current_app_user_id()))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.vendors",
+      "restoredClone": [
+        {
+          "check": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role, 'scout'::org_role]) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role, 'scout'::org_role])",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role, 'scout'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.visit_invite_demos",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.visit_invite_hosts",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.visit_invite_rsvps",
+      "restoredClone": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(is_org_member(org_id) AND ((user_id = current_app_user_id()) OR (created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((user_id = current_app_user_id()) OR (created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ],
+      "fresh": [
+        {
+          "check": "(is_org_member(org_id) AND (created_by = current_app_user_id()))",
+          "command": "INSERT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": null
+        },
+        {
+          "check": "is_org_member(org_id)",
+          "command": "UPDATE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((user_id = current_app_user_id()) OR (created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "DELETE",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "((user_id = current_app_user_id()) OR (created_by = current_app_user_id()) OR has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]))"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "is_org_member(org_id)"
+        }
+      ]
+    },
+    {
+      "table": "public.workspace_access_requests",
+      "restoredClone": [
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role]) OR is_platform_admin())"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(user_id = current_app_user_id())"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        }
+      ],
+      "fresh": [
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "(user_id = current_app_user_id())"
+        },
+        {
+          "check": null,
+          "command": "SELECT",
+          "roles": [
+            "vantage_app"
+          ],
+          "using": "has_org_role(org_id, ARRAY['owner'::org_role, 'admin'::org_role])"
+        }
+      ]
+    }
+  ],
+  "productionOnlyTablesWithPossibleRuntimeSQLReferences": [],
+  "limits": [
+    "Metadata-only comparison; extra columns and differently named equivalent constraints are not automatically defects.",
+    "Literal SQL references identify potential fresh-install gaps, not exhaustive coverage of dynamic SQL or a claim that every reference is shipped.",
+    "Remaining required column/key/policy differences must be reconciled and proved before deployment or production migrations.",
+    "All restored rows and original recovery database remain preserved; clone contains sensitive recovery data locally and no row values enter this artifact."
+  ]
+}

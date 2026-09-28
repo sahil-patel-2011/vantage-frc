@@ -248,9 +248,6 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const errorCopy = writerShellCopy("error");
   const setupCopy = writerShellCopy("setup");
   const setupPrimary = writerNextActions({ orgId: setupOrg, draftCount: 0 })[0] ?? null;
-  const neighborLinks = orgId
-    ? writerRelatedLinks(orgId, { include: ["claude-code", "chat", "budgets"] })
-    : [];
 
   return (
     <main className="module-page writer-page">
@@ -285,16 +282,8 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
       </header>
 
       {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
-      {orgId ? <WriterCrossLinks orgId={orgId} /> : null}
-      {neighborLinks.length ? (
-        <nav className="writer-cross-links writer-ai-neighbors" aria-label="Related AI tools">
-          {neighborLinks.map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      ) : null}
+      {/* No link rows up here: Chat and Budgets are the AI tabs just above, and Grants, Awards and
+          Knowledge sit beside Saved drafts below (they were shown twice). */}
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       <OfflineBanner feature="Writer" fromCache={fromCache} cachedAt={cachedAt} />

@@ -273,4 +273,25 @@ describe("GoogleSheetsTarget", () => {
     expect(calls.filter((call) => call.url.includes("values:batchGet"))).toHaveLength(1);
     expect(calls).toHaveLength(2);
   });
+
+  it("detects an extra data row instead of silently importing a capped table", async () => {
+    const data = [["id"], ...Array.from({ length: 20_001 }, (_, index) => [String(index)])];
+    const { client, calls } = fakeSheets([{ title: "PickList", sheetId: 3 }], [data]);
+    const target = await GoogleSheetsTarget.open(client, "s");
+    const result = await target.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" });
+    expect(result?.truncated).toBe(true);
+    expect(result?.rows).toHaveLength(20_000);
+    expect(calls.find((call) => call.url.includes("values:batchGet"))?.url).toContain("ZZ20002");
+  });
+
+  it("accepts the exact continuation limit and rejects an extra continuation row", async () => {
+    for (const count of [20_000, 20_001]) {
+      const continuations = [["id", "part", "text_json", "characters"], ...Array.from({ length: count }, (_, index) => [index.toString(16).padStart(64, "0"), 0, '"a"', 1])];
+      const { client } = fakeSheets([{ title: "PickList", sheetId: 3 }, { title: "LongText", sheetId: 4 }], [[["id"], ["a"]], continuations]);
+      const target = await GoogleSheetsTarget.open(client, "s");
+      const read = target.readTable({ entity: "PickList", sheet: "PickList", table: "VantagePickList" });
+      if (count === 20_000) expect((await read)?.truncated).toBe(false);
+      else await expect(read).rejects.toThrow(/No fragments were imported/);
+    }
+  });
 });

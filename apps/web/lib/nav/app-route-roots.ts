@@ -1,9 +1,14 @@
 /**
  * The first path segment of every route under app/. The proxy uses it to tell a page that
  * exists but needs a session (sign in first) from an address that exists nowhere (the 404).
- * app-route-roots.test.ts fails when a folder is added to app/ without being listed here.
+ * app-route-roots.test.ts fails when a source folder is added without being listed here.
  */
+// Workflow generates this directory during next dev/build. It is absent in a
+// fresh checkout, but its endpoints must remain known before generation too.
+export const GENERATED_APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([".well-known"]);
+
 export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
+  ...GENERATED_APP_ROUTE_ROOTS,
   "account",
   "admin",
   "ai",
@@ -233,6 +238,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "support",
   "tasks",
   "team",
+  "team-setup",
   "team-health-dashboard",
   "team-tags",
   "terms",

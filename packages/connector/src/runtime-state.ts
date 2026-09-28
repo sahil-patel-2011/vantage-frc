@@ -15,8 +15,8 @@ import type { CapabilityRunState, ConnectorStatusReport } from "./supervisor.js"
 
 export const RUNTIME_STATE_FILENAME = "connector-state.json";
 
-export function runtimeStatePath(home: string): string {
-  return joinPath(connectorConfigDir(home), RUNTIME_STATE_FILENAME);
+export function runtimeStatePath(home: string, profile?: string): string {
+  return joinPath(connectorConfigDir(home, profile), RUNTIME_STATE_FILENAME);
 }
 
 export type RuntimeCapabilitySnapshot = {
@@ -119,8 +119,9 @@ export function snapshotFromStatus(report: ConnectorStatusReport): RuntimeCapabi
 export async function readRuntimeState(
   fs: FileSystemLike,
   home: string,
+  profile?: string,
 ): Promise<ConnectorRuntimeState | null> {
-  const raw = await readIfExists(fs, runtimeStatePath(home));
+  const raw = await readIfExists(fs, runtimeStatePath(home, profile));
   if (raw === null) return null;
   try {
     return parseRuntimeState(JSON.parse(raw));
@@ -133,8 +134,9 @@ export async function writeRuntimeState(
   fs: FileSystemLike,
   home: string,
   state: ConnectorRuntimeState,
+  profile?: string,
 ): Promise<void> {
-  await fs.mkdir(connectorConfigDir(home), { recursive: true });
-  const path = runtimeStatePath(home);
+  await fs.mkdir(connectorConfigDir(home, profile), { recursive: true });
+  const path = runtimeStatePath(home, profile);
   await fs.writeFile(path, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
 }

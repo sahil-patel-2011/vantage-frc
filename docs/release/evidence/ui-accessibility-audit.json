@@ -1,0 +1,801 @@
+{
+  "tool": "@axe-core/playwright 4.13.0",
+  "buildId": "ej9yST5ocX2ZfrFnGSp-R",
+  "scope": "Actual scratch owner, production build, loopback only. Default complete axe rule set; no exclusions. Automatic checks are not full WCAG conformance.",
+  "results": [
+    {
+      "name": "home-1280",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:17.261Z",
+      "passes": 34,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "account-1280",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:18.149Z",
+      "passes": 38,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "description": "Ensure all ARIA attributes have valid values",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-valid-attr-value?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "#account-menu-trigger"
+              ],
+              "summary": "Fix all of the following:\n  Unable to determine if aria-controls referenced ID exists on the page while using aria-haspopup: aria-controls=\"account-menu-popup\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "drawer-1280",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:19.161Z",
+      "passes": 44,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "island-editor-1280",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:20.083Z",
+      "passes": 38,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "competition-1280",
+      "url": "http://127.0.0.1:3419/competition?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:21.864Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".edc-next > header > .edc-card-title > div > h2"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-next > header > .edc-card-title > div > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-match-hero > strong"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-match-when"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".nm-side:nth-child(1) > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".nm-against > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-after > a"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-after > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > header > .edc-card-title > div > h2"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > header > .edc-card-title > div > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > .edc-muted"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > .edc-link"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "notifications-1280",
+      "url": "http://127.0.0.1:3419/notifications?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:23.295Z",
+      "passes": 34,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "/team-1280",
+      "url": "http://127.0.0.1:3419/team?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:24.390Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build-1280",
+      "url": "http://127.0.0.1:3419/build?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:26.037Z",
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/business-1280",
+      "url": "http://127.0.0.1:3419/business?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:27.365Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[data-testid=\"biz-add-menu\"] > span"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=scouting-1280",
+      "url": "http://127.0.0.1:3419/competition?tab=scouting&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:28.826Z",
+      "passes": 43,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".scout-views-more > span[aria-hidden=\"true\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".is-selected > b"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "target": [
+                ".is-selected > small"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "home-390",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:30.386Z",
+      "passes": 34,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "account-390",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:31.200Z",
+      "passes": 38,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "description": "Ensure all ARIA attributes have valid values",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-valid-attr-value?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "#account-menu-trigger"
+              ],
+              "summary": "Fix all of the following:\n  Unable to determine if aria-controls referenced ID exists on the page while using aria-haspopup: aria-controls=\"account-menu-popup\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "drawer-390",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:32.278Z",
+      "passes": 44,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "island-editor-390",
+      "url": "http://127.0.0.1:3419/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:33.198Z",
+      "passes": 39,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "competition-390",
+      "url": "http://127.0.0.1:3419/competition?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:34.597Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".edc-next > header > .edc-card-title > div > h2"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-next > header > .edc-card-title > div > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-match-hero > strong"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-match-when"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".nm-side:nth-child(1) > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".nm-against > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-after > a"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-after > span"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > header > .edc-card-title > div > h2"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > header > .edc-card-title > div > p"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > .edc-muted"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".edc-coverage > .edc-link"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "notifications-390",
+      "url": "http://127.0.0.1:3419/notifications?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:35.747Z",
+      "passes": 34,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/team-390",
+      "url": "http://127.0.0.1:3419/team?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:36.704Z",
+      "passes": 42,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/build-390",
+      "url": "http://127.0.0.1:3419/build?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:38.206Z",
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/business-390",
+      "url": "http://127.0.0.1:3419/business?orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:39.726Z",
+      "passes": 40,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "button[data-testid=\"biz-add-menu\"] > span"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/competition?tab=scouting-390",
+      "url": "http://127.0.0.1:3419/competition?tab=scouting&orgId=6925a000-0000-4000-8000-000000000001",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "timestamp": "2026-09-27T04:21:40.950Z",
+      "passes": 41,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".scout-views-more > span[aria-hidden=\"true\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "target": [
+                ".is-selected > b"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "target": [
+                ".is-selected > small"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "target": [
+                ".consent-banner-lead"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "target": [
+                ".consent-banner-btn--decline"
+              ],
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "previousAudits": [
+    {
+      "buildId": "BrzMPzVDXoMZgvbi2lzWD",
+      "states": 12,
+      "detectedViolations": 0
+    },
+    {
+      "buildId": "epbhuK3I35yD78a1mBlwq",
+      "states": 20,
+      "detectedViolations": 0
+    }
+  ],
+  "manualChecks": {
+    "accountControlledMenuId": "Confirmed in actual Chrome; account trigger controls the present account-menu-popup.",
+    "transparency": "Actual Windows Chrome reports reduced-transparency. Its opaque accessibility fallback was observed; the normal translucent material is source-verified, not a claim about that screenshot.",
+    "limitations": [
+      "Default axe incomplete checks retained below; overlapping/gradient contrast needs manual review.",
+      "No full WCAG conformance, assistive-technology certification or universal aesthetic score is claimed.",
+      "Actual production providers, production flows, physical devices and full release gates remain separate."
+    ]
+  },
+  "screenshots": [
+    "ui-accessibility-final-desktop.png",
+    "ui-accessibility-final-account-phone.png",
+    "ui-accessibility-final-drawer-phone.png"
+  ],
+  "additionalAudit": "ui-embedded-accessibility-audit.json",
+  "totalAutomaticallyScannedStates": 48
+}

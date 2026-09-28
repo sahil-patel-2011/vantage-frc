@@ -268,8 +268,6 @@ export default function PicklistJustifierClient() {
   });
   const competitionHref = hubWorkbenchHref("competition", "picklist-justifier", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const draftHref = withOrgHref("/strategy/draft", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -427,14 +425,6 @@ export default function PicklistJustifierClient() {
         <div className="picklist-justifier-layout">
           <SummaryPanel view={view} busy={busy} mutate={mutate} />
           <EntriesList view={view} />
-          <Panel className="picklist-justifier-tip" aria-label="Pick-list Justifier tip">
-            <span className="eyebrow">Grounding path</span>
-            <p className="app-muted" style={{ marginTop: 8 }}>
-              Adjust ranks in <a href={strategyHref}>Strategy</a>, deepen{" "}
-              <a href={scoutingHref}>Scouting</a>, then carry justified picks to the{" "}
-              <a href={draftHref}>Alliance board</a>
-            </p>
-          </Panel>
         </div>
       )}
     </main>

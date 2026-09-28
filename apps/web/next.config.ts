@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
+import { withWorkflow } from "workflow/next";
+
+// Empty deployment metadata in local env files is not a deployed host. WDK
+// distinguishes absence from an empty string when constructing its step URL.
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL_URL?.trim()) delete process.env.VERCEL_URL;
 
 // Each browser-test group starts a new dev server. Reusing its predecessor's
 // compiler files has produced Turbopack cache panics and 404s for real routes.
@@ -19,6 +24,12 @@ const config: NextConfig = {
   // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
   // Preview Comments are off on the project.
   supportsImmutableAssets: false,
+  // A browser shard visits many cold routes. CI's runner can be killed
+  // while Turbopack's default auto eviction retains their compiled state.
+  // Use its supported disk-snapshot eviction in CI dev sessions only.
+  ...(process.env.CI === "true" && process.env.NODE_ENV === "development"
+    ? { experimental: { turbopackMemoryEviction: "full" as const } }
+    : {}),
   // Dev only. 127.0.0.1 is the local stand-in for the Scouting host (see
   // lib/products/products.ts); without it the dev server withholds its scripts
   // there and the Scouting pages never hydrate.
@@ -66,4 +77,4 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+export default withWorkflow(config);

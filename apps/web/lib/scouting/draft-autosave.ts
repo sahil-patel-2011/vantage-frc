@@ -11,6 +11,7 @@ export type ScoutDraftSnapshot = {
 };
 
 export function scoutDraftStorageKey(input: {
+  userId?: string | null;
   orgId: string;
   eventKey: string;
   entryType: "match" | "pit";
@@ -20,9 +21,10 @@ export function scoutDraftStorageKey(input: {
   const orgId = input.orgId.trim();
   const eventKey = input.eventKey.trim();
   const teamKey = input.teamKey.trim();
-  if (!orgId || !eventKey || !teamKey) return null;
+  const userId = input.userId?.trim();
+  if (!userId || !orgId || !eventKey || !teamKey) return null;
   const matchPart = input.entryType === "match" ? (input.matchKey?.trim() || "_") : "pit";
-  return `vantage-scout-draft:${orgId}:${eventKey}:${input.entryType}:${matchPart}:${teamKey}`;
+  return `vantage-scout-draft-person:${encodeURIComponent(userId)}:${orgId}:${eventKey}:${input.entryType}:${matchPart}:${teamKey}`;
 }
 
 export function readScoutDraft(key: string | null): ScoutDraftSnapshot | null {
@@ -54,9 +56,51 @@ export function clearScoutDraft(key: string | null): void {
   if (!key || typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(key);
+    window.localStorage.removeItem(`${key}:clock`);
   } catch {
     /* ignore */
   }
+}
+
+export function readScoutClock(key: string | null, now = Date.now()): number | null {
+  if (!key || typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(`${key}:clock`);
+    const startedAt = raw === null ? NaN : Number(raw);
+    return Number.isFinite(startedAt) && startedAt > 0 && startedAt <= now ? startedAt : null;
+  } catch { return null; }
+}
+
+export function writeScoutClock(key: string | null, startedAt: number | null): void {
+  if (!key || typeof window === "undefined") return;
+  try {
+    if (startedAt === null) window.localStorage.removeItem(`${key}:clock`);
+    else window.localStorage.setItem(`${key}:clock`, String(startedAt));
+  } catch { /* The form still works when local storage is unavailable. */ }
+}
+
+type DraftContext = { userId: string; orgId: string; eventKey: string };
+type ActiveDraft = { key: string; type: "match" | "pit"; matchKey: string; teamKey: string };
+function activeDraftKey(context: DraftContext): string {
+  return `vantage-scout-active:${encodeURIComponent(context.userId)}:${context.orgId}:${context.eventKey}`;
+}
+
+export function rememberActiveScoutDraft(context: DraftContext, draft: ActiveDraft): void {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(activeDraftKey(context), JSON.stringify(draft)); } catch { /* Keep the saved draft itself. */ }
+}
+
+export function readActiveScoutDraft(context: DraftContext): ActiveDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(activeDraftKey(context));
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as ActiveDraft;
+    if (draft.type !== "match" && draft.type !== "pit") return null;
+    if (typeof draft.matchKey !== "string" || typeof draft.teamKey !== "string") return null;
+    const expected = scoutDraftStorageKey({ ...context, entryType: draft.type, matchKey: draft.matchKey, teamKey: draft.teamKey });
+    return expected === draft.key && (readScoutDraft(expected) || readScoutClock(expected)) ? draft : null;
+  } catch { return null; }
 }
 
 export function formatDraftSavedAgo(savedAt: string | null, nowMs = Date.now()): string {

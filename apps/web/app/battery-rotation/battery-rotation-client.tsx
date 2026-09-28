@@ -254,8 +254,6 @@ export default function BatteryRotationClient() {
   });
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
-  const forecastHref = hubHref("/build", "battery-health-forecast", orgId);
-  const pitHref = withOrgHref("/pit", orgId);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -381,14 +379,6 @@ export default function BatteryRotationClient() {
             <RotationSchedule view={view} busy={busy} mutate={mutate} />
           </>
         ) : null}
-        <Panel aria-label="Battery rotation tip">
-          <span className="eyebrow">Fleet path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Log IR on <a href={batteriesHref}>Batteries</a>, project retirement in{" "}
-            <a href={forecastHref}>Health Forecast</a>, and check event-day rack status in{" "}
-            <a href={pitHref}>Robot status</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

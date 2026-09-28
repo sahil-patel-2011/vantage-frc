@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { expectReadyOr, waitForLoadingGone } from "./ready";
 import { signInAs, signInFixture } from "./session";
-import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -124,12 +123,10 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   }
 
   await page.goto("/video-analysis");
-  if (mediaPaused) {
-    // Video is a media tool, switched off to save storage. The walk carries on
-    // past it — the step after this one has nothing to do with media — so this
-    // checks the paused page and moves on rather than ending the walk here.
-    await expectPausedPage(page, "Video analysis");
-  } else {
+  // Link-based video analysis remains usable after upload/storage removal.
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /is paused$/ })).toHaveCount(0);
+  {
     await waitForLoadingGone(page);
     for (const phrase of BANNED_VIDEO) {
       await expect(page.locator("body"), `Video still shows ${phrase}`).not.toContainText(phrase);

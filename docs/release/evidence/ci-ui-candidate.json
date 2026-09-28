@@ -1,0 +1,1997 @@
+{
+  "scope": "Candidate branch CI follow-up; not production acceptance",
+  "originalRun": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36286595247",
+  "originalRevision": "b7a1a87cbbf280e7f3e0909697a33a41a023da81",
+  "originalResult": "failed",
+  "findings": [
+    {
+      "name": "Standalone RLS fixture lacked positive age confirmation",
+      "repair": "Seed eligible synthetic profiles before memberships. Production age trigger and all access assertions retained.",
+      "localResult": "40/40 proofs passed as NOSUPERUSER/NOBYPASSRLS vantage_app login"
+    },
+    {
+      "name": "Browser seeds also lacked birthdays",
+      "repair": "Set synthetic fixture birthdays explicitly; no authentication or eligibility bypass.",
+      "localResult": "Development and four-login browser seeds each passed twice against migrated loopback scratch database"
+    },
+    {
+      "name": "Route inventory expected generated Workflow directory in fresh checkout",
+      "repair": "Separate the explicitly generated .well-known root; still compare every source directory exactly and recognize Workflow endpoints before generation."
+    },
+    {
+      "name": "Parent Home assertion expected selected team to be discarded",
+      "repair": "Assert exact team-scoped Home URL, consistent with final navigation behavior."
+    }
+  ],
+  "localFollowup": {
+    "database": "vantage_schema_test_20260927",
+    "postgresVersion": "17.11",
+    "focusedFilesPassed": 5,
+    "focusedTestsPassed": 27,
+    "lint": "passed for changed source/scripts/tests",
+    "whitespace": "passed",
+    "notes": "Invitation eligibility and inbox isolation now also run with real PostgreSQL in CI; safety guards require loopback test/ci database names."
+  },
+  "remoteFollowup": {
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36287059784",
+    "revision": "1b4bccd827f67a50e43260dfb51a9850e4eec444",
+    "result": "failed",
+    "quality": "passed; lint, workspace types,1497files/11186tests,746-page build",
+    "postgres": "passed; fresh migrations/reapplication, two-team RLS,40 standalone role proofs, invitation age and inbox SQL checks",
+    "browserShards": [
+      {
+        "shard": 1,
+        "stats": {
+          "total": 64,
+          "expected": 61,
+          "unexpected": 3,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "action-menu-mouse.spec.ts",
+            "title": "a saved TV board's More menu stays open after a mouse click",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "calendar-month-grid.spec.ts",
+            "title": "the arrows move a month at a time and Today comes back",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "choose-your-team-leftover.spec.ts",
+            "title": "All apps team chip and Chat never say Pick a team",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "shard": 2,
+        "stats": {
+          "total": 64,
+          "expected": 56,
+          "unexpected": 4,
+          "flaky": 1,
+          "skipped": 3,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "event-day-shells.spec.ts",
+            "title": "scouting hub stays empty/setup and never DEMO",
+            "path": [
+              "phone event-day shells"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "event-day-shells.spec.ts",
+            "title": "scouting hub stays empty/setup and never DEMO",
+            "path": [
+              "tablet event-day shells"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "event-day-shells.spec.ts",
+            "title": "scouting hub stays empty/setup and never DEMO",
+            "path": [
+              "desktop event-day shells"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "a non-admin is offered no way to write a form or an announcement",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "an owner builds and opens a form, a member answers it once",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "an acknowledgement moves the count and drops the name off the chase list",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "skipped",
+            "annotations": []
+          },
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "a link-audience form is answerable with no session at all",
+            "path": [
+              "with real sessions"
+            ],
+            "outcome": "skipped",
+            "annotations": []
+          },
+          {
+            "file": "feature-map-walk.spec.ts",
+            "title": "FEATURE_MAP product routes render without a 500",
+            "path": [
+              "FEATURE_MAP fixture walk"
+            ],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "shard": 3,
+        "stats": {
+          "total": 64,
+          "expected": 57,
+          "unexpected": 2,
+          "flaky": 3,
+          "skipped": 2,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "forms-shell.spec.ts",
+            "title": "Form builder still loads after the panel split",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "home-edit-mode.spec.ts",
+            "title": "the edit toolbar replaces the tab bar and fits on one line",
+            "path": [
+              "on a phone"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "leftover-chrome-snapshot-shell.spec.ts",
+            "title": "/auton-path-library paints a heading instead of leftover VANTAGE chrome",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "my-day-shell.spec.ts",
+            "title": "My Day still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "newly-findable-pages.spec.ts",
+            "title": "/match-debrief opens and says what it is",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "title": "an event later today shows on the card, and goes when it is removed",
+            "path": [],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ]
+          },
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "title": "the card does not reach past today to find something to say",
+            "path": [],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "shard": 4,
+        "stats": {
+          "total": 61,
+          "expected": 55,
+          "unexpected": 5,
+          "flaky": 1,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "Hours keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "Batteries keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "FMEA keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "offline-phone-student.spec.ts",
+            "title": "Event readiness keeps the last board after a failed refresh",
+            "path": [
+              "offline phone student boards keep the last copy"
+            ],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "no-team-access-wall.spec.ts",
+            "title": "a signed-in account with no team is told what is happening, once",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "one-h1-per-page.spec.ts",
+            "title": "/chat has exactly one visible h1",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "shard": 5,
+        "stats": {
+          "total": 68,
+          "expected": 63,
+          "unexpected": 4,
+          "flaky": 1,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "product-shell.spec.ts",
+            "title": "product shell keeps four favorite apps and one way to see the rest",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "product-shell.spec.ts",
+            "title": "scouting and Work strips hide meta jobs that still have routes",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "saturday-pit-shells.spec.ts",
+            "title": "/match-video-index still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "saturday-pit-shells.spec.ts",
+            "title": "/drive-team-signals still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "pricing.spec.ts",
+            "title": "the cost page says it is free and that AI runs on the team's own key",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "shard": 6,
+        "stats": {
+          "total": 58,
+          "expected": 48,
+          "unexpected": 6,
+          "flaky": 1,
+          "skipped": 3,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "scouting-shell.spec.ts",
+            "title": "Scouting hub still loads after the panel split",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "search-storage-ai-shell.spec.ts",
+            "title": "/team/ai-bridge loads without engineering copy",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "student-week-actions.spec.ts",
+            "title": "student this week can walk Home → My Day/Scout → Video paste → CAD link",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "video-analysis-shell.spec.ts",
+            "title": "Video is a student paste page, not an engineering wall",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "video-shell.spec.ts",
+            "title": "Match video still loads after the Saturday shell pass",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "waitlist.spec.ts",
+            "title": "a visitor can join the waitlist",
+            "path": [],
+            "outcome": "unexpected",
+            "annotations": []
+          },
+          {
+            "file": "student-week-gui.spec.ts",
+            "title": "waitlist form still submits without Setup required",
+            "path": [
+              "marketing waitlist and sign-in"
+            ],
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "student-week-gui.spec.ts",
+            "title": "Home What to do now CTA is a real click",
+            "path": [
+              "student-week GUI path"
+            ],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ]
+          },
+          {
+            "file": "student-week-gui.spec.ts",
+            "title": "Connectors pair Approve pairing stays student-usable",
+            "path": [
+              "student-week GUI path"
+            ],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the student fixture is not on a team — nothing to check the student audience against",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 324,
+                  "column": 10
+                }
+              }
+            ]
+          },
+          {
+            "file": "tinyfish-key-never-returned.spec.ts",
+            "title": "a real key is accepted, shown only by its last four characters, and never returned",
+            "path": [],
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "notes": "HTML report includes serial tests skipped after first failure; counts differ from compact CLI lines. Original failures and retry-only passes are retained. Repairs are verified locally; final remote rerun pending."
+  },
+  "productionDeployment": "not performed",
+  "productionAcceptance": false,
+  "latestRepairEvidence": "ui-deep-details.json",
+  "followup9f": {
+    "revision": "9f8388248d7dac148fb9a6eece62a5dd61231d2f",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36290241694",
+    "result": "failed",
+    "quality": "passed: lint, all workspace types, full unit suite, migration static checks, production build",
+    "postgres": "passed: migration/reapplication/RLS plus invitation/onboarding/inbox integrations",
+    "browser": [
+      {
+        "findings": [],
+        "shard": 1,
+        "stats": {
+          "total": 64,
+          "expected": 64,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        }
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "unexpected",
+            "file": "first-run-shell.spec.ts",
+            "title": "/start paints a heading instead of leftover VANTAGE chrome"
+          },
+          {
+            "annotations": [],
+            "outcome": "unexpected",
+            "file": "forms-announcements.spec.ts",
+            "title": "an owner builds and opens a form, a member answers it once"
+          },
+          {
+            "annotations": [],
+            "outcome": "skipped",
+            "file": "forms-announcements.spec.ts",
+            "title": "a non-admin is offered no way to write a form or an announcement"
+          },
+          {
+            "annotations": [],
+            "outcome": "skipped",
+            "file": "forms-announcements.spec.ts",
+            "title": "an acknowledgement moves the count and drops the name off the chase list"
+          },
+          {
+            "annotations": [],
+            "outcome": "skipped",
+            "file": "forms-announcements.spec.ts",
+            "title": "a link-audience form is answerable with no session at all"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "feature-map-walk.spec.ts",
+            "title": "FEATURE_MAP product routes render without a 500"
+          }
+        ],
+        "shard": 2,
+        "stats": {
+          "total": 65,
+          "expected": 59,
+          "unexpected": 2,
+          "flaky": 0,
+          "skipped": 4,
+          "ok": false
+        }
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "inventory-adjust-once.spec.ts",
+            "title": "adjusting with a note changes the count by the amount typed, not twice"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "judging-district-shell.spec.ts",
+            "title": "/budget-reconciler paints a heading instead of leftover VANTAGE chrome"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "leftover-org-bound.spec.ts",
+            "title": "Alliance, Team admin, Help, and Attendance drop leftover engineering copy"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "leftover-setup-vantage-chrome.spec.ts",
+            "title": "leftover Setup required / VANTAGE Forms chrome is gone from student boards"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "home-knows-tonight.spec.ts",
+            "title": "an event later today shows on the card, and goes when it is removed"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "home-knows-tonight.spec.ts",
+            "title": "the card does not reach past today to find something to say"
+          }
+        ],
+        "shard": 3,
+        "stats": {
+          "total": 63,
+          "expected": 57,
+          "unexpected": 0,
+          "flaky": 4,
+          "skipped": 2,
+          "ok": false
+        }
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "one-h1-per-page.spec.ts",
+            "title": "/business has exactly one visible h1"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "people-continuity-shell.spec.ts",
+            "title": "/reviews paints a heading instead of leftover VANTAGE chrome"
+          }
+        ],
+        "shard": 4,
+        "stats": {
+          "total": 64,
+          "expected": 62,
+          "unexpected": 0,
+          "flaky": 2,
+          "skipped": 0,
+          "ok": false
+        }
+      },
+      {
+        "shard": 5,
+        "result": "incomplete",
+        "stats": null,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed. Logs contain a safety navigation timeout; no complete shard result exists."
+      },
+      {
+        "findings": [
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "student-week-event-slice.spec.ts",
+            "title": "student this week can walk Event day packing/checklist → My Hours clock-in → Pick desk"
+          },
+          {
+            "annotations": [],
+            "outcome": "flaky",
+            "file": "team-playbook.spec.ts",
+            "title": "a team can start its own playbook, and it is about that team"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "student-week-gui.spec.ts",
+            "title": "Home What to do now CTA is a real click"
+          },
+          {
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ],
+            "outcome": "skipped",
+            "file": "tinyfish-key-never-returned.spec.ts",
+            "title": "a real key is accepted, shown only by its last four characters, and never returned"
+          }
+        ],
+        "shard": 6,
+        "stats": {
+          "total": 59,
+          "expected": 55,
+          "unexpected": 0,
+          "flaky": 2,
+          "skipped": 2,
+          "ok": false
+        }
+      }
+    ],
+    "repairs": [
+      "Read actual form destination ID instead of a response body that Chrome can discard during document unload. Mutation status and actual detail record remain asserted.",
+      "First-run and safety route walks wait for DOMContentLoaded and then their original visible state assertions, rather than every page resource.",
+      "Runner-terminated shard retains incomplete status; supported Turbopack full memory eviction is enabled only for CI development sessions."
+    ],
+    "localRepair": {
+      "testsPassed": 11,
+      "testsSkipped": 0,
+      "log": "vantage-ui-ci-followup-regressions.log"
+    }
+  },
+  "followup30f": {
+    "revision": "30f85fa8bc6cc5ef71ab00468f18634a699daf27",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36291289125",
+    "quality": "passed",
+    "postgresRls": "passed",
+    "result": "incomplete",
+    "shards": [
+      {
+        "stats": {
+          "total": 68,
+          "expected": 68,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "shard": 1,
+        "findings": []
+      },
+      {
+        "stats": {
+          "total": 62,
+          "expected": 60,
+          "unexpected": 0,
+          "flaky": 1,
+          "skipped": 1,
+          "ok": false
+        },
+        "shard": 2,
+        "findings": [
+          {
+            "file": "forms-announcements.spec.ts",
+            "title": "an owner builds and opens a form, a member answers it once",
+            "outcome": "flaky",
+            "annotations": []
+          },
+          {
+            "file": "feature-map-walk.spec.ts",
+            "title": "FEATURE_MAP product routes render without a 500",
+            "outcome": "skipped",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "result": "incomplete",
+        "stats": null,
+        "shard": 3,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes."
+      },
+      {
+        "stats": {
+          "total": 66,
+          "expected": 65,
+          "unexpected": 0,
+          "flaky": 1,
+          "skipped": 0,
+          "ok": false
+        },
+        "shard": 4,
+        "findings": [
+          {
+            "file": "picklist-collab-shell.spec.ts",
+            "title": "Collaborative pick list still loads after the Saturday shell pass",
+            "outcome": "flaky",
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "result": "incomplete",
+        "stats": null,
+        "shard": 5,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes."
+      },
+      {
+        "result": "incomplete",
+        "stats": null,
+        "shard": 6,
+        "reason": "Runner received a shutdown signal before the remaining browser tests and artifact upload completed; no complete shard result exists. Consult the run-specific diagnostic notes."
+      }
+    ],
+    "diagnosis": "Three runners received shutdown signals before publishing complete reports. Logs show 15 GiB initial free memory plus 9 GiB swap. The termination cause is not established; memory pressure is an inference, not a proven OOM. Full cache eviction alone did not establish a reliable complete run."
+  },
+  "followupA9c": {
+    "revision": "a9c850e206df2bc503f37bde88697585ae2384d4",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36292900870",
+    "quality": "passed",
+    "postgresRls": "passed",
+    "result": "failed",
+    "shards": [
+      {
+        "shard": 1,
+        "stats": {
+          "total": 51,
+          "expected": 51,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "findings": []
+      },
+      {
+        "shard": 2,
+        "result": "not executed",
+        "stats": null,
+        "plannedCases": 47,
+        "reason": "Coverage preflight rejected generated width variants as duplicate identities because their suite paths were omitted. No tests in this shard ran; not a runner termination. Suite paths now distinguish all 47 cases."
+      },
+      {
+        "shard": 3,
+        "stats": {
+          "total": 48,
+          "expected": 47,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 1,
+          "ok": true
+        },
+        "findings": [
+          {
+            "file": "feature-map-walk.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                  "line": 83,
+                  "column": 10
+                }
+              }
+            ],
+            "title": "FEATURE_MAP product routes render without a 500",
+            "outcome": "skipped"
+          }
+        ]
+      },
+      {
+        "shard": 4,
+        "stats": {
+          "total": 50,
+          "expected": 48,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 2,
+          "ok": true
+        },
+        "findings": [
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 77,
+                  "column": 8
+                }
+              }
+            ],
+            "title": "an event later today shows on the card, and goes when it is removed",
+            "outcome": "skipped"
+          },
+          {
+            "file": "home-knows-tonight.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                  "line": 153,
+                  "column": 8
+                }
+              }
+            ],
+            "title": "the card does not reach past today to find something to say",
+            "outcome": "skipped"
+          }
+        ]
+      },
+      {
+        "shard": 5,
+        "stats": {
+          "total": 48,
+          "expected": 48,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "findings": []
+      },
+      {
+        "shard": 6,
+        "stats": {
+          "total": 51,
+          "expected": 51,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": true
+        },
+        "findings": []
+      },
+      {
+        "shard": 7,
+        "stats": {
+          "total": 44,
+          "expected": 42,
+          "unexpected": 2,
+          "flaky": 0,
+          "skipped": 0,
+          "ok": false
+        },
+        "findings": [
+          {
+            "file": "shared-ui-accessibility.spec.ts",
+            "annotations": [],
+            "title": "shared navigation and event UI accessibility at 1280px",
+            "outcome": "unexpected"
+          },
+          {
+            "file": "shared-ui-accessibility.spec.ts",
+            "annotations": [],
+            "title": "shared navigation and event UI accessibility at 390px",
+            "outcome": "unexpected"
+          }
+        ]
+      },
+      {
+        "shard": 8,
+        "stats": {
+          "total": 47,
+          "expected": 45,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 2,
+          "ok": true
+        },
+        "findings": [
+          {
+            "file": "student-week-gui.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "the next match leads Home today",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                  "line": 50,
+                  "column": 10
+                }
+              }
+            ],
+            "title": "Home What to do now CTA is a real click",
+            "outcome": "skipped"
+          },
+          {
+            "file": "tinyfish-key-never-returned.spec.ts",
+            "annotations": [
+              {
+                "type": "skip",
+                "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                "location": {
+                  "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                  "line": 74,
+                  "column": 8
+                }
+              }
+            ],
+            "title": "a real key is accepted, shown only by its last four characters, and never returned",
+            "outcome": "skipped"
+          }
+        ]
+      }
+    ],
+    "axeFindings": [
+      {
+        "test": "shared navigation and event UI accessibility at 1280px",
+        "state": "notifications-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">Loading your inbox.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.39 (foreground color: #6e7986, background color: #fefefe, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".soft-empty"
+                    ],
+                    "element": "<section class=\"soft-empty scan-empty\" aria-busy=\"true\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell has-event-focus\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "test": "shared navigation and event UI accessibility at 1280px",
+        "state": "home-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".hero > header > .dash-widget-title > div > h2"
+                ],
+                "html": "<h2>Next match</h2>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.38 (foreground color: #5f7996, background color: #fbfcfd, font size: 11.3pt (15px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-alliance"
+                ],
+                "html": "<span class=\"nm-alliance nm-alliance-blue\">Switch to BLUE bumpers</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.77 (foreground color: #fbfcfd, background color: #6f97f0, font size: 9.8pt (13px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-alliance"
+                    ],
+                    "element": "<span class=\"nm-alliance nm-alliance-blue\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".dash-countdown > span"
+                ],
+                "html": "<span>Starts in</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.88 (foreground color: #8e97a1, background color: #fbfcfd, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-side:nth-child(1) > span"
+                ],
+                "html": "<span>With us</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.73 (foreground color: #8e97a1, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-side:nth-child(1)"
+                    ],
+                    "element": "<div class=\"nm-side\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-against > span"
+                ],
+                "html": "<span>Against</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.73 (foreground color: #8e97a1, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-against"
+                    ],
+                    "element": "<div class=\"nm-side nm-against\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-win-head > span"
+                ],
+                "html": "<span>chance we win · usually 65⁠–⁠85%</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.88 (foreground color: #8e97a1, background color: #fbfcfd, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".hero > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">Open briefing →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.39 (foreground color: #60919a, background color: #fbfcfd, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > header > .dash-widget-title > div > h2"
+                ],
+                "html": "<h2>My day</h2>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.93 (foreground color: #a9b7c7, background color: #f8f9fa, font size: 11.3pt (15px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">Qual 31 at 4:20 AM is next. Nothing else is on your list today.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.63 (foreground color: #c1c6cc, background color: #f8f9fa, font size: 11.3pt (15px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">Open My Day →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.75 (foreground color: #aac3c8, background color: #f8f9fa, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "test": "shared navigation and event UI accessibility at 390px",
+        "state": "home-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".nm-alliance"
+                ],
+                "html": "<span class=\"nm-alliance nm-alliance-blue\">Switch to BLUE bumpers</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.91 (foreground color: #fcfcfd, background color: #6993ef, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-alliance"
+                    ],
+                    "element": "<span class=\"nm-alliance nm-alliance-blue\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".dash-countdown > span"
+                ],
+                "html": "<span>Starts in</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.03 (foreground color: #8a939e, background color: #fcfcfd, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-side:nth-child(1) > span"
+                ],
+                "html": "<span>With us</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.87 (foreground color: #8a939e, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-side:nth-child(1)"
+                    ],
+                    "element": "<div class=\"nm-side\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-against > span"
+                ],
+                "html": "<span>Against</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.87 (foreground color: #8a939e, background color: #f5f6f7, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".nm-against"
+                    ],
+                    "element": "<div class=\"nm-side nm-against\">"
+                  },
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".nm-win-head > span"
+                ],
+                "html": "<span>chance we win · usually 65⁠–⁠85%</span>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.03 (foreground color: #8a939e, background color: #fcfcfd, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero"
+                    ],
+                    "element": "<article class=\"dash-widget app-card hero\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".hero > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">Open briefing →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.6 (foreground color: #5a8d96, background color: #fcfcfd, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".hero > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/briefing?orgId=6925a000-0000-4000-8000-000000000001&amp;matchKey=2026gacmp_qm31\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > header > .dash-widget-title > div > h2"
+                ],
+                "html": "<h2>My day</h2>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.98 (foreground color: #a7b5c5, background color: #f8f9fa, font size: 11.3pt (15px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">Qual 31 at 4:20 AM is next. Nothing else is on your list today.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.66 (foreground color: #bfc4cb, background color: #f8f9fa, font size: 11.3pt (15px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card"
+                    ],
+                    "element": "<article class=\"dash-widget app-card\" style=\"--tone: var(--tone-blue);\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell\">"
+                  }
+                ]
+              },
+              {
+                "target": [
+                  "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                ],
+                "html": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">Open My Day →</a>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.79 (foreground color: #a7c1c7, background color: #f8f9fa, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      "article[data-widget-id=\"w-my_day\"] > .dash-widget-hit > .dash-widget.app-card > .dash-widget-link"
+                    ],
+                    "element": "<a class=\"dash-widget-link\" href=\"/my-day?orgId=6925a000-0000-4000-8000-000000000001\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "test": "shared navigation and event UI accessibility at 390px",
+        "state": "notifications-accessibility.json",
+        "violations": [
+          {
+            "id": "color-contrast",
+            "nodes": [
+              {
+                "target": [
+                  ".app-muted"
+                ],
+                "html": "<p class=\"app-muted\">When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here.</p>",
+                "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.2 (foreground color: #717c88, background color: #fdfefe, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+                "ancestors": [
+                  {
+                    "target": [
+                      ".soft-empty"
+                    ],
+                    "element": "<section class=\"soft-empty scan-empty\">"
+                  },
+                  {
+                    "target": [
+                      "body"
+                    ],
+                    "element": "<body class=\"has-app-shell has-event-focus\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "repairs": [
+      "Include full suite ancestry in coverage identities for generated viewport variants.",
+      "Keep content at full opacity during card/page entrances. Loading states animate their border, not their text."
+    ],
+    "coverage": [
+      {
+        "shard": "1/8",
+        "maxFiles": 6,
+        "planned": 51,
+        "reported": 51,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:59:08.427Z",
+          "duration": 281768.65087890625,
+          "expected": 51,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "3/8",
+        "maxFiles": 6,
+        "planned": 48,
+        "reported": 48,
+        "groups": 2,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:21.194Z",
+          "duration": 269269.35009765625,
+          "expected": 47,
+          "skipped": 1,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "4/8",
+        "maxFiles": 6,
+        "planned": 50,
+        "reported": 50,
+        "groups": 6,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:36.807Z",
+          "duration": 461626.958984375,
+          "expected": 48,
+          "skipped": 2,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "5/8",
+        "maxFiles": 6,
+        "planned": 48,
+        "reported": 48,
+        "groups": 2,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:21.362Z",
+          "duration": 165847.65502929688,
+          "expected": 48,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "6/8",
+        "maxFiles": 6,
+        "planned": 51,
+        "reported": 51,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:24.472Z",
+          "duration": 194125.86694335938,
+          "expected": 51,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "7/8",
+        "maxFiles": 6,
+        "planned": 44,
+        "reported": 44,
+        "groups": 3,
+        "exactCoverage": true,
+        "result": "failed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:32.177Z",
+          "duration": 263441.64501953125,
+          "expected": 42,
+          "skipped": 0,
+          "unexpected": 2,
+          "flaky": 0
+        }
+      },
+      {
+        "shard": "8/8",
+        "maxFiles": 6,
+        "planned": 47,
+        "reported": 47,
+        "groups": 4,
+        "exactCoverage": true,
+        "result": "passed",
+        "stats": {
+          "startTime": "2026-09-27T03:58:41.362Z",
+          "duration": 284718.9189453125,
+          "expected": 45,
+          "skipped": 2,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      }
+    ],
+    "localRepair": {
+      "testsPassed": 4,
+      "states": 48,
+      "log": "vantage-ui-extended-accessibility-retry.log",
+      "unitTestsPassed": 17,
+      "unitScope": "Coverage identity, origin guards, motion conventions and motion preferences",
+      "harness": {
+        "planned": 14,
+        "reported": 14,
+        "exactCoverage": true,
+        "result": "12 passed / 2 failed before Logistics shell repair",
+        "log": "vantage-ui-extended-accessibility-harness.log"
+      },
+      "subsequentRepair": "Forward embedded state to every Logistics loading/error/setup/empty shell; actual four-test desktop/phone replay then passes all 48 states."
+    }
+  },
+  "final": {
+    "sourceRevision": "2045bc2569ca81cf8460f9c7f96c0c9244ca9b95",
+    "run": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/36294203960",
+    "result": "passed",
+    "quality": {
+      "lint": "passed",
+      "workspaceTypes": "passed",
+      "unitFilesPassed": 1498,
+      "unitFilesSkipped": 15,
+      "unitTestsPassed": 11191,
+      "unitTestsSkipped": 40,
+      "migrationStaticTestsPassed": 15,
+      "productionBuild": "passed",
+      "pages": 746
+    },
+    "postgres": {
+      "migrationReapplication": "passed",
+      "restrictedRlsProof": "passed",
+      "conditionalOnboardingInvitationInbox": "passed",
+      "database": "Isolated PostgreSQL 17 CI service; application proof uses NOSUPERUSER/NOBYPASSRLS login"
+    },
+    "browser": {
+      "total": 388,
+      "passed": 383,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 5,
+      "shards": [
+        {
+          "findings": [],
+          "stats": {
+            "total": 51,
+            "expected": 51,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 0,
+            "ok": true
+          },
+          "shard": 1
+        },
+        {
+          "findings": [],
+          "stats": {
+            "total": 47,
+            "expected": 47,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 0,
+            "ok": true
+          },
+          "shard": 2
+        },
+        {
+          "findings": [
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Chromium compiling 143 next-dev routes hangs the compiler; the HTTP walk in scripts/feature-map-http-walk.mjs is the catalog proof.",
+                  "location": {
+                    "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/feature-map-walk.spec.ts",
+                    "line": 83,
+                    "column": 10
+                  }
+                }
+              ],
+              "title": "FEATURE_MAP product routes render without a 500",
+              "file": "feature-map-walk.spec.ts",
+              "outcome": "skipped"
+            },
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "the next match leads Home today",
+                  "location": {
+                    "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                    "line": 77,
+                    "column": 8
+                  }
+                }
+              ],
+              "title": "an event later today shows on the card, and goes when it is removed",
+              "file": "home-knows-tonight.spec.ts",
+              "outcome": "skipped"
+            },
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "the next match leads Home today",
+                  "location": {
+                    "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/home-knows-tonight.spec.ts",
+                    "line": 153,
+                    "column": 8
+                  }
+                }
+              ],
+              "title": "the card does not reach past today to find something to say",
+              "file": "home-knows-tonight.spec.ts",
+              "outcome": "skipped"
+            }
+          ],
+          "stats": {
+            "total": 50,
+            "expected": 47,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 3,
+            "ok": true
+          },
+          "shard": 3
+        },
+        {
+          "findings": [],
+          "stats": {
+            "total": 48,
+            "expected": 48,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 0,
+            "ok": true
+          },
+          "shard": 4
+        },
+        {
+          "findings": [],
+          "stats": {
+            "total": 48,
+            "expected": 48,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 0,
+            "ok": true
+          },
+          "shard": 5
+        },
+        {
+          "findings": [],
+          "stats": {
+            "total": 51,
+            "expected": 51,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 0,
+            "ok": true
+          },
+          "shard": 6
+        },
+        {
+          "findings": [],
+          "stats": {
+            "total": 46,
+            "expected": 46,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 0,
+            "ok": true
+          },
+          "shard": 7
+        },
+        {
+          "findings": [
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "the next match leads Home today",
+                  "location": {
+                    "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/student-week-gui.spec.ts",
+                    "line": 50,
+                    "column": 10
+                  }
+                }
+              ],
+              "title": "Home What to do now CTA is a real click",
+              "file": "student-week-gui.spec.ts",
+              "outcome": "skipped"
+            },
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "set TINYFISH_TEST_KEY to run the accepted-key path",
+                  "location": {
+                    "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/tinyfish-key-never-returned.spec.ts",
+                    "line": 74,
+                    "column": 8
+                  }
+                }
+              ],
+              "title": "a real key is accepted, shown only by its last four characters, and never returned",
+              "file": "tinyfish-key-never-returned.spec.ts",
+              "outcome": "skipped"
+            }
+          ],
+          "stats": {
+            "total": 47,
+            "expected": 45,
+            "unexpected": 0,
+            "flaky": 0,
+            "skipped": 2,
+            "ok": true
+          },
+          "shard": 8
+        }
+      ],
+      "coverage": [
+        {
+          "shard": "1/8",
+          "maxFiles": 6,
+          "planned": 51,
+          "reported": 51,
+          "groups": 4,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:25:21.964Z",
+            "duration": 245579.71899414062,
+            "expected": 51,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "2/8",
+          "maxFiles": 6,
+          "planned": 47,
+          "reported": 47,
+          "groups": 3,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:25:41.222Z",
+            "duration": 190814.86206054688,
+            "expected": 47,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "3/8",
+          "maxFiles": 6,
+          "planned": 50,
+          "reported": 50,
+          "groups": 2,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:26:02.214Z",
+            "duration": 336287.4609375,
+            "expected": 47,
+            "skipped": 3,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "4/8",
+          "maxFiles": 6,
+          "planned": 48,
+          "reported": 48,
+          "groups": 5,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:25:35.484Z",
+            "duration": 363950.2490234375,
+            "expected": 48,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "5/8",
+          "maxFiles": 6,
+          "planned": 48,
+          "reported": 48,
+          "groups": 2,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:25:23.688Z",
+            "duration": 192991.94189453125,
+            "expected": 48,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "6/8",
+          "maxFiles": 6,
+          "planned": 51,
+          "reported": 51,
+          "groups": 3,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:25:30.009Z",
+            "duration": 191778.43505859375,
+            "expected": 51,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "7/8",
+          "maxFiles": 6,
+          "planned": 46,
+          "reported": 46,
+          "groups": 3,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:26:10.382Z",
+            "duration": 364554.85302734375,
+            "expected": 46,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        },
+        {
+          "shard": "8/8",
+          "maxFiles": 6,
+          "planned": 47,
+          "reported": 47,
+          "groups": 4,
+          "exactCoverage": true,
+          "result": "passed",
+          "stats": {
+            "startTime": "2026-09-27T04:25:30.808Z",
+            "duration": 346017.666015625,
+            "expected": 45,
+            "skipped": 2,
+            "unexpected": 0,
+            "flaky": 0
+          }
+        }
+      ],
+      "scope": "All eight complete browser shard reports and exact planned/reported case identities. Five explicit skips remain: three alternate Home cases when a next match takes priority; one catalog browser walk covered by the built HTTP inventory; one actual provider-key case requiring TINYFISH_TEST_KEY."
+    },
+    "productionAcceptance": false,
+    "limitations": [
+      "CI is not live production acceptance.",
+      "Manual assistive-technology/device checks and incomplete axe contrast reviews remain.",
+      "Required platform settings, provider/device checks, recovery/deletion/retention, connected workflows and load gates remain in the original release matrix."
+    ]
+  }
+}

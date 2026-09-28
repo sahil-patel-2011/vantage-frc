@@ -8,6 +8,7 @@ import {
 import { createInviteToken, type OrgRole } from "./index";
 import { assertOrgCapability } from "./capabilities";
 import { emitPreferredNotification } from "./in-app-notifications";
+import { assertAccountAgeConfirmed } from "./eligibility";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -327,6 +328,7 @@ export async function acceptOrganizationInvite(
   actorUserId: string,
   token: string,
 ) {
+  await assertAccountAgeConfirmed(client, actorUserId);
   const result = await client.query<{ orgId: string }>(
     `SELECT accept_org_invite($1) AS "orgId"`,
     [token],
@@ -343,6 +345,7 @@ export async function acceptOrganizationInvite(
  * accepted by verified email so the two ways in can be told apart.
  */
 export async function acceptMyOrganizationInvite(client: PoolClient, actorUserId: string, orgId: string) {
+  await assertAccountAgeConfirmed(client, actorUserId);
   const result = await client.query<{ orgId: string }>(`SELECT accept_my_org_invite($1::uuid) AS "orgId"`, [orgId]);
   const joined = result.rows[0]!.orgId;
   await audit(client, { orgId: joined, actorUserId, action: "invite.accepted", metadata: { via: "verified_email" } });

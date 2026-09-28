@@ -89,10 +89,11 @@ function AllianceBlock({
                 {robot.estimate == null
                   ? "not scouted"
                   : `scouted ${points(robot.estimate)}${
-                      robot.scoutCount > 1 ? ` · median of ${robot.scoutCount}` : ""
+                      robot.scoutCount > 1 ? ` · mean of ${robot.scoutCount}` : ""
                     }`}
                 {share ? ` · share of the official score ${points(share.points)}` : ""}
               </span>
+              {robot.range && robot.range[0] !== robot.range[1] ? <span>Reports range {points(robot.range[0])}–{points(robot.range[1])} points; review disagreement.</span> : null}
               {robot.entryIds.length ? (
                 <a href={entriesHref(orgId, matchKey, robot.teamKey)}>
                   {robot.entryIds.length} {robot.entryIds.length === 1 ? "report" : "reports"}

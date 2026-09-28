@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "journey": "Browser retest of the three repaired Team workflow defects",
+  "checkedAt": "2026-09-26T22:24:20Z",
+  "environment": "Local development server with isolated vantage_release_test PostgreSQL database",
+  "baseUrl": "http://127.0.0.1:3417",
+  "account": "Controlled Morgan Journey fixture, journey-mentor-20260926@example.test",
+  "organizationId": "6925a000-0000-4000-8000-000000000001",
+  "browser": "Chrome visible UI through cua_repl, own tab 781731031",
+  "status": "passed",
+  "productionAcceptance": false,
+  "freshClientLoaded": true,
+  "identityChanged": false,
+  "recordsPreserved": true,
+  "originalEvidence": "docs/release/evidence/journey-team-workflows.json",
+  "retests": [
+    {
+      "defect": "Unified work totals stale after mutations",
+      "result": "Passed",
+      "recordId": "1df2b3e2-edca-4878-b4f5-fd3662816973",
+      "recordName": "Journey rerun 20260926 - task summary refresh",
+      "observed": [
+        "Before creation: Open 1, Unowned 0.",
+        "After creation without reload: Open 2, Unowned 1.",
+        "Assign Morgan without reload: Open 2, Unowned 0, Mine 1.",
+        "Mark done without reload: Open 1, Unowned 0, Mine 0, rerun record Done."
+      ]
+    },
+    {
+      "defect": "One-tap mentor attendance incorrectly saved as Student",
+      "result": "Passed",
+      "recordName": "Journey rerun 20260926 - mentor attendance",
+      "observed": [
+        "Fresh event created with default two-hour credit.",
+        "Morgan one-tap present creates Morgan Journey Mentor 2 h.",
+        "Event reports 1 present, 2h credited, 1 mentor.",
+        "Season reports two preserved events, four hours total, one mentor mark.",
+        "Original historical Student row retained as evidence; no silent history rewrite."
+      ]
+    },
+    {
+      "defect": "Logistics mutation success followed by null form-reset exception",
+      "result": "Passed",
+      "records": [
+        "Journey rerun 20260926 - clean logistics forms",
+        "Journey rerun 20260926 - departure",
+        "Journey rerun 20260926 - form reset check"
+      ],
+      "observed": [
+        "Trip saved for September 28 at Synthetic rerun shop; trip title, venue and date inputs reset.",
+        "Travel leg saved for September 28 09:00 at Synthetic rerun entrance; title, time and meeting-point inputs reset.",
+        "Everyone checklist item saved; text input resets and selects restore their form defaults.",
+        "Console error/warning logs empty before and after all three mutations."
+      ],
+      "consoleErrors": [],
+      "consoleWarnings": []
+    }
+  ],
+  "apiEvidenceFromServerLog": [
+    { "path": "/api/todos", "methods": ["POST"], "status": 200 },
+    { "path": "/api/work-items", "methods": ["GET"], "status": 200, "note": "Read again after todo mutations; visible aggregate updated without reload." },
+    { "path": "/api/attendance", "methods": ["GET", "POST"], "status": 200 },
+    { "path": "/api/logistics", "methods": ["GET", "POST"], "status": 200 }
+  ],
+  "screenshots": [
+    "docs/release/evidence/journey-team-rerun-attendance.png",
+    "docs/release/evidence/journey-team-rerun-logistics.png"
+  ],
+  "limitations": [
+    "This rerun only closes the three observed defects; it does not prove all Team workflow requirements or production readiness.",
+    "Task history, dependencies, canonical task consolidation, offline behavior, and complete logistics workflow remain separate acceptance work.",
+    "No source edits, external messages, real travel bookings, account changes, or production actions performed."
+  ]
+}

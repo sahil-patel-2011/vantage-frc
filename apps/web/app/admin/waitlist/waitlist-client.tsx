@@ -10,6 +10,7 @@ type SignupStatus = {
   open: boolean;
   earliest: string;
   dateReached: boolean;
+  readinessVerified: boolean;
   envEnabled: boolean;
   reason: string;
 };
@@ -130,9 +131,10 @@ export default function WaitlistAdminClient() {
           </div>
           <ol className="admin-signup-steps">
             <li data-done={signup.dateReached ? "yes" : "no"}>
-              {signup.dateReached
-                ? `Planned date reached (${signup.earliest})`
-                : `Waiting for ${signup.earliest}`}
+              {signup.dateReached ? "December 1 launch date reached" : "Scheduled for December 1, 2026 at midnight Eastern Time"}
+            </li>
+            <li data-done={signup.readinessVerified ? "yes" : "no"}>
+              {signup.readinessVerified ? "Production verification passed" : "Complete production verification before opening signup"}
             </li>
             <li data-done={signup.envEnabled ? "yes" : "no"}>
               {signup.envEnabled

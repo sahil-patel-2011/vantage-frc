@@ -14,6 +14,8 @@ import { resolveScoutMediaPreview } from "../../lib/scouting/scout-media-preview
 import { StudioField, isStudioField } from "./studio-fields";
 import { ScoutChoice, ScoutChoiceRow, segmentedOptions } from "./scout-choice";
 import type { OfficialFlag } from "./scouting-model";
+import { isTapCounterField } from "../../lib/scouting/count-field";
+export { isTapCounterField } from "../../lib/scouting/count-field";
 
 /**
  * Offline-first photo preview: the queued IndexedDB blob when we have it.
@@ -65,19 +67,6 @@ export function RobotImagePreview({ clientId, orgId }: { clientId: string; orgId
     <span className="app-muted">
       {preview.status === "missing" ? preview.reason : "This photo is not available."}
     </span>
-  );
-}
-
-/**
- * Counted things (points, cycles, fouls, pieces) get big − / + buttons: a scout taps while
- * watching instead of opening the phone keyboard mid-match. Times, weights and rates stay a
- * typed box, because they are measured, not counted. So do totals: a robot's 60-point match is
- * sixty taps on a + button, and the scout reads it off the scoreboard anyway.
- */
-export function isTapCounterField(field: Pick<SchemaDefinition["fields"][number], "type" | "key" | "label">): boolean {
-  return (
-    field.type === "number" &&
-    !/time|sec|\(s\)|weight|rate|avg|average|percent|%|speed|total/i.test(`${field.key} ${field.label}`)
   );
 }
 

@@ -54,7 +54,13 @@ export type AttendanceContext = {
   canManage: boolean;
 };
 
-export type AttendanceMember = { userId: string; name: string };
+export type AttendanceMember = { userId: string; name: string; attendanceRole?: AttendanceRole };
+
+export function attendanceRosterRole(teamRole: string | null | undefined, fallback: AttendanceRole = "other"): AttendanceRole {
+  if (teamRole === "mentor") return "mentor";
+  if (teamRole === "student") return "student";
+  return fallback;
+}
 
 export type AttendanceView =
   | {

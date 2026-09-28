@@ -176,13 +176,14 @@ async function main() {
       await db.query(
         `INSERT INTO profiles (user_id, display_name, first_name, last_name,
            preferred_team_number, onboarding_completed_at, onboarding_current_step,
-           terms_accepted_at, privacy_accepted_at)
-         VALUES ($1::uuid, $2, $3, $4, $5, now(), 'complete', now(), now())
+           terms_accepted_at, privacy_accepted_at, date_of_birth)
+         VALUES ($1::uuid, $2, $3, $4, $5, now(), 'complete', now(), now(), DATE '2000-01-01')
          ON CONFLICT (user_id) DO UPDATE SET
            onboarding_completed_at = now(),
            onboarding_current_step = 'complete',
            terms_accepted_at = now(),
-           privacy_accepted_at = now()`,
+           privacy_accepted_at = now(),
+           date_of_birth = EXCLUDED.date_of_birth`,
         [id, `${first} ${last}`, first, last, OUR_TEAM],
       );
     }

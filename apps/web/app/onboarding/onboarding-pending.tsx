@@ -25,6 +25,7 @@ export function PendingPanel({
     accessStatus: state.accessStatus,
     teamNumber: state.preferredTeamNumber ?? state.lockedTeamNumber ?? null,
     orgName: state.workspaceOrgName ?? state.lockedOrgName ?? null,
+    workspaceMissing: state.workspaceMissing,
     adult,
   });
 

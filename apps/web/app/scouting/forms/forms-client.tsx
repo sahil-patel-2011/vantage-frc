@@ -59,7 +59,8 @@ async function persistScoutFormsSnapshot(orgId: string, data: SchemasPayload): P
   }
 }
 
-export default function FormsClient({ orgId }: { orgId: string; embedded?: boolean }) {
+export default function FormsClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
+  const Root = embedded ? "section" : "main";
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
   const [loadError, setLoadError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -360,7 +361,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   }
 
   return (
-    <main className="module-page sfb-page">
+    <Root className="module-page sfb-page">
       <PageHeader
         breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
@@ -791,9 +792,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Drivetrain", kind: "drivetrain", optionsText: DRIVETRAIN_OPTIONS_TEXT, }), ]) }>
                   Add drivetrain
                 </Button>
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Robot images", kind: "robot_image" }), ]) }>
-                  Add robot images
-                </Button>
                 <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setMode("preview")}>
                   Preview
                 </Button>
@@ -883,6 +881,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           <FormBuilderNextActionsPanel actions={readyActions} />
         </aside>
       </div>
-    </main>
+    </Root>
   );
 }

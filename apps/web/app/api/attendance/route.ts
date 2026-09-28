@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   defaultSeasonYear,
+  attendanceRosterRole,
   parseAttendanceAction,
   type AttendanceEntry,
   type AttendanceEvent,
@@ -153,10 +154,11 @@ export async function GET(request: Request) {
       }
       const [events, members] = await Promise.all([
         loadEvents(client, row.orgId, seasonYear),
-        client.query<{ userId: string; name: string | null }>(
-          `SELECT u.id AS "userId", u.name
+        client.query<{ userId: string; name: string | null; teamRole: string | null }>(
+          `SELECT u.id AS "userId", u.name, p.team_role AS "teamRole"
            FROM memberships m
            JOIN users u ON u.id = m.user_id
+           LEFT JOIN profiles p ON p.user_id = m.user_id
            WHERE m.org_id = $1
            ORDER BY u.name ASC NULLS LAST`,
           [row.orgId],
@@ -181,7 +183,7 @@ export async function GET(request: Request) {
         seasonYear,
         seasons,
         members: members.rows
-          .map((m) => ({ userId: m.userId, name: (m.name ?? "").trim() }))
+          .map((m) => ({ userId: m.userId, name: (m.name ?? "").trim(), attendanceRole: attendanceRosterRole(m.teamRole) }))
           .filter((m) => m.name.length > 0),
       } satisfies AttendanceView;
     });
@@ -258,10 +260,11 @@ export async function POST(request: Request) {
           ]);
           if (!event.rowCount) throw new HttpError(404, "Attendance event not found");
           const linkedMember = action.userId
-            ? await client.query<{ name: string | null }>(
-                `SELECT u.name
+            ? await client.query<{ name: string | null; teamRole: string | null }>(
+                `SELECT u.name, p.team_role AS "teamRole"
                  FROM memberships m
                  INNER JOIN users u ON u.id = m.user_id
+                 LEFT JOIN profiles p ON p.user_id = m.user_id
                  WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid
                  LIMIT 1`,
                 [action.orgId, action.userId],
@@ -276,7 +279,8 @@ export async function POST(request: Request) {
             `INSERT INTO attendance_entries (org_id, event_id, user_id, person_name, role, hours)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id`,
-            [action.orgId, action.eventId, action.userId, personName, action.role, action.hours],
+            [action.orgId, action.eventId, action.userId, personName,
+              linkedMember ? attendanceRosterRole(linkedMember.rows[0]?.teamRole, action.role) : action.role, action.hours],
           );
           return { id: inserted.rows[0]!.id };
         }

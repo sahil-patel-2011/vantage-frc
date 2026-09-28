@@ -312,19 +312,12 @@ test.describe("student-week GUI path", () => {
       The rest of the file stays on the owner, whose team has the data the
       other paths walk through.
     */
-    const asStudent = await signInAs(context, "student");
+    const asStudent = await signInAs(context, "member");
     test.skip(!asStudent, "needs a seeded student to check student-audience copy");
 
     await openStudent(page, "/connectors");
-    // Signing in is not the same as being on a team. The student fixture on
-    // this box is not attached to one, so every product page bounces it to
-    // /onboarding and there is no student-audience copy to look at. Skipping
-    // says that; asserting against the onboarding page would have "passed"
-    // while checking nothing.
-    test.skip(
-      /\/onboarding/.test(page.url()),
-      "the student fixture is not on a team — nothing to check the student audience against",
-    );
+    // The seeded member has the student profile and actual team membership.
+    // A redirect to onboarding is a failed journey, not a skipped check.
     await expect(page.getByRole("heading", { level: 1, name: "Connectors" })).toBeVisible({
       timeout: 20_000,
     });
@@ -353,7 +346,7 @@ test.describe("marketing waitlist and sign-in", () => {
   test("waitlist form still submits without Setup required", async ({ page }) => {
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: "Your season stops living in spreadsheets." }),
+      page.getByRole("heading", { name: "Your whole team. One connected season." }),
     ).toBeVisible();
     const section = page.locator("#waitlist");
     await section.scrollIntoViewIfNeeded();

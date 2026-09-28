@@ -1,0 +1,2119 @@
+{
+  "date": "2026-09-27",
+  "scope": "Marketing redesign and accurate product descriptions; not production acceptance",
+  "baseRevision": "397061b0516b13e466ce858b72b65791a7e5a5f5",
+  "buildId": "M3Kpu30jS_ScZm84khCl4",
+  "sourceSha256": {
+    "apps/web/app/apple-polish-marketing.css": "dc7d48b48c8b2c104035362d28a2840d63783f4976a08ddd038d42e9e050a210",
+    "apps/web/app/features/cad/page.tsx": "090aa88e2cf2a1f22aa000badd1ba21269b0bec2532b68398616800869c25a36",
+    "apps/web/app/features/page.tsx": "4f76f310a291b3a56c6a69b52beb94e6770b18ad0fa011f82b31b25be69ecb9b",
+    "apps/web/app/features/strategy/page.tsx": "58921354e47a8333b009421f90916dda8ba707fc2627aee9c5a13b457c436327",
+    "apps/web/app/for-teams/page.tsx": "58a451edc157e296c1a38a7159b0dd0bc644505c12343552a9b99cd4d7f9f36a",
+    "apps/web/app/marketing-motion.css": "b4f9274d655645a7030644c3c603c8c530da7a256d769e5d6c2e4a9591f87ae0",
+    "apps/web/app/marketing-showcase.css": "ede1d575d817deb0a300ca354cb3cd0a35b40e121d5f552603a16832fc99c073",
+    "apps/web/app/opengraph-image.tsx": "b1829554ae5b93eb36628a41e40b7113f3c68989747d12d85e93b3bdbd3a9f59",
+    "apps/web/app/page.tsx": "ef1bb82670615ef6f1bd094a5de4832511eb11df3b022151cbfbd839f69a1e9b",
+    "apps/web/app/workflow/page.tsx": "c4c04835a3ad5d4d95f5701542d5bc879a73e707ef9d4c8027b9d32e316a0b98",
+    "apps/web/components/marketing/app-frames.tsx": "73f03b2108c3e6616faf21f634c06cfc07a96eac60aee0b46e58d2d4f8b52df6",
+    "apps/web/components/marketing/faq.tsx": "6333621ca8745af3d0b38014f727b12143f9e55b246ea8c5d5dc04b3459eeda1",
+    "apps/web/components/marketing/home-showcase.tsx": "b5c182e1c9193e16432ffd05a8ef7e2bdce5ff9b49992e62e1edabe3b03d8f4b",
+    "apps/web/components/marketing/product-glances.tsx": "3ad5858786408c9e3bc0d2a3474daa947274ea4011d142e90107c06d3470c452",
+    "apps/web/components/marketing/site-header.tsx": "8e4448a30a8a971d17ded9df7cbf5fa227f7d4a2cc6fd431960fca17c290d313",
+    "apps/web/lib/marketing/marketing-chrome.test.ts": "8ee103a3a619f039b34daec1f54e37bf0046fd746e0c0eed0daf1933a2f37ef0",
+    "apps/web/lib/marketing/product-story.ts": "744c0df3723795dd5aeb43e442482ec836824f727a8ad5cbbd4c53edb840432e",
+    "apps/web/lib/marketing/seo.ts": "ee94e426f24ecb0f8c94be47c090c71d5742d61e88767acba7042a72477f5bcc",
+    "tests/browser/marketing-routes.spec.ts": "a744122f31d802cce6bb0b404f1285295fe85abe985e75756906b3241356c544",
+    "tests/browser/student-week-gui.spec.ts": "ab25c113191549f780ec03cdc9cdccf81053dcca2677b9f0462143f795172fc0",
+    "tests/browser/theme.spec.ts": "154765cc0efa3539cb979bff100dcc1bfda9cbc60bb47967380368cc28c48467",
+    "tests/browser/waitlist.spec.ts": "5fc2248c840f40477f096905e0f08ff4513eb0bc49344409ecacc57cb2e397cb",
+    "tests/browser/marketing-accessibility.spec.ts": "80e8b76833ab5596e4c298a5ee1695de14112927c7259f426ea528fe24181a9f"
+  },
+  "checks": {
+    "focusedLint": "passed",
+    "webTypes": "passed",
+    "unitFiles": 10,
+    "unitPassed": 63,
+    "productionBuildPages": 746,
+    "devBrowserPassed": 26,
+    "devBrowserFailed": 0
+  },
+  "builtBrowser": {
+    "stats": {
+      "startTime": "2026-09-27T11:34:28.166Z",
+      "duration": 55593.818999999996,
+      "expected": 24,
+      "skipped": 0,
+      "unexpected": 2,
+      "flaky": 0
+    },
+    "cases": [
+      {
+        "name": "marketing-accessibility.spec.ts / phone workspace links work, menu returns focus, and offline scope is explained",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 825,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / / has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 2432,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 868,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /workflow has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 793,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /for-teams has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 853,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /pricing has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 864,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features/cad has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 771,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features/code has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 800,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features/strategy has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 856,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / / has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1911,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 883,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /workflow has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 838,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /for-teams has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 875,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /pricing has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 1164,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features/cad has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 844,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features/code has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 945,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features/strategy has readable structure and no detected accessibility violations",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 875,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-routes.spec.ts / marketing navigation uses real routes and active tabs",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 811,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "marketing-routes.spec.ts / marketing header keeps mobile navigation and footer routes discoverable",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 475,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "student-week-gui.spec.ts / marketing waitlist and sign-in / waitlist form still submits without Setup required",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 826,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "student-week-gui.spec.ts / marketing waitlist and sign-in / sign-in email code and waitlist stay without Setup required",
+        "status": "unexpected",
+        "results": [
+          {
+            "status": "failed",
+            "retry": 0,
+            "durationMs": 5473,
+            "errors": [
+              "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('button', { name: 'Email me a sign-in code' })\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Email me a sign-in code' })\u001b[22m\n\u001b[2m    14 \u00d7 locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n\n  377 |     await expect(page.getByRole(\"heading\", { level: 1, name: \"Sign in\" })).toBeVisible();\n  378 |     await expect(page.locator(\"body\")).not.toContainText(\"Application error\");\n> 379 |     await expect(page.getByRole(\"button\", { name: \"Email me a sign-in code\" })).toHaveCount(1);\n      |                                                                                 ^\n  380 |     // By destination, not label \u2014 see signin-shell.spec.ts. It is \"Request\n  381 |     // access\" today and was \"Join the waitlist\" before.\n  382 |     const waitlist = page.locator('a[href*=\"waitlist\"]').first();\n    at C:\\Users\\sahil\\Desktop\\vantage-frc\\tests\\browser\\student-week-gui.spec.ts:379:81"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "theme.spec.ts / public site uses a restrained light palette",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 577,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "theme.spec.ts / dashboard honors a persisted theme choice",
+        "status": "unexpected",
+        "results": [
+          {
+            "status": "failed",
+            "retry": 0,
+            "durationMs": 5457,
+            "errors": [
+              "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveClass\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('html')\nExpected pattern: \u001b[32m/theme-ready/\u001b[39m\nReceived string:  \u001b[31m\"inter_c15e96cb-module__0bjUvq__variable source_sans_3_d295bf70-module__3u7R_a__variable source_serif_4_880bd459-module__KbmBwW__variable ibm_plex_mono_a1b67b67-module__G2H2Dq__variable\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveClass\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('html')\u001b[22m\n\u001b[2m    14 \u00d7 locator resolved to <html lang=\"en\" data-theme=\"light\" class=\"inter_c15e96cb-module__0bjUvq__variable source_sans_3_d295bf70-module__3u7R_a__variable source_serif_4_880bd459-module__KbmBwW__variable ibm_plex_mono_a1b67b67-module__G2H2Dq__variable\">\u2026</html>\u001b[22m\n\u001b[2m       - unexpected value \"inter_c15e96cb-module__0bjUvq__variable source_sans_3_d295bf70-module__3u7R_a__variable source_serif_4_880bd459-module__KbmBwW__variable ibm_plex_mono_a1b67b67-module__G2H2Dq__variable\"\u001b[22m\n\n\n  40 |   await page.goto(\"/dashboard\");\n  41 |   await expect(page.locator(\"html\")).toHaveAttribute(\"data-theme\", \"light\");\n> 42 |   await expect(page.locator(\"html\")).toHaveClass(/theme-ready/);\n     |                                      ^\n  43 |\n  44 |   const saved = await page.evaluate(async () => {\n  45 |     const response = await fetch(\"/api/theme\", {\n    at C:\\Users\\sahil\\Desktop\\vantage-frc\\tests\\browser\\theme.spec.ts:42:38"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "theme.spec.ts / persisted theme applies on a mobile dashboard",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 379,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "waitlist.spec.ts / a visitor can join the waitlist",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 803,
+            "errors": []
+          }
+        ]
+      },
+      {
+        "name": "waitlist.spec.ts / a stalled waitlist request keeps details and offers a safe retry",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "retry": 0,
+            "durationMs": 21100,
+            "errors": []
+          }
+        ]
+      }
+    ],
+    "limitations": [
+      "The sign-in email-code test requires development mailbox support; the production-mode scratch host intentionally has no Resend/Google credentials, so it exposes password sign-in and a provider-setup notice. No delivery was attempted or claimed.",
+      "The persisted-theme test uses signInFixture, documented as dev-only. The production proxy rejects this shortcut. Its built run does not test authenticated theme behavior; the same test passes under its intended development configuration.",
+      "The built mobile theme test can observe a cookie on an unauthenticated shell; do not count this as an authenticated production journey.",
+      "Actual Chrome with an existing real local session navigated marketing -> Features/Competition anchor -> Open your team -> saved My Home board and real task/calendar widgets successfully."
+    ]
+  },
+  "accessibility": {
+    "engine": "axe-core via @axe-core/playwright",
+    "defaultRules": true,
+    "excludedRulesOrRegions": [],
+    "scans": [
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / / has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<span>Vantage / your workspace</span>",
+                "target": [
+                  "figcaption > span"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<b>Product overview</b>",
+                "target": [
+                  "figcaption > b"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<p class=\"mk-map-caption\">Explore an area to see the tools inside.</p>",
+                "target": [
+                  ".mk-map-caption"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.9pt (14.5px)",
+                      "fontWeight": "normal",
+                      "messageKey": "elmPartiallyObscuring",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined because it partially overlaps other elements"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Understand the costs</a>",
+                "target": [
+                  ".mk-related-links > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /workflow has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /for-teams has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /pricing has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features/cad has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features/code has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 390px / /features/strategy has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": []
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / / has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<span>Vantage / your workspace</span>",
+                "target": [
+                  "figcaption > span"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<b>Product overview</b>",
+                "target": [
+                  "figcaption > b"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<p class=\"mk-map-caption\">Explore an area to see the tools inside.</p>",
+                "target": [
+                  ".mk-map-caption"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<span>Vantage / your workspace</span>",
+                "target": [
+                  "figcaption > span"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<b>Product overview</b>",
+                "target": [
+                  "figcaption > b"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<p class=\"mk-map-caption\">Explore an area to see the tools inside.</p>",
+                "target": [
+                  ".mk-map-caption"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /workflow has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /for-teams has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<span>Vantage / your workspace</span>",
+                "target": [
+                  "figcaption > span"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<b>Product overview</b>",
+                "target": [
+                  "figcaption > b"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "9.0pt (12px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<figure class=\"mk-workspace-map\">",
+                        "target": [
+                          "figure"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<p class=\"mk-map-caption\">Explore an area to see the tools inside.</p>",
+                "target": [
+                  ".mk-map-caption"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /pricing has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features/cad has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features/code has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "marketing-accessibility.spec.ts / marketing at 1280px / /features/strategy has readable structure and no detected accessibility violations",
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "tags": [
+              "cat.color",
+              "wcag2aa",
+              "wcag143",
+              "TTv5",
+              "TT13.c",
+              "EN-301-549",
+              "EN-9.1.4.3",
+              "ACT",
+              "RGAAv4",
+              "RGAA-3.2.1"
+            ],
+            "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+            "nodes": [
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a aria-current=\"page\" href=\"/features\">Features</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[aria-current=\"page\"][href$=\"features\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/workflow\">How it works</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/workflow\">How it works</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"workflow\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/for-teams\">For teams</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/for-teams\">For teams</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"for-teams\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              },
+              {
+                "any": [
+                  {
+                    "id": "color-contrast",
+                    "data": {
+                      "contrastRatio": 0,
+                      "fontSize": "10.5pt (14px)",
+                      "fontWeight": "normal",
+                      "messageKey": "bgGradient",
+                      "expectedContrastRatio": "4.5:1"
+                    },
+                    "relatedNodes": [
+                      {
+                        "html": "<a href=\"/pricing\">Cost</a>",
+                        "target": [
+                          "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                        ]
+                      }
+                    ],
+                    "impact": "serious",
+                    "message": "Element's background color could not be determined due to a background gradient"
+                  }
+                ],
+                "all": [],
+                "none": [],
+                "impact": "serious",
+                "html": "<a href=\"/pricing\">Cost</a>",
+                "target": [
+                  "nav[aria-label=\"Primary navigation\"] > a[href$=\"pricing\"]"
+                ],
+                "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "violations": 0,
+    "limits": "Incomplete contrast results retained. Automated scans are not full WCAG certification or an Apple/Google/Microsoft UX score."
+  },
+  "manual": {
+    "browser": "Chrome",
+    "widths": [
+      390,
+      "normal desktop"
+    ],
+    "phone320": "Automated workspace target size, deep-link scroll, Escape focus return and offline FAQ checks passed",
+    "screenshots": [
+      "marketing-refresh-desktop.png",
+      "marketing-refresh-phone.png"
+    ]
+  },
+  "unchanged": [
+    "DashboardHomeView and saved-board APIs",
+    "Product routes and services",
+    "Database schema and permissions",
+    "Waitlist/signup release gates",
+    "Policy routes and existing FAQ anchors"
+  ],
+  "release": {
+    "productionDeployed": false,
+    "publicSignupOpened": false,
+    "originalPlanSha256": "d52c7f3cab6e07b612b80f243dcff4741dd6c7737907e22180f8ede2b14791cb",
+    "remainingGates": "See STATUS.md and production-preflight-ui-release.json; no acceptance gate waived."
+  }
+}

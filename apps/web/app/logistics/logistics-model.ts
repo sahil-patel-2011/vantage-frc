@@ -1,7 +1,7 @@
 import type { LogisticsMember } from "../../lib/logistics";
 
 export type ActionBody = Record<string, unknown> & { action: string; orgId: string };
-export type RunFn = (body: ActionBody, key: string) => Promise<void>;
+export type RunFn = (body: ActionBody, key: string) => Promise<boolean | void>;
 
 export function fmtWhen(iso: string | null | undefined): string {
   if (!iso) return "—";

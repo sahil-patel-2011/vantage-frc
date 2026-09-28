@@ -167,7 +167,7 @@ export function batteryOverDischargeCue(input: {
 
 /** 2026 R601-G: cue only while the latest log is a charge, never invent a blocked vent. */
 export const BATTERY_VENT_CHARGE_CUE =
-  "Last log is a charge — keep the inset vent rectangle clear (R601-G). Tie-down straps over the short edges are ok; a sealed crate or cover is not.";
+  "After charging, keep the inset vent rectangle clear (R601-G). Tie-down straps over the short edges are ok; a sealed crate or cover is not.";
 
 export function batteryVentChargeCue(input: {
   lastChargedAt: string | null | undefined;
@@ -202,10 +202,13 @@ export const READINESS_MAX_RESISTANCE_MOHM = 25;
  */
 export function competitionReadiness(input: {
   status: BatteryStatus;
-  health: BatteryHealth;
+  health: Pick<BatteryHealth, "status">;
   lastMeasuredAt: string | null;
   lastRestingVoltage: number | null;
   lastInternalResistanceMohm: number | null;
+  lastChargedAt?: string | null;
+  lastUsedAt?: string | null;
+  lastTestedAt?: string | null;
   now?: Date;
 }): { ready: boolean; reasons: string[] } {
   const reasons: string[] = [];
@@ -217,12 +220,13 @@ export function competitionReadiness(input: {
   if (input.health.status === "retire") reasons.push("Health grade says retire");
   else if (input.health.status === "aging") reasons.push("Health grade is aging");
 
-  if (input.lastRestingVoltage == null && input.lastInternalResistanceMohm == null) {
-    reasons.push("No voltage or resistance reading yet");
-  } else {
+  if (input.lastRestingVoltage == null || !Number.isFinite(input.lastRestingVoltage)) reasons.push("Resting voltage is not recorded");
+  if (input.lastInternalResistanceMohm == null || !Number.isFinite(input.lastInternalResistanceMohm)) reasons.push("Internal resistance is not recorded");
+  {
     if (input.lastMeasuredAt) {
       const age = nowMs - new Date(input.lastMeasuredAt).getTime();
-      if (Number.isFinite(age) && age > READINESS_MAX_AGE_MS) {
+      if (!Number.isFinite(age) || age < 0) reasons.push("Last reading time is invalid");
+      else if (age > READINESS_MAX_AGE_MS) {
         reasons.push("Last reading is older than 18 hours");
       }
     } else {
@@ -234,6 +238,12 @@ export function competitionReadiness(input: {
     if (input.lastInternalResistanceMohm != null && input.lastInternalResistanceMohm > READINESS_MAX_RESISTANCE_MOHM) {
       reasons.push(`Internal resistance ${input.lastInternalResistanceMohm} mΩ is above ${READINESS_MAX_RESISTANCE_MOHM} mΩ`);
     }
+  }
+
+  if (input.lastChargedAt !== undefined || input.lastUsedAt !== undefined || input.lastTestedAt !== undefined) {
+    const slot = cartSlot({ status: input.status, lastChargedAt: input.lastChargedAt ?? null,
+      lastUsedAt: input.lastUsedAt ?? null, lastTestedAt: input.lastTestedAt ?? null, nowIso: new Date(nowMs).toISOString() });
+    if (slot.kind !== "ready") reasons.push(`${slot.label}: ${slot.detail}`);
   }
 
   return { ready: reasons.length === 0, reasons };
@@ -255,7 +265,7 @@ function minutesSince(fromIso: string, nowIso: string): number | null {
   const start = Date.parse(fromIso);
   const now = Date.parse(nowIso);
   if (!Number.isFinite(start) || !Number.isFinite(now)) return null;
-  return Math.round((now - start) / 60000);
+  return (now - start) / 60000;
 }
 
 /**
@@ -302,7 +312,7 @@ export function cartSlot(input: {
 
   const elapsed = minutesSince(input.lastChargedAt, input.nowIso);
   if (elapsed == null || elapsed < CART_COOLDOWN_MINUTES) {
-    const remaining = elapsed == null ? CART_COOLDOWN_MINUTES : Math.max(0, CART_COOLDOWN_MINUTES - elapsed);
+    const remaining = elapsed == null ? CART_COOLDOWN_MINUTES : Math.max(0, Math.ceil(CART_COOLDOWN_MINUTES - elapsed));
     return {
       kind: "cooling",
       label: "Cooling",
@@ -311,12 +321,12 @@ export function cartSlot(input: {
     };
   }
 
-  if (!Number.isFinite(testedMs) || testedMs <= chargedMs) {
+  if (!Number.isFinite(testedMs) || testedMs < chargedMs + CART_COOLDOWN_MINUTES * 60_000 || testedMs > Date.parse(input.nowIso)) {
     return {
       kind: "ready_to_test",
       label: "Cool — test now",
       minutesRemaining: 0,
-      detail: "Cooldown done. Battery Czar: Beak test, then write Ready.",
+      detail: "Cooldown done. Record a new Beak test taken after the full cooldown.",
     };
   }
 

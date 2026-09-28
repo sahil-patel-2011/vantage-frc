@@ -13,6 +13,7 @@ import {
   marketingShowsAdminLink,
 } from "../../lib/marketing/account-links";
 import "./marketing-styles";
+import { usePublicSignupOpen } from "./launch-availability";
 
 const links = [
   ["/features", "Features"],
@@ -158,9 +159,10 @@ export function MarketingDesktopWebLink({ primary }: { primary: boolean }) {
 
 export function MarketingHeroActions() {
   const signedIn = useSignedIn();
+  const signupOpen = usePublicSignupOpen();
   return (
     <div className="actions">
-      {marketingHeroLinks(signedIn).map((link) =>
+      {marketingHeroLinks(signedIn, signupOpen).map((link) =>
         link.primary ? (
           <a className="button primary" href={link.href} key={link.label}>
             {link.label}
@@ -178,7 +180,8 @@ export function MarketingHeroActions() {
 export function SiteHeader() {
   const pathname = usePathname();
   const signedIn = useSignedIn();
-  const account = marketingHeaderLinks(signedIn);
+  const signupOpen = usePublicSignupOpen();
+  const account = marketingHeaderLinks(signedIn, signupOpen);
   // The phone menu is a <details>: it stayed open over the page until its button was tapped
   // again. Escape and a tap anywhere outside it close it too.
   useEffect(() => {
@@ -262,7 +265,7 @@ export function SiteFooter() {
     <footer className="marketing-footer">
       <div className="marketing-footer-brand">
         <BrandLink />
-        <p>Free software for FRC teams — scouting, strategy, build and business in one login.</p>
+        <p>Your FRC team, connected. Scouting, team work, robot development and business.</p>
       </div>
       <div className="marketing-footer-cols">
         <nav className="marketing-footer-col" aria-label="Product">

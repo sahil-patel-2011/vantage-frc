@@ -1,4 +1,5 @@
 "use client";
+import { ScoutingSharing } from "../scouting/scouting-sharing";
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -221,6 +222,8 @@ export function ScoutingHome() {
       } else {
         setReadyNote("Nothing could be saved. Check the connection and try again.");
       }
+    } catch (error) {
+      setReadyNote(`${saved.length ? `Saved ${saved.join(", ")}. ` : ""}${error instanceof Error ? error.message : "Could not save the offline copy. Your existing saved data is unchanged."}`);
     } finally {
       setPreparing(false);
       await refreshDevice();
@@ -305,6 +308,7 @@ export function ScoutingHome() {
         </div>
       </section>
 
+      {orgId ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}
       <section className="scout-home-device" aria-label="This device">
         <div className={`scout-home-status ${online ? "is-online" : "is-offline"}`}>
           <span aria-hidden="true" />
@@ -337,7 +341,7 @@ export function ScoutingHome() {
         {storage?.usage != null || storage?.available != null ? (
           <details className="scout-home-storage">
             <summary>
-              Phone storage <span aria-hidden="true">▾</span>
+              Device storage <span aria-hidden="true">▾</span>
             </summary>
             <dl className="scout-home-facts">
               <div>
@@ -349,6 +353,7 @@ export function ScoutingHome() {
                 <dd>{storage?.available != null ? formatBytes(storage.available) : "—"}</dd>
               </div>
             </dl>
+            <a href="/account?tab=appearance">Manage offline cache budget</a>
           </details>
         ) : null}
         <div className="scout-home-persist">

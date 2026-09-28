@@ -18,6 +18,7 @@ import {
 } from "../../lib/invite";
 import { legalConsentMessage } from "../../lib/legal";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { inviteAcceptanceFailure } from "../../lib/invite/accept-error";
 import "./invite-flow.css";
 
 /** Kept for onboarding handoff (`PENDING_INVITE_KEY` import). */
@@ -26,6 +27,7 @@ export const PENDING_INVITE_KEY = PENDING_INVITE_STORAGE_KEY;
 type PreviewResponse = {
   preview?: InvitePreview | null;
   legalRequired?: boolean;
+  profileRequired?: boolean;
   signedIn?: boolean;
   emailMismatch?: boolean;
   sessionEmail?: string | null;
@@ -104,6 +106,7 @@ export default function InviteClient() {
   const acceptRef = useRef<HTMLButtonElement | null>(null);
   const [preview, setPreview] = useState<InvitePreview | null | undefined>(undefined);
   const [legalRequired, setLegalRequired] = useState(true);
+  const [profileRequired, setProfileRequired] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"info" | "error">("info");
   const [busy, setBusy] = useState(false);
@@ -166,6 +169,7 @@ export default function InviteClient() {
         if (!active) return;
         setSessionEmail(data.sessionEmail ?? null);
         setLegalRequired(data.legalRequired !== false);
+        setProfileRequired(data.profileRequired === true);
         if (response.status === 401) {
           setAuthRequired(true);
           setPreview(data.preview ?? null);
@@ -214,7 +218,7 @@ export default function InviteClient() {
     error: loadError,
   });
   const empty = inviteEmptyCopy(kind, loadError);
-  const canAccept = inviteCanAccept({
+  const canAccept = !profileRequired && inviteCanAccept({
     termsAccepted,
     privacyAccepted,
     legalRequired,
@@ -273,22 +277,14 @@ export default function InviteClient() {
           ...(legalRequired ? { termsAccepted: true as const, privacyAccepted: true as const } : {}),
         }),
       });
-      const data = (await response.json()) as { orgId?: string; error?: string };
-      if (response.status === 401) {
-        setAuthRequired(true);
-        setMessageTone("error");
-        setMessage(data.error ?? "Sign in with the invited email to accept.");
-        return;
-      }
-      if (response.status === 403) {
-        setEmailMismatch(true);
-        setMessageTone("error");
-        setMessage(data.error ?? "This invite was sent to a different email address.");
-        return;
-      }
+      const data = (await response.json()) as { orgId?: string; error?: string; code?: string };
       if (!response.ok) {
+        const failure = inviteAcceptanceFailure(response.status, data);
+        if (failure.kind === "auth_required") setAuthRequired(true);
+        if (failure.kind === "email_mismatch") setEmailMismatch(true);
+        if (failure.kind === "profile_required") setProfileRequired(true);
         setMessageTone("error");
-        setMessage(data.error ?? "Could not accept invitation.");
+        setMessage(failure.message);
         return;
       }
       try {
@@ -334,6 +330,12 @@ export default function InviteClient() {
           <p className={`invite-message${messageTone === "error" ? " error" : ""}`} role="status">
             {message}
           </p>
+        ) : null}
+
+        {profileRequired ? (
+          <p><a className="invite-next-link" href={`/onboarding?next=${encodeURIComponent(`/invite?token=${token}`)}`}>
+            Finish your profile
+          </a> to confirm age eligibility. Your invitation stays available.</p>
         ) : null}
 
         {identityPreview ? <InviteIdentity preview={identityPreview} /> : null}

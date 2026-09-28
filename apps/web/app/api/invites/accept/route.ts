@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       const sessionEmail = session.user.email?.trim().toLowerCase() ?? "";
       if (!sessionEmail || preview.email.trim().toLowerCase() !== sessionEmail) {
         const err = new Error("This invite was sent to a different email address.");
-        (err as Error & { status?: number }).status = 403;
+        Object.assign(err, { status: 403, code: "INVITE_EMAIL_MISMATCH" });
         throw err;
       }
       if (preview.status !== "pending") {
@@ -94,7 +94,10 @@ export async function POST(request: Request) {
     return privateJson({ orgId });
   } catch (error) {
     if (error instanceof Error && (error as Error & { status?: number }).status === 403) {
-      return privateJson({ error: error.message }, { status: 403 });
+      const code = (error as Error & { code?: string }).code;
+      return privateJson({ error: error.message,
+        ...(code === "AGE_ELIGIBILITY_REQUIRED" || code === "INVITE_EMAIL_MISMATCH" ? { code } : {}),
+      }, { status: 403 });
     }
     return securityErrorResponse(error, "Invite could not be accepted");
   }

@@ -60,6 +60,8 @@ export function SubmitForm({
   const [vendorChoice, setVendorChoice] = useState("");
   // Shown by the button that was pressed, not at the top of the page.
   const [formError, setFormError] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [unitCost, setUnitCost] = useState("");
   const directoryHref = hubHref("/business", "vendors", orgId);
   const addingVendor = vendorsReady && (vendors.length === 0 || vendorChoice === NEW_VENDOR);
 
@@ -118,6 +120,11 @@ export function SubmitForm({
       setFormError(sheet.error);
       return;
     }
+    const orderedQuantity = Number(data.quantity);
+    if (!Number.isInteger(orderedQuantity) || orderedQuantity < 1 || orderedQuantity > 2_147_483_647) {
+      setFormError("Quantity must be a positive whole number.");
+      return;
+    }
     if (!addingVendor && !vendorChoice) {
       setFormError("Pick a vendor, or choose New vendor… and type its name.");
       return;
@@ -144,7 +151,8 @@ export function SubmitForm({
             seasonYear,
             title: sheet.value.title,
             justification: sheet.value.justification,
-            estimateUsd: sheet.value.costUsd,
+            unitCostUsd: sheet.value.costUsd,
+            quantity: orderedQuantity,
             vendorId,
             itemUrl: data.itemUrl,
             neededBy: sheet.value.neededBy ?? undefined,
@@ -159,6 +167,8 @@ export function SubmitForm({
           return;
         }
         form.reset();
+        setQuantity("1");
+        setUnitCost("");
         setVendorChoice("");
         onCreated();
       })
@@ -217,8 +227,12 @@ export function SubmitForm({
             <input name="neededBy" type="date" />
           </label>
           <label>
-            Cost ($)
-            <input name="estimateUsd" type="number" min={0} step="0.01" required placeholder="42.00" />
+            Quantity <small>units to receive into inventory</small>
+            <input name="quantity" type="number" min={1} max={2_147_483_647} step={1} required value={quantity} onChange={event => setQuantity(event.target.value)} />
+          </label>
+          <label>
+            Unit cost ($)
+            <input name="estimateUsd" type="number" min={0} step="0.01" required placeholder="42.00" value={unitCost} onChange={event => setUnitCost(event.target.value)} />
           </label>
           {vendors.length > 0 ? (
             <label>
@@ -266,6 +280,7 @@ export function SubmitForm({
             </label>
           ) : null}
         </div>
+        <p className="orders-form-lead">Estimated total: {unitCost !== "" && Number.isFinite(Number(unitCost)) && Number.isInteger(Number(quantity)) && Number(quantity) > 0 ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Math.round(Number(unitCost) * 100) * Number(quantity) / 100) : "Enter quantity and unit cost"}</p>
         {formError ? (
           <p className="orders-error" role="alert">
             {formError}

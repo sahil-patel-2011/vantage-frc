@@ -30,6 +30,7 @@
     "react": "latest",
     "react-dom": "latest",
     "sharp": "^0.35.4",
+    "workflow": "^4.8.9",
     "zod": "latest"
   },
   "devDependencies": {

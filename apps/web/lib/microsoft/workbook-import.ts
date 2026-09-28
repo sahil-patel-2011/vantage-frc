@@ -27,6 +27,7 @@
 
 import { createHash } from "node:crypto";
 import { isPickBucket } from "../picklist/ordering";
+import { normalizeUtcTimestamp } from "./workbook-timestamp";
 import type { PickBucket } from "../picklist/types";
 import {
   type CellValue,
@@ -223,25 +224,22 @@ export function sameCell(exported: unknown, read: unknown): boolean {
 const EXCEL_EPOCH_DAYS = 25569;
 
 /**
- * An `updated_at` / `created_at` cell → ISO-8601 UTC at second precision (the format the
- * export writes), or null when it is blank or unreadable. Accepts the ISO text Vantage
+ * An `updated_at` / `created_at` cell → ISO-8601 UTC retaining text precision,
+ * or null when it is blank or unreadable. Accepts the ISO text Vantage
  * wrote, the same text with the apostrophe stripped or a space for the T, and an Excel date
  * serial (if Excel turned the text into a date).
  */
 export function normalizeWorkbookTimestamp(value: unknown): string | null {
   let ms: number;
   if (typeof value === "number" && Number.isFinite(value)) {
-    ms = Math.round((value - EXCEL_EPOCH_DAYS) * 86_400) * 1000;
+    ms = Math.round((value - EXCEL_EPOCH_DAYS) * 86_400_000);
   } else if (typeof value === "string") {
-    let text = unescapeCell(value).trim();
-    if (!text) return null;
-    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(text)) text = `${text.replace(" ", "T")}Z`;
-    ms = Date.parse(text);
+    return normalizeUtcTimestamp(unescapeCell(value));
   } else {
     return null;
   }
   if (!Number.isFinite(ms)) return null;
-  return new Date(Math.floor(ms / 1000) * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+  return normalizeUtcTimestamp(new Date(ms).toISOString());
 }
 
 /** A cell as the preview shows it: unescaped text, capped for display. */

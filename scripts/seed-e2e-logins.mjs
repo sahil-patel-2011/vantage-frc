@@ -177,15 +177,16 @@ try {
     await db.query(
       `INSERT INTO profiles (user_id, display_name, first_name, last_name,
          preferred_team_number, onboarding_completed_at, onboarding_current_step,
-         terms_accepted_at, privacy_accepted_at, terms_version, privacy_version)
-       VALUES ($1::uuid, $2, $3, 'Tester', 6925, now(), 'complete', now(), now(), $4, $4)
+         terms_accepted_at, privacy_accepted_at, terms_version, privacy_version, date_of_birth)
+       VALUES ($1::uuid, $2, $3, 'Tester', 6925, now(), 'complete', now(), now(), $4, $4, DATE '2000-01-01')
        ON CONFLICT (user_id) DO UPDATE SET
          onboarding_completed_at = now(),
          onboarding_current_step = 'complete',
          terms_accepted_at = now(),
          privacy_accepted_at = now(),
          terms_version = EXCLUDED.terms_version,
-         privacy_version = EXCLUDED.privacy_version`,
+         privacy_version = EXCLUDED.privacy_version,
+         date_of_birth = EXCLUDED.date_of_birth`,
       [account.id, account.name, account.name.split(" ")[0], CURRENT_LEGAL_VERSION],
     );
 

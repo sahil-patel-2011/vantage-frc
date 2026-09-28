@@ -41,8 +41,9 @@ async function persistKickoffSnapshot(orgHint: string, data: KickoffView): Promi
   }
 }
 
-export default function KickoffClient(_props: { embedded?: boolean } = {}) {
+export default function KickoffClient({ embedded = false }: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
+  const Root = embedded || embed === "build" ? "section" : "main";
   const [view, setView] = useState<KickoffView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -165,7 +166,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         )
       : null;
     return (
-      <main className="module-page kick-page">
+      <Root className="module-page kick-page">
         <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
@@ -185,13 +186,13 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page kick-page">
+      <Root className="module-page kick-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Kickoff & Game Analysis"
@@ -204,7 +205,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
@@ -225,9 +226,17 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   // season after this one, and there is only ever one of those to look at.
   const nextSeasonSignals = view.nextSeasonSignals ?? [];
   const showTiles = shouldShowKickoffSummaryTiles(summary);
+  const seasonControl = (
+    <label className="kick-year">
+      Season
+      <select value={year} disabled={busyKey != null} onChange={(event) => setSelectedYear(Number(event.target.value))}>
+        {years.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
+  );
 
   return (
-    <main className="module-page kick-page">
+    <Root className="module-page kick-page">
       <PageHeader
         breadcrumbs={crumbs}
         title="Kickoff & Game Analysis"
@@ -238,17 +247,9 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           </>
         }
       >
-        <label className="kick-year">
-          Season
-          <select value={year} disabled={busyKey != null} onChange={(event) => setSelectedYear(Number(event.target.value))}>
-            {years.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        {embedded || embed === "build" ? null : seasonControl}
       </PageHeader>
+      {embedded || embed === "build" ? <div className="kick-embedded-controls">{seasonControl}</div> : null}
 
       <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
       <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
@@ -363,6 +364,6 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         busyKey={busyKey}
         run={run}
       />
-    </main>
+    </Root>
   );
 }

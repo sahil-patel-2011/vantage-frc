@@ -1,0 +1,27 @@
+{
+  "verifiedAt": "2026-09-26T23:47:32.204Z",
+  "elapsedMs": 186234,
+  "bridgeVersion": 7,
+  "expected": {
+    "Income (USD)": 42.5,
+    "Expenses (USD)": 7.25,
+    "Recorded balance (USD)": 35.25,
+    "Active sponsors": 0
+  },
+  "actual": {
+    "Income (USD)": 42.5,
+    "Expenses (USD)": 7.25,
+    "Recorded balance (USD)": 35.25,
+    "Active sponsors": 0
+  },
+  "realGoogleCalculation": true,
+  "retryReusedResource": true,
+  "legacyCompatibilityVerified": true,
+  "modernRestored": true,
+  "scope": "one identified synthetic Business workbook; no production database migration or app deployment; no load proof",
+  "deploymentVersion": 12,
+  "deploymentVerifiedThrough": "Existing Apps Script deployment success dialog, 2026-09-26 19:43 America/New_York",
+  "credentialsOrAccessChanged": false,
+  "productionAcceptance": false,
+  "screenshot": "google-bridge-protocol7-compat-deployed.png"
+}

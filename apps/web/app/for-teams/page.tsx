@@ -8,7 +8,7 @@ import "../marketing-showcase.css";
 export const metadata: Metadata = marketingPageMetadata({
   title: "For FRC teams — Vantage",
   description:
-    "How mentors, drive team, scouts, and business leads share one invite-only FRC app: scouting, CAD from a link, team chat, and team ops.",
+    "How mentors, drive team, scouts and business leads coordinate scouting, robot development, team work and business in Vantage.",
   path: "/for-teams",
 });
 
@@ -31,11 +31,11 @@ const roles = [
   },
   {
     title: "Business leads",
-    copy: "Money, sponsors, grants, outreach and a media kit, with totals only from what your team actually recorded.",
+    copy: "Budgets, spending, sponsors, grants and outreach records, with access set by the team.",
   },
   {
     title: "Every member",
-    copy: "On a phone, four tabs: Home, Matches, Scout and Stats. On a laptop, four workspaces: Team, Build, Competition and Business. Team chat is private to your roster.",
+    copy: "Start on Home, use personal shortcuts, or open Competition, Team, Build and Business from the menu. Access follows your team role.",
   },
 ] as const;
 
@@ -48,12 +48,12 @@ export default function ForTeamsPage() {
           <p className="lux-kicker">For teams</p>
           <h1>Built for the whole FRC team.</h1>
           <p>
-            Mentors invite exact emails. Students open Home, then scout, paste a CAD link, talk with the team, and
-            run the shop — one login, no extra help required.
+            Scouts, builders, programmers and business leads share a workspace. Team owners invite members
+            and assign access; each person starts on Home.
           </p>
           <MarketingRouteActions signIn />
           {/* The right half of the first screen was empty on a laptop: show the product there. */}
-          <div className="lux-route-hero-visual" aria-hidden="true">
+          <div className="lux-route-hero-visual">
             <HeroProductPanel />
           </div>
         </header>
@@ -111,10 +111,10 @@ export default function ForTeamsPage() {
 
         <section className="lux-pricing">
           <div>
-            <h2>Free for every team. Bring your own AI key.</h2>
+            <h2>Free to use. AI is optional.</h2>
             <p>
-              Every feature, no plans, no card. AI runs on your team&rsquo;s own key (or a free one), so you see the
-              bill and set the limit. Walk through <a href="/workflow">how it works</a>.
+              Vantage has no subscription charge. Optional AI uses your personal Codex connection or a personal or team
+              provider key. External providers set their own prices and limits. Walk through <a href="/workflow">how it works</a>.
             </p>
           </div>
           <MarketingRouteActions

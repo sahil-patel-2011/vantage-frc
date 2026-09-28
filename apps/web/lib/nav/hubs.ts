@@ -91,7 +91,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot" },
       ]),
-      { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
+      { id: "scouting", label: "Scout", legacyHref: "/scouting" },
       ...nest("scouting", [
         { id: "forms", label: "Forms", legacyHref: "/scouting/forms" },
         { id: "scout-coverage-live", label: "Coverage", legacyHref: "/scout-coverage-live" },
@@ -109,13 +109,16 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate", inStrip: false },
         { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
       ]),
+      { id: "teams", label: "Teams", legacyHref: "/scout/teams" },
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
         // The briefing is the drive coach's main screen, so it leads Strategy's chips too.
         // Its own href keeps the hub's one-route-per-tab rule; search lists it once (Event day).
         { id: "match-briefing", label: "Pre-match briefing", legacyHref: "/briefing?from=strategy", featured: true, inSearch: false },
         { id: "alliance-selection-desk", label: "Alliance desk", legacyHref: "/alliance-selection-desk", featured: true },
-        { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", featured: true },
+        // Not a chip: the Strategy page right under the strip has its own "Pick lists" tab that opens
+        // this same view, so the chip was a second button for one place. Search still finds it.
+        { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", inStrip: false },
         { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
         { id: "chemistry", label: "Chemistry", legacyHref: "/chemistry" },
         { id: "pairwise", label: "Pairwise", legacyHref: "/pairwise" },
@@ -157,7 +160,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/team",
     label: "Team",
     title: "Team",
-    description: "Calendar, chat, people, work, and the playbook.",
+    description: "Calendar, people, work, playbook, and logistics.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
@@ -601,4 +604,3 @@ export function hubLegacyHref(tab: HubTabDef, orgId?: string | null): string {
   const join = base.includes("?") ? "&" : "?";
   return `${base}${join}orgId=${encodeURIComponent(orgId)}`;
 }
-

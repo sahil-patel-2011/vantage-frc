@@ -1,0 +1,469 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - button "Menu and search"
+  - button "This team — switch team":
+    - generic: This team
+  - status:
+    - link "Sync pending (1)":
+      - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001
+    - button "Retry all"
+  - link "Open the Scouting app":
+    - /url: /scout?orgId=6925a000-0000-4000-8000-000000000001
+    - text: Scouting
+    - generic: app
+    - generic: ↗
+  - link "Ask AI":
+    - /url: /ai?tab=chat&orgId=6925a000-0000-4000-8000-000000000001
+  - link "Notifications":
+    - /url: /notifications
+  - button "Account menu": "?"
+- main:
+  - heading "Competition" [level=1]
+  - tablist "Competition sections":
+    - tab "Event day"
+    - tab "Scouting" [selected]
+    - tab "Strategy"
+    - tab "Robot check"
+  - navigation "Tools in Scouting":
+    - button "Forms"
+    - link "Coverage":
+      - /url: /scout-coverage-live?orgId=6925a000-0000-4000-8000-000000000001
+    - link "Shifts":
+      - /url: /shift-balancer?orgId=6925a000-0000-4000-8000-000000000001
+    - button "More tools"
+  - button "How Scouting works":
+    - generic: "?"
+  - strong: Peachtree District Championship
+  - generic: Online · 1 queued
+  - button "Sync now"
+  - navigation "Scouting views":
+    - button "Match"
+    - button "Pit"
+    - button "Robots"
+    - button "More":
+      - text: More
+      - generic: ▾
+  - heading "Match scouting" [level=2]
+  - paragraph:
+    - text: Scouting as
+    - strong: Morgan Journey
+  - region "Pick the robot to scout":
+    - button "Previous match": ‹
+    - strong:
+      - text: Qual 36
+      - generic: · 4:17 PM
+    - text: Every match here is played · catch up from video
+    - button "Next match" [disabled]: ›
+    - group "red alliance":
+      - button "Scout team 6925, red 1":
+        - generic: "6925"
+        - generic: Red 1
+      - button "Scout team 7457, red 2, already scouted":
+        - generic: "7457"
+        - generic: Red 2 · ✓ Done
+      - button "Scout team 67, red 3":
+        - generic: "67"
+        - generic: Red 3
+    - group "blue alliance":
+      - button "Scout team 1678, blue 1":
+        - generic: "1678"
+        - generic: Blue 1
+      - button "Scout team 1323, blue 2":
+        - generic: "1323"
+        - generic: Blue 2
+      - button "Scout team 254, blue 3":
+        - generic: "254"
+        - generic: Blue 3
+  - generic "Another match, or a team that isn’t listed"
+  - option "Select match and team" [selected]
+  - option "QM 1 · 6925"
+  - option "QM 1 · 2056"
+  - option "QM 1 · 33"
+  - option "QM 1 · 1619"
+  - option "QM 1 · 195"
+  - option "QM 1 · 254"
+  - option "QM 2 · 2481"
+  - option "QM 2 · 3310"
+  - option "QM 2 · 971"
+  - option "QM 2 · 8033"
+  - option "QM 2 · 1678"
+  - option "QM 2 · 3005"
+  - option "QM 3 · 1678"
+  - option "QM 3 · 2767"
+  - option "QM 3 · 1114"
+  - option "QM 3 · 254"
+  - option "QM 3 · 67"
+  - option "QM 3 · 3310"
+  - option "QM 4 · 7457"
+  - option "QM 4 · 6925"
+  - option "QM 4 · 1114"
+  - option "QM 4 · 33"
+  - option "QM 4 · 8033"
+  - option "QM 4 · 4613"
+  - option "QM 5 · 67"
+  - option "QM 5 · 1619"
+  - option "QM 5 · 8033"
+  - option "QM 5 · 3310"
+  - option "QM 5 · 118"
+  - option "QM 5 · 971"
+  - option "QM 6 · 118"
+  - option "QM 6 · 9999"
+  - option "QM 6 · 7457"
+  - option "QM 6 · 1114"
+  - option "QM 6 · 2481"
+  - option "QM 6 · 8033"
+  - option "QM 7 · 5406"
+  - option "QM 7 · 195"
+  - option "QM 7 · 254"
+  - option "QM 7 · 9999"
+  - option "QM 7 · 6925"
+  - option "QM 7 · 3310"
+  - option "QM 8 · 2056"
+  - option "QM 8 · 148"
+  - option "QM 8 · 7457"
+  - option "QM 8 · 1619"
+  - option "QM 8 · 3005"
+  - option "QM 8 · 2481"
+  - option "QM 9 · 1114"
+  - option "QM 9 · 254"
+  - option "QM 9 · 1323"
+  - option "QM 9 · 148"
+  - option "QM 9 · 7457"
+  - option "QM 9 · 195"
+  - option "QM 10 · 6925"
+  - option "QM 10 · 1323"
+  - option "QM 10 · 4613"
+  - option "QM 10 · 6800"
+  - option "QM 10 · 33"
+  - option "QM 10 · 2056"
+  - option "QM 11 · 254"
+  - option "QM 11 · 1678"
+  - option "QM 11 · 148"
+  - option "QM 11 · 118"
+  - option "QM 11 · 217"
+  - option "QM 11 · 2481"
+  - option "QM 12 · 2767"
+  - option "QM 12 · 67"
+  - option "QM 12 · 217"
+  - option "QM 12 · 2481"
+  - option "QM 12 · 7457"
+  - option "QM 12 · 9999"
+  - option "QM 13 · 6925"
+  - option "QM 13 · 4613"
+  - option "QM 13 · 5406"
+  - option "QM 13 · 2481"
+  - option "QM 13 · 1678"
+  - option "QM 13 · 254"
+  - option "QM 14 · 2056"
+  - option "QM 14 · 3310"
+  - option "QM 14 · 7457"
+  - option "QM 14 · 67"
+  - option "QM 14 · 6800"
+  - option "QM 14 · 971"
+  - option "QM 15 · 1114"
+  - option "QM 15 · 67"
+  - option "QM 15 · 971"
+  - option "QM 15 · 1678"
+  - option "QM 15 · 3005"
+  - option "QM 15 · 254"
+  - option "QM 16 · 2767"
+  - option "QM 16 · 1114"
+  - option "QM 16 · 6800"
+  - option "QM 16 · 6925"
+  - option "QM 16 · 4613"
+  - option "QM 16 · 254"
+  - option "QM 17 · 2056"
+  - option "QM 17 · 33"
+  - option "QM 17 · 67"
+  - option "QM 17 · 1114"
+  - option "QM 17 · 6800"
+  - option "QM 17 · 8033"
+  - option "QM 18 · 1619"
+  - option "QM 18 · 2767"
+  - option "QM 18 · 971"
+  - option "QM 18 · 254"
+  - option "QM 18 · 7457"
+  - option "QM 18 · 1323"
+  - option "QM 19 · 7457"
+  - option "QM 19 · 217"
+  - option "QM 19 · 6925"
+  - option "QM 19 · 1678"
+  - option "QM 19 · 254"
+  - option "QM 19 · 2481"
+  - option "QM 20 · 254"
+  - option "QM 20 · 9999"
+  - option "QM 20 · 8033"
+  - option "QM 20 · 2056"
+  - option "QM 20 · 33"
+  - option "QM 20 · 2481"
+  - option "QM 21 · 971"
+  - option "QM 21 · 118"
+  - option "QM 21 · 2481"
+  - option "QM 21 · 7457"
+  - option "QM 21 · 4613"
+  - option "QM 21 · 3005"
+  - option "QM 22 · 67"
+  - option "QM 22 · 254"
+  - option "QM 22 · 33"
+  - option "QM 22 · 3005"
+  - option "QM 22 · 1114"
+  - option "QM 22 · 6925"
+  - option "QM 23 · 3005"
+  - option "QM 23 · 195"
+  - option "QM 23 · 1114"
+  - option "QM 23 · 5406"
+  - option "QM 23 · 33"
+  - option "QM 23 · 6800"
+  - option "QM 24 · 9999"
+  - option "QM 24 · 2481"
+  - option "QM 24 · 254"
+  - option "QM 24 · 1678"
+  - option "QM 24 · 118"
+  - option "QM 24 · 971"
+  - option "QM 25 · 6925"
+  - option "QM 25 · 1114"
+  - option "QM 25 · 1678"
+  - option "QM 25 · 1323"
+  - option "QM 25 · 3005"
+  - option "QM 25 · 6800"
+  - option "QM 26 · 1114"
+  - option "QM 26 · 2481"
+  - option "QM 26 · 254"
+  - option "QM 26 · 2767"
+  - option "QM 26 · 3005"
+  - option "QM 26 · 1678"
+  - option "QM 27 · 254"
+  - option "QM 27 · 1114"
+  - option "QM 27 · 4613"
+  - option "QM 27 · 148"
+  - option "QM 27 · 5406"
+  - option "QM 27 · 1678"
+  - option "QM 28 · 217"
+  - option "QM 28 · 3005"
+  - option "QM 28 · 33"
+  - option "QM 28 · 3310"
+  - option "QM 28 · 6925"
+  - option "QM 28 · 8033"
+  - option "QM 29 · 254"
+  - option "QM 29 · 2056"
+  - option "QM 29 · 3310"
+  - option "QM 29 · 3005"
+  - option "QM 29 · 217"
+  - option "QM 29 · 67"
+  - option "QM 30 · 217"
+  - option "QM 30 · 33"
+  - option "QM 30 · 118"
+  - option "QM 30 · 195"
+  - option "QM 30 · 2481"
+  - option "QM 30 · 1678"
+  - option "QM 31 · 118"
+  - option "QM 31 · 2481"
+  - option "QM 31 · 3005"
+  - option "QM 31 · 1323"
+  - option "QM 31 · 6925"
+  - option "QM 31 · 7457"
+  - option "QM 32 · 6925"
+  - option "QM 32 · 3310"
+  - option "QM 32 · 148"
+  - option "QM 32 · 67"
+  - option "QM 32 · 9999"
+  - option "QM 32 · 3005"
+  - option "QM 33 · 1678"
+  - option "QM 33 · 1323"
+  - option "QM 33 · 217"
+  - option "QM 33 · 33"
+  - option "QM 33 · 1619"
+  - option "QM 33 · 6925"
+  - option "QM 34 · 6925"
+  - option "QM 34 · 148"
+  - option "QM 34 · 1619"
+  - option "QM 34 · 1678"
+  - option "QM 34 · 1323"
+  - option "QM 34 · 4613"
+  - option "QM 35 · 217"
+  - option "QM 35 · 2056"
+  - option "QM 35 · 5406"
+  - option "QM 35 · 1619"
+  - option "QM 35 · 254"
+  - option "QM 35 · 6925"
+  - option "QM 36 · 6925"
+  - option "QM 36 · 7457"
+  - option "QM 36 · 67"
+  - option "QM 36 · 1678"
+  - option "QM 36 · 1323"
+  - option "QM 36 · 254"
+  - button "Watching one part? Pick a focus"
+  - generic: Auto points
+  - 'button "Auto points: one less" [disabled]': −
+  - spinbutton "Auto points"
+  - 'button "Auto points: one more"': +
+  - generic: Teleop cycles
+  - 'button "Teleop cycles: one less" [disabled]': −
+  - spinbutton "Teleop cycles"
+  - 'button "Teleop cycles: one more"': +
+  - generic: Endgame
+  - radiogroup "Endgame":
+    - radio "None"
+    - radio "Park"
+    - radio "Climb"
+  - generic: Robot's points
+  - spinbutton "Robot's points Your best count of the points this robot scored itself, not the alliance score."
+  - generic: Your best count of the points this robot scored itself, not the alliance score.
+  - generic: Fouls
+  - 'button "Fouls: one less" [disabled]': −
+  - spinbutton "Fouls"
+  - 'button "Fouls: one more"': +
+  - generic: Broke down
+  - radiogroup "Broke down":
+    - radio "No"
+    - radio "Yes"
+  - generic: Notes
+  - textbox "Notes":
+    - /placeholder: Anything the numbers miss
+  - generic: How sure are you?
+  - radiogroup "How sure are you?":
+    - radio "Sure"
+    - radio "OK" [checked]
+    - radio "Guessing"
+  - button "Pick a robot above to save" [disabled]
+  - status: Using the last copy on this phone
+  - generic "Your reports 2 at this event · 1 waiting to upload":
+    - generic: Your reports
+    - generic: 2 at this event · 1 waiting to upload
+  - complementary:
+    - generic "Saved entries and lead tools 30 recent":
+      - generic: Saved entries and lead tools
+      - generic: 30 recent
+    - heading "Saved entries" [level=2]
+    - paragraph: Tap one to see what was recorded.
+    - paragraph:
+      - link "Export all match scouting":
+        - /url: /api/scouting/export?orgId=6925a000-0000-4000-8000-000000000001&eventKey=2026gacmp
+      - generic: Every report at this event, with each answer, in match order. Reports still waiting to upload from a phone are not in it yet.
+    - list:
+      - button "Qual 36 · 7457 Morgan Journey Sure · Today 6:32 PM":
+        - strong: Qual 36 · 7457
+        - generic: Morgan Journey
+        - generic: Sure · Today 6:32 PM
+      - button "Qual 33 · 1678 Morgan Journey Sure · Today 6:12 PM":
+        - strong: Qual 33 · 1678
+        - generic: Morgan Journey
+        - generic: Sure · Today 6:12 PM
+      - button "Qual 1 · 33 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 1 · 33
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 1 · 195 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 1 · 195
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 1 · 254 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 1 · 254
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 2 · 2481 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 2 · 2481
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 2 · 971 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 2 · 971
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 3 · 67 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 3 · 67
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 2 · 8033 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 2 · 8033
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 2 · 1678 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 2 · 1678
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 2 · 3005 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 2 · 3005
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 3 · 1678 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 3 · 1678
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 3 · 2767 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 3 · 2767
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 3 · 1114 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 3 · 1114
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 3 · 254 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 3 · 254
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 2 · 3310 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 2 · 3310
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 3 · 3310 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 3 · 3310
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 4 · 7457 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 4 · 7457
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 4 · 6925 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 4 · 6925
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 4 · 1114 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 4 · 1114
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 4 · 33 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 4 · 33
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 4 · 8033 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 4 · 8033
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 4 · 4613 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 4 · 4613
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 5 · 67 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 5 · 67
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 5 · 1619 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 5 · 1619
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 5 · 8033 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 5 · 8033
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 5 · 3310 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 5 · 3310
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 5 · 118 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 5 · 118
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 5 · 971 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 5 · 971
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+      - button "Qual 1 · 1619 Riley Scout OK · Today 2:05 PM":
+        - strong: Qual 1 · 1619
+        - generic: Riley Scout
+        - generic: OK · Today 2:05 PM
+    - heading "Most accurate scouts" [level=2]
+    - paragraph: Checked against the official scores, not by how many forms were filled.
+    - paragraph: Appears once the official score breakdown is posted for a match you scouted. Some events post only alliance totals; those can't check one robot.
+    - button "Coach value formula"
+- alert

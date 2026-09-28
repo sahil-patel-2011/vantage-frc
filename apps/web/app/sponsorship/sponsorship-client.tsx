@@ -117,6 +117,7 @@ async function downloadBlob(response: Response, fallbackName: string) {
 }
 
 export default function SponsorshipClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<SponsorshipView | null>(null);
   const [error, setError] = useState("");
   // Kept so an expired session offers sign-in instead of a dead end.
@@ -325,7 +326,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         )
       : null;
     return (
-      <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
+      <Root className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
           <PageHeader
             navPath="/sponsorship"
@@ -351,13 +352,13 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
+      <Root className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
           <PageHeader
             navPath="/sponsorship"
@@ -371,14 +372,14 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   const { context, onePagers, seasons, seasonYear } = view;
 
   return (
-    <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
       <PageHeader
         navPath="/sponsorship"
@@ -698,6 +699,6 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           )}
         </section>
       </div>
-    </main>
+    </Root>
   );
 }

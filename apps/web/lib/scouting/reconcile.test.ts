@@ -114,26 +114,14 @@ describe("robotEstimateFromPayload", () => {
     });
   });
 
-  it("sums the numeric answers whose inferred role scores points", () => {
-    const result = robotEstimateFromPayload({
-      autoScore: 6,
-      teleopScore: 20,
-      endgamePoints: 12,
-      notes: "great cycles",
-      defense: true,
-    });
-    expect(result?.points).toBe(38);
-    expect(result?.basis).toBe("roles");
-    expect(result?.fields).toEqual(["autoScore", "teleopScore", "endgamePoints"]);
+  it("never converts counters or role labels into points without a configured formula", () => {
+    expect(robotEstimateFromPayload({ autoScore: 6, teleopCycles: 20, endgamePoints: 12 })).toBeNull();
+    expect(robotEstimateFromPayload({ widgets: 7 }, { widgets: "teleop_score" })).toBeNull();
   });
 
-  it("honours an explicit role map over key inference", () => {
-    const result = robotEstimateFromPayload(
-      { widgets: 7, autoScore: 5 },
-      { widgets: "teleop_score", autoScore: "none" },
-    );
-    expect(result?.points).toBe(7);
-    expect(result?.fields).toEqual(["widgets"]);
+  it("uses the same configured point formula as profiles", () => {
+    const result = robotEstimateFromPayload({ widgets: 7 }, undefined, [{ name: "Total points", expression: { op: "multiply", args: [{ op: "field", field: "widgets" }, { op: "constant", value: 3 }] } }]);
+    expect(result).toEqual({ points: 21, basis: "formula", fields: ["widgets"] });
   });
 
   it("returns null instead of reading a checkbox-only sheet as zero", () => {
@@ -143,13 +131,14 @@ describe("robotEstimateFromPayload", () => {
 });
 
 describe("robotEstimate", () => {
-  it("takes the median across scouts so one bad sheet cannot swing the total", () => {
+  it("uses the same mean as profiles and retains conflicting report values", () => {
     const robot = robotEstimate("frc1", [
       entry("frc1", { totalPoints: 30 }, "a"),
       entry("frc1", { totalPoints: 32 }, "b"),
       entry("frc1", { totalPoints: 300 }, "c"),
     ]);
-    expect(robot.estimate).toBe(32);
+    expect(robot.estimate).toBeCloseTo((30 + 32 + 300) / 3);
+    expect(robot.range).toEqual([30, 300]);
     expect(robot.scoutCount).toBe(3);
     expect(robot.entryIds).toEqual(["frc1-a", "frc1-b", "frc1-c"]);
   });

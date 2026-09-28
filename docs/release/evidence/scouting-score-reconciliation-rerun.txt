@@ -1,0 +1,918 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - button "Menu and search"
+  - button "Team 6925 — switch team":
+    - generic: Team 6925
+  - link "Open the Scouting app":
+    - /url: /api/handoff/start?to=scouting&path=%2Fscout&orgId=6925a000-0000-4000-8000-000000000001
+    - text: Scouting
+    - generic: app
+    - generic: ↗
+  - link "Ask AI":
+    - /url: /ai?tab=chat&orgId=6925a000-0000-4000-8000-000000000001
+  - link "Notifications, 1 unread":
+    - /url: /notifications
+    - generic: "1"
+  - button "Account menu": M
+- main:
+  - heading "Competition" [level=1]
+  - tablist "Competition sections":
+    - tab "Event day"
+    - tab "Scouting" [selected]
+    - tab "Strategy"
+    - tab "Robot check"
+  - navigation "Tools in Scouting":
+    - button "Forms"
+    - link "Coverage":
+      - /url: /scout-coverage-live?orgId=6925a000-0000-4000-8000-000000000001
+    - link "Shifts":
+      - /url: /shift-balancer?orgId=6925a000-0000-4000-8000-000000000001
+    - button "More tools"
+  - button "How Scouting works":
+    - generic: "?"
+  - strong: Peachtree District Championship
+  - generic: Online · 0 queued
+  - navigation "Scouting views":
+    - button "Match"
+    - button "Pit"
+    - button "Robots"
+    - button "Trust & coverage":
+      - text: Trust & coverage
+      - generic: ▾
+  - article:
+    - generic: Coverage gaps
+    - strong: "70"
+    - generic: no assignment or entry
+  - article:
+    - generic: Assigned, waiting
+    - strong: "0"
+    - generic: scout has the row
+  - article:
+    - generic: Covered rows
+    - strong: "146"
+    - generic: 68%
+  - article:
+    - generic: Fields checked
+    - strong: "0"
+    - generic: against official results
+  - text: LIVE COVERAGE
+  - heading "Every robot, every match" [level=2]
+  - button "Balance shifts"
+  - button "Nudge coordinator"
+  - article:
+    - generic: QM 1
+    - generic: "6925"
+    - generic: covered
+  - article:
+    - generic: QM 1
+    - generic: "2056"
+    - generic: covered
+  - article:
+    - generic: QM 1
+    - generic: "33"
+    - generic: covered
+  - article:
+    - generic: QM 1
+    - generic: "1619"
+    - generic: covered
+  - article:
+    - generic: QM 1
+    - generic: "195"
+    - generic: covered
+  - article:
+    - generic: QM 1
+    - generic: "254"
+    - generic: covered
+  - article:
+    - generic: QM 2
+    - generic: "2481"
+    - generic: covered
+  - article:
+    - generic: QM 2
+    - generic: "3310"
+    - generic: covered
+  - article:
+    - generic: QM 2
+    - generic: "971"
+    - generic: covered
+  - article:
+    - generic: QM 2
+    - generic: "8033"
+    - generic: covered
+  - article:
+    - generic: QM 2
+    - generic: "1678"
+    - generic: covered
+  - article:
+    - generic: QM 2
+    - generic: "3005"
+    - generic: covered
+  - article:
+    - generic: QM 3
+    - generic: "1678"
+    - generic: covered
+  - article:
+    - generic: QM 3
+    - generic: "2767"
+    - generic: covered
+  - article:
+    - generic: QM 3
+    - generic: "1114"
+    - generic: covered
+  - article:
+    - generic: QM 3
+    - generic: "254"
+    - generic: covered
+  - article:
+    - generic: QM 3
+    - generic: "67"
+    - generic: covered
+  - article:
+    - generic: QM 3
+    - generic: "3310"
+    - generic: covered
+  - article:
+    - generic: QM 4
+    - generic: "7457"
+    - generic: covered
+  - article:
+    - generic: QM 4
+    - generic: "6925"
+    - generic: covered
+  - article:
+    - generic: QM 4
+    - generic: "1114"
+    - generic: covered
+  - article:
+    - generic: QM 4
+    - generic: "33"
+    - generic: covered
+  - article:
+    - generic: QM 4
+    - generic: "8033"
+    - generic: covered
+  - article:
+    - generic: QM 4
+    - generic: "4613"
+    - generic: covered
+  - article:
+    - generic: QM 5
+    - generic: "67"
+    - generic: covered
+  - article:
+    - generic: QM 5
+    - generic: "1619"
+    - generic: covered
+  - article:
+    - generic: QM 5
+    - generic: "8033"
+    - generic: covered
+  - article:
+    - generic: QM 5
+    - generic: "3310"
+    - generic: covered
+  - article:
+    - generic: QM 5
+    - generic: "118"
+    - generic: covered
+  - article:
+    - generic: QM 5
+    - generic: "971"
+    - generic: covered
+  - article:
+    - generic: QM 6
+    - generic: "118"
+    - generic: covered
+  - article:
+    - generic: QM 6
+    - generic: "9999"
+    - generic: covered
+  - article:
+    - generic: QM 6
+    - generic: "7457"
+    - generic: covered
+  - article:
+    - generic: QM 6
+    - generic: "1114"
+    - generic: covered
+  - article:
+    - generic: QM 6
+    - generic: "2481"
+    - generic: covered
+  - article:
+    - generic: QM 6
+    - generic: "8033"
+    - generic: covered
+  - article:
+    - generic: QM 7
+    - generic: "5406"
+    - generic: covered
+  - article:
+    - generic: QM 7
+    - generic: "195"
+    - generic: covered
+  - article:
+    - generic: QM 7
+    - generic: "254"
+    - generic: covered
+  - article:
+    - generic: QM 7
+    - generic: "9999"
+    - generic: covered
+  - article:
+    - generic: QM 7
+    - generic: "6925"
+    - generic: covered
+  - article:
+    - generic: QM 7
+    - generic: "3310"
+    - generic: covered
+  - article:
+    - generic: QM 8
+    - generic: "2056"
+    - generic: covered
+  - article:
+    - generic: QM 8
+    - generic: "148"
+    - generic: covered
+  - article:
+    - generic: QM 8
+    - generic: "7457"
+    - generic: covered
+  - article:
+    - generic: QM 8
+    - generic: "1619"
+    - generic: covered
+  - article:
+    - generic: QM 8
+    - generic: "3005"
+    - generic: covered
+  - article:
+    - generic: QM 8
+    - generic: "2481"
+    - generic: covered
+  - article:
+    - generic: QM 9
+    - generic: "1114"
+    - generic: covered
+  - article:
+    - generic: QM 9
+    - generic: "254"
+    - generic: covered
+  - article:
+    - generic: QM 9
+    - generic: "1323"
+    - generic: covered
+  - article:
+    - generic: QM 9
+    - generic: "148"
+    - generic: covered
+  - article:
+    - generic: QM 9
+    - generic: "7457"
+    - generic: covered
+  - article:
+    - generic: QM 9
+    - generic: "195"
+    - generic: covered
+  - article:
+    - generic: QM 10
+    - generic: "6925"
+    - generic: covered
+  - article:
+    - generic: QM 10
+    - generic: "1323"
+    - generic: covered
+  - article:
+    - generic: QM 10
+    - generic: "4613"
+    - generic: covered
+  - article:
+    - generic: QM 10
+    - generic: "6800"
+    - generic: covered
+  - article:
+    - generic: QM 10
+    - generic: "33"
+    - generic: covered
+  - article:
+    - generic: QM 10
+    - generic: "2056"
+    - generic: covered
+  - article:
+    - generic: QM 11
+    - generic: "254"
+    - generic: covered
+  - article:
+    - generic: QM 11
+    - generic: "1678"
+    - generic: covered
+  - article:
+    - generic: QM 11
+    - generic: "148"
+    - generic: covered
+  - article:
+    - generic: QM 11
+    - generic: "118"
+    - generic: covered
+  - article:
+    - generic: QM 11
+    - generic: "217"
+    - generic: covered
+  - article:
+    - generic: QM 11
+    - generic: "2481"
+    - generic: covered
+  - article:
+    - generic: QM 12
+    - generic: "2767"
+    - generic: covered
+  - article:
+    - generic: QM 12
+    - generic: "67"
+    - generic: covered
+  - article:
+    - generic: QM 12
+    - generic: "217"
+    - generic: covered
+  - article:
+    - generic: QM 12
+    - generic: "2481"
+    - generic: covered
+  - article:
+    - generic: QM 12
+    - generic: "7457"
+    - generic: covered
+  - article:
+    - generic: QM 12
+    - generic: "9999"
+    - generic: covered
+  - complementary:
+    - generic: YOUR DATA'S IMPACT
+    - heading "Where your scouting went" [level=2]
+    - paragraph: After coaches save a pick list, entries you scouted for listed teams show up here with the exact reason they were picked.
+    - link "Open pick desk":
+      - /url: /strategy?orgId=6925a000-0000-4000-8000-000000000001&tab=picks
+    - generic: STRATEGY MEETING SEATS
+    - heading "Pick-desk conversation" [level=2]
+    - paragraph: Accuracy vs TBA earns a rotating seat so scouts see their product used at alliance selection.
+    - paragraph: No seats assigned for this event yet.
+    - button "Seat top accurate scouts"
+  - generic: RECONCILIATION
+  - heading "Scouted vs official" [level=2]
+  - paragraph: This event posts only each alliance's final score, so foul points are still inside the official number. Expect your scouts' totals to read a little under it.
+  - article:
+    - generic: Flagged matches
+    - strong: "14"
+    - generic: over 15% gap
+  - article:
+    - generic: Alliances compared
+    - strong: "48"
+    - generic: all 3 robots scouted
+  - article:
+    - generic: Average gap
+    - strong: 13%
+    - generic: 146 reports
+  - article:
+    - generic: No official score
+    - strong: "0"
+    - generic: not posted yet
+  - button "Show all 30"
+  - button "Refresh"
+  - article:
+    - heading "Qual 11" [level=3]
+    - generic: review · -57%
+    - generic: Red · scouted 72 vs official 169 · -57%
+    - paragraph: "Scouted 72 vs official 169 (final score; fouls not removed): 57% under."
+    - list:
+      - generic: "254"
+      - generic: scouted 12 · share of the official score 28.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm11&teamKey=frc254
+      - generic: "1678"
+      - generic: scouted 12 · share of the official score 28.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm11&teamKey=frc1678
+      - generic: "148"
+      - generic: scouted 48 · share of the official score 112.7
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm11&teamKey=frc148
+    - generic: Blue · scouted 123 vs official 129 · -5%
+    - paragraph: "Scouted 123 vs official 129 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "118"
+      - generic: scouted 54 · share of the official score 56.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm11&teamKey=frc118
+      - generic: "217"
+      - generic: scouted 44 · share of the official score 46.1
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm11&teamKey=frc217
+      - generic: "2481"
+      - generic: scouted 25 · share of the official score 26.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm11&teamKey=frc2481
+  - article:
+    - heading "Qual 23" [level=3]
+    - generic: review · +41%
+    - generic: Red · scouted 123 vs official 87 · +41%
+    - paragraph: "Scouted 123 vs official 87 (final score; fouls not removed): 41% over."
+    - list:
+      - generic: "3005"
+      - generic: scouted 31 · share of the official score 21.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm23&teamKey=frc3005
+      - generic: "195"
+      - generic: scouted 45 · share of the official score 31.8
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm23&teamKey=frc195
+      - generic: "1114"
+      - generic: scouted 47 · share of the official score 33.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm23&teamKey=frc1114
+    - generic: Blue · scouted 108 vs official 99 · +9%
+    - paragraph: "Scouted 108 vs official 99 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "5406"
+      - generic: scouted 22 · share of the official score 20.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm23&teamKey=frc5406
+      - generic: "33"
+      - generic: scouted 57 · share of the official score 52.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm23&teamKey=frc33
+      - generic: "6800"
+      - generic: scouted 29 · share of the official score 26.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm23&teamKey=frc6800
+  - article:
+    - heading "Qual 6" [level=3]
+    - generic: review · +39%
+    - generic: Red · scouted 91 vs official 105 · -13%
+    - paragraph: "Scouted 91 vs official 105 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "118"
+      - generic: scouted 58 · share of the official score 66.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm6&teamKey=frc118
+      - generic: "9999"
+      - generic: scouted 13 · share of the official score 15
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm6&teamKey=frc9999
+      - generic: "7457"
+      - generic: scouted 20 · share of the official score 23.1
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm6&teamKey=frc7457
+    - generic: Blue · scouted 114 vs official 82 · +39%
+    - paragraph: "Scouted 114 vs official 82 (final score; fouls not removed): 39% over."
+    - list:
+      - generic: "1114"
+      - generic: scouted 53 · share of the official score 38.1
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm6&teamKey=frc1114
+      - generic: "2481"
+      - generic: scouted 36 · share of the official score 25.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm6&teamKey=frc2481
+      - generic: "8033"
+      - generic: scouted 25 · share of the official score 18
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm6&teamKey=frc8033
+  - article:
+    - heading "Qual 14" [level=3]
+    - generic: review · -33%
+    - generic: Red · scouted 94 vs official 98 · -4%
+    - paragraph: "Scouted 94 vs official 98 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "2056"
+      - generic: scouted 56 · share of the official score 58.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm14&teamKey=frc2056
+      - generic: "3310"
+      - generic: scouted 28 · share of the official score 29.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm14&teamKey=frc3310
+      - generic: "7457"
+      - generic: scouted 10 · share of the official score 10.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm14&teamKey=frc7457
+    - generic: Blue · scouted 83 vs official 124 · -33%
+    - paragraph: "Scouted 83 vs official 124 (final score; fouls not removed): 33% under."
+    - list:
+      - generic: "67"
+      - generic: scouted 53 · share of the official score 79.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm14&teamKey=frc67
+      - generic: "6800"
+      - generic: scouted 17 · share of the official score 25.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm14&teamKey=frc6800
+      - generic: "971"
+      - generic: scouted 13 · share of the official score 19.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm14&teamKey=frc971
+  - article:
+    - heading "Qual 21" [level=3]
+    - generic: review · -30%
+    - generic: Red · scouted 149 vs official 125 · +19%
+    - paragraph: "Scouted 149 vs official 125 (final score; fouls not removed): 19% over."
+    - list:
+      - generic: "971"
+      - generic: scouted 59 · share of the official score 49.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm21&teamKey=frc971
+      - generic: "118"
+      - generic: scouted 58 · share of the official score 48.7
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm21&teamKey=frc118
+      - generic: "2481"
+      - generic: scouted 32 · share of the official score 26.8
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm21&teamKey=frc2481
+    - generic: Blue · scouted 60 vs official 86 · -30%
+    - paragraph: "Scouted 60 vs official 86 (final score; fouls not removed): 30% under."
+    - list:
+      - generic: "7457"
+      - generic: scouted 22 · share of the official score 31.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm21&teamKey=frc7457
+      - generic: "4613"
+      - generic: scouted 23 · share of the official score 33
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm21&teamKey=frc4613
+      - generic: "3005"
+      - generic: scouted 15 · share of the official score 21.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm21&teamKey=frc3005
+  - article:
+    - heading "Qual 8" [level=3]
+    - generic: review · -29%
+    - generic: Red · scouted 116 vs official 121 · -4%
+    - paragraph: "Scouted 116 vs official 121 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "2056"
+      - generic: scouted 61 · share of the official score 63.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm8&teamKey=frc2056
+      - generic: "148"
+      - generic: scouted 41 · share of the official score 42.8
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm8&teamKey=frc148
+      - generic: "7457"
+      - generic: scouted 14 · share of the official score 14.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm8&teamKey=frc7457
+    - generic: Blue · scouted 73 vs official 103 · -29%
+    - paragraph: "Scouted 73 vs official 103 (final score; fouls not removed): 29% under."
+    - list:
+      - generic: "1619"
+      - generic: scouted 22 · share of the official score 31
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm8&teamKey=frc1619
+      - generic: "3005"
+      - generic: scouted 16 · share of the official score 22.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm8&teamKey=frc3005
+      - generic: "2481"
+      - generic: scouted 35 · share of the official score 49.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm8&teamKey=frc2481
+  - article:
+    - heading "Qual 12" [level=3]
+    - generic: review · -29%
+    - generic: Red · scouted 103 vs official 145 · -29%
+    - paragraph: "Scouted 103 vs official 145 (final score; fouls not removed): 29% under."
+    - list:
+      - generic: "2767"
+      - generic: scouted 40 · share of the official score 56.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm12&teamKey=frc2767
+      - generic: "67"
+      - generic: scouted 53 · share of the official score 74.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm12&teamKey=frc67
+      - generic: "217"
+      - generic: scouted 10 · share of the official score 14.1
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm12&teamKey=frc217
+    - generic: Blue · scouted 72 vs official 79 · -9%
+    - paragraph: "Scouted 72 vs official 79 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "2481"
+      - generic: scouted 27 · share of the official score 29.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm12&teamKey=frc2481
+      - generic: "7457"
+      - generic: scouted 25 · share of the official score 27.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm12&teamKey=frc7457
+      - generic: "9999"
+      - generic: scouted 20 · share of the official score 21.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm12&teamKey=frc9999
+  - article:
+    - heading "Qual 4" [level=3]
+    - generic: review · -26%
+    - generic: Red · scouted 130 vs official 121 · +7%
+    - paragraph: "Scouted 130 vs official 121 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "7457"
+      - generic: scouted 12 · share of the official score 11.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm4&teamKey=frc7457
+      - generic: "6925"
+      - generic: scouted 64 · share of the official score 59.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm4&teamKey=frc6925
+      - generic: "1114"
+      - generic: scouted 54 · share of the official score 50.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm4&teamKey=frc1114
+    - generic: Blue · scouted 87 vs official 117 · -26%
+    - paragraph: "Scouted 87 vs official 117 (final score; fouls not removed): 26% under."
+    - list:
+      - generic: "33"
+      - generic: scouted 48 · share of the official score 64.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm4&teamKey=frc33
+      - generic: "8033"
+      - generic: scouted 16 · share of the official score 21.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm4&teamKey=frc8033
+      - generic: "4613"
+      - generic: scouted 23 · share of the official score 30.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm4&teamKey=frc4613
+  - article:
+    - heading "Qual 19" [level=3]
+    - generic: review · -21%
+    - generic: Red · scouted 115 vs official 145 · -21%
+    - paragraph: "Scouted 115 vs official 145 (final score; fouls not removed): 21% under."
+    - list:
+      - generic: "7457"
+      - generic: scouted 13 · share of the official score 16.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm19&teamKey=frc7457
+      - generic: "217"
+      - generic: scouted 45 · share of the official score 56.7
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm19&teamKey=frc217
+      - generic: "6925"
+      - generic: scouted 57 · share of the official score 71.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm19&teamKey=frc6925
+    - generic: Blue · scouted 157 vs official 141 · +11%
+    - paragraph: "Scouted 157 vs official 141 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "1678"
+      - generic: scouted 65 · share of the official score 58.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm19&teamKey=frc1678
+      - generic: "254"
+      - generic: scouted 54 · share of the official score 48.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm19&teamKey=frc254
+      - generic: "2481"
+      - generic: scouted 38 · share of the official score 34.1
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm19&teamKey=frc2481
+  - article:
+    - heading "Qual 9" [level=3]
+    - generic: review · -18%
+    - generic: Red · scouted 133 vs official 162 · -18%
+    - paragraph: "Scouted 133 vs official 162 (final score; fouls not removed): 18% under."
+    - list:
+      - generic: "1114"
+      - generic: scouted 39 · share of the official score 47.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm9&teamKey=frc1114
+      - generic: "254"
+      - generic: scouted 55 · share of the official score 67
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm9&teamKey=frc254
+      - generic: "1323"
+      - generic: scouted 39 · share of the official score 47.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm9&teamKey=frc1323
+    - generic: Blue · scouted 107 vs official 106 · +1%
+    - paragraph: "Scouted 107 vs official 106 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "148"
+      - generic: scouted 50 · share of the official score 49.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm9&teamKey=frc148
+      - generic: "7457"
+      - generic: scouted 19 · share of the official score 18.8
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm9&teamKey=frc7457
+      - generic: "195"
+      - generic: scouted 38 · share of the official score 37.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm9&teamKey=frc195
+  - article:
+    - heading "Qual 17" [level=3]
+    - generic: review · -17%
+    - generic: Red · scouted 147 vs official 174 · -16%
+    - paragraph: "Scouted 147 vs official 174 (final score; fouls not removed): 16% under."
+    - list:
+      - generic: "2056"
+      - generic: scouted 47 · share of the official score 55.6
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm17&teamKey=frc2056
+      - generic: "33"
+      - generic: scouted 51 · share of the official score 60.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm17&teamKey=frc33
+      - generic: "67"
+      - generic: scouted 49 · share of the official score 58
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm17&teamKey=frc67
+    - generic: Blue · scouted 93 vs official 112 · -17%
+    - paragraph: "Scouted 93 vs official 112 (final score; fouls not removed): 17% under."
+    - list:
+      - generic: "1114"
+      - generic: scouted 43 · share of the official score 51.8
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm17&teamKey=frc1114
+      - generic: "6800"
+      - generic: scouted 29 · share of the official score 34.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm17&teamKey=frc6800
+      - generic: "8033"
+      - generic: scouted 21 · share of the official score 25.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm17&teamKey=frc8033
+  - article:
+    - heading "Qual 20" [level=3]
+    - generic: review · -16%
+    - generic: Red · scouted 87 vs official 104 · -16%
+    - paragraph: "Scouted 87 vs official 104 (final score; fouls not removed): 16% under."
+    - list:
+      - generic: "254"
+      - generic: scouted 65 · share of the official score 77.7
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm20&teamKey=frc254
+      - generic: "9999"
+      - generic: scouted 4 · share of the official score 4.8
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm20&teamKey=frc9999
+      - generic: "8033"
+      - generic: scouted 18 · share of the official score 21.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm20&teamKey=frc8033
+    - generic: Blue · scouted 128 vs official 147 · -13%
+    - paragraph: "Scouted 128 vs official 147 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "2056"
+      - generic: scouted 53 · share of the official score 60.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm20&teamKey=frc2056
+      - generic: "33"
+      - generic: scouted 54 · share of the official score 62
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm20&teamKey=frc33
+      - generic: "2481"
+      - generic: scouted 21 · share of the official score 24.1
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm20&teamKey=frc2481
+  - article:
+    - heading "Qual 22" [level=3]
+    - generic: review · +16%
+    - generic: Red · scouted 163 vs official 141 · +16%
+    - paragraph: "Scouted 163 vs official 141 (final score; fouls not removed): 16% over."
+    - list:
+      - generic: "67"
+      - generic: scouted 58 · share of the official score 50.2
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm22&teamKey=frc67
+      - generic: "254"
+      - generic: scouted 57 · share of the official score 49.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm22&teamKey=frc254
+      - generic: "33"
+      - generic: scouted 48 · share of the official score 41.5
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm22&teamKey=frc33
+    - generic: Blue · scouted 122 vs official 120 · +2%
+    - paragraph: "Scouted 122 vs official 120 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "3005"
+      - generic: scouted 16 · share of the official score 15.7
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm22&teamKey=frc3005
+      - generic: "1114"
+      - generic: scouted 39 · share of the official score 38.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm22&teamKey=frc1114
+      - generic: "6925"
+      - generic: scouted 67 · share of the official score 65.9
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm22&teamKey=frc6925
+  - article:
+    - heading "Qual 7" [level=3]
+    - generic: review · -15%
+    - generic: Red · scouted 116 vs official 126 · -8%
+    - paragraph: "Scouted 116 vs official 126 (final score; fouls not removed): within 15%."
+    - list:
+      - generic: "5406"
+      - generic: scouted 27 · share of the official score 29.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm7&teamKey=frc5406
+      - generic: "195"
+      - generic: scouted 35 · share of the official score 38
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm7&teamKey=frc195
+      - generic: "254"
+      - generic: scouted 54 · share of the official score 58.7
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm7&teamKey=frc254
+    - generic: Blue · scouted 115 vs official 136 · -15%
+    - paragraph: "Scouted 115 vs official 136 (final score; fouls not removed): 15% under."
+    - list:
+      - generic: "9999"
+      - generic: scouted 29 · share of the official score 34.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm7&teamKey=frc9999
+      - generic: "6925"
+      - generic: scouted 57 · share of the official score 67.4
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm7&teamKey=frc6925
+      - generic: "3310"
+      - generic: scouted 29 · share of the official score 34.3
+      - link "1 report":
+        - /url: /scouting?orgId=6925a000-0000-4000-8000-000000000001&scoutTab=match&matchKey=2026gacmp_qm7&teamKey=frc3310
+  - generic: FIELD CONFIDENCE
+  - heading "Slow down where the team disagrees" [level=2]
+  - article:
+    - strong: endgame
+    - generic: 0 conflicts across 0 official checks
+    - generic: No checksdisagreement
+  - generic: ACCURACY LEADERBOARD
+  - heading "Quality before volume" [level=2]
+  - list:
+    - generic: Morgan Journey
+    - generic: 2 entries · 0 checked
+    - strong: No checks
+    - generic: Riley Scout
+    - generic: 144 entries · 0 checked
+    - strong: No checks
+  - generic: PER-FIELD SOURCE POLICY
+  - heading "Choose what wins when sources disagree" [level=2]
+  - generic: Auto pointsautoPoints
+  - combobox "Auto pointsautoPoints":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: Teleop cyclesteleopCycles
+  - combobox "Teleop cyclesteleopCycles":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: Endgameendgame
+  - combobox "Endgameendgame":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: Robot's pointstotalPoints
+  - combobox "Robot's pointstotalPoints":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: Foulsfouls
+  - combobox "Foulsfouls":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: Broke downbrokeDown
+  - combobox "Broke downbrokeDown":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: Notesnotes
+  - combobox "Notesnotes":
+    - option "Scout consensus" [selected]
+    - option "Scout data"
+    - option "TBA official"
+    - option "Statbotics"
+  - generic: FORM ACCURACY BUDGET
+  - article:
+    - strong: Match scouting
+    - generic: 2026 · match · v1
+    - generic: 7/20
+    - paragraph: 7 fields — within the accuracy budget (~20).
+  - article:
+    - strong: 2026 REBUILT pit
+    - generic: 2026 · pit · v1
+    - generic: 8/20
+    - paragraph: 8 fields — within the accuracy budget (~20).
+  - button "Clone last match form"
+  - button "Clone last pit form"
+- button "Open Next.js Dev Tools":
+- alert

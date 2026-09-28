@@ -220,8 +220,16 @@ export function CommandReadyHeader({
   if (embedded) {
     return (
       <>
+        <div className="edc-context-header">
+          {eventLabel ? (
+            <div className="edc-event-context" role="region" aria-label="Selected event">
+              <span>Active event</span>
+              <strong>{eventLabel}</strong>
+            </div>
+          ) : null}
+          {actions}
+        </div>
         <EventDayRelatedStrip orgId={orgId} />
-        {actions}
       </>
     );
   }

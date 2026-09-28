@@ -132,7 +132,12 @@ async function fetchSessionCookie(
     data: { email, password },
     failOnStatusCode: false,
   });
-  if (!response.ok()) return null;
+  if (!response.ok()) {
+    if (process.env.GITHUB_ACTIONS === "true") {
+      throw new Error(`Seeded account sign-in returned HTTP ${response.status()} at /api/auth/sign-in/email.`);
+    }
+    return null;
+  }
   /**
    * `cookies(url)` first, then the whole jar.
    *
@@ -164,23 +169,28 @@ async function fetchSessionCookie(
 }
 
 /**
- * Put a real session for `role` on this context, or return false when the
- * environment has no such account. Callers skip rather than fail: a box with
- * no seeded database is not a product defect.
+ * Put a real session for `role` on this context. Local unseeded environments
+ * may return false; GitHub Actions must authenticate its explicitly seeded
+ * accounts so an integration failure cannot silently turn into skipped tests.
  */
 export async function signInAs(context: BrowserContext, role: FixtureRole): Promise<boolean> {
   const { email, password } = fixtureAccount(role);
   if (!cookieCache.has(email)) {
     try {
-      cookieCache.set(email, await fetchSessionCookie(context, email, password));
-    } catch {
+      const value = await fetchSessionCookie(context, email, password);
+      if (value) cookieCache.set(email, value);
+    } catch (error) {
+      if (process.env.GITHUB_ACTIONS === "true") throw error;
       // Next crashed or is still booting. Do not cache the miss — the next
       // test can retry, and callers still fall back to the fixture cookie.
       return false;
     }
   }
   const value = cookieCache.get(email) ?? null;
-  if (!value) return false;
+  if (!value) {
+    if (process.env.GITHUB_ACTIONS === "true") throw new Error(`Could not authenticate seeded ${role} browser-test account.`);
+    return false;
+  }
   await addSessionCookies(context, [
     { name: "better-auth.session_token", value, httpOnly: true },
   ]);

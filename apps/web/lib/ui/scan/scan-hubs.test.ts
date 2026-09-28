@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const APP = join(__dirname, "../../../app");
 const SCAN = join(APP, "vantage-scan");
-const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan"]);
+const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known"]);
 
 describe("vantage scan hub overlays", () => {
   const hubs = readdirSync(APP).filter((name) => {

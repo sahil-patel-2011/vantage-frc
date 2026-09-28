@@ -10,6 +10,8 @@ describe("SCOUT_ENTRY_CSV_COLUMNS", () => {
       "Scout",
       "Source",
       "Confidence",
+      "Answers (JSON)",
+      "Observation history (versioned JSON)",
       "Updated at",
     ]);
   });

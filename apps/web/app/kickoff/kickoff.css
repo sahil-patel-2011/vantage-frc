@@ -3,6 +3,8 @@
 .kick-page input,.kick-page select{min-height:44px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}
 .kick-page textarea{min-height:52px;padding:8px 10px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit;resize:vertical}
 .kick-year{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:700}
+.kick-embedded-controls{display:flex;justify-content:flex-end;margin-bottom:var(--space-4)}
+.kick-year select{min-height:48px}
 .kick-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0;color:var(--accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .kick-link.danger{color:var(--critical)}
 

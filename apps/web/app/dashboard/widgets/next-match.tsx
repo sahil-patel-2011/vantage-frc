@@ -77,7 +77,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
         </div>
       ) : null}
       {win ? (
-        <div className="nm-win" aria-label={`${win.label} chance we win`}>
+        <div className="nm-win" role="group" aria-label={`${win.label} chance we win`}>
           <div className="nm-win-head">
             <strong>{win.label}</strong>
             <span>

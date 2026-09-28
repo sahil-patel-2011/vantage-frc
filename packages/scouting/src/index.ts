@@ -1,5 +1,7 @@
 import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField } from "@vantage/game-year";
 import { lockScoutPayload } from "./identity";
+import { ACTION_HISTORY_KEY, validateActionHistory } from "./action-history";
+export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
 import {
   assertStorageKeyForOrg,
   orgScopedStorageKey,
@@ -592,13 +594,6 @@ export const DEFAULT_PIT_SCHEMA: SchemaDefinition = {
       options: [...DEFAULT_DRIVETRAIN_OPTIONS],
       widget: "drivetrain",
     },
-    {
-      key: "robot_images",
-      label: "Robot images",
-      type: "robot_image",
-      widget: "robot_image",
-      helpText: "Upload or capture pit photos of the robot.",
-    },
     { key: "cycle_time", label: "Cycle time (s)", type: "number" },
     { key: "reliable", label: "Reliable", type: "boolean" },
     { key: "notes", label: "Notes", type: "text" },
@@ -612,7 +607,7 @@ export function matchSchemaForYear(year: number = currentSeasonYear()): SchemaDe
 
 export function pitSchemaForYear(year: number = currentSeasonYear()): SchemaDefinition {
   const schema = defaultPitSchema(year);
-  return { title: schema.title, fields: schema.fields.map(gameFieldToDefinition) };
+  return { title: schema.title, fields: schema.fields.filter((field) => field.type !== "robot_image").map(gameFieldToDefinition) };
 }
 
 /** True when a robot_image payload holds one or more media client ids. */
@@ -884,7 +879,9 @@ export function validatePayload(
 ): string[] {
   const errors: string[] = [];
   const allowed = new Set(schema.fields.map((field) => field.key));
+  errors.push(...validateActionHistory(payload[ACTION_HISTORY_KEY], allowed));
   for (const key of Object.keys(payload)) {
+    if (key === ACTION_HISTORY_KEY) continue;
     if (!allowed.has(key)) errors.push(`Unknown field: ${key}`);
   }
   for (const field of schema.fields) {

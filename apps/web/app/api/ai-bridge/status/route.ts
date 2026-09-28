@@ -63,16 +63,16 @@ export async function GET(request: Request) {
                 (to_jsonb(ai_bridge_devices) ->> 'coverage') AS coverage,
                 jobs_served AS "jobsServed"
            FROM ai_bridge_devices
-          WHERE org_id = $1::uuid AND revoked_at IS NULL
+          WHERE org_id = $1::uuid AND paired_by = $2::uuid AND revoked_at IS NULL
           ORDER BY created_at DESC`,
-        [orgId],
+        [orgId, session.user.id],
       );
       const jobs = await client.query<{ state: string; count: string; lastAt: Date | null }>(
         `SELECT state, COUNT(*)::text AS count, MAX(created_at) AS "lastAt"
            FROM ai_bridge_jobs
-          WHERE org_id = $1::uuid AND created_at > now() - interval '7 days'
+          WHERE org_id = $1::uuid AND requested_by = $2::uuid AND created_at > now() - interval '7 days'
           GROUP BY state`,
-        [orgId],
+        [orgId, session.user.id],
       );
       return Response.json({
         devices: devices.rows.map(

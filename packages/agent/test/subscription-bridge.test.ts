@@ -114,10 +114,11 @@ describe("bridge CLI output parsing (bridge.mjs)", () => {
     expect(bridge.jobTimeoutMs({ timeoutMs: "not-a-number" })).toBe(90_000);
   });
 
-  it("picks engines honoring requests and claude-first preference", async () => {
+  it("picks personal Codex by default and honors explicit engine requests", async () => {
     const bridge = await bridgeModule();
     const both = { claude: { available: true }, codex: { available: true } };
-    expect(bridge.pickEngine(both, null)).toBe("claude");
+    expect(bridge.pickEngine(both, null)).toBe("codex");
+    expect(bridge.pickEngine(both, "claude")).toBe("claude");
     expect(bridge.pickEngine(both, "codex")).toBe("codex");
     expect(bridge.pickEngine({ codex: { available: true } }, null)).toBe("codex");
     expect(bridge.pickEngine({}, "claude")).toBeNull();
@@ -544,6 +545,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "chat",
       bridgeTransport: transport,
@@ -571,6 +573,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "chat",
       bridgeTransport: transport,
@@ -597,6 +600,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "dreams",
       bridgeTransport: transport,
@@ -627,6 +631,7 @@ describe("resolver fall-through order with a bridge", () => {
     const enqueueSpy = stubTransport(async () => ({ state: "queued" }));
     const gated = await resolveOrgChatAdapterWithProvenance(chatOnly as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "season_report",
       bridgeTransport: enqueueSpy,
@@ -648,6 +653,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const allowed = await resolveOrgChatAdapterWithProvenance(optedIn as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "season_report",
       bridgeTransport: enqueueSpy,
@@ -677,6 +683,7 @@ describe("resolver fall-through order with a bridge", () => {
     const decrypt = vi.fn(async () => "sk-ant");
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "chat",
       bridgeTransport: doneTransport,
@@ -723,6 +730,7 @@ describe("resolver fall-through order with a bridge", () => {
     );
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "chat",
       bridgeTransport: brokenTransport,
@@ -759,6 +767,7 @@ describe("resolver fall-through order with a bridge", () => {
     for (const feature of ["dreams", "season_report", "cad", "grants"]) {
       const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
         orgId: "org-1",
+      userId: "user-1",
         promptCachingEnabled: false,
         feature,
         bridgeTransport: transport,
@@ -790,6 +799,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const heavy = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "season_report",
       bridgeTransport: doneTransport,
@@ -802,6 +812,7 @@ describe("resolver fall-through order with a bridge", () => {
 
     const interactive = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "chat",
       bridgeTransport: doneTransport,
@@ -830,6 +841,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "dreams",
       bridgeTransport: transport,
@@ -855,6 +867,7 @@ describe("resolver fall-through order with a bridge", () => {
     ]);
     const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
       orgId: "org-1",
+      userId: "user-1",
       promptCachingEnabled: false,
       feature: "chat",
       bridgeTransport: transport,

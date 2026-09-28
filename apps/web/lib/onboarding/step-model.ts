@@ -364,6 +364,7 @@ export function buildOnboardingPendingPlan(input: {
   teamNumber: number | null;
   orgName: string | null;
   adult: boolean;
+  workspaceMissing?: boolean;
 }): OnboardingPendingPlan {
   const teamLabel = input.orgName ?? (input.teamNumber ? `FRC Team ${input.teamNumber}` : "your team");
 
@@ -400,7 +401,7 @@ export function buildOnboardingPendingPlan(input: {
   }
 
   // Server accepted the profile but found no workspace for that number.
-  if (input.accessStatus === "none" && input.teamNumber) {
+  if (input.accessStatus === "none" && input.teamNumber && input.workspaceMissing) {
     return {
       kind: "no_workspace",
       eyebrow: "TEAM NOT SET UP YET",
@@ -436,6 +437,22 @@ export function buildOnboardingPendingPlan(input: {
       ],
       meanwhile: MEANWHILE_BASE,
       primaryAction: { kind: "edit", label: "Add a team number" },
+    };
+  }
+
+  if (input.accessStatus === "none" || input.accessStatus === "withdrawn") {
+    return {
+      kind: "no_team",
+      eyebrow: "PROFILE SAVED",
+      headline: "Your profile is ready. Join your team next.",
+      notified: "",
+      stages: [
+        { key: "profile", title: "Profile saved", detail: "Your team preference does not grant access." , phase: "done" },
+        { key: "team", title: "Join by invitation or request access", detail: "Open the invitation sent to your verified email, or review your team number and submit a request.", phase: "current" },
+        { key: "approve", title: "That team decides", detail: "Knowing a team number never opens someone else's team.", phase: "upcoming" },
+      ],
+      meanwhile: MEANWHILE_BASE,
+      primaryAction: { kind: "edit", label: "Review my team request" },
     };
   }
 

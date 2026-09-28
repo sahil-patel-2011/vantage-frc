@@ -83,8 +83,8 @@ export function AiTrainingCard({ orgId }: { orgId: string | null }) {
             <strong>Let Vantage learn from our AI activity</strong>
             <small>
               {choice.trainingAllowed
-                ? "On. Turn it off and none of your team's AI activity is used for training."
-                : "Off. None of your team's AI activity is used for training."}
+                ? "On for new activity. Turning it off stops future training selection."
+                : "Off. Activity created now stays excluded if training is enabled later."}
             </small>
           </span>
         </label>

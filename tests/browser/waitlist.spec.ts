@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("a visitor can join the waitlist", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Your season stops living in spreadsheets." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your whole team. One connected season." })).toBeVisible();
   const finalForm = page.locator("#waitlist");
   await finalForm.scrollIntoViewIfNeeded();
   await expect(finalForm.getByRole("heading", { name: "Join the waitlist." })).toBeVisible();
@@ -31,4 +31,39 @@ test("a visitor can join the waitlist", async ({ page }) => {
     await expect(success).toContainText(email);
     await expect(success).toContainText("254");
   }
+});
+
+test("a stalled waitlist request keeps details and offers a safe retry", async ({ page }) => {
+  test.setTimeout(60_000);
+  let attempts = 0;
+  await page.route("**/api/waitlist", async route => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({ json: { status: "ready" } });
+      return;
+    }
+    attempts++;
+    if (attempts === 1) {
+      // An unavailable network must not leave Joining… disabled forever.
+      await new Promise(resolve => setTimeout(resolve, 22_000));
+      await route.fulfill({ json: { ok: true } }).catch(() => { /* Browser has already aborted this timed-out request. */ });
+      return;
+    }
+    await route.fulfill({ json: { ok: true } });
+  });
+  await page.goto("/");
+  const form = page.locator("#waitlist");
+  const email = "retry-fixture@example.test";
+  await form.getByLabel("Email").fill(email);
+  await form.getByLabel("FRC team number").fill("254");
+  await form.getByRole("checkbox", { name: /Terms of Service/ }).check();
+  await form.getByRole("checkbox", { name: /Privacy Policy/ }).check();
+  const submit = form.getByRole("button", { name: "Join the waitlist", exact: true });
+  await submit.click();
+  await expect(form.getByTestId("waitlist-error")).toContainText("We couldn't confirm your request in time", { timeout: 25_000 });
+  await expect(form.getByLabel("Email")).toHaveValue(email);
+  await expect(form.getByLabel("FRC team number")).toHaveValue("254");
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(form.getByTestId("waitlist-success")).toContainText(email);
+  expect(attempts).toBe(2);
 });

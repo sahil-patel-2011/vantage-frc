@@ -511,18 +511,18 @@ export function CommandReadyView({
           </header>
           {snap?.coverage.liveBoard?.length ? (
             <>
-              <div className="edc-coverage-board" role="list">
+              <ul className="edc-coverage-board">
                 {snap.coverage.liveBoard.slice(0, 24).map((cell) => (
-                  <article key={`${cell.matchKey}-${cell.teamKey}`} className={cell.state} role="listitem">
+                  <li key={`${cell.matchKey}-${cell.teamKey}`} className={cell.state}>
                     <b>{matchShortLabel(cell.compLevel, cell.matchNumber)}</b>
                     <span>{cell.teamNumber ?? teamLabel(cell.teamKey)}</span>
                     <small>
                       {cell.state.replaceAll("_", " ")}
                       {cell.entryCount > 1 ? ` · ${cell.entryCount}` : ""}
                     </small>
-                  </article>
+                  </li>
                 ))}
-              </div>
+              </ul>
               {snap.coverage.coordinatorNudge?.message ? (
                 <p className="edc-muted">{snap.coverage.coordinatorNudge.message}</p>
               ) : null}

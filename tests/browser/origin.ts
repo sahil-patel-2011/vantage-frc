@@ -88,11 +88,12 @@ export function playwrightWebServerEnv(origin: string, port: number): NodeJS.Pro
     NEXT_PUBLIC_APP_URL: origin,
     NEXT_PUBLIC_SITE_URL: origin,
     AUTH_TRUSTED_ORIGINS: trusted,
-    NODE_OPTIONS: [process.env.NODE_OPTIONS, "--max-old-space-size=4096"].filter(Boolean).join(" "),
+    // Leave room for native Turbopack, Chromium and Postgres on CI's runner.
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, process.env.GITHUB_ACTIONS === "true" ? "--max-old-space-size=2048" : "--max-old-space-size=4096"].filter(Boolean).join(" "),
   };
-  // GitHub Actions browser job has no Postgres. Cursor/local boxes do —
-  // fill vantage_ci when DATABASE_* is unset. `CI=true` is not enough:
-  // cloud agent shells often set CI without being GHA.
+  // GitHub Actions must provide its isolated service connections explicitly.
+  // Other local/agent shells may use the guarded vantage_ci defaults; merely
+  // setting CI does not identify a GitHub-hosted runner.
   if (process.env.GITHUB_ACTIONS !== "true") {
     env.DATABASE_URL ??= LOCAL_VANTAGE_CI_APP;
     env.DATABASE_AUTH_URL ??= LOCAL_VANTAGE_CI_APP;

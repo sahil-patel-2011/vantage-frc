@@ -157,6 +157,28 @@ describe("scoutedRowsFromEntries", () => {
 });
 
 describe("points the scouts recorded themselves", () => {
+  it("uses real totals even when most reports are missing them, without inventing a teleop split", () => {
+    const result = scoutedRowsFromEntries([
+      entry({ teamKey: "frc1", matchKey: "qm1", payload: { totalPoints: 0 } }),
+      entry({ teamKey: "frc1", matchKey: "qm2", payload: { teleopCycles: 7 } }),
+      entry({ teamKey: "frc1", matchKey: "qm3", payload: {} }),
+    ], []);
+    if (!result.ok) throw new Error("Expected recorded zero");
+    expect(result.ratings[0]).toMatchObject({ matches: 1, meanTotal: 0, phaseSamples: { auto: 0, teleop: 0, endgame: 0 } });
+    expect(matchRowTotal(result.rows[1]!)).toBeNull();
+  });
+
+  it("preserves missing formula answers rather than recording fabricated zeroes", () => {
+    const result = scoutedRowsFromEntries([
+      entry({ teamKey: "frc1", matchKey: "qm1", payload: { auto_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm2", payload: { auto_fuel: 0, teleop_fuel: 0 } }),
+    ], [AUTO, TELEOP]);
+    if (!result.ok) throw new Error("Expected configured formulas");
+    expect(result.rows[0]).toMatchObject({ auto: 4, teleop: null, total: null });
+    expect(matchRowTotal(result.rows[0]!)).toBeNull();
+    expect(result.ratings[0]).toMatchObject({ matches: 1, meanTotal: 0 });
+  });
+
   it("uses a recorded total when there is no formula, and says nothing is guessed", () => {
     const result = scoutedRowsFromEntries(
       [
@@ -168,7 +190,7 @@ describe("points the scouts recorded themselves", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.basis).toBe("total");
-    expect(result.rows[0]).toMatchObject({ auto: 10, teleop: 49, disabled: false });
+    expect(result.rows[0]).toMatchObject({ total: 59, auto: 10, teleop: null, endgame: null, disabled: false });
     // "yes" is a breakdown; it used to be read only when the answer was "true".
     expect(result.rows[1]).toMatchObject({ disabled: true });
   });
@@ -212,13 +234,22 @@ describe("onePerMatch", () => {
     expect(matchRowTotal(row!)).toBe(12);
   });
 
-  it("scores a disabled robot 0 when at least half the scouts said so", () => {
+  it("retains observed points when a breakdown was reported by half the scouts", () => {
     const [row] = onePerMatch([
       { teamKey: "frc1", matchKey: "e_qm1", teleop: 20, disabled: true },
       { teamKey: "frc1", matchKey: "e_qm1", teleop: 8 },
     ]);
     expect(row?.disabled).toBe(true);
-    expect(matchRowTotal(row!)).toBe(0);
+    expect(matchRowTotal(row!)).toBe(14);
+    const ratings = scoutedRowsFromEntries([
+      entry({ teamKey: "frc1", matchKey: "e_qm1", payload: { totalPoints: 12, autoPoints: 10, brokeDown: "yes" } }),
+    ], []);
+    expect(ratings.ok).toBe(true);
+    if (ratings.ok) {
+      expect(ratings.ratings[0]?.meanTotal).toBe(12);
+      expect(ratings.ratings[0]?.disabledRate).toBe(1);
+      expect(matchRowTotal(ratings.rows[0]!)).toBe(12);
+    }
     expect(matchRowTotal({ teamKey: "frc1", matchKey: "e_qm2" })).toBeNull();
   });
 });

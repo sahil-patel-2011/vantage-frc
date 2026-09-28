@@ -260,8 +260,6 @@ export default function MatchCopilotClient() {
   });
   const competitionHref = hubWorkbenchHref("competition", "match-copilot", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
-  const fmeaHref = hubHref("/team", "fmea", orgId);
 
   const generateBrief = useCallback(async () => {
     if (!orgId || busy) return;
@@ -393,13 +391,6 @@ export default function MatchCopilotClient() {
           <RisksPanel view={view} />
           <BatteryPanel view={view} />
         </div>
-        <Panel className="match-copilot-tip" aria-label="Match Copilot tip">
-          <span className="eyebrow">Grounding path</span>
-          <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep the next-match plan in <a href={strategyHref}>Strategy</a>, confirm the active event
-            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>FMEA</a>
-          </p>
-        </Panel>
       </div>
     </main>
   );

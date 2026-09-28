@@ -36,6 +36,7 @@ import {
   type CockpitPrefs,
 } from "../../lib/cockpit/prefs";
 import { ThemeToggle } from "../theme-provider";
+import OfflineStoragePanel from "./offline-storage-panel";
 
 type Status = { tone: "ok" | "error"; text: string } | null;
 
@@ -228,6 +229,7 @@ export default function AppearancePanel() {
 
   return (
     <div className="appearance-stack">
+      <OfflineStoragePanel />
       <section className="appearance-group">
         <ThemeToggle expanded />
       </section>
@@ -304,7 +306,7 @@ export default function AppearancePanel() {
           {(
             [
               ["comfortable", "Comfortable", "Default spacing"],
-              ["compact", "Compact", "About 20% tighter"],
+              ["compact", "Compact", "Less space between items"],
             ] as [DensityPreference, string, string][]
           ).map(([value, label, hint]) => (
             <button
@@ -329,9 +331,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-clarity-title">
         <h3 id="appearance-clarity-title">Glass</h3>
         <p>
-          The bar at the top and the tabs at the bottom float over the page. How much of the page
-          shows through is up to you — outdoors, or on an older tablet, solid is easier to read and
-          quicker to draw.
+          Set the transparency of navigation bars.
         </p>
         <div className="appearance-choice" role="radiogroup" aria-label="Glass">
           {(
@@ -359,8 +359,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-motion-title">
         <h3 id="appearance-motion-title">Motion</h3>
         <p>
-          Reduced turns off the sheet, drag, and splash animations Vantage drives in JavaScript — the
-          ones your device’s own “reduce motion” setting cannot reach.
+          Reduce animations for calmer transitions.
         </p>
         <div className="appearance-choice" role="radiogroup" aria-label="Motion">
           {(
@@ -409,8 +408,7 @@ export default function AppearancePanel() {
       <section className="appearance-group" aria-labelledby="appearance-cockpit-title">
         <h3 id="appearance-cockpit-title">Cockpit</h3>
         <p>
-          A few useful switches — like the car, not the factory. These stay small on purpose so nothing
-          surprising breaks.
+          Code review and live-update preferences.
         </p>
         <label className="appearance-check">
           <input
@@ -493,10 +491,9 @@ export default function AppearancePanel() {
       </section>
 
       <section className="appearance-group" aria-labelledby="appearance-island-title">
-        <h3 id="appearance-island-title">Bottom island — your four apps</h3>
+        <h3 id="appearance-island-title">Bottom shortcuts</h3>
         <p>
-          The four shortcuts at the bottom of every screen. Tap in the order you want them; tap a
-          chosen app again to remove it.
+          Choose four apps in order. Tap again to remove.
         </p>
         <div
           className="appearance-island-slots"

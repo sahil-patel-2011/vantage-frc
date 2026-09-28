@@ -26,6 +26,8 @@ import {
   type ScoutedMatchRow,
   type ScoutedTeamRating,
   implausibleScoutRows,
+  combineScoutedMatchRows,
+  scoutedMatchTotal,
   ratingsFromScouting,
 } from "./scouting-rating";
 
@@ -147,7 +149,7 @@ function headlineFor(profile: Omit<ScoutedTeamProfile, "headline">): string {
   }
   if (profile.disabledRate >= 0.25) {
     const pct = Math.round(profile.disabledRate * 100);
-    return `${number} — dead on the field in ${pct}% of the matches we watched`;
+    return `${number} — a breakdown was reported in ${pct}% of the matches we watched`;
   }
   // Trend is checked before spread on purpose. A robot that started at 10 and
   // finished at 31 has a wide spread by construction, and calling that
@@ -177,6 +179,7 @@ function headlineFor(profile: Omit<ScoutedTeamProfile, "headline">): string {
  * either.
  */
 export function profilesFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTeamProfile[] {
+  rows = combineScoutedMatchRows(rows);
   const ratings = ratingsFromScouting(rows);
   if (ratings.length === 0) return [];
 
@@ -188,14 +191,13 @@ export function profilesFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedT
   const implausible = new Set(implausibleScoutRows(rows));
   for (const row of rows) {
     if (!row.teamKey || implausible.has(row)) continue;
-    const hasSignal = row.disabled || row.auto != null || row.teleop != null || row.endgame != null;
-    if (!hasSignal) continue;
+    const total = scoutedMatchTotal(row);
+    if (total == null) continue;
     const seen = seenMatch.get(row.teamKey) ?? new Set<string>();
     const key = row.matchKey || `${row.teamKey}:${seen.size}`;
     if (seen.has(key)) continue;
     seen.add(key);
     seenMatch.set(row.teamKey, seen);
-    const total = row.disabled ? 0 : (row.auto ?? 0) + (row.teleop ?? 0) + (row.endgame ?? 0);
     const list = seriesByTeam.get(row.teamKey) ?? [];
     list.push(total);
     seriesByTeam.set(row.teamKey, list);

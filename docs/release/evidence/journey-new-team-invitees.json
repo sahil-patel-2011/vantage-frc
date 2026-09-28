@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "journey": "new-team-invitees",
+  "environment": "isolated local app",
+  "appUrl": "http://127.0.0.1:3417",
+  "database": {
+    "name": "vantage_release_test",
+    "host": "127.0.0.1",
+    "port": 55439
+  },
+  "organization": {
+    "teamNumber": 99991,
+    "orgId": "e6048770-61f0-48a6-b555-069a1a8d8f03",
+    "source": "Created through normal signup/team UI; root reports provisioning verified"
+  },
+  "status": "passed_new_team_student_and_mentor_invitation_journeys_local",
+  "execution": {
+    "browserExecuted": true,
+    "realEmailDelivery": false,
+    "invitationSource": "Actual owner-UI Copy links from team_invitation_journey, privately handed off; no token minting",
+    "tokensStoredInPublicEvidence": false,
+    "sessionsOrMembershipsInjected": false
+  },
+  "requestedChecks": [
+    "Genuine new-team student invitation link",
+    "Normal exact-email OTP verification",
+    "Adult profile and separate Terms/Privacy recording",
+    "Assigned scout membership and Home",
+    "Scout denied Team admin without privileged cached details",
+    "Genuine mentor/admin invitation and normal onboarding",
+    "Assigned admin membership, Home and authorized Team admin",
+    "Read-only role/invite/policy proof",
+    "Screenshots and browser console errors"
+  ],
+  "recipients": [
+    {
+      "email": "journey-invite-20260926@example.test",
+      "assignedRole": "scout",
+      "existingAccount": true,
+      "profileReused": true
+    },
+    {
+      "email": "journey-mentor-20260926@example.test",
+      "assignedRole": "admin",
+      "existingAccount": false,
+      "profileCreatedThroughUi": true
+    }
+  ],
+  "results": [
+    {
+      "check": "Wrong-account rejection",
+      "status": "pass",
+      "evidence": "Actual new-team scout invitation refused Alex owner account; actual mentor invitation refused Jordan scout account. Explicit switch-account action preserved respective invitation."
+    },
+    {
+      "check": "Student normal sign-in and acceptance",
+      "status": "pass",
+      "evidence": "UI-requested local OTP verified existing student, genuine link showed Team99991/Student and Accept invitation entered Home. Existing adult/profile/legal records reused; no unnecessary consent reset."
+    },
+    {
+      "check": "Student Home",
+      "status": "pass",
+      "evidence": "Good evening, Jordan; Team99991 named; real My Home saved-board API data. Empty team/event state shown honestly rather than fabricated matches."
+    },
+    {
+      "check": "Student admin boundary",
+      "status": "pass",
+      "evidence": "Team administrator access required. Create invite count0 and pending mentor email count0; no prior-owner cached details visible."
+    },
+    {
+      "check": "Mentor profile guidance",
+      "status": "pass",
+      "evidence": "New mentor invitation displayed Finish your profile link with age eligibility explanation, preserving invitation and correct Team99991/Mentor identity. Followed actual link."
+    },
+    {
+      "check": "Fresh mentor onboarding",
+      "status": "pass",
+      "evidence": "Normal onboarding saved Morgan Journey, synthetic adult birthday, Mentor profile role; summary identified FRC99991 and intended new team."
+    },
+    {
+      "check": "Separate policy consents",
+      "status": "pass",
+      "evidence": "Join remained disabled with only Terms selected; enabled only when Privacy separately selected. Both simulated consents recorded current version."
+    },
+    {
+      "check": "Mentor role and Home",
+      "status": "pass",
+      "evidence": "Normal finish joined intended Team99991; Open Home rendered Good evening, Morgan and admin setup actions."
+    },
+    {
+      "check": "Mentor admin authorization",
+      "status": "pass",
+      "evidence": "Authorized Team admin loaded Invite someone, Past invites2, People3: Alex owner, Morgan mentor/admin, Jordan student/scout. No administrative mutation attempted."
+    },
+    {
+      "check": "Read-only persistence",
+      "status": "pass",
+      "evidence": "Both exact-email invitations accepted by intended account; scout/admin memberships and adult/current legal versions persisted. Student original Team6925 membership preserved. Mentor earlier Team6925 invite remains pending."
+    },
+    {
+      "check": "Joining does not reprovision",
+      "status": "pass",
+      "evidence": "Owner-requested persistent Team99991 job remained ready/verified with attempts10 before and after mentor joining. No duplicate setup job or ownership change observed."
+    },
+    {
+      "check": "Browser diagnostics",
+      "status": "pass_with_scope",
+      "evidence": "Captured browser warning/error log query returned zero entries. No product error response surfaced in these successful journeys. Several transient detached controls were resolved by inspecting fresh UI before retry; no browser/auth shortcuts."
+    }
+  ],
+  "screenshots": [
+    "docs/release/evidence/journey-new-team-scout-home.png",
+    "docs/release/evidence/journey-new-team-scout-admin-denial.png",
+    "docs/release/evidence/journey-new-team-mentor-profile-required.png",
+    "docs/release/evidence/journey-new-team-mentor-home.png",
+    "docs/release/evidence/journey-new-team-mentor-admin.png"
+  ],
+  "liveProductionVerified": false,
+  "databaseProof": {
+    "database": "vantage_release_test",
+    "host": "127.0.0.1",
+    "port": 55439,
+    "source": "Explicit read-only psql connection arguments, not browser/API injection",
+    "scout": {
+      "emailVerified": true,
+      "onboardingComplete": true,
+      "ageEligible": true,
+      "role": "scout",
+      "inviteStatus": "accepted",
+      "acceptedByCorrectPerson": true,
+      "priorTeamMembershipPreserved": true,
+      "termsVersion": "2026-09-26.2",
+      "privacyVersion": "2026-09-26.2"
+    },
+    "mentor": {
+      "emailVerified": true,
+      "onboardingComplete": true,
+      "ageEligible": true,
+      "role": "admin",
+      "inviteStatus": "accepted",
+      "acceptedByCorrectPerson": true,
+      "termsVersion": "2026-09-26.2",
+      "privacyVersion": "2026-09-26.2",
+      "otherTeamInviteStillPending": true
+    },
+    "provisioning": {
+      "state": "ready",
+      "phase": "ready",
+      "attemptsBeforeMentor": 10,
+      "attemptsAfterMentor": 10,
+      "verified": true,
+      "requestedByOriginalOwner": true
+    },
+    "observedAt": "2026-09-26T21:36:40.5005060Z"
+  },
+  "consoleEvidence": "docs/release/evidence/journey-new-team-invitees-console.json",
+  "finalBrowserState": "Chrome2 tab781730963, Morgan mentor/admin authenticated on new Team99991 /team/admin. Browser slot released to root.",
+  "limitations": [
+    "Local controlled synthetic accounts only; external invitation email delivery not verified",
+    "This proves signup/team/invitation actor paths represented by these tests, not every Team/Build/Business/scouting production workflow",
+    "No production deployment, production load, offline operations, external provider credentials or personal Codex verified by this journey"
+  ]
+}

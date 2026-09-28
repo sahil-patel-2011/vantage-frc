@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepointOrThrow } from "@vantage/db/savepoint";
 import { assertLegalAccepted, recordLegalAcceptance } from "./legal";
 import { acceptMyOrganizationInvite } from "./membership";
+import { assertMinimumAge } from "./eligibility";
 
 export const GENDER_OPTIONS = [
   "female",
@@ -177,6 +178,8 @@ export type OnboardingState = {
   workspaceOrgId: string | null;
   workspaceOrgName: string | null;
   requestCreatedAt: string | null;
+  /** Only a failed exact-number access request establishes absence. */
+  workspaceMissing?: boolean;
 };
 
 export type OnboardingDraftInput =
@@ -257,6 +260,7 @@ export function parseDob(value: string): Date {
   if (dob.getTime() > todayUtc) throw new Error("Date of birth cannot be in the future.");
   const oldest = Date.UTC(today.getUTCFullYear() - 120, today.getUTCMonth(), today.getUTCDate());
   if (dob.getTime() < oldest) throw new Error("Date of birth is out of range.");
+  assertMinimumAge(dob, today);
   return dob;
 }
 
@@ -547,6 +551,7 @@ export async function completeOnboarding(
   userId: string,
   input: OnboardingPayload,
 ): Promise<OnboardingState> {
+  let workspaceMissing = false;
   const state = await getOnboardingState(client, userId);
   if (state.complete && !["declined", "withdrawn", "none"].includes(state.accessStatus)) return state;
 
@@ -697,10 +702,12 @@ export async function completeOnboarding(
       );
     } catch (error) {
       if (!isMissingWorkspaceError(error)) throw error;
+      workspaceMissing = true;
     }
   }
 
-  return getOnboardingState(client, userId);
+  const completed = await getOnboardingState(client, userId);
+  return workspaceMissing ? { ...completed, workspaceMissing: true } : completed;
 }
 
 /** Lightweight gate for proxy/middleware: profile complete + workspace membership. */

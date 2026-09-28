@@ -50,7 +50,7 @@ export default function PrivacyPage() {
           This policy describes what the software actually does, including where its protections stop. If you are a
           school administrator, start at{" "}
           <a href="#schools">School-affiliated teams</a>, then{" "}
-          <a href="#children">Students under 13, and parental consent</a>.
+          <a href="#children">Age eligibility</a>.
         </p>
 
         <nav className="legal-toc" aria-label="Sections of this policy">

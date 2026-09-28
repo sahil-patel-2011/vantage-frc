@@ -104,8 +104,8 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // fifth "All" button that opened the drawer the hamburger already opens — a
   // duplicate sitting among Team, Compete, Scout and Build as if it were one of
   // your apps. The gear is not an app and says so.
-  await expect(island.getByRole("button")).toHaveCount(1);
-  await expect(island.getByRole("button", { name: "Choose your bottom bar apps" })).toBeVisible();
+  // Four apps and nothing else: press and hold (or right-click, or the Menu key) to change them.
+  await expect(island.getByRole("button")).toHaveCount(0);
   await page.getByRole("button", { name: "Menu and search" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
@@ -119,11 +119,11 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(drawer.getByRole("link", { name: "Competition" })).toHaveCount(1);
   await expect(drawer.getByRole("link", { name: "Event day" })).toHaveCount(0);
   await drawer.getByRole("button", { name: "Show Competition tools" }).click();
-  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Pit", exact: true })).toBeVisible();
   await drawer.getByRole("button", { name: "Show Team tools" }).click();
-  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeHidden();
+  await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeHidden();
   await expect(drawer.getByRole("link", { name: "Chat" })).toBeVisible();
   await drawer.getByRole("button", { name: "Show Build tools" }).click();
   await expect(drawer.getByRole("link", { name: "CAD" })).toBeVisible();
@@ -138,9 +138,9 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(drawer.getByRole("link", { name: /Account/ })).toHaveCount(1);
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
   await drawer.getByRole("button", { name: "Show Competition tools" }).click();
-  await drawer.getByRole("link", { name: "Scouting" }).click();
+  await drawer.getByRole("link", { name: "Scout", exact: true }).click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);
-  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   await expect(island).toBeVisible();
 
   // The island stays available on desktop; the hamburger opens the full directory.
@@ -199,7 +199,7 @@ test("the hub tab bar owns the workbench name and the tool strip does not repeat
 test("scouting and Work strips hide meta jobs that still have routes", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/competition?tab=scouting");
-  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   const scoutingStrip = page.locator(".hub-tool-strip");
   await expect(scoutingStrip).toContainText("Forms");
   // The strip shows three chips now, not six, so a tool being present and a

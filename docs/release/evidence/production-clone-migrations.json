@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-09-27T00:14:15.533Z",
+  "productionAcceptance": false,
+  "database": "vantage_production_migration_test_20260926",
+  "source": "Local clone of719-table Google-only restored checkpoint",
+  "migrations": "0694 through0705 applied locally",
+  "clonedTables": 723,
+  "uncoveredApplicationTables": 0,
+  "legacyAndCurrentInsertInterfaces": true,
+  "sameUniqueCheckForBothInterfaces": true,
+  "exactTimestampAliases": true,
+  "fixturesRolledBack": true,
+  "originalLegacyCheckRowCount": 0,
+  "nonemptyHistoricalPrecisionAndRlsProof": "onboarding-schema-integration.test.ts: two real PostgreSQL fixture schemas",
+  "scope": "Additive schema compatibility only; production unchanged. Remaining columns/constraints/policies and restored grants/credential revocation are not passed."
+}

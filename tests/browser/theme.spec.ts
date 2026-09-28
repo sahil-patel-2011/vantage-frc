@@ -4,7 +4,7 @@ import { addSessionCookies, signInFixture } from "./session";
 test("public site uses a restrained light palette", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.getByRole("heading", { name: "Your season stops living in spreadsheets." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your whole team. One connected season." })).toBeVisible();
   await expect(page.locator("#waitlist").getByLabel("Email")).toBeVisible();
   /*
     "Restrained light palette" is the claim, so that is what is checked: light
