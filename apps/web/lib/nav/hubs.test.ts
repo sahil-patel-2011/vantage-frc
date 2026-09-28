@@ -318,12 +318,10 @@ describe("product hubs", () => {
       "shift-balancer",
       "scout-p2p-relay",
       "scout-training-mode",
-      "scout-field-budget",
-      "data-quality-scorecard",
     ]);
     expect(competition.tabs.find((tab) => tab.id === "scout-p2p-relay")?.label).toBe("Pit link");
     expect(competition.tabs.find((tab) => tab.id === "scout-field-budget")?.label).toBe(
-      "Field value",
+      "Point values",
     );
     expect(hubStripTabs(competition, "scouting", "scout-accuracy").map((tab) => tab.id)).toContain(
       "scout-accuracy",
@@ -341,8 +339,16 @@ describe("product hubs", () => {
 
   it("hides Invites from members who cannot manage the team", () => {
     const team = hubById("team");
-    const people = hubStripTabs(team, "attendance");
+    const people = hubNestedTabs(team, "attendance");
     expect(people.map((tab) => tab.id)).toContain("team-admin");
+    expect(hubStripTabs(team, "attendance").filter((tab) => tab.group).length).toBeLessThanOrEqual(5);
+    expect(hubStripTabs(hubById("competition"), "strategy").filter((tab) => tab.group).length).toBeLessThanOrEqual(5);
+    expect(
+      hubStripTabs(hubById("competition"), "command")
+        .filter((tab) => tab.group)
+        .map((tab) => tab.id),
+    ).toEqual(["my-day", "briefing", "schedule", "packing", "inspection-copilot"]);
+    expect(hubStripTabs(hubById("build"), "fmea").filter((tab) => tab.group).length).toBeLessThanOrEqual(5);
     expect(hubTabsForMember(people, false).map((tab) => tab.id)).not.toContain("team-admin");
     expect(hubTabsForMember(people, true).map((tab) => tab.id)).toContain("team-admin");
   });

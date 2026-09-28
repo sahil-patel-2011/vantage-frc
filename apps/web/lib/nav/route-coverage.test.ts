@@ -310,8 +310,8 @@ describe("R6 — the palette surfaces a tool from a short prefix", () => {
   it("answers the jobs a member actually types", () => {
     const jobs: Array<[string, string]> = [
       ["scout", "/competition?tab=scouting"],
-      ["pick list", "/competition?tab=picklist-collab"],
-      ["hours", "/team?tab=hours"],
+      ["pick list", "/picklist-collab"],
+      ["hours", "/hours"],
       ["chat", "/team?tab=messages"],
       ["budget", "/business?tab=budget"],
       ["cad", "/build?tab=cad"],

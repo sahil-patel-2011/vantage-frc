@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { EMBEDDED_HUB_TABS } from "../../lib/nav/hubs";
 import "../product-hub.css";
 import "../code/code.css";
 import "../kickoff/kickoff.css";
@@ -16,7 +17,7 @@ const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/protot
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"] as const;
+const EMBEDDED_TABS = EMBEDDED_HUB_TABS.build;
 
 export default function BuildHub() {
   return (

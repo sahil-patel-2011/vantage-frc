@@ -9,11 +9,13 @@ const hrefs = (query: string, count = 5): string[] =>
   searchCommands(query, catalog).slice(0, count).map((hit) => hit.href);
 
 describe("commandCatalog", () => {
-  it("consolidates old Team routes while preserving travel and RSVP search terms", () => {
-    for (const tab of ["logistics", "duties", "visit-invites"]) {
-      expect(catalog.filter(entry => entry.href === `/team?tab=${tab}`)).toHaveLength(1);
-      expect(catalog.some(entry => entry.href === `/${tab}`)).toBe(false);
-    }
+  it("opens travel inside Team, and duties and visit invites on their own pages", () => {
+    expect(catalog.filter((entry) => entry.href === "/team?tab=logistics")).toHaveLength(1);
+    expect(catalog.some((entry) => entry.href === "/logistics")).toBe(false);
+    expect(catalog.filter((entry) => entry.href === "/duties")).toHaveLength(1);
+    expect(catalog.filter((entry) => entry.href === "/visit-invites")).toHaveLength(1);
+    expect(catalog.some((entry) => entry.href === "/team?tab=duties")).toBe(false);
+    expect(catalog.some((entry) => entry.href === "/team?tab=visit-invites")).toBe(false);
     expect(hrefs("hotel")).toContain("/team?tab=logistics");
   });
   it("covers every hub tab plus actions and standalone destinations", () => {
@@ -31,15 +33,15 @@ describe("commandCatalog", () => {
   });
 
   it("gives nested tabs a hub breadcrumb so labels are unambiguous", () => {
-    const coverage = catalog.find((entry) => entry.href === "/competition?tab=scout-coverage-live");
+    const coverage = catalog.find((entry) => entry.href === "/scout-coverage-live");
     expect(coverage?.label).toBe("Coverage");
     expect(coverage?.context).toBe("Competition › Scout");
   });
 
   it.skipIf(!MEDIA_ENABLED)("lists Media library so search opens a real destination", () => {
     const library = catalog.find((entry) => entry.id === "media:media-library");
-    expect(library?.href).toBe("/media?tab=media-library");
-    expect(hrefs("media library")).toContain("/media?tab=media-library");
+    expect(library?.href).toBe("/media-library");
+    expect(hrefs("media library")).toContain("/media-library");
   });
 
   it("keeps every entry pointing at a real in-app path", () => {
@@ -67,18 +69,18 @@ describe("searchCommands ranking", () => {
   });
 
   it("matches word-initial abbreviations", () => {
-    expect(hrefs("asd")).toContain("/competition?tab=alliance-selection-desk");
+    expect(hrefs("asd")).toContain("/alliance-selection-desk");
   });
 
   it("tolerates a query that spans label and hub context", () => {
-    expect(hrefs("scouting coverage")).toContain("/competition?tab=scout-coverage-live");
-    expect(hrefs("scout shifts")).toContain("/competition?tab=shift-balancer");
+    expect(hrefs("scouting coverage")).toContain("/scout-coverage-live");
+    expect(hrefs("scout shifts")).toContain("/shift-balancer");
   });
 
   it("survives a dropped letter via subsequence matching", () => {
     expect(hrefs("clendar")).toContain("/team?tab=calendar");
     expect(hrefs("season calendar")).toContain("/calendar");
-    expect(hrefs("this phone")).toContain("/team?tab=offline-shell");
+    expect(hrefs("this phone")).toContain("/offline-shell");
     expect(hrefs("chat limits")).toContain("/ai?tab=budgets");
     expect(hrefs("btteries", 8)).toContain("/team?tab=batteries");
   });
@@ -88,9 +90,8 @@ describe("searchCommands ranking", () => {
     expect(hrefs("pick-list")).toEqual(hrefs("pick list"));
   });
 
-  it("ranks the verb above the destination for action phrasing", () => {
+  it("opens My hours for clock-in phrasing", () => {
     const first = searchCommands("clock in", catalog)[0];
-    expect(first?.kind).toBe("action");
     expect(first?.href).toBe("/hours-self-view");
   });
 
@@ -172,7 +173,7 @@ describe("searchCommands with a custom catalog", () => {
 describe("searchCommands multi-word and stemming (audit regressions)", () => {
   it("reaches a tool whose label uses a different word form", () => {
     // "failed" vs the label "Failure patterns"
-    expect(hrefs("robot failed", 8)).toContain("/build?tab=failure-patterns");
+    expect(hrefs("robot failed", 8)).toContain("/failure-patterns");
   });
 
   it("ignores filler words in a natural-language query", () => {
@@ -182,7 +183,7 @@ describe("searchCommands multi-word and stemming (audit regressions)", () => {
 
   it("still ranks a full-word match above a partial one", () => {
     const results = searchCommands("scout shifts", catalog);
-    expect(results[0]?.href).toBe("/competition?tab=shift-balancer");
+    expect(results[0]?.href).toBe("/shift-balancer");
   });
 
   it("spreads the empty state across hubs instead of one hub", () => {
@@ -201,22 +202,22 @@ describe("searchCommands multi-word and stemming (audit regressions)", () => {
 
 describe("newly surfaced tools are findable by their real-world words", () => {
   const cases: Array<[string, string]> = [
-    ["brownout", "/build?tab=power-budget"],
-    ["gear ratio", "/build?tab=gearbox"],
-    ["can bus", "/build?tab=wiring-map"],
-    ["zip ties", "/build?tab=consumables"],
-    ["how heavy", "/build?tab=weight-budget"],
-    ["first power", "/build?tab=bringup"],
-    ["when do we play", "/competition?tab=schedule"],
-    ["injury", "/team?tab=safety"],
-    ["engineering notebook", "/team?tab=notebook"],
-    ["where to buy", "/business?tab=vendors"],
+    ["brownout", "/power-budget"],
+    ["gear ratio", "/gearbox"],
+    ["can bus", "/wiring"],
+    ["zip ties", "/spares"],
+    ["how heavy", "/weight-budget"],
+    ["first power", "/bringup"],
+    ["when do we play", "/schedule"],
+    ["injury", "/safety"],
+    ["engineering notebook", "/notebook"],
+    ["where to buy", "/vendors"],
     // The rookie-survival roadmap, found by the words a first-year coach types.
-    ["rookie", "/team?tab=roadmap"],
-    ["first season", "/team?tab=roadmap"],
-    ["what do we do next", "/team?tab=roadmap"],
-    ["getting started", "/team?tab=roadmap"],
-    ["season checklist", "/team?tab=roadmap"],
+    ["rookie", "/roadmap"],
+    ["first season", "/roadmap"],
+    ["what do we do next", "/roadmap"],
+    ["getting started", "/roadmap"],
+    ["season checklist", "/roadmap"],
   ];
   for (const [query, href] of cases) {
     it(`finds ${href} from "${query}"`, () => {
@@ -227,28 +228,28 @@ describe("newly surfaced tools are findable by their real-world words", () => {
 
 describe("this wave's tools are findable by the words teams type", () => {
   const cases: Array<[string, string]> = [
-    ["guardians", "/team?tab=parents"],
-    ["parent email", "/team?tab=parents"],
-    ["newsletter", "/team?tab=parents"],
-    ["successor", "/team?tab=leadership"],
-    ["who is next", "/team?tab=leadership"],
-    ["roll call", "/team?tab=presence"],
-    ["rsvp", "/team?tab=presence"],
-    ["who is struggling", "/team?tab=learning"],
-    ["call your shot", "/team?tab=learning"],
-    ["write it up", "/team?tab=knowledge-drafts"],
-    ["wiki drafts", "/team?tab=knowledge-drafts"],
-    ["needs cam", "/build?tab=manufacturing"],
-    ["parts board", "/build?tab=manufacturing"],
-    ["filament", "/build?tab=print-farm"],
-    ["3d print", "/build?tab=print-farm"],
-    ["petg", "/build?tab=print-farm"],
-    ["stl", "/build?tab=cad-vault"],
-    ["dxf", "/build?tab=cad-vault"],
-    ["upload cad", "/build?tab=cad-vault"],
-    ["inspection prep", "/competition?tab=event-readiness"],
-    ["consent", "/competition?tab=event-readiness"],
-    ["pre event", "/competition?tab=event-readiness"],
+    ["guardians", "/parents"],
+    ["parent email", "/parents"],
+    ["newsletter", "/parents"],
+    ["successor", "/leadership"],
+    ["who is next", "/leadership"],
+    ["roll call", "/presence"],
+    ["rsvp", "/presence"],
+    ["who is struggling", "/learning"],
+    ["call your shot", "/learning"],
+    ["write it up", "/knowledge-drafts"],
+    ["wiki drafts", "/knowledge-drafts"],
+    ["needs cam", "/manufacturing"],
+    ["parts board", "/manufacturing"],
+    ["filament", "/print-farm"],
+    ["3d print", "/print-farm"],
+    ["petg", "/print-farm"],
+    ["stl", "/cad-vault"],
+    ["dxf", "/cad-vault"],
+    ["upload cad", "/cad-vault"],
+    ["inspection prep", "/event-readiness"],
+    ["consent", "/event-readiness"],
+    ["pre event", "/event-readiness"],
   ];
   for (const [query, href] of cases) {
     it(`finds ${href} from "${query}"`, () => {

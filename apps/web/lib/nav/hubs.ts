@@ -78,18 +78,18 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "briefing", label: "Pre-match briefing", legacyHref: "/briefing", featured: true },
         // The pit TV, one tap from Event day as well as from the Pit tab (a separate id and
         // href because a hub may not list one route twice). Featured so it stays a chip.
-        { id: "event-pit-tv", label: "Pit TV", legacyHref: "/display?from=event-day", featured: true, inSearch: false },
+        { id: "event-pit-tv", label: "Pit TV", legacyHref: "/display?from=event-day", inSearch: false },
         // Labelled "Schedule", not "Match schedule": seven palette entries already
         // start with "Matc" and the top-5 prefix ranking can only surface five.
-        { id: "schedule", label: "Schedule", legacyHref: "/schedule" },
+        { id: "schedule", label: "Schedule", legacyHref: "/schedule", featured: true },
         { id: "rankings", label: "Rankings", legacyHref: "/rankings" },
         // The dated pre-event flow (inspection prep, consent, packing, travel) —
         // it belongs beside the day-of surfaces, not in a settings corner.
         { id: "event-readiness", label: "Event readiness", legacyHref: "/event-readiness" },
-        { id: "video-analysis", label: "Match video", legacyHref: "/video-analysis", featured: true },
+        { id: "video-analysis", label: "Match video", legacyHref: "/video-analysis" },
         { id: "packing", label: "Packing", legacyHref: "/packing", featured: true },
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
-        { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot" },
+        { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot", featured: true },
       ]),
       { id: "scouting", label: "Scout", legacyHref: "/scouting" },
       ...nest("scouting", [
@@ -98,30 +98,30 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer" },
         { id: "scout-p2p-relay", label: "Pit link", legacyHref: "/scout-p2p-relay" },
         { id: "scout-training-mode", label: "Training", legacyHref: "/scout-training-mode" },
-        { id: "scout-field-budget", label: "Field value", legacyHref: "/scout-field-budget" },
-        { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard" },
+        { id: "scout-field-budget", label: "Point values", legacyHref: "/scout-field-budget", inStrip: false },
+        { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard", inStrip: false },
         // Meta analysis of scouting — routes and Cmd+K stay; the strip does not.
         { id: "scout-accuracy", label: "Accuracy", legacyHref: "/scout-accuracy", inStrip: false },
         { id: "scout-crossval", label: "Cross-check", legacyHref: "/scout-crossval", inStrip: false },
         { id: "scout-disagreements", label: "Disagreements", legacyHref: "/scout-disagreements", inStrip: false },
         { id: "scout-data-impact", label: "Data impact", legacyHref: "/scout-data-impact", inStrip: false },
-        { id: "scout-assisted-count", label: "Assisted count", legacyHref: "/scout-assisted-count", inStrip: false },
-        { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate", inStrip: false },
-        { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
+        { id: "scout-assisted-count", label: "Assisted scores", legacyHref: "/scout-assisted-count", inStrip: false },
+        { id: "scout-schema-negotiate", label: "Shared form", legacyHref: "/scout-schema-negotiate", inStrip: false },
+        { id: "scouting-heat-signals", label: "Hot robots", legacyHref: "/scouting-heat-signals", inStrip: false },
       ]),
       { id: "teams", label: "Teams", legacyHref: "/scout/teams" },
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
         // The briefing is the drive coach's main screen, so it leads Strategy's chips too.
         // Its own href keeps the hub's one-route-per-tab rule; search lists it once (Event day).
-        { id: "match-briefing", label: "Pre-match briefing", legacyHref: "/briefing?from=strategy", featured: true, inSearch: false },
+        { id: "match-briefing", label: "Pre-match briefing", legacyHref: "/briefing?from=strategy", inSearch: false, inStrip: false },
         { id: "alliance-selection-desk", label: "Alliance desk", legacyHref: "/alliance-selection-desk", featured: true },
         // Not a chip: the Strategy page right under the strip has its own "Pick lists" tab that opens
         // this same view, so the chip was a second button for one place. Search still finds it.
         { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", inStrip: false },
         { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
-        { id: "chemistry", label: "Chemistry", legacyHref: "/chemistry" },
-        { id: "pairwise", label: "Pairwise", legacyHref: "/pairwise" },
+        { id: "chemistry", label: "Partner fit", legacyHref: "/chemistry" },
+        { id: "pairwise", label: "Head to head", legacyHref: "/pairwise" },
         { id: "team-tags", label: "Drive-team tags", legacyHref: "/team-tags" },
         { id: "picklist-collab", label: "Pick list", legacyHref: "/picklist-collab" },
         { id: "picklist-justifier", label: "Justifier", legacyHref: "/picklist-justifier" },
@@ -182,7 +182,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // on first visit and refreshed weekly. Under People because the one thing
         // it cannot know — who is on the team — is answered right next to it.
         { id: "profile", label: "Team profile", legacyHref: "/team/profile", featured: true },
-        { id: "hours", label: "Hours kiosk", legacyHref: "/hours", featured: true },
+        { id: "hours", label: "Hours kiosk", legacyHref: "/hours" },
         // Subteams and Forms are people operations, so they live under People
         // rather than as their own drawer pillar — the drawer keeps one link
         // per pillar, and a tool nobody can click to might as well not exist.
@@ -196,7 +196,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
         { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view", featured: true },
-        { id: "team-admin", label: "Team admin", legacyHref: "/team/admin", featured: true },
+        { id: "team-admin", label: "Team admin", legacyHref: "/team/admin" },
         { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
         // The programming subteam's setup track. Sits with the other
@@ -212,7 +212,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // the mentor "who is struggling" view is the same people list, one level in.
         { id: "learning", label: "Learning", legacyHref: "/learning" },
         { id: "training", label: "Training matrix", legacyHref: "/training" },
-        { id: "roles", label: "Season roles", legacyHref: "/roles", featured: true },
+        { id: "roles", label: "Season roles", legacyHref: "/roles" },
         { id: "leadership", label: "Leadership", legacyHref: "/leadership" },
         { id: "driver-tryouts", label: "Driver tryouts", legacyHref: "/driver-tryouts" },
         { id: "exit-interview", label: "Exit interviews", legacyHref: "/exit-interview" },
@@ -397,16 +397,16 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "fmea", label: "Robot", legacyHref: "/fmea" },
       ...nest("fmea", [
         { id: "robot", label: "Blueprint", legacyHref: "/robot", featured: true },
-        { id: "subsystems", label: "Subsystem specs", legacyHref: "/subsystems" },
-        { id: "bringup", label: "Bring-up", legacyHref: "/bringup" },
+        { id: "subsystems", label: "Subsystem specs", legacyHref: "/subsystems", featured: true },
+        { id: "bringup", label: "Bring-up", legacyHref: "/bringup", featured: true },
         { id: "reviews", label: "Design reviews", legacyHref: "/reviews" },
         { id: "gearbox", label: "Gearbox calculator", legacyHref: "/gearbox" },
         { id: "shooter-table", label: "Shooter table", legacyHref: "/shooter-table" },
         { id: "weight-budget", label: "Weight budget", legacyHref: "/weight-budget" },
         { id: "power-budget", label: "Power budget", legacyHref: "/power-budget" },
         { id: "prototype", label: "Prototypes", legacyHref: "/prototype-tracker" },
-        { id: "batteries", label: "Batteries", legacyHref: "/batteries" },
-        { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot" },
+        { id: "batteries", label: "Batteries", legacyHref: "/batteries", featured: true },
+        { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot", featured: true },
         { id: "robot-weigh-in", label: "Weigh-in", legacyHref: "/robot-weigh-in" },
         { id: "readiness-score", label: "Readiness", legacyHref: "/readiness-score" },
         { id: "wiring-diagnoser", label: "Wiring check", legacyHref: "/wiring-diagnoser" },
@@ -545,14 +545,27 @@ export function hubNestedTabs(hub: ProductHubDef, workbenchId: string): HubTabDe
  * stay in `hubNestedTabs` (search, help, access) and only appear here when
  * they are the active deep link, so a search hit is not a missing chip.
  */
+/** Tools on the workbench strip. The rest stay in search. */
+export const WORKBENCH_STRIP_CAP = 5;
+
 export function hubStripTabs(
   hub: ProductHubDef,
   workbenchId: string,
   activeId?: string,
 ): HubTabDef[] {
-  return hubNestedTabs(hub, workbenchId).filter(
+  const eligible = hubNestedTabs(hub, workbenchId).filter(
     (tab) => tab.inStrip !== false || tab.id === activeId,
   );
+  const root = eligible.find((tab) => !tab.group);
+  const inner = eligible.filter((tab) => tab.group);
+  const featured = inner.filter((tab) => tab.featured);
+  const rest = inner.filter((tab) => !tab.featured);
+  let kept = [...featured, ...rest].slice(0, WORKBENCH_STRIP_CAP);
+  if (activeId && !kept.some((tab) => tab.id === activeId)) {
+    const active = inner.find((tab) => tab.id === activeId);
+    if (active) kept = [...kept.slice(0, WORKBENCH_STRIP_CAP - 1), active];
+  }
+  return root ? [root, ...kept] : kept;
 }
 
 const MANAGER_ONLY_HUB_TAB_IDS = new Set(["team-admin"]);
@@ -578,6 +591,32 @@ export function hubHref(hubPath: string, tab: string, orgId?: string | null): st
   params.set("tab", tab);
   if (orgId) params.set("orgId", orgId);
   return `${hubPath}?${params.toString()}`;
+}
+
+/**
+ * Tab ids the hub page draws inline. Anything else with a `legacyHref` is its
+ * own page. Search and the All menu must open that page. A `?tab=` URL for a
+ * tool the hub does not embed only paints "Taking you to the full page…".
+ */
+export const EMBEDDED_HUB_TABS: Record<ProductHubDef["id"], readonly string[]> = {
+  competition: ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"],
+  team: ["calendar", "logistics", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"],
+  business: ["overview", "finance", "budget", "orders", "sponsors", "sponsorship", "placements", "grants", "evidence"],
+  build: ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"],
+  ai: ["chat", "agent", "budgets", "writer", "code", "bugbot", "memory", "governance", "finance", "decisions"],
+  media: [],
+};
+
+export function isEmbeddedHubTab(hubId: ProductHubDef["id"], tabId: string): boolean {
+  return EMBEDDED_HUB_TABS[hubId].includes(tabId);
+}
+
+/** The URL that renders the tool, not the hub tab that only redirects to it. */
+export function directToolHref(hub: ProductHubDef, tab: HubTabDef): string {
+  if (!tab.legacyHref || isEmbeddedHubTab(hub.id, tab.id)) {
+    return hubHref(hub.href, tab.id);
+  }
+  return tab.legacyHref;
 }
 
 /**
