@@ -207,7 +207,7 @@ export default function OnboardingClient() {
       })
       .catch(() => {
         setLoadStatus("error");
-        setLoadError("Could not open setup. Check your connection and try again.");
+        setLoadError("Could not load onboarding. Check your connection and try again.");
         setState(null);
       });
   }, [hydrate, routeCompleteState]);
@@ -499,21 +499,22 @@ export default function OnboardingClient() {
               // The owner invite: they are setting the team up, not joining someone else's.
               // An invited mentor (admin) answering for a new team is not its owner.
               eyebrow: state.workspaceRole === "owner" ? "YOU'RE THE OWNER" : "YOU'RE A TEAM LEAD",
+              // The stepper already counts the steps; the heading said it again.
               title: `Set up ${teamName ?? "your team"}.`,
-              sub: "Who you are, then Home. Setup runs once.",
+              sub: "Tell us who you are, then Home walks you through inviting your team.",
             }
           : onTeamAlready
           ? {
               // Someone who just accepted an invite was told their team "still
               // has to let you in" — the one thing that had already happened.
-              eyebrow: "WELCOME",
+              eyebrow: "WELCOME TO THE TEAM",
               title: `You're on ${teamName ?? "the team"}.`,
-              sub: "Your name and what you do. Setup runs once.",
+              sub: "Tell us who you are and what you do, and Home will open on what to do first.",
             }
           : {
-              eyebrow: "WELCOME",
-              title: "Tell us who you are.",
-              sub: "Three short steps. Setup runs once.",
+              eyebrow: "WELCOME TO VANTAGE",
+              title: "Make Vantage work for you.",
+              sub: "A few questions. Your team still has to let you in before anything is shared.",
             };
 
   return (

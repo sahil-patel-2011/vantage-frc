@@ -1,6 +1,8 @@
 .onboarding-flow-page{
   padding:40px 18px;
-  background:var(--bg);
+  background:
+    radial-gradient(circle at 10% 0,color-mix(in srgb,var(--accent) 12%,transparent),transparent 35%),
+    var(--bg);
 }
 .onboarding-flow-card{width:min(100%,680px);padding:34px;border-radius:var(--radius-lg);box-shadow:var(--shadow-pop)}
 .onboarding-flow-card.pending{width:min(100%,720px)}
@@ -27,7 +29,7 @@
 .onboarding-terms-block{display:grid;gap:8px;padding:14px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));border-radius:var(--radius-sm);background:var(--accent-soft)}
 .onboarding-terms-block .onboarding-legal-accept{margin:0}
 
-.onboarding-load-shell{display:grid;gap:16px;padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--surface);text-align:center}
+.onboarding-load-shell{display:grid;gap:16px;padding:18px;border:1px dashed var(--line);border-radius:var(--radius);background:var(--bg);text-align:center}
 .onboarding-load-shell.loading{border-style:solid;border-color:var(--line)}
 .onboarding-load-badge{justify-self:center;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--ink);font:700 10px var(--font-ibm-mono),monospace;letter-spacing:.08em;text-transform:uppercase}
 .onboarding-load-badge.setup{background:var(--warning-soft);color:var(--warning)}

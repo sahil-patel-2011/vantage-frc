@@ -85,7 +85,6 @@ export default function AccountClient() {
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
-  const [replayNote, setReplayNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -341,32 +340,6 @@ export default function AccountClient() {
     setBusy(false);
   }
 
-  async function replaySetup() {
-    const confirmed = window.confirm(
-      "Walk through setup again? Your team stays the same. Setup does not start on its own.",
-    );
-    if (!confirmed) return;
-    setBusy(true);
-    setReplayNote("");
-    try {
-      const response = await fetch("/api/onboarding/replay", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-      });
-      if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as { error?: string };
-        setReplayNote(data.error ?? "Setup could not start again. Try once more.");
-        return;
-      }
-      window.location.assign("/onboarding");
-    } catch {
-      setReplayNote("Setup could not start again. Try once more.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const orgId = org.orgId;
   const canManageTeam = Boolean(orgId) && (org.role === "owner" || org.role === "admin");
 
@@ -612,15 +585,6 @@ export default function AccountClient() {
             window.location.assign("/dashboard");
           }}
         />
-        <KitRow
-          icon="play"
-          tone="teal"
-          title="Replay onboarding"
-          subtitle="Setup runs once. Open it again only when you tap this."
-          disabled={busy}
-          onClick={() => void replaySetup()}
-        />
-        {replayNote ? <p className="kit-footnote">{replayNote}</p> : null}
         <KitRow
           icon="logout"
           tone="cyan"

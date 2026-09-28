@@ -162,11 +162,12 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
   }
   return {
     kind: "error",
-    eyebrow: "TRY AGAIN",
-    title: "Setup could not open",
+    eyebrow: "COULD NOT LOAD",
+    title: "Could not load onboarding",
     description:
       detail?.trim() ||
-      "Try again. Setup runs once, and it starts again only from Account.",
+      "Check your connection and try again.",
+    badge: "Retry",
   };
 }
 

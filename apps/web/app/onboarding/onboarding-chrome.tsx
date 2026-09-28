@@ -45,11 +45,9 @@ export function OnboardingLoadShell({
               {copy.kind === "error" ? (
                 <button type="button" className="signin-submit" onClick={onRetry}>Try again</button>
               ) : (
-                <>
-                  <a className="signin-submit" href="/signin">Sign in</a>
-                  <a className="signin-link" href="/invite">Have an invite?</a>
-                </>
+                <a className="signin-submit" href="/signin">Sign in</a>
               )}
+              <a className="signin-link" href="/invite">Have an invite?</a>
             </div>
           ) : (
             <p className="onboarding-load-progress" role="status">Checking saved steps…</p>

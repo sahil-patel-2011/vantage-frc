@@ -710,22 +710,6 @@ export async function completeOnboarding(
   return workspaceMissing ? { ...completed, workspaceMissing: true } : completed;
 }
 
-/**
- * Start setup over for the signed-in person only. Their name, team, and
- * membership stay. Nothing calls this except the Account action they tap.
- */
-export async function replayOnboarding(client: PoolClient, userId: string): Promise<OnboardingState> {
-  await client.query(
-    `UPDATE profiles
-        SET onboarding_completed_at = NULL,
-            onboarding_current_step = 'profile',
-            onboarding_saved_at = now()
-      WHERE user_id = $1`,
-    [userId],
-  );
-  return getOnboardingState(client, userId);
-}
-
 /** Lightweight gate for proxy/middleware: profile complete + workspace membership. */
 export async function getOnboardingGate(client: PoolClient, userId: string) {
   const complete = await isOnboardingComplete(client, userId);
