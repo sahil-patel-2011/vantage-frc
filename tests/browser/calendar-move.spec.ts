@@ -99,7 +99,9 @@ test("an entry can be dragged onto another day", async ({ page }) => {
   // viewport the second week of the month sat below the fold, so the drop landed
   // on nothing and the chip never moved — a red run that said nothing about the grid.
   const target = page.locator(`.cal-grid-day[data-date="2027-05-12"]`);
-  await target.scrollIntoViewIfNeeded();
+  // Center the drop row so sticky chrome and layout settling cannot cover its edge.
+  // Keep the viewport assertions and the real pointer/touch + persisted-date checks below.
+  await target.evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
   await chip.scrollIntoViewIfNeeded();
   const viewport = page.viewportSize();
   const from = await chip.boundingBox();
@@ -232,7 +234,9 @@ test("dragging works with a finger, which is how it is used in the pit", async (
     invalidate the first.
   */
   const target = page.locator(`.cal-grid-day[data-date="2027-09-15"]`);
-  await target.scrollIntoViewIfNeeded();
+  // Center the drop row so sticky chrome and layout settling cannot cover its edge.
+  // Keep the viewport assertions and the real pointer/touch + persisted-date checks below.
+  await target.evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
   await chip.scrollIntoViewIfNeeded();
 
   const from = await chip.boundingBox();
