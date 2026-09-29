@@ -193,7 +193,14 @@ test("the hub tab bar owns the workbench name and the tool strip does not repeat
   await expect(page.getByRole("tab", { name: "Event day" })).toBeVisible();
   // "Event day" was both the selected tab and the first chip under it.
   await expect(page.locator(".hub-tool-strip").getByText("Event day", { exact: true })).toHaveCount(0);
-  await expect(page.locator(".hub-tool-strip")).toContainText("Pre-match briefing");
+  const tools = page.locator(".hub-bar .hub-tool-strip");
+  await expect(tools.locator(".hub-tool-strip-row button")).toHaveCount(1);
+  await tools.getByRole("button", { name: "Tools", exact: true }).click();
+  await expect(tools).toContainText("Pre-match briefing");
+  await tools.locator(".hub-tool-list a, .hub-tool-list button").first().focus();
+  await page.keyboard.press("Escape");
+  await expect(tools.locator(".hub-tool-overflow")).toHaveCount(0);
+  await expect(tools.getByRole("button", { name: "Tools", exact: true })).toBeFocused();
 });
 
 test("scouting and Work strips hide meta jobs that still have routes", async ({ page }) => {
@@ -201,6 +208,7 @@ test("scouting and Work strips hide meta jobs that still have routes", async ({ 
   await page.goto("/competition?tab=scouting");
   await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   const scoutingStrip = page.locator(".hub-tool-strip");
+  await scoutingStrip.getByRole("button", { name: "Tools", exact: true }).click();
   await expect(scoutingStrip).toContainText("Forms");
   // The strip shows three chips now, not six, so a tool being present and a
   // tool being a chip are different claims. What this test is about is which
@@ -209,7 +217,7 @@ test("scouting and Work strips hide meta jobs that still have routes", async ({ 
   await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
   await expect(scoutingStrip.getByText("Cross-check", { exact: true })).toHaveCount(0);
   await expect(scoutingStrip.getByText("Schema A/B", { exact: true })).toHaveCount(0);
-  await scoutingStrip.getByRole("button", { name: /More tools/ }).click();
+
   await expect(scoutingStrip).toContainText("Field value");
   await expect(scoutingStrip).toContainText("Data quality");
   // Still hidden, even with everything open: these are meta jobs that keep a
@@ -219,8 +227,8 @@ test("scouting and Work strips hide meta jobs that still have routes", async ({ 
   await page.goto("/team?tab=todos");
   await expect(page.getByRole("tab", { name: "Work" })).toBeVisible();
   const workStrip = page.locator(".hub-tool-strip");
+  await workStrip.getByRole("button", { name: "Tools", exact: true }).click();
   await expect(workStrip).toContainText("Practice");
-  await workStrip.getByRole("button", { name: /More tools/ }).click();
   await expect(workStrip.getByText("Task board", { exact: true })).toHaveCount(0);
 });
 
