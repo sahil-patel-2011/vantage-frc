@@ -83,6 +83,10 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     for (const name of ["Home", "Competition", "Team", "Build", "Business"]) await expect(drawer.getByRole("link", { name, exact: true })).toBeVisible();
     await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
     const show = drawer.getByRole("button", { name: "Show Competition tools" });
+    // Measure the settled hit target, not its fractional transformed bounds mid-transition.
+    await drawer.evaluate(async (node) => {
+      await Promise.all(node.getAnimations().map((animation) => animation.finished.catch(() => {})));
+    });
     const box = await show.boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(48);
     expect(box!.height).toBeGreaterThanOrEqual(48);
