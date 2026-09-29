@@ -98,7 +98,7 @@ body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-
   border-color: rgba(29, 29, 31, .08);
   border-radius: 20px;
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 5%, transparent);
   line-height: 1.55;
 }
 

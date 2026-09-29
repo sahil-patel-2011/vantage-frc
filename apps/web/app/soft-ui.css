@@ -34,7 +34,7 @@ body.has-app-shell.dash-editing .soft-island{opacity:.35;pointer-events:none}
 /* Account pop lives inside this stacking context — elevate above the dismiss scrim when open. */
 .soft-topbar.account-menu-open{z-index:86}
 .soft-icon-btn{
-  display:grid;place-items:center;width:44px;height:44px;color:var(--ink);
+  display:grid;place-items:center;align-items:center;justify-content:center;padding:0;flex-shrink:0;width:44px;height:44px;color:var(--ink);
   background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);cursor:pointer;
   transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;
 }

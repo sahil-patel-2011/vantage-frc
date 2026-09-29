@@ -452,9 +452,9 @@ export default function ChatClient({
           </p>
         </div>
         <div className="ch-header-actions">
-          <span className={`app-badge ${thread?.scope === "team" ? "setup" : "good"}`}>
-            {thread?.scope === "team" ? "Team shared" : thread ? "Private" : "No channel"}
-          </span>
+          {thread ? <span className={`app-badge ${thread.scope === "team" ? "setup" : "good"}`}>
+            {thread.scope === "team" ? "Team shared" : "Private"}
+          </span> : null}
           {shell === "ready" ? (
             <Button variant="secondary" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
               {contextOpen ? "Hide chat settings" : "Chat settings"}
@@ -490,18 +490,18 @@ export default function ChatClient({
       {shell === "ready" ? <NextActions orgId={orgId} shell={shell} /> : null}
 
       {shell === "empty" ? (
-        <>
-          <section className="ch-scope" aria-label="Private versus team-shared channels">
+        <details className="ch-privacy">
+          <summary>Who can see a chat?</summary>
+          <div className="ch-scope">
             {AI_CHAT_SCOPE_CARDS.map((card) => (
-              <article key={card.id} className="ch-scope-card soft-panel">
+              <article key={card.id}>
                 <h2>{card.title}</h2>
                 <p>{card.body}</p>
               </article>
             ))}
-          </section>
-        </>
+          </div>
+        </details>
       ) : null}
-
       {!blocked ? (
       <div className="ch-layout">
         <aside className="ch-sidebar" id="ch-channels" aria-label="Channels">
@@ -511,14 +511,21 @@ export default function ChatClient({
           </div>
           <div className="ch-thread-actions">
             {shell !== "empty" ? (
-              <>
-            <Button variant="secondary" type="button" onClick={() => void newThread("private")}>
-              + Private chat
-            </Button>
-            <Button variant="secondary" type="button" onClick={() => void newThread("team")}>
-              + Team-shared chat
-            </Button>
-              </>
+              <details className="ch-new-chat">
+                <summary>New chat</summary>
+                <Button variant="secondary" type="button" onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  void newThread("private");
+                }}>
+                  + Private chat
+                </Button>
+                <Button variant="secondary" type="button" onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  void newThread("team");
+                }}>
+                  + Team-shared chat
+                </Button>
+              </details>
             ) : null}
           </div>
           <ul className="ch-thread-list">
