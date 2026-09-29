@@ -14,9 +14,27 @@ type Props = {
 export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamData = false }: Props) {
   if (!health?.degraded) return null;
 
+  if (compact) {
+    return (
+      <aside className={`data-source-degraded-banner compact mode-${health.mode}`} role="status" aria-live="polite">
+        <details className="data-source-summary">
+          <summary>
+            <span className="data-source-indicator" aria-hidden="true" />
+            <strong>{health.bannerTitle}</strong>
+            <span>{health.usingLastGoodCache ? "Using saved copy" : "Details"}</span>
+          </summary>
+          <p>{health.bannerDetail}</p>
+          {health.usingLastGoodCache ? <p>Saved rankings and schedule remain available.</p> : null}
+          {!canOpenTeamData ? <p>An owner or admin can refresh this in Team → Data.</p> : null}
+        </details>
+        {canOpenTeamData ? <a className="data-source-settings" href={health.teamDataHref}>Data settings</a> : null}
+      </aside>
+    );
+  }
+
   return (
     <aside
-      className={`data-source-degraded-banner${compact ? " compact" : ""} mode-${health.mode}`}
+      className={`data-source-degraded-banner mode-${health.mode}`}
       role="status"
       aria-live="polite"
     >
@@ -25,22 +43,10 @@ export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamD
           {health.mode === "stale" ? "May be out of date" : health.usingLastGoodCache ? "Using saved copy" : "Data unavailable"}
         </span>
         <strong>{health.bannerTitle}</strong>
-        {compact ? (
-          <>
-            <p>{health.usingLastGoodCache ? "Saved rankings and schedule remain available." : "Rankings and schedule are unavailable for now."}</p>
-            <details>
-              <summary>What happened</summary>
-              <p>{health.bannerDetail}</p>
-            </details>
-          </>
-        ) : (
-          <>
-            <p>{health.bannerDetail}</p>
-            {health.usingLastGoodCache ? (
-              <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
-            ) : null}
-          </>
-        )}
+        <p>{health.bannerDetail}</p>
+        {health.usingLastGoodCache ? (
+          <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
+        ) : null}
       </div>
       {canOpenTeamData ? (
         <Button as="a" variant="secondary" href={health.teamDataHref}>

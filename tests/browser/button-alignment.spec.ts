@@ -25,11 +25,15 @@ for (const width of [390, 1440]) {
       if (route.includes("/ai")) {
         await expect(page.locator(' .ch-page [aria-busy="true"]')).toHaveCount(0, { timeout: 30_000 });
         await expect(page.getByText("No channel", { exact: true })).toHaveCount(0);
-        await testInfo.attach("ai-chat-" + width + ".png", {
+      }
+      if (route === "/dashboard") {
+        await expect(page.getByTestId("dash-place-canvas")).toBeVisible();
+        await expect(page.locator('.dash-home [aria-busy="true"]')).toHaveCount(0, { timeout: 30_000 });
+      }
+      await testInfo.attach(route.split("?")[0].slice(1) + "-" + width + ".png", {
           body: await page.screenshot({ fullPage: true }),
           contentType: "image/png",
         });
-      }
     }
   });
 }
