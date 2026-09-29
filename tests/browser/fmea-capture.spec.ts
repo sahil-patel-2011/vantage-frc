@@ -4,7 +4,8 @@ import { signInAs } from "./session";
 
 for (const width of [1280, 390]) {
   test(`failure capture retains drafts and saves full analysis at ${width}px`, async ({ page, context }, testInfo) => {
-    test.setTimeout(150_000);
+    test.setTimeout(90_000);
+    page.setDefaultTimeout(15_000);
     expect(await signInAs(context, "owner")).toBe(true);
     const me = await context.request.get("/api/me");
     expect(me.ok()).toBe(true);
@@ -42,7 +43,7 @@ for (const width of [1280, 390]) {
       await expect(form.locator("input:visible, select:visible, textarea:visible")).toHaveCount(6);
       await expect(form.getByRole("button")).toHaveCount(1);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await form.screenshot({ path: testInfo.outputPath(`failure-capture-${width}.png`) });
+      await page.screenshot({ path: testInfo.outputPath(`failure-capture-${width}.png`), fullPage: true });
       await testInfo.attach("Simplified capture", { path: testInfo.outputPath(`failure-capture-${width}.png`), contentType: "image/png" });
       await form.getByLabel("What happened?", { exact: true }).fill(title);
       await form.getByLabel("Subsystem", { exact: true }).fill("Intake");
@@ -98,6 +99,7 @@ for (const width of [1280, 390]) {
 }
 
 test("failure capture switches between a registered subsystem and a custom name", async ({ page, context }) => {
+  page.setDefaultTimeout(15_000);
   expect(await signInAs(context, "owner")).toBe(true);
   const identity = await (await context.request.get("/api/me")).json();
   await page.route("**/api/fmea**", async route => {

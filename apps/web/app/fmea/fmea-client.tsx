@@ -577,6 +577,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           <FormRow label="Subsystem">
             {view.subsystems.length > 0 ? (
               <select
+                aria-label="Subsystem"
                 value={form.subsystemId}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -607,6 +608,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           </FormRow>
           <FormRow label="Where">
             <select
+              aria-label="Where"
               value={form.context}
               onChange={(e) => setForm({ ...form, context: e.target.value as FmeaContext })}
             >
