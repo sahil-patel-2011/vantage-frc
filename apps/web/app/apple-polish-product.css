@@ -98,7 +98,7 @@ body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-
   border-color: rgba(29, 29, 31, .08);
   border-radius: 20px;
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 5%, transparent);
   line-height: 1.55;
 }
 
@@ -142,9 +142,13 @@ body.has-app-shell :where(.app-page-header, .dash-home-header) p {
   color: var(--muted);
 }
 
-body.has-app-shell :where(.app-button, .soft-btn, .primary-action) {
-  border-radius: 999px;
-  font-weight: 650;
+body.has-app-shell :is(.app-button, .soft-btn, .primary-action) {
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 44px;
+  padding: 11px 16px;
   box-shadow: none;
 }
 
@@ -272,3 +276,24 @@ html[data-theme="dark"] body.has-app-shell .soft-island-editor > section {
 @media (max-width: 720px) {
   html:not([data-clarity="clear"]) body.has-app-shell .soft-topbar { background-color: var(--bg); }
 }
+
+/* One product typeface and a quieter surface hierarchy across workspaces. */
+body.has-app-shell {
+  --font-source-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --line-soft: color-mix(in srgb, var(--ink) 9%, transparent);
+  font-family: var(--font-sans);
+}
+body.has-app-shell :where(.app-page-header, .hub-bar-id) h1 {
+  font-family: var(--font-sans); font-weight: 650; letter-spacing: -.035em;
+}
+body.has-app-shell :where(.app-page-actions, .soft-btn-row) { gap: 8px; align-items: center; }
+body.has-app-shell .soft-empty.scan-empty {
+  border-style: solid; border-color: var(--line-soft); border-radius: 24px; background: var(--surface);
+  padding: clamp(28px, 4vw, 48px) 24px; box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 3%, transparent);
+}
+body.has-app-shell .soft-empty.scan-empty h2 { font-size: 24px; font-weight: 650; color: var(--ink); letter-spacing: -.035em; }
+body.has-app-shell .soft-empty.scan-empty > p { max-width: 44ch; font-size: 14px; line-height: 1.65; }
+body.has-app-shell :is(.app-button.primary, .app-button.is-primary, .soft-btn.primary, .primary-action) { box-shadow: none; }
+body.has-app-shell .app-button:hover { transform: none; }
+body.has-app-shell .hub-tool-strip[data-compact] .hub-tool-more { border-radius: 12px; box-shadow: none; }

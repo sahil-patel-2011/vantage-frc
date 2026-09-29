@@ -106,7 +106,7 @@ export function LiveMediaWorkspace({
           tab one row up, so listing its root here rendered the same workbench
           twice — the strip is how you reach what is nested under it. */}
       {kitTools.length > 0 && tab === "kit" ? (
-        <ToolStrip
+        <ToolStrip compact
           aria-label="Tools in Kit"
           value="kit"
           onChange={(id) => {

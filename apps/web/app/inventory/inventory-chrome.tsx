@@ -314,7 +314,7 @@ export function InventorySectionStrip({
   onTab: (tab: InventoryTab) => void;
 }) {
   return (
-    <ToolStrip
+    <ToolStrip compact
       aria-label="Inventory sections"
       value={tab}
       onChange={(id) => {

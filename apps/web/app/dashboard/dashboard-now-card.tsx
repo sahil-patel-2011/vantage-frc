@@ -43,6 +43,7 @@ export function DashboardNowCard({
     return (
       <section className="dash-now dash-now-setup" aria-label="What to do now" data-testid="dash-now" {...dim}>
         <div className="dash-now-main">
+          <span className="dash-now-eyebrow">Get started</span>
           <strong>{setupHero.title}</strong>
           {setupHero.detail ? <p>{setupHero.detail}</p> : null}
           <Button as="a" variant="primary" href={withOrgHref(setupHero.href, orgId || null)} data-testid="dash-now-cta">
@@ -54,8 +55,9 @@ export function DashboardNowCard({
     );
   }
   return (
-    <section className="dash-now" aria-label="What to do now" data-testid="dash-now" {...dim}>
-      <div>
+    <section className="dash-now" data-quiet={Boolean(now.quiet)} aria-label="What to do now" data-testid="dash-now" {...dim}>
+      <div className="dash-now-main">
+        <span className="dash-now-eyebrow">{now.quiet ? "Today" : "Up next"}</span>
         <strong>{now.title}</strong>
         {now.detail ? <p>{now.detail}</p> : null}
       </div>
