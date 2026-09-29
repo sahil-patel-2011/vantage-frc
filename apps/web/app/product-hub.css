@@ -128,7 +128,6 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 }
 /* Duplicate sibling strips inside Team/Build surfaces — hub tabs already cover these. */
 .product-hub-panel .team-hub-related,
-.product-hub-panel .fmea-related,
 .product-hub-panel .batt-related,
 .product-hub-panel .practice-hero-links,
 .product-hub-panel .kb-hero-actions,

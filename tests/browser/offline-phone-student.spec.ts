@@ -174,7 +174,7 @@ test.describe("offline phone student boards keep the last copy", () => {
       feature: "fmea",
       body: FMEA_LIVE,
       heading: "No failures logged yet",
-      keep: /The riskiest item shows here once there is one/,
+      keep: /Log the first issue below/,
     });
   });
 

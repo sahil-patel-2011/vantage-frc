@@ -77,6 +77,8 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   const [removed, setRemoved] = useState<{ question: DraftQuestion; index: number } | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const publishingRef = useRef(false);
+  const draftsRef = useRef<Partial<Record<EntryType, { title: string; questions: DraftQuestion[]; acknowledgeBudget: boolean }>>>({});
   const [message, setMessage] = useState("");
   const [acknowledgeBudget, setAcknowledgeBudget] = useState(false);
   const [published, setPublished] = useState<{ id: string; version: number } | null>(null);
@@ -192,17 +194,28 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   }, [orgId, type, loadSchemaIntoDraft]);
 
   useEffect(() => {
+    draftsRef.current = {};
     void load();
     // Mount / org only — type switches reuse the loaded schema list.
   }, [orgId]);
 
   function switchType(next: EntryType) {
+    if (publishingRef.current || next === type) return;
+    draftsRef.current[type] = { title, questions, acknowledgeBudget };
     setType(next);
+    setRemoved(null);
     setPublished(null);
     setMessage("");
     setAcknowledgeBudget(false);
-    const schema = payload?.schemas.find((entry) => entry.type === next);
-    loadSchemaIntoDraft(schema, next);
+    const draft = draftsRef.current[next];
+    if (draft) {
+      setTitle(draft.title);
+      setQuestions(draft.questions);
+      setAcknowledgeBudget(draft.acknowledgeBudget);
+    } else {
+      const schema = payload?.schemas.find((entry) => entry.type === next);
+      loadSchemaIntoDraft(schema, next);
+    }
     if (payload?.year != null) setYear(payload.year);
   }
 
@@ -233,6 +246,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   }
 
   async function publish() {
+    if (publishingRef.current) return;
     setMessage("");
     const blocked = formBuilderPublishBlockedReason({
       canManageSchemas: Boolean(payload?.canManageSchemas),
@@ -245,11 +259,13 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       setMessage(blocked);
       return;
     }
+    publishingRef.current = true;
     setBusy(true);
     try {
       const definition: SchemaDefinition = definitionFromDraft(title, questions);
       const response = await fetch("/api/scouting/schemas", {
         method: "POST",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           orgId,
@@ -278,9 +294,11 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       // The green card at the top says it once.
       setMessage("");
       await load();
+      delete draftsRef.current[type];
     } catch {
       setMessage("Network error — try again.");
     } finally {
+      publishingRef.current = false;
       setBusy(false);
     }
   }
@@ -466,7 +484,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            disabled={!payload.canManageSchemas}
+            disabled={!payload.canManageSchemas || busy}
             maxLength={80}
           />
         </FormRow>
@@ -553,6 +571,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                     variant="secondary"
                     size="sm"
                     type="button"
+                    disabled={busy}
                     onClick={() => {
                       setQuestions((prev) => {
                         const next = prev.slice();
@@ -604,7 +623,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         <button
                           type="button"
                           className="sfb-move"
-                          disabled={!payload.canManageSchemas || index === 0}
+                          disabled={!payload.canManageSchemas || busy || index === 0}
                           aria-label={`Move question ${index + 1} up`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index - 1))}
                         >
@@ -613,7 +632,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         <button
                           type="button"
                           className="sfb-move"
-                          disabled={!payload.canManageSchemas || index === questions.length - 1}
+                          disabled={!payload.canManageSchemas || busy || index === questions.length - 1}
                           aria-label={`Move question ${index + 1} down`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index + 1))}
                         >
@@ -629,7 +648,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                               id: "duplicate",
                               label: "Duplicate",
                               intent: "primary",
-                              disabled: !payload.canManageSchemas,
+                              disabled: !payload.canManageSchemas || busy,
                               hint: "A copy directly below, ready to edit",
                               onClick: () => setQuestions((prev) => duplicateQuestion(prev, index)),
                             },
@@ -637,7 +656,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                               id: "remove",
                               label: "Remove",
                               intent: "destructive",
-                              disabled: !payload.canManageSchemas || questions.length <= 1,
+                              disabled: !payload.canManageSchemas || busy || questions.length <= 1,
                               hint: "Undo is offered right after",
                               onClick: () => {
                                 setRemoved({ question, index });
@@ -652,7 +671,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                       <FormRow label="Label">
                         <input
                           value={question.label}
-                          disabled={!payload.canManageSchemas}
+                          disabled={!payload.canManageSchemas || busy}
                           onChange={(event) => updateQuestion(question.id, { label: event.target.value })}
                           placeholder="What should scouts answer?"
                         />
@@ -660,7 +679,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                       <FormRow label="Answer type">
                         <select
                           value={question.kind}
-                          disabled={!payload.canManageSchemas}
+                          disabled={!payload.canManageSchemas || busy}
                           onChange={(event) =>
                             retypeQuestionById(question.id, event.target.value as AnswerKind)
                           }
@@ -676,7 +695,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                     {needsOptionEditor(question.kind) ? (
                       <OptionEditor
                         optionsText={question.optionsText}
-                        disabled={!payload.canManageSchemas}
+                        disabled={!payload.canManageSchemas || busy}
                         kind={question.kind}
                         onChange={(optionsText) => updateQuestion(question.id, { optionsText })}
                       />
@@ -688,7 +707,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                     {needsSettingsEditor(question.kind) ? (
                       <StudioSettingsEditor
                         question={question}
-                        disabled={!payload.canManageSchemas}
+                        disabled={!payload.canManageSchemas || busy}
                         onChange={(settings) => updateQuestion(question.id, { settings })}
                       />
                     ) : null}
@@ -719,7 +738,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                           >
                             <select
                               value={question.role}
-                              disabled={!payload.canManageSchemas}
+                              disabled={!payload.canManageSchemas || busy}
                               aria-label={`Strategy mapping for question ${index + 1}`}
                               onChange={(event) =>
                                 updateQuestion(question.id, {
@@ -744,7 +763,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         >
                           <select
                             value={question.reset}
-                            disabled={!payload.canManageSchemas}
+                            disabled={!payload.canManageSchemas || busy}
                             aria-label={`After-save behavior for question ${index + 1}`}
                             onChange={(event) =>
                               updateQuestion(question.id, {
@@ -766,7 +785,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                           <input
                             type="checkbox"
                             checked={question.required}
-                            disabled={!payload.canManageSchemas}
+                            disabled={!payload.canManageSchemas || busy}
                             onChange={(event) =>
                               updateQuestion(question.id, { required: event.target.checked })
                             }
@@ -786,13 +805,13 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 ))}
               </div>
               <div className="sfb-add-row">
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}>
                   Add question
                 </Button>
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Drivetrain", kind: "drivetrain", optionsText: DRIVETRAIN_OPTIONS_TEXT, }), ]) }>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Drivetrain", kind: "drivetrain", optionsText: DRIVETRAIN_OPTIONS_TEXT, }), ]) }>
                   Add drivetrain
                 </Button>
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas} onClick={() => setMode("preview")}>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setMode("preview")}>
                   Preview
                 </Button>
               </div>
@@ -824,7 +843,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                     </span>
                   </span>
                   {publishStatus.kind === "draft_changes" ? (
-                    <Button variant="secondary" type="button" onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
+                    <Button variant="secondary" type="button" disabled={busy} onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
                       Undo my changes
                     </Button>
                   ) : null}
@@ -859,7 +878,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <li key={option.kind}>
                   <button
                     type="button"
-                    disabled={!payload.canManageSchemas}
+                    disabled={!payload.canManageSchemas || busy}
                     aria-label={`Add a ${option.label} question`}
                     onClick={() =>
                       setQuestions((prev) => [

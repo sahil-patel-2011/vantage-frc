@@ -2,22 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { BuildHubRelated } from "../../components/build-hub-related";
-import { TeamHubRelated } from "../../components/team-hub-related";
 import { canDeleteFmeaFailure, fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
 import { FMEA_CONTEXTS, FMEA_STATUSES, type FmeaView } from "../../lib/fmea/compute-fmea";
 import {
-  FMEA_BUILD_RELATED_INCLUDE,
-  FMEA_TEAM_RELATED_INCLUDE,
   fmeaNextActions,
   fmeaRelatedLinks,
   formatOsdFactors,
   formatRpnDisplay,
 } from "../../lib/fmea/fmea-related";
 import type { FmeaContext, FmeaEvaluation, FmeaLevel, FmeaStatus } from "../../lib/fmea/types";
-import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -43,7 +38,7 @@ async function persistFmeaSnapshot(orgHint: string, seasonHint: string, data: Fm
 }
 
 type LiveView = Extract<FmeaView, { status: "live" }>;
-type Mutate = (payload: Record<string, unknown>) => void;
+type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
 const SCALES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -59,17 +54,15 @@ function useHubEmbed(): "team" | "build" | null {
 }
 
 function FmeaRelated({ orgId }: { orgId: string }) {
-  const primary = fmeaRelatedLinks(orgId, { include: ["knowledge", "cad", "prototype", "inventory"] });
+  const links = fmeaRelatedLinks(orgId, { include: ["knowledge", "cad", "prototype", "inventory"] });
   return (
-    <div className="fmea-related">
-      <nav className="product-hub-related fmea-hub-related" aria-label="Related reliability tools">
-        {primary.map((link) => (
-          <a key={link.href} href={link.href}>{link.label}</a>
-        ))}
+    <details className="fmea-disclosure fmea-related">
+      <summary>Related work</summary>
+      <nav aria-label="Related reliability tools" className="fmea-related-links">
+        {links.map((link) => <a key={link.href} href={link.href}>{link.label}</a>)}
+        <a href={withOrgHref("/inspection", orgId)}>Inspection</a>
       </nav>
-      <TeamHubRelated orgId={orgId} active="fmea" include={[...FMEA_TEAM_RELATED_INCLUDE]} />
-      <BuildHubRelated orgId={orgId} active="fmea" include={[...FMEA_BUILD_RELATED_INCLUDE]} />
-    </div>
+    </details>
   );
 }
 
@@ -127,6 +120,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const mutationPending = useRef(false);
   const [season, setSeason] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -217,11 +211,12 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   }, [load]);
 
   const mutate = useCallback<Mutate>(
-    (payload) => {
-      if (!orgId || busy) return;
+    async (payload) => {
+      if (!orgId || mutationPending.current) return false;
+      mutationPending.current = true;
       setBusy(true);
       setError("");
-      void fetch("/api/fmea", {
+      return fetch("/api/fmea", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
@@ -229,18 +224,22 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       })
         .then(async (response) => {
           const data = (await response.json()) as FmeaView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
-            return;
+          if (!response.ok || !("status" in data) || data.status !== "live") {
+            setError("error" in data && data.error ? data.error : "Could not save this entry. Try again.");
+            return false;
           }
           setView(data);
           setSeason(data.seasonYear);
           void persistFmeaSnapshot(orgId, season != null ? String(season) : "", data);
+          return true;
         })
-        .catch(() => setError("Network error — please try again."))
-        .finally(() => setBusy(false));
+        .catch(() => {
+          setError("Could not save. Your entry is still here — try again.");
+          return false;
+        })
+        .finally(() => { mutationPending.current = false; setBusy(false); });
     },
-    [orgId, season, busy],
+    [orgId, season],
   );
 
   if (!view) {
@@ -325,8 +324,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         title="Failure Log (FMEA)"
         description={
           <>
-            Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
-            detection, record root cause and fix. Risk priority is calculated from the scores you enter.
+            Track what broke, prioritize repairs, and record the fix.
           </>
         }
       >
@@ -335,6 +333,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
+                disabled={busy}
                 value={season ?? view.seasonYear}
                 onChange={(event) => {
                   const next = Number(event.target.value);
@@ -350,23 +349,10 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
               </select>
             </label>
           ) : null}
-          <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
-            Knowledge
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
-            CAD
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/build", "prototype", orgId)}>
-            Prototypes
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/inspection", orgId)}>
-            Inspection
-          </Button>
+
         </div>
       </PageHeader>
       <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
-
-      {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
 
       {error ? (
         <p className="fmea-alert" role="alert">
@@ -374,39 +360,33 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         </p>
       ) : null}
 
-      <NextActions
+      {hasFailures ? <NextActions
         orgId={orgId}
         failureCount={view.summary.total}
         activeCount={view.summary.active}
         needsFixCount={view.summary.needsFix.length}
         highestRpn={view.summary.highestRpn}
         topTitle={topTitle}
-      />
+      /> : null}
 
-      <SummaryTiles view={view} />
+      {hasFailures ? <SummaryTiles view={view} /> : null}
       <BatteryReliabilitySignals view={view} />
 
-      {!hasFailures ? (
-        <EmptyState
-          soft
-          title="No failures logged yet"
-          description="When something breaks in the pit or on the field, log it and score how often, how bad and how hard to spot. The riskiest item shows here once there is one."
-        >
-          <div className="fmea-risk-links">
-            <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
-            <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
-            <a href={hubHref("/build", "prototype", orgId)}>Prototypes →</a>
-          </div>
-        </EmptyState>
-      ) : (
+      {hasFailures ? (
         <div className="fmea-layout">
           <SubsystemHotspots view={view} orgId={orgId} />
           <TopFailures view={view} />
         </div>
+      ) : (
+        <div className="fmea-empty">
+          <h2>No failures logged yet</h2>
+          <p>Log the first issue below. Repairs and risks will appear here.</p>
+        </div>
       )}
 
-      <AddFailureForm view={view} busy={busy} mutate={mutate} />
-      {hasFailures ? <FailureList view={view} busy={busy} mutate={mutate} orgId={orgId} /> : null}
+      <AddFailureForm key={`${orgId}:${view.seasonYear}`} view={view} busy={busy} mutate={mutate} />
+      {hasFailures ? <FailureList view={view} busy={busy} mutate={mutate} /> : null}
+      {orgId ? <FmeaRelated orgId={orgId} /> : null}
     </Root>
   );
 }
@@ -552,19 +532,20 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
     [],
   );
   const [form, setForm] = useState(empty);
+  const [saved, setSaved] = useState(false);
 
   const previewRpn =
     (Number(form.occurrence) || 1) * (Number(form.severity) || 1) * (Number(form.detection) || 1);
 
   return (
-    <Panel className="fmea-panel">
+    <Panel className="fmea-panel fmea-capture">
       <h2>Log a failure</h2>
-      <p>The risk score updates as you pick how often, how bad and how hard to spot. It saves when you add the entry.</p>
-      <form
-        onSubmit={(event) => {
+      <form aria-label="Log a failure" onChange={() => setSaved(false)}
+        onSubmit={async (event) => {
           event.preventDefault();
           if (!form.title.trim()) return;
-          mutate({
+          setSaved(false);
+          const success = await mutate({
             action: "create-failure",
             title: form.title,
             subsystemId: form.subsystemId || null,
@@ -580,11 +561,12 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             inspectionItemId: form.inspectionItemId || null,
             inventoryItemId: form.inventoryItemId || null,
           });
-          setForm(empty);
+          if (success) { setForm(empty); setSaved(true); }
         }}
       >
-        <FormGrid>
-          <FormRow label="Title">
+        <fieldset disabled={busy} className="fmea-fields">
+        <div className="fmea-capture-basics">
+          <FormRow label="What happened?" wide>
             <input
               required
               value={form.title}
@@ -595,6 +577,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           <FormRow label="Subsystem">
             {view.subsystems.length > 0 ? (
               <select
+                aria-label="Subsystem"
                 value={form.subsystemId}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -619,22 +602,13 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
                 required
                 value={form.subsystemName}
                 onChange={(e) => setForm({ ...form, subsystemName: e.target.value })}
-                placeholder="Intake — or add subsystems first"
+                placeholder="e.g. Intake"
               />
             )}
           </FormRow>
-          {!form.subsystemId ? (
-            <FormRow label="Subsystem name">
-              <input
-                required
-                value={form.subsystemName}
-                onChange={(e) => setForm({ ...form, subsystemName: e.target.value })}
-                placeholder="Intake"
-              />
-            </FormRow>
-          ) : null}
           <FormRow label="Where">
             <select
+              aria-label="Where"
               value={form.context}
               onChange={(e) => setForm({ ...form, context: e.target.value as FmeaContext })}
             >
@@ -645,14 +619,21 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               ))}
             </select>
           </FormRow>
-          <FormRow label="Failure mode">
-            <input
-              value={form.failureMode}
-              onChange={(e) => setForm({ ...form, failureMode: e.target.value })}
-              placeholder="Belt skips teeth under load"
-            />
-          </FormRow>
-          <FormRow label={`Occurrence (${form.occurrence})`}>
+          {view.subsystems.length > 0 && !form.subsystemId ? (
+            <FormRow label="Subsystem name" wide>
+              <input
+                required
+                value={form.subsystemName}
+                onChange={(e) => setForm({ ...form, subsystemName: e.target.value })}
+                placeholder="Intake"
+              />
+            </FormRow>
+          ) : null}
+        </div>
+        <fieldset className="fmea-scoring">
+          <legend>Risk assessment</legend>
+          <div className="fmea-score-grid">
+          <FormRow label="Occurrence" hint="1 rare · 10 frequent">
             <select value={form.occurrence} onChange={(e) => setForm({ ...form, occurrence: e.target.value })}>
               {SCALES.map((n) => (
                 <option key={n} value={n}>
@@ -661,7 +642,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               ))}
             </select>
           </FormRow>
-          <FormRow label={`Severity (${form.severity})`}>
+          <FormRow label="Severity" hint="1 minor · 10 severe">
             <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>
               {SCALES.map((n) => (
                 <option key={n} value={n}>
@@ -670,7 +651,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               ))}
             </select>
           </FormRow>
-          <FormRow label={`Detection (${form.detection})`}>
+          <FormRow label="Detection" hint="1 easy to spot · 10 hard">
             <select value={form.detection} onChange={(e) => setForm({ ...form, detection: e.target.value })}>
               {SCALES.map((n) => (
                 <option key={n} value={n}>
@@ -679,6 +660,18 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               ))}
             </select>
           </FormRow>
+          </div>
+        </fieldset>
+        <details className="fmea-disclosure fmea-analysis">
+          <summary>Analysis and repair <span>Optional</span></summary>
+          <div className="fmea-analysis-grid">
+          <FormRow label="Failure mode">
+            <input
+              value={form.failureMode}
+              onChange={(e) => setForm({ ...form, failureMode: e.target.value })}
+              placeholder="Belt skips teeth under load"
+            />
+          </FormRow>
           <FormRow label="Root cause">
             <input
               value={form.rootCause}
@@ -686,7 +679,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               placeholder="Idler tensioner loosened after match 4"
             />
           </FormRow>
-          <FormRow label="5 whys">
+          <FormRow label="5 whys" wide>
             <textarea
               value={form.fiveWhys}
               onChange={(e) => setForm({ ...form, fiveWhys: e.target.value })}
@@ -732,10 +725,12 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               </select>
             </FormRow>
           ) : null}
-        </FormGrid>
+          </div>
+        </details>
+        </fieldset>
         <div className="fmea-form-actions">
           <Button variant="primary" type="submit" disabled={busy}>
-            {busy ? "Saving…" : "Add failure"}
+            {busy ? "Saving…" : "Save failure"}
           </Button>
           <span className="fmea-preview">
             Risk score: <strong>{previewRpn}</strong>{" "}
@@ -746,6 +741,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             })})</span>
           </span>
         </div>
+        <p className="fmea-save-status" role="status">{saved ? "Failure saved." : ""}</p>
       </form>
     </Panel>
   );
@@ -755,12 +751,10 @@ function FailureList({
   view,
   busy,
   mutate,
-  orgId,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: Mutate;
-  orgId: string | null;
 }) {
   return (
     <Panel className="fmea-panel">
@@ -773,7 +767,6 @@ function FailureList({
             evaluation={evaluation}
             busy={busy}
             mutate={mutate}
-            orgId={orgId}
             role={view.role}
             userId={view.userId}
           />
@@ -787,14 +780,12 @@ function FailureCard({
   evaluation,
   busy,
   mutate,
-  orgId,
   role,
   userId,
 }: {
   evaluation: FmeaEvaluation;
   busy: boolean;
   mutate: Mutate;
-  orgId: string | null;
   role?: string | null;
   userId?: string | null;
 }) {
@@ -831,6 +822,7 @@ function FailureCard({
       </header>
 
       <div className="fmea-risk-body">
+        {f.fiveWhys ? <details className="fmea-disclosure"><summary>5 whys</summary><p style={{ whiteSpace: "pre-wrap" }}>{f.fiveWhys}</p></details> : null}
         {f.rootCause ? (
           <p>
             <span className="label">Root cause: </span>
@@ -880,12 +872,6 @@ function FailureCard({
         {f.recordedByName ? <small className="app-muted">Logged by {f.recordedByName}</small> : null}
       </div>
 
-      <div className="fmea-risk-links">
-        <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge</a>
-        <a href={hubHref("/build", "cad", orgId)}>Review in CAD</a>
-        <a href={hubHref("/build", "prototype", orgId)}>Prototype the fix</a>
-        <a href={withOrgHref("/inventory", orgId)}>Open Inventory</a>
-      </div>
     </article>
   );
 }
