@@ -841,7 +841,7 @@ export default function ChatClient({
               ))}
             </ul>
           </div>
-        </aside> : null}
+        </aside>
         ) : null}
       </div>
       ) : null}
