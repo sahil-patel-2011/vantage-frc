@@ -677,3 +677,7 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     color: var(--accent); background: var(--surface); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 9%, transparent);
   }
 }
+
+@media (min-width: 721px) {
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(.active, [aria-selected="true"])::after { display: none; }
+}

@@ -2888,9 +2888,9 @@ body.has-app-shell .soft-ask-ai:hover{color:var(--accent);border-color:var(--acc
 /* Home's hero leads with the greeting; the team number is in the top bar and
    is not repeated here (see dashboard-home-view.tsx). */
 .dash-hero-greeting{
-  margin:0 !important;
-  font-size:clamp(22px,2.6vw,28px) !important;
-  font-weight:800;letter-spacing:-.03em;line-height:1.1 !important;
+  margin:0;
+  font-size:clamp(22px,2.6vw,28px);
+  font-weight:650;letter-spacing:-.03em;line-height:1.18;
 }
 /* Edit Home moved inside the More menu, so it is a row in a list now rather
    than a pill on the page. Same control, quieter place. */
