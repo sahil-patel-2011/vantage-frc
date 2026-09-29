@@ -634,3 +634,18 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
 }
+
+/* Secondary destinations have one disclosure, separate from primary tabs. */
+.hub-bar .hub-tool-strip[data-compact] {
+  flex: 0 1 auto;
+  margin-left: auto;
+  border-left: 0;
+  padding-left: 0;
+}
+.hub-tool-strip[data-compact] .hub-tool-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
+.hub-tool-strip[data-compact] .hub-tool-more > span { margin-left: auto; }

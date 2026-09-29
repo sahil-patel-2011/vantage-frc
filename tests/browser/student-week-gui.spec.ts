@@ -102,7 +102,7 @@ test.describe("student-week GUI path", () => {
     // is where it lives, and with three chips on screen it may be behind
     // "More tools". This is the real path a student takes.
     const strip = page.locator(".hub-tool-strip");
-    const more = strip.getByRole("button", { name: /More tools/ });
+    const more = strip.getByRole("button", { name: /More tools|Tools/ });
     if (await more.count()) await more.first().click();
     const packing = strip.getByRole("link", { name: "Packing" }).or(
       strip.getByRole("button", { name: "Packing" }),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useDismiss } from "../../hooks/use-dismiss";
 import { layoutToolStrip, type ToolStripEntry } from "../../lib/nav/tool-strip-layout";
 
@@ -21,6 +21,8 @@ type ToolStripProps = {
    * short, complete set rather than the head of a long one pass their own.
    */
   visibleCount?: number;
+  /** Put secondary navigation in one selector, keeping primary tabs distinct. */
+  compact?: boolean;
   /** One line on what a tool is for, shown in the "More tools" list. */
   describe?: (id: string) => string | undefined;
   /**
@@ -115,6 +117,7 @@ export function ToolStrip({
   onChange,
   "aria-label": ariaLabel,
   visibleCount = DESKTOP_VISIBLE_COUNT,
+  compact = false,
   describe,
   groups,
 }: ToolStripProps) {
@@ -129,7 +132,12 @@ export function ToolStrip({
   // tool list arrives with its data renders empty once, then non-empty, and
   // React throws "rendered more hooks than during the previous render" on that
   // second pass. Every hook in this component now runs on every render.
-  const closeOverflow = useCallback(() => setExpanded(false), []);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeOverflow = useCallback(() => {
+    if (panelRef.current?.contains(document.activeElement)) triggerRef.current?.focus();
+    setExpanded(false);
+  }, []);
   const stripRef = useDismiss<HTMLDivElement>(expanded, closeOverflow);
 
   if (items.length < 1) return null;
@@ -140,7 +148,9 @@ export function ToolStrip({
    */
   const wanted = phone ? Math.min(PHONE_VISIBLE_COUNT, visibleCount) : visibleCount;
   // Never a "More tools (1)": a single leftover tool is shown instead of hidden behind a button.
-  const { visible, hidden } = layoutToolStrip(items, value, items.length - wanted === 1 ? items.length : wanted);
+  const { visible, hidden } = compact
+    ? { visible: [] as ToolStripItem[], hidden: items }
+    : layoutToolStrip(items, value, items.length - wanted === 1 ? items.length : wanted);
   const collapsible = hidden.length > 0;
 
   const renderChip = (item: ToolStripItem) => {
@@ -190,7 +200,7 @@ export function ToolStrip({
           aria-current={active ? "page" : undefined}
           onClick={() => {
             onChange(item.id);
-            setExpanded(false);
+            closeOverflow();
           }}
         >
           {body}
@@ -200,12 +210,13 @@ export function ToolStrip({
   };
 
   return (
-    <div className="hub-tool-strip" ref={stripRef}>
+    <div className="hub-tool-strip" data-compact={compact || undefined} ref={stripRef}>
       <nav className="hub-tool-strip-row" aria-label={ariaLabel}>
         {visible.map(renderChip)}
         {collapsible ? (
           <button
             type="button"
+            ref={triggerRef}
             className="hub-tool-chip hub-tool-more"
             aria-expanded={expanded}
             aria-controls={overflowId}
@@ -213,12 +224,13 @@ export function ToolStrip({
           >
             {/* No count: it changed with the tab and the screen width (8, 10, 21, 23), which read as
                 tools appearing and disappearing. */}
-            {expanded ? "Fewer tools" : "More tools"}
+            {compact ? (items.find((item) => item.id === value)?.label ?? "Tools") : expanded ? "Fewer tools" : "More tools"}
+            {compact ? <span aria-hidden="true">⌄</span> : null}
           </button>
         ) : null}
       </nav>
       {collapsible && expanded ? (
-        <div className="hub-tool-overflow" id={overflowId}>
+        <div className="hub-tool-overflow" id={overflowId} ref={panelRef}>
           <p className="hub-tool-overflow-head">{ariaLabel}</p>
           {groups?.length ? (
             groupHidden(hidden, groups).map((group) => (

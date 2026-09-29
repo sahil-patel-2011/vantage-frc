@@ -276,20 +276,7 @@ export function ProductHubShell({
   return (
     <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
       <OfflineBanner feature={hub.label} />
-      {/*
-        One bar, not four.
-        A hub used to open with a page header ("Competition" + a sentence), a
-        tab row, a tool row and the app bar along the bottom — four stacked
-        strips of navigation before a single pixel of the thing you came for,
-        around 320px of a 667px phone. Worse, they repeated each other: the
-        header's sentence for this hub was "Event day, scouting, strategy, and
-        pit." and the row directly beneath it read Event day | Scouting |
-        Strategy | Pit, while the app bar already had Compete lit up.
-        So the description is gone, and title, sections, tools and actions
-        share one row. The two levels stay legible because they are styled
-        differently, not because they are on different lines: sections are
-        underlined tabs, tools are chips.
-      */}
+      {/* Primary workspaces stay visible; secondary tools share one selector. */}
       <div className="hub-bar">
         <div className="hub-bar-id">
           {breadcrumbs ? <span className="breadcrumbs">{breadcrumbs}</span> : null}
@@ -310,6 +297,8 @@ export function ProductHubShell({
             the tab is how you get back to its own screen. */}
         {toolTabs.length > 0 ? (
           <ToolStrip
+            key={workbenchId}
+            compact
             aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
             value={tab}
             onChange={selectTab}
@@ -318,8 +307,6 @@ export function ProductHubShell({
               sectionHelpFor(hub.id, id)?.what
             }
             groups={hub.id === "competition" && workbenchId === "strategy" ? STRATEGY_TOOL_GROUPS : undefined}
-            // Pit has four tools; a "More tools (1)" holding Charge plan hid it for nothing.
-            visibleCount={hub.id === "competition" && workbenchId === "match-checklist" ? 4 : undefined}
             items={toolTabs.map((entry) => ({
               id: entry.id,
               label: entry.label,
