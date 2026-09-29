@@ -503,8 +503,8 @@ export default function ChatClient({
         </details>
       ) : null}
       {!blocked ? (
-      <div className="ch-layout">
-        <aside className="ch-sidebar" id="ch-channels" aria-label="Channels">
+      <div className="ch-layout" data-has-threads={threads.length > 0 || Boolean(thread)}>
+        {threads.length > 0 || thread ? <aside className="ch-sidebar" id="ch-channels" aria-label="Channels">
           <div>
             <span className="eyebrow">Channels</span>
             <h2>Your threads</h2>
@@ -546,7 +546,7 @@ export default function ChatClient({
               </li>
             ))}
           </ul>
-        </aside>
+        </aside> : null}
 
         <section className="ch-main">
           {!thread ? (
@@ -841,7 +841,7 @@ export default function ChatClient({
               ))}
             </ul>
           </div>
-        </aside>
+        </aside> : null}
         ) : null}
       </div>
       ) : null}

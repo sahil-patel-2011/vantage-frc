@@ -23,6 +23,7 @@ for (const width of [390, 1440]) {
         expect(Math.abs(target!.y + target!.height / 2 - glyph!.y - glyph!.height / 2)).toBeLessThan(0.6);
       }
       if (route.includes("/ai")) {
+        await expect(page.locator(' .ch-page [aria-busy="true"]')).toHaveCount(0, { timeout: 30_000 });
         await expect(page.getByText("No channel", { exact: true })).toHaveCount(0);
         await testInfo.attach("ai-chat-" + width + ".png", {
           body: await page.screenshot({ fullPage: true }),

@@ -419,3 +419,4 @@
 .ch-new-chat[open] { padding-bottom: 6px; }
 .ch-new-chat button { width: calc(100% - 12px); margin: 3px 6px; }
 .product-hub-panel .ch-page > .app-page-header:not(:has(.ch-header-actions > *)) { display: none; }
+.ch-layout[data-has-threads="false"] { grid-template-columns: minmax(0, 1fr); }
