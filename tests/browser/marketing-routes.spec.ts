@@ -4,7 +4,7 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   // The homepage identifies the whole product without promising spreadsheet replacement.
-  await expect(page.getByRole("heading", { name: "Your whole team. One connected season." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "One team. A clearer season." })).toBeVisible();
   const hero = page.locator(".lux-hero");
   await expect(hero.getByRole("link", { name: "Join the waitlist" })).toHaveCount(1);
   await expect(hero.getByRole("link", { name: /Already invited/ })).toBeVisible();

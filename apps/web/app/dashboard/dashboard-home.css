@@ -314,3 +314,13 @@ body.has-app-shell .dash-home .dash-widget .dash-big-number {
 
 /* The account call failed: one line and a retry, in place of a guessed "no team" card. */
 .dash-session-failed { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 12px; color: var(--ink); font-size: 14px; }
+
+/* Keep the greeting distinct from the workspace controls beneath it. */
+.dash-home .dash-hero-greeting {
+  color: var(--ink);
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.dash-home .dash-home-header { padding-block: 8px 12px; }

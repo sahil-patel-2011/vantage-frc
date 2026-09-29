@@ -14,7 +14,7 @@ export function HomeShowcase() {
           <header className="lux-section-head">
             <p className="lux-eyebrow">The whole season</p>
             <h2 id="lux-runs-title">More than match day.</h2>
-            <p>Start on Home. Move into the workspace for the job at hand, with the same team and sign-in.</p>
+            <p>Scouting, shop work, schedules and sponsorships. Each has a home; everyone stays on the same team.</p>
           </header>
           <ul className="mk-pillars">
             {MARKETING_HUBS.map((hub) => (
@@ -33,8 +33,8 @@ export function HomeShowcase() {
           <header className="lux-section-head">
             <p className="lux-eyebrow">Scouting with a purpose</p>
             <h2 id="lux-app-frames">From the stands to the strategy table.</h2>
-            <p>Collect match and pit observations, review the evidence, then decide together.
-              Prepare your forms while online; scouting entries can save locally and upload when you reconnect.</p>
+            <p>Collect observations. Compare robots. Make your plan.
+              Prepare forms online, collect offline, and upload when you reconnect.</p>
           </header>
           <ul className="mk-app-gallery-grid">
             {MARKETING_APP_FRAMES.map((frame) => (
