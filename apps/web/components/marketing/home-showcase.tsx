@@ -1,6 +1,7 @@
 import { MARKETING_HUBS } from "../../lib/marketing/product-story";
 import { MARKETING_APP_FRAMES, ProductFrame } from "./app-frames";
 import { MIcon } from "./marketing-icons";
+import { ScoutingDemo } from "./scouting-demo";
 
 export function HomeShowcase() {
   return (
@@ -44,6 +45,7 @@ export function HomeShowcase() {
           <p className="mk-related-links"><a href="/features/strategy">Explore scouting and strategy →</a></p>
         </div>
       </section>
+      <ScoutingDemo />
       <section className="lux-fit" aria-labelledby="lux-trust-title">
         <div className="lux-content">
           <header className="lux-section-head">

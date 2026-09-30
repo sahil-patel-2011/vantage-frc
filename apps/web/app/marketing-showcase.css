@@ -90,3 +90,55 @@
   }
   .marketing-lux .lux-route-hero-visual .mk-mock{width:100%;max-width:none;animation:none}
 }
+
+/* -- Scouting demo: the phone form and the draggable pick list, drawn without numbers -- */
+.marketing-lux .mk-scout-demo{padding:var(--m-section-gap,clamp(56px,8vw,104px)) var(--m-pad-x,20px);border-top:1px solid var(--m-line,#dfe5ea);background:var(--m-paper,#fff)}
+.marketing-lux .mk-scout-demo-grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:start;justify-content:center;margin-top:40px}
+.marketing-lux .mk-scout-demo figure{margin:0;display:grid;gap:16px}
+.marketing-lux .mk-scout-demo figcaption{display:grid;gap:4px;max-width:44ch}
+.marketing-lux .mk-scout-demo figcaption strong{font-size:17px}
+.marketing-lux .mk-scout-demo figcaption span{color:var(--muted,#556270);line-height:1.5}
+.marketing-lux .mk-scout-phone{width:100%;max-width:340px;padding:18px 16px 16px;border:1px solid var(--line,#dfe5ea);border-radius:36px;background:var(--bg,#f6f8fa);box-shadow:0 24px 60px rgba(15,35,50,.12);display:grid;gap:12px}
+.marketing-lux .mk-scout-phone-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.marketing-lux .mk-scout-phone-top b{font-size:17px}
+.marketing-lux .mk-scout-phone-top span{font-size:12px;color:var(--muted,#556270)}
+.marketing-lux .mk-scout-alliances{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.marketing-lux .mk-scout-alliances i{display:grid;place-items:center;gap:2px;min-height:48px;border-radius:12px;color:#fff;font-style:normal;font-weight:700;font-size:13px}
+.marketing-lux .mk-scout-alliances i small{font-size:10px;font-weight:600;opacity:.9}
+.marketing-lux .mk-scout-alliances .red{background:#b91c1c}
+.marketing-lux .mk-scout-alliances .blue{background:#1d4ed8}
+.marketing-lux .mk-scout-alliances .is-next{outline:3px solid var(--ink,#13202b);outline-offset:2px}
+.marketing-lux .mk-scout-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border:1px solid var(--line,#dfe5ea);border-radius:999px;background:var(--surface,#fff)}
+.marketing-lux .mk-scout-tabs span{display:grid;place-items:center;min-height:36px;border-radius:999px;font-size:12px;font-weight:600;color:var(--muted,#556270)}
+.marketing-lux .mk-scout-tabs .is-on{background:var(--accent,#155e68);color:#fff}
+.marketing-lux .mk-scout-field{display:grid;gap:6px}
+.marketing-lux .mk-scout-field label{font-size:12px;font-weight:600;color:var(--muted,#556270)}
+.marketing-lux .mk-scout-stepper{display:grid;grid-template-columns:44px 1fr 44px;gap:8px}
+.marketing-lux .mk-scout-stepper b,.marketing-lux .mk-scout-stepper span{display:grid;place-items:center;min-height:44px;border:1px solid var(--line,#dfe5ea);border-radius:12px;background:var(--surface,#fff);font-size:16px}
+.marketing-lux .mk-scout-stepper .plus{background:var(--accent,#155e68);border-color:var(--accent,#155e68);color:#fff}
+.marketing-lux .mk-scout-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.marketing-lux .mk-scout-chips span{display:grid;place-items:center;min-height:44px;border:1px solid var(--line,#dfe5ea);border-radius:12px;background:var(--surface,#fff);font-size:14px;font-weight:600}
+.marketing-lux .mk-scout-route{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:10px;border:1px solid var(--line,#dfe5ea);border-radius:14px;background:var(--surface,#fff)}
+.marketing-lux .mk-scout-route span{height:22px;border-radius:6px;background:var(--bg,#eef2f5);border:1px solid var(--line,#dfe5ea)}
+.marketing-lux .mk-scout-route .on{background:var(--accent,#155e68);border-color:var(--accent,#155e68)}
+.marketing-lux .mk-scout-save{display:grid;place-items:center;min-height:48px;border-radius:14px;background:var(--accent,#155e68);color:#fff;font-weight:700}
+.marketing-lux .mk-scout-offline{margin:0;text-align:center;font-size:12px;color:var(--muted,#556270)}
+.marketing-lux .mk-scout-picks{display:grid;gap:14px;padding:18px;border:1px solid var(--line,#dfe5ea);border-radius:24px;background:var(--bg,#f6f8fa);box-shadow:0 24px 60px rgba(15,35,50,.08)}
+.marketing-lux .mk-scout-tier{padding:14px;border:1px solid var(--line,#dfe5ea);border-radius:18px;background:var(--surface,#fff)}
+.marketing-lux .mk-scout-tier h3{margin:0 0 8px;font-size:15px}
+.marketing-lux .mk-scout-tier ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.marketing-lux .mk-scout-tier li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;border:1px solid transparent}
+.marketing-lux .mk-scout-tier li em{font-style:normal;color:var(--muted,#556270);letter-spacing:-3px;font-size:18px;padding:0 4px}
+.marketing-lux .mk-scout-tier li span{display:grid;gap:2px;min-width:0}
+.marketing-lux .mk-scout-tier li b{font-size:14px}
+.marketing-lux .mk-scout-tier li small{font-size:12px;color:var(--muted,#556270)}
+.marketing-lux .mk-scout-tier li u{text-decoration:none;display:grid;place-items:center;min-height:36px;padding:0 14px;border:1px solid var(--line,#dfe5ea);border-radius:10px;font-size:13px;font-weight:600}
+.marketing-lux .mk-scout-tier li.lifted{background:var(--surface,#fff);border-color:var(--accent,#155e68);box-shadow:0 14px 30px rgba(15,35,50,.16);transform:translate(10px,-2px) rotate(-.6deg)}
+.marketing-lux .mk-scout-tier li.slot{height:3px;padding:0;margin:0 8px;border:0;border-radius:2px;background:var(--accent,#155e68)}
+@media (max-width:899px){
+  .marketing-lux .mk-scout-demo-grid{grid-template-columns:1fr;justify-items:center}
+  .marketing-lux .mk-scout-picks-wrap{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .marketing-lux .mk-scout-tier li.lifted{transform:none}
+}
