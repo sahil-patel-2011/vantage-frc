@@ -53,7 +53,9 @@ for (const width of [1280, 390]) {
       await question.getByLabel(/^Answer type/).selectOption("dropdown");
       await question.getByLabel("Option 1", { exact: true }).fill("Swerve");
       await question.getByLabel("Option 2", { exact: true }).fill("Tank");
-      await builder.getByRole("button", { name: "Move question 2 up", exact: true }).click();
+      // Reorder with the question's drag handle; the arrow keys are its keyboard form.
+      await builder.getByRole("button", { name: /^Move question 2:/ }).focus();
+      await page.keyboard.press("ArrowUp");
       await expect(builder.locator(".sfb-question").first().getByLabel("Label", { exact: true })).toHaveValue("Drive preference");
       await types.getByRole("button", { name: "Pit form", exact: true }).click();
       await builder.getByLabel("Form title", { exact: true }).fill(`${marker} Pit`);

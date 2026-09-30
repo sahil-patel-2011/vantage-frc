@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ActionMenu, EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
+import { useTierDrag } from "../../../components/ui/use-tier-drag";
+import "../../../components/ui/tier-drag.css";
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
@@ -17,7 +19,6 @@ import {
   formBuilderPublishLabel,
   formBuilderShellCopy,
   duplicateQuestion,
-  moveQuestion,
   needsOptionEditor,
   needsSettingsEditor,
   newDraftQuestion,
@@ -86,6 +87,24 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const payloadRef = useRef<SchemasPayload | null>(null);
   payloadRef.current = payload;
+
+  // Drag a question by its handle (finger, mouse, or the arrow keys) instead of an up and a down
+  // button on every card. One list, so a single tier.
+  const canReorder = Boolean(payload?.canManageSchemas) && !busy;
+  const questionDrag = useTierDrag<"questions">({
+    groups: [{ tier: "questions", ids: questions.map((question) => question.id) }],
+    enabled: canReorder,
+    tierLabel: () => "the form",
+    onMove: (id, _tier, index) =>
+      setQuestions((prev) => {
+        const from = prev.findIndex((question) => question.id === id);
+        if (from < 0) return prev;
+        const next = prev.slice();
+        const [moving] = next.splice(from, 1);
+        next.splice(Math.max(0, Math.min(index, next.length)), 0, moving!);
+        return next;
+      }),
+  });
 
   const validation = useMemo(() => validateDraft(title, questions, type), [title, questions, type]);
 
@@ -557,8 +576,8 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Toggle required, edit options, copy a question with Duplicate, and reorder with
-                    Move up / Move down.
+                    Toggle required, edit options, and drag a question by its handle to reorder it.
+                    Duplicate and Remove are under More.
                   </p>
                 </div>
               </header>
@@ -594,9 +613,20 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                   </Button>
                 </div>
               ) : null}
-              <div className="sfb-questions">
+              <div className="sfb-questions" ref={questionDrag.rootRef} data-tier-list="questions">
+                <p className="sr-only" role="status" aria-live="polite">
+                  {questionDrag.announcement}
+                </p>
                 {questions.map((question, index) => (
-                  <article key={question.id} className="sfb-question">
+                  <Fragment key={question.id}>
+                  {questionDrag.slotIndex("questions") === questions.slice(0, index).filter((item) => item.id !== questionDrag.drag?.id).length &&
+                  questionDrag.drag?.id !== question.id ? (
+                    <div className="tier-drop-slot" aria-hidden="true" />
+                  ) : null}
+                  <article
+                    className={`sfb-question${questionDrag.drag?.id === question.id ? " is-dragging" : ""}`}
+                    data-entry-id={question.id}
+                  >
                     <div className="sfb-question-head">
                       <strong>
                         Q{index + 1}
@@ -620,24 +650,17 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         Remove also picks up the menu's confirmation step.
                       */}
                       <div className="sfb-question-actions">
-                        <button
-                          type="button"
-                          className="sfb-move"
-                          disabled={!payload.canManageSchemas || busy || index === 0}
-                          aria-label={`Move question ${index + 1} up`}
-                          onClick={() => setQuestions((prev) => moveQuestion(prev, index, index - 1))}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          className="sfb-move"
-                          disabled={!payload.canManageSchemas || busy || index === questions.length - 1}
-                          aria-label={`Move question ${index + 1} down`}
-                          onClick={() => setQuestions((prev) => moveQuestion(prev, index, index + 1))}
-                        >
-                          ↓
-                        </button>
+                        {payload.canManageSchemas ? (
+                          <button
+                            type="button"
+                            className="tier-drag-handle"
+                            aria-label={`Move question ${index + 1}: drag, or press the up and down arrow keys`}
+                            aria-disabled={busy || undefined}
+                            {...questionDrag.handleProps(question.id, "questions")}
+                          >
+                            <span aria-hidden="true">⋮⋮</span>
+                          </button>
+                        ) : null}
                         <ActionMenu
                           tone="row"
                           label={`Question ${index + 1} actions`}
@@ -802,7 +825,12 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                       </>
                     )}
                   </article>
+                  </Fragment>
                 ))}
+                {questionDrag.slotIndex("questions") !== null &&
+                questionDrag.slotIndex("questions")! >= questions.filter((item) => item.id !== questionDrag.drag?.id).length ? (
+                  <div className="tier-drop-slot" aria-hidden="true" />
+                ) : null}
               </div>
               <div className="sfb-add-row">
                 <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}>
