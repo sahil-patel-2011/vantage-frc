@@ -17,19 +17,19 @@ import { ConsentBanner } from "../components/consent-banner";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
 const inter = localFont({
-  src: "./fonts/inter-latin-variable.woff2",
+  src: "../assets/fonts/inter-latin-variable.woff2",
   weight: "100 900",
   variable: "--font-inter",
   display: "swap",
 });
 const sourceSans = localFont({
-  src: "./fonts/source-sans-3-latin-variable.woff2",
+  src: "../assets/fonts/source-sans-3-latin-variable.woff2",
   weight: "200 900",
   variable: "--font-source-sans",
   display: "swap",
 });
 const sourceSerif = localFont({
-  src: "./fonts/source-serif-4-latin-variable.woff2",
+  src: "../assets/fonts/source-serif-4-latin-variable.woff2",
   weight: "200 900",
   adjustFontFallback: "Times New Roman",
   variable: "--font-source-serif",
@@ -37,9 +37,9 @@ const sourceSerif = localFont({
 });
 const ibmMono = localFont({
   src: [
-    { path: "./fonts/ibm-plex-mono-latin-400.woff2", weight: "400" },
-    { path: "./fonts/ibm-plex-mono-latin-500.woff2", weight: "500" },
-    { path: "./fonts/ibm-plex-mono-latin-600.woff2", weight: "600" },
+    { path: "../assets/fonts/ibm-plex-mono-latin-400.woff2", weight: "400" },
+    { path: "../assets/fonts/ibm-plex-mono-latin-500.woff2", weight: "500" },
+    { path: "../assets/fonts/ibm-plex-mono-latin-600.woff2", weight: "600" },
   ],
   fallback: ["ui-monospace", "monospace"],
   adjustFontFallback: false,
