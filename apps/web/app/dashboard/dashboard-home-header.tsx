@@ -48,7 +48,6 @@ export function DashboardHomeHeader({
   return (
     <header className="dash-home-header">
       <div className="dash-home-intro" {...dim}>
-        <span className="dash-home-eyebrow">Your workspace</span>
         {/* The greeting is what is specific to opening the page; the team number is in the
             top bar on every page, so it is not repeated here. */}
         <h1 className="dash-hero-greeting">{greetingText}</h1>

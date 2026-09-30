@@ -147,6 +147,7 @@ export function AppShellIsland({
     >
       {islandTabs.map((tab) => (
         <a
+          aria-label={tab.href.includes("tab=messages") && unreadMessages >= 1 ? `${tab.label}, ${unreadMessages} unread` : tab.label}
           aria-current={activeIslandTabHref === tab.href ? "page" : undefined}
           href={withOrgHref(tab.href, orgId)}
           key={tab.href}

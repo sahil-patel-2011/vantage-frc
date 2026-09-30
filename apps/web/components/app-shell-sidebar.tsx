@@ -96,7 +96,7 @@ export function AppShellSidebar({
         <span className="vrail-org">{orgLabel}</span>
       </div>
 
-      <button className="vrail-search" type="button" data-tour="menu" onClick={onOpenSearch}>
+      <button className="vrail-search" type="button" data-tour="menu" aria-controls="vantage-navigation-panel" onClick={onOpenSearch}>
         <Icon name="search" />
         <span>Search</span>
         {shortcutHint ? <kbd>{shortcutHint}</kbd> : null}

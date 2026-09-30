@@ -200,10 +200,25 @@
   body.has-app-shell .soft-ask-ai {
     display: none;
   }
-  /* The three-line button STAYS. The rail is the fast path — the five pillars
-     and your own apps. The drawer is the complete list: App manual, Support
-     and Sign out appear nowhere else, and hiding its only entry point on a
-     desktop would take them off the product entirely. */
+  /* Search opens a centered panel on desktop, rather than a second left rail. */
+  body.has-app-shell .soft-drawer {
+    inset: 24px auto auto 50%;
+    width: min(560px, calc(100vw - 48px));
+    max-height: calc(100dvh - 48px);
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    transform: translate(-50%, -12px);
+    transition: transform .18s var(--ease-settle), visibility 0s linear .18s;
+  }
+  body.has-app-shell .soft-drawer.open {
+    transform: translate(-50%, 0);
+    box-shadow: var(--shadow-pop);
+    transition: transform .18s var(--ease-settle), visibility 0s;
+  }
+  body.has-app-shell.soft-nav-panel-open .vrail {
+    visibility: hidden;
+  }
 }
 
 /* Page title stacked over the team button (non-hub pages): the pair was 64px tall inside a

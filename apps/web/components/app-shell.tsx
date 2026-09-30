@@ -241,7 +241,11 @@ export default function AppShell() {
     if (!navOpen) {
       const opener = navOpenerRef.current;
       navOpenerRef.current = null;
-      if (opener?.isConnected) requestAnimationFrame(() => opener.focus());
+      if (opener) requestAnimationFrame(() => {
+        const visible = opener.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden";
+        const fallback = document.querySelector<HTMLElement>(window.matchMedia("(min-width: 1024px)").matches ? ".vrail-search" : ".soft-menu-btn");
+        (visible ? opener : fallback)?.focus();
+      });
       setNavQuery("");
       setSearchHits([]);
       setSearchLoading(false);

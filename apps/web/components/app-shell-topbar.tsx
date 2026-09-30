@@ -112,6 +112,7 @@ export function AppShellTopbar({
             data-tour="menu"
             type="button"
             aria-label="Menu and search"
+            aria-controls="vantage-navigation-panel"
             aria-expanded={menuOpen || navOpen}
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onOpenNav}

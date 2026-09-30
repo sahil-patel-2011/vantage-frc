@@ -123,6 +123,7 @@ export function AppShellNavPanel({
         <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={closeNav} />
       ) : null}
       <aside
+        id="vantage-navigation-panel"
         className={`soft-drawer ${navOpen ? "open" : ""}`}
         aria-label="Product navigation"
         onKeyDown={navOpen ? keepTabInsidePanel : undefined}

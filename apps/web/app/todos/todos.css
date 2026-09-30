@@ -10,6 +10,38 @@
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 12px;
 }
+.todos-create { display: grid; gap: 10px; }
+.todos-page .soft-form-row > select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+}
+.todos-create-row { display: flex; align-items: flex-end; gap: 10px; }
+.todos-create-row > label { flex: 1; min-width: 0; }
+.todos-create-row > .app-button { flex: none; min-height: 44px; }
+.todos-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  color: var(--muted);
+  font-size: 13px;
+}
+.todos-filter select {
+  min-height: 44px;
+  min-width: 156px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+}
 .todos-metrics strong {
   display: block;
   font-size: 1.45rem;
@@ -189,6 +221,27 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.todos-card-controls { display: flex; align-items: flex-start; gap: 12px; }
+.todos-card-controls > .app-button { flex: none; }
+.todos-card-details { flex: 1; min-width: 0; }
+.todos-card-details > summary {
+  width: fit-content;
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.todos-card-details[open] > summary { margin-bottom: 10px; }
+@media (max-width: 500px) {
+  .todos-card-controls { flex-wrap: wrap; }
+  .todos-card-details[open] { flex-basis: 100%; order: 1; }
 }
 .todos-filter-note {
   margin: 0;
@@ -196,8 +249,12 @@
   font-size: 12px;
 }
 .todos-more {
+  width: fit-content;
+  min-height: 44px;
+  align-content: center;
   cursor: pointer;
-  font: 700 12px inherit;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--muted);
 }
 .product-hub-panel .todos-page {
