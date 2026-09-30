@@ -8,6 +8,29 @@ const homeOrg = "6925a000-0000-4000-8000-000000000001";
 const ownerId = "6925e2e0-0000-4000-8000-000000000001";
 test.use({ actionTimeout: 15_000 });
 
+test("account menu becomes actionable only after hydration", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
+  let release!: () => void;
+  const scriptsReady = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/_next/static/**/*.js", async route => {
+    await scriptsReady;
+    await route.continue();
+  });
+  try {
+    await page.goto(`/account?orgId=${homeOrg}`, { waitUntil: "commit" });
+    const avatar = page.getByRole("button", { name: "Account menu" });
+    await expect(avatar).toBeVisible();
+    await expect(avatar).toBeDisabled();
+    release();
+    await expect(avatar).toBeEnabled();
+    await avatar.click();
+    await expect(page.getByRole("menu", { name: "Account" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Team admin", exact: true })).toBeVisible();
+  } finally {
+    release();
+  }
+});
+
 for (const width of [390, 1440]) test(`switching teams updates data, permissions and Home at ${width}px`, async ({ page, context }) => {
   const url = new URL(process.env.DATABASE_ADMIN_URL!);
   expect(["localhost", "127.0.0.1"]).toContain(url.hostname);

@@ -125,26 +125,25 @@
   /* Hero: the copy rises in line by line, then the product frame settles. */
   @keyframes mk-rise {
     from {
-      opacity: 0;
       transform: translateY(14px);
     }
     to {
-      opacity: 1;
       transform: none;
     }
   }
   @keyframes mk-settle {
     from {
-      opacity: 0;
       transform: translateY(22px) scale(0.985);
     }
     to {
-      opacity: 1;
       transform: none;
     }
   }
-  /* Not the h1: it is the largest paint, and holding it at opacity 0 would
-     delay LCP for an effect nobody needs on the headline. */
+  /* The headline is immediately readable; entrance motion must never reduce
+     the contrast of copy or controls while the page is becoming interactive. */
+  .marketing-lux .lux-hero-copy > h1 {
+    animation: none;
+  }
   .marketing-lux .lux-hero-copy > :not(h1) {
     animation: mk-rise 620ms var(--ease-settle) backwards;
   }
@@ -152,16 +151,15 @@
   .marketing-lux .lux-hero-copy > :nth-child(3) { animation-delay: 120ms; }
   .marketing-lux .lux-hero-copy > :nth-child(4) { animation-delay: 180ms; }
   .marketing-lux .lux-hero-copy > :nth-child(n + 5) { animation-delay: 240ms; }
-  .marketing-lux .lux-hero-inner > .mk-mock {
+  .marketing-lux .lux-hero-inner > :last-child {
     animation: mk-settle 760ms var(--ease-settle) 200ms backwards;
   }
 
   /* Grids reveal their cards one after another instead of as one slab. */
   html.reveal-armed .marketing-lux :where(.lux-feature-grid, .lux-loop-steps, .mk-pillars, .mk-price-grid, .mk-app-gallery-grid)[data-reveal] > li {
-    opacity: 0;
+    opacity: 1;
     transform: translateY(12px);
     transition:
-      opacity var(--dur-page) var(--ease-out),
       transform var(--dur-page) var(--ease-settle);
   }
   html.reveal-armed .marketing-lux :where(.lux-feature-grid, .lux-loop-steps, .mk-pillars, .mk-price-grid, .mk-app-gallery-grid)[data-reveal].is-in > li {
@@ -197,4 +195,11 @@
       animation-range: 0 120px;
     }
   }
+}
+
+/* Older marketing layers arm a fade on the whole section as well as each
+   card. Keep every section readable, including before scroll/hydration. */
+html.reveal-armed .marketing-lux [data-reveal] {
+  opacity: 1;
+  transition: transform var(--dur-page) var(--ease-settle);
 }

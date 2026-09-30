@@ -22,6 +22,11 @@ for (const width of [320, 768, 1440]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth), route).toBeLessThanOrEqual(width + 1);
       expect(await page.getByRole("button", { name: /open (navigation|menu)/i }).count(), route).toBeLessThanOrEqual(1);
       const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+      if (accessibility.violations.length) {
+        await info.attach(`accessibility-${route.replace(/\W/g, "") || "marketing"}-${width}.json`, {
+          body: JSON.stringify(accessibility.violations, null, 2), contentType: "application/json",
+        });
+      }
       expect(accessibility.violations.map(v => `${v.id}: ${v.nodes.length} nodes`), route).toEqual([]);
       const name = `${route.replace(/\W/g, "") || "marketing"}-${width}.png`;
       const path = info.outputPath(name);

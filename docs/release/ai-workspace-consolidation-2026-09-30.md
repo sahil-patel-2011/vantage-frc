@@ -10,6 +10,8 @@ The writer exposes all six draft types through one labeled selector. Its team pr
 
 The shared hub can defer navigation to an integrated workspace without bypassing its access gates. The action menu gains an opt-in menu-only layout. The modal gains opt-in editor retention and initializes its focus trap after its portal mounts, including directly opened Notes URLs. Other consumers keep their existing defaults.
 
+Marketing entrances preserve full text/control opacity, including the workspace map. The prior fade temporarily reduced contrast below WCAG AA while controls were already interactive. Subtle movement remains, and reduced-motion behavior is preserved. The avatar is disabled until its menu handler is hydrated, preventing a silent click immediately after a reload or Back navigation.
+
 ## Verification and scope
 
 - Base: main `f35cbf6c9860fc358b1403fafe8e07ec528f5b2d`, following merged PRs #2338 and #2339. The primary checkout's two local `.claude` files were preserved.
@@ -23,5 +25,7 @@ The shared hub can defer navigation to an integrated workspace without bypassing
 The compiled local app passed seven focused journeys. The first CI quality run passed all 11,244 unit tests, static migration checks, lint, types and build; its PostgreSQL/RLS job also passed. Two browser assertions still required the deliberately removed AI tab bar. Their replacements verify all five original workbenches exactly once across the mode selector and contextual menu, preserving the other hubs' checks. All six compiled hub-navigation checks passed locally. No assertion was simply removed or replaced with a skip.
 
 Full GitHub quality, migration/RLS, production build and eight browser shards remain merge gates for the final revision. Final CI/deployment evidence is recorded in the PR and handoff.
+
+The complete presentation audit found the marketing entrance contrast problem at all three widths. After repair, all 30 route/viewport states passed the compiled presentation audit; direct marketing entrance and settled checks also passed at 320, 768 and 1440 pixels. The account-menu regression deliberately pauses JavaScript to verify the server-rendered avatar cannot advertise an inactive click, then releases the scripts and verifies the real authenticated menu. This regression and both compiled team-switch journeys passed. Team switching also passed six repeated compiled local journeys, including saving a report to the selected team's database records and checking permissions after reload and Back.
 
 No schema, production records, media controls, signup eligibility or external credentials change in this release. UI verification does not demonstrate provider execution: live AI requests still require the appropriate personal connection or configured provider. The broader Google recovery/load, SMTP and other production acceptance work described in the existing release status remains unverified where evidence is missing.

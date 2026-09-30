@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
@@ -101,6 +102,10 @@ export function AppShellTopbar({
   onWorkspaceSwitch: (nextOrgId: string) => void;
   onSignOut: () => void;
 }) {
+  // SSR paints the avatar before React attaches its menu handler. Do not
+  // advertise an actionable control that can silently ignore an early click.
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => { setInteractive(true); }, []);
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
@@ -201,6 +206,7 @@ export function AppShellTopbar({
             aria-label="Account menu"
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
+            disabled={!interactive}
             onClick={onToggleAccount}
           >
             {me.image ? <img src={me.image} alt="" /> : initial}
