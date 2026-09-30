@@ -73,6 +73,15 @@ test("the tool picker stays above the phone bar on narrow and landscape screens"
       const island = document.querySelector(".soft-island")?.getBoundingClientRect();
       return rect.height > 0 && rect.bottom <= innerHeight - 16 && (!island?.width || rect.bottom <= island.top - 12);
     })).toBe(true);
+    if (viewport.height < 500) {
+      await page.locator(".hub-tool-more").click();
+      await page.locator(".hub-tool-more").click();
+      const first = panel.locator(".hub-tool-list :is(a,button)").first();
+      await expect.poll(() => first.evaluate(el => {
+        const rect = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
+      }), "Opening the landscape picker shows a usable tool below search").toBe(true);
+    }
     const last = panel.locator(".hub-tool-list :is(a,button)").last();
     await last.focus();
     await page.keyboard.press("End");

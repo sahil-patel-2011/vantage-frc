@@ -576,6 +576,14 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
   background: var(--surface);
   box-shadow: var(--shadow-pop);
 }
+/* On a short screen, anchor higher so search does not consume the entire menu. */
+@media (max-height: 500px) {
+  .hub-bar .hub-tool-overflow {
+    position: fixed;
+    top: calc(var(--topbar-h, 60px) + 12px);
+    right: 16px;
+  }
+}
 
 @media (max-width: 720px) {
   .hub-bar {
