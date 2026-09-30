@@ -64,6 +64,7 @@ test("the tool picker stays above the phone bar on narrow and landscape screens"
   test.setTimeout(120_000);
   expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/competition?tab=strategy");
+  await expect(page.getByRole("tab", { name: "Strategy", exact: true })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "More tools", exact: true }).click();
   for (const viewport of [{ width: 320, height: 667 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
     await page.setViewportSize(viewport);

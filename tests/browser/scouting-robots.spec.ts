@@ -78,15 +78,15 @@ test("sorts by pick order, average and team number", async ({ page }) => {
 
   const firstTeam = async () => (await page.locator(".stp-row .stp-team").first().innerText()).trim();
   // The screen opens on Best fit, not pick order, so choose pick order first.
-  await page.getByRole("button", { name: "Pick order" }).click();
+  await page.getByRole("combobox", { name: "Sort robots" }).selectOption("pick");
   const byPick = await firstTeam();
 
-  await page.getByRole("button", { name: "Team number" }).click();
+  await page.getByRole("combobox", { name: "Sort robots" }).selectOption("number");
   const byNumber = await page.locator(".stp-row .stp-team").allInnerTexts();
   const numbers = byNumber.map((value) => Number(value.trim()));
   expect(numbers).toEqual([...numbers].sort((a, b) => a - b));
 
-  await page.getByRole("button", { name: "Pick order" }).click();
+  await page.getByRole("combobox", { name: "Sort robots" }).selectOption("pick");
   await expect(page.locator(".stp-row .stp-team").first()).toHaveText(byPick);
 });
 
@@ -98,17 +98,11 @@ test("Best fit ranks on more than points, and is the order that opens", async ({
 
   // It opens on Best fit, because "which robot should we take" is the question
   // the data was collected to answer.
-  await expect(page.getByRole("button", { name: "Best fit", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.getByRole("combobox", { name: "Sort robots" })).toHaveValue("fit");
   const fit = await order();
 
-  await page.getByRole("button", { name: "Average", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Average", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await page.getByRole("combobox", { name: "Sort robots" }).selectOption("average");
+  await expect(page.getByRole("combobox", { name: "Sort robots" })).toHaveValue("average");
   const average = await order();
 
   // If weighting cannot change the answer it is decoration.
@@ -130,7 +124,7 @@ test("Best fit ranks on more than points, and is the order that opens", async ({
    * with a full sample — so the check fired on a robot that was not thin and
    * failed on correct behaviour.
    */
-  await page.getByRole("button", { name: "Best fit", exact: true }).click();
+  await page.getByRole("combobox", { name: "Sort robots" }).selectOption("fit");
   await page.waitForTimeout(300);
 
   let checked = 0;

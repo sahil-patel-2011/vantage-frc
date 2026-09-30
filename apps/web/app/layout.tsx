@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Inter, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 // Last on purpose: system.css is the shared default layer (see its header).
 // Leftover product chrome sheets load from product-styles.ts via AppShell
@@ -16,24 +16,33 @@ import ThemeProvider from "./theme-provider";
 import { ConsentBanner } from "../components/consent-banner";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "./fonts/inter-latin-variable.woff2",
+  weight: "100 900",
   variable: "--font-inter",
   display: "swap",
 });
-const sourceSans = Source_Sans_3({
-  subsets: ["latin"],
+const sourceSans = localFont({
+  src: "./fonts/source-sans-3-latin-variable.woff2",
+  weight: "200 900",
   variable: "--font-source-sans",
   display: "swap",
 });
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
+const sourceSerif = localFont({
+  src: "./fonts/source-serif-4-latin-variable.woff2",
+  weight: "200 900",
+  adjustFontFallback: "Times New Roman",
   variable: "--font-source-serif",
   display: "swap",
 });
-const ibmMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const ibmMono = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-mono-latin-400.woff2", weight: "400" },
+    { path: "./fonts/ibm-plex-mono-latin-500.woff2", weight: "500" },
+    { path: "./fonts/ibm-plex-mono-latin-600.woff2", weight: "600" },
+  ],
+  fallback: ["ui-monospace", "monospace"],
+  adjustFontFallback: false,
   variable: "--font-ibm-mono",
   display: "swap",
 });

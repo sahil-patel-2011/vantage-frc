@@ -14,7 +14,8 @@ import type { TeamMatchLogView } from "../../lib/scouting/team-match-log-load";
 import { MIN_SUMMARY_MATCHES, sharedFieldTeams, summarizeTeamMatches } from "../../lib/scouting/team-match-log";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { MEDIA_ENABLED } from "../../lib/media-availability";
+import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { Button } from "../../components/ui";
 import "./scouting-team-match-log.css";
 
 function num(teamKey: string): string {
@@ -45,13 +46,14 @@ export function ScoutingTeamMatchLog({
   teamKey: string;
 }) {
   const [view, setView] = useState<TeamMatchLogView | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<{ message: string; status: number | null } | null>(null);
+  const [retry, setRetry] = useState(0);
   const [relativeTo, setRelativeTo] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     setView(null);
-    setFailed(false);
+    setFailure(null);
     setRelativeTo("");
     void (async () => {
       try {
@@ -62,26 +64,38 @@ export function ScoutingTeamMatchLog({
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         if (!response.ok) {
-          if (!cancelled) setFailed(true);
+          const message = await apiErrorMessage(response);
+          if (!cancelled) setFailure({ message: message ?? "Could not load this robot’s matches.", status: response.status });
           return;
         }
         const body = (await response.json()) as TeamMatchLogView;
         if (!cancelled) setView(body);
       } catch {
-        if (!cancelled) setFailed(true);
+        if (!cancelled) setFailure({ message: "Could not load this robot’s matches.", status: null });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [orgId, eventKey, teamKey]);
+  }, [orgId, eventKey, teamKey, retry]);
+
+  useEffect(() => {
+    if (!failure || (failure.status != null && failure.status < 500)) return;
+    const reconnect = () => setRetry(current => current + 1);
+    window.addEventListener("online", reconnect);
+    return () => window.removeEventListener("online", reconnect);
+  }, [failure]);
 
   const rows = useMemo(() => (view?.status === "ready" ? view.rows : []), [view]);
   const summary = useMemo(() => summarizeTeamMatches(rows, { relativeTo: relativeTo || null }), [rows, relativeTo]);
   const shared = useMemo(() => sharedFieldTeams(rows), [rows]);
 
-  if (failed) {
-    return <p className="stml-empty">Could not load this robot’s matches. They will load when the connection is back.</p>;
+  if (failure) {
+    const copy = loadFailureCopy(classifyLoadFailure({ ...failure, online: navigator.onLine }), { message: failure.message, nextPath: withOrgHref("/competition?tab=scouting", orgId) });
+    return <div className="stml-error" role="status"><p>{copy.description}</p>
+      {copy.primary ? <Button as="a" href={copy.primary.href}>{copy.primary.label}</Button>
+        : copy.showRetry ? <Button onClick={() => setRetry(current => current + 1)}>Retry matches</Button> : null}
+    </div>;
   }
   if (!view) return <p className="stml-empty" aria-busy="true">Loading matches…</p>;
   if (view.status !== "ready") return <p className="stml-empty">{view.message}</p>;
@@ -220,12 +234,8 @@ export function ScoutingTeamMatchLog({
         </table>
       </div>
       <p className="stml-foot">
-        {MEDIA_ENABLED ? (
-          <>
-            <a href={withOrgHref("/match-video-index", orgId)}>Add a video link</a>
-            {" · "}
-          </>
-        ) : null}
+        <a href={withOrgHref("/match-video-index", orgId)}>Add a video link</a>
+        {" · "}
         <a href={withOrgHref("/match-notes-timeline", orgId)}>Add a match note</a>
       </p>
     </section>

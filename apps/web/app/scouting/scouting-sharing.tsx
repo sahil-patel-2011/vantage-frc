@@ -68,12 +68,15 @@ export function ScoutingSharing({ orgId }: { orgId: string }) {
               : "Sharing is off for your team."
             : "Checking your team’s sharing setting…"}
         </p>
-        <p className="app-muted">
-          By default, past and new match observations are available to other
-          signed-in Vantage teams. Scout identities, free text, private notes,
-          and action histories stay with your team. Owners and admins can turn
-          sharing off.
-        </p>
+        <details>
+          <summary data-disclosure>What is shared?</summary>
+          <p className="app-muted">
+            Past and new match observations are available to other signed-in
+            Vantage teams while sharing is on. Scout identities, free text,
+            private notes, and action histories stay with your team. Owners and
+            admins can change this setting.
+          </p>
+        </details>
       </div>
       {settings?.canManage ? (
         <Button
