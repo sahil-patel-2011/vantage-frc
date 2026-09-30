@@ -4,6 +4,8 @@ import { signInFixture } from "./session";
 const defaults = ["/dashboard", "/competition", "/competition?tab=scouting", "/rankings"];
 const personal = ["/dashboard", "/competition", "/competition?tab=scouting", "/team"];
 
+// The four-app bottom bar is the phone layout; from 1024px up the left rail carries the apps.
+test.use({ viewport: { width: 390, height: 844 } });
 test.beforeEach(async ({ context }) => { await signInFixture(context); });
 
 for (const phase of ["editing", "saved"] as const) {

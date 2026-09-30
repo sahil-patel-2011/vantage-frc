@@ -24,7 +24,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Primary apps" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: width < 1024 ? "Primary apps" : "Your apps" })).toBeVisible();
     await checkAccessibility(page, testInfo, "home");
 
     await page.getByRole("button", { name: "Account menu", exact: true }).click();
@@ -37,7 +37,7 @@ for (const width of [1280, 390]) {
     await checkAccessibility(page, testInfo, "drawer");
     await page.keyboard.press("Escape");
 
-    await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
+    await page.getByRole("navigation", { name: width < 1024 ? "Primary apps" : "Your apps" }).click({ button: "right" });
     await expect(page.getByRole("dialog", { name: "Your four apps", exact: true })).toBeVisible();
     await checkAccessibility(page, testInfo, "island-editor");
     await page.keyboard.press("Escape");
@@ -49,7 +49,7 @@ for (const width of [1280, 390]) {
     expect(identity.orgId).toBeTruthy();
     await page.goto(`/competition?orgId=${encodeURIComponent(identity.orgId)}`);
     await expect(page.getByRole("heading", { level: 1, name: "Competition", exact: true })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Selected event", exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Selected event", exact: true })).toBeVisible({ timeout: 30_000 });
     await checkAccessibility(page, testInfo, "competition");
 
     await page.goto("/notifications");

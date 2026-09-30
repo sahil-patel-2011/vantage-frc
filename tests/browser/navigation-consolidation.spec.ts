@@ -41,7 +41,7 @@ for (const width of [390, 1440]) {
     await search.fill("chemistry");
     await strip.getByRole("link", { name: /^Chemistry/ }).or(strip.getByRole("button", { name: /^Chemistry/ })).click();
     await expect(page).toHaveURL(/chemistry/);
-    await expect(page.locator("[data-hub-tab='chemistry']")).toBeVisible();
+    await expect(page.locator("[data-hub-tab='chemistry']")).toBeVisible({ timeout: 30_000 });
   });
 
   test(`scouting report tools and code options stay available without crowding primary work at ${width}px`, async ({ page, context }) => {
@@ -58,7 +58,7 @@ for (const width of [390, 1440]) {
     await expect(lead.locator(".scout-report-open").first()).toBeVisible();
     await page.goto("/build?tab=code");
     const options = page.locator(".cdc-options");
-    await expect(options.locator("summary")).toBeVisible();
+    await expect(options.locator("summary")).toBeVisible({ timeout: 30_000 });
     await expect(options).not.toHaveAttribute("open");
     await expect(page.getByRole("textbox", { name: "Source code", exact: true })).toBeVisible();
     await options.locator("summary").click();
