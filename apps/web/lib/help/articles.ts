@@ -436,10 +436,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "Lock this list",
+        heading: "Rank your picks, then lock the list",
         body: [
-          "After quals are in, open Pick desk (/strategy?tab=picks).",
-          "Rank, pick, then Lock this list. That locked list is the alliance-hour input — not Alliance desk, not Ask AI.",
+          "After quals are in, open Competition → Strategy → Pick lists.",
+          "Under Event pool, press Add on a team: it goes to the column we suggest (First, Second, Third or Watch).",
+          "Drag a team by its handle (the two rows of dots) to change its place or move it to another column. With the keyboard, focus the handle and press the up or down arrow keys. Under More you can move it to a column, see where it plays, or remove it.",
+          "When the list is right, press Lock this list. The locked list is what you use during alliance selection.",
+          "The Collaborative pick list (Scouting → Pick list) works the same way. Its By sliders / My order switch chooses between an order suggested from your scouting and the order your team dragged.",
         ],
       },
       {
