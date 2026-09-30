@@ -223,25 +223,27 @@ function SlotRow({
       ) : null}
       <FormGrid>
         <FormRow label="Team #">
-          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" disabled={busy} />
+          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" aria-label={`Team number, ${pickSlotLabel(slot.pickSlot)}`} disabled={busy} />
         </FormRow>
         <FormRow label="Rationale">
           <input
             value={rationale}
             onChange={(e) => setRationale(e.target.value)}
             placeholder="Why this pick"
+            aria-label={`Why this pick, ${pickSlotLabel(slot.pickSlot)}`}
             disabled={busy}
           />
         </FormRow>
       </FormGrid>
       <div className="alliance-desk-slot-actions">
-        <Button type="button" size="sm" disabled={busy} onClick={() => onSetTeam(slot.id, team, rationale)}>
+        <Button type="button" size="sm" disabled={busy} aria-label={`Save pick, ${pickSlotLabel(slot.pickSlot)}`} onClick={() => onSetTeam(slot.id, team, rationale)}>
           Save pick
         </Button>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Attach scout note"
+          aria-label={`Scout note, ${pickSlotLabel(slot.pickSlot)}`}
           disabled={busy}
           className="alliance-desk-note-input"
         />
@@ -249,6 +251,7 @@ function SlotRow({
           type="button"
           size="sm"
           variant="secondary"
+          aria-label={`Attach evidence, ${pickSlotLabel(slot.pickSlot)}`}
           disabled={busy || !note.trim()}
           onClick={() => {
             onAttachNote(slot.id, note);
