@@ -8,7 +8,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button } fr
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { enqueueOutboxItem, getFeatureSnapshot, newOutboxClientId, putFeatureSnapshot, syncOutbox } from "../../lib/offline";
+import { getFeatureSnapshot, putFeatureSnapshot, syncOutbox } from "../../lib/offline";
 import type { WorkItemsView } from "../../lib/work-items/service";
 import {
   TODO_LIST_FILTERS,
@@ -23,11 +23,12 @@ import {
   type TodoStatus,
   type TodosView,
 } from "../../lib/todos";
+import { persistTodo } from "../../lib/todos/persist";
 import "./todos.css";
 
 type LiveView = Extract<TodosView, { status: "live" }>;
 type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
-type Mutate = (payload: Record<string, unknown>) => void;
+type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   if (!todo.dueOn || todo.flags.daysToDue == null) return null;
@@ -226,48 +227,35 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   }, [orgId, load, loadWork]);
 
   const mutate = useCallback<Mutate>(
-    (payload) => {
-      if (!orgId || busy) return;
-      if (!navigator.onLine) {
-        const action = typeof payload.action === "string" ? payload.action : "";
-        const feature = action === "create-todo" ? "task_create" : "task_tick";
-        void enqueueOutboxItem({
-          clientId: newOutboxClientId(),
-          feature,
-          orgId,
-          payload: { orgId, ...payload },
-        });
-        if (view?.status === "live" && action === "update-todo" && typeof payload.todoId === "string") {
-          setView({
-            ...view,
-            todos: view.todos.map((todo) =>
-              todo.id === payload.todoId && typeof payload.status === "string"
-                ? { ...todo, status: payload.status as TodoStatus }
-                : todo,
-            ),
-          });
-        }
-        setError("Saved on this device. It will upload when you are back online.");
-        return;
-      }
+    async (payload) => {
+      if (!orgId || busy) return false;
       setBusy(true);
       setError("");
-      void fetch("/api/todos", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, ...payload }),
-      })
-        .then(async (response) => {
-          const data = (await response.json()) as TodosView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
-            return;
+      try {
+        const result = await persistTodo(orgId, payload, navigator.onLine);
+        if (result.kind === "queued") {
+          if (view?.status === "live" && payload.action === "update-todo" && typeof payload.todoId === "string") {
+            setView({
+              ...view,
+              todos: view.todos.map((todo) =>
+                todo.id === payload.todoId && typeof payload.status === "string"
+                  ? { ...todo, status: payload.status as TodoStatus }
+                  : todo,
+              ),
+            });
           }
-          setView(data);
+          setError("Saved on this device. It will upload when you are back online.");
+        } else {
+          setView(result.view);
           loadWork();
-        })
-        .catch(() => setError("Network error — please try again."))
-        .finally(() => setBusy(false));
+        }
+        return true;
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : "Could not save the task. Check your connection and try again.");
+        return false;
+      } finally {
+        setBusy(false);
+      }
     },
     [orgId, busy, view, loadWork],
   );
@@ -451,10 +439,11 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
     <Panel
       as="form"
       className="todos-create"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
-        if (!form.title.trim()) return;
-        mutate({
+        if (busy || !form.title.trim()) return;
+        const submitted = form;
+        const saved = await mutate({
           action: "create-todo",
           title: form.title,
           notes: form.notes || undefined,
@@ -462,7 +451,7 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           subteamId: form.subteamId || null,
           dueOn: form.dueOn || null,
         });
-        setForm(empty);
+        if (saved) setForm((current) => current === submitted ? empty : current);
       }}
     >
       <div className="todos-create-row">

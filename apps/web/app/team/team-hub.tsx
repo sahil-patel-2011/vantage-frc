@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { EmptyState } from "../../components/ui";
-import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
 import "./calendar/team-calendar.css";
@@ -14,15 +14,15 @@ import "../batteries/batteries.css";
 import "../todos/todos.css";
 import "../logistics/logistics.css";
 
-const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false });
-const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false });
-const MessagesClient = dynamic(() => import("../messages/messages-client"), { ssr: false });
-const PracticeClient = dynamic(() => import("../practice/practice-client"), { ssr: false });
-const KnowledgeClient = dynamic(() => import("./knowledge/knowledge-client"), { ssr: false });
-const AttendanceClient = dynamic(() => import("../attendance/attendance-client"), { ssr: false });
-const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
-const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
-const LogisticsClient = dynamic(() => import("../logistics/logistics-client"), { ssr: false });
+const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false, loading: HubPanelSkeleton });
+const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false, loading: HubPanelSkeleton });
+const MessagesClient = dynamic(() => import("../messages/messages-client"), { ssr: false, loading: HubPanelSkeleton });
+const PracticeClient = dynamic(() => import("../practice/practice-client"), { ssr: false, loading: HubPanelSkeleton });
+const KnowledgeClient = dynamic(() => import("./knowledge/knowledge-client"), { ssr: false, loading: HubPanelSkeleton });
+const AttendanceClient = dynamic(() => import("../attendance/attendance-client"), { ssr: false, loading: HubPanelSkeleton });
+const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false, loading: HubPanelSkeleton });
+const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false, loading: HubPanelSkeleton });
+const LogisticsClient = dynamic(() => import("../logistics/logistics-client"), { ssr: false, loading: HubPanelSkeleton });
 
 function MessagesTab({ orgId }: { orgId: string }) {
   const [initialConversationId, setInitialConversationId] = useState<string | null>(null);

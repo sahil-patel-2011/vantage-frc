@@ -271,6 +271,9 @@ body.has-app-shell .dash-home .dash-widget.app-card.is-empty {
 .nm-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .dash-next-match.alliance-red .nm-bar > i { background: #d43a3a; }
 @media (max-width: 520px) {
+  .nm-top { flex-wrap: wrap; }
+  .nm-title { flex: 1 1 160px; min-width: 0; }
+  .dash-next-match.nm .nm-clock { max-width: 100%; margin-left: auto; }
   .nm-sides { grid-template-columns: 1fr; }
   /* The pill sits under the match name at its own width; it had wrapped to two lines and
      filled the column. */

@@ -3,6 +3,85 @@ import { expect, test } from "@playwright/test";
 import type { TodosView } from "../../apps/web/lib/todos/types";
 import { signInAs } from "./session";
 
+test("a rejected task keeps the draft and permits a successful retry", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
+  await page.goto("/team?tab=todos");
+  const form = page.locator("form.todos-create");
+  const title = `Retry task ${Date.now()}`;
+  await form.getByLabel("Title", { exact: true }).fill(title);
+  await page.route("**/api/todos", async route => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 403, json: { error: "Ask a team admin for task access." } });
+    } else await route.continue();
+  });
+  await form.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.locator(".todos-page").getByRole("alert")).toContainText("Ask a team admin");
+  await expect(form.getByLabel("Title", { exact: true })).toHaveValue(title);
+  await page.unroute("**/api/todos");
+  try {
+    await form.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(form.getByLabel("Title", { exact: true })).toHaveValue("");
+    await expect(page.locator(".todos-card").filter({ hasText: title })).toBeVisible();
+  } finally {
+    const identity = await (await context.request.get("/api/me")).json();
+    const response = await context.request.get(`/api/todos?orgId=${identity.orgId}`);
+    const view = await response.json() as TodosView;
+    expect(view.status, "Task cleanup requires live data").toBe("live");
+    const live = view as Extract<TodosView, { status: "live" }>;
+    for (const todo of live.todos.filter(todo => todo.title === title)) {
+      expect((await context.request.post("/api/todos", { data: { orgId: identity.orgId, action: "delete-todo", todoId: todo.id } })).ok()).toBe(true);
+    }
+  }
+});
+
+test("offline storage failure retains the task without claiming it was saved", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
+  await page.goto("/team?tab=todos");
+  const form = page.locator("form.todos-create");
+  await form.getByLabel("Title", { exact: true }).fill("Keep this offline draft");
+  await page.evaluate(() => Object.defineProperty(window, "indexedDB", { configurable: true, value: undefined }));
+  await context.setOffline(true);
+  try {
+    await form.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator(".todos-page").getByRole("alert")).toContainText("cannot save work offline");
+    await expect(form.getByLabel("Title", { exact: true })).toHaveValue("Keep this offline draft");
+    await expect(page.locator(".todos-page").getByRole("alert")).not.toContainText("Saved on this device");
+  } finally {
+    await context.setOffline(false);
+  }
+});
+
+test("typing the next task during a save retains the new draft", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
+  const identity = await (await context.request.get("/api/me")).json();
+  const title = `Pending task ${Date.now()}`;
+  await page.goto(`/team?tab=todos&orgId=${identity.orgId}`);
+  const form = page.locator("form.todos-create");
+  await form.getByLabel("Title", { exact: true }).fill(title);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/api/todos", async route => {
+    if (route.request().method() === "POST") await gate;
+    await route.continue();
+  });
+  try {
+    await form.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(form.getByRole("button", { name: "Add", exact: true })).toBeDisabled();
+    await form.getByLabel("Title", { exact: true }).fill("The next task");
+    release();
+    await expect(page.locator(".todos-card").filter({ hasText: title })).toBeVisible();
+    await expect(form.getByLabel("Title", { exact: true })).toHaveValue("The next task");
+  } finally {
+    release();
+    await page.unroute("**/api/todos");
+    const view = await (await context.request.get(`/api/todos?orgId=${identity.orgId}`)).json() as TodosView;
+    expect(view.status).toBe("live");
+    for (const todo of (view as Extract<TodosView, { status: "live" }>).todos.filter(todo => todo.title === title)) {
+      expect((await context.request.post("/api/todos", { data: { orgId: identity.orgId, action: "delete-todo", todoId: todo.id } })).ok()).toBe(true);
+    }
+  }
+});
+
 for (const width of [320, 1440]) {
   test(`compact task controls preserve filters and real mutations at ${width}px`, async ({ page, context }, info) => {
     test.setTimeout(180_000);

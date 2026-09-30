@@ -81,15 +81,35 @@ for (const width of [1280, 390]) {
       await expect(builder.locator(".sfb-message")).toHaveText("Publish temporarily unavailable");
       await expect(builder.getByLabel("Form title", { exact: true })).toHaveValue(`${marker} Match`);
       async function publishCurrent() {
-        const responsePromise = page.waitForResponse(r => r.url().endsWith("/api/scouting/schemas") && r.request().method() === "POST");
-        await publish.click();
-        const response = await responsePromise;
-        expect(response.status()).toBe(201);
-        const result = await response.json();
-        schemas.push(result.id);
-        await expect(builder.locator(".sfb-published-card")).toContainText("Published");
-        await expect(publish).toHaveCount(0);
-        return result.id as string;
+        let release!: () => void;
+        let refreshBlocked = false;
+        const refresh = new Promise<void>(resolve => { release = resolve; });
+        const refreshUrl = "**/api/scouting/schemas?*";
+        await page.route(refreshUrl, async route => {
+          const response = await route.fetch();
+          refreshBlocked = true;
+          await refresh;
+          await route.fulfill({ response });
+        });
+        try {
+          const responsePromise = page.waitForResponse(r => r.url().endsWith("/api/scouting/schemas") && r.request().method() === "POST");
+          await publish.click();
+          const response = await responsePromise;
+          expect(response.status()).toBe(201);
+          const result = await response.json();
+          schemas.push(result.id);
+          await expect.poll(() => refreshBlocked).toBe(true);
+          await expect(types.getByRole("button", { name: "Pit form", exact: true })).toBeDisabled();
+          await expect(builder.locator(".sfb-published-card")).toHaveCount(0);
+          release();
+          await expect(builder.locator(".sfb-published-card")).toContainText("Published");
+          await expect(publish).toHaveCount(0);
+          await expect(types.getByRole("button", { name: "Pit form", exact: true })).toBeEnabled();
+          return result.id as string;
+        } finally {
+          release();
+          await page.unroute(refreshUrl);
+        }
       }
       const matchSchema = await publishCurrent();
       await types.getByRole("button", { name: "Pit form", exact: true }).click();

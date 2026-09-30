@@ -2,6 +2,22 @@ import { expect, test } from "@playwright/test";
 import { waitForLoadingGone } from "./ready";
 import { signInAs } from "./session";
 
+for (const width of [320, 390]) {
+  test(`a running-late match stays inside the Home card at ${width}px`, async ({ page, context }) => {
+    expect(await signInAs(context, "owner")).toBe(true);
+    await page.clock.install({ time: new Date(Date.now() + 7 * 24 * 60 * 60_000) });
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/dashboard");
+    await waitForLoadingGone(page);
+    const clock = page.locator(".dash-next-match.nm .nm-clock");
+    await expect(clock).toContainText("Running late");
+    const bounds = await clock.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+}
+
 for (const width of [1280, 390]) {
   test(`Home reads compactly and keeps its saved edit grid at ${width}px`, async ({ page, context }, testInfo) => {
     expect(await signInAs(context, "owner")).toBe(true);

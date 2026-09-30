@@ -1,19 +1,20 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import "../product-hub.css";
 import "../code/code.css";
 import "../kickoff/kickoff.css";
 
-const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: false });
-const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false });
-const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false });
-const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
+const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: false, loading: HubPanelSkeleton });
+const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false, loading: HubPanelSkeleton });
+const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false, loading: HubPanelSkeleton });
+const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false, loading: HubPanelSkeleton });
 const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/prototype-tracker-client"), {
   ssr: false,
+  loading: HubPanelSkeleton,
 });
-const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
+const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false, loading: HubPanelSkeleton });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"] as const;

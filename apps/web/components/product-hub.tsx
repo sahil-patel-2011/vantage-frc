@@ -363,14 +363,14 @@ export function ProductHubShell({
  * Every element is aria-hidden and the region carries `aria-busy`, so this
  * announces as "busy" rather than as a set of blank boxes to be read aloud.
  */
-function HubPanelSkeleton() {
+export function HubPanelSkeleton() {
   return (
-    <div className="hub-panel-skeleton" aria-hidden="true">
-      <div className="hub-skel-head">
+    <div className="hub-panel-skeleton" role="status" aria-label="Loading section" aria-busy="true">
+      <div className="hub-skel-head" aria-hidden="true">
         <i className="is-label" />
         <i className="is-title" />
       </div>
-      <div className="hub-skel-grid">
+      <div className="hub-skel-grid" aria-hidden="true">
         {[0, 1, 2].map((column) => (
           <div className="hub-skel-card" key={column}>
             <i className="is-label" />
