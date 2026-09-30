@@ -154,6 +154,41 @@ export function ToolStrip({
     else stripRef.current?.querySelector<HTMLElement>(".hub-tool-list a, .hub-tool-list button")?.focus({ preventScroll: true });
   }, [expanded, compact, stripRef]);
 
+  // Leave room for the phone app bar and the on-screen keyboard. A viewport percentage
+  // alone let the last tools fall below a short landscape screen.
+  useEffect(() => {
+    if (!expanded) return;
+    const panel = document.getElementById(overflowId);
+    if (!panel) return;
+    const measure = () => {
+      const viewport = window.visualViewport;
+      let bottom = Math.min(window.innerHeight, viewport ? viewport.offsetTop + viewport.height : window.innerHeight) - 16;
+      const island = document.querySelector(".soft-island")?.getBoundingClientRect();
+      if (island && island.width > 0 && island.height > 0) bottom = Math.min(bottom, island.top - 12);
+      // Opening moves the panel down four pixels. Reserve that travel before it settles.
+      panel.style.maxHeight = `${Math.max(0, Math.min(520, Math.floor(bottom - panel.getBoundingClientRect().top - 4)))}px`;
+      // Rotation can shrink the list while the last tool remains focused. Keep that row visible.
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && panel.contains(active)) {
+        const row = active.getBoundingClientRect();
+        const bounds = panel.getBoundingClientRect();
+        if (row.bottom > bounds.bottom - 12) panel.scrollTop += row.bottom - bounds.bottom + 12;
+        else if (row.top < bounds.top + 12) panel.scrollTop -= bounds.top + 12 - row.top;
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    window.visualViewport?.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("scroll", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+      window.visualViewport?.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("scroll", measure);
+    };
+  }, [expanded, overflowId]);
+
   if (items.length < 1) return null;
 
   /**

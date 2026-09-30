@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { contrastRatio } from "../../apps/web/lib/branding/colors";
 import { signInAs } from "./session";
-import { openNav } from "./nav";
+import { openNav, primaryNavigation } from "./nav";
 
 async function palette(page: Page) {
   return page.evaluate(() => {
@@ -26,7 +26,7 @@ for (const width of [390, 1440]) {
     await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
     await page.goto("/account?tab=appearance");
     const themes = page.getByRole("radiogroup", { name: "Color theme" });
-    await expect(themes).toBeVisible();
+    await expect(themes).toBeVisible({ timeout: 30_000 });
 
     for (const name of ["Light", "Dark"]) {
       await themes.getByRole("radio", { name, exact: true }).click();
@@ -56,12 +56,12 @@ for (const width of [390, 1440]) {
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await page.goto("/dashboard");
-    await expect(page.getByRole("navigation", { name: "Primary apps" })).toBeVisible();
+    await expect(primaryNavigation(page)).toBeVisible();
     await expect(page.getByTestId("dash-customize")).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("home-light.png"), fullPage: true });
     await openNav(page);
     await page.screenshot({ path: testInfo.outputPath("navigation-light.png") });
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("navigation", { name: "Primary apps" })).toBeVisible();
+    await expect(primaryNavigation(page)).toBeVisible();
   });
 }

@@ -5,7 +5,7 @@ This release builds on the current UI in main (6340a1acb). It retains the deskto
 ## Changes
 
 - Home: board selection and Edit share one aligned control group. Live card headings open their destination, replacing the repeated footer link; empty cards retain their relevant setup action.
-- Secondary tools: one searchable selector, a single current-tool label, readable stacked descriptions, and more vertical room. Keyboard opening, arrow navigation, Escape, and focus restoration remain supported.
+- Secondary tools: one searchable selector, a single current-tool label, readable stacked descriptions, and more vertical room. Keyboard opening, arrow navigation, Escape, and focus restoration remain supported. The picker measures available space above the phone bar and listens for viewport/keyboard resizing; narrow, landscape, and tablet checks verify that its last tool can receive a pointer hit.
 - Finance: keep Open Money visible; put Season budget and Purchase orders under Budget and orders. All three actions remain available.
 - Shared buttons: lighter contact shadows and stationary pointer targets on press. Semantic status colours, light/dark tokens, reduced motion, and touch targets remain in place.
 - Loading: remove the hub's content-observer gate. It withheld the very components needed to produce content until an eight-second fallback fired. Render the view immediately with a Suspense fallback.

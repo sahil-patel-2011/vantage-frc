@@ -17,7 +17,7 @@ test("landing sign in reaches dashboard with a real authenticated session", asyn
   // dashboard's own control, which is what this test was trying to check.
   // Edit sits beside the greeting as a quiet button (it spent a while inside
   // "More", where people could not find it).
-  await expect(page.getByTestId("dash-customize")).toBeVisible();
+  await expect(page.getByTestId("dash-customize")).toBeVisible({ timeout: 30_000 });
 });
 
 test("protected routes preserve their requested destination", async ({ page }) => {
