@@ -1,0 +1,15 @@
+/* Shared by every list you can drag between tiers (Pick lists, the collaborative list). */
+.tier-drag-handle{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:12px;background:transparent;color:var(--muted);cursor:grab;touch-action:none;font-size:20px;letter-spacing:-3px;user-select:none}
+.tier-drag-handle:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.tier-drag-handle:active{cursor:grabbing}
+.tier-drag-handle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tier-drag-handle[aria-disabled="true"]{opacity:.4;cursor:default}
+.tier-drop-slot{height:3px;margin:-2px 8px;border-radius:2px;background:var(--accent);list-style:none}
+.tier-row-more{position:relative}
+.tier-row-more>summary{min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;padding:0 10px;border-radius:12px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;list-style:none}
+.tier-row-more>summary::-webkit-details-marker{display:none}
+.tier-row-more>summary:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.tier-row-more[open]>summary{color:var(--accent)}
+.tier-row-more-panel{position:absolute;right:0;top:calc(100% + 4px);z-index:5;display:grid;gap:10px;width:min(260px,80vw);padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
+.tier-row-more-panel label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.tier-row-more-actions{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}

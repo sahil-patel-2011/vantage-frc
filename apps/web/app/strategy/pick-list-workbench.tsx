@@ -10,6 +10,8 @@ import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
+import { useTierDrag } from "../../components/ui/use-tier-drag";
+import "../../components/ui/tier-drag.css";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -102,6 +104,20 @@ function teamLabel(entry: { teamKey: string; teamNumber?: number | null; nicknam
  * confused.
  */
 function pickMetricLine(candidate: PickDeskCandidate | undefined) {
+  if (!candidate) return "No numbers yet";
+  const matches = candidate.scoutedMatches ?? 0;
+  // What a strategist scans for; the full breakdown sits in the hover text (pickMetricDetail).
+  const short = [
+    candidate.scoutedAverage != null ? `${candidate.scoutedAverage.toFixed(1)} a match` : null,
+    matches > 0 ? `${matches} scouted` : null,
+    candidate.rank != null ? `rank ${candidate.rank}` : null,
+  ].filter(Boolean);
+  if (short.length) return short.join(" · ");
+  return pickMetricDetail(candidate);
+}
+
+/** Every number we have for the team, in words: shown on hover. */
+function pickMetricDetail(candidate: PickDeskCandidate | undefined) {
   if (!candidate) return "No numbers yet";
   const matches = candidate.scoutedMatches ?? 0;
   const parts = [
@@ -478,26 +494,30 @@ export function PickListWorkbench({
     setEntries((current) => reindex(current.filter((entry) => entry.teamKey !== teamKey)));
   }
 
-  function shiftRank(teamKey: string, direction: -1 | 1) {
-    setEntries((current) => {
-      const tier = (current.find((entry) => entry.teamKey === teamKey)?.tier ?? "watch") as PickTier;
-      const column = current
-        .filter((entry) => (entry.tier ?? "watch") === tier)
-        .sort((a, b) => a.rank - b.rank);
-      const index = column.findIndex((entry) => entry.teamKey === teamKey);
-      const swapWith = index + direction;
-      if (index < 0 || swapWith < 0 || swapWith >= column.length) return current;
-      const a = column[index]!;
-      const b = column[swapWith]!;
-      return reindex(
-        current.map((entry) => {
-          if (entry.teamKey === a.teamKey) return { ...entry, rank: b.rank };
-          if (entry.teamKey === b.teamKey) return { ...entry, rank: a.rank };
-          return entry;
-        }),
-      );
-    });
+  /** Move one team to slot `index` of a column (counted among the teams that stay), then renumber. */
+  function placeEntry(current: PickDeskEntry[], teamKey: string, tier: PickTier, index: number): PickDeskEntry[] {
+    const moving = current.find((entry) => entry.teamKey === teamKey);
+    if (!moving) return current;
+    const columns = TIERS.map((item) => ({
+      id: item.id,
+      list: current
+        .filter((entry) => entry.teamKey !== teamKey && (entry.tier ?? "watch") === item.id)
+        .sort((a, b) => a.rank - b.rank),
+    }));
+    const target = columns.find((column) => column.id === tier);
+    if (!target) return current;
+    target.list.splice(Math.max(0, Math.min(index, target.list.length)), 0, { ...moving, tier });
+    return columns.flatMap((column) => column.list).map((entry, position) => ({ ...entry, rank: position + 1 }));
   }
+
+  // Drag a team between the columns (or up and down one with the arrow keys). Only people who can
+  // edit the list get handles.
+  const tierDrag = useTierDrag<PickTier>({
+    groups: TIERS.map((item) => ({ tier: item.id, ids: entriesForTier(item.id).map((entry) => entry.teamKey) })),
+    enabled: Boolean(desk?.canEdit),
+    tierLabel: (tier) => TIERS.find((item) => item.id === tier)?.label ?? tier,
+    onMove: (teamKey, tier, index) => setEntries((current) => placeEntry(current, teamKey, tier, index)),
+  });
 
   async function saveList() {
     if (!desk) return;
@@ -705,73 +725,102 @@ export function PickListWorkbench({
         ) : null}
       </div>
 
-      <div className="strategy-pick-columns">
-        {TIERS.map((tier) => (
-          <article key={tier.id} className="app-card strategy-pick-column">
-            <header>
-              <h3>{tier.label}</h3>
-              <small>{tier.hint}</small>
-            </header>
-            <ul>
-              {entriesForTier(tier.id).map((entry) => {
-                const candidate = byKey.get(entry.teamKey);
-                return (
-                  <li key={entry.teamKey}>
-                    <div>
-                      <strong>
-                        #{entry.rank} {teamLabel(entry)}
-                      </strong>
-                      <small>{pickMetricLine(candidate)}</small>
-                  <IndependenceChip candidate={candidate} />
-                  <ConsistencyChip candidate={candidate} />
-                    </div>
-                    <div className="strategy-pick-row-actions">
-                      {desk.canEdit ? (
-                        <>
-                          <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
-                            ↑
-                          </button>
-                          <button type="button" onClick={() => shiftRank(entry.teamKey, 1)} aria-label="Move down">
-                            ↓
-                          </button>
-                          {TIERS.filter((item) => item.id !== tier.id).map((item) => (
-                            <button key={item.id} type="button" onClick={() => moveEntry(entry.teamKey, item.id)}>
-                              {item.id[0]!.toUpperCase()}
+      <div className="strategy-pick-columns" ref={tierDrag.rootRef}>
+        <p className="sr-only" role="status" aria-live="polite">
+          {tierDrag.announcement}
+        </p>
+        {TIERS.map((tier) => {
+          const column = entriesForTier(tier.id);
+          const slot = tierDrag.slotIndex(tier.id);
+          const rows: ReactNode[] = [];
+          let stay = 0;
+          for (const entry of column) {
+            const dragged = tierDrag.drag?.id === entry.teamKey;
+            if (!dragged && slot === stay) rows.push(<li key="drop-slot" className="tier-drop-slot" aria-hidden="true" />);
+            if (!dragged) stay += 1;
+            const candidate = byKey.get(entry.teamKey);
+            const hasHeat = Boolean(desk.positionHeatByTeam?.[entry.teamKey]?.length);
+            const heatButton = hasHeat ? (
+              <button
+                type="button"
+                aria-expanded={heatOpenFor === entry.teamKey}
+                onClick={() => setHeatOpenFor((current) => (current === entry.teamKey ? null : entry.teamKey))}
+              >
+                {heatOpenFor === entry.teamKey ? "Hide heat" : "Heat"}
+              </button>
+            ) : null;
+            rows.push(
+              <li key={entry.teamKey} data-entry-id={entry.teamKey} className={dragged ? "is-dragging" : undefined}>
+                <div className="strategy-pick-row-head">
+                  {desk.canEdit ? (
+                    <button
+                      type="button"
+                      className="tier-drag-handle"
+                      aria-label={`Move team ${entry.teamNumber ?? entry.teamKey}: drag, or press the up and down arrow keys`}
+                      {...tierDrag.handleProps(entry.teamKey, tier.id)}
+                    >
+                      <span aria-hidden="true">⋮⋮</span>
+                    </button>
+                  ) : null}
+                  <div>
+                    <strong>
+                      #{entry.rank} {teamLabel(entry)}
+                    </strong>
+                    <small title={pickMetricDetail(candidate)}>{pickMetricLine(candidate)}</small>
+                    <IndependenceChip candidate={candidate} />
+                    <ConsistencyChip candidate={candidate} />
+                  </div>
+                  <div className="strategy-pick-row-actions">
+                    {desk.canEdit ? (
+                      <details className="tier-row-more">
+                        <summary aria-label={`More for team ${entry.teamNumber ?? entry.teamKey}`}>More</summary>
+                        <div className="tier-row-more-panel">
+                          <span className="app-muted">Move to</span>
+                          <div className="tier-row-more-actions">
+                            {TIERS.filter((item) => item.id !== tier.id).map((item) => (
+                              <button key={item.id} type="button" onClick={() => moveEntry(entry.teamKey, item.id)}>
+                                {item.label.replace(" picks", "")}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="tier-row-more-actions">
+                            {heatButton}
+                            <button type="button" onClick={() => removeEntry(entry.teamKey)}>
+                              Remove
                             </button>
-                          ))}
-                          <button type="button" onClick={() => removeEntry(entry.teamKey)}>
-                            Remove
-                          </button>
-                        </>
-                      ) : null}
-                      {desk.positionHeatByTeam?.[entry.teamKey]?.length ? (
-                        <button
-                          type="button"
-                          aria-expanded={heatOpenFor === entry.teamKey}
-                          onClick={() =>
-                            setHeatOpenFor((current) =>
-                              current === entry.teamKey ? null : entry.teamKey,
-                            )
-                          }
-                        >
-                          {heatOpenFor === entry.teamKey ? "Hide heat" : "Heat"}
-                        </button>
-                      ) : null}
-                    </div>
-                    {heatOpenFor === entry.teamKey && desk.positionHeatByTeam?.[entry.teamKey] ? (
-                      <PositionHeatPanel heatmaps={desk.positionHeatByTeam[entry.teamKey]!} />
-                    ) : null}
+                          </div>
+                        </div>
+                      </details>
+                    ) : (
+                      heatButton
+                    )}
+                  </div>
+                </div>
+                {heatOpenFor === entry.teamKey && desk.positionHeatByTeam?.[entry.teamKey] ? (
+                  <PositionHeatPanel heatmaps={desk.positionHeatByTeam[entry.teamKey]!} />
+                ) : null}
+              </li>,
+            );
+          }
+          if (slot !== null && stay <= slot) rows.push(<li key="drop-slot" className="tier-drop-slot" aria-hidden="true" />);
+          return (
+            <article key={tier.id} className="app-card strategy-pick-column">
+              <header>
+                <h3>{tier.label}</h3>
+                <small>{tier.hint}</small>
+              </header>
+              <ul data-tier-list={tier.id}>
+                {rows}
+                {!column.length ? (
+                  <li className="strategy-pick-empty">
+                    Add teams from the pool below
+                    {desk.canEdit ? ", or drag one here" : ""}.
                   </li>
-                );
-              })}
-              {!entriesForTier(tier.id).length ? (
-                <li className="strategy-pick-empty">
-                  Drop teams from the pool — empty tiers stay empty.
-                </li>
-              ) : null}
-            </ul>
-          </article>
-        ))}
+                ) : null}
+              </ul>
+            </article>
+          );
+        })}
       </div>
 
       <article className="app-card strategy-pick-pool">
@@ -793,7 +842,7 @@ export function PickListWorkbench({
               <li key={candidate.teamKey}>
                 <div>
                   <strong>{teamLabel(candidate)}</strong>
-                  <small>{pickMetricLine(candidate)}</small>
+                  <small title={pickMetricDetail(candidate)}>{pickMetricLine(candidate)}</small>
                   <IndependenceChip candidate={candidate} />
                   <ConsistencyChip candidate={candidate} />
                   {candidate.suggestedTier ? (
@@ -803,11 +852,16 @@ export function PickListWorkbench({
                   )}
                 </div>
                 <div className="strategy-pick-row-actions">
-                  {TIERS.map((tier) => (
-                    <button key={tier.id} type="button" onClick={() => addToTier(candidate, tier.id)}>
-                      + {tier.label.replace(" picks", "").replace("Watch", "Watch")}
+                  {desk.canEdit ? (
+                    <button
+                      type="button"
+                      className="strategy-pool-add"
+                      title={`Adds to ${TIERS.find((item) => item.id === (candidate.suggestedTier ?? "watch"))?.label ?? "Watch"}; drag it to move it later`}
+                      onClick={() => addToTier(candidate, (candidate.suggestedTier ?? "watch") as PickTier)}
+                    >
+                      Add to {(TIERS.find((item) => item.id === (candidate.suggestedTier ?? "watch"))?.label ?? "Watch").replace(" picks", "")}
                     </button>
-                  ))}
+                  ) : null}
                 </div>
               </li>
             ))}
