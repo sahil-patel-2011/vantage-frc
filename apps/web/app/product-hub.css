@@ -713,3 +713,17 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 @media (min-width: 721px) {
   .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(.active, [aria-selected="true"])::after { display: none; }
 }
+
+/* Phones: the compact "More tools" selector goes on its own line under the tabs. The rule above
+   (margin-left: auto, no basis) put it on the tab row, where it hid "Strategy" and "Pit". */
+@media (max-width: 720px) {
+  .hub-bar .hub-tool-strip[data-compact] {
+    flex: 1 1 100%;
+    margin-left: 0;
+    padding: 0 0 8px;
+  }
+  .hub-bar .hub-tool-strip[data-compact] .hub-tool-more {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
