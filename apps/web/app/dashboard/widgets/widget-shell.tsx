@@ -5,7 +5,7 @@ import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
 import { EmptyState } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
-import { type EmptyHint, liveLinkLabel, studentWidgetDescription } from "./widget-empty-copy";
+import { type EmptyHint, studentWidgetDescription } from "./widget-empty-copy";
 import { WidgetsLoadedContext } from "./widgets-loaded";
 
 export type { EmptyHint } from "./widget-empty-copy";
@@ -171,7 +171,7 @@ export function WidgetShell({
           ) : null}
           <div>
             <h2>{href && showLive ? (
-              <a className="dash-widget-open" href={href} aria-label={liveLinkLabel(emptyHint)}>
+              <a className="dash-widget-open" href={href}>
                 <span>{title}</span><Icon name="chevron" />
               </a>
             ) : title}</h2>

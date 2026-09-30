@@ -26,6 +26,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
     const openCard = page.locator(".dash-widget-open").first();
     await expect(openCard).toBeVisible();
+    const heading = openCard.locator("..");
+    await expect(heading).toHaveAccessibleName((await heading.innerText()).trim());
     await expect(page.locator(".dash-widget > .dash-widget-link")).toHaveCount(0);
     const destination = await openCard.getAttribute("href");
     expect(destination).toMatch(/^\//);
