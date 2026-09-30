@@ -309,11 +309,11 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         }
         return;
       }
-      setPublished({ id: String(body.id), version: Number(body.version) });
       // The green card at the top says it once.
       setMessage("");
       await load();
       delete draftsRef.current[type];
+      setPublished({ id: String(body.id), version: Number(body.version) });
     } catch {
       setMessage("Network error — try again.");
     } finally {
@@ -457,15 +457,17 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         />
       ) : null}
 
-      <ToolStrip
-        aria-label="Form type"
-        value={type}
-        onChange={(id) => switchType(id as EntryType)}
-        items={[
-          { id: "match", label: "Match form" },
-          { id: "pit", label: "Pit form" },
-        ]}
-      />
+      <fieldset className="sfb-type-switch" disabled={busy}>
+        <ToolStrip
+          aria-label="Form type"
+          value={type}
+          onChange={(id) => switchType(id as EntryType)}
+          items={[
+            { id: "match", label: "Match form" },
+            { id: "pit", label: "Pit form" },
+          ]}
+        />
+      </fieldset>
 
       {/* Said once: with nothing published the card above already says so, and the page said
           "not published" three times over. */}

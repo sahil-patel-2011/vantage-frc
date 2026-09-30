@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { HubPanelSkeleton } from "../../components/product-hub";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
@@ -40,9 +41,9 @@ import { Budget, Evidence, Grants, Overview } from "./business-panels";
 import "../product-hub.css";
 import { withWaitlistLink } from "../../components/waitlist-link";
 
-const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false });
-const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false });
-const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false });
+const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false, loading: HubPanelSkeleton });
+const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false, loading: HubPanelSkeleton });
+const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false, loading: HubPanelSkeleton });
 
 const BUSINESS_HUB = hubById("business");
 const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);

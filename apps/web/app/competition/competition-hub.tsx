@@ -1,29 +1,30 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import { ScoutingLoadingSkeleton } from "../scouting/scouting-chrome";
 import "../product-hub.css";
 import "../scouting/scouting.css";
 import "../scouting/forms/forms.css";
 import "../my-day/my-day.css";
 
-const CommandClient = dynamic(() => import("../command/command-client"), { ssr: false });
-const MyDayClient = dynamic(() => import("../my-day/my-day-client"), { ssr: false });
-const StrategyClient = dynamic(() => import("../strategy/strategy-client"), { ssr: false });
+const CommandClient = dynamic(() => import("../command/command-client"), { ssr: false, loading: HubPanelSkeleton });
+const MyDayClient = dynamic(() => import("../my-day/my-day-client"), { ssr: false, loading: HubPanelSkeleton });
+const StrategyClient = dynamic(() => import("../strategy/strategy-client"), { ssr: false, loading: HubPanelSkeleton });
 // The scouting screen's own shape while its code downloads, not a blank panel:
 // on a phone that blank was the first thing a scout saw after signing in.
 const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), {
   ssr: false,
   loading: () => <ScoutingLoadingSkeleton />,
 });
-const FormsClient = dynamic(() => import("../scouting/forms/forms-client"), { ssr: false });
-const IntelClient = dynamic(() => import("../intel/intel-client"), { ssr: false });
+const FormsClient = dynamic(() => import("../scouting/forms/forms-client"), { ssr: false, loading: HubPanelSkeleton });
+const IntelClient = dynamic(() => import("../intel/intel-client"), { ssr: false, loading: HubPanelSkeleton });
 const MatchChecklistClient = dynamic(() => import("../match-checklist/match-checklist-client"), {
   ssr: false,
+  loading: HubPanelSkeleton,
 });
-const PickClockClient = dynamic(() => import("../pick-clock/pick-clock-client"), { ssr: false });
-const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), { ssr: false });
+const PickClockClient = dynamic(() => import("../pick-clock/pick-clock-client"), { ssr: false, loading: HubPanelSkeleton });
+const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), { ssr: false, loading: HubPanelSkeleton });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"] as const;

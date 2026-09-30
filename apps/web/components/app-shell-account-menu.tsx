@@ -2,6 +2,7 @@
 
 import { formatMembershipLabel, roleWord, type Me, type MembershipOption } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { Icon } from "./icon";
 
 export function AppShellAccountMenu({
   open,
@@ -45,8 +46,10 @@ export function AppShellAccountMenu({
         <div className="soft-account-pop-head">
           <strong>{accountLabel ?? "Signed-in user"}</strong>
           <span>{me.email ?? "Account"}</span>
-          <span className="soft-account-org">{orgLabel}</span>
-          <span className="soft-account-org">{rolePlanCue}</span>
+          <div className="soft-account-context">
+            <span className="soft-account-org" title={orgLabel}>{orgLabel}</span>
+            <span className="soft-account-role">{rolePlanCue}</span>
+          </div>
         </div>
         {memberships.length > 1 ? (
           <div className="soft-account-teams" role="group" aria-label="Switch team">
@@ -74,24 +77,19 @@ export function AppShellAccountMenu({
         {/* Settings owns the canonical list (SETTINGS_NAV): profile,
             appearance, notifications, security, keys. Repeating two of
             its rows here meant this menu had two ways to /account. */}
-        <a role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
+        <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
           {/* The page it opens is titled Account; the menu said Settings. */}
-          Account and settings
+          <Icon name="gear" /><span>Account and settings</span>
         </a>
         {/* One tap to the team for the people who run it; it took Account and settings first. */}
         {memberships.some((row) => row.orgId === orgId && (row.role === "owner" || row.role === "admin")) ? (
-          <a role="menuitem" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`} onClick={onClose}>
-            Team admin
+          <a className="soft-account-destination" role="menuitem" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`} onClick={onClose}>
+            <Icon name="users" /><span>Team admin</span>
           </a>
         ) : null}
-        <a role="menuitem" href={withOrgHref("/docs", orgId)} onClick={onClose}>
-          App manual
-        </a>
-        <a role="menuitem" href={withOrgHref("/support", orgId)} onClick={onClose}>
-          Support tickets
-        </a>
-        <a role="menuitem" href={withOrgHref("/report-bug", orgId)} onClick={onClose}>
-          Report a bug
+        {/* The help centre keeps the manual, tickets and bug reporting together. */}
+        <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
+          <Icon name="chat" /><span>Help and support</span>
         </a>
         {me.platformAdmin ? (
           <a role="menuitem" href="/admin" onClick={onClose}>

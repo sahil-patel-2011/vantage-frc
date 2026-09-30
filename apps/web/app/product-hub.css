@@ -765,3 +765,16 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
   }
 }
 @media (prefers-reduced-motion: reduce) { .hub-tool-more::after { transition: none; } }
+.hub-panel-skeleton { display: grid; gap: 20px; padding: 20px 0; }
+.hub-skel-head { display: grid; gap: 8px; max-width: 380px; }
+.hub-skel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.hub-skel-card { display: grid; gap: 12px; padding: 18px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.hub-panel-skeleton i { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.hub-panel-skeleton .is-label { width: 28%; }
+.hub-panel-skeleton .is-title { width: 70%; height: 24px; }
+.hub-panel-skeleton .is-row { width: 90%; }
+.hub-panel-skeleton .is-short { width: 60%; }
+@media (max-width: 640px) {
+  .hub-skel-grid { grid-template-columns: minmax(0, 1fr); }
+  .hub-skel-card:nth-child(n+2) { display: none; }
+}

@@ -8,7 +8,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button } fr
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { enqueueOutboxItem, getFeatureSnapshot, newOutboxClientId, putFeatureSnapshot, syncOutbox } from "../../lib/offline";
+import { getFeatureSnapshot, putFeatureSnapshot, syncOutbox } from "../../lib/offline";
 import type { WorkItemsView } from "../../lib/work-items/service";
 import {
   TODO_LIST_FILTERS,
@@ -23,11 +23,12 @@ import {
   type TodoStatus,
   type TodosView,
 } from "../../lib/todos";
+import { persistTodo } from "../../lib/todos/persist";
 import "./todos.css";
 
 type LiveView = Extract<TodosView, { status: "live" }>;
 type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
-type Mutate = (payload: Record<string, unknown>) => void;
+type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   if (!todo.dueOn || todo.flags.daysToDue == null) return null;
@@ -226,48 +227,35 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   }, [orgId, load, loadWork]);
 
   const mutate = useCallback<Mutate>(
-    (payload) => {
-      if (!orgId || busy) return;
-      if (!navigator.onLine) {
-        const action = typeof payload.action === "string" ? payload.action : "";
-        const feature = action === "create-todo" ? "task_create" : "task_tick";
-        void enqueueOutboxItem({
-          clientId: newOutboxClientId(),
-          feature,
-          orgId,
-          payload: { orgId, ...payload },
-        });
-        if (view?.status === "live" && action === "update-todo" && typeof payload.todoId === "string") {
-          setView({
-            ...view,
-            todos: view.todos.map((todo) =>
-              todo.id === payload.todoId && typeof payload.status === "string"
-                ? { ...todo, status: payload.status as TodoStatus }
-                : todo,
-            ),
-          });
-        }
-        setError("Saved on this device. It will upload when you are back online.");
-        return;
-      }
+    async (payload) => {
+      if (!orgId || busy) return false;
       setBusy(true);
       setError("");
-      void fetch("/api/todos", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, ...payload }),
-      })
-        .then(async (response) => {
-          const data = (await response.json()) as TodosView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
-            return;
+      try {
+        const result = await persistTodo(orgId, payload, navigator.onLine);
+        if (result.kind === "queued") {
+          if (view?.status === "live" && payload.action === "update-todo" && typeof payload.todoId === "string") {
+            setView({
+              ...view,
+              todos: view.todos.map((todo) =>
+                todo.id === payload.todoId && typeof payload.status === "string"
+                  ? { ...todo, status: payload.status as TodoStatus }
+                  : todo,
+              ),
+            });
           }
-          setView(data);
+          setError("Saved on this device. It will upload when you are back online.");
+        } else {
+          setView(result.view);
           loadWork();
-        })
-        .catch(() => setError("Network error — please try again."))
-        .finally(() => setBusy(false));
+        }
+        return true;
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : "Could not save the task. Check your connection and try again.");
+        return false;
+      } finally {
+        setBusy(false);
+      }
     },
     [orgId, busy, view, loadWork],
   );
@@ -422,23 +410,19 @@ function FilterBar({
   overdue: number;
 }) {
   return (
-    <div className="soft-chip-row" role="toolbar" aria-label="Filter todos">
+    <label className="todos-filter">
+      <span>Show</span>
+      <select aria-label="Show tasks" value={filter} onChange={(event) => setFilter(event.target.value as TodoListFilter)}>
       {TODO_LIST_FILTERS.map((option) => {
         let label = option.label;
         if (option.id === "mine") label = `Mine (${mineOpen})`;
         if (option.id === "overdue") label = `Overdue (${overdue})`;
         return (
-          <button
-            key={option.id}
-            type="button"
-            aria-pressed={filter === option.id}
-            onClick={() => setFilter(option.id)}
-          >
-            {label}
-          </button>
+          <option key={option.id} value={option.id}>{label}</option>
         );
       })}
-    </div>
+      </select>
+    </label>
   );
 }
 
@@ -454,10 +438,12 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
   return (
     <Panel
       as="form"
-      onSubmit={(event) => {
+      className="todos-create"
+      onSubmit={async (event) => {
         event.preventDefault();
-        if (!form.title.trim()) return;
-        mutate({
+        if (busy || !form.title.trim()) return;
+        const submitted = form;
+        const saved = await mutate({
           action: "create-todo",
           title: form.title,
           notes: form.notes || undefined,
@@ -465,17 +451,17 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           subteamId: form.subteamId || null,
           dueOn: form.dueOn || null,
         });
-        setForm(empty);
+        if (saved) setForm((current) => current === submitted ? empty : current);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <FormGrid min={150}>
+      <div className="todos-create-row">
         <FormRow label="Title" wide>
-          <input value={form.title} onChange={set("title")} placeholder="New reminder" required />
+          <input value={form.title} onChange={set("title")} placeholder="Add a team task…" required />
         </FormRow>
-      </FormGrid>
+        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>Add</Button>
+      </div>
       <details>
-        <summary className="todos-more">More</summary>
+        <summary className="todos-more">Details</summary>
         <FormGrid min={150}>
         <FormRow label="Assignee">
           <select value={form.assigneeUserId} onChange={set("assigneeUserId")}>
@@ -507,11 +493,6 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
         </FormRow>
         </FormGrid>
       </details>
-      <div>
-        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
-          Add
-        </Button>
-      </div>
     </Panel>
   );
 }
@@ -607,6 +588,7 @@ function TodoCard({
         <div>
           <strong>{todo.title}</strong>
           <div className="todos-card-meta">
+            {statusLabel(todo.status)}{" · "}
             {todo.assigneeName ? todo.assigneeName : "Unassigned"}
             {todo.subteamName ? (
               <>
@@ -622,93 +604,93 @@ function TodoCard({
             ) : null}
           </div>
         </div>
-        <a className="app-muted" href={deepLink} title="Deep link">
-          Link
-        </a>
       </div>
 
       {todo.notes ? <p style={{ margin: 0 }}>{todo.notes}</p> : null}
 
-      <FormGrid min={140}>
-        <FormRow label="Status">
-          <select
-            value={todo.status}
-            disabled={busy}
-            onChange={(event) =>
-              mutate({ action: "update-todo", todoId: todo.id, status: event.target.value as TodoStatus })
-            }
-          >
-            {TODO_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {statusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </FormRow>
-        <FormRow label="Assignee">
-          <select
-            value={todo.assigneeUserId ?? ""}
-            disabled={busy}
-            onChange={(event) =>
-              mutate({
-                action: "update-todo",
-                todoId: todo.id,
-                assigneeUserId: event.target.value || null,
-              })
-            }
-          >
-            <option value="">Unassigned</option>
-            {view.members.map((member) => (
-              <option key={member.userId} value={member.userId}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-        </FormRow>
-        {view.subteams.length > 0 ? (
-          <FormRow label="Subteam">
-            <select
-              value={todo.subteamId ?? ""}
-              disabled={busy}
-              onChange={(event) =>
-                mutate({
-                  action: "update-todo",
-                  todoId: todo.id,
-                  subteamId: event.target.value || null,
-                })
-              }
-            >
-              <option value="">Whole team</option>
-              {view.subteams.map((subteam) => (
-                <option key={subteam.id} value={subteam.id}>
-                  {subteam.name}
-                </option>
-              ))}
-            </select>
-          </FormRow>
-        ) : null}
-        <FormRow label="Due">
-          <input
-            type="date"
-            value={todo.dueOn ?? ""}
-            disabled={busy}
-            onChange={(event) =>
-              mutate({
-                action: "update-todo",
-                todoId: todo.id,
-                dueOn: event.target.value || null,
-              })
-            }
-          />
-        </FormRow>
-      </FormGrid>
-
-      <div className="todos-card-actions">
-        {todo.status !== "doing" && todo.status !== "done" ? (
-          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "doing" })}>
-            Start
-          </Button>
-        ) : null}
+      <div className="todos-card-controls">
+        <details className="todos-card-details">
+          <summary>Details</summary>
+          <FormGrid min={140}>
+            <FormRow label="Status">
+              <select
+                value={todo.status}
+                disabled={busy}
+                onChange={(event) =>
+                  mutate({ action: "update-todo", todoId: todo.id, status: event.target.value as TodoStatus })
+                }
+              >
+                {TODO_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {statusLabel(status)}
+                  </option>
+                ))}
+              </select>
+            </FormRow>
+            <FormRow label="Assignee">
+              <select
+                value={todo.assigneeUserId ?? ""}
+                disabled={busy}
+                onChange={(event) =>
+                  mutate({
+                    action: "update-todo",
+                    todoId: todo.id,
+                    assigneeUserId: event.target.value || null,
+                  })
+                }
+              >
+                <option value="">Unassigned</option>
+                {view.members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </FormRow>
+            {view.subteams.length > 0 ? (
+              <FormRow label="Subteam">
+                <select
+                  value={todo.subteamId ?? ""}
+                  disabled={busy}
+                  onChange={(event) =>
+                    mutate({
+                      action: "update-todo",
+                      todoId: todo.id,
+                      subteamId: event.target.value || null,
+                    })
+                  }
+                >
+                  <option value="">Whole team</option>
+                  {view.subteams.map((subteam) => (
+                    <option key={subteam.id} value={subteam.id}>
+                      {subteam.name}
+                    </option>
+                  ))}
+                </select>
+              </FormRow>
+            ) : null}
+            <FormRow label="Due">
+              <input
+                type="date"
+                value={todo.dueOn ?? ""}
+                disabled={busy}
+                onChange={(event) =>
+                  mutate({
+                    action: "update-todo",
+                    todoId: todo.id,
+                    dueOn: event.target.value || null,
+                  })
+                }
+              />
+            </FormRow>
+          </FormGrid>
+          <div className="todos-card-actions">
+            <a className="app-muted" href={deepLink}>Link to task</a>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm(`Delete “${todo.title}”?`)) { mutate({ action: "delete-todo", todoId: todo.id }); } }}>
+              Delete
+            </Button>
+          </div>
+        </details>
         {todo.status !== "done" ? (
           <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
             Mark done
@@ -718,9 +700,6 @@ function TodoCard({
             Reopen
           </Button>
         )}
-        <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm(`Delete “${todo.title}”?`)) { mutate({ action: "delete-todo", todoId: todo.id }); } }}>
-          Delete
-        </Button>
       </div>
     </article>
   );

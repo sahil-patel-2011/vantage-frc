@@ -165,45 +165,61 @@
    control it was designed to be. The island's four slots are not thrown away:
    they are the rail's "Your apps" section, where they are labelled. */
 @media (min-width: 1024px) {
-  body.has-app-shell .vrail {
+  /* The server-rendered rail reserves its space before AppShell's body effect runs. */
+  body:is(.has-app-shell, :has(.vrail)) .vrail {
     display: flex !important;
   }
   /* The rail owns the page's left inset, and the top bar sits beside it. */
-  body.has-app-shell {
+  body:is(.has-app-shell, :has(.vrail)) {
     padding-left: var(--rail-w) !important;
     padding-bottom: calc(28px + var(--safe-bottom)) !important;
   }
-  body.has-app-shell .soft-topbar {
+  body:is(.has-app-shell, :has(.vrail)) .soft-topbar {
     left: var(--rail-w) !important;
   }
   /* The next-match strip sits beside the rail too: from 0 its left end ("Next · Qual 31") hid
      behind the sidebar on every page that shows it. */
-  body.has-app-shell .soft-focus-rail {
+  body:is(.has-app-shell, :has(.vrail)) .soft-focus-rail {
     left: var(--rail-w);
     padding-inline: max(18px, calc((100vw - var(--rail-w) - 1124px) / 2));
   }
-  body.has-app-shell .soft-focus-reopen {
+  body:is(.has-app-shell, :has(.vrail)) .soft-focus-reopen {
     left: calc(50% + var(--rail-w) / 2);
   }
   /* The rail lists every workspace and has its own Search, so the hamburger only opened a second
      copy of the same menu. It stays for phones and tablets, where there is no rail. */
-  body.has-app-shell .soft-menu-btn {
+  body:is(.has-app-shell, :has(.vrail)) .soft-menu-btn {
     display: none !important;
   }
   /* The island is a phone affordance. Hiding it removes four duplicate
      destinations from every desktop page, and the occlusion with them. */
-  body.has-app-shell .soft-island {
+  body:is(.has-app-shell, :has(.vrail)) .soft-island {
     display: none !important;
   }
   /* The rail already lists Ask AI. Two controls for one place is the
      duplication this change exists to remove. */
-  body.has-app-shell .soft-ask-ai {
+  body:is(.has-app-shell, :has(.vrail)) .soft-ask-ai {
     display: none;
   }
-  /* The three-line button STAYS. The rail is the fast path — the five pillars
-     and your own apps. The drawer is the complete list: App manual, Support
-     and Sign out appear nowhere else, and hiding its only entry point on a
-     desktop would take them off the product entirely. */
+  /* Search opens a centered panel on desktop, rather than a second left rail. */
+  body:is(.has-app-shell, :has(.vrail)) .soft-drawer {
+    inset: 24px auto auto 50%;
+    width: min(560px, calc(100vw - 48px));
+    max-height: calc(100dvh - 48px);
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    transform: translate(-50%, -12px);
+    transition: transform .18s var(--ease-settle), visibility 0s linear .18s;
+  }
+  body:is(.has-app-shell, :has(.vrail)) .soft-drawer.open {
+    transform: translate(-50%, 0);
+    box-shadow: var(--shadow-pop);
+    transition: transform .18s var(--ease-settle), visibility 0s;
+  }
+  body:is(.has-app-shell, :has(.vrail)).soft-nav-panel-open .vrail {
+    visibility: hidden;
+  }
 }
 
 /* Page title stacked over the team button (non-hub pages): the pair was 64px tall inside a

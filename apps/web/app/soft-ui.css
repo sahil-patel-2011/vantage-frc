@@ -72,7 +72,8 @@ body.has-app-shell.dash-editing .soft-island{opacity:.35;pointer-events:none}
    above island/FAB (80/81) so outside clicks dismiss without eating menu item hits. */
 .soft-account-scrim{position:fixed;z-index:85;inset:0;border:0;background:transparent;cursor:default}
 .soft-account-pop{
-  position:absolute;z-index:2;top:calc(100% + 8px);right:0;width:min(280px,calc(100vw - 24px));
+  position:absolute;z-index:2;top:calc(100% + 8px);right:0;width:min(304px,calc(100vw - 24px));
+  max-height:calc(100dvh - 84px);overflow:auto;overscroll-behavior:contain;
   padding:8px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);
   box-shadow:var(--shadow-pop);display:grid;gap:2px;
   animation:dash-fade .16s ease;
@@ -82,6 +83,11 @@ body.has-app-shell.dash-editing .soft-island{opacity:.35;pointer-events:none}
 .soft-account-pop-head{padding:10px 12px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}
 .soft-account-pop-head strong{display:block;font-size:14px}
 .soft-account-pop-head span{display:block;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.soft-account-context{display:flex;align-items:center;gap:8px;margin-top:8px;min-width:0}
+.soft-account-context .soft-account-org{flex:1;min-width:0;margin-top:0}
+.soft-account-context .soft-account-role{flex:none;padding:3px 7px;border-radius:var(--radius-pill);background:var(--surface-2);font-size:11px}
+.soft-account-pop .soft-account-destination{justify-content:flex-start;gap:10px}
+.soft-account-destination svg{flex:none;width:18px;height:18px;color:var(--muted)}
 .soft-account-pop a,.soft-account-pop button{
   display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:8px 12px;border-radius:var(--radius-sm);
   border:0;background:transparent;color:var(--ink);font:600 13px var(--font-source-sans),ui-sans-serif;

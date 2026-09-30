@@ -1,0 +1,338 @@
+[
+  {
+    "width": 1440,
+    "route": "/dashboard",
+    "url": "http://127.0.0.1:3310/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Good evening, E2E"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/competition",
+    "url": "http://127.0.0.1:3310/competition?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Competition"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/team",
+    "url": "http://127.0.0.1:3310/team?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Team"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/build",
+    "url": "http://127.0.0.1:3310/build?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Build",
+      "Kickoff & Game Analysis"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/business",
+    "url": "http://127.0.0.1:3310/business?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Business"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/competition?tab=scouting&mode=free",
+    "url": "http://127.0.0.1:3310/competition?tab=scouting&mode=free&orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Competition"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/ai",
+    "url": "http://127.0.0.1:3310/ai?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "AI",
+      "Chat"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/account",
+    "url": "http://127.0.0.1:3310/account",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Account"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/onboarding",
+    "url": "http://127.0.0.1:3310/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Good evening, E2E"
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/",
+    "url": "http://127.0.0.1:3310/",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "One team.A clearer season."
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/dashboard",
+    "url": "http://127.0.0.1:3310/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Good evening, E2E"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/competition",
+    "url": "http://127.0.0.1:3310/competition?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Competition"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/team",
+    "url": "http://127.0.0.1:3310/team?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Team"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/build",
+    "url": "http://127.0.0.1:3310/build?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Build",
+      "Kickoff & Game Analysis"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/business",
+    "url": "http://127.0.0.1:3310/business?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Business"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/competition?tab=scouting&mode=free",
+    "url": "http://127.0.0.1:3310/competition?tab=scouting&mode=free&orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Competition"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/ai",
+    "url": "http://127.0.0.1:3310/ai?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "AI",
+      "Chat"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/account",
+    "url": "http://127.0.0.1:3310/account",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Account"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/onboarding",
+    "url": "http://127.0.0.1:3310/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Good evening, E2E"
+    ]
+  },
+  {
+    "width": 768,
+    "route": "/",
+    "url": "http://127.0.0.1:3310/",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "One team.A clearer season."
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/dashboard",
+    "url": "http://127.0.0.1:3310/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Good evening, E2E"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/competition",
+    "url": "http://127.0.0.1:3310/competition?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Competition"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/team",
+    "url": "http://127.0.0.1:3310/team?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Team"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/build",
+    "url": "http://127.0.0.1:3310/build?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Build",
+      "Kickoff & Game Analysis"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/business",
+    "url": "http://127.0.0.1:3310/business?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Business"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/competition?tab=scouting&mode=free",
+    "url": "http://127.0.0.1:3310/competition?tab=scouting&mode=free&orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Competition"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/ai",
+    "url": "http://127.0.0.1:3310/ai?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "AI",
+      "Chat"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/account",
+    "url": "http://127.0.0.1:3310/account",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Account"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/onboarding",
+    "url": "http://127.0.0.1:3310/dashboard?orgId=6925a000-0000-4000-8000-000000000001",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "Good evening, E2E"
+    ]
+  },
+  {
+    "width": 320,
+    "route": "/",
+    "url": "http://127.0.0.1:3310/",
+    "status": 200,
+    "errors": [],
+    "overflow": false,
+    "heading": [
+      "One team.A clearer season."
+    ]
+  }
+]

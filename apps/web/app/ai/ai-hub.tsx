@@ -2,22 +2,22 @@
 
 import dynamic from "next/dynamic";
 import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
-import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import { FinanceInAiPanel } from "./finance-in-ai-panel";
 import "../product-hub.css";
 import "../chat/chat.css";
 import "../code/code.css";
 
-const ChatClient = dynamic(() => import("../chat/chat-client"), { ssr: false });
-const BudgetClient = dynamic(() => import("../team/budgets/budget-client"), { ssr: false });
-const WriterClient = dynamic(() => import("../writer/writer-client"), { ssr: false });
-const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false });
-const DecisionsClient = dynamic(() => import("../decisions/decisions-client"), { ssr: false });
-const AiMemoryClient = dynamic(() => import("../team/ai-memory/ai-memory-client"), { ssr: false });
-const AiPolicyClient = dynamic(() => import("../team/ai-policy/ai-policy-client"), { ssr: false });
+const ChatClient = dynamic(() => import("../chat/chat-client"), { ssr: false, loading: HubPanelSkeleton });
+const BudgetClient = dynamic(() => import("../team/budgets/budget-client"), { ssr: false, loading: HubPanelSkeleton });
+const WriterClient = dynamic(() => import("../writer/writer-client"), { ssr: false, loading: HubPanelSkeleton });
+const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false, loading: HubPanelSkeleton });
+const DecisionsClient = dynamic(() => import("../decisions/decisions-client"), { ssr: false, loading: HubPanelSkeleton });
+const AiMemoryClient = dynamic(() => import("../team/ai-memory/ai-memory-client"), { ssr: false, loading: HubPanelSkeleton });
+const AiPolicyClient = dynamic(() => import("../team/ai-policy/ai-policy-client"), { ssr: false, loading: HubPanelSkeleton });
 const AutonomousAgentPanel = dynamic(
   () => import("./autonomous-agent-panel").then((m) => m.AutonomousAgentPanel),
-  { ssr: false },
+  { ssr: false, loading: HubPanelSkeleton },
 );
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
