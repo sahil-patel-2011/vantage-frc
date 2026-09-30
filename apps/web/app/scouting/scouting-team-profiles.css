@@ -22,22 +22,50 @@
 }
 .stp-sort {
   display: flex;
-  gap: 4px;
-}
-.stp-sort button {
-  min-height: 30px;
-  padding: 0 11px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
+  align-items: center;
+  gap: 10px;
   color: var(--muted);
-  font: 600 12px var(--font-source-sans), ui-sans-serif;
+  font-size: 13px;
+}
+.stp-sort select {
+  min-height: 48px;
+  max-width: 100%;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 14px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
 }
-.stp-sort button.is-active {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: var(--accent-soft);
-  color: var(--accent);
+.stp-sort select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.stp-event-overview {
+  min-width: 0;
+  border-block: 1px solid var(--line);
+}
+.stp-event-overview > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+.stp-event-overview[open] {
+  padding-bottom: 16px;
+}
+.stp-event-overview .sds { margin-bottom: 16px; }
+.stp .std { min-width: 0; }
+.stp { gap: 20px; }
+.stp-shell { scroll-margin-top: 80px; }
+.std-back { display: none; }
+@media (max-width: 959px) {
+  .stp-shell[data-detail-open="false"] > .std { display: none; }
+  .stp-shell[data-detail-open="true"] > .stp-browse { display: none; }
+  .std-back { display: inline-flex; align-items: center; min-height: 48px; justify-self: start; padding: 0; border: 0; background: none; color: var(--accent); font: 600 14px var(--font-sans); cursor: pointer; }
 }
 
 .stp-list {
@@ -136,7 +164,7 @@
   font: 700 10.5px var(--font-source-sans), ui-sans-serif;
   white-space: nowrap;
 }
-.stp-tag[data-kind="up"] { background: color-mix(in srgb, var(--positive) 16%, transparent); color: var(--positive); }
+.stp-tag[data-kind="up"] { background: color-mix(in srgb, var(--positive) 6%, var(--surface)); color: var(--positive); }
 .stp-tag[data-kind="down"] { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
 .stp-tag[data-kind="risk"] { background: color-mix(in srgb, var(--critical) 15%, transparent); color: var(--critical); }
 .stp-tag[data-kind="rank"] { background: var(--accent-soft); color: var(--accent); }
@@ -206,118 +234,11 @@
 
 /* Remove stale compare-button animation rules — the button lives in the detail pane now. */
 
-/* ---------------------------------------------------------------- motion --
-   Everything here uses the shared tokens in vantage-fluid.css, which zero
-   themselves under `html[data-motion="reduced"]` and
-   `prefers-reduced-motion`. That is why none of this is wrapped in a media
-   query: the durations already know.
-
-   The rule for the character: hover tints, press gives a couple of percent of
-   scale and springs back, and nothing travels more than a few pixels. A list
-   of robots should feel like paper under a finger, not like a menu opening. */
-.stp-row {
-  transition:
-    border-color var(--dur-tint) var(--ease-out),
-    box-shadow var(--dur-move) var(--ease-out),
-    transform var(--dur-press) var(--ease-out);
-}
-.stp-row:hover {
-  box-shadow: var(--shadow);
-}
-.stp-row-main {
-  transition: background-color var(--dur-tint) var(--ease-out);
-}
-/* The press lands on the row, not the button, so the whole card moves as one
-   object — pressing a label and having only the label react is the thing that
-   reads as a web page rather than a surface. */
-.stp-row:active {
-  transform: scale(0.994);
-}
-.stp-sort button,
-.stp-tag {
-  transition:
-    background-color var(--dur-tint) var(--ease-out),
-    border-color var(--dur-tint) var(--ease-out),
+/* Stationary targets keep robot selection and comparison predictable. */
+.stp-row-main, .stp-tag {
+  transition: background-color var(--dur-tint) var(--ease-out),
     color var(--dur-tint) var(--ease-out);
 }
-.stp-sort button:active {
-  transform: scale(0.96);
-  transition: transform var(--dur-press) var(--ease-out);
-}
-/* The list arrives rather than appears: each row lifts in a few pixels behind
-   the one above it. The stagger stops at eight so a fifty-robot event does not
-   spend two seconds assembling itself, and the durations are the shared tokens,
-   which zero out under reduced motion. */
-.stp-row {
-  animation: stp-row-in var(--dur-move) var(--ease-settle) both;
-}
-.stp-row:nth-child(1) { animation-delay: 0ms; }
-.stp-row:nth-child(2) { animation-delay: 24ms; }
-.stp-row:nth-child(3) { animation-delay: 48ms; }
-.stp-row:nth-child(4) { animation-delay: 72ms; }
-.stp-row:nth-child(5) { animation-delay: 96ms; }
-.stp-row:nth-child(6) { animation-delay: 120ms; }
-.stp-row:nth-child(7) { animation-delay: 144ms; }
-.stp-row:nth-child(n + 8) { animation-delay: 168ms; }
-@keyframes stp-row-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.stp-compare-hint {
-  animation: stp-unfold var(--dur-move) var(--ease-settle) both;
-}
-@keyframes stp-unfold {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* The sparkline is the one thing worth drawing rather than fading: the shape
-   is the information, and watching it arrive left-to-right is how you read
-   it. Short enough not to be a performance. */
-.stp-spark polyline {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  animation: stp-draw var(--dur-sheet) var(--ease-out) both;
-}
-.stp-spark circle {
-  /* An SVG element transforms about the *viewport* origin by default, so a
-     plain `scale()` would launch the dot toward the top-left instead of
-     growing it in place. `fill-box` makes the origin its own centre. */
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: stp-dot var(--dur-tint) var(--ease-out) var(--dur-sheet) both;
-}
-@keyframes stp-draw {
-  from {
-    stroke-dasharray: 0 1;
-  }
-  to {
-    stroke-dasharray: 1 0;
-  }
-}
-@keyframes stp-dot {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* ── What are you looking for? ───────────────────────────────────────────────
    The sliders that decide the order. Short list on purpose: the ranking knows
    seventeen metrics and scouting fills seven, and a wall of mostly-dead
@@ -398,7 +319,7 @@
 }
 .stp-search input {
   width: 100%;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
@@ -428,8 +349,7 @@
   }
 }
 @media (max-width: 959px) {
-  .stp-browse { order: 2; }
-  .std { position: static; order: 1; }
+  .std { position: static; scroll-margin-top: 80px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .stp-row { transition: none; }

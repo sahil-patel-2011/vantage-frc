@@ -4,16 +4,27 @@
  * The detail half of the scouting dashboard.
  *
  * The list answers "which robot", this answers "why". It is a sticky pane on a
- * wide screen and a card above the list on a phone, so moving between robots is
- * one tap and the numbers never move around underneath you.
+ * wide screen and a focused view on a phone. Returning to the list preserves
+ * the selected robot, filters, scroll position, and keyboard focus.
  *
  * Arithmetic only — every number here is already on the page in the profile.
  */
 
+import { useId, useState } from "react";
 import { CONSISTENCY_LABEL, type ScoutedTeamProfile } from "@vantage/prediction-strategy";
+import type { ObservedRobot } from "../../lib/scouting/team-profiles";
+import { ScoutObservationExplorer } from "../intel/scout-observation-explorer";
 import { ScoutingDetailCharts } from "./scouting-detail-charts";
 import { ScoutingTeamMatchLog } from "./scouting-team-match-log";
 import "./scouting-team-detail.css";
+
+const SECTIONS = [
+  ["overview", "Overview"],
+  ["matches", "Matches"],
+  ["capabilities", "Capabilities"],
+  ["notes", "Notes"],
+] as const;
+type ProfileSection = (typeof SECTIONS)[number][0];
 
 export function ScoutingTeamDetail({
   profile,
@@ -22,6 +33,8 @@ export function ScoutingTeamDetail({
   onCompare,
   orgId,
   eventKey = null,
+  observations,
+  onBack,
 }: {
   profile: ScoutedTeamProfile;
   compared: boolean;
@@ -30,7 +43,11 @@ export function ScoutingTeamDetail({
   /** With a team to read from, the pane also shows the robot match by match. */
   orgId?: string;
   eventKey?: string | null;
+  observations?: ObservedRobot;
+  onBack?: () => void;
 }) {
+  const [section, setSection] = useState<ProfileSection>("overview");
+  const id = useId();
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
   const stats: Array<{ label: string; value: string }> = [
@@ -54,7 +71,8 @@ export function ScoutingTeamDetail({
   }
 
   return (
-    <aside className="std" aria-label={`Team ${number} detail`} key={profile.teamKey}>
+    <aside className="std" aria-label={`Team ${number} detail`} tabIndex={-1}>
+      {onBack ? <button type="button" className="std-back" onClick={onBack}>← All robots</button> : null}
       <header className="std-head">
         <div className="std-head-main">
           <span className="std-kicker">Team</span>
@@ -79,9 +97,25 @@ export function ScoutingTeamDetail({
       </header>
 
       <p className="std-headline">{profile.headline}</p>
-
-      <ScoutingDetailCharts profile={profile} />
-
+      <div className="std-sections" role="tablist" aria-label={`Team ${number} sections`}>
+        {SECTIONS.map(([key, label], index) => <button
+          key={key} type="button" role="tab" id={`${id}-${key}`}
+          aria-selected={section === key} aria-controls={`${id}-panel`}
+          tabIndex={section === key ? 0 : -1}
+          onClick={() => setSection(key)}
+          onKeyDown={event => {
+            const next = event.key === "ArrowRight" ? (index + 1) % SECTIONS.length
+              : event.key === "ArrowLeft" ? (index + SECTIONS.length - 1) % SECTIONS.length
+              : event.key === "Home" ? 0 : event.key === "End" ? SECTIONS.length - 1 : null;
+            if (next == null) return;
+            event.preventDefault();
+            setSection(SECTIONS[next]![0]);
+            event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
+          }}
+        >{label}</button>)}
+      </div>
+      <div className="std-panel" id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${section}`} tabIndex={0}>
+      {section === "overview" ? <>
       <dl className="std-stats">
         {stats.map((stat) => (
           <div key={stat.label}>
@@ -90,8 +124,16 @@ export function ScoutingTeamDetail({
           </div>
         ))}
       </dl>
-
-      {orgId ? <ScoutingTeamMatchLog orgId={orgId} eventKey={eventKey} teamKey={profile.teamKey} /> : null}
+      <ScoutingDetailCharts profile={profile} />
+      </> : null}
+      {section === "matches" ? <>
+        {orgId ? <ScoutingTeamMatchLog orgId={orgId} eventKey={eventKey} teamKey={profile.teamKey} /> : <p className="app-muted">Match history is unavailable.</p>}
+        {observations?.reports.length ? <details className="std-reports"><summary data-disclosure>Original scout reports</summary><ScoutObservationExplorer rows={observations.reports} activeEventKey={eventKey} sectionView="matches" /></details> : null}
+      </> : null}
+      {section === "capabilities" || section === "notes" ? observations?.reports.length ?
+        <ScoutObservationExplorer rows={observations.reports} activeEventKey={eventKey} sectionView={section === "notes" ? "notes" : "metrics"} />
+        : <p className="app-muted">No {section === "notes" ? "notes" : "capability observations"} recorded for this robot.</p> : null}
+      </div>
     </aside>
   );
 }

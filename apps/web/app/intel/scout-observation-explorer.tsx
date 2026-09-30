@@ -45,18 +45,22 @@ export function ScoutObservationExplorer({
   activeEventKey,
   sourceLabel = "your team",
   privateNotes = true,
+  sectionView,
 }: {
   rows: IntelScoutNote[];
   activeEventKey: string | null;
   sourceLabel?: string;
   privateNotes?: boolean;
+  /** Embed one result section in a robot profile without a second navigation bar. */
+  sectionView?: "metrics" | "matches" | "notes";
 }) {
   const [eventKey, setEventKey] = useState(activeEventKey ?? "");
   const [matchKey, setMatchKey] = useState("");
   const [includeLow, setIncludeLow] = useState(false);
-  const [section, setSection] = useState<"metrics" | "matches" | "notes">(
+  const [selectedSection, setSection] = useState<"metrics" | "matches" | "notes">(
     "metrics",
   );
+  const section = sectionView ?? selectedSection;
   const events = [
     ...new Set(
       rows.map(observationEvent).filter((key): key is string => Boolean(key)),
@@ -129,7 +133,7 @@ export function ScoutObservationExplorer({
           </label>
         ) : null}
       </div>
-      <div
+      {!sectionView ? <div
         className="intel-observation-sections"
         role="group"
         aria-label="Scouting result view"
@@ -152,7 +156,7 @@ export function ScoutObservationExplorer({
               {label}
             </button>
           ))}
-      </div>
+      </div> : null}
       <p className="app-muted intel-observation-scope">
         Source: {sourceLabel} · {scoped.filter((row) => row.matchKey).length}{" "}
         reports · {breakdown.matches} unique matches

@@ -10,7 +10,8 @@ import {
   aiBridgeShellCopy,
 } from "../../../lib/ai-bridge/ai-bridge-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { useOnline } from "../../../lib/offline/use-online";
 
 type Org = { id: string; name: string; role: string };
 
@@ -38,6 +39,7 @@ type StatusPayload = {
   bridgeFeatures?: string[];
   setupRequired?: boolean;
   error?: string;
+  httpStatus?: number;
 };
 
 const ENGINE_LABELS: Record<string, { name: string; plan: string }> = {
@@ -68,10 +70,10 @@ function isStatusPayload(value: unknown): value is StatusPayload {
   );
 }
 
-async function persistBridgeSnapshot(cacheScope: string, data: StatusPayload): Promise<void> {
+async function persistBridgeSnapshot(orgId: string, userId: string, data: StatusPayload): Promise<void> {
   if (data.error) return;
   try {
-    await putFeatureSnapshot("ai-bridge", cacheScope, data);
+    await putFeatureSnapshot("ai-bridge", orgId, data, userId);
   } catch {
     // Live bridge already painted; IndexedDB is best-effort.
   }
@@ -100,9 +102,10 @@ export default function AiBridgeClient({
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const paintedRef = useRef(false);
+  const cacheRejectedRef = useRef(false);
   const refreshSequence = useRef(0);
   const [busy, setBusy] = useState(false);
-  const cacheScope = `${userId}:${orgId}`;
+  const online = useOnline();
 
   const refresh = useCallback(async () => {
     const requestId = ++refreshSequence.current;
@@ -115,7 +118,7 @@ export default function AiBridgeClient({
     }
     let hadCache = paintedRef.current;
     try {
-      const cached = await getFeatureSnapshot<StatusPayload>("ai-bridge", cacheScope);
+      const cached = cacheRejectedRef.current ? null : await getFeatureSnapshot<StatusPayload>("ai-bridge", orgId, userId);
       if (!isCurrent()) return;
       if (cached?.data && isStatusPayload(cached.data) && !cached.data.error) {
         if (!paintedRef.current) {
@@ -140,7 +143,9 @@ export default function AiBridgeClient({
       if (!isCurrent()) return;
       if (response.status === 401 || response.status === 403) {
         paintedRef.current = false;
+        cacheRejectedRef.current = true;
         setStatus({
+          httpStatus: response.status,
           error:
             data && typeof data === "object" && "error" in data && typeof data.error === "string"
               ? data.error
@@ -149,6 +154,7 @@ export default function AiBridgeClient({
         setFromCache(false);
         setCachedAt(null);
         setLoading(false);
+        await clearFeatureSnapshot("ai-bridge", orgId, userId).catch(() => {});
         return;
       }
       if (!response.ok || !isStatusPayload(data) || data.error) {
@@ -158,6 +164,7 @@ export default function AiBridgeClient({
           return;
         }
         setStatus({
+          httpStatus: response.status,
           error:
             data && typeof data === "object" && "error" in data && typeof data.error === "string"
               ? data.error
@@ -167,13 +174,18 @@ export default function AiBridgeClient({
         return;
       }
       setStatus(data);
+      cacheRejectedRef.current = false;
       paintedRef.current = true;
       setFromCache(false);
       setCachedAt(null);
       setLoading(false);
-      await persistBridgeSnapshot(cacheScope, data);
+      await persistBridgeSnapshot(orgId, userId, data);
     } catch {
       if (!isCurrent()) return;
+      if (cacheRejectedRef.current) {
+        setLoading(false);
+        return;
+      }
       if (hadCache || paintedRef.current) {
         setFromCache(true);
         setLoading(false);
@@ -182,12 +194,12 @@ export default function AiBridgeClient({
       setStatus({ error: "Could not load your personal connection. Check your connection and retry." });
       setLoading(false);
     }
-  }, [orgId, cacheScope]);
+  }, [orgId, userId]);
 
   useEffect(() => {
     void refresh();
     return () => { refreshSequence.current++; };
-  }, [refresh]);
+  }, [refresh, online]);
 
   async function approve(event: React.FormEvent) {
     event.preventDefault();
@@ -271,6 +283,7 @@ export default function AiBridgeClient({
               <select value={orgId} onChange={(event) => {
                 refreshSequence.current++;
                 paintedRef.current = false;
+                cacheRejectedRef.current = false;
                 setStatus(null); setLoading(true); setFromCache(false); setCachedAt(null); setMessage("");
                 setOrgId(event.target.value);
               }}>
@@ -305,7 +318,7 @@ export default function AiBridgeClient({
                   autoComplete="one-time-code"
                 />
               </label>
-              <Button variant="primary" type="submit" disabled={!orgId || busy}>
+              <Button variant="primary" type="submit" disabled={!orgId || busy || !online || loading || showStatusError || Boolean(status?.setupRequired)}>
                 Approve this computer
               </Button>
               {message ? (
@@ -320,9 +333,16 @@ export default function AiBridgeClient({
               {loading && !status ? (
                 <p className="app-muted">Loading your connection…</p>
               ) : showStatusError ? (
-                <p className="telemetry-status">{status?.error}</p>
+                <div role="status">
+                  <p className="telemetry-status">{status?.error}</p>
+                  {status?.httpStatus === 401 ? (
+                    <Button as="a" href={`/signin?next=${encodeURIComponent(`/team/ai-bridge?orgId=${orgId}`)}`}>Sign in again</Button>
+                  ) : status?.httpStatus !== 403 ? (
+                    <Button disabled={loading || !online} onClick={() => void refresh()}>Retry connection</Button>
+                  ) : null}
+                </div>
               ) : status?.setupRequired ? (
-                <p className="app-muted">This team is not ready to pair yet. Ask a mentor to finish team setup.</p>
+                <p className="app-muted">Personal connections are unavailable. Contact Vantage support to enable pairing.</p>
               ) : !status?.devices?.length ? (
                 <p className="app-muted">No computer paired yet. Follow the three steps, then approve the code.</p>
               ) : (

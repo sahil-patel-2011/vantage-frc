@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CONSISTENCY_LABEL,
   MIN_MATCHES_TO_STAND_ALONE,
@@ -59,10 +59,15 @@ type Sort = "fit" | "pick" | "average" | "number";
 export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; eventKey: string | null }) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; status: number | null } | null>(null);
+  const [retry, setRetry] = useState(0);
   const [sort, setSort] = useState<Sort>("fit");
   const { weights, update, reset, changed } = usePickWeights(orgId);
   /** The robot whose numbers fill the detail pane. */
   const [selected, setSelected] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const returnFocus = useRef<HTMLButtonElement | null>(null);
+  const returnScroll = useRef(0);
+  const shellRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   /** Up to three robots held side by side. Team keys, in the order they were picked. */
   const [compare, setCompare] = useState<string[]>([]);
@@ -70,9 +75,37 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [splitView, setSplitView] = useState(false);
   const [savedContext, setSavedContext] = useState<{ orgId: string; eventKey: string | null; key: string } | null>(null);
 
+  const selectRobot = (teamKey: string, button?: HTMLButtonElement) => {
+    setSelected(teamKey);
+    if (!window.matchMedia("(max-width: 959px)").matches) return;
+    returnFocus.current = button ?? null;
+    returnScroll.current = window.scrollY;
+    setDetailOpen(true);
+  };
+
+  const backToRobots = () => {
+    setDetailOpen(false);
+    requestAnimationFrame(() => {
+      (returnFocus.current ?? shellRef.current?.querySelector<HTMLInputElement>("input[type=search]"))?.focus({ preventScroll: true });
+      window.scrollTo({ top: returnScroll.current, behavior: "instant" });
+    });
+  };
+
+  useEffect(() => {
+    if (!detailOpen) return;
+    const frame = requestAnimationFrame(() => {
+      const detail = shellRef.current?.querySelector<HTMLElement>(".std");
+      detail?.focus({ preventScroll: true });
+      detail?.scrollIntoView({ block: "start", behavior: "instant" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [detailOpen, selected]);
+
   useEffect(() => {
     let cancelled = false;
     setSavedContext(null);
+    setSort("fit"); setSelected(null); setQuery(""); setCompare([]); setSplitView(false); setDetailOpen(false);
+    returnFocus.current = null;
     void offlineSnapshotUser(orgId).then(user => {
       if (cancelled || !user) return;
       const key = robotViewStorageKey(user, orgId, eventKey);
@@ -83,6 +116,13 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     });
     return () => { cancelled = true; };
   }, [orgId, eventKey]);
+
+  useEffect(() => {
+    if (!error || (error.status != null && error.status < 500)) return;
+    const reconnect = () => setRetry(current => current + 1);
+    window.addEventListener("online", reconnect);
+    return () => window.removeEventListener("online", reconnect);
+  }, [error]);
 
   useEffect(() => {
     if (!savedContext || savedContext.orgId !== orgId || savedContext.eventKey !== eventKey) return;
@@ -124,7 +164,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     return () => {
       cancelled = true;
     };
-  }, [orgId, eventKey]);
+  }, [orgId, eventKey, retry]);
 
   const rows = useMemo(() => {
     if (!view || view.status !== "ready") return [];
@@ -188,7 +228,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
           <Button as="a" variant="primary" href={copy.primary.href}>
             {copy.primary.label}
           </Button>
-        ) : null}
+        ) : copy.showRetry ? <Button onClick={() => setRetry(current => current + 1)}>Retry scouting</Button> : null}
       </EmptyState>
     );
   }
@@ -233,7 +273,9 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
             {sort === "fit" ? " Best fit orders them by what you say you are looking for." : ""}
           </p>
         </div>
-        <div className="stp-sort" role="group" aria-label="Sort robots">
+        <label className="stp-sort">
+          <span>Sort</span>
+          <select aria-label="Sort robots" value={sort} onChange={event => setSort(event.target.value as Sort)}>
           {(
             [
               ["fit", "Best fit"],
@@ -241,29 +283,22 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
               ["average", "Average"],
               ["number", "Team number"],
             ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={sort === id ? "is-active" : undefined}
-              aria-pressed={sort === id}
-              onClick={() => setSort(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+          ).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </label>
       </header>
 
+      <details className="stp-event-overview"><summary data-disclosure>Event overview</summary>
       <ScoutingDashboardSummary profiles={view.profiles} />
-      {view.observations?.length ? <details className="intel-shared-scouting"><summary data-disclosure>Explore recorded capabilities and match reports</summary><ObservedRobots robots={view.observations} eventKey={eventKey} /></details> : null}
-
       <ScoutingFieldChart
         profiles={view.profiles}
         selectedKey={detail?.teamKey ?? null}
         compareKeys={compare}
-        onSelect={setSelected}
+        onSelect={teamKey => selectRobot(teamKey)}
       />
+      </details>
+
+      {view.observations?.some(robot => !view.profiles.some(profile => profile.teamKey === robot.teamKey)) ? <details className="intel-shared-scouting"><summary data-disclosure>Robots without a scored total</summary><ObservedRobots robots={view.observations.filter(robot => !view.profiles.some(profile => profile.teamKey === robot.teamKey))} eventKey={eventKey} /></details> : null}
 
       {sort === "fit" ? <details className="intel-shared-scouting"><summary data-disclosure>Adjust what makes a good pick</summary><PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} /></details> : null}
 
@@ -298,7 +333,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         </p>
       ) : null}
 
-      <div className="stp-shell">
+      <div className="stp-shell" ref={shellRef} data-detail-open={detailOpen}>
         <div className="stp-browse">
           <label className="stp-search">
             <span className="sr-only">Find a team</span>
@@ -318,7 +353,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
                   profile={profile}
                   active={detail?.teamKey === profile.teamKey}
                   compared={compare.includes(profile.teamKey)}
-                  onSelect={() => setSelected(profile.teamKey)}
+                  onSelect={button => selectRobot(profile.teamKey, button)}
                 />
               ))}
             </ul>
@@ -329,12 +364,15 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
 
         {detail ? (
           <ScoutingTeamDetail
+            key={detail.teamKey}
             profile={detail}
             compared={compare.includes(detail.teamKey)}
             compareFull={compare.length >= COMPARE_LIMIT}
             onCompare={() => toggleCompare(detail.teamKey)}
             orgId={orgId}
             eventKey={view.eventKey}
+            observations={view.observations?.find(robot => robot.teamKey === detail.teamKey)}
+            onBack={backToRobots}
           />
         ) : null}
       </div>
@@ -382,13 +420,13 @@ function ProfileRow({
   profile: ScoutedTeamProfile;
   active: boolean;
   compared: boolean;
-  onSelect: () => void;
+  onSelect: (button: HTMLButtonElement) => void;
 }) {
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
   return (
     <li className="stp-row" data-consistency={consistency} data-active={active ? "true" : undefined} data-compared={compared ? "true" : undefined}>
-      <button type="button" className="stp-row-main" aria-pressed={active} onClick={onSelect}>
+      <button type="button" className="stp-row-main" aria-pressed={active} onClick={event => onSelect(event.currentTarget)}>
         <span className="stp-team">{number}</span>
         <span className="stp-score">
           {/* The plain average of the matches watched, the same number as the

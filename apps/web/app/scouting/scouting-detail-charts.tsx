@@ -14,6 +14,7 @@
 
 import type { ScoutedTeamProfile } from "@vantage/prediction-strategy";
 import { completePhaseBreakdown, phasePointValue, phaseSampleCount, pointValue } from "./scouting-points-display";
+import "./scouting-detail-charts.css";
 
 const PHASES = [
   { key: "auto", label: "Auto", value: (p: ScoutedTeamProfile) => p.meanAuto, color: "var(--chart-phase-auto)" },

@@ -64,8 +64,7 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: sdc-draw var(--dur-sheet) var(--ease-settle) both;
+  stroke-dashoffset: 0;
 }
 .sdc-trend-dot {
   fill: var(--accent);
@@ -89,8 +88,7 @@
 }
 .sdc-donut-slice {
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: sdc-draw var(--dur-sheet) var(--ease-settle) both;
+  stroke-dashoffset: 0;
 }
 .sdc-donut-center {
   fill: var(--ink);
@@ -113,6 +111,14 @@
   align-items: center;
   gap: 8px;
 }
+.sdc-donut-legend div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+}
+.sdc-donut-legend dt, .sdc-donut-legend dd { margin: 0; font-size: 12px; }
+.sdc-donut-legend dt { color: var(--muted); }
 .sdc-donut-swatch {
   width: 10px;
   height: 10px;
@@ -133,14 +139,4 @@
   --chart-phase-auto: color-mix(in srgb, var(--accent) 55%, var(--surface));
   --chart-phase-teleop: var(--accent);
   --chart-phase-endgame: color-mix(in srgb, var(--accent) 80%, var(--ink));
-}
-
-/* ---- Motion ---- */
-@keyframes sdc-draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sdc-trend-line,
-  .sdc-donut-slice { animation: none; }
 }

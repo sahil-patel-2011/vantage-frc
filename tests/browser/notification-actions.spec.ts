@@ -15,8 +15,15 @@ test("notification counts follow the team, opening clears seen items, and change
   const otherOrg = randomUUID();
   const ids = Array.from({ length: 5 }, () => randomUUID());
   const title = `Inbox audit ${randomUUID()}`;
+  // Repeated local journeys leave legitimate fixture notifications. Isolate
+  // unread state for this test, then restore every prior timestamp afterward.
+  const existing = await pool.query<{ id: string; read_at: string | null }>(
+    "SELECT id,read_at::text AS read_at FROM notifications WHERE user_id=$1 AND (org_id=$2 OR org_id IS NULL)",
+    [ownerId, homeOrg],
+  );
   await pool.query("INSERT INTO organizations(id,name,slug,team_number) VALUES($1,$2,$3,99993)", [otherOrg, title, otherOrg]);
   try {
+    await pool.query("UPDATE notifications SET read_at=COALESCE(read_at,now()) WHERE id=ANY($1::uuid[])", [existing.rows.map(row => row.id)]);
     await pool.query("INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'scout')", [otherOrg, ownerId]);
     expect(await signInAs(context, "owner")).toBe(true);
     const baseline = await (await context.request.get(`/api/me?orgId=${homeOrg}`)).json();
@@ -62,6 +69,9 @@ test("notification counts follow the team, opening clears seen items, and change
     expect(remaining.rows.map((row) => row.id).sort()).toEqual(ids.slice(2, 5).sort());
   } finally {
     await pool.query("DELETE FROM notifications WHERE id=ANY($1::uuid[])", [ids]);
+    for (const row of existing.rows) {
+      await pool.query("UPDATE notifications SET read_at=$2 WHERE id=$1 AND user_id=$3", [row.id, row.read_at, ownerId]);
+    }
     await pool.query("DELETE FROM organizations WHERE id=$1 AND name=$2", [otherOrg, title]);
     await pool.end();
   }
