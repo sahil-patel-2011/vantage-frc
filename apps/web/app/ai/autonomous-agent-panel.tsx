@@ -103,7 +103,7 @@ function labelAgentStepKind(kind: string): string {
   }
 }
 
-export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
+export function AutonomousAgentPanel({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [steps, setSteps] = useState<StepRow[]>([]);
@@ -252,16 +252,16 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
     <div className="aa-page">
       <header className="aa-header">
         <div>
-          <h1>Give AI a task</h1>
+          {embedded ? <h2>Give AI a task</h2> : <h1>Give AI a task</h1>}
           <p>
             See each step. It only opens sites your team allows.
           </p>
         </div>
-        <div className="aa-header-actions">
+        {!embedded ? <div className="aa-header-actions">
           <Button as="a" variant="secondary" href={hubHref("/ai", "budgets", orgId)}>
             Budgets
           </Button>
-        </div>
+        </div> : null}
       </header>
 
       <SponsoredPromoBanner orgId={orgId} />
@@ -319,17 +319,16 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           <Button variant="primary" type="button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
             {busy ? "Running…" : "Run this goal"}
           </Button>
-          <Button variant="secondary" type="button" onClick={() => void loadRuns()} disabled={busy}>
-            Refresh history
-          </Button>
         </div>
       </section>
 
       <div className="aa-grid">
         <section className="aa-history app-card soft-panel" aria-label="Past runs">
           <header>
-            <h2>Past runs</h2>
-            <p>Earlier jobs and what each one found.</p>
+            <div><h2>Past runs</h2><p>Earlier jobs and what each one found.</p></div>
+            <Button variant="ghost" size="sm" type="button" onClick={() => void loadRuns()} disabled={busy}>
+              Refresh history
+            </Button>
           </header>
           {loading ? <p className="aa-muted">Loading…</p> : null}
           {empty ? (

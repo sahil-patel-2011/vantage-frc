@@ -33,7 +33,9 @@ import { useFollowUrl } from "../lib/nav/use-follow-url";
 type ProductHubShellProps = {
   hubId: ProductHubDef["id"];
   breadcrumbs?: ReactNode;
-  children: (ctx: { tab: string; orgId: string | null; selectTab: (tab: string) => void }) => ReactNode;
+  children: (ctx: { tab: string; orgId: string | null; selectTab: (tab: string) => void; availableTabs: ProductHubDef["tabs"] }) => ReactNode;
+  /** Integrated workspaces supply their own contextual controls. Access checks still apply. */
+  navigation?: "tabs" | "contextual";
   headerActions?: ReactNode;
   /**
    * Tab ids this hub renders inline. Tools not listed live on their own route,
@@ -144,6 +146,7 @@ export function ProductHubShell({
   children,
   headerActions,
   embeddedTabs,
+  navigation = "tabs",
 }: ProductHubShellProps) {
   const hub = hubById(hubId);
   const access = useClientAccessProfile();
@@ -277,7 +280,7 @@ export function ProductHubShell({
     <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
       <OfflineBanner feature={hub.label} />
       {/* Primary workspaces stay visible; secondary tools share one selector. */}
-      <div className="hub-bar">
+      {navigation === "tabs" ? <div className="hub-bar">
         <div className="hub-bar-id">
           {breadcrumbs ? <span className="breadcrumbs">{breadcrumbs}</span> : null}
           {/* Still an h1: the page needs one, and it is what a screen reader
@@ -324,7 +327,7 @@ export function ProductHubShell({
           <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
           {headerActions}
         </div>
-      </div>
+      </div> : null}
       <div
         className="product-hub-panel"
         data-hub-tab={tab}
@@ -347,7 +350,11 @@ export function ProductHubShell({
           }
           // Mount the view immediately: its requests must run before it can finish loading.
           // Suspense handles views that actually suspend without a timer or text-length guess.
-          return <Suspense fallback={<HubPanelSkeleton />}>{children({ tab, orgId, selectTab })}</Suspense>;
+          const availableTabs = hubTabsForMember(
+            hub.tabs.filter((entry) => primaryTabs.some((primary) => primary.id === hubWorkbenchId(hub, entry.id))),
+            canManageTeam,
+          );
+          return <Suspense fallback={<HubPanelSkeleton />}>{children({ tab, orgId, selectTab, availableTabs })}</Suspense>;
         })()}
       </div>
     </main>

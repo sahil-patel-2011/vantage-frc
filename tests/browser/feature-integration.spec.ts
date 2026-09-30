@@ -211,6 +211,30 @@ test.describe("workflow handoffs", () => {
 test.describe("hub chrome", () => {
   const HUBS = ["competition", "team", "business", "build", "ai"] as const;
 
+  async function expectAiWorkspaceControls(page: Page) {
+    expect(await gotoAsTeam(page, "/ai")).toBeTruthy();
+    const mode = page.getByRole("combobox", { name: "AI workspace mode" });
+    await expect(mode).toHaveValue("chat");
+    await expect(page.getByRole("tablist", { name: "AI sections" })).toHaveCount(0);
+    const modeIds = await mode.locator("option").evaluateAll((options) => options.map((option) => option.getAttribute("value")));
+    expect(modeIds).toEqual(["chat", "writer", "agent"]);
+    const tools = page.getByRole("button", { name: "AI tools: Tools", exact: true });
+    await tools.click();
+    // All five former workbenches remain available exactly once. Chat, Write and
+    // Run a task belong to the selector; Notes and limits belong to its contextual menu.
+    for (const entry of hubPrimaryTabs(hubById("ai"))) {
+      if (modeIds.includes(entry.id)) {
+        await expect(mode.locator(`option[value="${entry.id}"]`)).toHaveCount(1);
+        await expect(page.getByRole("menuitem", { name: entry.label, exact: true })).toHaveCount(0);
+      } else {
+        const label = entry.id === "budgets" ? "Limits & settings" : entry.label;
+        await expect(page.getByRole("menuitem", { name: label, exact: true })).toHaveCount(1);
+      }
+    }
+    await tools.press("Escape");
+    await expect(tools).toBeFocused();
+  }
+
   /**
    * The tab bar names the workbench; the tool strip lists what is *inside* it.
    * `/media` and `/business` built their own strips off hubNestedTabs(), which
@@ -218,6 +242,10 @@ test.describe("hub chrome", () => {
    */
   for (const hubId of HUBS) {
     test(`${hubId} tool strip never repeats the open workbench`, async ({ page }) => {
+      if (hubId === "ai") {
+        await expectAiWorkspaceControls(page);
+        return;
+      }
       const hub = hubById(hubId);
       await page.goto(hub.href, { waitUntil: "domcontentloaded" });
       const selected = page.getByRole("tab", { selected: true });
@@ -230,8 +258,12 @@ test.describe("hub chrome", () => {
     });
   }
 
-  test("hub tab bars list every workbench exactly once", async ({ page }) => {
+  test("hub navigation lists every workbench exactly once", async ({ page }) => {
     for (const hubId of HUBS) {
+      if (hubId === "ai") {
+        await expectAiWorkspaceControls(page);
+        continue;
+      }
       const hub = hubById(hubId);
       await page.goto(hub.href, { waitUntil: "domcontentloaded" });
       const tabs = page.getByRole("tablist").first().getByRole("tab");

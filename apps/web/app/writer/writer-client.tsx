@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
+import { useAiWorkspace } from "../../components/ai-workspace-context";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { ModelProvenance, Button, EmptyState } from "../../components/ui";
@@ -111,6 +112,8 @@ function WriterCrossLinks({ orgId }: { orgId: string }) {
 }
 
 export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | null } = {}) {
+  const embedded = useAiWorkspace();
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<WriterView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -250,7 +253,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const setupPrimary = writerNextActions({ orgId: setupOrg, draftCount: 0 })[0] ?? null;
 
   return (
-    <main className="module-page writer-page">
+    <Root className="module-page writer-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">AI / Writing Assistant</span>
@@ -337,7 +340,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           canManageProfile={canManageProfile}
         />
       )}
-    </main>
+    </Root>
   );
 }
 
@@ -362,6 +365,7 @@ function WriterWorkspace({
   setCutoffCode: (code: string | null) => void;
   canManageProfile: boolean;
 }) {
+  const embedded = useAiWorkspace();
   const [profile, setProfile] = useState(() => toForm(view.profile));
   useEffect(() => {
     setProfile(toForm(view.profile));
@@ -392,14 +396,17 @@ function WriterWorkspace({
         hasMission={hasMission}
         hasAchievements={hasAchievements}
       />
-      <ProfilePanel
-        profile={profile}
-        setProfile={setProfile}
-        busy={busy}
-        mutate={mutate}
-        canManageProfile={canManageProfile}
-        thinProfile={!hasMission || !hasAchievements}
-      />
+      <details className="writer-profile-disclosure" open={embedded ? undefined : true}>
+        <summary>Team profile{!hasMission || !hasAchievements ? <span className="app-badge setup">Incomplete</span> : null}</summary>
+        <ProfilePanel
+          profile={profile}
+          setProfile={setProfile}
+          busy={busy}
+          mutate={mutate}
+          canManageProfile={canManageProfile}
+          thinProfile={!hasMission || !hasAchievements}
+        />
+      </details>
       <Composer
         liveProfile={liveProfile}
         profileForm={profile}
@@ -767,19 +774,14 @@ function Composer({
           </Button>
         </div>
       ) : null}
-      <div className="writer-kind-pills" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {(["grant", ...EMAIL_KINDS] as DraftKind[]).map((k) => (
-          <button
-            key={k}
-            type="button"
-            className={`app-badge ${kind === k ? "good" : "muted"}`}
-            style={{ cursor: "pointer", border: "none" }}
-            onClick={() => setKind(k)}
-          >
-            {kindLabel(k)}
-          </button>
-        ))}
-      </div>
+      <label className="writer-draft-kind">
+        <span>Draft type</span>
+        <select value={kind} onChange={(event) => setKind(event.target.value as DraftKind)}>
+          {(["grant", ...EMAIL_KINDS] as DraftKind[]).map((k) => (
+            <option key={k} value={k}>{kindLabel(k)}</option>
+          ))}
+        </select>
+      </label>
 
       {isGrant ? (
         <div style={{ display: "grid", gap: 10 }}>

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { signInFixture } from "./session";
+import { signInAs, signInFixture } from "./session";
+import { gotoAsTeam } from "./active-org";
 import { expectPausedPage, mediaPaused } from "./media-paused";
 
 test.beforeEach(async ({ context }) => {
@@ -12,7 +13,7 @@ const HUBS = [
   { path: "/team", tab: "Calendar" },
   { path: "/business", tab: "Overview" },
   { path: "/build", tab: "Kickoff" },
-  { path: "/ai", tab: "Chat" },
+  { path: "/ai", heading: /^AI$/ },
   // A media tool: the paused page while media is switched off.
   { path: "/media", heading: /^Media$/i, pausedAs: "Media" },
   { path: "/logistics", heading: /Logistics|Travel/i },
@@ -46,9 +47,13 @@ test("Media library hub tab opens the library page instead of Calendar", async (
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-test("AI Notes stays on the AI hub instead of bouncing to /decisions", async ({ page }) => {
-  await page.goto("/ai?tab=decisions", { waitUntil: "domcontentloaded" });
+test("AI Notes stays on the AI hub instead of bouncing to /decisions", async ({ page, context }) => {
+  expect(await signInAs(context, "owner"), "Seeded owner must sign in").toBe(true);
+  expect(await gotoAsTeam(page, "/ai?tab=decisions")).toBeTruthy();
   await expect(page).toHaveURL(/\/ai(\?|$)/, { timeout: 15_000 });
-  await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
+  // Notes is a contextual editor in the same workspace; the old five-tab bar is gone.
+  const notes = page.getByRole("dialog", { name: "Notes", exact: true });
+  await expect(notes).toBeVisible();
+  await expect(notes.getByRole("button", { name: "Close dialog" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Taking you to the full page");
 });
