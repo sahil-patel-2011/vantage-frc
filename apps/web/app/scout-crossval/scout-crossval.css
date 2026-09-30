@@ -98,5 +98,7 @@
 .scout-crossval-filter button{min-height:40px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .scout-crossval-filter button span{margin-left:4px;font-weight:700;opacity:.8}
 .scout-crossval-filter button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink,#fff)}
-.scout-crossval-compact{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:10px 4px;border-top:1px solid var(--line)}
-.scout-crossval-compact strong{font-size:14px}
+.scout-crossval-list > li.scout-crossval-compact{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding:10px 14px;border-radius:12px}
+.scout-crossval-list > li.scout-crossval-compact strong{font-size:14px}
+.scout-crossval-list > li.scout-crossval-compact small{display:inline;margin:0}
+.scout-crossval-list:has(> .scout-crossval-compact){gap:6px}
