@@ -28,6 +28,21 @@
 .cdc-gov a:hover {
   text-decoration: underline;
 }
+.cdc-options {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 0 14px;
+}
+.cdc-options > summary {
+  min-height: 48px;
+  padding: 14px 0;
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+.cdc-options[open] { padding-bottom: 14px; }
+.cdc-options > :not(summary) { margin-top: 10px; }
 .cdc-billing {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

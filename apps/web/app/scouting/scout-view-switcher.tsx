@@ -8,7 +8,12 @@ import type { ScoutTab } from "./scouting-model";
 /** The three places a scout goes during an event. Everything else is under More. */
 const PRIMARY: Array<{ id: ScoutTab; label: string }> = [
   { id: "match", label: "Match" },
-  { id: "pit", label: "Pit" },
+  // "Pit visits", not "Pit". The Competition hub has its own Pit workbench
+  // beside this row — robot status, repair triage, charge plan, the Pit TV — and
+  // on a desktop screen both rows are on screen at once. Two controls, same
+  // word, different jobs, and the one you are looking for during an event is
+  // this one. Naming the job rather than the place tells them apart.
+  { id: "pit", label: "Pit visits" },
   { id: "teams", label: "Robots" },
 ];
 
@@ -19,16 +24,16 @@ const SECONDARY: Array<{ id: ScoutTab; label: string; what: string }> = [
 ];
 
 /**
- * Match / Pit / Robots, and one More.
+ * Match / Pit visits / Robots, and one More.
  *
  * On a 390px phone the Competition hub stacked three rows of navigation over
  * the form: the hub's sections, the hub's scouting tools (Forms · Coverage ·
- * Shifts · More tools), then this screen's own chips (Match · Robots · Pit ·
- * More tools). Two of the rows each had a "More tools", and "Pit" meant the pit
- * checklist in one row and pit scouting in the next. The hub's tool row is
- * hidden on the scouting tab at phone width (see scouting.css) and its tools
- * are listed here instead, so a student sees the hub's sections and then one
- * control: the three views they switch between, and More for the rest.
+ * Shifts · More tools), then this screen's own chips (Match · Robots · Pit
+ * visits · More tools). Two of the rows each had a "More tools", and "Pit"
+ * meant the pit checklist in one row and pit scouting in the next. The hub's
+ * tool row is hidden on the scouting tab at phone width (see scouting.css) and
+ * its tools are listed here instead, so a student sees the hub's sections and
+ * then one control: the three views they switch between, and More for the rest.
  */
 export function ScoutViewSwitcher({
   tab,

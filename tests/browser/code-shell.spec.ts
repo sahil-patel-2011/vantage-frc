@@ -12,8 +12,10 @@ test("Code Coach hub still loads after the panel split", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Code" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const coach = page.getByRole("heading", { name: "Code Coach pattern review" });
-  if (!(await expectHubReadyOrGate(page, coach))) return;
+  const source = page.getByRole("textbox", { name: "Source code", exact: true });
+  if (!(await expectHubReadyOrGate(page, source))) return;
+  await page.locator(".cdc-options > summary").click();
+  await expect(page.getByRole("heading", { name: "Code Coach pattern review" })).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "AI Bugbot" })).toBeVisible();
   const modes = page.getByRole("group", { name: "Bugbot billing mode" });

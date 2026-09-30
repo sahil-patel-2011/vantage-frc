@@ -1,6 +1,10 @@
 /* Persistent left rail (wide screens only).
    Component rules only — every colour, radius and space comes from system.css. */
 
+/* One number for the rail's width and the page inset it owns, so the two
+   cannot drift apart when the rail is restyled. */
+:root { --rail-w: 244px; }
+
 .vrail {
   display: none;
 }
@@ -10,7 +14,7 @@
     position: fixed;
     z-index: 72;
     inset: 0 auto 0 0;
-    width: 232px;
+    width: var(--rail-w);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
@@ -139,20 +143,6 @@
     border-top: 1px solid var(--line-soft);
     padding-top: 8px;
   }
-
-  /* Give legacy rail layouts their horizontal inset. Keep room for the island. */
-  body.has-app-shell {
-    padding-left: 232px !important;
-    padding-bottom: calc(100px + var(--safe-bottom)) !important;
-  }
-  body.has-app-shell .soft-topbar {
-    left: 232px;
-  }
-  /* The rail already has Search and Ask AI. The top-bar copies are for phones. */
-  body.has-app-shell .soft-menu-btn,
-  body.has-app-shell .soft-ask-ai {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -163,22 +153,44 @@
   }
 }
 
-/* One menu: the three-line button opens the drawer at every width (app-shell.tsx), so the
-   always-open left rail is retired and pages use the full width. */
+/* The shell, on a screen with room for the rail.
+   The rail was retired on the grounds that the three-line button already opens
+   the same places. Measuring the built app said otherwise. With the rail gone
+   the only pillars on a 1440px screen were two clicks deep, behind a hamburger,
+   and the thing that stood in for them was the floating bottom island: four
+   round targets, a phone pattern, covering up to 36 elements of the page behind
+   it. Every workspace was linked two or three times on the same screen, and the
+   five-pillar shape of the product — the thing the marketing page, the drawer
+   and the tour all describe — was nowhere on the screen.
+   So wide screens get the rail, and the island goes back to being the phone
+   control it was designed to be. The island's four slots are not thrown away:
+   they are the rail's "Your apps" section, where they are labelled. */
 @media (min-width: 1024px) {
   body.has-app-shell .vrail {
-    display: none !important;
+    display: flex !important;
   }
+  /* The rail owns the page's left inset, and the top bar sits beside it. */
   body.has-app-shell {
-    padding-left: 0 !important;
+    padding-left: var(--rail-w) !important;
+    padding-bottom: calc(28px + var(--safe-bottom)) !important;
   }
   body.has-app-shell .soft-topbar {
-    left: 0 !important;
+    left: var(--rail-w) !important;
   }
-  body.has-app-shell .soft-menu-btn,
+  /* The island is a phone affordance. Hiding it removes four duplicate
+     destinations from every desktop page, and the occlusion with them. */
+  body.has-app-shell .soft-island {
+    display: none !important;
+  }
+  /* The rail already lists Ask AI. Two controls for one place is the
+     duplication this change exists to remove. */
   body.has-app-shell .soft-ask-ai {
-    display: inline-flex;
+    display: none;
   }
+  /* The three-line button STAYS. The rail is the fast path — the five pillars
+     and your own apps. The drawer is the complete list: App manual, Support
+     and Sign out appear nowhere else, and hiding its only entry point on a
+     desktop would take them off the product entirely. */
 }
 
 /* Page title stacked over the team button (non-hub pages): the pair was 64px tall inside a

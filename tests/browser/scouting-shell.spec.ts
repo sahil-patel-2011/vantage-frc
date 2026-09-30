@@ -17,10 +17,10 @@ test("Scouting hub still loads after the panel split", async ({ page }) => {
   if (!(await expectHubReadyOrGate(page, views, recovery))) return;
 
   await expect(views.getByRole("button", { name: "Match" })).toBeVisible();
-  await expect(views.getByRole("button", { name: "Pit" })).toBeVisible();
+  await expect(views.getByRole("button", { name: "Pit visits" })).toBeVisible();
   await expect(views.getByRole("tab")).toHaveCount(0);
 
-  await views.getByRole("button", { name: "Pit" }).click();
-  await expect(views.getByRole("button", { name: "Pit" })).toHaveAttribute("aria-current", "page");
+  await views.getByRole("button", { name: "Pit visits" }).click();
+  await expect(views.getByRole("button", { name: "Pit visits" })).toHaveAttribute("aria-current", "page");
   await views.getByRole("button", { name: "Match" }).click();
 });

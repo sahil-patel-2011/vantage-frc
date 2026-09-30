@@ -56,6 +56,33 @@
   background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer;
 }
 
+.edc-page-actions { position: relative; }
+.edc-page-actions > summary,
+.edc-supporting-tools > summary {
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 var(--text-sm)/1.5 var(--font-source-sans), sans-serif;
+  cursor: pointer;
+}
+.edc-page-actions-body {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 8px;
+  width: min(260px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+.edc-supporting-tools { margin-top: 16px; }
+.edc-supporting-tools[open] > summary { margin-bottom: 12px; }
 .edc-context-header {
   display: flex;
   flex-wrap: wrap;

@@ -2,6 +2,7 @@
 
 import { Icon } from "./icon";
 import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../lib/nav/product-nav";
+import { PRODUCT_HUBS } from "../lib/nav/hubs";
 
 /**
  * Persistent left rail for wide screens.
@@ -12,8 +13,16 @@ import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../
  * the island + drawer they already had.
  */
 
+/**
+ * Always-available shortcuts, used when the member has not pinned them.
+ *
+ * Scouting is deliberately not here. The Scout workbench is one tap from the
+ * Competition pillar, it is a chip in that hub's own TabBar, and the Event-day
+ * page it belongs to ends in a "See all N in Scouting" link — listing it in the
+ * rail as well put the same destination on one screen three times, which is the
+ * exact thing this rail was brought back to fix.
+ */
 const QUICK_LINKS = [
-  { href: "/competition?tab=scouting", label: "Scouting", icon: "scout" as const },
   { href: "/rankings", label: "Stats", icon: "stats" as const },
   { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" as const },
 ];
@@ -23,6 +32,13 @@ function isCurrent(href: string, pathname: string, pathSearch: string) {
   if (path !== pathname) return false;
   if (!query) return true;
   return pathSearch.includes(query);
+}
+
+/** `/competition?tab=scouting` and `/competition` name the same place at different depths. */
+function hrefKey(href: string): string {
+  const [path, query] = href.split("?");
+  const tab = new URLSearchParams(query ?? "").get("tab");
+  return tab ? `${path}?tab=${tab}` : (path ?? href);
 }
 
 export function AppShellSidebar({
@@ -51,10 +67,26 @@ export function AppShellSidebar({
   const rows = visibleNavGroups
     .flatMap((group) => (group.items[0] ? [group.items[0]] : []))
     .filter((item) => navHrefAllowed(item.href));
-  const pillarHrefs = new Set(rows.map((item) => item.href));
-  const pinned = islandTabs.filter((tab) => navHrefAllowed(tab.href) && !pillarHrefs.has(tab.href));
+  const pillarHrefs = new Set(rows.map((item) => hrefKey(item.href)));
+  /**
+   * A pinned app that is a workbench of the hub you are standing in is already
+   * on screen: the hub's own TabBar is a row of those names, directly above the
+   * content. Listing "Scout" in the rail as well meant the same word, the same
+   * icon and the same destination appeared on one screen twice, and a person
+   * choosing between two identical controls has to work out which one is real.
+   * The rail keeps the pinned apps that point somewhere else, so it stays a
+   * shortcut rather than a second copy of the page.
+   */
+  const hubTabsHere = new Set(
+    PRODUCT_HUBS.flatMap((hub) =>
+      hub.href === pathname ? hub.tabs.map((tab) => hrefKey(`${hub.href}?tab=${tab.id}`)) : [],
+    ),
+  );
+  const pinned = islandTabs.filter(
+    (tab) => navHrefAllowed(tab.href) && !pillarHrefs.has(hrefKey(tab.href)) && !hubTabsHere.has(hrefKey(tab.href)),
+  );
   const quick = QUICK_LINKS.filter(
-    (item) => navHrefAllowed(item.href) && !pinned.some((tab) => tab.href === item.href),
+    (item) => navHrefAllowed(item.href) && !pinned.some((tab) => hrefKey(tab.href) === hrefKey(item.href)),
   );
 
   return (

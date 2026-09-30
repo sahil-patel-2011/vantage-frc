@@ -73,7 +73,7 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
     setRefreshing(true);
     try {
       const query = new URLSearchParams({ orgId, scope, source });
-      const response = await fetch(`/api/cad/activity?${query.toString()}`);
+      const response = await fetch(`/api/cad/activity?${query.toString()}`, { signal: AbortSignal.timeout(8_000) });
       const data = (await response.json()) as { activity?: ActivityRow[]; error?: string };
       if (!response.ok) throw new Error(data.error ?? "Could not load CAD activity");
       setRows(data.activity ?? []);
@@ -101,7 +101,7 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
       setDetails((prev) => ({ ...prev, [id]: "loading" }));
       try {
         const query = new URLSearchParams({ orgId, sessionId: id });
-        const response = await fetch(`/api/cad/activity?${query.toString()}`);
+        const response = await fetch(`/api/cad/activity?${query.toString()}`, { signal: AbortSignal.timeout(8_000) });
         const data = (await response.json()) as { detail?: ActivityDetail; error?: string };
         if (!response.ok || !data.detail) throw new Error(data.error ?? "Could not load this session");
         setDetails((prev) => ({ ...prev, [id]: data.detail! }));
@@ -119,32 +119,18 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
       <div className="cad-activity-head">
         <span>Recent CAD activity</span>
         <div className="cad-activity-filters">
-          <div className="cad-activity-filter" role="group" aria-label="Whose sessions">
-            {SCOPE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`cad-activity-chip${scope === option.value ? " active" : ""}`}
-                aria-pressed={scope === option.value}
-                onClick={() => setScope(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <div className="cad-activity-filter" role="group" aria-label="Session source">
-            {SOURCE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`cad-activity-chip${source === option.value ? " active" : ""}`}
-                aria-pressed={source === option.value}
-                onClick={() => setSource(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <label className="cad-activity-filter">
+            <span>Whose sessions</span>
+            <select value={scope} onChange={event => setScope(event.target.value as ActivityScope)}>
+              {SCOPE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="cad-activity-filter">
+            <span>Session source</span>
+            <select value={source} onChange={event => setSource(event.target.value as ActivitySource)}>
+              {SOURCE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
           <Button variant="secondary" type="button" disabled={refreshing} onClick={() => void loadActivity()}>
             {refreshing ? "Refreshing…" : "Refresh"}
           </Button>

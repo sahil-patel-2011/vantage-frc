@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HelpTip } from "./help-tip";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
@@ -248,6 +248,42 @@ export function ProductHubShell({
     [access.hubAccess, access.ready, accessHubId, hub, primaryTabs],
   );
 
+  /**
+   * Has this tab actually painted its own content yet?
+   *
+   * Measured on the panel rather than guessed at in each of the ~180 tab views,
+   * because the blank frame is the same problem everywhere and the fix should
+   * be too. The observer watches for real text arriving; the timeout is the
+   * backstop, so a tab that is genuinely empty shows its empty state rather
+   * than a skeleton for ever.
+   */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPainted, setPanelPainted] = useState(false);
+  useEffect(() => {
+    setPanelPainted(false);
+    const node = panelRef.current;
+    if (!node) return;
+    if ((node.textContent ?? "").trim().length > 30) {
+      setPanelPainted(true);
+      return;
+    }
+    const painted = () => (node.textContent ?? "").trim().length > 30;
+    const observer = new MutationObserver(() => {
+      if (!painted()) return;
+      observer.disconnect();
+      setPanelPainted(true);
+    });
+    observer.observe(node, { childList: true, subtree: true, characterData: true });
+    const backstop = window.setTimeout(() => {
+      observer.disconnect();
+      setPanelPainted(true);
+    }, 8000);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(backstop);
+    };
+  }, [tab, orgId]);
+
   if (access.ready && hubDenied) {
     return (
       <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id} soft-gate`}>
@@ -310,6 +346,7 @@ export function ProductHubShell({
             the tab is how you get back to its own screen. */}
         {toolTabs.length > 0 ? (
           <ToolStrip
+            compact
             aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
             value={tab}
             onChange={selectTab}
@@ -339,7 +376,12 @@ export function ProductHubShell({
           {headerActions}
         </div>
       </div>
-      <div className="product-hub-panel" data-hub-tab={tab}>
+      <div
+        className="product-hub-panel"
+        data-hub-tab={tab}
+        ref={panelRef}
+        aria-busy={panelPainted ? undefined : true}
+      >
         {(() => {
           if (!orgReady) {
             return (
@@ -356,10 +398,48 @@ export function ProductHubShell({
             const active = hub.tabs.find((entry) => entry.id === tab);
             return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
           }
+          // Between the first paint of this panel and the arrival of the tab's
+          // own data there was nothing at all: a white rectangle under a tab
+          // bar, for around a second on a warm load and longer on venue Wi-Fi.
+          // A person cannot tell that from a broken page, and the instinct is
+          // to tap again. The skeleton is deliberately shaped like the cards
+          // that replace it, so the page does not jump when the data lands.
+          if (!panelPainted) return <HubPanelSkeleton />;
           return children({ tab, orgId, selectTab });
         })()}
       </div>
     </main>
+  );
+}
+
+/**
+ * What a hub tab shows between the first paint and its own data.
+ *
+ * Shaped like the cards it stands in for — a lead line, a headline, two rows of
+ * chips — because the alternative is a spinner, and a spinner in a panel that
+ * is about to hold five cards of different heights makes the page jump twice.
+ * Every element is aria-hidden and the region carries `aria-busy`, so this
+ * announces as "busy" rather than as a set of blank boxes to be read aloud.
+ */
+function HubPanelSkeleton() {
+  return (
+    <div className="hub-panel-skeleton" aria-hidden="true">
+      <div className="hub-skel-head">
+        <i className="is-label" />
+        <i className="is-title" />
+      </div>
+      <div className="hub-skel-grid">
+        {[0, 1, 2].map((column) => (
+          <div className="hub-skel-card" key={column}>
+            <i className="is-label" />
+            <i className="is-title" />
+            <i className="is-row" />
+            <i className="is-row is-short" />
+            <i className="is-row" />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

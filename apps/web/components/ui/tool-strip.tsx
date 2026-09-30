@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useDismiss } from "../../hooks/use-dismiss";
 import { layoutToolStrip, type ToolStripEntry } from "../../lib/nav/tool-strip-layout";
 
@@ -21,6 +21,8 @@ type ToolStripProps = {
    * short, complete set rather than the head of a long one pass their own.
    */
   visibleCount?: number;
+  /** Hub navigation uses one searchable picker instead of a second row of destinations. */
+  compact?: boolean;
   /** One line on what a tool is for, shown in the "More tools" list. */
   describe?: (id: string) => string | undefined;
   /**
@@ -115,12 +117,16 @@ export function ToolStrip({
   onChange,
   "aria-label": ariaLabel,
   visibleCount = DESKTOP_VISIBLE_COUNT,
+  compact = false,
   describe,
   groups,
 }: ToolStripProps) {
   const [expanded, setExpanded] = useState(false);
   const overflowId = useId();
   const phone = usePhoneLayout();
+  const [query, setQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   // The ref wraps the "More tools" button as well as the list it opens, so
   // pressing the button to close does not read as a click outside the panel.
   //
@@ -129,8 +135,22 @@ export function ToolStrip({
   // tool list arrives with its data renders empty once, then non-empty, and
   // React throws "rendered more hooks than during the previous render" on that
   // second pass. Every hook in this component now runs on every render.
-  const closeOverflow = useCallback(() => setExpanded(false), []);
+  const closeOverflow = useCallback(() => {
+    setExpanded(false);
+    setQuery("");
+    // Restore focus only when dismissing from inside the picker, not after clicking elsewhere.
+    if (document.activeElement?.closest(".hub-tool-overflow")) triggerRef.current?.focus();
+  }, []);
   const stripRef = useDismiss<HTMLDivElement>(expanded, closeOverflow);
+
+  useEffect(() => {
+    setExpanded(false);
+    setQuery("");
+  }, [value, ariaLabel]);
+
+  useEffect(() => {
+    if (expanded && compact) searchRef.current?.focus({ preventScroll: true });
+  }, [expanded, compact]);
 
   if (items.length < 1) return null;
 
@@ -140,8 +160,13 @@ export function ToolStrip({
    */
   const wanted = phone ? Math.min(PHONE_VISIBLE_COUNT, visibleCount) : visibleCount;
   // Never a "More tools (1)": a single leftover tool is shown instead of hidden behind a button.
-  const { visible, hidden } = layoutToolStrip(items, value, items.length - wanted === 1 ? items.length : wanted);
+  const { visible, hidden } = compact
+    ? { visible: [], hidden: items }
+    : layoutToolStrip(items, value, items.length - wanted === 1 ? items.length : wanted);
   const collapsible = hidden.length > 0;
+  const needle = query.trim().toLocaleLowerCase();
+  const matches = hidden.filter(item => !needle || `${item.label} ${describe?.(item.id) ?? ""}`.toLocaleLowerCase().includes(needle));
+  const activeItem = items.find(item => item.id === value);
 
   const renderChip = (item: ToolStripItem) => {
     const active = item.id === value;
@@ -178,7 +203,7 @@ export function ToolStrip({
     if (item.href && !active) {
       return (
         <li key={item.id}>
-          <a href={item.href}>{body}</a>
+          <a href={item.href} onClick={closeOverflow}>{body}</a>
         </li>
       );
     }
@@ -190,7 +215,7 @@ export function ToolStrip({
           aria-current={active ? "page" : undefined}
           onClick={() => {
             onChange(item.id);
-            setExpanded(false);
+            closeOverflow();
           }}
         >
           {body}
@@ -200,28 +225,54 @@ export function ToolStrip({
   };
 
   return (
-    <div className="hub-tool-strip" ref={stripRef}>
+    <div className={`hub-tool-strip${compact ? " hub-tool-strip--compact" : ""}`} ref={stripRef}>
       <nav className="hub-tool-strip-row" aria-label={ariaLabel}>
         {visible.map(renderChip)}
         {collapsible ? (
           <button
             type="button"
-            className="hub-tool-chip hub-tool-more"
+            className={`hub-tool-chip hub-tool-more${activeItem && compact ? " is-current-tool" : ""}`}
+            ref={triggerRef}
             aria-expanded={expanded}
             aria-controls={overflowId}
-            onClick={() => setExpanded((current) => !current)}
+            title={compact ? `${ariaLabel}${activeItem ? ` · ${activeItem.label}` : ""}` : undefined}
+            onClick={() => expanded ? closeOverflow() : setExpanded(true)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                setExpanded(true);
+              }
+            }}
           >
             {/* No count: it changed with the tab and the screen width (8, 10, 21, 23), which read as
                 tools appearing and disappearing. */}
             {expanded ? "Fewer tools" : "More tools"}
+            {compact && activeItem ? <span className="hub-current-tool">{activeItem.label}</span> : null}
           </button>
         ) : null}
       </nav>
       {collapsible && expanded ? (
-        <div className="hub-tool-overflow" id={overflowId}>
-          <p className="hub-tool-overflow-head">{ariaLabel}</p>
+        <div className="hub-tool-overflow" id={overflowId} onKeyDown={(event) => {
+          if (event.target instanceof HTMLInputElement && event.key !== "ArrowDown") return;
+          if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+          const rows = [...event.currentTarget.querySelectorAll<HTMLElement>(".hub-tool-list a, .hub-tool-list button")];
+          if (!rows.length) return;
+          event.preventDefault();
+          const current = rows.indexOf(document.activeElement as HTMLElement);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? rows.length - 1
+            : current < 0 ? 0 : (current + (event.key === "ArrowDown" ? 1 : -1) + rows.length) % rows.length;
+          rows[next]?.focus();
+        }}>
+          <h2 className="hub-tool-overflow-head">{ariaLabel}</h2>
+          {compact ? (
+            <label className="hub-tool-search">
+              <span className="sr-only">Find a tool</span>
+              <input ref={searchRef} type="search" aria-label="Find a tool" placeholder="Find a tool…" value={query} onChange={event => setQuery(event.target.value)} />
+            </label>
+          ) : null}
+          {matches.length === 0 ? <p className="hub-tool-empty" role="status">No tools match “{query.trim()}”. Try another name or task.</p> : null}
           {groups?.length ? (
-            groupHidden(hidden, groups).map((group) => (
+            groupHidden(matches, groups).map((group) => (
               <section key={group.label} className="hub-tool-group">
                 <h3 className="hub-tool-group-head">{group.label}</h3>
                 <ul className="hub-tool-list" aria-label={group.label}>
@@ -231,7 +282,7 @@ export function ToolStrip({
             ))
           ) : (
             <ul className="hub-tool-list" aria-label={`More ${ariaLabel.toLowerCase()}`}>
-              {hidden.map(renderRow)}
+              {matches.map(renderRow)}
             </ul>
           )}
         </div>

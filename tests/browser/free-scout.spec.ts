@@ -77,6 +77,7 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
+    await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 25_000 });
     const opener = page.getByRole("button", { name: "Menu and search" });
     await opener.click();
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
@@ -87,9 +88,9 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     expect(box!.width).toBeGreaterThanOrEqual(48);
     expect(box!.height).toBeGreaterThanOrEqual(48);
     await show.click();
-    await expect(drawer.getByRole("link", { name: "Scouting", exact: true })).toBeVisible();
+    await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeVisible();
     await drawer.getByRole("button", { name: "Show Team tools" }).click();
-    await expect(drawer.getByRole("link", { name: "Scouting", exact: true })).toBeHidden();
+    await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeHidden();
     await expect(drawer.getByRole("link", { name: "Chat", exact: true })).toBeVisible();
     await drawer.getByRole("combobox").fill("logistics");
     await expect(drawer.getByRole("option").filter({ hasText: /Logistics|Travel/ }).first()).toBeVisible();

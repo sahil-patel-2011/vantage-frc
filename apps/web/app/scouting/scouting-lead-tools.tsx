@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import type { ScoutSchema } from "@vantage/scouting";
 import { Button, FormRow, Panel } from "../../components/ui";
 import { shouldShowScoutingRecentEntries } from "../../lib/scouting/scouting-related";
 import type { Bootstrap, TrustSnapshot } from "./scouting-model";
 import { ScoutReportViewer } from "./scout-report-viewer";
 
-/** Wide enough that the tools sit in their own column beside the form. */
-const SIDE_COLUMN_QUERY = "(min-width: 1100px)";
 
 /**
  * Saved entries, the accuracy board, the CSV and the coach formula.
@@ -16,8 +14,8 @@ const SIDE_COLUMN_QUERY = "(min-width: 1100px)";
  * On a phone these used to follow Save as three full panels, about 3,500px of
  * a scout's page: thirty report links, a leaderboard and a formula editor
  * between one match and the next. None of it is part of scouting a match, so
- * on a phone it is one closed row under the form. On a wide screen, where it
- * sits in a column beside the form and costs a scout nothing, it opens.
+ * it is one closed, clearly named row at every width. A lead can open it to
+ * inspect reports without distracting a scout from the active match.
  */
 export function ScoutingLeadTools({
   orgId,
@@ -46,14 +44,9 @@ export function ScoutingLeadTools({
   saveFormula: () => Promise<void> | void;
   sync: () => Promise<void> | void;
 }) {
+  // Match collection is the primary task at every width. Reports, export and
+  // lead tools are available together on demand, not thirty competing buttons.
   const [open, setOpen] = useState(false);
-  useEffect(() => {
-    try {
-      if (window.matchMedia(SIDE_COLUMN_QUERY).matches) setOpen(true);
-    } catch {
-      // No matchMedia: stay closed, which is the phone layout.
-    }
-  }, []);
 
   const entries = data?.recentEntries ?? [];
   // Only scouts with at least one report checked against an official score are

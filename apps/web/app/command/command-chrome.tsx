@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import {
@@ -194,6 +194,7 @@ export function CommandReadyHeader({
   headerActions?: ReactNode;
 }) {
   const eventLabel = scoutEventLabel({ eventName, eventKey });
+  const [actionsOpen, setActionsOpen] = useState(false);
   const actions = headerActions ?? (
     <div className="edc-header-actions">
       {/* The board refreshes itself, so "Refresh" is the timestamp rather than a third
@@ -208,12 +209,17 @@ export function CommandReadyHeader({
       >
         {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"} · Refresh`}
       </button>
-      <CopyShareLink orgId={orgId} variant="ghost" />
-      {canSetEvent ? (
-        <Button variant="secondary" type="button" onClick={onSelectEvent}>
-          {eventKey ? "Change event" : "Set active event"}
-        </Button>
-      ) : null}
+      <details className="edc-page-actions" open={actionsOpen} onToggle={event => setActionsOpen(event.currentTarget.open)}>
+        <summary>Event options</summary>
+        <div className="edc-page-actions-body">
+          <CopyShareLink orgId={orgId} variant="ghost" />
+          {canSetEvent ? (
+            <Button variant="secondary" type="button" onClick={() => { setActionsOpen(false); onSelectEvent(); }}>
+              {eventKey ? "Change event" : "Set active event"}
+            </Button>
+          ) : null}
+        </div>
+      </details>
     </div>
   );
 

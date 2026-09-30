@@ -67,4 +67,5 @@ Start with the section that matches you. Each document says who it is for in its
 | [STATUS.md](STATUS.md) | What is done, what is in progress, what only the owner can unblock |
 | [PREDICTION_RESULTS.md](PREDICTION_RESULTS.md) | Measured match-prediction accuracy (honest: not yet a validated claim) |
 | [COMPETITIVE_NOTES.md](COMPETITIVE_NOTES.md) | Other FRC tools, what teams like about them, and the mistakes Vantage avoids |
+| [release/TEST-AGENT-PLAN.md](release/TEST-AGENT-PLAN.md) | Implementation plan for evidence-first code/GUI testing, FRC usability trials and fair specialist-tool benchmarks |
 | [archive/](archive/README.md) | Historical plans, audits and research briefs. Kept for context; not maintained |

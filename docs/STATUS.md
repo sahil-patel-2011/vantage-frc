@@ -4,6 +4,10 @@
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 
+## Planning addition — 2026-09-29
+
+Added [the test-agent implementation plan](release/TEST-AGENT-PLAN.md): reuse existing Playwright/inventory infrastructure, require strict real-session outcome evidence, separate code-aware testing from blind novice evaluation, and benchmark FRC tasks against Lovat and other specialists. This is documentation only; no agent implementation, fresh GUI/test execution, deployment or competitor usability measurement was performed. Existing release gates and historical results below are unchanged.
+
 **Branch:** `github-latest` (tracks `origin/main`).
 **Date opened:** 2026-09-13.
 **This revision:** Claude Code is the no-key Ask AI path. Home Ask AI, Writer, and API keys now send students to **Connect Claude Code**. Leftover boards that still said **Setup required** (related copy + EmptyState overrides, including Pit Command and Knowledge-gap) now badge **Needs setup**. Kickoff still paints an honest 2026 REBUILT / 2027 BIOCORE brief. Did not deploy. No season ±3 claim. Master brief is **not** done.

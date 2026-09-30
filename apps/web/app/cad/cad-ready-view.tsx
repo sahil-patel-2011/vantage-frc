@@ -374,6 +374,7 @@ export function CadReadyView({
           </div>
           <div className="cad-agent-composer">
             <textarea
+              aria-label="CAD brief"
               rows={3}
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}

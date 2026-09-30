@@ -373,7 +373,17 @@ export function CommandReadyView({
                       {item.matchLabel ?? "Event"} · {item.reasons.slice(0, 2).join(" · ")}
                     </span>
                   </div>
-                  <a href={item.formHref}>{item.hasMatchScout && !item.hasPitScout ? "Pit visit" : "Scout"}</a>
+                  <a
+                    href={item.formHref}
+                    /* The visible word is the same on every row, which is fine
+                       to read and useless to hear: a screen-reader user heard
+                       "Pit visit" five times with no way to tell the rows
+                       apart. The name carries the team and the match, which is
+                       the part that distinguishes them. */
+                    aria-label={`${item.hasMatchScout && !item.hasPitScout ? "Pit visit" : "Scout"} team ${item.teamNumber ?? teamLabel(item.teamKey)}, ${item.matchLabel ?? "this event"}`}
+                  >
+                    {item.hasMatchScout && !item.hasPitScout ? "Pit visit" : "Scout"}
+                  </a>
                 </li>
               ))}
               {snap.scoutQueue.length > 5 ? (
@@ -631,6 +641,8 @@ export function CommandReadyView({
       </>
       )}
 
+      <details className="edc-supporting-tools">
+        <summary>Related pit and strategy tools</summary>
       <nav className="edc-actions" aria-label="More competition tools">
         <a href={pitHref}>
           <Icon name="cube" />
@@ -653,6 +665,7 @@ export function CommandReadyView({
           <span>Alliance fit</span>
         </a>
       </nav>
+      </details>
 
       {eventPicker}
     </EdcRoot>

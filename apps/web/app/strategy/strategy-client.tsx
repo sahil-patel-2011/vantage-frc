@@ -273,8 +273,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           hasMetrics: view?.referenceAccess?.statbotics.cacheHasMetrics,
         });
 
+  const Root = embedded ? "div" : "main";
   return (
-    <main className={`module-page strategy-page${embedded ? " is-embedded" : ""}`}>
+    <Root className={`module-page strategy-page${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Strategy"
@@ -346,6 +347,6 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           {embedded ? null : <StrategyNextActionsPanel actions={nextActions} />}
         </>
       ) : null}
-    </main>
+    </Root>
   );
 }

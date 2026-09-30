@@ -78,6 +78,34 @@
   border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--surface) 60%, transparent);
 }
+.hub-tool-strip--compact .hub-tool-more {
+  color: var(--ink);
+  gap: 8px;
+  min-height: 44px;
+}
+.hub-current-tool {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+  color: var(--accent);
+}
+.hub-tool-search { display: block; margin-bottom: 8px; }
+.hub-tool-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+}
+.hub-tool-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hub-tool-empty { margin: 12px 0; color: var(--muted); font-size: var(--text-sm); }
+.hub-tool-strip--compact .hub-tool-list :is(a, button) { min-height: 48px; }
 .hub-tool-overflow-head {
   margin: 0 0 8px;
   color: var(--muted);
@@ -608,6 +636,11 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
     padding-right: 24px;
+  }
+  .hub-bar .hub-tool-strip--compact .hub-tool-strip-row {
+    mask-image: none;
+    -webkit-mask-image: none;
+    padding-right: 0;
   }
 }
 

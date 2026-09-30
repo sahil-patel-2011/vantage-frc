@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   analyticsAllowed,
   consentDecisionPending,
@@ -108,6 +108,7 @@ export function ConsentBanner() {
       setChoice(next);
       setAsking(false);
       setReopened(false);
+      clearClearance();
       if (next === "granted" && typeof window !== "undefined") {
         // Record the page they were on when they said yes, and nothing earlier.
         trackPageView(window.location.pathname);
@@ -116,13 +117,58 @@ export function ConsentBanner() {
     [],
   );
 
+  /**
+   * Give the page the height of the banner.
+   *
+   * The card is `position: fixed` so it survives scrolling, which meant it sat
+   * on top of whatever was at the bottom of the screen. The wrapper is
+   * `pointer-events: none`, so the page underneath still worked — but on a
+   * calendar or a scouting form the bottom third of the screen was simply gone,
+   * with no scroll position that revealed it. Publishing the measured height
+   * as a custom property lets the shell pad itself by exactly that much, so
+   * the question is asked without hiding anything.
+   */
+  const bannerRef = useRef<HTMLElement | null>(null);
+  const clearClearance = useCallback(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.removeProperty("--consent-clearance");
+  }, []);
+  useEffect(() => {
+    const node = bannerRef.current;
+    if (!node) return;
+    const publish = () => {
+      const height = node.getBoundingClientRect().height;
+      document.body.style.setProperty(
+        "--consent-clearance",
+        height > 0 ? `${Math.ceil(height)}px` : "0px",
+      );
+    };
+    publish();
+    // The card reflows when the "What we collect" disclosure opens, and on a
+    // phone when the copy wraps to a different number of lines.
+    const observer = new ResizeObserver(publish);
+    observer.observe(node);
+    window.addEventListener("resize", publish);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", publish);
+      clearClearance();
+    };
+  }, [clearClearance, reopened]);
+
   if (!mounted || !asking || (!reopened && !asksOn(pathname))) return null;
 
   const copy = ANALYTICS_BANNER_COPY;
   const current = choice === "granted" ? copy.currentGranted : choice === "denied" ? copy.currentDenied : null;
 
   return (
-    <section className="consent-banner" role="region" aria-label={copy.ariaLabel} data-soft-ui="consent-banner">
+    <section
+      className="consent-banner"
+      role="region"
+      aria-label={copy.ariaLabel}
+      data-soft-ui="consent-banner"
+      ref={bannerRef}
+    >
       <div className="consent-banner-card">
         <div className="consent-banner-text">
           <h2 className="consent-banner-title">{copy.title}</h2>

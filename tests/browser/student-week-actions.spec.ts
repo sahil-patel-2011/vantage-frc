@@ -108,8 +108,8 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
     if (await save.count()) {
       await expect(save.first()).toBeVisible();
     }
-    await views.getByRole("button", { name: "Pit" }).click();
-    await expect(views.getByRole("button", { name: "Pit" })).toHaveAttribute("aria-current", "page");
+    await views.getByRole("button", { name: "Pit visits" }).click();
+    await expect(views.getByRole("button", { name: "Pit visits" })).toHaveAttribute("aria-current", "page");
     const pitSave = page.getByRole("button", { name: /Save this pit|Save on this phone/i });
     if (await pitSave.count()) {
       await expect(pitSave.first()).toBeVisible();

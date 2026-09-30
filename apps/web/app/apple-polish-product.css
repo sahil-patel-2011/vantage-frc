@@ -54,7 +54,10 @@ body.has-app-shell .soft-avatar {
 }
 
 body.has-app-shell .vrail {
-  width: 244px;
+  /* var(--rail-w), not a literal: this sheet loads after app-rail.css, so a
+     hard-coded width here silently disagreed with the page inset that sheet
+     sets and the rail sat 12px over the content it was supposed to clear. */
+  width: var(--rail-w, 244px);
   padding: 18px 14px;
   background: rgba(255, 255, 255, .78);
   border-right-color: rgba(29, 29, 31, .08);

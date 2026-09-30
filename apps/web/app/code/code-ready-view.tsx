@@ -73,7 +73,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
             Choose your team
           </Button>
         </EmptyState>
-      ) : (
+      ) : !embedded ? (
         <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
           {relatedLinks.map((link) => (
             <a key={link.id} href={link.href}>
@@ -83,8 +83,17 @@ export function CodeReadyView(props: CodeReadyViewProps) {
           <a href={budgetsHref}>Budgets</a>
           <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
         </nav>
-      )}
+      ) : null}
 
+      <details className="cdc-options">
+        <summary>AI options, connections and costs</summary>
+        {embedded && orgId ? (
+          <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
+            {relatedLinks.map(link => <a key={link.id} href={link.href}>{link.label}</a>)}
+            <a href={budgetsHref}>Budgets</a>
+            <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
+          </nav>
+        ) : null}
       <section className="cdc-billing" aria-label="Local versus metered">
         <article className="cdc-billing-local">
           <span className="app-badge good">Local · free</span>
@@ -135,11 +144,6 @@ export function CodeReadyView(props: CodeReadyViewProps) {
         </article>
       </section>
 
-      {showMeteredBanner ? (
-        <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" />
-      ) : null}
-      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} className="cdc-cutoff" /> : null}
-
       <section className="cdc-next-actions app-card soft-panel" aria-label="Next actions">
         <header>
           <h2>Next actions</h2>
@@ -156,6 +160,11 @@ export function CodeReadyView(props: CodeReadyViewProps) {
           ))}
         </ol>
       </section>
+
+      </details>
+
+      {showMeteredBanner ? <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" /> : null}
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} className="cdc-cutoff" /> : null}
 
       <section className="cdc-flow" aria-label="Teach, don't just do">
         <article>

@@ -15,6 +15,10 @@ coverage/
 !apps/web/app/api/desktop/release/**
 playwright-report/
 test-results/
+# GUI test agent evidence: screenshots and per-surface census JSON. Not under
+# test-results/ on purpose — Playwright clears that directory when a run starts,
+# and a local Postgres data directory lives there too.
+audit-artifacts/
 *.tsbuildinfo
 .env
 .env.local

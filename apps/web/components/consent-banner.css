@@ -30,16 +30,33 @@
 /*
  * Inside the product shell, clear the bottom app island.
  *
- * The island's "All" is the only way to open navigation, and it is
- * bottom-centred like this card — so the card landed straight on top of it and
- * swallowed the clicks (elementFromPoint at the button's centre returned
- * .consent-banner-card at 390, 768, 1180 and 1440). That left a first-time
- * visitor unable to navigate at all until they answered the banner. Being
- * above the island in z-order is still right so the question stays readable;
- * it just must not cover it.
+ * The island is bottom-centred like this card — so the card landed straight on
+ * top of it and swallowed the clicks (elementFromPoint at the button's centre
+ * returned .consent-banner-card at 390, 768, 1180 and 1440). That left a
+ * first-time visitor unable to navigate at all until they answered the banner.
+ * On a desktop there is no island any more (app-rail.css), so the reserve
+ * there is just the card's own padding.
  */
 body.has-app-shell .consent-banner {
-  padding-bottom: calc(12px + var(--safe-bottom, 0px) + var(--island-clearance, 88px));
+  padding-bottom: calc(12px + var(--safe-bottom, 0px) + var(--island-clearance, 0px));
+}
+
+/*
+ * The card is fixed, so it covers the bottom of the screen. The wrapper lets
+ * clicks through, which hides the problem for as long as you are clicking — but
+ * on a calendar, a scouting form or a long table the bottom third of the page
+ * was simply not there, at any scroll position.
+ *
+ * ConsentBanner measures itself and publishes the height as
+ * `--consent-clearance`; the shell pads by exactly that, so the question is
+ * asked without taking anything away. Declared here as 0 so the property is
+ * always defined and a missing measurement degrades to today's behaviour.
+ */
+body.has-app-shell {
+  --consent-clearance: 0px;
+}
+body.has-app-shell:has(.consent-banner) {
+  padding-bottom: calc(28px + var(--safe-bottom) + var(--island-clearance, 0px) + var(--consent-clearance)) !important;
 }
 
 /* Sign-in, onboarding, invite, and desktop-link put their only action at the

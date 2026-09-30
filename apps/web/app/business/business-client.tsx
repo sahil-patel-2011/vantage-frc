@@ -344,6 +344,7 @@ export default function BusinessClient() {
       />
       {visibleNested.length > 0 ? (
         <ToolStrip
+          compact
           aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}
           value={tab}
           onChange={(id) => {
