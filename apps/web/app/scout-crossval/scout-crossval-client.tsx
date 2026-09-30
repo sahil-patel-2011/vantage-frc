@@ -470,6 +470,8 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   );
 }
 
+const PAGE = 25;
+
 function EntriesList({
   view,
   busy,
@@ -479,6 +481,20 @@ function EntriesList({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
+  const conflicts = view.entries.filter((entry) => entry.overallStatus === "conflict");
+  const agrees = view.entries.filter((entry) => entry.overallStatus === "agree");
+  const unverifiable = view.entries.filter((entry) => entry.overallStatus === "unverifiable");
+  // Start on what needs a person: the conflicts; with none, the entries we could check.
+  const [filter, setFilter] = useState<CrossvalStatus | null>(null);
+  const [shown, setShown] = useState(PAGE);
+  const active: CrossvalStatus =
+    filter ?? (conflicts.length ? "conflict" : agrees.length ? "agree" : "unverifiable");
+  const list = active === "conflict" ? conflicts : active === "agree" ? agrees : unverifiable;
+  const tabs: Array<{ id: CrossvalStatus; label: string; count: number }> = [
+    { id: "conflict", label: "Needs review", count: conflicts.length },
+    { id: "agree", label: "Agree", count: agrees.length },
+    { id: "unverifiable", label: "Can't verify", count: unverifiable.length },
+  ];
   return (
     <Panel className="scout-crossval-panel" id="crossval-entries">
       <header>
@@ -500,11 +516,44 @@ function EntriesList({
           </Button>
         </EmptyState>
       ) : (
-        <ul className="scout-crossval-list">
-          {view.entries.map((entry) => (
-            <EntryRow key={entry.matchScoutEntryId} entry={entry} busy={busy} mutate={mutate} />
-          ))}
-        </ul>
+        <>
+          <div className="scout-crossval-filter" role="group" aria-label="Show entries">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                aria-pressed={active === tab.id}
+                onClick={() => {
+                  setFilter(tab.id);
+                  setShown(PAGE);
+                }}
+              >
+                {tab.label} <span>{tab.count}</span>
+              </button>
+            ))}
+          </div>
+          {active === "unverifiable" ? (
+            <p className="app-muted">
+              These have no official score breakdown to compare against yet, so they can&apos;t be checked either way.
+            </p>
+          ) : null}
+          {list.length === 0 ? (
+            <p className="app-muted">
+              {active === "conflict" ? "Nothing conflicts with the official results." : "Nothing here yet."}
+            </p>
+          ) : (
+            <ul className="scout-crossval-list">
+              {list.slice(0, shown).map((entry) => (
+                <EntryRow key={entry.matchScoutEntryId} entry={entry} busy={busy} mutate={mutate} compact={active === "unverifiable"} />
+              ))}
+            </ul>
+          )}
+          {list.length > shown ? (
+            <Button variant="secondary" type="button" onClick={() => setShown((count) => count + PAGE)}>
+              Show {Math.min(PAGE, list.length - shown)} more ({list.length - shown} left)
+            </Button>
+          ) : null}
+        </>
       )}
     </Panel>
   );
@@ -514,11 +563,24 @@ function EntryRow({
   entry,
   busy,
   mutate,
+  compact,
 }: {
   entry: CrossvalEntry;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  /** One line, no per-field list and no button: for entries there is nothing to compare against. */
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <li className="scout-crossval-compact">
+        <strong>
+          {entry.teamNumber != null ? `Team ${entry.teamNumber}` : entry.teamKey} · {describeMatchKey(entry.matchKey)}
+        </strong>
+        <small>{entry.allianceColor ? `${entry.allianceColor} alliance` : "Alliance unknown"}</small>
+      </li>
+    );
+  }
   return (
     <li>
       <div className="scout-crossval-row-head">
