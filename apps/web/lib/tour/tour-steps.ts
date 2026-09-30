@@ -35,7 +35,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "island",
     target: "island",
     title: "Your shortcuts",
-    body: "These are the apps you pinned. Edit apps, or the gear on the phone bar, changes them.",
+    body: "These are the apps you pinned. Right-click them (press and hold the bar on a phone), or open Account → Appearance, to change them.",
     prefer: "top",
   },
   {

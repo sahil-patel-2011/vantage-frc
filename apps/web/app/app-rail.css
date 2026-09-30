@@ -74,8 +74,7 @@
   }
   .vrail-search kbd {
     font: 600 10px var(--font-mono);
-    color: var(--muted);
-    opacity: .8;
+    color: var(--muted); /* no opacity: at .8 it read 3.7:1 on the search field (needs 4.5:1) */
   }
 
   .vrail-nav {
@@ -176,6 +175,20 @@
   }
   body.has-app-shell .soft-topbar {
     left: var(--rail-w) !important;
+  }
+  /* The next-match strip sits beside the rail too: from 0 its left end ("Next · Qual 31") hid
+     behind the sidebar on every page that shows it. */
+  body.has-app-shell .soft-focus-rail {
+    left: var(--rail-w);
+    padding-inline: max(18px, calc((100vw - var(--rail-w) - 1124px) / 2));
+  }
+  body.has-app-shell .soft-focus-reopen {
+    left: calc(50% + var(--rail-w) / 2);
+  }
+  /* The rail lists every workspace and has its own Search, so the hamburger only opened a second
+     copy of the same menu. It stays for phones and tablets, where there is no rail. */
+  body.has-app-shell .soft-menu-btn {
+    display: none !important;
   }
   /* The island is a phone affordance. Hiding it removes four duplicate
      destinations from every desktop page, and the occlusion with them. */

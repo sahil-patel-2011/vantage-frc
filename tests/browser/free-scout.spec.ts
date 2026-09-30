@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { signInAs } from "./session";
+import { openNav } from "./nav";
 
 test.use({ actionTimeout: 15_000 });
 
@@ -78,8 +79,8 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 25_000 });
-    const opener = page.getByRole("button", { name: "Menu and search" });
-    await opener.click();
+    const opener = width < 1024 ? page.getByRole("button", { name: "Menu and search" }) : page.locator(".vrail-search");
+    await openNav(page);
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
     for (const name of ["Home", "Competition", "Team", "Build", "Business"]) await expect(drawer.getByRole("link", { name, exact: true })).toBeVisible();
     await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);

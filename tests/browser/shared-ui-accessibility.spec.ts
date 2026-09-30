@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { signInAs } from "./session";
+import { openNav } from "./nav";
 
 /** Scan the rendered state, including navigation outside the active overlay. */
 async function checkAccessibility(page: Page, testInfo: TestInfo, state: string) {
@@ -31,7 +32,7 @@ for (const width of [1280, 390]) {
     await checkAccessibility(page, testInfo, "account");
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+    await openNav(page);
     await expect(page.getByRole("complementary", { name: "Product navigation", exact: true })).toBeVisible();
     await checkAccessibility(page, testInfo, "drawer");
     await page.keyboard.press("Escape");

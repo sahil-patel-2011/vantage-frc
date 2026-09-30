@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { signInAs } from "./session";
+import { openNav } from "./nav";
 
 const homeOrg = "6925a000-0000-4000-8000-000000000001";
 const ownerId = "6925e2e0-0000-4000-8000-000000000001";
@@ -22,7 +23,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/competition?tab=scouting&mode=free&orgId=${homeOrg}&reportId=previous-team-record`);
     await expect(page.getByRole("heading", { name: "Scout without an event" })).toBeVisible();
-    await page.getByRole("button", { name: "Menu and search" }).click();
+    await openNav(page);
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
     await drawer.locator(".soft-org-chip-btn").click();
     await drawer.getByRole("option").filter({ hasText: marker }).click();

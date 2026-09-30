@@ -115,7 +115,18 @@ export function AppShellSidebar({
         ))}
       </nav>
 
-      <nav className="vrail-nav vrail-quick" aria-label="Your apps">
+      {/* No "Edit apps" button: it was on every page for something done once. Right-click these
+          apps, or open Account → Appearance, to change them. */}
+      <nav
+        className="vrail-nav vrail-quick"
+        aria-label="Your apps"
+        data-tour="island"
+        title="Right-click to change these apps (or Account → Appearance)"
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onEditApps();
+        }}
+      >
         <span className="vrail-label">Your apps</span>
         {pinned.map((item) => (
           <a
@@ -128,9 +139,6 @@ export function AppShellSidebar({
             <span>{item.label}</span>
           </a>
         ))}
-        <button className="vrail-edit" type="button" data-tour="island" onClick={onEditApps}>
-          Edit apps
-        </button>
       </nav>
 
       {quick.length > 0 ? (

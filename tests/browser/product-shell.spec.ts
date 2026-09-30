@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signInAs, signInFixture } from "./session";
+import { openNav } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   await signInFixture(context);
@@ -106,7 +107,7 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // your apps. The gear is not an app and says so.
   // Four apps and nothing else: press and hold (or right-click, or the Menu key) to change them.
   await expect(island.getByRole("button")).toHaveCount(0);
-  await page.getByRole("button", { name: "Menu and search" }).click();
+  await openNav(page);
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
   // Search is a field in the panel, not a button that opened a second overlay.
@@ -143,11 +144,13 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   await expect(island).toBeVisible();
 
-  // The island stays available on desktop; the hamburger opens the full directory.
+  // On desktop the sidebar replaces the bottom bar and the menu button (it would only open a
+  // second copy of the same menu); the sidebar has its own Search.
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(island).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Pillars" })).toBeHidden();
-  await expect(page.getByRole("button", { name: "Menu and search" })).toBeVisible();
+  await expect(island).toBeHidden();
+  await expect(page.locator(".vrail")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Menu and search" })).toBeHidden();
+  await expect(page.locator(".vrail-search")).toBeVisible();
 });
 
 test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
@@ -160,7 +163,7 @@ test("search is one affordance at every width, inside the navigation panel", asy
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
   // The three-line "Menu and search" button is the one opener at every width; the old
   // desktop rail (and its own search box) is retired.
-  const openerFor = (_width: number) => page.getByRole("button", { name: "Menu and search" });
+  const openerFor = (width: number) => (width < 1024 ? page.getByRole("button", { name: "Menu and search" }) : page.locator(".vrail-search"));
 
   for (const size of [
     { width: 390, height: 844 },
@@ -170,7 +173,9 @@ test("search is one affordance at every width, inside the navigation panel", asy
     await page.goto("/dashboard");
     await expect(oldButton).toHaveCount(0);
     await expect(field).toBeHidden();
-    await expect(page.locator(".vrail-search")).toBeHidden();
+    // The sidebar (and its Search) exists from 1024px up; below that the menu button is the opener.
+    if (size.width < 1024) await expect(page.locator(".vrail-search")).toBeHidden();
+    else await expect(page.locator(".vrail-search")).toBeVisible();
 
     await openerFor(size.width).click();
     await expect(field).toBeVisible();
@@ -195,12 +200,12 @@ test("the hub tab bar owns the workbench name and the tool strip does not repeat
   await expect(page.locator(".hub-tool-strip").getByText("Event day", { exact: true })).toHaveCount(0);
   const tools = page.locator(".hub-bar .hub-tool-strip");
   await expect(tools.locator(".hub-tool-strip-row button")).toHaveCount(1);
-  await tools.getByRole("button", { name: "Tools", exact: true }).click();
+  await tools.getByRole("button", { name: "More tools", exact: true }).click();
   await expect(tools).toContainText("Pre-match briefing");
   await tools.locator(".hub-tool-list a, .hub-tool-list button").first().focus();
   await page.keyboard.press("Escape");
   await expect(tools.locator(".hub-tool-overflow")).toHaveCount(0);
-  await expect(tools.getByRole("button", { name: "Tools", exact: true })).toBeFocused();
+  await expect(tools.getByRole("button", { name: "More tools", exact: true })).toBeFocused();
 });
 
 test("scouting and Work strips hide meta jobs that still have routes", async ({ page }) => {
@@ -208,7 +213,7 @@ test("scouting and Work strips hide meta jobs that still have routes", async ({ 
   await page.goto("/competition?tab=scouting");
   await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
   const scoutingStrip = page.locator(".hub-tool-strip");
-  await scoutingStrip.getByRole("button", { name: "Tools", exact: true }).click();
+  await scoutingStrip.getByRole("button", { name: "More tools", exact: true }).click();
   await expect(scoutingStrip).toContainText("Forms");
   // The strip shows three chips now, not six, so a tool being present and a
   // tool being a chip are different claims. What this test is about is which
@@ -227,7 +232,7 @@ test("scouting and Work strips hide meta jobs that still have routes", async ({ 
   await page.goto("/team?tab=todos");
   await expect(page.getByRole("tab", { name: "Work" })).toBeVisible();
   const workStrip = page.locator(".hub-tool-strip");
-  await workStrip.getByRole("button", { name: "Tools", exact: true }).click();
+  await workStrip.getByRole("button", { name: "More tools", exact: true }).click();
   await expect(workStrip).toContainText("Practice");
   await expect(workStrip.getByText("Task board", { exact: true })).toHaveCount(0);
 });

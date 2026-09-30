@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { contrastRatio } from "../../apps/web/lib/branding/colors";
 import { signInAs } from "./session";
+import { openNav } from "./nav";
 
 async function palette(page: Page) {
   return page.evaluate(() => {
@@ -58,7 +59,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole("navigation", { name: "Primary apps" })).toBeVisible();
     await expect(page.getByTestId("dash-customize")).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("home-light.png"), fullPage: true });
-    await page.getByRole("button", { name: "Menu and search" }).click();
+    await openNav(page);
     await page.screenshot({ path: testInfo.outputPath("navigation-light.png") });
     await page.keyboard.press("Escape");
     await expect(page.getByRole("navigation", { name: "Primary apps" })).toBeVisible();
