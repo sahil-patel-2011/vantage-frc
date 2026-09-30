@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } from "react";
 import { HelpTip } from "./help-tip";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
@@ -248,42 +248,6 @@ export function ProductHubShell({
     [access.hubAccess, access.ready, accessHubId, hub, primaryTabs],
   );
 
-  /**
-   * Has this tab actually painted its own content yet?
-   *
-   * Measured on the panel rather than guessed at in each of the ~180 tab views,
-   * because the blank frame is the same problem everywhere and the fix should
-   * be too. The observer watches for real text arriving; the timeout is the
-   * backstop, so a tab that is genuinely empty shows its empty state rather
-   * than a skeleton for ever.
-   */
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [panelPainted, setPanelPainted] = useState(false);
-  useEffect(() => {
-    setPanelPainted(false);
-    const node = panelRef.current;
-    if (!node) return;
-    if ((node.textContent ?? "").trim().length > 30) {
-      setPanelPainted(true);
-      return;
-    }
-    const painted = () => (node.textContent ?? "").trim().length > 30;
-    const observer = new MutationObserver(() => {
-      if (!painted()) return;
-      observer.disconnect();
-      setPanelPainted(true);
-    });
-    observer.observe(node, { childList: true, subtree: true, characterData: true });
-    const backstop = window.setTimeout(() => {
-      observer.disconnect();
-      setPanelPainted(true);
-    }, 8000);
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(backstop);
-    };
-  }, [tab, orgId]);
-
   if (access.ready && hubDenied) {
     return (
       <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id} soft-gate`}>
@@ -364,8 +328,6 @@ export function ProductHubShell({
       <div
         className="product-hub-panel"
         data-hub-tab={tab}
-        ref={panelRef}
-        aria-busy={panelPainted ? undefined : true}
       >
         {(() => {
           if (!orgReady) {
@@ -383,14 +345,9 @@ export function ProductHubShell({
             const active = hub.tabs.find((entry) => entry.id === tab);
             return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
           }
-          // Between the first paint of this panel and the arrival of the tab's
-          // own data there was nothing at all: a white rectangle under a tab
-          // bar, for around a second on a warm load and longer on venue Wi-Fi.
-          // A person cannot tell that from a broken page, and the instinct is
-          // to tap again. The skeleton is deliberately shaped like the cards
-          // that replace it, so the page does not jump when the data lands.
-          if (!panelPainted) return <HubPanelSkeleton />;
-          return children({ tab, orgId, selectTab });
+          // Mount the view immediately: its requests must run before it can finish loading.
+          // Suspense handles views that actually suspend without a timer or text-length guess.
+          return <Suspense fallback={<HubPanelSkeleton />}>{children({ tab, orgId, selectTab })}</Suspense>;
         })()}
       </div>
     </main>

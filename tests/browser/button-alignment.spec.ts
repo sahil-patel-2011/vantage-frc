@@ -12,14 +12,23 @@ for (const width of [390, 1440]) {
       await page.goto(route);
       await waitForLoadingGone(page);
       for (const label of ["Ask AI", "Notifications"]) {
-        const control = page.locator(".soft-topbar").getByRole("link", { name: new RegExp("^" + label) });
+        // Desktop moves Ask AI into the rail to avoid two identical shortcuts.
+        const surface = label === "Ask AI" && width > 1024 ? page.locator(".vrail") : page.locator(".soft-topbar");
+        const control = surface.getByRole("link", { name: new RegExp("^" + label) });
         await expect(control).toBeVisible();
         await control.hover();
         const target = await control.boundingBox();
         const glyph = await control.locator("svg").boundingBox();
         expect(target).not.toBeNull();
         expect(glyph).not.toBeNull();
-        expect(Math.abs(target!.x + target!.width / 2 - glyph!.x - glyph!.width / 2)).toBeLessThan(0.6);
+        if (label === "Ask AI" && width >= 1024) {
+          // This is a labeled row, with its icon before the text, rather than an icon-only hit area.
+          expect(glyph!.x).toBeGreaterThanOrEqual(target!.x);
+          expect(glyph!.x + glyph!.width).toBeLessThanOrEqual(target!.x + target!.width);
+          await expect(control).toHaveText("Ask AI");
+        } else {
+          expect(Math.abs(target!.x + target!.width / 2 - glyph!.x - glyph!.width / 2)).toBeLessThan(0.6);
+        }
         expect(Math.abs(target!.y + target!.height / 2 - glyph!.y - glyph!.height / 2)).toBeLessThan(0.6);
       }
       if (route.includes("/ai")) {

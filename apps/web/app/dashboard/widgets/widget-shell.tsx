@@ -5,7 +5,7 @@ import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
 import { EmptyState } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
-import { type EmptyHint, liveLinkLabel, studentWidgetDescription } from "./widget-empty-copy";
+import { type EmptyHint, studentWidgetDescription } from "./widget-empty-copy";
 import { WidgetsLoadedContext } from "./widgets-loaded";
 
 export type { EmptyHint } from "./widget-empty-copy";
@@ -170,7 +170,11 @@ export function WidgetShell({
             </i>
           ) : null}
           <div>
-            <h2>{title}</h2>
+            <h2>{href && showLive ? (
+              <a className="dash-widget-open" href={href}>
+                <span>{title}</span><Icon name="chevron" />
+              </a>
+            ) : title}</h2>
           </div>
         </div>
         {/* No "LIVE" pill or to-the-second "Updated" stamp on each card: live is the normal state,
@@ -186,11 +190,7 @@ export function WidgetShell({
       ) : (
         <WidgetEmptyState type={type} hint={emptyHint} message={payload?.message} href={href} orgId={orgId} lead={lead} />
       )}
-      {href && showLive ? (
-        <a className="dash-widget-link" href={href}>
-          {liveLinkLabel(emptyHint)} →
-        </a>
-      ) : null}
+
     </article>
   );
 }

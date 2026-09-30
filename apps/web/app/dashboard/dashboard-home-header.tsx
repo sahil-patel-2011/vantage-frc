@@ -48,7 +48,7 @@ export function DashboardHomeHeader({
   return (
     <header className="dash-home-header">
       <div className="dash-home-intro" {...dim}>
-        <span className="dash-home-eyebrow">Home</span>
+        <span className="dash-home-eyebrow">Your workspace</span>
         {/* The greeting is what is specific to opening the page; the team number is in the
             top bar on every page, so it is not repeated here. */}
         <h1 className="dash-hero-greeting">{greetingText}</h1>
@@ -63,7 +63,7 @@ export function DashboardHomeHeader({
           </a>
         ) : null}
       </div>
-      <div className="dash-home-controls">
+      <div className="dash-home-controls" role="group" aria-label="Home layout">
         {orgId && meLoaded ? (
           <DashboardBoardSwitcher
             boards={switcherBoards}
@@ -97,6 +97,7 @@ export function DashboardHomeHeader({
               aria-label="Edit Home — rearrange, add, or remove widgets"
               onClick={onEdit}
             >
+              <Icon name="gear" />
               Edit
             </button>
           </div>

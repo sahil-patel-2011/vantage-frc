@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { signInAs } from "./session";
-import { openNav } from "./nav";
+import { openNav, primaryNavigation } from "./nav";
 
 const homeOrg = "6925a000-0000-4000-8000-000000000001";
 const ownerId = "6925e2e0-0000-4000-8000-000000000001";
@@ -42,7 +42,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.locator(".free-scout-report").filter({ hasText: marker }).getByText("Uploaded", { exact: true })).toBeVisible();
     const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE label=$1", [marker]);
     expect(saved.rows).toEqual([{ org_id: orgId }]);
-    await page.getByRole("navigation", { name: "Primary apps" }).getByRole("link", { name: "Home", exact: true }).click();
+    await primaryNavigation(page).getByRole("link", { name: "Home", exact: true }).click();
     // The org is already in the scouting URL. Wait for the destination too,
     // otherwise the test opens a menu on the page that is still leaving.
     await expect(page).toHaveURL(new RegExp(`/dashboard\\?orgId=${orgId}`));

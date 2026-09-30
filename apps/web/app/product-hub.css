@@ -69,7 +69,7 @@
 /* The overflow is a named block with its own scroll, not twenty more chips
    shoved into the row above the page's content. */
 .hub-tool-overflow {
-  max-height: min(38vh, 320px);
+  max-height: min(65dvh, 520px);
   overflow: auto;
   overscroll-behavior: contain;
   margin: 8px 0 0;
@@ -110,8 +110,7 @@
   margin: 0 0 8px;
   color: var(--muted);
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 /* Touch devices get the 44px minimum target; a mouse does not need it, and the
    compact row keeps more tools on screen on a shop laptop. */
@@ -434,9 +433,9 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 .hub-tool-list a,
 .hub-tool-list button {
   display: grid;
-  grid-template-columns: minmax(120px, 180px) 1fr;
-  gap: 12px;
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  align-items: start;
   width: 100%;
   padding: 8px 10px;
   border: 0;
@@ -572,10 +571,18 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
   top: calc(100% + 6px);
   right: 0;
   left: auto;
-  width: min(380px, calc(100vw - 32px));
+  width: min(400px, calc(100vw - 32px));
   margin: 0;
   background: var(--surface);
   box-shadow: var(--shadow-pop);
+}
+/* On a short screen, anchor higher so search does not consume the entire menu. */
+@media (max-height: 500px) {
+  .hub-bar .hub-tool-overflow {
+    position: fixed;
+    top: calc(var(--topbar-h, 60px) + 12px);
+    right: 16px;
+  }
 }
 
 @media (max-width: 720px) {

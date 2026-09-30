@@ -42,6 +42,10 @@ for (const width of [390, 1440]) {
     await strip.getByRole("link", { name: /^Chemistry/ }).or(strip.getByRole("button", { name: /^Chemistry/ })).click();
     await expect(page).toHaveURL(/chemistry/);
     await expect(page.locator("[data-hub-tab='chemistry']")).toBeVisible({ timeout: 30_000 });
+    const currentTool = page.locator(".hub-tool-strip--compact").first();
+    await expect(currentTool.locator(".hub-tool-strip-row > button")).toHaveText("Chemistry");
+    await currentTool.getByRole("button", { name: "Chemistry", exact: true }).click();
+    await expect(currentTool.getByRole("searchbox", { name: "Find a tool" })).toBeFocused();
   });
 
   test(`scouting report tools and code options stay available without crowding primary work at ${width}px`, async ({ page, context }) => {
