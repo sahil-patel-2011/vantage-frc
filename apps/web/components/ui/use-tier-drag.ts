@@ -49,7 +49,9 @@ export function useTierDrag<Tier extends string>({
 
   /** The tier list nearest the pointer (both axes: columns sit side by side, panels stack) and the slot in it. */
   function locate(x: number, y: number, draggedId: string): { tier: Tier; index: number } | null {
-    const lists = [...(rootRef.current?.querySelectorAll<HTMLElement>("[data-tier-list]") ?? [])];
+    const root = rootRef.current;
+    // The root may itself be the (only) list, as in a single-tier list.
+    const lists = root ? [...(root.matches("[data-tier-list]") ? [root] : []), ...root.querySelectorAll<HTMLElement>("[data-tier-list]")] : [];
     let best: HTMLElement | null = null;
     let bestDistance = Infinity;
     for (const list of lists) {
