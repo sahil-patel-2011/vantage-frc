@@ -14,6 +14,7 @@ import {
   clampVoteWeight,
   detectReorderConflict,
   normalizeTeamKey,
+  PICK_BUCKETS,
   planImportedOrder,
   rankAssignments,
   sortPickEntries,
@@ -615,6 +616,62 @@ export async function reorderEntry(
     pickListId: input.pickListId,
   });
   return { conflict, snapshot };
+}
+
+/**
+ * Write a whole visible order at once: which tier each named entry sits in and its place, top to
+ * bottom. Entries not named (added by someone else a moment ago) follow the named ones in their
+ * own tier. Rank stays dense 1..n across tiers, as everywhere else in this store.
+ */
+export async function setPickOrder(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    pickListId: string;
+    groups: Array<{ bucket: PickBucket; entryIds: string[] }>;
+  },
+): Promise<void> {
+  await assertWritable(client, input);
+  const existing = await client.query<{ id: string; rank: number; bucket: PickBucket }>(
+    `SELECT id, rank, bucket FROM pick_list_entries WHERE org_id = $1::uuid AND pick_list_id = $2::uuid`,
+    [input.orgId, input.pickListId],
+  );
+  const known = new Map(existing.rows.map((row) => [row.id, { id: row.id, rank: Number(row.rank), bucket: row.bucket }]));
+  const placed = new Set<string>();
+  const wanted = new Map<PickBucket, string[]>();
+  for (const group of input.groups) {
+    for (const id of group.entryIds) {
+      if (!known.has(id) || placed.has(id)) continue;
+      placed.add(id);
+      wanted.set(group.bucket, [...(wanted.get(group.bucket) ?? []), id]);
+    }
+  }
+  const rest = [...known.values()].filter((entry) => !placed.has(entry.id)).sort((a, b) => a.rank - b.rank);
+  const final: Array<{ id: string; bucket: PickBucket }> = [];
+  for (const bucket of PICK_BUCKETS) {
+    for (const id of wanted.get(bucket) ?? []) final.push({ id, bucket });
+    for (const entry of rest) if (entry.bucket === bucket) final.push({ id: entry.id, bucket });
+  }
+  if (final.length === 0) return;
+  await client.query(
+    `UPDATE pick_list_entries e
+     SET rank = v.rank, bucket = v.bucket, tier = v.tier,
+         updated_by = $4::uuid, updated_at = now(), revision = e.revision + 1
+     FROM (SELECT unnest($2::uuid[]) AS id, unnest($3::int[]) AS rank,
+                  unnest($5::text[]) AS bucket, unnest($6::text[]) AS tier) v
+     WHERE e.id = v.id AND e.pick_list_id = $1::uuid
+       AND (e.rank IS DISTINCT FROM v.rank OR e.bucket IS DISTINCT FROM v.bucket)`,
+    [
+      input.pickListId,
+      final.map((entry) => entry.id),
+      final.map((_, index) => index + 1),
+      input.userId,
+      final.map((entry) => entry.bucket),
+      final.map((entry) => tierFromBucket(entry.bucket)),
+    ],
+  );
+  await touchList(client, input);
 }
 
 export async function recordVote(

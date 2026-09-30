@@ -62,6 +62,7 @@ export {
   setEntryNotes,
   setJustification,
   setListStatus,
+  setPickOrder,
   upsertEntry,
   upsertEntryFromTier,
   type ImportedEntryEdit,

@@ -14,6 +14,7 @@ import {
   recordVote,
   removeVote as removeVoteFromSpine,
   reorderEntry,
+  setPickOrder,
   setListStatus,
   upsertEntry,
   deleteEntry as deleteSpineEntry,
@@ -489,6 +490,32 @@ export async function moveEntry(
     toIndex: Math.max(0, Math.trunc(input.position) - 1),
     bucket: bucketFromTier(input.tier),
     expectedRevision: input.expectedRevision ?? null,
+  });
+}
+
+/**
+ * Save a whole visible order at once: one entry list per tier, first to last. Dragging commits
+ * exactly what the person sees, whatever sorted it before (sliders, votes, an older drag), so
+ * the next person opening the list sees the same order.
+ */
+export async function setEntryOrder(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    groups: Array<{ tier: PicklistCollabTier; entryIds: string[] }>;
+    userId?: string;
+    listId?: string | null;
+  },
+): Promise<void> {
+  const firstId = input.groups.flatMap((group) => group.entryIds)[0];
+  if (!firstId) return;
+  const listId = input.listId ?? (await pickListIdForEntry(client, input.orgId, firstId));
+  if (!listId) throw new Error("Pick-list entry not found");
+  await setPickOrder(client, {
+    orgId: input.orgId,
+    userId: input.userId ?? (await entryActor(client, input.orgId, firstId)),
+    pickListId: listId,
+    groups: input.groups.map((group) => ({ bucket: bucketFromTier(group.tier), entryIds: group.entryIds })),
   });
 }
 

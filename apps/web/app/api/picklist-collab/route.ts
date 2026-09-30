@@ -12,6 +12,7 @@ import {
   deleteEntry,
   moveEntry,
   removeVote,
+  setEntryOrder,
   updateListStatus,
   type PicklistCollabView,
 } from "../../../lib/picklist-collab/compute-picklist-collab";
@@ -150,6 +151,21 @@ export async function POST(request: Request) {
           if (!tier) throw new Error("tier is required");
           const position = positiveInt(body.position) ?? 0;
           await moveEntry(client, { orgId, entryId, tier, position });
+          break;
+        }
+        case "set-order": {
+          const raw = Array.isArray(body.order) ? body.order : [];
+          const groups = raw
+            .map((group: { tier?: unknown; entryIds?: unknown }) => ({
+              tier: oneOf<PicklistCollabTier>(PICKLIST_COLLAB_TIERS, group?.tier),
+              entryIds: Array.isArray(group?.entryIds)
+                ? group.entryIds.filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 64)
+                : [],
+            }))
+            .filter((group): group is { tier: PicklistCollabTier; entryIds: string[] } => group.tier !== null);
+          const total = groups.reduce((sum, group) => sum + group.entryIds.length, 0);
+          if (!groups.length || total === 0 || total > 500) throw new Error("A list of entries to order is required");
+          await setEntryOrder(client, { orgId, groups });
           break;
         }
         case "delete-entry": {

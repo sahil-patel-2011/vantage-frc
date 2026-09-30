@@ -18,15 +18,15 @@ import { rankByWeightedZScores, type MetricWeight } from "@vantage/prediction-st
 import { usePathname } from "next/navigation";
 import {
   PICKLIST_COLLAB_TIERS,
-  epaRoleLabel,
   picklistCollabTierLabel,
-  picklistEntrySummary,
   picklistToCsv,
   sortEntriesWithFieldRating,
-  type PicklistCollabEntryWithRating,
+  type PicklistOrderMode,
 } from "../../lib/picklist-collab";
 import { PicklistWeightSliders, usePicklistFieldWeights } from "./picklist-weight-sliders";
 import { PicklistEventRanking } from "./picklist-event-ranking";
+import { PicklistTierList } from "./picklist-tier-list";
+import type { TierGroup } from "../../lib/picklist-collab/reorder";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
   PICKLIST_COLLAB_RELATED_INCLUDE,
@@ -466,12 +466,16 @@ export default function PicklistCollabClient() {
             busy={busy}
             onAdd={(teamNumber) => mutate({ action: "add-entry", teamNumber, tier: "unranked" })}
           />
-          <AddEntryForm busy={busy} mutate={mutate} />
+          <details className="picklist-add-more">
+            <summary>Add a team that isn&apos;t in the ranking</summary>
+            <AddEntryForm busy={busy} mutate={mutate} />
+          </details>
           <EntriesByTier
             view={view}
             busy={busy}
             mutate={mutate}
             weights={fieldWeights.weights}
+            listKey={view.activeList?.id ?? "default"}
           />
           <CreateListForm busy={busy} mutate={mutate} collapsedLabel="Add another pick list" />
         </div>
@@ -506,13 +510,38 @@ function EntriesByTier({
   busy,
   mutate,
   weights,
+  listKey,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   weights: MetricWeight[];
+  listKey: string;
 }) {
-  const ranked = sortEntriesWithFieldRating(view.entries, weights, view.fieldStats ?? {}, view.eventTeams);
+  // "Sliders" re-sorts each tier as the sliders move; "My order" keeps what the team dragged.
+  // Dragging switches to My order. Remembered per list on this device.
+  const orderStorageKey = `vantage.picklist.order.v1:${listKey}`;
+  const [mode, setMode] = useState<PicklistOrderMode>("sliders");
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(orderStorageKey) === "hand") setMode("hand");
+    } catch {
+      /* storage blocked: the list still sorts by sliders */
+    }
+  }, [orderStorageKey]);
+  const chooseMode = useCallback(
+    (next: PicklistOrderMode) => {
+      setMode(next);
+      try {
+        window.localStorage.setItem(orderStorageKey, next);
+      } catch {
+        /* storage blocked */
+      }
+    },
+    [orderStorageKey],
+  );
+
+  const ranked = sortEntriesWithFieldRating(view.entries, weights, view.fieldStats ?? {}, view.eventTeams, mode);
   // Where each listed team sits in "Ranked by your sliders", so a row says
   // "7th of 23" instead of a bare comparison score.
   const sliderRank = new Map<string, number>();
@@ -531,138 +560,30 @@ function EntriesByTier({
       />
     );
   }
+  const groups: TierGroup[] = PICKLIST_COLLAB_TIERS.map((tier) => ({
+    tier,
+    entries: ranked.filter((entry) => entry.tier === tier),
+  }));
   return (
-    <div id="picklist-collab-entries" className="picklist-collab-layout">
-      {PICKLIST_COLLAB_TIERS.map((tier) => {
-        const entries = ranked.filter((e) => e.tier === tier);
-        if (entries.length === 0) return null;
-        return (
-          <Panel key={tier} className="picklist-collab-panel">
-            <h2 style={{ marginTop: 0 }}>{picklistCollabTierLabel(tier)}</h2>
-            <ul className="picklist-collab-list">
-              {entries.map((entry) => (
-                <EntryRow
-                  key={entry.id}
-                  entry={entry}
-                  tier={tier}
-                  busy={busy}
-                  mutate={mutate}
-                  sliderRank={sliderRank.get(`frc${entry.teamNumber}`) ?? null}
-                  sliderCount={sliderRanked.length}
-                />
-              ))}
-            </ul>
-          </Panel>
-        );
-      })}
-    </div>
-  );
-}
-
-function EntryRow({
-  entry,
-  tier,
-  busy,
-  mutate,
-  sliderRank,
-  sliderCount,
-}: {
-  entry: PicklistCollabEntryWithRating;
-  tier: PicklistCollabTier;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-  sliderRank: number | null;
-  sliderCount: number;
-}) {
-  const [weight, setWeight] = useState("1");
-  const [rank, setRank] = useState("");
-
-  return (
-    <li className="picklist-collab-entry">
-      <div>
-        <strong>
-          #{entry.teamNumber}
-          {entry.teamName ? ` — ${entry.teamName}` : ""}
-        </strong>
-        <small className="app-muted picklist-collab-tip">
-          {picklistEntrySummary({
-            sliderRank,
-            sliderCount,
-            votes: entry.votes.length,
-            weightedScore: entry.weightedScore,
-            averageRankSuggestion: entry.averageRankSuggestion,
-            role: entry.epaRole ? epaRoleLabel(entry.epaRole) : null,
-          })}
-        </small>
-        {entry.note ? <small className="app-muted">{entry.note}</small> : null}
+    <>
+      <div className="picklist-order-switch" role="group" aria-label="How the list is ordered">
+        <span className="app-muted">Order</span>
+        <button type="button" aria-pressed={mode === "sliders"} onClick={() => chooseMode("sliders")}>
+          By sliders
+        </button>
+        <button type="button" aria-pressed={mode === "hand"} onClick={() => chooseMode("hand")}>
+          My order
+        </button>
       </div>
-      <div className="picklist-collab-entry-actions">
-        <select
-          value={tier}
-          aria-label={`Tier for team #${entry.teamNumber}`}
-          onChange={(event) =>
-            mutate({
-              action: "move-entry",
-              entryId: entry.id,
-              tier: event.target.value,
-              position: entry.position,
-            })
-          }
-        >
-          {PICKLIST_COLLAB_TIERS.map((t) => (
-            <option key={t} value={t}>
-              {picklistCollabTierLabel(t)}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          min={0.1}
-          max={5}
-          step={0.1}
-          value={weight}
-          onChange={(event) => setWeight(event.target.value)}
-          className="picklist-collab-num"
-          aria-label="Vote weight"
-        />
-        <input
-          type="number"
-          min={1}
-          placeholder="Rank"
-          value={rank}
-          onChange={(event) => setRank(event.target.value)}
-          className="picklist-collab-num"
-          aria-label="Suggested rank"
-        />
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={busy}
-          onClick={() =>
-            mutate({
-              action: "cast-vote",
-              entryId: entry.id,
-              weight: Number(weight) || 1,
-              rankSuggestion: rank ? Number(rank) : undefined,
-            })
-          }
-        >
-          Vote
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Remove team #${entry.teamNumber} from this list?`)) {
-              mutate({ action: "delete-entry", entryId: entry.id });
-            }
-          }}
-        >
-          Remove
-        </Button>
-      </div>
-    </li>
+      <PicklistTierList
+        groups={groups}
+        sliderRank={sliderRank}
+        sliderCount={sliderRanked.length}
+        busy={busy}
+        mutate={mutate}
+        onReordered={() => chooseMode("hand")}
+      />
+    </>
   );
 }
 

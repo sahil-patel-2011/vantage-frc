@@ -95,11 +95,15 @@ export function collabEntriesToMetricRows(entries: PicklistCollabEntry[]): TeamM
  * Teams without real ratings stay at the bottom of their tier — never a 0 fill.
  * When every slider is off or nobody has ratings, vote order is unchanged.
  */
+export type PicklistOrderMode = "sliders" | "hand";
+
 export function sortEntriesWithFieldRating(
   entries: PicklistCollabEntry[],
   weights: readonly MetricWeight[],
   field?: FieldStats,
   eventTeams?: readonly TeamMetricRow[],
+  /** "hand" keeps the order the team dragged: within a tier only the saved position counts. */
+  mode: PicklistOrderMode = "sliders",
 ): PicklistCollabEntryWithRating[] {
   // Prefer the event rows (ratings + our scouting) so "finishes the match"
   // moves the list; fall back to the entry's own ratings.
@@ -115,6 +119,10 @@ export function sortEntriesWithFieldRating(
   return [...withRating].sort((a, b) => {
     const tierDiff = TIER_RANK[a.tier] - TIER_RANK[b.tier];
     if (tierDiff !== 0) return tierDiff;
+    if (mode === "hand") {
+      const handDiff = a.position - b.position;
+      return handDiff !== 0 ? handDiff : a.teamNumber - b.teamNumber;
+    }
     if (useField) {
       if (a.fieldRating == null && b.fieldRating == null) {
         /* fall through to votes */
