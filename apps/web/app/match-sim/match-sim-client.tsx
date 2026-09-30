@@ -353,7 +353,7 @@ function SimulateForm({
         </FormRow>
       </FormGrid>
       <details className="match-sim-more">
-        <summary style={{ minHeight: 44, display: "flex", alignItems: "center", cursor: "pointer" }}>
+        <summary data-disclosure style={{ minHeight: 44, display: "flex", alignItems: "center", cursor: "pointer" }}>
           More: another event, a match, a name
         </summary>
         <FormGrid min={160}>

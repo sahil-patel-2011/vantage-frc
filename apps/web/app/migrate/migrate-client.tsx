@@ -113,7 +113,7 @@ function ReviewNotes({ skipped, errors }: { skipped?: Skip[]; errors?: Issue[] }
     <div className="migrate-notes">
       {errors?.length ? (
         <details open>
-          <summary>
+          <summary data-disclosure>
             {errors.length} row{errors.length === 1 ? "" : "s"} could not be read
           </summary>
           <ul>
@@ -127,7 +127,7 @@ function ReviewNotes({ skipped, errors }: { skipped?: Skip[]; errors?: Issue[] }
       ) : null}
       {skipped?.length ? (
         <details>
-          <summary>
+          <summary data-disclosure>
             {skipped.length} item{skipped.length === 1 ? "" : "s"} not imported, and why
           </summary>
           <ul>

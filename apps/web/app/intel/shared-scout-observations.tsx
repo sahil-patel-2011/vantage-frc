@@ -82,7 +82,7 @@ export function SharedScoutObservations({
         if (!event.currentTarget.open) setRows([]);
       }}
     >
-      <summary>Shared scouting from other teams</summary>
+      <summary data-disclosure>Shared scouting from other teams</summary>
       <p className="app-muted">
         Event: {eventKey ?? "choose an active event"}. Sources and form versions
         stay separate so different units are never mixed. Private notes and

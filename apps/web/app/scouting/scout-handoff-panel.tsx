@@ -344,7 +344,7 @@ export default function ScoutHandoffPanel({
             <figcaption>
               <p className="app-muted">Your teammate opens QR handoff and taps Scan a teammate&apos;s code.</p>
               <details open={!qrImage}>
-                <summary>Can&apos;t scan? Copy the code as text</summary>
+                <summary data-disclosure>Can&apos;t scan? Copy the code as text</summary>
                 <textarea readOnly value={qrText} rows={3} aria-label="Handoff code as text" />
               </details>
             </figcaption>
@@ -353,7 +353,7 @@ export default function ScoutHandoffPanel({
 
         {hasQueue ? (
           <details className="scout-qr-more">
-            <summary>Use a short code instead</summary>
+            <summary data-disclosure>Use a short code instead</summary>
             <p className="app-muted">
               A short code needs a working connection on both phones. The QR sequence above works without signal and preserves the same reports and action history.
             </p>

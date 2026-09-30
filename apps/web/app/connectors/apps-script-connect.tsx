@@ -191,7 +191,7 @@ export default function AppsScriptConnect({
       </div>
       {/* The secret is built into the copied script; most people never need to see it. */}
       <details className="apps-script-advanced">
-        <summary>Advanced: script text and secret</summary>
+        <summary data-disclosure>Advanced: script text and secret</summary>
         <p className="app-muted">
           &quot;Anyone&quot; only lets the address be called: the script refuses every request that isn&apos;t signed
           with this secret, and it only touches this spreadsheet and your team&apos;s media folder.

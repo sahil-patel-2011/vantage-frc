@@ -166,7 +166,7 @@ export function SheetsHubCard() {
 
           {(!working || status.check?.updateAvailable) && status.script ? (
             <details className="sheets-hub-script">
-              <summary>Show the script</summary>
+              <summary data-disclosure>Show the script</summary>
               <textarea readOnly value={status.script} rows={10} aria-label="Hub script" />
             </details>
           ) : null}

@@ -286,7 +286,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 Pause AI for everyone on the team
               </label>
               <details className="ai-budgets-more">
-                <summary>More controls</summary>
+                <summary data-disclosure>More controls</summary>
                 <div className="budget-fields">
                   {(["monthlyTokenLimit", "dailyTokenLimit"] as const).map((key) => (
                     <label key={key}>
@@ -350,7 +350,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
 
           {canManage ? (
             <details className="intel-panel ai-budgets-more">
-              <summary>A limit for one person, feature or model</summary>
+              <summary data-disclosure>A limit for one person, feature or model</summary>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();

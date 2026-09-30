@@ -15,19 +15,21 @@ export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamD
   if (!health?.degraded) return null;
 
   if (compact) {
+    // One quiet line while closed; the technical detail and the one action live inside.
     return (
       <aside className={`data-source-degraded-banner compact mode-${health.mode}`} role="status" aria-live="polite">
         <details className="data-source-summary">
-          <summary>
-            <span className="data-source-indicator" aria-hidden="true" />
+          <summary data-disclosure>
             <strong>{health.bannerTitle}</strong>
             <span>{health.usingLastGoodCache ? "Using saved copy" : "Details"}</span>
           </summary>
           <p>{health.bannerDetail}</p>
-          {health.usingLastGoodCache ? <p>Saved rankings and schedule remain available.</p> : null}
-          {!canOpenTeamData ? <p>An owner or admin can refresh this in Team → Data.</p> : null}
+          {canOpenTeamData ? (
+            <a className="data-source-settings" href={health.teamDataHref}>Open data settings</a>
+          ) : (
+            <p>An owner or admin can refresh this in Team → Data.</p>
+          )}
         </details>
-        {canOpenTeamData ? <a className="data-source-settings" href={health.teamDataHref}>Data settings</a> : null}
       </aside>
     );
   }

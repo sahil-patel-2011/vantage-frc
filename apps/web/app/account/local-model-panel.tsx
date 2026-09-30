@@ -125,7 +125,7 @@ export function LocalModelPanel() {
       ) : null}
 
       <details className="lm-models">
-        <summary>Which model, and why</summary>
+        <summary data-disclosure>Which model, and why</summary>
         <ul>
           {LOCAL_MODELS.map((model) => (
             <li key={model.id}>

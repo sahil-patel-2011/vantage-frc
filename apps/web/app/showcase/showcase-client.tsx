@@ -334,7 +334,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
                   </label>
                   {section.aiAssistedDraft ? (
                     <details>
-                      <summary>Advice draft · not approved</summary>
+                      <summary data-disclosure>Advice draft · not approved</summary>
                       <p>{section.aiAssistedDraft}</p>
                     </details>
                   ) : null}

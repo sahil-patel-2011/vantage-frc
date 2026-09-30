@@ -315,7 +315,7 @@ export default function SecurityClient({
                     </div>
                   ) : null}
                   <details className="mfa-manual">
-                    <summary>
+                    <summary data-disclosure>
                       {setup.qrDataUri ? "Can’t scan it? Enter the key by hand" : "Enter the key by hand"}
                     </summary>
                     <label>

@@ -419,7 +419,7 @@ function LiveDesk({
         )}
       </section>
       <details className="season-finance-more">
-        <summary>More numbers</summary>
+        <summary data-disclosure>More numbers</summary>
         <section className="biz-kpis" aria-label="Season plan">
           <Kpi label="Planned income" value={hasPlan ? money(rollup.plannedIncomeCents) : "—"} detail="The money in below, or fundraising goals if none yet" />
           <Kpi

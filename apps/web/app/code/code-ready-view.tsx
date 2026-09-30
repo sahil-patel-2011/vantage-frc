@@ -86,7 +86,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       ) : null}
 
       <details className="cdc-options">
-        <summary>AI options, connections and costs</summary>
+        <summary data-disclosure>AI options, connections and costs</summary>
         {embedded && orgId ? (
           <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
             {relatedLinks.map(link => <a key={link.id} href={link.href}>{link.label}</a>)}

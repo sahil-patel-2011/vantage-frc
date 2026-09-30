@@ -126,7 +126,7 @@ function ImportPreviewPanel({
 
       {notImported.length > 0 ? (
         <details className="ms-excel-skipped">
-          <summary>Not imported ({notImported.length.toLocaleString()})</summary>
+          <summary data-disclosure>Not imported ({notImported.length.toLocaleString()})</summary>
           <ul className="ms-excel-change-list">
             {notImported.slice(0, 100).map((line, index) => (
               <li key={index}>{line}</li>

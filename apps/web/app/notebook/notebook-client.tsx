@@ -623,7 +623,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
                 )}
                 {view.context.role !== "viewer" ? (
                   <details style={{ marginTop: 8 }}>
-                    <summary>Attach photos or video</summary>
+                    <summary data-disclosure>Attach photos or video</summary>
                     {view.imageLibrary.length === 0 ? (
                       <p className="app-muted">
                         Nothing to attach until a real photo or video is in the{" "}

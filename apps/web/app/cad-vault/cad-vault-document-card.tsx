@@ -23,7 +23,7 @@ function OnshapeCardPreview({
     case "onshape":
       return editHref ? (
         <details className="onshape-edit-preview">
-          <summary>View in Vantage</summary>
+          <summary data-disclosure>View in Vantage</summary>
           <OnshapeDocumentEmbed url={editHref} title={title} />
         </details>
       ) : null;

@@ -201,7 +201,7 @@ export function ScoutObservationExplorer({
             )
             .map((row, index) => (
               <details key={(row.matchKey ?? "") + index}>
-                <summary>
+                <summary data-disclosure>
                   {matchKeyLabel(row.matchKey)} · report {index + 1}
                   <span>{row.confidence} confidence</span>
                 </summary>

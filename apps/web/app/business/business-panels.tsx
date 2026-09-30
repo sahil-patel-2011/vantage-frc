@@ -359,7 +359,7 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
         <p className="app-muted">Purchases go on the buy sheet: a mentor approves, then someone buys it.</p>
         <Button as="a" variant="primary" href={businessOrdersHref}>Add a purchase</Button>
         <details className="biz-category-purchase">
-          <summary>Charge a purchase to a budget category instead</summary>
+          <summary data-disclosure>Charge a purchase to a budget category instead</summary>
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "submit-purchase", ["unitPrice", "shipping"])}>
           <Field label="Item" wide><input name="itemName" required placeholder="2 × 1 aluminum tube" /></Field>
           <Field label="Vendor"><input name="vendor" defaultValue="Amazon" required /></Field>

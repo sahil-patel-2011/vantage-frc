@@ -93,10 +93,6 @@ export function CommandReadyView({
   const strategyHref = hrefs.strategy;
   const scoutingHref = hrefs.scouting;
   const matchChecklistHref = hrefs.matchChecklist;
-  const pitHref = hrefs.pit;
-  const batteriesHref = hrefs.batteries;
-  const intelHref = hrefs.intel;
-  const chemistryHref = hrefs.chemistry;
   const rankingsHref = hubHref("/competition", "rankings", orgId || null);
   // With no match coming up, every "next match" card below would be empty. Show what is
   // true now (why, the record, what to do) instead of a grid of "No …" cards.
@@ -641,32 +637,6 @@ export function CommandReadyView({
       </>
       )}
 
-      <details className="edc-supporting-tools">
-        <summary>Related pit and strategy tools</summary>
-      <nav className="edc-actions" aria-label="More competition tools">
-        <a href={pitHref}>
-          <Icon name="cube" />
-          <strong>Pit</strong>
-          <span>Release gate & batteries</span>
-        </a>
-        <a href={batteriesHref}>
-          <Icon name="bolt" />
-          <strong>Batteries</strong>
-          <span>Fleet readiness</span>
-        </a>
-        <a href={intelHref}>
-          <Icon name="stats" />
-          <strong>Research</strong>
-          <span>Team lookup</span>
-        </a>
-        <a href={chemistryHref}>
-          <Icon name="users" />
-          <strong>Chemistry</strong>
-          <span>Alliance fit</span>
-        </a>
-      </nav>
-      </details>
-
       {eventPicker}
     </EdcRoot>
   );
@@ -676,7 +646,7 @@ function LeadsFold({ lead, children }: { lead: boolean; children: ReactNode }) {
   if (lead) return <>{children}</>;
   return (
     <details className="edc-for-leads">
-      <summary>For team leads: scout coverage, opponent briefs and pit flags</summary>
+      <summary data-disclosure>For team leads: scout coverage, opponent briefs and pit flags</summary>
       {children}
     </details>
   );

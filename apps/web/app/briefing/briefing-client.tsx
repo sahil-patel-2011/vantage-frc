@@ -487,7 +487,7 @@ export default function BriefingClient() {
 
       {factors.length > 0 || caveats.length > 0 || opponentEvidence.length > 0 ? (
         <details className="app-card brief-why">
-          <summary>How we got this</summary>
+          <summary data-disclosure>How we got this</summary>
           {factors.length > 0 ? (
             <ul className="brief-factors">
               {factors.map((factor, index) => (

@@ -467,7 +467,7 @@ export default function PicklistCollabClient() {
             onAdd={(teamNumber) => mutate({ action: "add-entry", teamNumber, tier: "unranked" })}
           />
           <details className="picklist-add-more">
-            <summary>Add a team that isn&apos;t in the ranking</summary>
+            <summary data-disclosure>Add a team that isn&apos;t in the ranking</summary>
             <AddEntryForm busy={busy} mutate={mutate} />
           </details>
           <EntriesByTier

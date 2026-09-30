@@ -61,7 +61,7 @@ function Week({ week }: { week: PacedWeek }) {
           return (
             <li key={task.id} className="lab-task" id={task.id}>
               <details>
-                <summary>
+                <summary data-disclosure>
                   <span className="lab-task-number" aria-hidden="true">
                     {index + 1}
                   </span>

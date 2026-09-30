@@ -389,7 +389,7 @@ export function PreferencesForm({
       ) : null}
 
       <details className="onboarding-optional">
-        <summary>Display name and appearance <small>Optional — change any time in Account</small></summary>
+        <summary data-disclosure>Display name and appearance <small>Optional — change any time in Account</small></summary>
         <label>
           Display name
           <input

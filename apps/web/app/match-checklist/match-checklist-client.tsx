@@ -423,7 +423,7 @@ function StartRunForm({
       ) : null}
       {next ? (
         <details className="mcl-start-other">
-          <summary>Different match or robot</summary>
+          <summary data-disclosure>Different match or robot</summary>
           {manual}
         </details>
       ) : (

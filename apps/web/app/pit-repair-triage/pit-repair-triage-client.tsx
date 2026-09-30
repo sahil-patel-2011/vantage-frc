@@ -586,7 +586,7 @@ function ReportsList({
             ) : null}
             <small className="app-muted">{report.rationale}</small>
             <p className="app-muted">These rules use time, spare stock and recorded failure history. They do not estimate the probability of a successful repair. Review the robot before releasing it.</p>
-            <details><summary>Recommendation rules</summary>
+            <details><summary data-disclosure>Recommendation rules</summary>
               <p>Consider swapping below {SWAP_TIME_THRESHOLD_MIN} minutes, repairing from {FIX_TIME_THRESHOLD_MIN} minutes, and a recurring issue after {CHRONIC_FAILURE_COUNT} recorded failures. A missing spare limits the available choices.</p>
             </details>
             <small className="app-muted">

@@ -764,7 +764,7 @@ function ReadyCalendar({
       />
 
       <Panel as="details" className="cal-seed" open={milestones.length === 0}>
-        <summary>Start from a season template</summary>
+        <summary data-disclosure>Start from a season template</summary>
         <div className="cal-seed-body">
           <p className="app-muted">
             Templates are opt-in plans dated from your kickoff — not live TBA stats. Existing titles are skipped so you

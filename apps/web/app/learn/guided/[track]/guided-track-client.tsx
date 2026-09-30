@@ -281,7 +281,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                         <p>{state.result.message}</p>
                         {state.result.evidence?.length ? (
                           <details>
-                            <summary>What was checked</summary>
+                            <summary data-disclosure>What was checked</summary>
                             <ul>
                               {state.result.evidence.map((line) => (
                                 <li key={line}>{line}</li>

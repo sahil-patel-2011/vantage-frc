@@ -175,7 +175,7 @@ export function ConsentBanner() {
           <p className="consent-banner-lead">{copy.lead}</p>
           {/* The full list and the "no costs nothing" promise, one tap away so the card stays small. */}
           <details className="consent-banner-more" open={reopened}>
-            <summary>{copy.detailsLabel}</summary>
+            <summary data-disclosure>{copy.detailsLabel}</summary>
             <p className="consent-banner-detail">{copy.detail}</p>
             <p className="consent-banner-detail">{copy.reassurance}</p>
           </details>

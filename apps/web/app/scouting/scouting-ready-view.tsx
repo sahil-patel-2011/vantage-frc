@@ -537,7 +537,7 @@ return (
                   )}
                   {audit.length ? (
                     <details className="scout-conflict-audit">
-                      <summary>Audit trail ({audit.length})</summary>
+                      <summary data-disclosure>Audit trail ({audit.length})</summary>
                       <ol>
                         {audit.map((event) => (
                           <li key={event.id}>
@@ -624,7 +624,7 @@ return (
                 // team are the exception. Open, they put about 300px between
                 // the tile a scout just tapped and the form it opens.
                 <details className="scout-other-target">
-                  <summary>Another match, or a team that isn’t listed</summary>
+                  <summary data-disclosure>Another match, or a team that isn’t listed</summary>
                   <ScoutTargetChoices
                     matchOptions={matchOptions}
                     hasSchedule

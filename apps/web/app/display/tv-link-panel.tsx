@@ -106,7 +106,7 @@ export function TvLinkPanel({
           </p>
         ) : null}
         <details className="tv-link-more">
-          <summary>Other ways to show it</summary>
+          <summary data-disclosure>Other ways to show it</summary>
           {eventMode ? (
             <p>
               <strong>This board&rsquo;s own panels instead</strong>: shows {boardName ? `"${boardName}"` : "the saved board"} as

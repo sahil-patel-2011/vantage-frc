@@ -805,7 +805,7 @@ function ReportView({ report }: { report: Report }) {
 
       {report.disagreements?.length ? (
         <details className="am-details">
-          <summary>Where the two orders disagreed ({report.disagreements.length})</summary>
+          <summary data-disclosure>Where the two orders disagreed ({report.disagreements.length})</summary>
           <ul>
             {report.disagreements.map((entry) => (
               <li key={entry.instanceId}>
@@ -818,7 +818,7 @@ function ReportView({ report }: { report: Report }) {
 
       {report.notes?.length ? (
         <details className="am-details">
-          <summary>Notes ({report.notes.length})</summary>
+          <summary data-disclosure>Notes ({report.notes.length})</summary>
           <ul>
             {report.notes.map((note) => (
               <li key={note}>{note}</li>
@@ -829,7 +829,7 @@ function ReportView({ report }: { report: Report }) {
 
       {report.gaps?.length ? (
         <details className="am-details">
-          <summary>What the CAD could not tell us ({report.gaps.length})</summary>
+          <summary data-disclosure>What the CAD could not tell us ({report.gaps.length})</summary>
           <ul>
             {report.gaps.map((gap) => (
               <li key={gap}>{gap}</li>
@@ -840,7 +840,7 @@ function ReportView({ report }: { report: Report }) {
 
       {report.cutList?.length ? (
         <details className="am-details" open>
-          <summary>Materials and cut list ({report.cutList.length})</summary>
+          <summary data-disclosure>Materials and cut list ({report.cutList.length})</summary>
           <table className="am-table">
             <thead>
               <tr>
@@ -873,7 +873,7 @@ function ReportView({ report }: { report: Report }) {
 
       {report.hardware?.length ? (
         <details className="am-details">
-          <summary>Hardware ({report.hardware.length})</summary>
+          <summary data-disclosure>Hardware ({report.hardware.length})</summary>
           <ul>
             {report.hardware.map((row) => (
               <li key={row.partName}>

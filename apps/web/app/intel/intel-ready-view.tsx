@@ -295,7 +295,7 @@ export function IntelReadyView({
       {scoutingFirst ? <ScoutObservationExplorer key={intel.team.teamKey + activeEvent?.eventKey} rows={scoutNotes} activeEventKey={activeEvent?.eventKey ?? null} /> : null}
 
       <details className="intel-shared-scouting" open={!scoutingFirst}>
-      <summary>Official ratings and public research</summary>
+      <summary data-disclosure>Official ratings and public research</summary>
       <IntelLookupBoard
         teamKey={intel.team.teamKey}
         event={eventRow}

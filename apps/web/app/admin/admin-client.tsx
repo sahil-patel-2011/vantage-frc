@@ -244,7 +244,7 @@ function AdminClientInner() {
             </div>
           ) : null}
           <details className="admin-confirmation-details">
-            <summary>Details</summary>
+            <summary data-disclosure>Details</summary>
             <ul>
               {confirmationDetails(confirmation).map((line) => (
                 <li key={line}>{line}</li>
@@ -302,7 +302,7 @@ function AdminClientInner() {
             <small className="app-muted">They get an invite by email. They don&rsquo;t need an account yet.</small>
           </label>
           <details className="admin-advanced">
-            <summary>Advanced</summary>
+            <summary data-disclosure>Advanced</summary>
             <label>
               Web address
               <input

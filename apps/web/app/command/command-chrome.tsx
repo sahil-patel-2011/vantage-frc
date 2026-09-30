@@ -210,7 +210,7 @@ export function CommandReadyHeader({
         {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"} · Refresh`}
       </button>
       <details className="edc-page-actions" open={actionsOpen} onToggle={event => setActionsOpen(event.currentTarget.open)}>
-        <summary>Event options</summary>
+        <summary data-disclosure>Event options</summary>
         <div className="edc-page-actions-body">
           <CopyShareLink orgId={orgId} variant="ghost" />
           {canSetEvent ? (

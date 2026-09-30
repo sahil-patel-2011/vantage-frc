@@ -57,8 +57,7 @@
 }
 
 .edc-page-actions { position: relative; }
-.edc-page-actions > summary,
-.edc-supporting-tools > summary {
+.edc-page-actions > summary {
   min-height: 48px;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -81,8 +80,17 @@
   background: var(--surface);
   box-shadow: var(--shadow-pop);
 }
-.edc-supporting-tools { margin-top: 16px; }
-.edc-supporting-tools[open] > summary { margin-bottom: 12px; }
+/* A menu: every row looks the same (one was a bordered button, the other plain text). */
+.edc-page-actions-body { gap: 2px; padding: 6px; }
+.edc-page-actions-body :is(.app-button, button) {
+  justify-content: flex-start;
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+}
+.edc-page-actions-body :is(.app-button, button):hover { background: var(--surface-2); }
 .edc-context-header {
   display: flex;
   flex-wrap: wrap;

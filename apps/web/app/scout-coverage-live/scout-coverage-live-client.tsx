@@ -589,7 +589,7 @@ function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | nu
           {lost.length ? <ul className="scout-coverage-live-list">{lost.map(renderRow)}</ul> : null}
           {covered.length ? (
             <details>
-              <summary>
+              <summary data-disclosure>
                 {covered.length} more where someone else scouted the robot
               </summary>
               <ul className="scout-coverage-live-list">{covered.map(renderRow)}</ul>

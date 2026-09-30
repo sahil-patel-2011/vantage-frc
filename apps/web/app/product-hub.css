@@ -727,3 +727,34 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     justify-content: space-between;
   }
 }
+
+/* "More tools" is a quiet text control with a chevron on the same line as the words (it was a boxed button
+   beside the title, next to a second boxed help button). It rotates open. */
+.hub-tool-more::after {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  margin: -3px 0 0 8px;
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
+  transform: rotate(45deg);
+  opacity: .6;
+  transition: transform .16s ease;
+}
+.hub-tool-more[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
+.hub-tool-more > .hub-current-tool { order: 2; }
+@media (min-width: 721px) {
+  .product-hub .hub-bar > .hub-tool-strip .hub-tool-more {
+    background: transparent;
+    border-color: transparent;
+    color: var(--muted);
+  }
+  .product-hub .hub-bar > .hub-tool-strip .hub-tool-more:hover,
+  .product-hub .hub-bar > .hub-tool-strip .hub-tool-more[aria-expanded="true"] {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+}
+@media (prefers-reduced-motion: reduce) { .hub-tool-more::after { transition: none; } }

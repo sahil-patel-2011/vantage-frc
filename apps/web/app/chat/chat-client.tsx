@@ -491,7 +491,7 @@ export default function ChatClient({
 
       {shell === "empty" ? (
         <details className="ch-privacy">
-          <summary>Who can see a chat?</summary>
+          <summary data-disclosure>Who can see a chat?</summary>
           <div className="ch-scope">
             {AI_CHAT_SCOPE_CARDS.map((card) => (
               <article key={card.id}>
@@ -512,7 +512,7 @@ export default function ChatClient({
           <div className="ch-thread-actions">
             {shell !== "empty" ? (
               <details className="ch-new-chat">
-                <summary>New chat</summary>
+                <summary data-disclosure>New chat</summary>
                 <Button variant="secondary" type="button" onClick={(event) => {
                   event.currentTarget.closest("details")?.removeAttribute("open");
                   void newThread("private");

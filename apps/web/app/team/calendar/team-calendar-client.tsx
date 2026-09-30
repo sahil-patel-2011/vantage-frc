@@ -924,7 +924,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 open={detailsOpen}
                 onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
               >
-                <summary>More event details</summary>
+                <summary data-disclosure>More event details</summary>
                 <CreateEventForm
                   orgId={orgId}
                   subteams={view.subteams}

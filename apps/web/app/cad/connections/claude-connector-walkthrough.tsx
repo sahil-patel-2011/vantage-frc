@@ -46,7 +46,7 @@ function CommandLine({ command }: { command: string }) {
 export function ClaudeConnectorWalkthrough() {
   return (
     <details className="cc-walkthrough">
-      <summary>
+      <summary data-disclosure>
         <strong>Drive CAD from Claude Code</strong>
         <span>Five steps, once per computer</span>
       </summary>

@@ -666,7 +666,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
           <SharedScoutObservations key={orgId + view.intel.team.teamKey + view.activeEvent?.eventKey} orgId={orgId} teamKey={view.intel.team.teamKey} eventKey={view.activeEvent?.eventKey ?? null} />
           {scouting ? (
             <details className="intel-source-more">
-              <summary>Compare against other teams or events</summary>
+              <summary data-disclosure>Compare against other teams or events</summary>
               <DataSourcePicker
                 settings={source.settings}
                 ownTeamKey={null}

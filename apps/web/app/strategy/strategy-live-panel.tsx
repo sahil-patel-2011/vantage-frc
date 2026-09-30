@@ -166,7 +166,7 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
       {edge.differentials.length ? (
         // Folded: nine rows of it made Matchup one long page saying the same things again.
         <details className="strategy-more">
-          <summary>Why we win or lose ({edge.differentials.length})</summary>
+          <summary data-disclosure>Why we win or lose ({edge.differentials.length})</summary>
           <ul className="factor-table">
             {edge.differentials.map((row) => (
               <li key={`${row.field}-${row.headline}`}>
@@ -202,7 +202,7 @@ export function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { statu
       ))}
       {edge.evidence.length ? (
         <details>
-          <summary>Scout evidence cards</summary>
+          <summary data-disclosure>Scout evidence cards</summary>
           <ul>
             {edge.evidence.slice(0, 8).map((card) => (
               <li key={card.entryId}>
@@ -309,7 +309,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         {/* The game plan below is what to do; this is how much each thing is worth. It was a
             third telling of the same match ahead of the plan itself. */}
         <details className="strategy-more strategy-levers">
-          <summary>What would change the win chance</summary>
+          <summary data-disclosure>What would change the win chance</summary>
         <p className="app-muted lever-note">
           Each line re-runs the rating model with one measured number changed. A
           lever only appears when we have actually measured the thing behind it.
@@ -346,7 +346,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         )}
         </details>
         <details className="strategy-more">
-          <summary>How this was worked out</summary>
+          <summary data-disclosure>How this was worked out</summary>
         <h3>Key factors</h3>
         <ul className="factor-table">
           {view.prediction.keyFactors
@@ -415,7 +415,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         </ol>
         {view.playbook.generalTips?.length ? (
           <details className="strategy-more">
-            <summary>General tips</summary>
+            <summary data-disclosure>General tips</summary>
             <ul>
               {view.playbook.generalTips.map((tip) => (
                 <li key={tip}>{plainStrategyText(tip)}</li>
@@ -434,7 +434,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
       {/* The ratings arithmetic, opponent tendencies and which scouting was used: for the
           strategy lead. A scout opening Strategy met five screens of it before the plan. */}
       <details className="strategy-more strategy-lead-details">
-        <summary>Details for leads: coach notes, opponent tendencies, scouting used</summary>
+        <summary data-disclosure>Details for leads: coach notes, opponent tendencies, scouting used</summary>
       <Panel className="strategy-matchup-card">
         <header>
           <h2>Coach notes</h2>
@@ -469,7 +469,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
         {/* Pick-list ranks are on the Pick lists tab; this view is one match. */}
         {view.scoutProvenance.length > 0 || view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
           <details className="strategy-provenance-details">
-            <summary>Which scouting was used</summary>
+            <summary data-disclosure>Which scouting was used</summary>
             {view.scoutProvenance.length === 0 ? (
               <p className="app-muted">None of our scouting has gone into this prediction yet.</p>
             ) : (
@@ -506,7 +506,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
       {/* CAD, rules and assumptions are for later or for someone else; before a match they were
           three more screens of scrolling. */}
       <details className="strategy-more strategy-more-panels">
-        <summary>More: CAD for this match, game rules, what-if</summary>
+        <summary data-disclosure>More: CAD for this match, game rules, what-if</summary>
       <Panel className="strategy-engineering-card">
         <header>
           <div>

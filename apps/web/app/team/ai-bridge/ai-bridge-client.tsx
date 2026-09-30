@@ -481,7 +481,7 @@ function ConnectorCommands({ userId }: { userId: string }) {
       </div>
       <small className="app-muted">Approve the pairing code before signing in. The test checks your personal Codex sign-in and Vantage connection. Each person uses their own user ID in the --profile command.</small>
       <details>
-        <summary>Connect your Codex terminal to Vantage</summary>
+        <summary data-disclosure>Connect your Codex terminal to Vantage</summary>
         <p>After pairing, register this connector with Codex. Replace the quoted path with the full path to your downloaded file.</p>
         <pre aria-label="Codex MCP command">{`codex mcp add vantage -- node "/full/path/to/vantage-ai-bridge.mjs" --profile ${userId} --mcp`}</pre>
         <small className="app-muted">These tools use your Vantage permissions. Purchase requests and CAD briefs wait for your confirmation in Vantage.</small>

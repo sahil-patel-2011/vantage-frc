@@ -50,7 +50,7 @@ export default function OfflineStoragePanel() {
       </div>
       <p>Synced uploads clear automatically. Unsent work stays safe.</p>
       <details className="offline-storage-details">
-        <summary>Storage details</summary>
+        <summary data-disclosure>Storage details</summary>
         <p>This is a cache budget, not reserved space. Your browser may allow less. Lowering the limit pauses new caching without deleting saved data.</p>
         <p>Saved events and files stay available offline after syncing. Drafts and unsent reports are never removed to meet this limit.</p>
       </details>

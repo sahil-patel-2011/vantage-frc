@@ -36,7 +36,7 @@ export function MyReports({
   });
   return (
     <details className="scout-my-reports">
-      <summary>
+      <summary data-disclosure>
         <span>Your reports</span>
         <small>
           {reports.length === 1 ? "1 at this event" : `${reports.length} at this event`}

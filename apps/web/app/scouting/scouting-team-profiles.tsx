@@ -256,7 +256,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
       </header>
 
       <ScoutingDashboardSummary profiles={view.profiles} />
-      {view.observations?.length ? <details className="intel-shared-scouting"><summary>Explore recorded capabilities and match reports</summary><ObservedRobots robots={view.observations} eventKey={eventKey} /></details> : null}
+      {view.observations?.length ? <details className="intel-shared-scouting"><summary data-disclosure>Explore recorded capabilities and match reports</summary><ObservedRobots robots={view.observations} eventKey={eventKey} /></details> : null}
 
       <ScoutingFieldChart
         profiles={view.profiles}
@@ -265,7 +265,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         onSelect={setSelected}
       />
 
-      {sort === "fit" ? <details className="intel-shared-scouting"><summary>Adjust what makes a good pick</summary><PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} /></details> : null}
+      {sort === "fit" ? <details className="intel-shared-scouting"><summary data-disclosure>Adjust what makes a good pick</summary><PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} /></details> : null}
 
       {splitView && compareProfiles.length === 2 ? (
         <ScoutingSplitCompare

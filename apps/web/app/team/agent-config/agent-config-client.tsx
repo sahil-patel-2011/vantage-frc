@@ -378,7 +378,7 @@ export default function AgentConfigClient() {
             {editor.content && !problems.length ? <p className="agent-config-ok">Format looks valid.</p> : null}
 
             <details className="agent-config-cheatsheet">
-              <summary>Format cheat-sheet: {KIND_LABEL[editor.kind]}</summary>
+              <summary data-disclosure>Format cheat-sheet: {KIND_LABEL[editor.kind]}</summary>
               <p style={{ fontSize: 12, color: "var(--muted)" }}>{cheat.hint}</p>
               <pre>{cheat.example}</pre>
             </details>
@@ -495,7 +495,7 @@ export default function AgentConfigClient() {
               <details className="agent-config-revisions" onToggle={(event) => {
                 if ((event.target as HTMLDetailsElement).open && revisions === null) loadRevisions();
               }}>
-                <summary>Revision history</summary>
+                <summary data-disclosure>Revision history</summary>
                 {revisions === null ? (
                   <p style={{ fontSize: 12, color: "var(--muted)" }}>Loading…</p>
                 ) : revisions.length === 0 ? (

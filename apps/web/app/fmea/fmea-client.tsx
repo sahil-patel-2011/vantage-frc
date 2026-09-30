@@ -57,7 +57,7 @@ function FmeaRelated({ orgId }: { orgId: string }) {
   const links = fmeaRelatedLinks(orgId, { include: ["knowledge", "cad", "prototype", "inventory"] });
   return (
     <details className="fmea-disclosure fmea-related">
-      <summary>Related work</summary>
+      <summary data-disclosure>Related work</summary>
       <nav aria-label="Related reliability tools" className="fmea-related-links">
         {links.map((link) => <a key={link.href} href={link.href}>{link.label}</a>)}
         <a href={withOrgHref("/inspection", orgId)}>Inspection</a>
@@ -663,7 +663,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           </div>
         </fieldset>
         <details className="fmea-disclosure fmea-analysis">
-          <summary>Analysis and repair <span>Optional</span></summary>
+          <summary data-disclosure>Analysis and repair <span>Optional</span></summary>
           <div className="fmea-analysis-grid">
           <FormRow label="Failure mode">
             <input
@@ -822,7 +822,7 @@ function FailureCard({
       </header>
 
       <div className="fmea-risk-body">
-        {f.fiveWhys ? <details className="fmea-disclosure"><summary>5 whys</summary><p style={{ whiteSpace: "pre-wrap" }}>{f.fiveWhys}</p></details> : null}
+        {f.fiveWhys ? <details className="fmea-disclosure"><summary data-disclosure>5 whys</summary><p style={{ whiteSpace: "pre-wrap" }}>{f.fiveWhys}</p></details> : null}
         {f.rootCause ? (
           <p>
             <span className="label">Root cause: </span>

@@ -65,17 +65,12 @@
 .data-source-degraded-banner.compact details p { margin-top: 6px; max-width: 85ch; }
 .data-source-degraded-banner.compact .app-button { min-height: 44px; }
 
-/* A compact status strip: the failure stays visible; technical detail expands. */
-.data-source-degraded-banner.compact { padding: 6px 14px; border-color: var(--line-soft); background: var(--surface); gap: 4px 16px; }
+/* A compact status strip: one line while closed (no button on it); the detail and the one action open inside. */
+.data-source-degraded-banner.compact { padding: 2px 14px; border-color: var(--line-soft); background: var(--surface); }
 .data-source-degraded-banner.compact .data-source-summary { flex: 1; min-width: 0; margin: 0; }
-.data-source-degraded-banner.compact .data-source-summary > summary {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 40px; width: auto; list-style: none;
-}
-.data-source-summary > summary::-webkit-details-marker { display: none; }
-.data-source-summary > summary::after { content: '⌄'; margin-left: auto; color: var(--muted); }
-.data-source-summary[open] > summary::after { content: '⌃'; }
-.data-source-indicator { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
-.data-source-summary > summary > span:not(.data-source-indicator) { color: var(--muted); font-size: 12px; font-weight: 400; }
-.data-source-degraded-banner.compact .data-source-summary > p { padding: 0 0 8px 16px; color: var(--muted); }
-.data-source-settings { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
+.data-source-degraded-banner.compact .data-source-summary > summary { flex-wrap: wrap; gap: 2px 10px; min-height: 44px; margin: 0; }
+.data-source-degraded-banner.compact .data-source-summary > summary::before { margin-right: 0; }
+.data-source-summary > summary > span { color: var(--muted); font-size: 12px; font-weight: 400; }
+.data-source-degraded-banner.compact .data-source-summary > p { margin: 0 0 8px 20px; padding: 0; color: var(--muted); }
+.data-source-settings { display: inline-flex; align-items: center; min-height: 44px; margin-left: 20px; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
 .data-source-settings:hover { text-decoration: underline; }

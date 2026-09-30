@@ -906,7 +906,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             </ul>
           )}
           <details className="pit-rule">
-            <summary>What counts as ready? ⓘ</summary>
+            <summary data-disclosure>What counts as ready? ⓘ</summary>
             <span>{data.rules.battery}</span>
           </details>
         </article>

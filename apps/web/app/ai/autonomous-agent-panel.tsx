@@ -405,7 +405,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                     ) : null}
                     {step.resultExcerpt ? (
                       <details>
-                        <summary>Excerpt</summary>
+                        <summary data-disclosure>Excerpt</summary>
                         <pre className="aa-pre">{step.resultExcerpt}</pre>
                       </details>
                     ) : null}

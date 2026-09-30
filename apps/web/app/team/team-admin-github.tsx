@@ -131,7 +131,7 @@ export function TeamAdminGitHubPanel({
         <section className="intel-panel">
           {githubConnection ? null : (
             <details className="github-token" open={githubOAuthSetupRequired}>
-              <summary>Use a personal access token instead</summary>
+              <summary data-disclosure>Use a personal access token instead</summary>
               <form onSubmit={onSavePat}>
                 <ol className="github-token-steps">
                   <li>On GitHub, open Settings → Developer settings → Personal access tokens.</li>

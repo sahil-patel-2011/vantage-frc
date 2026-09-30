@@ -334,7 +334,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
           ))}
           {moreTracks.length > 0 ? (
             <details className="start-more">
-              <summary>More ideas for your role ({moreTracks.length})</summary>
+              <summary data-disclosure>More ideas for your role ({moreTracks.length})</summary>
               <p className="start-more-note">Optional. Come back to these once the team is set up.</p>
               {moreTracks.map((track) => (
                 <TrackCard key={track.key} track={track} busy={busy} onMutate={mutate} />

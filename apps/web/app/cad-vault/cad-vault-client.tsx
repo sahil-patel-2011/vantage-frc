@@ -569,7 +569,7 @@ export default function CadVaultClient() {
         ) : null}
 
         {view.status === "empty" ? <details>{/* printable files stay secondary on empty */}
-          <summary>Or upload a printable file</summary>
+          <summary data-disclosure>Or upload a printable file</summary>
           <div style={{ marginTop: 12 }}>{uploadPanel}</div>
         </details> : uploadPanel}
 

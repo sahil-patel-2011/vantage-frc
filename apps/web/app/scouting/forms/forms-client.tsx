@@ -743,7 +743,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                       <>
                         {/* The settings most forms never change, folded: every question showed all of them. */}
                         <details className="sfb-more">
-                          <summary>More options</summary>
+                          <summary data-disclosure>More options</summary>
                           <FormRow
                             label="Feeds strategy as"
                             hint={

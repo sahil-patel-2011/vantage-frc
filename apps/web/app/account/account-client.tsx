@@ -513,7 +513,7 @@ export default function AccountClient() {
           {tab === "appearance" ? (
             // A per-device option most people never need; folded, not 500px under Appearance.
             <details className="appearance-more appearance-more--card">
-              <summary>Run a model on this computer</summary>
+              <summary data-disclosure>Run a model on this computer</summary>
               <LocalModelPanel />
             </details>
           ) : null}

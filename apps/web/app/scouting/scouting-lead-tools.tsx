@@ -66,7 +66,7 @@ export function ScoutingLeadTools({
         open={open}
         onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}
       >
-        <summary>
+        <summary data-disclosure>
           <span>{data?.canManageSchemas ? "Saved entries and lead tools" : "My saved entries"}</span>
           <small>{entries.length ? `${entries.length} recent` : "Nothing saved yet"}</small>
         </summary>

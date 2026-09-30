@@ -147,7 +147,7 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
         {!history.length ? <p className="app-muted">Saved reports appear here.</p> : null}
         {hasMore ? <p className="app-muted">Showing the latest 200 uploaded reports.</p> : null}
         {history.map((report) => <details className="free-scout-report" key={report.id}>
-          <summary><span><strong>Team {report.teamNumber}</strong> · {report.label}</span><span>{report.state}</span></summary>
+          <summary data-disclosure><span><strong>Team {report.teamNumber}</strong> · {report.label}</span><span>{report.state}</span></summary>
           {report.error ? <p role="alert">{report.error}</p> : null}
           {report.error ? <Button type="button" variant="secondary" onClick={async () => {
             if (started && Object.keys(draft.payload).length && !window.confirm("Replace the open draft with this saved report?")) return;

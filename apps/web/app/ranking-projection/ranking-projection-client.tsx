@@ -189,7 +189,7 @@ function BestPathPlanner({
         {/* One short line up front; the rest of the fine print behind "About these numbers". The
             rules line and the "not confirmed" caveat said the same thing twice. */}
         <details className="bp-caveats-more">
-          <summary>About these numbers</summary>
+          <summary data-disclosure>About these numbers</summary>
         <ul className="bp-caveats">
           {whatIf.rules.confirmed ? <li>Ranking points: {whatIf.rules.label}.</li> : null}
           {whatIf.seedOdds ? (

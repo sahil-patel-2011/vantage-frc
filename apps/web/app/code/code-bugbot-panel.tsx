@@ -455,7 +455,7 @@ export function CodeBugbotPanel({
               ) : null}
               {fixedFindings.length ? (
                 <details>
-                  <summary>
+                  <summary data-disclosure>
                     Fixed since the last scan ({fixedFindings.length})
                   </summary>
                   <ul>
@@ -468,7 +468,7 @@ export function CodeBugbotPanel({
                 </details>
               ) : null}
               <details>
-                <summary>Files read this pass ({coverage.reviewedFiles.length})</summary>
+                <summary data-disclosure>Files read this pass ({coverage.reviewedFiles.length})</summary>
                 <ol>
                   {coverage.reviewedFiles.map((file) => (
                     <li key={file}>
@@ -479,7 +479,7 @@ export function CodeBugbotPanel({
               </details>
               {coverage.skipCounts.length ? (
                 <details>
-                  <summary>
+                  <summary data-disclosure>
                     Skipped, and why ({coverage.skipCounts.reduce((sum, item) => sum + item.count, 0)})
                   </summary>
                   <ul>
@@ -643,7 +643,7 @@ export function CodeBugbotPanel({
           ) : null}
           {dismissals.length ? (
             <details className="cdc-dismissals">
-              <summary>Dismissed findings ({dismissals.length})</summary>
+              <summary data-disclosure>Dismissed findings ({dismissals.length})</summary>
               <ul>
                 {dismissals.map((item) => (
                   <li key={item.fingerprint}>
