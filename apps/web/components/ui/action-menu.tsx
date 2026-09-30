@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSPrope
 import { createPortal } from "react-dom";
 import {
   buildActionModel,
+  flattenActionModel,
   type ActionSpec,
   type BuildActionModelOptions,
   type ResolvedAction,
@@ -27,6 +28,8 @@ type ActionMenuProps = {
   className?: string;
   /** Text on the overflow trigger. Default "More". */
   overflowLabel?: string;
+  /** Contextual tool lists have no primary mutation; keep all entries in one menu. */
+  overflowOnly?: boolean;
   /** Override when several menus share a page (list rows) so E2E selectors stay unique. */
   triggerTestId?: string;
 };
@@ -53,12 +56,16 @@ export function ActionMenu({
   tone = "page",
   className,
   overflowLabel = "More",
+  overflowOnly = false,
   triggerTestId = "action-menu-trigger",
 }: ActionMenuProps) {
-  const model = useMemo(
-    () => buildActionModel(actions, { maxSecondary, allowDisabledPrimary }),
-    [actions, maxSecondary, allowDisabledPrimary],
-  );
+  const model = useMemo(() => {
+    const result = buildActionModel(actions, { maxSecondary, allowDisabledPrimary });
+    if (!overflowOnly) return result;
+    return { primary: null, secondary: [], overflow: flattenActionModel(result).map((action) => ({
+      ...action, placement: "overflow" as const,
+    })) };
+  }, [actions, maxSecondary, allowDisabledPrimary, overflowOnly]);
 
   const [open, setOpen] = useState(false);
   /**

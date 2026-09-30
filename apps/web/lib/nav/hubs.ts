@@ -445,7 +445,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     // live under Settings where configuration belongs. The hub page and every
     // /ai?tab= URL keep working.
     hidden: true,
-    description: "Chat, writer, agent, and controls — usage and memory live as tabs inside Controls.",
+    description: "Ask, write, or run a task. Notes, memory, and settings stay within the workspace.",
     defaultTab: "chat",
     tabs: [
       { id: "chat", label: "Chat", legacyHref: "/chat" },

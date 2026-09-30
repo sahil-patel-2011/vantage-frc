@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
+import { useAiWorkspace } from "../../components/ai-workspace-context";
 import { AiActionProposals } from "../../components/ai-action-proposals";
 import { AiAgentStatus } from "../../components/ai-agent-status";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
@@ -155,6 +156,8 @@ export default function ChatClient({
   source?: string;
   contextId?: string;
 }) {
+  const embedded = useAiWorkspace();
+  const Root = embedded ? "section" : "main";
   const [threads, setThreads] = useState<Thread[]>([]);
   const [thread, setThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -441,7 +444,7 @@ export default function ChatClient({
   const claudeHref = withOrgHref("/team/ai-bridge", orgId);
 
   return (
-    <main className="module-page ch-page">
+    <Root className="module-page ch-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Ask AI / Chat</span>
@@ -845,6 +848,6 @@ export default function ChatClient({
         ) : null}
       </div>
       ) : null}
-    </main>
+    </Root>
   );
 }

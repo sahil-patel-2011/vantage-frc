@@ -3,6 +3,7 @@
 
 import { hubHref } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { useAiWorkspace } from "./ai-workspace-context";
 
 const AI_TABS = [
   { id: "chat", label: "Chat" },
@@ -34,6 +35,8 @@ export function AiHubRelated({
   active?: AiHubRelatedId;
   className?: string;
 }) {
+  const embedded = useAiWorkspace();
+  if (embedded) return null;
   return (
     <nav
       className={["product-hub-related", "ai-hub-related", className].filter(Boolean).join(" ")}

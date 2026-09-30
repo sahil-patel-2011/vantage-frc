@@ -26,6 +26,8 @@ type ModalProps = {
   className?: string;
   /** Centered dialog by default; sheet docks to the bottom for mobile-first pickers. */
   variant?: "dialog" | "sheet";
+  /** Preserve an unsaved editor when its contextual panel closes. */
+  keepMounted?: boolean;
 };
 
 const CloseGlyph = () => (
@@ -48,6 +50,7 @@ export function Modal({
   hideClose,
   className,
   variant = "dialog",
+  keepMounted = false,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -65,7 +68,7 @@ export function Modal({
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !mounted) return;
     restoreRef.current = (document.activeElement as HTMLElement) ?? null;
     const node = dialogRef.current;
     // Focus what the dialog asks for (autoFocus / data-autofocus), else the first control in its
@@ -115,12 +118,14 @@ export function Modal({
       document.body.style.overflow = prevOverflow;
       restoreRef.current?.focus?.();
     };
-  }, [open]);
+  }, [open, mounted]);
 
-  if (!open || !mounted) return null;
+  if ((!open && !keepMounted) || !mounted) return null;
 
   return createPortal(
     <div
+      hidden={!open}
+      style={!open ? { display: "none" } : undefined}
       className={[styles.overlay, variant === "sheet" ? styles.sheetOverlay : ""].filter(Boolean).join(" ")}
       onMouseDown={(e) => e.target === e.currentTarget && onCloseRef.current()}
     >
