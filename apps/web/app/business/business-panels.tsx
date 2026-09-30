@@ -205,7 +205,8 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           {/* The one filled button on Overview. The season budget itself is set on /budget. */}
           <ActionMenu
             label="Spending so far"
-            maxSecondary={2}
+            overflowLabel="Budget and orders"
+            maxSecondary={0}
             actions={[
               { id: "finance", label: "Open Money", intent: "primary", onClick: () => setTab("finance") },
               { id: "budget", label: "Season budget", href: budgetHref },

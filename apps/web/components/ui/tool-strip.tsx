@@ -149,8 +149,10 @@ export function ToolStrip({
   }, [value, ariaLabel]);
 
   useEffect(() => {
-    if (expanded && compact) searchRef.current?.focus({ preventScroll: true });
-  }, [expanded, compact]);
+    if (!expanded) return;
+    if (compact) searchRef.current?.focus({ preventScroll: true });
+    else stripRef.current?.querySelector<HTMLElement>(".hub-tool-list a, .hub-tool-list button")?.focus({ preventScroll: true });
+  }, [expanded, compact, stripRef]);
 
   if (items.length < 1) return null;
 
@@ -246,8 +248,7 @@ export function ToolStrip({
           >
             {/* No count: it changed with the tab and the screen width (8, 10, 21, 23), which read as
                 tools appearing and disappearing. */}
-            {expanded ? "Fewer tools" : "More tools"}
-            {compact && activeItem ? <span className="hub-current-tool">{activeItem.label}</span> : null}
+            {compact && activeItem ? activeItem.label : "More tools"}
           </button>
         ) : null}
       </nav>
