@@ -22,7 +22,7 @@
  * Opt in with GUI_AUDIT=1. Requires an isolated, seeded local database — see
  * scripts/start-gui-audit.mjs, which also refuses non-loopback origins.
  */
-import { readFileSync, readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { readdirSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";

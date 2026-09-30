@@ -225,7 +225,7 @@ export function ToolStrip({
   };
 
   return (
-    <div className={`hub-tool-strip${compact ? " hub-tool-strip--compact" : ""}`} ref={stripRef}>
+    <div className={`hub-tool-strip${compact ? " hub-tool-strip--compact" : ""}`} data-compact={compact || undefined} ref={stripRef}>
       <nav className="hub-tool-strip-row" aria-label={ariaLabel}>
         {visible.map(renderChip)}
         {collapsible ? (

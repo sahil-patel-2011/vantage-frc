@@ -156,7 +156,6 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 }
 /* Duplicate sibling strips inside Team/Build surfaces — hub tabs already cover these. */
 .product-hub-panel .team-hub-related,
-.product-hub-panel .fmea-related,
 .product-hub-panel .batt-related,
 .product-hub-panel .practice-hero-links,
 .product-hub-panel .kb-hero-actions,
@@ -666,4 +665,51 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
+}
+
+/* Secondary destinations have one disclosure, separate from primary tabs. */
+.hub-bar .hub-tool-strip[data-compact] {
+  flex: 0 1 auto;
+  margin-left: auto;
+  border-left: 0;
+  padding-left: 0;
+}
+.hub-tool-strip[data-compact] .hub-tool-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
+.hub-tool-strip[data-compact] .hub-tool-more > span { margin-left: auto; }
+/* Desktop workspace hierarchy: title and utilities, then the primary sections. */
+@media (min-width: 721px) {
+  .product-hub .hub-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 16px 12px;
+    align-items: center;
+    border-bottom: 0;
+    margin-bottom: 24px;
+  }
+  .product-hub .hub-bar-id { grid-row: 1; grid-column: 1; }
+  .product-hub .hub-bar-id h1 { font: 650 28px/1.2 var(--font-sans); letter-spacing: -.04em; }
+  .product-hub .hub-bar > .hub-tool-strip { grid-row: 1; grid-column: 2; margin: 0; padding: 0; border: 0; }
+  .product-hub .hub-bar > .hub-bar-end { grid-row: 1; grid-column: 3; }
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar {
+    grid-row: 2; grid-column: 1 / -1; justify-self: start;
+    display: flex; flex-wrap: wrap; gap: 4px; padding: 4px;
+    border: 1px solid var(--line-soft); border-radius: 14px;
+    background: color-mix(in srgb, var(--ink) 3%, var(--bg));
+  }
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(a, button) {
+    border-radius: 10px; padding: 10px 16px; min-height: 44px; font-size: 14px;
+    box-shadow: none; border: 0; background: transparent;
+  }
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(.active, [aria-selected="true"]) {
+    color: var(--accent); background: var(--surface); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 9%, transparent);
+  }
+}
+
+@media (min-width: 721px) {
+  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(.active, [aria-selected="true"])::after { display: none; }
 }

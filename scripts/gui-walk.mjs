@@ -43,7 +43,7 @@ const account = {
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
 await context.addInitScript(() => {
-  try { localStorage.setItem("vantage.tour.v1", "done"); } catch {}
+  try { localStorage.setItem("vantage.tour.v1", "done"); } catch { /* storage blocked: the tour just shows */ }
 });
 // Answer the first-run questions so a census measures the product a returning
 // member sees, not the two overlays a brand-new account gets. Pass

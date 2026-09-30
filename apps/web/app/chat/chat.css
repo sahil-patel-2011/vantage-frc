@@ -397,3 +397,26 @@
 
 .ch-not-sent { color: var(--danger, #b42318); }
 .ch-not-sent a { font-weight: 600; }
+
+/* Privacy details belong beside chat creation, rather than two oversized cards. */
+.ch-privacy { color: var(--muted); font-size: 14px; }
+.ch-privacy summary, .ch-new-chat summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 12px;
+  border-radius: var(--radius-xs);
+  color: var(--ink);
+}
+.ch-privacy summary:focus-visible, .ch-new-chat summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ch-privacy[open] { padding-bottom: 12px; }
+.ch-privacy .ch-scope { padding: 0 12px; }
+.ch-privacy h2 { font-size: 14px; margin: 8px 0; }
+.ch-privacy p { margin: 0; line-height: 1.5; }
+.ch-new-chat { border: 1px solid var(--line); border-radius: var(--radius-xs); }
+.ch-new-chat[open] { padding-bottom: 6px; }
+.ch-new-chat button { width: calc(100% - 12px); margin: 3px 6px; }
+.product-hub-panel .ch-page > .app-page-header:not(:has(.ch-header-actions > *)) { display: none; }
+.ch-layout[data-has-threads="false"] { grid-template-columns: minmax(0, 1fr); }

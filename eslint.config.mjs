@@ -48,6 +48,11 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
   },
   {
+    // The GUI audit scripts pass functions to page.evaluate(), which run inside the browser.
+    files: ["scripts/gui-*.mjs", "scripts/lib/**/*.mjs", "scripts/start-gui-audit.mjs"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     // Register the plugins so inline eslint-disable comments naming their
     // rules resolve. The recommended sets stay off — spreading them would
     // surface a fresh wave of errors at sites that carry no disable comment.

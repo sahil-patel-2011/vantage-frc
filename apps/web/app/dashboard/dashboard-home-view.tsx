@@ -49,7 +49,7 @@ import type {
 } from "./dashboard-board-types";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
-import { homeHeaderDetail, homeNowFromWidgets } from "./dashboard-home-model";
+import { homeHeaderDetail, homeNowFromWidgets, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
@@ -606,7 +606,8 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard ? (
+      {dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
+      showStandaloneSetupBanner({ editing, displayLayout }) ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 
@@ -624,7 +625,7 @@ export function DashboardHomeView(props: {
       <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
 
       {meLoaded && orgId && tbaConfigured !== false ? (
-        <DataSourceDegradedBanner health={dataSourceHealth} canOpenTeamData={canOpenTeamData} />
+        <DataSourceDegradedBanner health={dataSourceHealth} compact canOpenTeamData={canOpenTeamData} />
       ) : null}
 
       {orgId || editing ? (

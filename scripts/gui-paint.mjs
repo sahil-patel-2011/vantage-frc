@@ -47,7 +47,7 @@ const target = `${origin}${route}${route.includes("?") ? "&" : "?"}orgId=${me.or
 page.goto(target, { waitUntil: "commit" }).catch(() => {});
 for (let i = 0; i < 60; i += 1) {
   const at = Date.now() - started;
-  let snapshot = null;
+  let snapshot;
   try {
     snapshot = await page.evaluate(() => {
       const panel = document.querySelector(".product-hub-panel");

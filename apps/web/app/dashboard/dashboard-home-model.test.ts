@@ -7,8 +7,18 @@ import {
   homeNowAction,
   homeNowFromWidgets,
   nextEventToday,
+  showStandaloneSetupBanner,
 } from "./dashboard-home-model";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
+
+describe("showStandaloneSetupBanner", () => {
+  it("keeps one setup action on a saved board without hiding personal first-week work", () => {
+    const setupWidget = [{ type: "onboarding_checklist" }] as const;
+    expect(showStandaloneSetupBanner({ editing: false, displayLayout: setupWidget })).toBe(false);
+    expect(showStandaloneSetupBanner({ editing: true, displayLayout: setupWidget })).toBe(true);
+    expect(showStandaloneSetupBanner({ editing: false, displayLayout: [{ type: "next_match" }] })).toBe(true);
+  });
+});
 
 describe("homeHeaderDetail", () => {
   it("names the loading, no-team, event, and quiet-home states without engineering words", () => {
@@ -92,7 +102,8 @@ describe("homeNowAction", () => {
       href: "/hours-self-view",
       cta: "Open My Hours",
     });
-    expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 things on your list");
+    expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 open team tasks");
+    expect(homeNowAction({ orgId: "org-1", openTodos: 3, mineTodos: 1 }).title).toBe("One task assigned to you");
     expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");
     expect(homeNowAction({ orgId: "org-1" }).quiet).toBe(true);
   });

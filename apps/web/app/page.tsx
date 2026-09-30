@@ -34,15 +34,15 @@ export default function Home() {
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
               <p className="lux-kicker">Built for FIRST Robotics Competition</p>
-              <h1 id="lux-hero-title">Your whole team.<br /><span>One connected season.</span></h1>
+              <h1 id="lux-hero-title">One team.<br /><span>A clearer season.</span></h1>
               <p>
-                From the first shop meeting to alliance selection. Bring scouting, team work, robot development
-                and business together in a workspace built around how FRC teams work.
+                Plan the work. Scout the match. Build the robot. Bring your people, observations
+                and decisions together, from kickoff to competition.
               </p>
               <MarketingHeroActions />
               <ul className="mk-hero-proof">
-                <li>Scouting collection that saves on your device</li>
-                <li>Team, Build and Business alongside Competition</li>
+                <li>Scouting that saves on your device</li>
+                <li>Connected tools for the whole team</li>
                 <li>Free to use. AI connections are optional.</li>
               </ul>
               <LaunchAvailability />

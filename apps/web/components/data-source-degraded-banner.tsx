@@ -14,14 +14,34 @@ type Props = {
 export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamData = false }: Props) {
   if (!health?.degraded) return null;
 
+  if (compact) {
+    return (
+      <aside className={`data-source-degraded-banner compact mode-${health.mode}`} role="status" aria-live="polite">
+        <details className="data-source-summary">
+          <summary>
+            <span className="data-source-indicator" aria-hidden="true" />
+            <strong>{health.bannerTitle}</strong>
+            <span>{health.usingLastGoodCache ? "Using saved copy" : "Details"}</span>
+          </summary>
+          <p>{health.bannerDetail}</p>
+          {health.usingLastGoodCache ? <p>Saved rankings and schedule remain available.</p> : null}
+          {!canOpenTeamData ? <p>An owner or admin can refresh this in Team → Data.</p> : null}
+        </details>
+        {canOpenTeamData ? <a className="data-source-settings" href={health.teamDataHref}>Data settings</a> : null}
+      </aside>
+    );
+  }
+
   return (
     <aside
-      className={`data-source-degraded-banner${compact ? " compact" : ""} mode-${health.mode}`}
+      className={`data-source-degraded-banner mode-${health.mode}`}
       role="status"
       aria-live="polite"
     >
       <div>
-        <span className="app-badge setup">{health.mode === "stale" ? "May be out of date" : "Using saved copy"}</span>
+        <span className="app-badge setup">
+          {health.mode === "stale" ? "May be out of date" : health.usingLastGoodCache ? "Using saved copy" : "Data unavailable"}
+        </span>
         <strong>{health.bannerTitle}</strong>
         <p>{health.bannerDetail}</p>
         {health.usingLastGoodCache ? (

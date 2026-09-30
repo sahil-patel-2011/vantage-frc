@@ -47,21 +47,11 @@ export function DashboardHomeHeader({
   const dim = editing ? ({ inert: true, "data-edit-dim": "true" } as const) : {};
   return (
     <header className="dash-home-header">
-      <div {...dim}>
+      <div className="dash-home-intro" {...dim}>
+        <span className="dash-home-eyebrow">Home</span>
         {/* The greeting is what is specific to opening the page; the team number is in the
             top bar on every page, so it is not repeated here. */}
         <h1 className="dash-hero-greeting">{greetingText}</h1>
-        {orgId && meLoaded ? (
-          <DashboardBoardSwitcher
-            boards={switcherBoards}
-            board={board}
-            saving={saving}
-            disabled={editing || previewing}
-            onSwitch={onSwitch}
-            onNew={onNewBoard}
-            onManage={onManageBoards}
-          />
-        ) : null}
         {me.teamNumber && orgNameAddsDetail(me.teamNumber, me.orgName) ? <p className="dash-hero-org">{me.orgName}</p> : null}
         {detail ? <p>{detail}</p> : null}
         {/* The event you are at, as its own row you can tap. Absent until an event is set. */}
@@ -73,32 +63,45 @@ export function DashboardHomeHeader({
           </a>
         ) : null}
       </div>
-      {!editing && !previewing ? (
-        <div className="dash-home-actions">
-          {nextMatchData && showNextGlance ? (
-            <a className="dash-next-glance" href={withOrgHref("/my-day", orgId || null)}>
-              <span>Next</span>
-              <strong>
-                {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
-              </strong>
-              <b>
-                <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
-              </b>
-            </a>
-          ) : null}
-          {/* A quiet "Edit" beside the greeting, the way iOS does it. */}
-          <button
-            type="button"
-            className="dash-edit-button"
-            data-testid="dash-customize"
-            data-tour="customise"
-            aria-label="Edit Home — rearrange, add, or remove widgets"
-            onClick={onEdit}
-          >
-            Edit
-          </button>
-        </div>
-      ) : null}
+      <div className="dash-home-controls">
+        {orgId && meLoaded ? (
+          <DashboardBoardSwitcher
+            boards={switcherBoards}
+            board={board}
+            saving={saving}
+            disabled={editing || previewing}
+            onSwitch={onSwitch}
+            onNew={onNewBoard}
+            onManage={onManageBoards}
+          />
+        ) : null}
+        {!editing && !previewing ? (
+          <div className="dash-home-actions">
+            {nextMatchData && showNextGlance ? (
+              <a className="dash-next-glance" href={withOrgHref("/my-day", orgId || null)}>
+                <span>Next</span>
+                <strong>
+                  {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
+                </strong>
+                <b>
+                  <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
+                </b>
+              </a>
+            ) : null}
+            {/* Board selection and customization share one control group. */}
+            <button
+              type="button"
+              className="dash-edit-button"
+              data-testid="dash-customize"
+              data-tour="customise"
+              aria-label="Edit Home — rearrange, add, or remove widgets"
+              onClick={onEdit}
+            >
+              Edit
+            </button>
+          </div>
+        ) : null}
+      </div>
     </header>
   );
 }
