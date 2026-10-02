@@ -25,15 +25,17 @@ const collector = `(() => {
 async function observe(page: Page) {
   const views: { type: string; url: string }[] = [];
   let scriptLoads = 0;
+  let development = false;
   await page.route(/(?:\/_vercel\/insights\/script\.js|https:\/\/va\.vercel-scripts\.com\/v1\/script\.debug\.js)(?:\?.*)?$/, async route => {
     scriptLoads++;
+    development = route.request().url().includes("script.debug.js");
     await route.fulfill({ contentType: "text/javascript", body: collector });
   });
   await page.route("**/_vercel/insights/view", async route => {
     views.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, body: "{}" });
   });
-  return { views, scriptLoads: () => scriptLoads };
+  return { views, scriptLoads: () => scriptLoads, viewsPerMount: () => development ? 2 : 1 };
 }
 
 test("declining Analytics loads no collector and sends no page views", async ({ page }) => {
@@ -50,9 +52,11 @@ test("grant, revoke and re-enable Analytics through the privacy chooser", async 
   const traffic = await observe(page);
   await page.goto("/privacy?orgId=private-team&search=private-search&token=private-invite#analytics");
   await page.getByRole("button", { name: "Turn analytics on", exact: true }).click();
-  await expect.poll(() => traffic.views.length).toBe(1);
-  expect(traffic.views[0]).toEqual({ type: "pageview", url: `${new URL(page.url()).origin}/privacy` });
-  expect(traffic.scriptLoads()).toBe(1);
+  await expect.poll(traffic.scriptLoads).toBe(1);
+  // Next development Strict Mode replays mount effects; production sends one.
+  const viewsPerMount = traffic.viewsPerMount();
+  await expect.poll(() => traffic.views.length).toBe(viewsPerMount);
+  for (const view of traffic.views) expect(view).toEqual({ type: "pageview", url: `${new URL(page.url()).origin}/privacy` });
   expect((await context.cookies()).find(cookie => cookie.name === ANALYTICS_CONSENT_COOKIE)?.value).toBe(serializeConsent("granted"));
 
   // A hash change reopens the existing chooser without unloading the SDK.
@@ -62,10 +66,10 @@ test("grant, revoke and re-enable Analytics through the privacy chooser", async 
   await page.evaluate(() => {
     (window as unknown as { va: (command: string, data: object) => void }).va("pageview", { path: "/terms", route: "/terms" });
   });
-  expect(traffic.views).toHaveLength(1);
+  expect(traffic.views).toHaveLength(viewsPerMount);
   await page.evaluate(() => { location.hash = ""; location.hash = "analytics"; });
   await page.getByRole("button", { name: "Turn analytics on", exact: true }).click();
-  await expect.poll(() => traffic.views.length).toBe(2);
+  await expect.poll(() => traffic.views.length).toBe(viewsPerMount * 2);
   expect(traffic.scriptLoads()).toBe(1);
 });
 
@@ -74,6 +78,7 @@ test("consent to the previous disclosure cannot enable the new collector", async
   const traffic = await observe(page);
   await page.goto("/privacy#analytics");
   await expect(page.getByRole("button", { name: "Turn analytics on", exact: true })).toBeVisible();
+  await expect(page.getByText("Analytics are on for this browser.", { exact: true })).toHaveCount(0);
   expect(traffic.scriptLoads()).toBe(0);
   expect(traffic.views).toEqual([]);
 });

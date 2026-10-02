@@ -6,6 +6,8 @@ Vercel Web Analytics was already enabled in that project. The web workspace now 
 
 The banner and privacy policy disclose Vercel's traffic summaries and approximate geography separately from Vantage's existing account-identified product events. Consent version 2 requires a fresh choice for this changed disclosure; a previous grant cannot silently authorize the new collector.
 
+Live inspection also caught a stale-choice status label: the chooser described an old grant as active even though collection correctly stayed off. The chooser now shows an active status only for the current disclosure, and the stale-grant browser case guards that label as well as script loading.
+
 Verification before push:
 
 - Full unit suite: 11,300 passed, 44 existing skips; no failures.

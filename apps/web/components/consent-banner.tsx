@@ -11,7 +11,7 @@ import {
   trackPageView,
   writeConsentChoice,
 } from "../lib/product-analytics/client";
-import { type ConsentChoice } from "../lib/product-analytics/consent";
+import { ANALYTICS_CONSENT_VERSION, type ConsentChoice } from "../lib/product-analytics/consent";
 import { ANALYTICS_BANNER_COPY } from "../lib/product-analytics/copy";
 import "./consent-banner.css";
 
@@ -59,7 +59,7 @@ export function ConsentBanner() {
 
   const syncFromCookie = useCallback(() => {
     const state = readConsentState();
-    setChoice(state?.choice ?? null);
+    setChoice(state?.version === ANALYTICS_CONSENT_VERSION ? state.choice : null);
     return state;
   }, []);
 
