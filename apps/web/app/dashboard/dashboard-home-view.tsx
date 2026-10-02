@@ -16,6 +16,7 @@ import {
   catalogEntry,
   emptyHomeWidgets,
   inferWidgetSize,
+  isAlwaysShown,
   type DashboardWidgetLayout,
   type WidgetCatalogEntry,
   type WidgetSizeKey,
@@ -490,6 +491,7 @@ export function DashboardHomeView(props: {
   const sharedSetupPrompt = Boolean(orgId && widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
   const showsOverview = Boolean(orgId && widgetsLoaded && !editing);
   const showActivity = !viewLayout.some(item => item.type === "calendar_today" || item.type === "my_day");
+  const liftNextMatch = widgets.next_match?.status === "live" && layout.some(item => item.type === "next_match") && !layout.some(item => item.type === "next_match" && isAlwaysShown(item));
   // Only when something in it has a value: a strip of "Nothing waiting / No empty room slots /
   // No member checks open" on a new team looked like a report of work already done.
   const showRoleStrip = Boolean(
@@ -535,7 +537,7 @@ export function DashboardHomeView(props: {
         detail={sharedSetupPrompt ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
         eventName={eventName}
         nextMatchData={nextMatchData}
-        showNextGlance={!viewLayout.some((item) => item.type === "next_match")}
+        showNextGlance={!liftNextMatch && !viewLayout.some((item) => item.type === "next_match")}
         onSwitch={(id) => void switchBoard(id)}
         onNewBoard={() => setNewBoardOpen(true)}
         onManageBoards={() => {
@@ -549,14 +551,16 @@ export function DashboardHomeView(props: {
           practice") waits too: it sat above Qual 31 fourteen minutes before the match. It is
           still on Your first week. */}
       {(showsOverview && (now.quiet || now.cta === "Open scouting form" || (showActivity && now.cta === "Open Calendar"))) ||
-      (now.href === "/todos" && viewLayout.some((item) => item.type === "team_todos")) ? null : now.title === "Our next match" &&
+      (now.href === "/todos" && (showsOverview || viewLayout.some((item) => item.type === "team_todos"))) ? null : now.title === "Our next match" &&
       (now.cta === "Open My Day" || now.cta === "Scout a match") &&
       layout.some((item) => item.type === "next_match") ? null : (
         <DashboardNowCard now={now} setupHero={sharedSetupPrompt ? null : setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
       )}
       {showsOverview ? <DashboardOverview orgId={orgId} role={props.role} hasEvent={!setupRequired}
         hasForms={props.hasScoutingSchemas} eventName={eventName} widgets={widgets}
-        nextAction={sharedSetupPrompt ? nextActions[0] : undefined} showActivity={showActivity} /> : null}
+        nextAction={sharedSetupPrompt ? nextActions[0] : undefined} showActivity={showActivity}
+        showNextMatch={liftNextMatch}
+        showTasks={!viewLayout.some(item => item.type === "team_todos")} /> : null}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
       {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}

@@ -98,6 +98,8 @@ export function useDashboardHomeState(initialOrgId = "") {
   const lastCacheRef = useRef<DashboardOfflineCache | null>(null);
   const widgetsRef = useRef(widgets);
   const contextRef = useRef(context);
+  const snapshotSequence = useRef(0);
+  const appliedSequence = useRef<Record<string, number>>({});
 
   const applyHomeCache = useCallback((cache: DashboardOfflineCache) => {
     const next = normalizeDashboardCache(cache);
@@ -133,16 +135,27 @@ export function useDashboardHomeState(initialOrgId = "") {
     opts?: { fullContext?: boolean; signal?: AbortSignal },
   ) => {
     const requested = types ?? snapshotPollWidgetTypes(layoutRef.current, { shell: shellRef.current });
+    const sequence = ++snapshotSequence.current;
     const qs = new URLSearchParams({ orgId: id, mode: "snapshot" });
     if (requested.length) qs.set("widgets", [...new Set(requested)].join(","));
     if (opts?.fullContext) qs.set("context", "full");
     const timeout = AbortSignal.timeout(FEATURE_API_TIMEOUT_MS);
     const signal = opts?.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
-    const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal });
+    const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal, cache: "no-store" });
     if (!response.ok) throw new Error("Could not refresh dashboard data.");
     const data = await response.json();
-    const nextWidgets = mergeDashboardWidgets(widgetsRef.current, data.widgets);
-    const nextContext = mergeDashboardContext(contextRef.current, data.context);
+    if (signal.aborted || loadedOrgRef.current !== id) return;
+    // A slow background poll cannot undo a newer refresh after a task was saved.
+    const incoming: Record<string, WidgetPayload> = {};
+    for (const [key, value] of Object.entries(data.widgets ?? {})) {
+      if ((appliedSequence.current[key] ?? 0) > sequence) continue;
+      appliedSequence.current[key] = sequence;
+      incoming[key] = value as WidgetPayload;
+    }
+    const nextWidgets = mergeDashboardWidgets(widgetsRef.current, incoming);
+    const acceptContext = (appliedSequence.current.context ?? 0) <= sequence;
+    if (acceptContext) appliedSequence.current.context = sequence;
+    const nextContext = mergeDashboardContext(contextRef.current, acceptContext ? data.context : undefined);
     widgetsRef.current = nextWidgets;
     contextRef.current = nextContext;
     setWidgets(nextWidgets);
@@ -333,13 +346,24 @@ export function useDashboardHomeState(initialOrgId = "") {
     const onVisibility = () => {
       if (document.visibilityState === "visible") void poll();
     };
+    const onResume = () => {
+      lastFull = 0;
+      // If returning during an old request, supersede it rather than drop the refresh.
+      inFlight?.abort();
+      inFlight = null;
+      void poll();
+    };
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onResume);
+    window.addEventListener("online", onResume);
 
     return () => {
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
       inFlight?.abort();
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onResume);
+      window.removeEventListener("online", onResume);
     };
   }, [orgId, loadHome, loadSnapshot]);
 

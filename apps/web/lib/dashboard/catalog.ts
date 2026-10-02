@@ -335,7 +335,8 @@ export function homeViewLayout(
     (widgets[item.i] ?? widgets[item.type] ?? Object.values(widgets).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
   const visible = layout.filter((item) => {
     if (isAlwaysShown(item)) return true;
-    if (input.homeOverview && item.type === "scouting_coverage") return false;
+    if (input.homeOverview && item.type === "next_match" && statusOf(item) === "live") return false;
+    if (input.homeOverview && ["scouting_coverage", "team_todos", "calendar_today", "my_day"].includes(item.type)) return false;
     if (input.sharedSetupPrompt && usesSharedSetupPrompt(item.type, statusOf(item))) return false;
     return isAlwaysShown(item) || !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type));
   });

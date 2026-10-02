@@ -19,6 +19,10 @@ const ActionsContext = createContext<{
   refresh: (type: DashboardWidgetType) => Promise<void>;
 } | null>(null);
 
+export function useDashboardActions() {
+  return useContext(ActionsContext);
+}
+
 export function DashboardActionsProvider({ orgId, refresh, children }: {
   orgId: string;
   refresh: (type: DashboardWidgetType) => Promise<void>;

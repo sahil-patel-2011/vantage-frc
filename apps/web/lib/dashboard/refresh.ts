@@ -3,7 +3,7 @@ import type { WidgetPayload } from "./snapshot";
 import type { DashboardShellKind } from "./dashboard-related";
 import { visibilityPollDelay } from "../perf/visibility-poll";
 
-export const DASHBOARD_POLL_MS = 30_000;
+export const DASHBOARD_POLL_MS = 15_000;
 export const DASHBOARD_HIDDEN_POLL_MS = 120_000;
 
 /** Visibility-aware Home poll. Hidden tabs should not burn Vercel credits. */
@@ -43,7 +43,7 @@ export function snapshotWantsFullContext(url: URL): boolean {
  * something that may not be on screen, so it earns its place by feeding a
  * part of the page that is always there.
  */
-export const HOME_ALWAYS_LOADED: DashboardWidgetType[] = ["calendar_today", "my_day", "scouting_coverage"];
+export const HOME_ALWAYS_LOADED: DashboardWidgetType[] = ["calendar_today", "my_day", "scouting_coverage", "team_todos"];
 
 export function snapshotPollWidgetTypes(
   layout: Array<{ type: DashboardWidgetType }>,

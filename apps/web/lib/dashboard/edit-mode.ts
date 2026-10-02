@@ -363,7 +363,7 @@ export const HIDDEN_ON_HOME_COPY: Record<HiddenOnHomeReason, string> = {
   // The owner's setup steps are the card at the top of Home while setup is unfinished.
   setup_top: "Shown at the top while setup is unfinished",
   setup_shared: "Waiting for setup — shown once above the board",
-  integrated: "Included in the scouting overview",
+  integrated: "Included in the Home overview",
 };
 
 /** The library's word for a card on the board that Home is not showing right now. */
@@ -410,7 +410,7 @@ export function hiddenOnHome(
     // it is hidden because the same steps are already on screen.
     hidden.set(
       item.i,
-      input.homeOverview && item.type === "scouting_coverage"
+      input.homeOverview && (["scouting_coverage", "team_todos", "calendar_today", "my_day"].includes(item.type) || (item.type === "next_match" && status === "live"))
         ? "integrated"
         : input.sharedSetupPrompt && usesSharedSetupPrompt(item.type, status)
         ? "setup_shared"

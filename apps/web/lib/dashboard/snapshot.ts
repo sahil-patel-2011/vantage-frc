@@ -732,8 +732,9 @@ export async function loadDashboardSnapshot(
            WHERE t.org_id = $1 AND t.status <> 'done'
            ORDER BY
              CASE WHEN t.assignee_user_id = $2 THEN 0 ELSE 1 END,
-             CASE t.status WHEN 'doing' THEN 0 ELSE 1 END,
+             CASE WHEN t.due_on < CURRENT_DATE THEN 0 ELSE 1 END,
              t.due_on NULLS LAST,
+             CASE t.status WHEN 'doing' THEN 0 ELSE 1 END,
              t.created_at DESC
            LIMIT 5`,
           [input.orgId, input.userId],

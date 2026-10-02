@@ -454,13 +454,14 @@ async function hoursMonth(client: PoolClient, ctx: HomeWidgetContext): Promise<L
 }
 
 async function calendarToday(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
-  const items = await query<{ id: string; title: string; startsAt: string }>(
+  const items = await query<{ id: string; title: string; startsAt: string; endsAt: string | null }>(
     client,
     `SELECT /* home-widget:calendar_today */ e.id, e.title,
-            ${ISO.replace("%s", "e.starts_at")} AS "startsAt"
+            ${ISO.replace("%s", "e.starts_at")} AS "startsAt",
+            ${ISO.replace("%s", "e.ends_at")} AS "endsAt"
        FROM subteam_calendar_events e
       WHERE e.org_id = $1::uuid
-        AND e.starts_at >= date_trunc('day', now())
+        AND (e.starts_at >= now() OR e.ends_at > now())
         AND e.starts_at < date_trunc('day', now()) + interval '7 days'
         AND (
           e.subteam_id IS NULL

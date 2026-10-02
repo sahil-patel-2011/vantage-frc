@@ -54,7 +54,7 @@ for (const width of [1440, 390]) {
     await testInfo.attach(`compact-event-${width}.png`, { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
     await page.getByTestId("dash-customize").click();
     await page.getByTestId("dash-hidden-row").locator("summary").click();
-    await expect(page.getByTestId("dash-hidden-item")).toHaveCount(3);
+    await expect(page.getByTestId("dash-hidden-item")).toHaveCount(4);
     await expect(page.getByTestId("dash-hidden-row")).toContainText("Waiting for setup");
     expect(writes()).toBe(0);
   });

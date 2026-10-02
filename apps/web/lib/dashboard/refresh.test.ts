@@ -47,7 +47,7 @@ describe("snapshotPollWidgetTypes", () => {
         ],
         { shell: "ready" },
       ),
-    ).toEqual(["next_match", "alerts", "calendar_today", "my_day", "scouting_coverage"]);
+    ).toEqual(["next_match", "alerts", "calendar_today", "my_day", "scouting_coverage", "team_todos"]);
   });
 
   it("asks for the calendar even when no calendar widget is on the board", () => {
@@ -55,19 +55,19 @@ describe("snapshotPollWidgetTypes", () => {
     expect(snapshotPollWidgetTypes([{ type: "next_match" }], { shell: "ready" })).toContain(
       "calendar_today",
     );
-    expect(snapshotPollWidgetTypes([], { shell: "ready" })).toEqual(["calendar_today", "my_day", "scouting_coverage"]);
+    expect(snapshotPollWidgetTypes([], { shell: "ready" })).toEqual(["calendar_today", "my_day", "scouting_coverage", "team_todos"]);
   });
 
   it("does not ask for it twice when the board already shows it", () => {
     expect(
       snapshotPollWidgetTypes([{ type: "calendar_today" }], { shell: "ready" }),
-    ).toEqual(["calendar_today", "my_day", "scouting_coverage"]);
+    ).toEqual(["calendar_today", "my_day", "scouting_coverage", "team_todos"]);
   });
 
   it("keeps setup widgets while the team is still configuring", () => {
     expect(
       snapshotPollWidgetTypes([{ type: "onboarding_checklist" }, { type: "next_match" }], { shell: "setup" }),
-    ).toEqual(["onboarding_checklist", "next_match", "calendar_today", "my_day", "scouting_coverage"]);
+    ).toEqual(["onboarding_checklist", "next_match", "calendar_today", "my_day", "scouting_coverage", "team_todos"]);
   });
 });
 

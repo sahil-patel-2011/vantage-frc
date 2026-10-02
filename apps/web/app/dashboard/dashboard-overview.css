@@ -1,5 +1,10 @@
-.dash-overview { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr); gap: 20px; }
+.dash-overview { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
 .dash-overview.single { grid-template-columns: 1fr; }
+.dash-overview.with-tasks { grid-template-columns: minmax(0, 1.15fr) minmax(280px, 1fr); }
+.dash-overview.with-tasks > .dash-home-tasks { grid-row: span 2; }
+.dash-overview.single.with-tasks > .dash-home-tasks { grid-row: auto; }
+.dash-home-next-match { grid-column: 1 / -1; }
+.dash-home-next-match .dash-widget { margin: 0; }
 .dash-overview > article { min-width: 0; padding: 26px; border: 1px solid var(--line-soft); border-radius: 24px; background: var(--surface); box-shadow: 0 4px 24px color-mix(in srgb, var(--ink) 3%, transparent); }
 .dash-overview .dash-scouting-overview { background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 7%, var(--surface)), var(--surface) 75%); border-color: color-mix(in srgb, var(--accent) 15%, var(--line-soft)); }
 .dash-overview header { display: flex; align-items: center; gap: 12px; }
@@ -11,11 +16,11 @@
 .dash-overview a { text-decoration: none; }
 .dash-overview a:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 6px; }
 .dash-scouting-purpose { max-width: 46ch; margin: 22px 0 16px; color: var(--ink); font-size: 16px; line-height: 1.55; }
-.dash-scouting-ready { margin: 0 0 24px; max-width: 48ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.dash-scouting-ready { margin: 18px 0; max-width: 48ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
 .dash-scouting-numbers { display: flex; flex-wrap: wrap; gap: 36px; margin: 20px 0 24px; }
 .dash-scouting-numbers > div { display: flex; flex-direction: column-reverse; gap: 4px; }
 .dash-scouting-numbers dt { color: var(--muted); font-size: 12px; }
-.dash-scouting-numbers dd { margin: 0; font: 650 30px/1.1 var(--font-sans); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.dash-scouting-numbers dd { margin: 0; font: 650 26px/1.1 var(--font-sans); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .dash-overview footer { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .dash-overview footer > a:not(.app-button), .dash-activity-overview a, .dash-scouting-setup a { color: var(--accent); font-size: 13px; font-weight: 600; }
 .dash-overview .app-button { gap: 10px; min-height: 44px; border-radius: 12px; }
@@ -34,9 +39,29 @@
 .dash-activity-overview li a { min-width: 0; display: grid; gap: 4px; color: var(--ink); }
 .dash-activity-overview li a strong { font-size: 14px; line-height: 1.4; }
 .dash-activity-overview li small { color: var(--muted); font-size: 12px; font-weight: 400; }
-.dash-activity-empty { padding: 30px 0 8px; }
-.dash-activity-empty > svg { color: var(--muted); width: 28px; height: 28px; margin-bottom: 12px; }
-.dash-activity-empty h3 { font-size: 15px; font-weight: 600; margin: 0 0 7px; }
-.dash-activity-empty p { max-width: 32ch; color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 14px; }
-.dash-activity-empty a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
-@media(max-width: 780px) { .dash-overview { grid-template-columns: 1fr; gap: 16px; } .dash-overview > article { padding: 22px; border-radius: 20px; } }
+.dash-activity-empty { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 16px 0 0; }
+.dash-home-tasks header { justify-content: space-between; flex-wrap: wrap; }
+.dash-home-tasks header > a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--accent); font-size: 13px; font-weight: 600; }
+.dash-home-task-list { list-style: none; padding: 0; margin: 14px 0; }
+.dash-home-task-list li { display: flex; gap: 8px; align-items: center; padding: 10px 0; }
+.dash-home-task-list li + li { border-top: 1px solid var(--line-soft); }
+.dash-home-task-list li > a { display: grid; gap: 5px; color: var(--ink); flex: 1; min-width: 0; padding: 4px 0; }
+.dash-home-task-list strong { font-size: 14px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
+.dash-home-task-list small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.dash-home-task-list .is-overdue { color: var(--warning, var(--accent)); }
+.dash-home-task-check { display: grid; place-items: center; position: relative; flex: 0 0 44px; height: 44px; cursor: pointer; }
+.dash-home-task-check input { position: absolute; opacity: 0; width: 44px; height: 44px; margin: 0; cursor: pointer; }
+.dash-home-task-check span { width: 20px; height: 20px; border: 1.5px solid var(--muted); border-radius: 7px; pointer-events: none; }
+.dash-home-task-check input:focus-visible + span { outline: 2px solid var(--ring); outline-offset: 4px; }
+.dash-home-task-check input:disabled + span { opacity: .45; }
+.dash-home-task-check input:checked + span { background: var(--accent); border-color: var(--accent); }
+.dash-home-task-check input:checked + span::after { content: "✓"; display: grid; place-items: center; color: var(--accent-ink); font-size: 14px; line-height: 18px; }
+.dash-home-task-empty { margin: 24px 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.dash-home-task-add { display: flex; gap: 8px; padding-top: 8px; }
+.dash-home-task-add input { flex: 1; min-width: 0; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 14px; }
+.dash-home-task-add input::placeholder { color: var(--muted); }
+.dash-home-task-add .app-button { padding: 0; width: 44px; flex: 0 0 44px; }
+.dash-home-task-feedback { color: var(--muted); margin: 8px 0 0; font-size: 12px; }
+.dash-home-task-feedback:empty { margin: 0; }
+.dash-home-task-feedback[role="alert"] { color: var(--danger); }
+@media(max-width: 780px) { .dash-overview, .dash-overview.with-tasks { grid-template-columns: 1fr; gap: 16px; } .dash-overview.with-tasks > .dash-home-tasks { grid-row: auto; } .dash-overview > article { padding: 22px; border-radius: 20px; } }

@@ -19,7 +19,7 @@ export function liveCount(payload: WidgetPayload | undefined, key: string): numb
   return payload?.status === "live" && typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
-export type HomeActivity = { title: string; startsAt: string; duty: boolean };
+export type HomeActivity = { title: string; startsAt: string; duty: boolean; ongoing: boolean };
 
 /** Real calendar items and personal duties, ordered together; invalid timestamps stay unknown. */
 export function homeActivities(calendar: WidgetPayload | undefined, myDay: WidgetPayload | undefined, now = new Date()): HomeActivity[] {
@@ -31,9 +31,28 @@ export function homeActivities(calendar: WidgetPayload | undefined, myDay: Widge
       const row = item as Record<string, unknown>;
       if (typeof row.title !== "string" || typeof row.startsAt !== "string") return [];
       const at = Date.parse(row.startsAt);
-      return Number.isFinite(at) && at >= now.getTime() ? [{ title: row.title, startsAt: row.startsAt, duty }] : [];
+      const end = typeof row.endsAt === "string" ? Date.parse(row.endsAt) : NaN;
+      const ongoing = at <= now.getTime() && end > now.getTime();
+      return Number.isFinite(at) && (at >= now.getTime() || ongoing) ? [{ title: row.title, startsAt: row.startsAt, duty, ongoing }] : [];
     });
   };
   return [...records(calendar, "items", false), ...records(myDay, "duties", true)]
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)).slice(0, 3);
+}
+
+export type HomeTask = { id: string; title: string; status: "todo" | "doing"; dueOn: string | null; assigneeName: string | null; overdue: boolean };
+
+/** Missing task data is unavailable, never a fabricated zero-task result. */
+export function homeTasks(payload: WidgetPayload | undefined, now = new Date()): HomeTask[] {
+  const raw = payload?.status === "live" ? payload.data?.items : undefined;
+  if (!Array.isArray(raw)) return [];
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return raw.flatMap((value: unknown): HomeTask[] => {
+    if (!value || typeof value !== "object") return [];
+    const row = value as Record<string, unknown>;
+    if (typeof row.id !== "string" || typeof row.title !== "string" || (row.status !== "todo" && row.status !== "doing")) return [];
+    const dueOn = typeof row.dueOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.dueOn) && Number.isFinite(Date.parse(row.dueOn)) ? row.dueOn : null;
+    return [{ id: row.id, title: row.title, status: row.status, dueOn,
+      assigneeName: typeof row.assigneeName === "string" ? row.assigneeName : null, overdue: dueOn !== null && dueOn < today }];
+  }).slice(0, 5);
 }

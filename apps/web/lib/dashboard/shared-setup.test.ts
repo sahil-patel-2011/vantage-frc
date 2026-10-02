@@ -56,6 +56,30 @@ describe("one shared Home setup prompt", () => {
       expect(homeViewLayout(layout, { ...input, widgets, editing: false }).some(row => row.i === "match")).toBe(true);
     }
   });
+  it("moves a live stock match into the leading overview and keeps an explicitly positioned match", () => {
+    const hero: DashboardWidgetLayout = { i: "next", type: "next_match", x: 0, y: 0, w: 12, h: 4 };
+    const input = { shell: "ready" as const, homeOverview: true, widgets: { next_match: { status: "live" } } };
+    expect(homeViewLayout([hero], { ...input, editing: false })).toEqual([]);
+    expect(hiddenOnHome([hero], input).get("next")).toBe("integrated");
+    expect(homeViewLayout([hero], { ...input, editing: true })).toEqual([hero]);
+    const pinned = { ...hero, config: { alwaysShow: true } };
+    expect(homeViewLayout([pinned], { ...input, editing: false })).toEqual([pinned]);
+  });
+  it("folds stock tasks and schedule into Home without changing saved layouts or hiding explicit pins", () => {
+    const stock: DashboardWidgetLayout[] = [
+      { i: "tasks", type: "team_todos", x: 0, y: 0, w: 6, h: 4 },
+      { i: "day", type: "my_day", x: 6, y: 0, w: 6, h: 4 },
+      { i: "calendar", type: "calendar_today", x: 0, y: 4, w: 6, h: 4 },
+    ];
+    const original = structuredClone(stock);
+    const input = { shell: "ready" as const, homeOverview: true, widgets: { team_todos: { status: "live" }, my_day: { status: "live" }, calendar_today: { status: "live" } } };
+    expect(homeViewLayout(stock, { ...input, editing: false })).toEqual([]);
+    expect([...hiddenOnHome(stock, input).values()]).toEqual(["integrated", "integrated", "integrated"]);
+    expect(homeViewLayout(stock, { ...input, editing: true })).toEqual(original);
+    const pinned = stock.map(item => ({ ...item, config: { alwaysShow: true } }));
+    expect(homeViewLayout(pinned, { ...input, editing: false }).map(item => item.i)).toEqual(["tasks", "day", "calendar"]);
+    expect(stock).toEqual(original);
+  });
 
   it("routes team leads directly to the event chooser and scouts to practice", () => {
     for (const role of ["owner", "admin"]) {
