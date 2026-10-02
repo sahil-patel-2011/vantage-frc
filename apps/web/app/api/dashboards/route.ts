@@ -5,7 +5,6 @@ import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import { HOME_ALWAYS_LOADED } from "../../../lib/dashboard/refresh";
 import {
   canWriteOrgDashboard,
-  catalogEntry,
   defaultDashboardLayoutForAudience,
   filterLayoutForRole,
   isDashboardWidgetType,
@@ -46,25 +45,6 @@ function requestedWidgetTypes(url: URL): DashboardWidgetType[] | undefined {
   return [...new Set(raw.split(",").map((item) => item.trim()).filter(isDashboardWidgetType))];
 }
 
-function ensureOnboardingChecklist(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
-  if (layout.some((item) => item.type === "onboarding_checklist")) return layout;
-  const entry = catalogEntry("onboarding_checklist");
-  const offset = entry?.defaultH ?? 4;
-  return [
-    {
-      i: "w-onboarding_checklist",
-      type: "onboarding_checklist",
-      x: 0,
-      y: 0,
-      w: entry?.defaultW ?? 12,
-      h: offset,
-      minW: entry?.minW ?? 6,
-      minH: entry?.minH ?? 3,
-    },
-    ...layout.map((item) => ({ ...item, y: item.y + offset })),
-  ];
-}
-
 async function defaultLayoutForMember(
   client: import("@neondatabase/serverless").PoolClient,
   userId: string,
@@ -75,7 +55,7 @@ async function defaultLayoutForMember(
     [userId],
   );
   const audience = homeAudienceFromTeamRole(row.rows[0]?.teamRole);
-  return filterLayoutForRole(ensureOnboardingChecklist(defaultDashboardLayoutForAudience(audience)), role);
+  return filterLayoutForRole(defaultDashboardLayoutForAudience(audience), role);
 }
 
 type BoardRow = {

@@ -1,5 +1,8 @@
 "use client";
 
+import { DashboardHomeTasks } from "./dashboard-home-tasks";
+import { useDashboardActions } from "./dashboard-quick-actions";
+import "./dashboard-overview.css";
 import { memo } from "react";
 import dynamic from "next/dynamic";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
@@ -48,6 +51,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
   tbaConfigured?: boolean;
   canOpenTeamData?: boolean;
 }) {
+  const actions = useDashboardActions();
   const data = payload?.data ?? {};
   const withOrg = (href: string) => withOrgHref(href, orgId || null);
   const hint = emptyHintFor(type);
@@ -135,52 +139,8 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           {payload?.status === "live" ? <TeamChatLive data={data} /> : null}
         </Shell>
       );
-    case "team_todos": {
-      const items =
-        (data.items as Array<{
-          id: string;
-          title: string;
-          status: string;
-          dueOn: string | null;
-          assigneeName: string | null;
-        }> | undefined) ?? [];
-      return (
-        <Shell type={type} title="Team todos" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? (
-            <div className="dash-metric-grid" style={{ marginBottom: items.length ? 10 : 0 }}>
-              <div>
-                <strong>{String(data.open ?? 0)}</strong>
-                <span>open</span>
-              </div>
-              <div>
-                <strong>{String(data.mineOpen ?? 0)}</strong>
-                <span>mine</span>
-              </div>
-              <div>
-                <strong>{String(data.overdue ?? 0)}</strong>
-                <span>overdue</span>
-              </div>
-            </div>
-          ) : null}
-          {payload?.status === "live" && items.length > 0 ? (
-            <ul className="dash-checklist">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <a href={withOrg(`/todos?todoId=${encodeURIComponent(item.id)}`)}>
-                    <span>{item.title}</span>
-                    <small className="dash-notif-preview">
-                      {item.status}
-                      {item.assigneeName ? ` · ${item.assigneeName}` : ""}
-                      {item.dueOn ? ` · ${item.dueOn}` : ""}
-                    </small>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </Shell>
-      );
-    }
+    case "team_todos":
+      return <DashboardHomeTasks orgId={orgId} role={actions?.role ?? null} payload={payload} />;
     case "onboarding_checklist": {
       const steps =
         (data.steps as Array<{

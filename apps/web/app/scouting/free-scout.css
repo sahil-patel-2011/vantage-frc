@@ -1,4 +1,13 @@
 .free-scout { display: grid; gap: 20px; max-width: 880px; margin: 0 auto; }
+.free-scout-kind { border: 0; padding: 0; margin: 0; display: flex; gap: 8px; }
+.free-scout-kind legend { font-weight: 600; margin-bottom: 8px; }
+.free-scout-kind label { flex: 1; position: relative; }
+.free-scout-kind input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.free-scout-kind span { display: grid; place-items: center; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; }
+.free-scout-kind input:checked + span { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--accent); }
+.free-scout-kind input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 3px; }
+.scout-report-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.scout-report-actions > :last-child { min-width: 45%; }
 .free-scout button, .free-scout .btn { min-height: 48px !important; }
 .free-scout-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .free-scout-heading h2, .free-scout-heading h3 { margin: 0; }
@@ -14,3 +23,4 @@
 .free-scout-report dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; }
 .free-scout-report dd { margin: 0; overflow-wrap: anywhere; text-align: right; }
 @media (max-width: 480px) { .free-scout-inputs { grid-template-columns: 1fr; } }
+body.has-app-shell:has(.free-scout) .soft-island { display: none !important; }

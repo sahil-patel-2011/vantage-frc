@@ -106,10 +106,10 @@ for (const width of [1440, 390]) test(`explicit cards resize, undo, save, reload
     rejectHome = true;
     await page.getByRole("link", { name: "Open Home", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/dashboard\\?orgId=${orgId}`));
-    await page.reload(); await expect(page.getByTestId("dash-overview")).toBeVisible();
+    await page.reload(); await expect(page.getByTestId("home-tasks")).toBeVisible();
     await expect(card).toHaveCount(0);
     rejectHome = false;
-    await page.reload(); await expect(page.getByTestId("dash-overview")).toBeVisible();
+    await page.reload(); await expect(page.getByTestId("home-tasks")).toBeVisible();
     await page.screenshot({ path: info.outputPath(`reset-home-${width}.png`), fullPage: false });
   } finally {
     await page.unrouteAll({ behavior: "wait" });

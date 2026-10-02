@@ -24,6 +24,13 @@ const CORPUS: ActionSpec[][] = [
 ];
 
 describe("buildActionModel — one-primary invariant", () => {
+  it("puts occasional row actions in one menu without losing order or destructive confirmation", () => {
+    const model = buildActionModel([a("duplicate"), a("remove", { intent: "destructive" })], { overflowOnly: true });
+    expect(model.primary).toBeNull();
+    expect(model.secondary).toEqual([]);
+    expect(model.overflow.map(action => action.id)).toEqual(["duplicate", "remove"]);
+    expect(model.overflow[1]?.needsConfirm).toBe(true);
+  });
   it("never yields more than one primary, for any input", () => {
     for (const input of CORPUS) {
       const model = buildActionModel(input);

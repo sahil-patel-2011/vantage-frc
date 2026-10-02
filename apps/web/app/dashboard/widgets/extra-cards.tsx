@@ -124,7 +124,7 @@ export function CalendarTodayLive({ data }: { data: Record<string, unknown> }) {
       {items.map((item) => (
         <li key={String(item.id)}>
           <span>{String(item.title)}</span>
-          <small className="dash-notif-preview">{String(item.startsAt).slice(0, 10)}</small>
+          <small className="dash-notif-preview">{new Date(String(item.startsAt)).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}</small>
         </li>
       ))}
     </ul>

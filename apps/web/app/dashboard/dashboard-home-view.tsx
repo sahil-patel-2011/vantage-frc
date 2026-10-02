@@ -16,7 +16,6 @@ import {
   catalogEntry,
   emptyHomeWidgets,
   inferWidgetSize,
-  isAlwaysShown,
   type DashboardWidgetLayout,
   type WidgetCatalogEntry,
   type WidgetSizeKey,
@@ -49,14 +48,14 @@ import type {
   SnapFeedback,
 } from "./dashboard-board-types";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
-import { DashboardOverview } from "./dashboard-overview";
+
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { homeHeaderDetail, homeNowFromWidgets, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
 import { DashboardHomeHeader } from "./dashboard-home-header";
-import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
+import { DashboardHomeSkeleton } from "./dashboard-now-card";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
@@ -489,9 +488,7 @@ export function DashboardHomeView(props: {
   const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
   const teamSetupCard = Boolean(setupHero);
   const sharedSetupPrompt = Boolean(orgId && widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
-  const showsOverview = Boolean(orgId && widgetsLoaded && !editing);
-  const showActivity = !viewLayout.some(item => item.type === "calendar_today" || item.type === "my_day");
-  const liftNextMatch = widgets.next_match?.status === "live" && layout.some(item => item.type === "next_match") && !layout.some(item => item.type === "next_match" && isAlwaysShown(item));
+  const showsOverview = false;
   // Only when something in it has a value: a strip of "Nothing waiting / No empty room slots /
   // No member checks open" on a new team looked like a report of work already done.
   const showRoleStrip = Boolean(
@@ -537,7 +534,7 @@ export function DashboardHomeView(props: {
         detail={sharedSetupPrompt ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
         eventName={eventName}
         nextMatchData={nextMatchData}
-        showNextGlance={!liftNextMatch && !viewLayout.some((item) => item.type === "next_match")}
+        showNextGlance={false}
         onSwitch={(id) => void switchBoard(id)}
         onNewBoard={() => setNewBoardOpen(true)}
         onManageBoards={() => {
@@ -550,17 +547,6 @@ export function DashboardHomeView(props: {
           so with a match coming up the Next match card leads. A setup step ("Add your first
           practice") waits too: it sat above Qual 31 fourteen minutes before the match. It is
           still on Your first week. */}
-      {(showsOverview && (now.quiet || now.cta === "Open scouting form" || (showActivity && now.cta === "Open Calendar"))) ||
-      (now.href === "/todos" && (showsOverview || viewLayout.some((item) => item.type === "team_todos"))) ? null : now.title === "Our next match" &&
-      (now.cta === "Open My Day" || now.cta === "Scout a match") &&
-      layout.some((item) => item.type === "next_match") ? null : (
-        <DashboardNowCard now={now} setupHero={sharedSetupPrompt ? null : setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
-      )}
-      {showsOverview ? <DashboardOverview orgId={orgId} role={props.role} hasEvent={!setupRequired}
-        hasForms={props.hasScoutingSchemas} eventName={eventName} widgets={widgets}
-        nextAction={sharedSetupPrompt ? nextActions[0] : undefined} showActivity={showActivity}
-        showNextMatch={liftNextMatch}
-        showTasks={!viewLayout.some(item => item.type === "team_todos")} /> : null}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
       {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}

@@ -20,6 +20,7 @@ type ActionMenuProps = {
   /** How many neutral buttons sit beside the primary. Default 0. */
   maxSecondary?: BuildActionModelOptions["maxSecondary"];
   allowDisabledPrimary?: BuildActionModelOptions["allowDisabledPrimary"];
+  overflowOnly?: boolean;
   /** Which edge the overflow menu hangs from. Default "end" (right in LTR). */
   align?: "start" | "end";
   /** Compact row for table/list rows: the primary renders neutral, not brand. */
@@ -49,6 +50,7 @@ export function ActionMenu({
   label,
   maxSecondary = 0,
   allowDisabledPrimary,
+  overflowOnly = false,
   align = "end",
   tone = "page",
   className,
@@ -56,8 +58,8 @@ export function ActionMenu({
   triggerTestId = "action-menu-trigger",
 }: ActionMenuProps) {
   const model = useMemo(
-    () => buildActionModel(actions, { maxSecondary, allowDisabledPrimary }),
-    [actions, maxSecondary, allowDisabledPrimary],
+    () => buildActionModel(actions, { maxSecondary, allowDisabledPrimary, overflowOnly }),
+    [actions, maxSecondary, allowDisabledPrimary, overflowOnly],
   );
 
   const [open, setOpen] = useState(false);

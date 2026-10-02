@@ -330,3 +330,9 @@
    areas, which beat a one-class reset and left the page in two lopsided columns at 1280-1440. */
 .strategy-live-grid.strategy-live-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; }
 .strategy-live-grid.strategy-live-grid > * { grid-area: auto; grid-column: 1 / -1; grid-row: auto; }
+
+.strategy-evaluation { padding: 20px 24px; margin: 16px 0; }
+.strategy-evaluation summary { font-weight: 650; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.strategy-evaluation p, .strategy-evaluation small { color: var(--muted); }
+.strategy-evaluation dl > div { padding: 12px 0; border-top: 1px solid var(--line); }
+.strategy-evaluation dd { margin: 6px 0 0; }

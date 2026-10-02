@@ -8,7 +8,7 @@ export type SchemasPayload = {
   canManageSchemas: boolean;
 };
 
-export type FormBuilderMode = "edit" | "preview";
+export type FormBuilderMode = "edit" | "preview" | "responses";
 
 export function defaultQuestions(type: EntryType): DraftQuestion[] {
   if (type === "pit") {

@@ -21,11 +21,13 @@ for (const width of [1440, 390]) test(`stock Home works immediately and reflects
   let matchKey: string | undefined;
   try {
     expect((await context.request.post("/api/dashboards", { data: { orgId, action: "reset", id: board.id } })).ok()).toBe(true);
+    const reset = await (await context.request.get(`/api/dashboards?orgId=${orgId}&mode=home`)).json();
+    expect(reset.active.layout.map((item: { type: string }) => item.type)).toEqual(["next_match", "team_todos", "scouting_coverage", "calendar_today", "recent_result", "competition_snapshot"]);
     await page.goto(`/dashboard?orgId=${orgId}`);
     const tasks = page.getByTestId("home-tasks");
     await expect(tasks).toBeVisible();
     await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
-    await expect(page.locator('[data-widget-type="team_todos"], [data-widget-type="my_day"], [data-widget-type="scouting_coverage"]')).toHaveCount(0);
+    await expect(page.locator('[data-widget-type="team_todos"], [data-widget-type="scouting_coverage"]')).toHaveCount(2);
     await tasks.getByRole("textbox", { name: "New team task" }).fill(title);
     const created = page.waitForResponse(response => response.url().endsWith("/api/todos") && response.request().method() === "POST");
     await tasks.getByRole("button", { name: "Add task", exact: true }).click();
@@ -72,20 +74,21 @@ for (const width of [1440, 390]) test(`stock Home works immediately and reflects
     await expect(tasks.getByRole("checkbox", { name: `Complete ${title}`, exact: true })).toBeVisible();
 
     eventId = (await pool.query("INSERT INTO subteam_calendar_events(org_id,title,starts_at,ends_at,created_by) VALUES($1,$2,now()-interval '20 minutes',now()+interval '2 hours',$3) RETURNING id", [orgId, activity, ownerId])).rows[0].id;
-    await expect(page.getByTestId("dash-overview").getByRole("link", { name: activity, exact: false })).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId("dash-overview")).toContainText("Happening now");
+    await expect(page.locator('[data-widget-type="calendar_today"]')).toContainText(activity, { timeout: 25_000 });
     const eventKey = (await pool.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1", [orgId])).rows[0].active_event_key;
     const matchNumber = width === 1440 ? 99881 : 99882;
     matchKey = `${eventKey}_qm${matchNumber}`;
     await pool.query("INSERT INTO matches_ref(match_key,event_key,comp_level,set_number,match_number,red_alliance,blue_alliance,event_time) VALUES($1,$2,'qm',1,$3,$4::jsonb,$5::jsonb,now()+interval '20 minutes')", [matchKey, eventKey, matchNumber,
       JSON.stringify({ teamKeys: ["frc6925", "frc254", "frc1678"], score: -1 }), JSON.stringify({ teamKeys: ["frc1323", "frc2056", "frc999"], score: -1 })]);
-    const match = page.getByTestId("home-next-match");
+    const match = page.locator('[data-widget-type="next_match"]');
     await expect(match).toContainText(`Qual ${matchNumber}`, { timeout: 25_000 });
     await expect(match).toContainText("RED bumpers");
+    await expect(page.locator('[data-widget-type="recent_result"]')).not.toContainText("-1");
+    await expect(page.locator('[data-widget-type="recent_result"]')).not.toContainText(`Q${matchNumber}`);
     expect((await match.boundingBox())!.y).toBeLessThan((await tasks.boundingBox())!.y);
-    await expect(page.locator('[data-widget-type="next_match"]')).toHaveCount(0);
+    await expect(page.locator('[data-widget-type="next_match"]')).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    expect((await new AxeBuilder({ page }).include(".dash-overview").analyze()).violations).toEqual([]);
+    expect((await new AxeBuilder({ page }).include(".dash-home").analyze()).violations).toEqual([]);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: info.outputPath(`stock-home-${width}.png`), fullPage: true });
     await tasks.getByRole("link", { name: title, exact: false }).click();

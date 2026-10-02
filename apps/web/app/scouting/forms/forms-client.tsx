@@ -1,10 +1,12 @@
 "use client";
 
+import { FormsResponses } from "./forms-responses";
+import { scoutingGameLabel, latestScoutingYear } from "../../../lib/scouting/free-scout";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { ActionMenu, EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
+import { ActionMenu, EmptyState, FormRow, Panel, ToolStrip, Button } from "../../../components/ui";
 import { useTierDrag } from "../../../components/ui/use-tier-drag";
 import "../../../components/ui/tier-drag.css";
 import {
@@ -26,7 +28,6 @@ import {
   resolveDraftPublishStatus,
   retypeQuestion,
   RESET_BEHAVIOR_OPTIONS,
-  SCOUT_IDENTITY_LOCK_COPY,
   STRATEGY_ROLE_OPTIONS,
   detectedRoleForQuestion,
   validateDraft,
@@ -37,7 +38,7 @@ import {
 import { hubHref } from "../../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
-import { FormBuilderNextActionsPanel, FormBuilderRelatedStrip, FormBuilderShell } from "./forms-chrome";
+import { FormBuilderNextActionsPanel, FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { OptionEditor } from "./forms-option-editor";
 import { FormsTabletPreview } from "./forms-tablet-preview";
@@ -66,10 +67,10 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   const [loadError, setLoadError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
-  const [type, setType] = useState<EntryType>("match");
+  const [type, setType] = useState<EntryType>("pit");
   const [mode, setMode] = useState<FormBuilderMode>("edit");
-  const [title, setTitle] = useState("Match scouting");
-  const [questions, setQuestions] = useState(() => defaultQuestions("match"));
+  const [title, setTitle] = useState("Pit scouting");
+  const [questions, setQuestions] = useState(() => defaultQuestions("pit"));
   /**
    * The last removed question and where it sat, so Remove is recoverable.
    * Deleting a configured field — options, settings, strategy role — used to
@@ -143,7 +144,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     setQuestions(defaultQuestions(nextType));
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (requestedYear?: number) => {
     let hadCache = Boolean(payloadRef.current);
     try {
       const cached = await getFeatureSnapshot<SchemasPayload>("scout-forms", orgId || "_");
@@ -162,7 +163,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     setLoadError("");
     setLoadErrorStatus(null);
     try {
-      const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}`, {
+      const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}${requestedYear ? `&year=${requestedYear}` : ""}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
@@ -195,6 +196,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         return;
       }
       setPayload(body);
+      if (requestedYear) draftsRef.current = {};
       if (body.year != null) setYear(body.year);
       const active = body.schemas.find((schema) => schema.type === type);
       loadSchemaIntoDraft(active, type);
@@ -399,22 +401,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
   return (
     <Root className="module-page sfb-page">
-      <PageHeader
-        breadcrumbs="Competition / Form builder"
-        title="Scouting form builder"
-        description="Configure required fields, preview, and publish match or pit forms."
-      >
-        <div className="sfb-toolbar">
-          <FormBuilderRelatedStrip orgId={orgId} />
-          {/* With nothing published yet, Publish is the empty state's own button below; with
-              nothing changed since, there is nothing to publish ("Republish … version pin"). */}
-          {shell === "empty" || publishStatus.kind === "published" ? null : (
-            <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
-              {publishLabel}
-            </Button>
-          )}
-        </div>
-      </PageHeader>
+      <header className="sfb-heading"><h2>Scouting forms</h2><p>Build your questions. Preview the form. Review the answers.</p></header>
 
       <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -426,8 +413,8 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
             <strong>Published</strong>
             <span>Scouts see this form the next time they open Scout.</span>
           </div>
-          <Button as="a" variant="primary" href={withOrgHref("/dashboard", orgId)}>
-            Back to Home
+          <Button as="a" variant="primary" href={withOrgHref("/competition?tab=scouting", orgId)}>
+            Open scouting
           </Button>
         </section>
       ) : null}
@@ -449,12 +436,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       ) : null}
 
       {!payload.canManageSchemas ? (
-        <EmptyState
-          badge="Needs setup"
-          badgeTone="setup"
-          title="Choose your team"
-          description="Choose your team and you can build scouting forms with everyone else."
-        />
+        <p className="app-muted">Team admins manage these questions. You can preview the form and review responses.</p>
       ) : null}
 
       <fieldset className="sfb-type-switch" disabled={busy}>
@@ -469,19 +451,6 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         />
       </fieldset>
 
-      {/* Said once: with nothing published the card above already says so, and the page said
-          "not published" three times over. */}
-      {shell === "empty" ? null : (
-        <div
-          className={`sfb-status sfb-status-${publishStatus.kind}`}
-          role="status"
-          aria-live="polite"
-        >
-          <span className="sfb-status-pill">{publishStatus.label}</span>
-          <small className="app-muted">{publishStatus.detail}</small>
-        </div>
-      )}
-
       {publishBlocked && payload.canManageSchemas ? (
         <p className="sfb-publish-blocked" role="status">
           {publishBlocked}
@@ -494,12 +463,6 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         </p>
       ) : null}
 
-      <div className="sfb-identity-lock" role="status">
-        <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
-        <strong>{SCOUT_IDENTITY_LOCK_COPY.title}</strong>
-        <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
-      </div>
-
       <div className="sfb-meta">
         <FormRow label="Form title">
           <input
@@ -509,19 +472,11 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
             maxLength={80}
           />
         </FormRow>
-        <FormRow label="Season year">
-          <input value={year ?? "—"} readOnly aria-readonly />
-        </FormRow>
-        <FormRow label="View">
-          <select
-            value={mode}
-            onChange={(event) => setMode(event.target.value as FormBuilderMode)}
-            aria-label="Edit or preview"
-          >
-            <option value="edit">Edit questions</option>
-            <option value="preview">Preview</option>
-          </select>
-        </FormRow>
+        <FormRow label="Game"><select aria-label="Form game" disabled={busy} value={year ?? latestScoutingYear()} onChange={event => {
+          if (publishStatus.kind !== "published" && !window.confirm("Change game? Unpublished changes to this form will be discarded.")) return;
+          setBusy(true); setPublished(null); void load(Number(event.target.value)).finally(() => setBusy(false));
+        }}>{Array.from(new Set([year ?? latestScoutingYear(), latestScoutingYear(), 2025, 2024])).sort((a,b) => b-a).map(value => <option key={value} value={value}>{scoutingGameLabel(value)}</option>)}</select></FormRow>
+        <ToolStrip presentation="segments" aria-label="Form workspace" value={mode} onChange={id => setMode(id as FormBuilderMode)} items={[{ id: "edit", label: "Questions" }, { id: "preview", label: "Preview" }, { id: "responses", label: "Responses" }]} />
       </div>
 
       {validation.budget.status !== "healthy" ? (
@@ -561,9 +516,9 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         </p>
       ) : null}
 
-      <div className="sfb-layout">
+      <div className="sfb-layout sfb-layout-single">
         <Panel as="section" className={mode === "preview" ? "sfb-tablet-panel" : undefined}>
-          {mode === "preview" ? (
+          {mode === "responses" ? <FormsResponses orgId={orgId} schemaId={currentSchema?.id} /> : mode === "preview" ? (
             <>
               <h2>What scouts see</h2>
               <p className="app-muted">
@@ -578,8 +533,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Toggle required, edit options, and drag a question by its handle to reorder it.
-                    Duplicate and Remove are under More.
+                    Drag to reorder. Use each question’s menu to duplicate or remove it.
                   </p>
                 </div>
               </header>
@@ -665,6 +619,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         ) : null}
                         <ActionMenu
                           tone="row"
+                          overflowOnly
                           label={`Question ${index + 1} actions`}
                           maxSecondary={0}
                           triggerTestId={`sfb-question-more:${question.id}`}
@@ -672,7 +627,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                             {
                               id: "duplicate",
                               label: "Duplicate",
-                              intent: "primary",
+                              intent: "normal",
                               disabled: !payload.canManageSchemas || busy,
                               hint: "A copy directly below, ready to edit",
                               onClick: () => setQuestions((prev) => duplicateQuestion(prev, index)),
@@ -745,7 +700,9 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                       <>
                         {/* The settings most forms never change, folded: every question showed all of them. */}
                         <details className="sfb-more">
-                          <summary data-disclosure>More options</summary>
+                          <summary data-disclosure>Description, chart and advanced options</summary>
+                          <FormRow label="Description"><input value={question.helpText ?? ""} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { helpText: event.target.value })} placeholder="Optional guidance for scouts" /></FormRow>
+                          <FormRow label="Response chart"><select aria-label={`Chart for question ${index+1}`} value={question.chart ?? "auto"} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { chart: event.target.value as DraftQuestion["chart"] })}><option value="auto">Automatic</option><option value="bar">Answer counts</option><option value="trend">Number trend</option><option value="none">Table only</option></select></FormRow>
                           <FormRow
                             label="Feeds strategy as"
                             hint={
@@ -838,20 +795,13 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}>
                   Add question
                 </Button>
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setQuestions((prev) => [ ...prev, newDraftQuestion({ label: "Drivetrain", kind: "drivetrain", optionsText: DRIVETRAIN_OPTIONS_TEXT, }), ]) }>
-                  Add drivetrain
-                </Button>
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setMode("preview")}>
-                  Preview
-                </Button>
               </div>
             </>
           )}
         </Panel>
 
-        <aside className="sfb-side" style={{ display: "grid", gap: 12 }}>
-          <Panel>
-            <h2>Publish status</h2>
+        {mode === "edit" ? <aside className="sfb-side" style={{ display: "grid", gap: 12 }}>
+          {published ? null : <Panel className="sfb-publish-bar">
             <p className={`sfb-status-inline sfb-status-${publishStatus.kind}`}>
               <strong>{publishStatus.label}</strong>
               <span className="app-muted">{publishStatus.detail}</span>
@@ -861,28 +811,11 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 Scouts keep the published form until you publish these changes.
               </p>
             ) : null}
-            {currentSchema ? (
-              <ul className="sfb-published">
-                <li>
-                  <span>
-                    <strong>{currentSchema.definition.title}</strong>
-                    <br />
-                    <span className="app-muted">
-                      {currentSchema.type} · v{currentSchema.version} ·{" "}
-                      {currentSchema.definition.fields.length} fields
-                    </span>
-                  </span>
-                  {publishStatus.kind === "draft_changes" ? (
+            {currentSchema && publishStatus.kind === "draft_changes" ? (
                     <Button variant="secondary" type="button" disabled={busy} onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
                       Undo my changes
                     </Button>
-                  ) : null}
-                </li>
-              </ul>
-            ) : shell === "empty" ? null : (
-              // The empty state above already says nothing is published; said once.
-              <p className="app-muted">No {type} form published yet for this season.</p>
-            )}
+            ) : null}
 
             <div className="sfb-publish-actions">
               {/* Nothing published yet: the card at the top has the Publish button, said once. */}
@@ -895,11 +828,11 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 Open Scouting
               </Button>
             </div>
-          </Panel>
+          </Panel>}
           {/* Sixteen answer types were a catalogue on the first screen; they are what "Add a
               question" opens. */}
           <details className="app-card soft-panel sfb-add-question">
-            <summary>Add a question</summary>
+            <summary>More question types</summary>
             <p className="app-muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
               Pick the kind of answer, then give the question a label.
             </p>
@@ -928,7 +861,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
             </ul>
           </details>
           <FormBuilderNextActionsPanel actions={readyActions} />
-        </aside>
+        </aside> : null}
       </div>
     </Root>
   );

@@ -308,12 +308,11 @@ export function usesSharedSetupPrompt(type: DashboardWidgetType, status: string 
 
 /**
  * View-mode Home keeps every user-placed widget, including honest empty
- * states with a destination CTA. Setup-only cards hide once the team
- * is ready. Every card respects the user's saved size.
+ * states with a destination CTA. Every card respects the user's saved size.
  */
 export function homeViewLayout(
   layout: DashboardWidgetLayout[],
-  input: {
+  _input: {
     editing: boolean;
     shell: "loading" | "no_org" | "setup" | "tba" | "ready";
     widgets?: Record<string, { status?: string } | undefined>;
@@ -324,30 +323,10 @@ export function homeViewLayout(
   },
 ): DashboardWidgetLayout[] {
   layout = layout.filter((item) => MEDIA_ENABLED || item.type !== "pit_youtube");
-  if (input.editing) return layout.map((item) => ({ ...item }));
-  const ready = input.shell === "ready";
-  const setupElsewhere = ready || input.teamSetupCard === true;
-  // A pinned card stays visible even when empty and keeps the user's saved size — except
-  // the hero. An empty "Next match" at full hero height was the biggest thing on Home for
-  // every day of the year that is not an event day; it takes two rows (one line and its link) until it is live.
-  const widgets = input.widgets ?? {};
-  const statusOf = (item: DashboardWidgetLayout) =>
-    (widgets[item.i] ?? widgets[item.type] ?? Object.values(widgets).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
-  const visible = layout.filter((item) => {
-    if (isAlwaysShown(item)) return true;
-    if (input.homeOverview && item.type === "next_match" && statusOf(item) === "live") return false;
-    if (input.homeOverview && ["scouting_coverage", "team_todos", "calendar_today", "my_day"].includes(item.type)) return false;
-    if (input.sharedSetupPrompt && usesSharedSetupPrompt(item.type, statusOf(item))) return false;
-    return isAlwaysShown(item) || !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type));
-  });
-  // Cards with nothing in them step aside outside edit mode: a new member's Home was nine
-  // cards, eight saying "nothing yet". They come back the moment they have something, and
-  // the page names them in one line (emptyHomeWidgets). Edit mode still shows every card.
-  // Next match is the exception: it is the top of Home and says when the next match is.
-  const filled = visible.filter(
-    (item) => HOME_ALWAYS_VISIBLE.has(item.type) || isAlwaysShown(item) || !isQuietCard(item.type, statusOf(item)),
-  );
-  return fillRowEnds(packDashboardLayout(sizeForHome(filled, widgets)));
+  // The board is the source of truth in Edit, Preview and Home. Data refreshes
+  // update card contents, never their presence, placement or chosen size.
+  return layout.map((item) => ({ ...item }));
+
 }
 
 /**
@@ -475,7 +454,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "team_todos",
-    label: "Team todos",
+    label: "Team tasks",
     description: "Open shared todos, yours first",
     defaultW: 4,
     defaultH: 3,
@@ -493,8 +472,8 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "scouting_coverage",
-    label: "Scouting coverage",
-    description: "Assignments, reports, and open disagreements",
+    label: "Scouting",
+    description: "Start a pit or match report; see real coverage and review gaps",
     defaultW: 4,
     defaultH: 3,
     minW: 3,
@@ -697,7 +676,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "calendar_today",
-    label: "Today",
+    label: "Coming up",
     description: "Today and this week's calendar",
     defaultW: 4,
     defaultH: 3,
@@ -866,30 +845,14 @@ export function defaultDashboardLayoutForFocus(focus: string | null | undefined)
 // My day and Hours share the second row half and half: they are the cards a new team always
 // has, and beside a card that is hiding while empty they left a third of the row blank.
 const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
-  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
-  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-hours_month", type: "hours_month", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-team_todos", type: "team_todos", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-files_recent", type: "files_recent", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-team_chat", type: "team_chat", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-ask_ai", type: "ask_ai", x: 0, y: 10, w: 12, h: 3, minW: 3, minH: 2 },
+  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_todos", type: "team_todos", x: 0, y: 3, w: 6, h: 5, minW: 3, minH: 2 },
+  { i: "w-scouting_coverage", type: "scouting_coverage", x: 6, y: 3, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-calendar_today", type: "calendar_today", x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
+  { i: "w-recent_result", type: "recent_result", x: 0, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-competition_snapshot", type: "competition_snapshot", x: 6, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
 ];
-
-/*
-  A lead's Home starts with the cards that have something on day one (the match, their day, hours,
-  Ask AI), then the team cards that fill in as the team uses them. It was only those team cards,
-  so a reset or a new board looked empty: "Next match" and "6 more cards show up here…".
-*/
-const MENTOR_HOME_LAYOUT: DashboardWidgetLayout[] = [
-  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
-  { i: "w-team_todos", type: "team_todos", x: 0, y: 4, w: 12, h: 3, minW: 3, minH: 2 },
-  { i: "w-my_day", type: "my_day", x: 0, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-hours_month", type: "hours_month", x: 6, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-ask_ai", type: "ask_ai", x: 0, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-duties", type: "duties", x: 4, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-announcements_ack", type: "announcements_ack", x: 8, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-budget_parts", type: "budget_parts", x: 0, y: 13, w: 12, h: 3, minW: 3, minH: 2 },
-];
+const MENTOR_HOME_LAYOUT = STUDENT_HOME_LAYOUT;
 
 /** Personal Home for a new student vs a mentor — not the competition-focus board. */
 export function defaultDashboardLayoutForAudience(

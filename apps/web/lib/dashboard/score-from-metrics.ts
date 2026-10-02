@@ -68,6 +68,7 @@ export function featuresForAlliance(
       endgameEpa: row?.endgameEpa ?? null,
       opr: row?.opr ?? null,
       scouted: scouted?.get(teamKey) ?? null,
+      recentFormDelta: scouted?.get(teamKey)?.recentFormDelta ?? null,
       /**
        * How much this robot actually swings, when the team has watched it
        * enough times to know.

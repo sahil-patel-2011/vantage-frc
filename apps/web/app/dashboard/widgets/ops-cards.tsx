@@ -1,5 +1,6 @@
 "use client";
 
+import { ScoutingCoverageCard } from "./scouting-coverage";
 import { useState, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { dashboardNextActions } from "../../../lib/dashboard/dashboard-related";
@@ -282,26 +283,7 @@ export function renderOpsWidget({
       );
     }
     case "scouting_coverage":
-      return (
-        <Shell type={type} title="Scouting coverage" payload={payload} href={withOrg("/scouting")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? (
-            <div className="dash-metric-grid">
-              <div>
-                <strong>{String(data.assignments ?? 0)}</strong>
-                <span>assignments</span>
-              </div>
-              <div>
-                <strong>{String(data.reports ?? 0)}</strong>
-                <span>reports</span>
-              </div>
-              <div>
-                <strong>{String(data.openDisagreements ?? 0)}</strong>
-                <span>open gaps</span>
-              </div>
-            </div>
-          ) : null}
-        </Shell>
-      );
+      return <ScoutingCoverageCard payload={payload} orgId={orgId} />;
     case "competition_snapshot": {
       const scope = String(data.scope ?? "event");
       const rankLabel =

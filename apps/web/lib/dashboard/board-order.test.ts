@@ -77,8 +77,8 @@ describe("the edit board, Preview and Home agree", () => {
     const holey = [card("n", "next_match", 0, 0, 12, 4), card("h", "hours_month", 0, 4), card("a", "ask_ai", 8, 4)];
     const edit = editBoardLayout(holey, new Map());
     const home = homeViewLayout(holey, { editing: false, shell: "ready", widgets: { next_match: { status: "live" } } });
-    for (const item of edit) expect(at(home, item.i)).toEqual(at(edit, item.i));
-    expect(at(edit, "a")).toEqual({ x: 4, y: 4 });
+    for (const item of edit) expect(at(displayBoard(home, 12), item.i)).toEqual(at(displayBoard(edit, 12), item.i));
+    expect(at(displayBoard(edit, 12), "a")).toEqual({ x: 4, y: 4 });
   });
 
   it("writes a board Home lays out unchanged", () => {
@@ -159,11 +159,11 @@ describe("nudgeOrder and describePlace", () => {
 });
 
 describe("hiddenOnHome while setup is the hero", () => {
-  it("says the setup card is at the top, not that the team is set up", () => {
+  it("does not silently remove a saved setup card when onboarding state changes", () => {
     const layout = [card("s", "onboarding_checklist", 0, 0, 12, 4), card("h", "hours_month", 0, 4)];
     const widgets = { hours_month: { status: "live" }, onboarding_checklist: { status: "live" } };
-    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: true }).get("s")).toBe("setup_top");
-    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: false }).get("s")).toBe("setup_done");
+    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: true }).size).toBe(0);
+    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: false }).size).toBe(0);
   });
 });
 

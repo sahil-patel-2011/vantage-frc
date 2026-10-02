@@ -52,13 +52,11 @@ describe("leftover student chrome says Choose your team", () => {
     expect(src).not.toMatch(/\bencrypted PAT\b/);
   });
 
-  it("nav chip and chat empty use Choose your team", () => {
+  it("team context is a label and team selection lives in Settings", () => {
     const nav = readFileSync(join(WEB_ROOT, "components/app-shell-nav-panel.tsx"), "utf8");
-    expect(nav).toMatch(/Choose your team/);
-    expect(nav).toMatch(/Checking your team/);
-    expect(nav).toMatch(/join the waitlist/);
-    expect(nav).toMatch(/href="\/#waitlist"/);
-    expect(nav).toMatch(/teamsLoaded/);
+    expect(nav).toMatch(/Choose a team in Settings/);
+    expect(nav).not.toMatch(/aria-expanded=\{workspaceOpen\}/);
+    expect(readFileSync(join(WEB_ROOT, "lib/nav/settings-nav.ts"), "utf8")).toContain('/account/teams');
     const chat = readFileSync(join(WEB_ROOT, "app/messages/page.tsx"), "utf8");
     expect(chat).toMatch(/Choose your team to open chat/);
   });

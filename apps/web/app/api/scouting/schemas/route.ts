@@ -8,6 +8,7 @@ import {
   scoutingErrorResponse,
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
+import { latestScoutingYear } from "../../../../lib/scouting/free-scout";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,9 @@ export async function GET(request: Request) {
         [orgId],
       );
       const eventKey = context.rows[0]?.eventKey ?? null;
-      const year = context.rows[0]?.year ?? null;
+      const requestedYear = Number(new URL(request.url).searchParams.get("year"));
+      const year = Number.isInteger(requestedYear) && requestedYear >= 1992 && requestedYear <= 2100
+        ? requestedYear : context.rows[0]?.year ?? latestScoutingYear();
       if (!year) {
         return {
           eventKey,

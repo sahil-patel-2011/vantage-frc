@@ -47,7 +47,7 @@ describe("widget groups", () => {
       (entry) => ({ entry }),
     );
     const groups = groupWidgetRows(rows);
-    expect(groups.map((group) => group.label)).toEqual(["Match day", "Build", "Me"]);
+    expect(groups.map((group) => group.label)).toEqual(["Matches and results", "Build", "Personal"]);
   });
 
   it("searches names, descriptions and group names", () => {
@@ -104,7 +104,7 @@ describe("packKeepingOrder", () => {
 });
 
 describe("hiddenOnHome", () => {
-  it("names the empty cards the normal view leaves out, and why", () => {
+  it("does not tuck away selected cards when their data is empty", () => {
     const layout = [card("n", "next_match", 0, 0, 12, 4), card("h", "hours_month", 0, 4), card("c", "onboarding_checklist", 4, 4)];
     const hidden = hiddenOnHome(layout, {
       shell: "ready",
@@ -112,8 +112,7 @@ describe("hiddenOnHome", () => {
     });
     // Next match always stays; the empty hours card and the finished setup card do not.
     expect(hidden.has("n")).toBe(false);
-    expect(hidden.get("h")).toBe("empty");
-    expect(hidden.get("c")).toBe("setup_done");
+    expect(hidden.size).toBe(0);
   });
 
   it("hides nothing that has data", () => {
@@ -127,7 +126,7 @@ describe("Always show", () => {
   const layout = [card("h", "hours_month", 0, 0), card("c", "onboarding_checklist", 4, 0, 6, 3)];
 
   it("keeps an empty card and a finished setup card on Home", () => {
-    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(2);
+    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(0);
     const always = setAlwaysShow(setAlwaysShow(layout, "h", true), "c", true);
     expect(hiddenOnHome(always, { shell: "ready", widgets }).size).toBe(0);
     expect(homeViewLayout(always, { editing: false, shell: "ready", widgets }).map((item) => item.i).sort()).toEqual(["c", "h"]);
@@ -156,8 +155,8 @@ describe("editBoardLayout and layoutForEditing", () => {
     ["a", "empty"],
   ]);
 
-  it("leaves hidden cards off the board", () => {
-    expect(editBoardLayout(layout, hidden).map((item) => item.i)).toEqual(["b"]);
+  it("keeps every selected card in the editor regardless of stale visibility flags", () => {
+    expect(editBoardLayout(layout, hidden).map((item) => item.i)).toEqual(["s", "a", "b"]);
   });
 
   it("starts the draft where Home shows the cards, with hidden ones below", () => {

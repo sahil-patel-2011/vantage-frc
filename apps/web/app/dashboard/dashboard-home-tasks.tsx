@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { Button } from "../../components/ui";
 import { Icon } from "../../components/icon";
@@ -11,6 +11,7 @@ import { homeTasks } from "./dashboard-overview-model";
 export function DashboardHomeTasks({ orgId, role, payload }: {
   orgId: string; role: string | null; payload?: WidgetPayload;
 }) {
+  const titleId = useId();
   const actions = useDashboardActions();
   const articleRef = useRef<HTMLElement>(null);
   const [title, setTitle] = useState("");
@@ -50,8 +51,8 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
     }
   }
 
-  return <article ref={articleRef} className="dash-home-tasks" aria-labelledby="home-tasks-title" data-testid="home-tasks" aria-busy={busy !== null}>
-    <header><div><h2 id="home-tasks-title">Team tasks</h2><p>{known ? open !== null && open > 0 ? `${open} open · yours first` : "A clear place for your team’s next steps" : "Tasks unavailable"}</p></div><a href={href}>All tasks <Icon name="chevron" /></a></header>
+  return <article ref={articleRef} className="dash-home-tasks dash-widget app-card" aria-labelledby={titleId} data-testid="home-tasks" aria-busy={busy !== null}>
+    <header><div><h2 id={titleId}>Team tasks</h2><p>{known ? open !== null && open > 0 ? `${open} open · yours first` : "A clear place for your team’s next steps" : "Tasks unavailable"}</p></div><a href={href}>All tasks <Icon name="chevron" /></a></header>
     {items.length ? <ul className="dash-home-task-list">{items.map(item => <li key={item.id}>
       {canWrite ? <label className="dash-home-task-check"><input type="checkbox" checked={busy === item.id} disabled={busy !== null}
         aria-label={`Complete ${item.title}`} onChange={() => void save(item.id, { action: "update-todo", todoId: item.id, status: "done" })} /><span aria-hidden="true" /></label> : null}

@@ -66,6 +66,8 @@ export type BuildActionModelOptions = {
    * surface is for. Set false to let a usable action take the slot instead.
    */
   allowDisabledPrimary?: boolean;
+  /** For occasional row actions: one menu, with every action still available. */
+  overflowOnly?: boolean;
 };
 
 const DEFAULT_MAX_SECONDARY = 2;
@@ -122,11 +124,12 @@ export function buildActionModel(
   // Exactly one primary: the first action that *asked* to be primary, else the first safe
   // action. Destructive candidates are never considered.
   const candidates = allowDisabledPrimary ? safe : safe.filter((action) => !action.disabled);
-  const primarySpec = candidates.find((action) => action.intent === "primary") ?? candidates[0] ?? null;
+  const primarySpec = options.overflowOnly ? null : candidates.find((action) => action.intent === "primary") ?? candidates[0] ?? null;
 
   const rest = safe.filter((action) => action !== primarySpec);
-  const secondarySpecs = rest.slice(0, maxSecondary);
-  const overflowSpecs = rest.slice(maxSecondary);
+  const secondaryCount = options.overflowOnly ? 0 : maxSecondary;
+  const secondarySpecs = rest.slice(0, secondaryCount);
+  const overflowSpecs = rest.slice(secondaryCount);
 
   return {
     primary: primarySpec ? resolve(primarySpec, "primary") : null,

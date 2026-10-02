@@ -3,7 +3,6 @@
 import type { KeyboardEvent, RefObject } from "react";
 import { Icon } from "./icon";
 import {
-  formatMembershipLabel,
   type Me,
   type MembershipOption,
   type NavResultRow,
@@ -44,13 +43,7 @@ export function AppShellNavPanel({
   orgLabel,
   rolePlanCue,
   orgId,
-  workspaceOpen,
-  setWorkspaceOpen,
   memberships,
-  teamsLoaded,
-  orderedMemberships,
-  switchWorkspaceHref,
-  onWorkspaceSwitch,
   navQuery,
   setNavQuery,
   resultRows,
@@ -146,66 +139,9 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
-            <button
-              type="button"
-              className="soft-org-chip soft-org-chip-btn"
-              title={orgLabel}
-              aria-expanded={workspaceOpen}
-              aria-controls="soft-workspace-picker"
-              onClick={() => setWorkspaceOpen((value) => !value)}
-            >
-              <Icon name="users" />
-              <div>
-                <strong>{orgLabel}</strong>
-                <span>{orgId ? rolePlanCue : "Choose your team"}</span>
-              </div>
-              <span className={`soft-nav-caret${workspaceOpen ? " open" : ""}`} aria-hidden="true">
-                <Icon name="chevron" />
-              </span>
-            </button>
-            {workspaceOpen ? (
-              <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Your teams">
-                {!teamsLoaded ? (
-                  <p className="soft-workspace-empty">Checking your team.</p>
-                ) : memberships.length === 0 ? (
-                  <p className="soft-workspace-empty">
-                    No team yet. Open an invite from your email, or{" "}
-                    <a href="/#waitlist" onClick={closeNav}>
-                      join the waitlist
-                    </a>
-                    .
-                  </p>
-                ) : (
-                  orderedMemberships.map((row) => (
-                    <a
-                      key={row.orgId}
-                      role="option"
-                      aria-selected={row.orgId === orgId}
-                      href={switchWorkspaceHref(row.orgId)}
-                      onClick={() => {
-                        onWorkspaceSwitch(row.orgId);
-                        closeNav();
-                      }}
-                    >
-                      <strong>{formatMembershipLabel(row)}</strong>
-                      <span>
-                        {(row.role ?? "member").charAt(0).toUpperCase() + (row.role ?? "member").slice(1)}
-                        {row.orgId === orgId ? " · active" : ""}
-                      </span>
-                    </a>
-                  ))
-                )}
-                <div className="soft-workspace-links">
-                  <a href={withOrgHref("/workspace", orgId)} onClick={closeNav}>
-                    Manage teams
-                  </a>
-                  <a href="/invite" onClick={closeNav}>
-                    Have an invite?
-                  </a>
-                </div>
-              </div>
-            ) : null}
+          <div className="soft-org-chip">
+            <Icon name="users" />
+            <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose a team in Settings"}</span></div>
           </div>
         </div>
 

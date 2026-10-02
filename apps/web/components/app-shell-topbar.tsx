@@ -6,40 +6,9 @@ import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
 import type { Me, MembershipOption } from "./app-shell-model";
 
-/**
- * The team you are in, rendered as the control that changes it.
- *
- * This was plain text. Switching teams lived behind the avatar menu and only
- * appeared there when you already belonged to more than one team — so the
- * label naming your team was inert, and from the one place you would think to
- * look, there was no way to switch, leave, or join another. Same words, same
- * position; now you can press it.
- */
-function TeamChip({
-  label,
-  onOpen,
-  className,
-}: {
-  label: string;
-  onOpen: () => void;
-  className: string;
-}) {
-  return (
-    <button
-      type="button"
-      className={`${className} soft-topbar-team`}
-      onClick={onOpen}
-      aria-label={`${label} — switch team`}
-      title="Switch or join a team"
-    >
-      {/* The number never truncates; only the name after it does ("Team 957…" hid the number). */}
-      <span>
-        <b className="soft-topbar-team-num">{label.split(" · ")[0]}</b>
-        {label.includes(" · ") ? <span className="soft-topbar-team-name">{" · "}{label.split(" · ").slice(1).join(" · ")}</span> : null}
-      </span>
-      <Icon name="chevron" />
-    </button>
-  );
+/** Current context stays visible; Settings → Your teams owns team changes. */
+function TeamChip({ label, className }: { label: string; onOpen: () => void; className: string }) {
+  return <span className={className} title={label}>{label}</span>;
 }
 
 export function AppShellTopbar({

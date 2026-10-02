@@ -191,6 +191,8 @@ export type DraftQuestion = {
   /** What happens to this answer after a save — preserve / reset / increment. */
   reset: FormResetBehavior;
   settings: DraftFieldSettings;
+  chart?: "auto" | "bar" | "trend" | "none";
+  helpText?: string;
 };
 
 export const COUNTER_STEPS_TEXT = DEFAULT_COUNTER_STEPS.join(", ");
@@ -233,6 +235,8 @@ export function newDraftQuestion(partial?: Partial<DraftQuestion>): DraftQuestio
     optionsText:
       partial?.optionsText ??
       (kind === "drivetrain" ? DRIVETRAIN_OPTIONS_TEXT : ""),
+    chart: partial?.chart ?? "auto",
+    helpText: partial?.helpText ?? "",
     role: partial?.role ?? "none",
     reset: partial?.reset ?? "reset",
     settings: { ...defaultSettingsForKind(kind), ...(partial?.settings ?? {}) },
@@ -467,6 +471,7 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         id: field.key,
         key: field.key,
         label: field.label,
+        helpText: field.helpText,
         kind: fieldToAnswerKind(field),
         required: Boolean(field.required),
         optionsText:
@@ -476,6 +481,7 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         role: fieldStrategyRole(field),
         reset: fieldResetBehavior(field),
         settings: settingsFromField(field),
+        chart: ["bar", "trend", "none"].includes(String(field.config?.chart)) ? field.config?.chart as DraftQuestion["chart"] : "auto",
       }),
     ),
   };
@@ -683,6 +689,7 @@ export function definitionFromDraft(
       key,
       label: question.label.trim() || "Untitled",
       type,
+      ...(question.helpText?.trim() ? { helpText: question.helpText.trim() } : {}),
       // A section header is a heading; "required" on it would block saves forever.
       required: (type !== "section_header" && question.required) || undefined,
       widget: question.kind,
@@ -696,6 +703,7 @@ export function definitionFromDraft(
       config.resetBehavior = question.reset;
     }
     Object.assign(config, studioConfigForQuestion(question, type));
+    if (question.chart && question.chart !== "auto") config.chart = question.chart;
     if (Object.keys(config).length) field.config = config;
     if (
       type === "select" ||
@@ -1001,7 +1009,7 @@ export function classifyFormBuilderShell(input: {
 }): FormBuilderShellKind {
   if (input.loading) return "loading";
   if (input.fetchFailed) return "error";
-  if (!input.orgId || !input.eventKey || input.year == null) return "setup";
+  if (!input.orgId || input.year == null) return "setup";
   if (!input.hasPublishedSchema) return "empty";
   return "ready";
 }
@@ -1237,8 +1245,8 @@ export function formBuilderPublishBlockedReason(input: {
     // stops are those who have not joined one yet.
     return "Choose your team before publishing a form.";
   }
-  if (!input.eventKey || input.year == null) {
-    return "Set an active event so the season year is known before publishing.";
+  if (input.year == null) {
+    return "Choose a game before publishing.";
   }
   if (!input.validation.ok) {
     return input.validation.errors[0] ?? "Fix the form before publishing.";

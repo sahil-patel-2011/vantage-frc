@@ -1,22 +1,26 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui";
 import { visibleFields } from "../../lib/scouting/context-visible";
-import { freeScoutDefinition, parseFreeScoutReport, type SavedFreeScoutReport } from "../../lib/scouting/free-scout";
+import type { ScoutSchema, SchemaDefinition } from "@vantage/scouting";
+import { freeScoutDefinition, portableScoutDefinition, latestScoutingYear, scoutingGameLabel, parseFreeScoutReport, type SavedFreeScoutReport } from "../../lib/scouting/free-scout";
 import { freeScoutDeviceKey, pendingFreeReports, queueFreeReport, removePendingFreeReport, syncFreeReports, type PendingFreeReport } from "../../lib/scouting/free-scout-device";
-import { Field, isTapCounterField } from "./scouting-field";
+import { Field } from "./scouting-field";
 import { useOnline } from "../../lib/offline/use-online";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./free-scout.css";
 
-type Draft = { type: "match" | "pit"; team: string; label: string; year: number; payload: Record<string, unknown> };
-const freshDraft = (): Draft => ({ type: "match", team: "", label: "Practice 1", year: new Date().getFullYear(), payload: {} });
+type Draft = { type: "match" | "pit"; team: string; label: string; year: number; schemaId?: string; definition?: SchemaDefinition; payload: Record<string, unknown> };
+const freshDraft = (): Draft => ({ type: "pit", team: "", label: "Practice 1", year: latestScoutingYear(), payload: {} });
 
 export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string }) {
+  const search = useSearchParams();
   const online = useOnline();
-  const [draft, setDraft] = useState<Draft>(freshDraft);
+  const [schemas, setSchemas] = useState<ScoutSchema[]>([]);
+  const [draft, setDraft] = useState<Draft>(() => ({ ...freshDraft(), type: search.get("scoutTab") === "match" ? "match" : "pit" }));
   const [hydrated, setHydrated] = useState(false);
   const [started, setStarted] = useState(false);
   const [reports, setReports] = useState<SavedFreeScoutReport[]>([]);
@@ -27,8 +31,16 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
   const [busy, setBusy] = useState(false);
   const syncing = useRef(false);
   const draftKey = `${freeScoutDeviceKey(orgId, userId)}:draft`;
-  const definition = freeScoutDefinition(draft.year, draft.type);
+  const definition = draft.definition ?? freeScoutDefinition(draft.year, draft.type);
   const fields = visibleFields(definition.fields, draft.payload);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}&year=${draft.year}`, { cache: "no-store", signal: controller.signal })
+      .then(async response => { if (!response.ok) return; const data = await response.json(); if (!controller.signal.aborted) setSchemas(data.schemas ?? []); })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [orgId, draft.year]);
 
   const refresh = useCallback(async () => {
     setPending(await pendingFreeReports(orgId, userId));
@@ -92,12 +104,9 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
     setBusy(true);
     try {
       const payload = { ...draft.payload };
-      for (const field of fields) {
-        if (field.required && payload[field.key] === undefined && isTapCounterField(field)) payload[field.key] = 0;
-      }
-      const report = parseFreeScoutReport({ id: crypto.randomUUID(), year: draft.year, type: draft.type, teamNumber: Number(draft.team), label: draft.label, payload, observedAt: new Date().toISOString() });
+      const report = parseFreeScoutReport({ id: crypto.randomUUID(), year: draft.year, type: draft.type, teamNumber: Number(draft.team), label: draft.type === "pit" ? "Pit scouting" : draft.label, schemaId: draft.schemaId, payload, observedAt: new Date().toISOString() }, definition);
       await queueFreeReport(orgId, userId, report);
-      localStorage.removeItem(draftKey);
+      try { localStorage.removeItem(draftKey); } catch { setStorageError("The saved draft could not be cleared from this device."); }
       setStarted(false);
       change({ payload: {} });
       setPending(await pendingFreeReports(orgId, userId));
@@ -109,33 +118,34 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
 
   const pendingIds = new Set(pending.map((row) => row.report.id));
   const history = [
-    ...pending.map((row) => ({ ...row.report, scoutUserId: userId, definition: freeScoutDefinition(row.report.year, row.report.type), state: row.error ? "Needs attention" : "Waiting to upload", error: row.error })),
+    ...pending.map((row) => ({ ...row.report, scoutUserId: userId, definition: row.report.definition ?? freeScoutDefinition(row.report.year, row.report.type), state: row.error ? "Needs attention" : "Waiting to upload", error: row.error })),
     ...reports.filter((row) => !pendingIds.has(row.id)).map((row) => ({ ...row, state: "Uploaded", error: undefined })),
   ];
   return (
-    <section className="free-scout" aria-label="Scout without an event">
+    <section className="free-scout" aria-label="Practice scouting">
       <header className="free-scout-heading">
-        <div><h2>Scout without an event</h2><p>Practice or video review. Separate from event results.</p></div>
-        <Button as="a" variant="secondary" href={withOrgHref("/competition?tab=scouting", orgId)}>Event scouting</Button>
+        <div><h2>Practice scouting</h2><p>Choose a robot. Record what you learn.</p></div>
+        <Button as="a" variant="secondary" href={withOrgHref("/competition?tab=command", orgId)}>Set event</Button>
       </header>
-      <div className="free-scout-status" role="status">
+      {!online || pending.length > 0 ? <div className="free-scout-status" role="status">
         {online ? "Online" : "Offline"} · {pending.length} waiting to upload
         {pending.length > 0 && online ? <Button type="button" variant="secondary" onClick={() => void sync()}>Retry upload</Button> : null}
-      </div>
+      </div> : null}
       <div className="free-scout-card">
         {!started ? <>
           <div className="free-scout-inputs">
             <label>Team number<input inputMode="numeric" value={draft.team} onChange={(event) => change({ team: event.target.value.replace(/\D/g, "").slice(0, 5) })} placeholder="6925" /></label>
-            <label>Session or match<input value={draft.label} maxLength={100} onChange={(event) => change({ label: event.target.value })} /></label>
-            <label>Form<select value={draft.type} onChange={(event) => change({ type: event.target.value as Draft["type"], payload: {} })}><option value="match">Match</option><option value="pit">Pit</option></select></label>
-            <label>Season<input type="number" min={1992} max={2100} value={draft.year} onChange={(event) => change({ year: Number(event.target.value), payload: {} })} /></label>
+            {draft.type === "match" ? <label>Match name<input value={draft.label} maxLength={100} placeholder="e.g. Practice 1 or Qual 12" onChange={(event) => change({ label: event.target.value })} /></label> : null}
+            <fieldset className="free-scout-kind"><legend>Scout</legend>{(["pit", "match"] as const).map(kind => <label key={kind}><input type="radio" name="practice-kind" checked={draft.type === kind} onChange={() => change({ type: kind, schemaId: undefined, definition: undefined, payload: {} })} /><span>{kind === "pit" ? "Pit" : "Match"}</span></label>)}</fieldset>
+            <label>Game<select value={draft.year} onChange={event => change({ year: Number(event.target.value), schemaId: undefined, definition: undefined, payload: {} })}>{Array.from(new Set([latestScoutingYear(), draft.year, 2025, 2024])).sort((a,b) => b-a).map(year => <option key={year} value={year}>{scoutingGameLabel(year)}</option>)}</select></label>
+            {schemas.some(schema => schema.type === draft.type) ? <label>Questions<select value={draft.schemaId ?? ""} onChange={event => { const schema = schemas.find(row => row.id === event.target.value); change({ schemaId: schema?.id, definition: schema ? portableScoutDefinition(schema.definition) : undefined, payload: {} }); }}><option value="">Game starter form</option>{schemas.filter(schema => schema.type === draft.type).map(schema => <option value={schema.id} key={schema.id}>{schema.definition.title}</option>)}</select></label> : null}
           </div>
-          <Button type="button" variant="primary" disabled={!Number(draft.team) || !draft.label.trim() || draft.year < 1992 || draft.year > 2100} onClick={() => setStarted(true)}>Start scouting</Button>
+          <Button type="button" variant="primary" disabled={!Number(draft.team) || (draft.type === "match" && !draft.label.trim()) || draft.year < 1992 || draft.year > 2100} onClick={() => setStarted(true)}>Start scouting</Button>
         </> : <>
-          <div className="free-scout-heading"><h3>Team {draft.team} · {draft.label}</h3><Button type="button" variant="secondary" onClick={() => setStarted(false)}>Change details</Button></div>
-          <p className="app-muted">{storageError || "Draft saved on this device"}</p>
+          <div className="free-scout-heading"><h3>Team {draft.team} · {draft.type === "pit" ? "Pit scouting" : draft.label}</h3><Button type="button" variant="secondary" onClick={() => setStarted(false)}>Change details</Button></div>
+          <p className="app-muted">{scoutingGameLabel(draft.year)}</p>{storageError ? <p role="alert">{storageError}</p> : null}
           <div className="scout-form-grid">{fields.map((field) => <Field key={field.key} field={field} value={draft.payload[field.key]} flags={[]} historyHint={null} disagreementRate={null} orgId={orgId} onChange={(value) => change({ payload: { ...draft.payload, [field.key]: value } })} />)}</div>
-          <Button type="button" variant="primary" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save report"}</Button>
+          <div className="scout-report-actions"><Button type="button" variant="secondary" disabled={busy} onClick={() => { if (Object.keys(draft.payload).length && !window.confirm("Discard this report? Your saved reports will stay.")) return; try { localStorage.removeItem(draftKey); } catch { setStorageError("This device could not clear its saved draft."); } setStarted(false); change({ payload: {} }); setMessage(""); }}>Cancel report</Button><Button type="button" variant="primary" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save report"}</Button></div>
         </>}
         {message ? <p role="status">{message}</p> : null}
       </div>
@@ -152,7 +162,7 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
           {report.error ? <Button type="button" variant="secondary" onClick={async () => {
             if (started && Object.keys(draft.payload).length && !window.confirm("Replace the open draft with this saved report?")) return;
             try {
-              const recovered: Draft = { type: report.type, team: String(report.teamNumber), year: report.year, label: report.label, payload: report.payload };
+              const recovered: Draft = { type: report.type, team: String(report.teamNumber), year: report.year, label: report.label, schemaId: report.schemaId, definition: report.definition, payload: report.payload };
               localStorage.setItem(draftKey, JSON.stringify(recovered));
               await removePendingFreeReport(orgId, userId, report.id);
               setDraft(recovered); setStarted(true); setPending(await pendingFreeReports(orgId, userId));

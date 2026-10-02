@@ -326,7 +326,8 @@ export async function loadDashboardSnapshot(
            red_alliance->'teamKeys' ? $2
            OR blue_alliance->'teamKeys' ? $2
          )
-         AND (red_alliance->>'score') IS NOT NULL
+         AND (red_alliance->>'score') ~ '^[0-9]+$'
+         AND (blue_alliance->>'score') ~ '^[0-9]+$'
        ORDER BY COALESCE(actual_time, predicted_time, event_time) DESC NULLS LAST
        LIMIT 1`,
       [eventKey, teamKey],
@@ -454,7 +455,22 @@ export async function loadDashboardSnapshot(
       [input.orgId, eventKey],
     );
     const c = counts.rows[0]!;
+    const progress = await client.query<{ scheduledTeams: string; pitReports: string; matchSlots: string; matchReports: string }>(
+      `WITH roster AS (
+         SELECT DISTINCT jsonb_array_elements_text(COALESCE(red_alliance->'teamKeys','[]'::jsonb)) AS team FROM matches_ref WHERE event_key=$2
+         UNION SELECT DISTINCT jsonb_array_elements_text(COALESCE(blue_alliance->'teamKeys','[]'::jsonb)) FROM matches_ref WHERE event_key=$2
+       ), slots AS (
+         SELECT match_key, jsonb_array_elements_text(COALESCE(red_alliance->'teamKeys','[]'::jsonb)) AS team FROM matches_ref WHERE event_key=$2 AND comp_level='qm'
+         UNION SELECT match_key, jsonb_array_elements_text(COALESCE(blue_alliance->'teamKeys','[]'::jsonb)) FROM matches_ref WHERE event_key=$2 AND comp_level='qm'
+       ) SELECT
+         (SELECT count(*)::text FROM roster) AS "scheduledTeams",
+         (SELECT count(DISTINCT p.team_key)::text FROM pit_scout_entries p JOIN roster r ON r.team=p.team_key WHERE p.org_id=$1 AND p.event_key=$2) AS "pitReports",
+         (SELECT count(*)::text FROM slots) AS "matchSlots",
+         (SELECT count(DISTINCT (s.match_key,s.team_key))::text FROM match_scout_entries s JOIN slots r ON r.match_key=s.match_key AND r.team=s.team_key WHERE s.org_id=$1 AND s.event_key=$2) AS "matchReports"`,
+      [input.orgId, eventKey],
+    );
     widgets.scouting_coverage = stamp("live", "scouting_coverage", {
+      ...Object.fromEntries(Object.entries(progress.rows[0] ?? {}).map(([key,value]) => [key, Number(value)])),
       assignments: Number(c.assignments),
       reports: Number(c.reports),
       openDisagreements: Number(c.openDisagreements),

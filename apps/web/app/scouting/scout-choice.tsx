@@ -77,7 +77,7 @@ export function ScoutChoice({
           aria-labelledby={labelId}
           style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
         >
-          {options.map((option) => {
+          {options.map((option, index) => {
             const active = value === option.value;
             return (
               <button
@@ -85,7 +85,16 @@ export function ScoutChoice({
                 type="button"
                 role="radio"
                 aria-checked={active}
+                tabIndex={active || (!value && index === 0) ? 0 : -1}
                 className={active ? "is-active" : undefined}
+                onKeyDown={event => {
+                  const direction = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : ["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 0;
+                  if (!direction && event.key !== "Home" && event.key !== "End") return;
+                  event.preventDefault();
+                  const next = event.key === "Home" ? 0 : event.key === "End" ? options.length-1 : (index+direction+options.length)%options.length;
+                  onChange(options[next]!.value);
+                  event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
+                }}
                 onClick={() => onChange(active && allowClear ? undefined : option.value)}
               >
                 {option.label}

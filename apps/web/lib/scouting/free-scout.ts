@@ -1,6 +1,7 @@
 import { matchSchemaForYear, pitSchemaForYear, validatePayload, type SchemaDefinition } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { visibleFields, withInferredPhaseRules } from "./context-visible";
+import { lastPublishedPack, packForYear } from "@vantage/game-year";
 
 export type FreeScoutReport = {
   id: string;
@@ -10,6 +11,9 @@ export type FreeScoutReport = {
   label: string;
   payload: Record<string, unknown>;
   observedAt: string;
+  /** Pins a team-authored form; the server resolves it under the team's RLS. */
+  schemaId?: string;
+  definition?: SchemaDefinition;
 };
 export type SavedFreeScoutReport = FreeScoutReport & {
   definition: SchemaDefinition;
@@ -17,15 +21,30 @@ export type SavedFreeScoutReport = FreeScoutReport & {
 };
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+export function latestScoutingYear(now = new Date()): number {
+  return lastPublishedPack(now.getUTCFullYear())?.year ?? now.getUTCFullYear();
+}
+export function scoutingGameLabel(year: number): string {
+  const archived: Record<number, string> = { 2025: "REEFSCAPE", 2024: "CRESCENDO" };
+  const pack = packForYear(year);
+  if (archived[year]) return `${archived[year]} · ${year}`;
+  return `${pack.gameName} · ${year}${pack.status === "published" ? "" : " (manual not released)"}`;
+}
+
 /** Use the same season forms and controls as event scouting, with no media or identity fields. */
 export function freeScoutDefinition(year: number, type: "match" | "pit"): SchemaDefinition {
   const schema = type === "match" ? matchSchemaForYear(year) : pitSchemaForYear(year);
+  return portableScoutDefinition(schema);
+}
+
+/** Identity comes from the signed-in account; disabled media cannot block a report. */
+export function portableScoutDefinition(schema: SchemaDefinition): SchemaDefinition {
   return { ...schema, fields: withInferredPhaseRules(schema.fields.filter((field) =>
     !isScoutIdentityField(field) && field.type !== "robot_image",
   )) };
 }
 
-export function parseFreeScoutReport(value: unknown): FreeScoutReport {
+export function parseFreeScoutReport(value: unknown, publishedDefinition?: SchemaDefinition): FreeScoutReport {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Report is required.");
   const row = value as Record<string, unknown>;
   if (typeof row.id !== "string" || !UUID_PATTERN.test(row.id)) throw new Error("Report ID is invalid.");
@@ -36,11 +55,12 @@ export function parseFreeScoutReport(value: unknown): FreeScoutReport {
   if (typeof row.observedAt !== "string" || !Number.isFinite(Date.parse(row.observedAt))) throw new Error("Observation time is invalid.");
   if (!row.payload || typeof row.payload !== "object" || Array.isArray(row.payload)) throw new Error("Answers are required.");
   if (JSON.stringify(row.payload).length > 64_000) throw new Error("This report is too large.");
-  const definition = freeScoutDefinition(Number(row.year), row.type);
+  if (row.schemaId !== undefined && (typeof row.schemaId !== "string" || !UUID_PATTERN.test(row.schemaId))) throw new Error("Form ID is invalid.");
+  const definition = publishedDefinition ? portableScoutDefinition(publishedDefinition) : freeScoutDefinition(Number(row.year), row.type);
   const fields = visibleFields(definition.fields, row.payload as Record<string, unknown>);
   const keys = new Set(fields.map((field) => field.key));
   const payload = Object.fromEntries(Object.entries(row.payload).filter(([key]) => keys.has(key)));
   const errors = validatePayload({ ...definition, fields }, payload);
   if (errors.length) throw new Error(errors.join("; "));
-  return { id: row.id, year: Number(row.year), type: row.type, teamNumber: Number(row.teamNumber), label: row.label.trim(), payload, observedAt: new Date(row.observedAt).toISOString() };
+  return { id: row.id, year: Number(row.year), type: row.type, teamNumber: Number(row.teamNumber), label: row.label.trim(), payload, observedAt: new Date(row.observedAt).toISOString(), ...(typeof row.schemaId === "string" ? { schemaId: row.schemaId, definition } : {}) };
 }

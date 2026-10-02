@@ -23,6 +23,7 @@ export type SettingsNavItem = {
 };
 
 export const SETTINGS_NAV: SettingsNavItem[] = [
+  { id: "teams", label: "Your teams", href: "/account/teams", icon: "users", scope: "personal", requiredRole: "member" },
   // Personal — every member.
   { id: "profile", label: "Profile", href: "/account", icon: "users", scope: "personal", requiredRole: "member" },
   {

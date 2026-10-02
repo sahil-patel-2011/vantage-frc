@@ -107,7 +107,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const setupHero = useMemo(() => setupHeroFrom(firstWeek.view), [firstWeek.view]);
   const teamSetupCard = Boolean(setupHero);
   const sharedSetupPrompt = Boolean(home.orgId && home.widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
-  const homeOverview = Boolean(home.orgId && home.widgetsLoaded);
+  const homeOverview = false;
   /** Session and the team's real board are here; before that Home is one skeleton. */
   const homeReady = home.meLoaded && (!home.orgId || home.boardLoaded);
   /*
@@ -356,7 +356,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       : null;
 
   return (
-    <DashboardActionsProvider orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
+    <DashboardActionsProvider role={home.role} orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
     <WidgetsLoadedContext.Provider value={home.widgetsLoaded}>
     <DashboardHomeView
       setupHero={setupHero}

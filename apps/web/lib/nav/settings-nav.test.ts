@@ -54,6 +54,7 @@ describe("visibleSettingsNav", () => {
     const items = visibleSettingsNav("scout");
     expect(items.every((i) => i.scope === "personal")).toBe(true);
     expect(items.map((i) => i.id)).toEqual([
+      "teams",
       "profile",
       "appearance",
       "notifications",

@@ -163,9 +163,9 @@ export function ScoutingShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" && orgId ? <Button as="a" variant="primary" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Scout without an event</Button> : null}
+        {shell === "setup" && orgId ? <Button as="a" variant="primary" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Practice scouting</Button> : null}
         {shell === "setup" ? (
-          <Button as="a" variant={orgId ? "secondary" : "primary"} href={orgId ? commandHref : workspaceHref}>{orgId ? "Open Event Day" : "Choose your team"}</Button>
+          <Button as="a" variant={orgId ? "secondary" : "primary"} href={orgId ? commandHref : workspaceHref}>{orgId ? "Set event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>

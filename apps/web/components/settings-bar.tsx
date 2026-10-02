@@ -43,6 +43,7 @@ function isOnAccountPage(item: SettingsNavItem): boolean {
 
 /** One line under each row, so "Security" and "Team security" side by side say how they differ. */
 const ROW_DETAIL: Record<string, string> = {
+  teams: "Switch teams, create a team or use an invitation",
   security: "Your sign-in and a second step",
   connectors: "Onshape, Google and other tools linked to the team",
   "team-admin": "Invite people and choose what each can do",
@@ -117,8 +118,10 @@ export function SettingsBar({ role, orgId }: SettingsBarProps) {
           that goes: the page's own switcher is the one that changes the panel
           in place without a reload. What stays here is the part the page does
           not have — the rows that go somewhere else. */}
-      <RowGroup label="Your settings" items={personal} orgId={orgId} />
-      <RowGroup label="Team settings" items={team} orgId={orgId} />
+      <RowGroup label="Account and security" items={personal.filter(item => ["security", "teams"].includes(item.id))} orgId={orgId} />
+      <RowGroup label="Connections" items={[...personal, ...team].filter(item => ["connectors", "team-ai-keys"].includes(item.id))} orgId={orgId} />
+      <RowGroup label="People and permissions" items={team.filter(item => ["team-admin", "member-access", "chat"].includes(item.id))} orgId={orgId} />
+      <RowGroup label="Team and data" items={team.filter(item => ["team-profile", "team-data", "data-export"].includes(item.id))} orgId={orgId} />
     </>
   );
 }

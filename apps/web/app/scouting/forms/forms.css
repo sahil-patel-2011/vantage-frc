@@ -662,3 +662,40 @@
 }
 .sfb-type-switch { border: 0; padding: 0; margin: 0; min-width: 0; }
 .sfb-type-switch:disabled button { cursor: wait; opacity: .6; }
+
+.sfb-layout-single { grid-template-columns: minmax(0, 1fr); }
+.sfb-responses > header, .sfb-response-controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; align-items: center; }
+.sfb-responses h2, .sfb-responses h3 { margin: 0; }
+.sfb-responses p { color: var(--muted); }
+.sfb-response-controls { margin: 20px 0; }
+.sfb-response-controls label { display: grid; gap: 6px; }
+.sfb-response-controls input { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
+.sfb-response-table { overflow: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 14px; }
+.sfb-response-table table { display: table; width: max-content; max-width: none; overflow: visible; table-layout: auto; border-collapse: collapse; min-width: 100%; font-size: 14px; }
+.sfb-response-table th, .sfb-response-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); min-width: 130px; max-width: 300px; overflow-wrap: anywhere; }
+.sfb-response-table thead { background: var(--bg); }
+.sfb-response-table small { display: block; color: var(--muted); }
+.sfb-response-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px),1fr)); gap: 16px; }
+.sfb-response-charts article { border: 1px solid var(--line); border-radius: 18px; padding: 20px; min-width: 0; }
+.sfb-response-charts svg { width: 100%; height: 130px; }
+.sfb-response-charts ul { list-style: none; padding: 0; display: grid; gap: 12px; }
+.sfb-response-charts li { display: grid; grid-template-columns: minmax(0,1fr) 2fr auto; align-items: center; gap: 12px; }
+.sfb-response-charts meter { width: 100%; accent-color: var(--accent); }
+.sfb-question { border-radius: 20px; border-color: var(--line); padding: 24px; }
+.sfb-question-head .sfb-question-order { display: none; }
+.form-view-segments { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); width: fit-content; max-width: 100%; }
+.form-view-segments button { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.form-view-segments button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 10%, transparent); }
+.form-view-segments button:active { background: var(--accent-soft); }
+.sfb-heading { margin-bottom: 24px; }
+.sfb-heading h2 { margin: 0; font-size: 28px; letter-spacing: -.025em; }
+.sfb-heading p { margin: 8px 0 0; color: var(--muted); }
+.sfb-meta > .soft-form-row:first-child { flex: 1 1 320px; }
+.sfb-meta > .form-view-segments { flex-basis: auto; }
+.sfb-publish-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+.sfb-publish-bar .sfb-status-inline { margin: 0; }
+.sfb-more > summary { min-height: 44px; }
+.sfb-page .app-card { box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 5%, transparent); }
+.sfb-response-table:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Scouting's focused workspace has its own views; navigation remains in the hamburger. */
+body.has-app-shell:has(.sfb-page) .soft-island { display: none !important; }

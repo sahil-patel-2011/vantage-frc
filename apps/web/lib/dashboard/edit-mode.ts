@@ -6,28 +6,27 @@
 
 import {
   DASHBOARD_COLUMNS,
-  fillRowEnds,
   findDashboardSlot,
   homeViewLayout,
   isAlwaysShown,
   packDashboardLayout,
   packFillingGaps,
-  sizeForHome,
   usesSharedSetupPrompt,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
   type WidgetCatalogEntry,
 } from "./catalog";
 
-export type WidgetGroup = "match_day" | "team" | "build" | "me";
+export type WidgetGroup = "match_day" | "scouting" | "team" | "build" | "me";
 
-export const WIDGET_GROUP_ORDER: readonly WidgetGroup[] = ["match_day", "team", "build", "me"];
+export const WIDGET_GROUP_ORDER: readonly WidgetGroup[] = ["match_day", "scouting", "team", "build", "me"];
 
 export const WIDGET_GROUP_LABEL: Record<WidgetGroup, string> = {
-  match_day: "Match day",
+  match_day: "Matches and results",
+  scouting: "Scouting and strategy",
   team: "Team",
   build: "Build",
-  me: "Me",
+  me: "Personal",
 };
 
 /*
@@ -39,10 +38,10 @@ export const WIDGET_GROUP: Record<DashboardWidgetType, WidgetGroup> = {
   next_match: "match_day",
   match_schedule: "match_day",
   recent_result: "match_day",
-  prediction_summary: "match_day",
+  prediction_summary: "scouting",
   competition_snapshot: "match_day",
-  scouting_coverage: "match_day",
-  alliance_desk: "match_day",
+  scouting_coverage: "scouting",
+  alliance_desk: "scouting",
   event_countdown: "match_day",
   event_readiness: "match_day",
   weather_venue: "match_day",
@@ -82,7 +81,7 @@ export const WIDGET_GROUP: Record<DashboardWidgetType, WidgetGroup> = {
  * Robot readiness, "money" finds Budget.
  */
 const WIDGET_KEYWORDS: Partial<Record<DashboardWidgetType, string>> = {
-  next_match: "match schedule queue bumper alliance partners",
+  next_match: "match day schedule queue bumper alliance partners",
   recent_result: "match score result",
   competition_snapshot: "event rank ranking record",
   scouting_coverage: "scout scouting coverage",
@@ -186,16 +185,14 @@ export function packInColumns(layout: DashboardWidgetLayout[], cols: number): Da
  */
 export function editBoardLayout(
   layout: DashboardWidgetLayout[],
-  hidden: ReadonlyMap<string, unknown>,
-  keep: ReadonlySet<string> = new Set(),
-  widgets?: Record<string, { status?: string } | undefined>,
+  _hidden: ReadonlyMap<string, unknown>,
+  _keep: ReadonlySet<string> = new Set(),
+  _widgets?: Record<string, { status?: string } | undefined>,
 ): DashboardWidgetLayout[] {
   // Array order kept (positions from the pack): React moving the dragged card's node mid-drag
   // drops the pointer capture the drag runs on.
   // The same narrow-strip fill Home applies, so the editor shows the widths Home will show.
-  return fillRowEnds(
-    packKeepingOrder(sizeForHome(layout.filter((item) => !hidden.has(item.i) || keep.has(item.i)), widgets)),
-  );
+  return layout.map(item => ({ ...item }));
 }
 
 /**

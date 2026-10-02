@@ -240,3 +240,13 @@
 .pit-progress button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
 .pit-progress-more { align-self: center; color: var(--muted); font-size: 13px; }
 .scout-auto-path-ends { display: flex; justify-content: space-between; margin: 0 0 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+
+/* Shared published-form renderer: comfortable controls and a clear question rhythm. */
+.scout-form-panel > .scout-field-wrap, .free-scout .scout-field-wrap, .sfb-tablet .scout-field-wrap { margin: 0 0 16px; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.scout-field-wrap .soft-form-row { display: grid; gap: 10px; margin: 0; }
+.scout-field-wrap .soft-form-row > span:first-child { font-weight: 650; color: var(--ink); }
+.scout-field-wrap .soft-form-row > input, .scout-field-wrap .soft-form-row > select, .scout-field-wrap .soft-form-row > textarea { width: 100%; min-width: 0; min-height: 48px; padding: 12px 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; font: inherit; }
+.scout-field-wrap .soft-form-row > textarea { min-height: 100px; resize: vertical; }
+.scout-report-actions { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin: 20px 0; }
+.scout-report-actions .scout-save-button { flex: 1; margin: 0; }
+@media(max-width: 480px) { .scout-form-panel > .scout-field-wrap, .free-scout .scout-field-wrap, .sfb-tablet .scout-field-wrap { padding: 16px; } }

@@ -15,6 +15,7 @@ const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), {
 type Action = "task" | "scouting";
 const ActionsContext = createContext<{
   orgId: string;
+  role: string | null;
   open: (action: Action) => void;
   refresh: (type: DashboardWidgetType) => Promise<void>;
 } | null>(null);
@@ -23,15 +24,16 @@ export function useDashboardActions() {
   return useContext(ActionsContext);
 }
 
-export function DashboardActionsProvider({ orgId, refresh, children }: {
+export function DashboardActionsProvider({ orgId, role, refresh, children }: {
   orgId: string;
+  role: string | null;
   refresh: (type: DashboardWidgetType) => Promise<void>;
   children: ReactNode;
 }) {
   const [action, setAction] = useState<Action | null>(null);
   const close = useCallback(() => setAction(null), []);
   return (
-    <ActionsContext.Provider value={{ orgId, open: setAction, refresh }}>
+    <ActionsContext.Provider value={{ orgId, role, open: setAction, refresh }}>
       {children}
       <Modal open={action !== null} onClose={close}
         title={action === "task" ? "Create team task" : "Log scouting report"}
@@ -44,9 +46,8 @@ export function DashboardActionsProvider({ orgId, refresh, children }: {
   );
 }
 
-const TASK_CARDS = new Set<DashboardWidgetType>(["team_todos"]);
+const TASK_CARDS = new Set<DashboardWidgetType>();
 const SCOUT_CARDS = new Set<DashboardWidgetType>([
-  "scouting_coverage",
   // Not the Next match card: it was the only card on a default Home with a ••• menu, and
   // offered "Log a scouting report" and "Refresh" even when the event was over.
   "match_schedule",

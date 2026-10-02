@@ -70,7 +70,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
-  const [tab, setTab] = useState<ScoutTab>("match");
+  const [tab, setTab] = useState<ScoutTab>("pit");
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
@@ -982,6 +982,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       loadConflicts={loadConflicts}
       reviewConflict={reviewConflict}
       attachMedia={attachMedia}
+      cancelReport={() => {
+        if (userEdited && Object.keys(payload).length && !window.confirm("Discard this report? Saved reports will stay.")) return;
+        clearScoutDraft(draftKey); setUserEdited(false); setPayload({}); setTeamKey(""); setHoldAutoPick(true);
+        setSaveReceipt(null); setMessage("");
+      }}
       submit={submit}
       saveFormula={saveFormula}
       setMessage={setMessage}

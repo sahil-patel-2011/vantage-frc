@@ -89,7 +89,7 @@ export function ExtraWidgetView({
       );
     case "calendar_today":
       return (
-        <Shell type={type} title="Today" payload={payload} href={withOrg("/team/calendar")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Coming up" payload={payload} href={withOrg("/team/calendar")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? <CalendarTodayLive data={data} /> : null}
         </Shell>
       );

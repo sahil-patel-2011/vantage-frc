@@ -1,5 +1,6 @@
 "use client";
 
+import { PredictionEvaluation } from "./prediction-evaluation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -338,6 +339,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           <StrategyMatchPicker orgId={view.orgId} current={view.matchKey} />
           {/* The chance to win first; the briefing link after it (it pushed the answer off a phone's first screen). */}
           <LivePanel view={view} />
+          <PredictionEvaluation orgId={previewOrgId} />
           <StrategyBriefingCard
             orgId={view.orgId}
             matchKey={view.matchKey}

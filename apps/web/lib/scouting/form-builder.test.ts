@@ -299,7 +299,7 @@ describe("form-builder", () => {
         validation: ok,
         acknowledgeBudget: false,
       }),
-    ).toMatch(/active event/i);
+    ).toMatch(/game/i);
   });
 
   it("refuses invented DEMO fields in empty/setup copy", () => {

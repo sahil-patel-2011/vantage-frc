@@ -6,6 +6,7 @@ import {
   implausibleScoutRows,
   ratingsByTeam,
   ratingsFromScouting,
+  recentScoutedFormDelta,
   type ScoutedMatchRow,
 } from "./scouting-rating";
 
@@ -33,6 +34,16 @@ function field(perTeam: number, teams = 12): ScoutedMatchRow[] {
 }
 
 describe("ratingsFromScouting", () => {
+  it("uses qualification chronology for form trends and declines ambiguous or thin samples", () => {
+    const rows = [6, 2, 4, 1, 5, 3].map(n => row({ teamKey: "frc254", matchKey: `2026test_qm${n}`, total: n > 3 ? 50 : 20 }));
+    expect(recentScoutedFormDelta(rows)).toBe(30);
+    expect(recentScoutedFormDelta(rows.slice(1))).toBeNull();
+    expect(recentScoutedFormDelta([...rows, row({ teamKey: "frc254", matchKey: "2026other_qm1", total: 20 })])).toBeNull();
+    expect(recentScoutedFormDelta(rows.map(row => ({ ...row, total: null, auto: null, teleop: null, endgame: null })))).toBeNull();
+    const [rating] = ratingsFromScouting([...rows, rows[0]!]);
+    expect(rating?.matches).toBe(6);
+    expect(rating?.recentFormDelta).toBe(30);
+  });
   it("keeps partial scoring before a breakdown and never infers zero from a status alone", () => {
     const [rating] = ratingsFromScouting([
       { teamKey: "frc1678", matchKey: "qm11", total: 12, auto: 10, disabled: true },

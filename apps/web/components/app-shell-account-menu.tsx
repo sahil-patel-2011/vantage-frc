@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMembershipLabel, roleWord, type Me, type MembershipOption } from "./app-shell-model";
+import { type Me, type MembershipOption } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { Icon } from "./icon";
 
@@ -12,12 +12,8 @@ export function AppShellAccountMenu({
   rolePlanCue,
   orgId,
   memberships,
-  orderedMemberships,
-  recentOrgIds,
   signingOut,
   onClose,
-  switchWorkspaceHref,
-  onWorkspaceSwitch,
   onSignOut,
 }: {
   open: boolean;
@@ -51,29 +47,6 @@ export function AppShellAccountMenu({
             <span className="soft-account-role">{rolePlanCue}</span>
           </div>
         </div>
-        {memberships.length > 1 ? (
-          <div className="soft-account-teams" role="group" aria-label="Switch team">
-            <span className="soft-account-teams-label">Teams</span>
-            {orderedMemberships.map((row) => (
-              <a
-                key={row.orgId}
-                role="menuitem"
-                href={switchWorkspaceHref(row.orgId)}
-                aria-current={row.orgId === orgId ? "true" : undefined}
-                onClick={() => {
-                  onWorkspaceSwitch(row.orgId);
-                  onClose();
-                }}
-              >
-                {formatMembershipLabel(row)}
-                <small>
-                  {roleWord(row.role)}
-                  {recentOrgIds[0] === row.orgId && row.orgId !== orgId ? " · recent" : ""}
-                </small>
-              </a>
-            ))}
-          </div>
-        ) : null}
         {/* Settings owns the canonical list (SETTINGS_NAV): profile,
             appearance, notifications, security, keys. Repeating two of
             its rows here meant this menu had two ways to /account. */}

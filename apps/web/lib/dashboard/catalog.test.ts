@@ -168,7 +168,7 @@ describe("dashboard tenant and role isolation rules", () => {
 });
 
 describe("home view layout", () => {
-  it("hides empty cards (not Next match) in view mode and hides completed setup cards", () => {
+  it("keeps user-selected empty cards and completed setup cards after saving", () => {
     const viewed = homeViewLayout(
       [
         ...DEFAULT_DASHBOARD_LAYOUT,
@@ -187,21 +187,19 @@ describe("home view layout", () => {
         },
       },
     );
-    // Empty cards step aside outside edit mode; Next match stays as the top of Home.
-    const empty = new Set(["robot_readiness", "recent_result", "scouting_coverage"]);
     expect(viewed.map((item) => item.type)).toEqual(
-      DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type).filter((type) => !empty.has(type)),
+      [...DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type), "onboarding_checklist"],
     );
     expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
-    expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
+    expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(true);
   });
 
-  it("shrinks an empty next-match hero to three rows, and keeps it full size when live or still loading", () => {
+  it("keeps saved heights through empty, loading and live data refreshes", () => {
     const hero = DEFAULT_DASHBOARD_LAYOUT.find((item) => item.type === "next_match")!;
     const view = (status?: string) =>
       homeViewLayout([hero], { editing: false, shell: "ready", widgets: status ? { [hero.i]: { status } } : {} })[0]!.h;
-    expect(view("empty")).toBe(3);
-    expect(view("setup_required")).toBe(3);
+    expect(view("empty")).toBe(hero.h);
+    expect(view("setup_required")).toBe(hero.h);
     expect(view("live")).toBe(hero.h);
     expect(view()).toBe(hero.h);
     expect(homeViewLayout([hero], { editing: true, shell: "ready", widgets: { [hero.i]: { status: "empty" } } })[0]!.h).toBe(hero.h);
@@ -215,12 +213,12 @@ describe("home view layout", () => {
     const shown = viewed.find((row) => row.i === resized.i)!;
     expect(shown.w).toBe(resized.w);
     expect(shown.h).toBe(resized.h);
-    // Alone on its row it fills the row on Home; the saved size is untouched.
+    // Alone on its row its chosen width stays unchanged.
     const alone = homeViewLayout([resized], { editing: false, shell: "ready" });
-    expect(alone[0]?.w).toBe(12);
+    expect(alone[0]?.w).toBe(resized.w);
     expect(resized.w).toBeLessThan(12);
     const withNarrowGap = homeViewLayout([{ ...resized, w: 10 }], { editing: false, shell: "ready" });
-    expect(withNarrowGap[0]?.w).toBe(12);
+    expect(withNarrowGap[0]?.w).toBe(10);
   });
 
   it("leaves the saved board untouched in edit mode", () => {
@@ -253,36 +251,33 @@ describe("widget registry", () => {
     const mentor = defaultDashboardLayoutForAudience("mentor");
     expect(student.map((item) => item.type)).toEqual([
       "next_match",
-      "my_day",
-      "hours_month",
       "team_todos",
-      "files_recent",
-      "team_chat",
-      "ask_ai",
+      "scouting_coverage",
+      "calendar_today",
+      "recent_result",
+      "competition_snapshot",
     ]);
     expect(mentor.map((item) => item.type)).toEqual([
       "next_match",
       "team_todos",
-      "my_day",
-      "hours_month",
-      "ask_ai",
-      "duties",
-      "announcements_ack",
-      "budget_parts",
+      "scouting_coverage",
+      "calendar_today",
+      "recent_result",
+      "competition_snapshot",
     ]);
     expect(validateDashboardLayout(student, "scout").ok).toBe(true);
     expect(validateDashboardLayout(mentor, "admin").ok).toBe(true);
-    expect(validateDashboardLayout(mentor, "scout").ok).toBe(false);
+    expect(validateDashboardLayout(mentor, "scout").ok).toBe(true);
   });
 
   it("missing Home uses the audience board while deliberately empty boards stay empty", () => {
     expect(layoutOrAudienceDefault([], "student")).toEqual([]);
     const student = layoutOrAudienceDefault(undefined, "student");
     const mentor = layoutOrAudienceDefault(undefined, "mentor");
-    expect(student.map((item) => item.type)).toContain("my_day");
-    expect(student.map((item) => item.type)).not.toContain("competition_snapshot");
-    expect(mentor.map((item) => item.type)).toContain("duties");
-    expect(mentor.map((item) => item.type)).not.toContain("competition_snapshot");
+    expect(student.map((item) => item.type)).toContain("scouting_coverage");
+    expect(student.map((item) => item.type)).toContain("team_todos");
+    expect(mentor.map((item) => item.type)).toContain("calendar_today");
+    expect(mentor.map((item) => item.type)).toContain("competition_snapshot");
     const kept = defaultDashboardLayoutForAudience("student");
     expect(layoutOrAudienceDefault(kept, "mentor")).toBe(kept);
     expect(layoutOrAudienceDefault(null, null).map((item) => item.type)).toEqual(

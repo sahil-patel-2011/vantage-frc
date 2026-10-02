@@ -66,6 +66,8 @@ export type ScoutedTeamRating = {
   phaseSamples?: { auto: number; teleop: number; endgame: number };
   /** Mean total per match, before shrinkage. */
   meanTotal: number;
+  /** Recent qualifying-match change, only when chronology and six observations are known. */
+  recentFormDelta?: number | null;
   /** Mean total pulled toward the field, by how thin the evidence is. */
   shrunkTotal: number;
   /** Share of scouted matches where the robot climbed, or null if never recorded. */
@@ -109,6 +111,19 @@ export const MIN_MATCHES_TO_STAND_ALONE = 3;
 
 /** At or above this, the sample is worth as much as an early-event EPA. */
 export const CONFIDENT_MATCHES = 8;
+
+export function recentScoutedFormDelta(rows: readonly ScoutedMatchRow[]): number | null {
+  const known = rows.flatMap(row => {
+    const match = /^(.*)_qm(\d+)$/.exec(row.matchKey);
+    const total = scoutedMatchTotal(row);
+    return match && total !== null ? [{ event: match[1], number: Number(match[2]), total }] : [];
+  });
+  // No timestamps for multi-event samples: don't guess which event was most recent.
+  if (known.length < 6 || new Set(known.map(row => row.event)).size !== 1) return null;
+  const ordered = known.sort((a,b) => a.number-b.number);
+  const average = (items: typeof ordered) => items.reduce((sum,row) => sum+row.total,0) / items.length;
+  return average(ordered.slice(-3)) - average(ordered.slice(0,-3));
+}
 
 function mean(values: readonly number[]): number {
   if (values.length === 0) return 0;
@@ -294,6 +309,7 @@ export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTe
       meanEndgame: mean(stat.endgames),
       phaseSamples: { auto: stat.autos.length, teleop: stat.teleops.length, endgame: stat.endgames.length },
       meanTotal: mean(stat.totals),
+      recentFormDelta: recentScoutedFormDelta(deduped.get(teamKey) ?? []),
       shrunkTotal: shrunk.get(teamKey)?.shrunk ?? mean(stat.totals),
       climbRate: stat.climbRecorded > 0 ? stat.climbs / stat.climbRecorded : null,
       disabledRate: matches > 0 ? stat.disabled / matches : 0,

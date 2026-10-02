@@ -154,6 +154,7 @@ export type ScoutingReadyViewProps = {
   loadConflicts: () => Promise<void> | void;
   reviewConflict: (id: string, status: "resolved" | "dismissed") => Promise<void> | void;
   attachMedia: (file: File, options?: { fieldKey?: string; tags?: string[] }) => Promise<string | null>;
+  cancelReport: () => void;
   submit: () => Promise<void> | void;
   saveFormula: () => Promise<void> | void;
   setMessage: (message: string) => void;
@@ -223,6 +224,7 @@ export function ScoutingReadyView({
   loadConflicts,
   reviewConflict,
   attachMedia,
+  cancelReport,
   submit,
   saveFormula,
   setMessage,
@@ -724,7 +726,7 @@ return (
             </div>
           ) : null}
 
-          {activeFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
+          {(teamKey && (type === "pit" || matchKey) ? activeFields : []).filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={`${type}:${matchKey}:${teamKey}:${field.key}`}
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
@@ -802,6 +804,7 @@ return (
           {/* Disabled, and saying why, until there is a robot to save it
               against. It used to accept the tap and answer with an error line
               below the button, after the scout had filled in the whole form. */}
+          <div className="scout-report-actions"><Button variant="secondary" type="button" onClick={cancelReport}>Cancel report</Button>
           <Button
             variant="primary"
             type="button"
@@ -830,6 +833,7 @@ return (
                 ? `Save this ${type}`
                 : "Save on this phone"}
           </Button>
+          </div>
           <ScoutActionHistoryView payload={payload} labels={Object.fromEntries(formFields.map((field) => [field.key, field.label]))} />
           {confirmRunning ? (
             <p className="form-message scout-running-note" role="status">
