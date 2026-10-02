@@ -15,6 +15,8 @@ test("members can collaborate on team forms without misleading setup prompts", a
   expect((await schemas.json()).canManageSchemas).toBe(true);
   await expect(builder.getByLabel("Form title", { exact: true })).toBeEnabled();
   await expect(builder.getByRole("button", { name: "Add question", exact: true })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "Forms", exact: true })).toHaveCount(1);
+  await expect(builder.getByRole("heading", { name: "Scouting forms", exact: true })).toHaveCount(0);
   await expect(builder.getByRole("heading", { name: "Choose your team", exact: true })).toHaveCount(0);
   await builder.getByRole("navigation", { name: "Form workspace" }).getByRole("button", { name: "Preview", exact: true }).click();
   await expect(builder.getByRole("heading", { name: "What scouts see", exact: true })).toBeVisible();

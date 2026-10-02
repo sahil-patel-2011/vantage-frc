@@ -19,7 +19,6 @@ import {
   formBuilderNextActions,
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
-  formBuilderShellCopy,
   duplicateQuestion,
   needsOptionEditor,
   needsSettingsEditor,
@@ -401,7 +400,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
   return (
     <Root className="module-page sfb-page">
-      <header className="sfb-heading"><h2>Scouting forms</h2><p>Build your questions. Preview the form. Review the answers.</p></header>
+      <header className="sfb-heading">{!embedded ? <h2>Scouting forms</h2> : null}<p>Build your questions. Preview the form. Review the answers.</p></header>
 
       <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -420,23 +419,17 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       ) : null}
 
       {shell === "empty" ? (
-        <EmptyState
-          soft
-          className="sfb-shell-empty"
-          badge="Not published"
-          badgeTone="setup"
-          title={formBuilderShellCopy("empty", { entryType: type }).title}
-          description={formBuilderShellCopy("empty", { entryType: type }).description}
-        >
+        <section className="sfb-shell-empty sfb-published-card" role="status">
+          <div><strong>Ready to publish</strong><span>Start with these questions or tailor them below.</span></div>
           {/* The step people arrive for is publishing; "Open Scouting" left the page. */}
           <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
             {publishLabel}
           </Button>
-        </EmptyState>
+        </section>
       ) : null}
 
       {!payload.canManageSchemas ? (
-        <p className="app-muted">Team admins manage these questions. You can preview the form and review responses.</p>
+        <p className="app-muted">You can preview this form and review responses. Editing is unavailable for this account.</p>
       ) : null}
 
       <fieldset className="sfb-type-switch" disabled={busy}>
