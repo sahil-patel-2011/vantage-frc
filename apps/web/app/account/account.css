@@ -310,41 +310,34 @@
   line-height: 1.55;
 }
 
-/* Account identity, centred.
-   The first question this page answers is whose account it is, which matters
-   most on the shared shop laptop where it is usually somebody else's. So the
-   avatar is the biggest thing on the screen and everything centres under it. */
+/* Keep identity clear on shared computers without pushing settings below it. */
 .acct-hero {
   display: grid;
   justify-items: center;
   gap: 4px;
-  margin: 6px 0 22px;
+  margin: 0 0 18px;
   text-align: center;
 }
 
 .acct-avatar {
   display: grid;
   place-items: center;
-  width: 108px;
-  height: 108px;
-  margin-bottom: 14px;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 8px;
   border-radius: 50%;
-  background: linear-gradient(
-    160deg,
-    var(--accent),
-    color-mix(in srgb, var(--accent) 62%, #0b2f8f)
-  );
-  color: #fff;
-  font-size: 44px;
-  font-weight: 800;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 28px;
+  font-weight: 650;
   line-height: 1;
-  box-shadow: var(--shadow-lift);
+  box-shadow: none;
 }
 
 .acct-name {
   margin: 0;
-  font-size: 30px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 650;
   letter-spacing: -0.015em;
   line-height: 1.15;
 }
@@ -363,7 +356,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px 34px;
-  margin: 16px 0 0;
+  margin: 10px 0 0;
 }
 
 .acct-facts div {
@@ -390,13 +383,13 @@
 
 @media (max-width: 480px) {
   .acct-avatar {
-    width: 88px;
-    height: 88px;
-    font-size: 36px;
+    width: 64px;
+    height: 64px;
+    font-size: 26px;
   }
 
   .acct-name {
-    font-size: 25px;
+    font-size: 22px;
   }
 }
 

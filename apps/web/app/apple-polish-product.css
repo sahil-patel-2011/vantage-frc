@@ -1,254 +1,96 @@
-/* Apple-inspired polish. Visual treatment only: no layout semantics or
-   product behavior live here. Split per surface so each sheet is imported
-   from exactly one style bundle (a sheet in two chunk groups loses its
-   <link> on hot reload). */
-
-/* ── Signed-in product, light theme ────────────────────────────────────── */
-html[data-theme="light"] body.has-app-shell {
-  --line-soft: rgba(29, 29, 31, .08);
-  --radius-xs: 10px;
-  --radius-sm: 14px;
+/* Shared product finish. One theme-aware rule per primitive; layout and
+   saved board placement remain with their owners. Semantic colours use shared tokens. */
+body.has-app-shell {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-source-sans: var(--font-sans);
+  --vt-font: var(--font-sans);
+  --line-soft: color-mix(in srgb, var(--ink) 9%, transparent);
+  --radius-xs: 8px;
+  --radius-sm: 12px;
   --radius: 20px;
-  --radius-lg: 26px;
+  --radius-lg: 24px;
+  --shadow-card: 0 2px 8px color-mix(in srgb, var(--ink) 4%, transparent);
   --glow: none;
-  --shadow: 0 1px 4px rgb(0 0 0 / .05);
-  --shadow-card: 0 1px 4px rgb(0 0 0 / .05);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
-  --vt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   background-color: var(--bg) !important;
   background-image: none !important;
   color: var(--ink);
   font-family: var(--font-sans) !important;
   font-size: 15px;
   line-height: 1.5;
-  letter-spacing: -.006em;
+  letter-spacing: -.012em;
 }
 
 body.has-app-shell .soft-topbar {
   height: 60px;
   padding-inline: 18px;
-  background-color: color-mix(in srgb, var(--bg) 88%, transparent);
-  border-bottom-color: rgba(29, 29, 31, .08);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  border-bottom-color: var(--line-soft);
   box-shadow: none;
-  backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(140%) blur(20px);
 }
-
-body.has-app-shell .soft-page-head h1,
-body.has-app-shell .soft-topbar-title {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
-  font-weight: 650;
-  letter-spacing: -.025em;
+body.has-app-shell :where(.soft-page-head, .app-page-header, .hub-bar-id) h1 {
+  color: var(--ink); font-family: var(--font-sans); font-weight: 650;
+  letter-spacing: -.035em; line-height: 1.2; text-wrap: balance;
 }
-
-body.has-app-shell .soft-icon-btn {
-  border-radius: 50%;
-}
-
-body.has-app-shell .soft-icon-btn:hover {
-  border-color: transparent;
-  background: rgba(29, 29, 31, .065);
-}
-
-body.has-app-shell .soft-avatar {
-  background: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
-}
+body.has-app-shell .soft-topbar-title { font-family: var(--font-sans); font-weight: 600; letter-spacing: -.02em; }
+body.has-app-shell :where(.app-page-header, .dash-home-header) p { color: var(--muted); }
+body.has-app-shell :where(.app-page-actions, .soft-btn-row) { align-items: center; gap: 8px; }
+body.has-app-shell .soft-icon-btn { border-radius: 12px; }
+body.has-app-shell .soft-icon-btn:hover { border-color: transparent; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+body.has-app-shell .soft-avatar { background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-ink) 20%, transparent); }
 
 body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
-  border-color: rgba(29, 29, 31, .08);
-  border-radius: 20px;
-  background: var(--surface);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 5%, transparent);
-  line-height: 1.55;
+  border-color: var(--line-soft); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--shadow-card); line-height: 1.5;
 }
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) {
-  padding: clamp(20px, 2.4vw, 28px);
+/* Explicit none/sm/lg padding is a component contract, not a theme choice. */
+body.has-app-shell :where(.app-card:not([data-pad]), .app-card[data-pad="md"], .soft-card, .vt-card, .vt-stat-card) { padding: clamp(20px, 2vw, 24px); }
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) :where(h2, h3, h4) {
+  font-family: var(--font-sans); color: var(--ink); font-weight: 600;
+  letter-spacing: -.02em; line-height: 1.35; text-wrap: balance;
 }
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
-  :where(h2, h3, h4) {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
-  color: var(--ink);
-  font-weight: 650;
-  letter-spacing: -.025em;
-  text-wrap: balance;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card)
-  :where(p, li, small) {
-  line-height: 1.58;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(h2, h3) {
-  margin-bottom: 12px;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(p, ul, ol) {
-  margin-block: 0 16px;
-}
-
-body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card):hover {
-  border-color: rgba(29, 29, 31, .11);
-}
-
-body.has-app-shell :where(.app-page-header, .dash-home-header) h1 {
-  color: var(--ink);
-  font-weight: 720;
-  letter-spacing: -.045em;
-}
-
-body.has-app-shell :where(.app-page-header, .dash-home-header) p {
-  color: var(--muted);
-}
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(h2, h3) { margin-bottom: 12px; }
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .vt-card, .vt-stat-card) > :where(p, ul, ol) { margin-block: 0 16px; }
+body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget) :where(p, li, small) { line-height: 1.55; }
+body.has-app-shell .app-card :where(.app-card, .soft-panel, .vt-card) { box-shadow: none; }
 
 body.has-app-shell :is(.app-button, .soft-btn, .primary-action) {
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.4;
-  min-height: 44px;
-  padding: 11px 16px;
-  box-shadow: none;
+  min-height: 44px; padding: 10px 16px; border-radius: 12px;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.4;
+  box-shadow: none; transition: background-color 140ms, border-color 140ms, box-shadow 140ms;
 }
-
-body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary) {
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-body.has-app-shell :where(.app-button.primary, .soft-btn.primary, .primary-action, .is-primary):hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
-body.has-app-shell :where(input, select, textarea) {
-  border-color: rgba(29, 29, 31, .14);
-  background: var(--surface);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .02);
-}
-
-body.has-app-shell :where(input, select, textarea):focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
-  outline: 0;
-}
-
-body.has-app-shell .soft-island {
-  border-color: rgba(29, 29, 31, .1);
-  background: var(--island);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .12), inset 0 1px rgba(255, 255, 255, .7);
-  backdrop-filter: saturate(180%) blur(24px);
-}
-
-body.has-app-shell .soft-island a[aria-current="page"] {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-body.has-app-shell .soft-drawer,
-body.has-app-shell .soft-account-pop,
-body.has-app-shell .soft-island-editor > section {
-  border-color: rgba(29, 29, 31, .1);
-  /* Solid: menu text over page text read as one jumble at 94%. */
-  background: var(--surface);
-}
-
-body.has-app-shell .app-badge {
-  letter-spacing: .03em;
-}
-
-
-@media (max-width: 680px) {
-  body.has-app-shell .soft-topbar { height: 56px; }
-}
-
-/* Dark mode keeps system.css tokens. The rules above lock ink, cards, and
-   chrome to a light palette; this block puts them back on the theme. */
-html[data-theme="dark"] body.has-app-shell {
-  background-color: var(--bg) !important;
-  background-image: var(--glow) !important;
-  color: var(--ink);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-topbar {
-  background-color: color-mix(in srgb, var(--bg) 78%, transparent);
-  border-bottom-color: var(--line);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-page-head h1,
-html[data-theme="dark"] body.has-app-shell .soft-topbar-title,
-html[data-theme="dark"] body.has-app-shell :where(.app-page-header, .dash-home-header) h1,
-html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) :where(h2, h3, h4) {
-  color: var(--ink);
-}
-
-html[data-theme="dark"] body.has-app-shell :where(.app-page-header, .dash-home-header) p {
-  color: var(--muted);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-icon-btn:hover {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
-
-html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
-  border-color: var(--line);
-  background: var(--surface);
-}
-
-html[data-theme="dark"] body.has-app-shell :where(input, select, textarea) {
-  border-color: var(--line);
-  background: var(--surface);
-  color: var(--ink);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-island {
-  border-color: var(--line);
-  background: var(--island);
-  box-shadow: var(--shadow-pop);
-}
-
-html[data-theme="dark"] body.has-app-shell .soft-drawer,
-html[data-theme="dark"] body.has-app-shell .soft-account-pop,
-html[data-theme="dark"] body.has-app-shell .soft-island-editor > section {
-  border-color: var(--line);
-  background: var(--surface);
-}
-
-/* On a phone the top bar sits over dense content scrolling right under it; see-through, a
-   page's chips showed through its title. Solid there unless the person chose the clear look. */
-@media (max-width: 720px) {
-  html:not([data-clarity="clear"]) body.has-app-shell .soft-topbar { background-color: var(--bg); }
-}
-
-/* One product typeface and a quieter surface hierarchy across workspaces. */
-body.has-app-shell {
-  --font-source-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --line-soft: color-mix(in srgb, var(--ink) 9%, transparent);
-  font-family: var(--font-sans);
-}
-body.has-app-shell :where(.app-page-header, .hub-bar-id) h1 {
-  font-family: var(--font-sans); font-weight: 650; letter-spacing: -.035em;
-}
-body.has-app-shell :where(.app-page-actions, .soft-btn-row) { gap: 8px; align-items: center; }
-body.has-app-shell .soft-empty.scan-empty {
-  border-style: solid; border-color: var(--line-soft); border-radius: 24px; background: var(--surface);
-  padding: clamp(28px, 4vw, 48px) 24px; box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 3%, transparent);
-}
-body.has-app-shell .soft-empty.scan-empty h2 { font-size: 24px; font-weight: 650; color: var(--ink); letter-spacing: -.035em; }
-body.has-app-shell .soft-empty.scan-empty > p { max-width: 44ch; font-size: 14px; line-height: 1.65; }
-body.has-app-shell :is(.app-button.primary, .app-button.is-primary, .soft-btn.primary, .primary-action) { box-shadow: none; }
-body.has-app-shell .app-button:hover { transform: none; }
-body.has-app-shell .hub-tool-strip[data-compact] .hub-tool-more { border-radius: 12px; box-shadow: none; }
-
-/* Buttons have one shape and visible feedback across shared product surfaces. */
-body.has-app-shell :is(.app-button, .soft-btn) { border-radius: 14px; transition: background-color 140ms, border-color 140ms, box-shadow 140ms; }
-body.has-app-shell :is(.app-button.secondary, .soft-btn:not(.primary)) { background: var(--surface); border-color: var(--line); color: var(--ink); }
-body.has-app-shell :is(.app-button.secondary, .soft-btn:not(.primary)):hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--ink) 22%, var(--line)); }
+body.has-app-shell :is(.app-button.primary, .app-button.is-primary, .soft-btn.primary, .primary-action) { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+body.has-app-shell :is(.app-button.primary, .app-button.is-primary, .soft-btn.primary, .primary-action):hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+body.has-app-shell :is(.app-button.secondary, .soft-btn:not(.primary)):not(.ghost):not(.danger) { color: var(--ink); background: var(--surface); border-color: var(--line); }
+body.has-app-shell :is(.app-button.secondary, .soft-btn:not(.primary)):not(.ghost):not(.danger):hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--ink) 22%, var(--line)); }
+body.has-app-shell :is(.app-button, .soft-btn):hover { transform: none; }
 body.has-app-shell :is(.app-button, .soft-btn):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 body.has-app-shell :is(.app-button, .soft-btn):disabled { cursor: not-allowed; }
+
+body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
+  border-color: var(--line); background: var(--surface); color: var(--ink); box-shadow: none;
+}
+body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea):focus-visible {
+  border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+body.has-app-shell input::placeholder, body.has-app-shell textarea::placeholder { color: var(--muted); opacity: 1; }
+body.has-app-shell .soft-island { border-color: var(--line-soft); background: var(--island); box-shadow: var(--shadow-pop); backdrop-filter: saturate(140%) blur(20px); }
+body.has-app-shell :is(.soft-drawer, .soft-account-pop, .soft-island-editor > section) { background: var(--surface); border-color: var(--line); }
+body.has-app-shell .app-badge { letter-spacing: .015em; }
+body.has-app-shell .hub-tool-strip[data-compact] .hub-tool-more { border-radius: 12px; box-shadow: none; }
+body.has-app-shell .soft-empty.scan-empty {
+  padding: clamp(24px, 3vw, 36px) 24px; border: 1px solid var(--line-soft);
+  border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card);
+}
+body.has-app-shell .soft-empty.scan-empty h2 { color: var(--ink); font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
+body.has-app-shell .soft-empty.scan-empty > p { max-width: 44ch; font-size: 15px; line-height: 1.6; }
+
+@media (max-width: 720px) {
+  body.has-app-shell .soft-topbar { height: 56px; padding-inline: 14px; }
+  html:not([data-clarity="clear"]) body.has-app-shell .soft-topbar { background: var(--bg); }
+  body.has-app-shell :is(.app-button, .soft-btn, .primary-action) { min-height: 48px; }
+  body.has-app-shell :where(.app-card:not([data-pad]), .app-card[data-pad="md"], .soft-card, .vt-card, .vt-stat-card) { padding: 18px; }
+}
 html[data-motion="reduced"] body.has-app-shell :is(.app-button, .soft-btn) { transition: none; }
 @media (prefers-reduced-motion: reduce) { body.has-app-shell :is(.app-button, .soft-btn) { transition: none; } }

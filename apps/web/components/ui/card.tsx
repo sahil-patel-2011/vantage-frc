@@ -45,7 +45,7 @@ export function Card<T extends ElementType = "section">({
   const cls = ["app-card", "soft-panel", padClass[pad], className].filter(Boolean).join(" ");
   const hasHeader = title != null || actions != null;
   return (
-    <Tag className={cls} {...rest}>
+    <Tag className={cls} data-pad={pad} {...rest}>
       {hasHeader ? (
         <div className={styles.cardHeader}>
           <div className={styles.cardHeadings}>

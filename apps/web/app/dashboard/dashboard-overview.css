@@ -45,7 +45,9 @@
 .dash-home-task-list { list-style: none; padding: 0; margin: 14px 0; }
 .dash-home-task-list li { display: flex; gap: 8px; align-items: center; padding: 10px 0; }
 .dash-home-task-list li + li { border-top: 1px solid var(--line-soft); }
-.dash-home-task-list li > a { display: grid; gap: 5px; color: var(--ink); flex: 1; min-width: 0; padding: 4px 0; }
+.dash-home-task-list li > a { display: grid; gap: 5px; color: var(--ink); flex: 1; min-width: 0; padding: 4px 0; text-decoration: none; border-radius: 6px; }
+.dash-home-task-list li > a:hover strong { color: var(--accent); }
+.dash-home-task-list li > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .dash-home-task-list strong { font-size: 14px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
 .dash-home-task-list small { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .dash-home-task-list .is-overdue { color: var(--warning, var(--accent)); }

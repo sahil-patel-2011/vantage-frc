@@ -96,7 +96,8 @@
   --hairline: var(--line);
   --hub-border: var(--line);
   --danger: var(--critical);
-  --font-inter: var(--font-sans);
+  /* --font-inter belongs to next/font on <html>. Aliasing it back to the
+     body font hid the loaded Inter face and could create a variable cycle. */
   --font-ibm-plex-sans: var(--font-sans);
 
   --m-ink: var(--brand-navy);
