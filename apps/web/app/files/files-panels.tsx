@@ -770,7 +770,7 @@ export function ShareDialog({
                 {created.map((entry) => (
                   <li key={entry.id}>
                     {entry.email ? <span className="app-muted">{entry.email}</span> : null}
-                    <input readOnly value={entry.url} onFocus={(event) => event.target.select()} />
+                    <input aria-label={entry.email ? `Share link for ${entry.email}` : "Share link"} readOnly value={entry.url} onFocus={(event) => event.target.select()} />
                     <Button variant="secondary" type="button" onClick={() => void navigator.clipboard?.writeText(entry.url)}>
                       Copy
                     </Button>

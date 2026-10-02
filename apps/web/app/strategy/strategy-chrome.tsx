@@ -105,7 +105,7 @@ export function StrategyShell({
   lastMatch?: { matchKey: string; compLevel: string; matchNumber: number } | null;
   children?: ReactNode;
 }) {
-  const copy = strategyShellCopy(shell);
+  const copy = strategyShellCopy(shell, orgId);
   const description =
     shell === "empty"
       ? lastMatch

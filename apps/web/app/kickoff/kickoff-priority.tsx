@@ -152,10 +152,10 @@ export function PrioritySection({
         <input
           value={capability}
           disabled={busy}
-          placeholder="Capability (e.g. Fast ground intake)"
+          placeholder="Capability (e.g. Fast ground intake)" aria-label="Robot capability"
           onChange={(event) => setCapability(event.target.value)}
         />
-        <input value={rationale} disabled={busy} placeholder="Why it matters" onChange={(event) => setRationale(event.target.value)} />
+        <input value={rationale} disabled={busy} placeholder="Why it matters" aria-label="Priority rationale" onChange={(event) => setRationale(event.target.value)} />
         <select value={weightText} disabled={busy} aria-label="Weight" onChange={(event) => setWeightText(event.target.value)}>
           {[1, 2, 3, 4, 5].map((weight) => (
             <option key={weight} value={String(weight)}>

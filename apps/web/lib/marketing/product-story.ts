@@ -68,7 +68,7 @@ export const MARKETING_HUBS = [
     href: "/features#competition",
     route: "/competition",
     promise: "Collect scouting, prepare match plans and coordinate the pit around your selected event.",
-    modules: ["Event day", "Scout", "Teams", "Strategy", "Pit"],
+    modules: ["Event day", "Scout", "Teams", "Match plan", "Our robot"],
     tools: [
       "Match and pit forms with local saving and queued uploads; prepare forms online before scouting offline",
       "Event day and My Day from the real match schedule",

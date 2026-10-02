@@ -133,6 +133,9 @@ type Row = {
   screenshot?: string;
   error?: string;
   functionalAcceptance: "not-tested";
+  controlInventory?: Control[];
+  expandedInventory?: Control[];
+  disclosuresTested?: number;
 };
 
 /** One in-page census. Runs in the page so it sees the rendered tree, not the source. */
@@ -206,6 +209,7 @@ async function census(page: Page): Promise<Omit<Row, "route" | "width" | "status
       axe: [] as string[],
       headings: [...main.querySelectorAll("h1,h2")].filter(visible).map((el) => el.textContent?.trim() ?? "").slice(0, 12),
       textLength: (main as HTMLElement).innerText.length,
+      controlInventory: controls,
     };
   });
 }
@@ -224,9 +228,17 @@ async function settled(page: Page): Promise<boolean> {
   }, undefined, { timeout: 20_000 }).then(() => true, () => false);
 }
 
-function writeReport(name: string, payload: unknown) {
+async function writeReport(name: string, payload: unknown) {
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, name), JSON.stringify(payload, null, 2));
+  // Windows readers can briefly hold the report while a progress check reads it.
+  for (let attempt = 0; ; attempt++) {
+    try { writeFileSync(join(OUT, name), JSON.stringify(payload, null, 2)); return; }
+    catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (attempt >= 5 || !["UNKNOWN", "EPERM", "EBUSY", "EACCES"].includes(code ?? "")) throw error;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }
 }
 
 function sharded<T>(items: T[], offset = 0, limit = items.length): T[] {
@@ -248,7 +260,9 @@ test.describe("GUI test agent", () => {
 
     const offset = Number(process.env.GUI_AUDIT_START ?? 0);
     const limit = Number(process.env.GUI_AUDIT_LIMIT ?? UNIVERSE.length);
-    const routes = sharded(UNIVERSE, offset, limit);
+    const requested: string[] | null = process.env.GUI_AUDIT_ROUTES ? JSON.parse(process.env.GUI_AUDIT_ROUTES) : null;
+    if (requested) expect(requested.filter(route => !UNIVERSE.includes(route)), "Targeted routes must be in the full audit inventory").toEqual([]);
+    const routes = requested ? UNIVERSE.filter(route => requested.includes(route)) : sharded(UNIVERSE, offset, limit);
     const widths = (process.env.GUI_AUDIT_WIDTHS ?? "1440,390").split(",").map(Number);
     const withAxe = process.env.GUI_AUDIT_AXE === "1";
 
@@ -292,11 +306,30 @@ test.describe("GUI test agent", () => {
           const isSettled = await settled(page);
           await page.waitForTimeout(500);
           const measured = await census(page);
+          let expandedInventory: Control[] | undefined;
+          let disclosuresTested = 0;
+          if (process.env.GUI_AUDIT_DISCLOSURES === "1") {
+            const disclosures = page.locator("main details");
+            for (let index = 0; index < await disclosures.count(); index++) {
+              const disclosure = disclosures.nth(index);
+              const summary = disclosure.locator(":scope > summary");
+              if (await summary.isVisible() && !await disclosure.getAttribute("open").then(value => value !== null)) {
+                await summary.press("Enter");
+                await expect(disclosure).toHaveAttribute("open");
+                disclosuresTested++;
+              }
+            }
+            expandedInventory = (await census(page)).controlInventory;
+            for (let index = await disclosures.count() - 1; index >= 0; index--) {
+              const disclosure = disclosures.nth(index);
+              if (await disclosure.getAttribute("open") !== null) await disclosure.locator(":scope > summary").press("Enter");
+            }
+          }
           const destination = new URL(page.url());
           const text = await page.evaluate(() => (document.querySelector("main") ?? document.body).innerText.slice(0, 6000));
           const authWall = /\/(signin|onboarding)$/.test(destination.pathname);
           const crash = /Application error|This page is not here|Could not load|Couldn't load|Couldn’t load|Something went wrong/i.test(text);
-          const setup = /Needs setup|Choose your team|Ask a mentor|not configured|temporarily unavailable|not available right now|setup_required/i.test(text);
+          const setup = /Needs setup|Needs a link|Choose your team|Ask a mentor|not configured|temporarily unavailable|not available right now|setup_required/i.test(text);
           let axe: string[] = [];
           if (withAxe) {
             try {
@@ -320,6 +353,7 @@ test.describe("GUI test agent", () => {
             elapsedMs: Date.now() - started,
             screenshot: shot,
             functionalAcceptance: "not-tested",
+            expandedInventory, disclosuresTested,
           });
         } catch (error) {
           rows.push({
@@ -340,7 +374,7 @@ test.describe("GUI test agent", () => {
     const failed = rows.filter((row) => row.disposition === "failed");
     const unsettled = rows.filter((row) => row.disposition === "unsettled");
     const overflow = rows.filter((row) => row.overflow);
-    const unnamed = rows.filter((row) => row.names.missing > 0);
+    const unnamed = rows.filter((row) => row.names.missing > 0 || row.expandedInventory?.some(control => !control.disclosed && !control.name.trim()));
     const axeBad = rows.filter((row) => row.axe.length > 0);
     const errors = rows.filter((row) => row.runtime.length > 0);
     console.log(JSON.stringify({
@@ -404,7 +438,7 @@ test.describe("GUI test agent", () => {
       }
       reaches.push({ href, label, clicks, path, found });
     }
-    writeReport("reach.json", { schemaVersion: 1, from: "/dashboard", reaches });
+    await writeReport("reach.json", { schemaVersion: 1, from: "/dashboard", reaches });
     await info.attach("reach.json", { path: join(OUT, "reach.json"), contentType: "application/json" });
     console.log(JSON.stringify(reaches, null, 2));
     // Home itself is already there, so zero clicks is correct and not an error.

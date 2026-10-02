@@ -17,7 +17,7 @@ type ActionMenuProps = {
   actions: readonly ActionSpec[];
   /** Names the action group and the overflow trigger for screen readers. Required. */
   label: string;
-  /** How many neutral buttons sit beside the primary. Default 2. */
+  /** How many neutral buttons sit beside the primary. Default 0. */
   maxSecondary?: BuildActionModelOptions["maxSecondary"];
   allowDisabledPrimary?: BuildActionModelOptions["allowDisabledPrimary"];
   /** Which edge the overflow menu hangs from. Default "end" (right in LTR). */
@@ -47,7 +47,7 @@ type ActionMenuProps = {
 export function ActionMenu({
   actions,
   label,
-  maxSecondary,
+  maxSecondary = 0,
   allowDisabledPrimary,
   align = "end",
   tone = "page",

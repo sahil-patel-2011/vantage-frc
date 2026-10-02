@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { defaultDashboardLayoutForAudience } from "../../lib/dashboard/catalog";
 import {
   dashboardCacheFromHomePayload,
+  dashboardCacheAfterSave,
   isDashboardOfflineCache,
   normalizeDashboardCache,
 } from "./dashboard-offline-cache";
@@ -20,6 +21,15 @@ const valid = {
 };
 
 describe("dashboard offline cache", () => {
+  it("replaces stale cached layout with the committed layout, retaining widget data", () => {
+    const saved = { ...valid.board, layout: [{ ...layout[0]!, config: { alwaysShow: true, fixedSize: true }, w: 6 }] };
+    const next = dashboardCacheAfterSave(valid, saved);
+    expect(next.layout).toEqual(saved.layout);
+    expect(next.board).toEqual(saved);
+    expect(next.widgets).toBe(valid.widgets);
+    expect(next.boards[0]).toMatchObject({ id: "b1", isActive: true });
+    expect(valid.layout).toEqual(layout);
+  });
   it("accepts a last-good Home payload and rejects garbage", () => {
     expect(isDashboardOfflineCache(valid)).toBe(true);
     expect(isDashboardOfflineCache(null)).toBe(false);

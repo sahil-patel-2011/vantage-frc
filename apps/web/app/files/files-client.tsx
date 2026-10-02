@@ -372,6 +372,7 @@ export default function FilesClient() {
       <ScopeNotice />
 
       <input
+        aria-label="Files to upload"
         ref={fileInput}
         type="file"
         multiple

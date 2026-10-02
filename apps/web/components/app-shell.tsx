@@ -4,7 +4,6 @@ import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
-import { AppShellSidebar } from "./app-shell-sidebar";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
 import { LegalUpdateBanner } from "./legal-update-banner";
@@ -25,7 +24,7 @@ import {
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { commandCatalog, searchCommands } from "../lib/nav/command-search";
 import { settingsRoleTier } from "../lib/nav/settings-nav";
-import { softNavigationTarget } from "../lib/nav/soft-navigation";
+import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigation";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { fetchProductSession } from "../lib/nav/product-session";
 import { Icon, type IconName } from "./icon";
@@ -142,6 +141,10 @@ export default function AppShell() {
     openNav({ focusSearch: !window.matchMedia("(pointer: coarse)").matches });
   }, [openNav]);
 
+  const navigate = useCallback((href: string) => {
+    pushAppNavigation((path) => router.push(path), href);
+  }, [router]);
+
   // Plain in-app links navigate without reloading the app (lib/nav/soft-navigation.ts).
   // On document, bubble phase: runs after React's handlers, so next/link clicks it
   // already handled arrive with defaultPrevented and are skipped.
@@ -165,25 +168,7 @@ export default function AppShell() {
       // dispatched before initialization"); let those early clicks load normally.
       if (!path || !routerReady) return;
       event.preventDefault();
-      const before = window.location.href;
-      try {
-        router.push(path);
-      } catch {
-        window.location.assign(path);
-        return;
-      }
-      // The router updates the address asynchronously; follow it for up to ~3s.
-      let tries = 0;
-      const follow = () => {
-        if (window.location.href !== before) {
-          setLocationTick((tick) => tick + 1);
-          // A link to the page already open (a hub tool chip that lands on the same hub with
-          // a different view) does not remount it; tell it the address changed.
-          window.dispatchEvent(new Event(URL_CHANGE_EVENT));
-        }
-        else if (++tries < 60) window.setTimeout(follow, 50);
-      };
-      window.setTimeout(follow, 0);
+      navigate(path);
     };
     const onPop = () => setLocationTick((tick) => tick + 1);
     document.addEventListener("click", onClick);
@@ -199,7 +184,7 @@ export default function AppShell() {
       window.removeEventListener("popstate", onPop);
       window.removeEventListener(URL_CHANGE_EVENT, onPop);
     };
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -243,7 +228,7 @@ export default function AppShell() {
       navOpenerRef.current = null;
       if (opener) requestAnimationFrame(() => {
         const visible = opener.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden";
-        const fallback = document.querySelector<HTMLElement>(window.matchMedia("(min-width: 1024px)").matches ? ".vrail-search" : ".soft-menu-btn");
+        const fallback = document.querySelector<HTMLElement>(".soft-menu-btn");
         (visible ? opener : fallback)?.focus();
       });
       setNavQuery("");
@@ -514,9 +499,9 @@ export default function AppShell() {
     (hit: { href: string }) => {
       closeNav();
       setRecentCommands(rememberRecentCommand(hit.href));
-      router.push(withOrgHref(hit.href, orgId || null));
+      navigate(withOrgHref(hit.href, orgId || null));
     },
-    [closeNav, orgId, router],
+    [closeNav, orgId, navigate],
   );
 
   useEffect(() => {
@@ -603,8 +588,8 @@ export default function AppShell() {
     const q = navQuery.trim();
     const href = withOrgHref(q ? `/search?q=${encodeURIComponent(q)}` : "/search", orgId || null);
     closeNav();
-    router.push(href);
-  }, [closeNav, navQuery, orgId, router]);
+    navigate(href);
+  }, [closeNav, navQuery, orgId, navigate]);
 
   const resultRows = useMemo(
     () => navResultRows(commandHits, searchHits),
@@ -625,9 +610,9 @@ export default function AppShell() {
       }
       closeNav();
       setRecentCommands(rememberRecentCommand(row.href));
-      router.push(row.href);
+      navigate(row.href);
     },
-    [closeNav, goToCommand, openFullSearch, resultRows, router],
+    [closeNav, goToCommand, openFullSearch, resultRows, navigate],
   );
 
   const jumpTopResult = useCallback(() => {
@@ -693,21 +678,9 @@ export default function AppShell() {
       <a className="soft-skip-link" href="#main-content">
         Skip to main content
       </a>
-      <AppShellSidebar
-        orgId={orgId}
-        pathname={pathname}
-        pathSearch={pathSearch}
-        orgLabel={orgLabel}
-        visibleNavGroups={visibleNavGroups}
-        navHrefAllowed={navHrefAllowed}
-        onOpenSearch={() => openNav({ focusSearch: true })}
-        shortcutHint={shortcutHint}
-        islandTabs={islandTabs}
-        onEditApps={openIslandEditor}
-      />
       <AppShellTopbar
         showBack={showBack}
-        onBack={() => router.push(backHref)}
+        onBack={() => navigate(backHref)}
         isHubRoot={isHubRoot}
         title={title}
         orgLabel={orgLabel}
@@ -757,6 +730,7 @@ export default function AppShell() {
         />
       ) : null}
       <AppShellNavPanel
+        islandTabs={islandTabs}
         navOpen={navOpen}
         closeNav={closeNav}
         panelCloseRef={panelCloseRef}

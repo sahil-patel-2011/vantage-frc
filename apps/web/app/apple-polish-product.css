@@ -11,6 +11,8 @@ html[data-theme="light"] body.has-app-shell {
   --radius: 20px;
   --radius-lg: 26px;
   --glow: none;
+  --shadow: 0 1px 4px rgb(0 0 0 / .05);
+  --shadow-card: 0 1px 4px rgb(0 0 0 / .05);
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   --vt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
   background-color: var(--bg) !important;
@@ -51,50 +53,6 @@ body.has-app-shell .soft-avatar {
   background: var(--accent);
   color: var(--accent-ink);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
-}
-
-body.has-app-shell .vrail {
-  /* var(--rail-w), not a literal: this sheet loads after app-rail.css, so a
-     hard-coded width here silently disagreed with the page inset that sheet
-     sets and the rail sat 12px over the content it was supposed to clear. */
-  width: var(--rail-w, 244px);
-  padding: 18px 14px;
-  background: rgba(255, 255, 255, .78);
-  border-right-color: rgba(29, 29, 31, .08);
-  backdrop-filter: saturate(180%) blur(22px);
-}
-
-body.has-app-shell .vrail-mark {
-  font-size: 18px;
-  font-weight: 720;
-  letter-spacing: -.04em;
-}
-
-body.has-app-shell .vrail-search {
-  min-height: 40px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(118, 118, 128, .12);
-  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, .035);
-}
-
-body.has-app-shell .vrail-nav a,
-body.has-app-shell .vrail-foot {
-  min-height: 42px;
-  padding-inline: 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 520;
-}
-
-body.has-app-shell .vrail-nav a[aria-current="page"] {
-  color: var(--ink);
-  background: var(--accent-soft);
-  font-weight: 650;
-}
-
-body.has-app-shell .vrail-nav a[aria-current="page"] svg {
-  color: var(--accent);
 }
 
 body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
@@ -235,21 +193,6 @@ html[data-theme="dark"] body.has-app-shell .soft-icon-btn:hover {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
-html[data-theme="dark"] body.has-app-shell .vrail {
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  border-right-color: var(--line);
-}
-
-html[data-theme="dark"] body.has-app-shell .vrail-search {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-  box-shadow: none;
-}
-
-html[data-theme="dark"] body.has-app-shell .vrail-nav a[aria-current="page"] {
-  color: var(--ink);
-  background: var(--accent-soft);
-}
-
 html[data-theme="dark"] body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget, .vt-card, .vt-stat-card) {
   border-color: var(--line);
   background: var(--surface);
@@ -300,3 +243,12 @@ body.has-app-shell .soft-empty.scan-empty > p { max-width: 44ch; font-size: 14px
 body.has-app-shell :is(.app-button.primary, .app-button.is-primary, .soft-btn.primary, .primary-action) { box-shadow: none; }
 body.has-app-shell .app-button:hover { transform: none; }
 body.has-app-shell .hub-tool-strip[data-compact] .hub-tool-more { border-radius: 12px; box-shadow: none; }
+
+/* Buttons have one shape and visible feedback across shared product surfaces. */
+body.has-app-shell :is(.app-button, .soft-btn) { border-radius: 14px; transition: background-color 140ms, border-color 140ms, box-shadow 140ms; }
+body.has-app-shell :is(.app-button.secondary, .soft-btn:not(.primary)) { background: var(--surface); border-color: var(--line); color: var(--ink); }
+body.has-app-shell :is(.app-button.secondary, .soft-btn:not(.primary)):hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--ink) 22%, var(--line)); }
+body.has-app-shell :is(.app-button, .soft-btn):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+body.has-app-shell :is(.app-button, .soft-btn):disabled { cursor: not-allowed; }
+html[data-motion="reduced"] body.has-app-shell :is(.app-button, .soft-btn) { transition: none; }
+@media (prefers-reduced-motion: reduce) { body.has-app-shell :is(.app-button, .soft-btn) { transition: none; } }

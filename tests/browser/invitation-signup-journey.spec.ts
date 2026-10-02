@@ -2,16 +2,17 @@ import { createHmac, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { expect, test } from "@playwright/test";
 import { baseOrigin, fixtureAccount, signInAs } from "./session";
+import { serializeConsent } from "../../apps/web/lib/product-analytics/consent";
 
 test("scratch team, exact-email signup, invitation acceptance and role-correct Home", async ({ browser }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(300_000);
   const url = new URL(process.env.DATABASE_ADMIN_URL!);
   expect(["localhost", "127.0.0.1"]).toContain(url.hostname);
   expect(url.pathname).toMatch(/test|ci/);
   const pool = new Pool({ connectionString: url.toString(), ssl: false });
   const marker = `UI journey ${randomUUID()}`;
   const email = `ui-invite-${randomUUID()}@example.test`;
-  const options = { baseURL: baseOrigin(), storageState: { cookies: [{ name: "vantage-analytics-consent", value: "denied.1", domain: new URL(baseOrigin()).hostname, path: "/", expires: -1, httpOnly: false, secure: false, sameSite: "Lax" as const }], origins: [] } };
+  const options = { baseURL: baseOrigin(), storageState: { cookies: [{ name: "vantage-analytics-consent", value: serializeConsent("denied"), domain: new URL(baseOrigin()).hostname, path: "/", expires: -1, httpOnly: false, secure: false, sameSite: "Lax" as const }], origins: [] } };
   const platform = await browser.newContext(options);
   const owner = await browser.newContext(options);
   const invited = await browser.newContext(options);
@@ -39,18 +40,24 @@ test("scratch team, exact-email signup, invitation acceptance and role-correct H
     await expect.poll(async () => (await invited.request.get("/api/auth/get-session")).json().then(data => data?.user?.email)).toBe(email);
     const ineligible = await invited.request.post("/api/invites/accept", { headers, data: { token: link.searchParams.get("token"), termsAccepted: true, privacyAccepted: true } });
     expect(ineligible.status()).toBe(403);
-    // Save the same profile contract used by the first onboarding screen before
-    // accepting; the remaining onboarding journey is completed through its API.
-    const profile = await invited.request.patch("/api/onboarding", { headers, data: { step: "profile", firstName: "Journey", lastName: "Scout", dateOfBirth: "2005-01-01", gender: "prefer_not_to_say", teamRole: "student" } });
-    expect(profile.ok(), await profile.text()).toBe(true);
-    await page.goto(`${link.pathname}${link.search}`);
+    // Complete the real first screen, including its persisted progress.
+    await page.getByRole("link", { name: "Finish your profile", exact: true }).click();
+    await expect(page).toHaveURL(/\/onboarding(?:\?|$)/, { timeout: 60_000 });
+    await page.getByLabel("First name", { exact: true }).fill("Journey");
+    await page.getByLabel("Last name", { exact: true }).fill("Scout");
+    await page.getByRole("radio", { name: /^Student/ }).check();
+    await page.getByLabel(/Date of birth/).fill("2005-01-01");
+    await page.getByLabel(/Gender/).selectOption("prefer_not_to_say");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    // An exact-email invite already supplies the team and role, so setup skips
+    // asking the new scout to choose those details again.
+    await expect(page.getByRole("region", { name: "Access request summary", exact: true })).toBeVisible();
     await page.getByRole("checkbox", { name: /Terms of Service/ }).check();
     await page.getByRole("checkbox", { name: /Privacy Policy/ }).check();
-    await page.getByRole("button", { name: "Accept invitation", exact: true }).click();
+    await page.getByRole("button", { name: new RegExp(`^Join ${marker}`) }).click();
     await expect.poll(async () => (await pool.query("SELECT role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.org_id=$1 AND u.email=$2", [orgId, email])).rows[0]?.role).toBe("scout");
-    const onboarding = await invited.request.post("/api/onboarding", { headers, data: { firstName: "Journey", lastName: "Scout", dateOfBirth: "2005-01-01", gender: "prefer_not_to_say", preferredTeamNumber: teamNumber, teamRole: "student", crewRole: "scout", primaryFocus: "competition", termsAccepted: true, privacyAccepted: true } });
-    expect(onboarding.ok(), await onboarding.text()).toBe(true);
-    await page.goto(`/dashboard?orgId=${orgId}`);
+    await page.getByRole("link", { name: "Open Home", exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 60_000 });
     await expect(page.getByTestId("dash-customize")).toBeVisible();
     const me = await invited.request.get(`/api/me?orgId=${orgId}`);
     expect(await me.json()).toMatchObject({ orgId, role: "scout" });
@@ -59,7 +66,7 @@ test("scratch team, exact-email signup, invitation acceptance and role-correct H
     const foreign = await invited.request.get("/api/scouting/free-reports?orgId=6925a000-0000-4000-8000-000000000001");
     expect(foreign.status()).toBe(403);
   } finally {
-    await Promise.all([platform.close(), owner.close(), invited.close()]);
+    await Promise.allSettled([platform.close(), owner.close(), invited.close()]);
     if (orgId) {
       await pool.query("DELETE FROM admin_actions WHERE target_org_id=$1 AND EXISTS(SELECT 1 FROM organizations WHERE id=$1 AND name=$2)", [orgId, marker]);
       await pool.query("DELETE FROM organizations WHERE id=$1 AND name=$2", [orgId, marker]);

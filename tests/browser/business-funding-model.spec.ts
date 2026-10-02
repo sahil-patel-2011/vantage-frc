@@ -1,15 +1,21 @@
 import { expect, test, type Page } from "@playwright/test";
 import { signInAs, signInFixture } from "./session";
+import { openMenuSection } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
   if (!signed) await signInFixture(context);
 });
 
+// Complete background fixture requests before Playwright disposes the page.
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "wait" });
+});
+
 function livePortal(input: { schoolFunded: boolean; sponsorsAllowed: boolean }) {
   return {
     status: "live",
-    orgId: "00000000-0000-4000-8000-000000000001",
+    orgId: "6925a000-0000-4000-8000-000000000001",
     orgName: "E2E Team",
     teamNumber: 6925,
     role: "owner",
@@ -53,6 +59,10 @@ function livePortal(input: { schoolFunded: boolean; sponsorsAllowed: boolean }) 
 }
 
 async function stubBusiness(page: Page, payload: ReturnType<typeof livePortal>) {
+  await page.route("**/api/me**", async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), sponsorsAllowed: payload.sponsorsAllowed } });
+  });
   await page.route("**/api/business**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (route.request().method() === "GET" && path === "/api/business") {
@@ -71,13 +81,15 @@ test("school-funded teams without sponsors open on Overview and hide CRM", async
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business");
 
-  const tabs = page.getByRole("tablist", { name: "Business sections" });
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Overview");
+  const tabs = await openMenuSection(page, "Business");
   await expect(tabs).toBeVisible();
-  await expect(tabs.getByRole("tab", { name: "Overview" })).toBeVisible();
-  await expect(tabs.getByRole("tab", { name: "Money" })).toBeVisible();
-  await expect(tabs.getByRole("tab", { name: "Sponsors" })).toHaveCount(0);
+  await expect(tabs.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Money" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Sponsors" })).toHaveCount(0);
   // /business always opens on Overview unless the link names a tab.
-  await expect(tabs.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open CRM" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open sponsors" })).toHaveCount(0);
@@ -88,9 +100,11 @@ test("a Sponsors deep-link is sent back to Overview when sponsors are not allowe
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business?tab=sponsors");
 
-  const tabs = page.getByRole("tablist", { name: "Business sections" });
-  await expect(tabs.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
-  await expect(tabs.getByRole("tab", { name: "Sponsors" })).toHaveCount(0);
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Overview");
+  const tabs = await openMenuSection(page, "Business");
+  await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+  await expect(tabs.getByRole("link", { name: "Sponsors" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
 });
 
@@ -98,7 +112,8 @@ test("sponsored teams still offer the Sponsors workbench", async ({ page }) => {
   await stubBusiness(page, livePortal({ schoolFunded: false, sponsorsAllowed: true }));
   await page.goto("/business");
 
-  const tabs = page.getByRole("tablist", { name: "Business sections" });
-  await expect(tabs.getByRole("tab", { name: "Sponsors" })).toBeVisible();
-  await expect(tabs.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Overview");
+  const tabs = await openMenuSection(page, "Business");
+  await expect(tabs.getByRole("link", { name: "Sponsors" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
 });

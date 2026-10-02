@@ -25,6 +25,7 @@ import { CONTEXT_REFRESH_MS } from "./dashboard-canvas";
 import type { BoardMeta, BoardState, Me } from "./dashboard-board-types";
 import {
   dashboardCacheFromHomePayload,
+  dashboardCacheAfterSave,
   isDashboardOfflineCache,
   normalizeDashboardCache,
   type DashboardOfflineCache,
@@ -114,6 +115,17 @@ export function useDashboardHomeState(initialOrgId = "") {
     setBoardLoaded(true);
     if (Object.keys(next.widgets).length > 0) setWidgetsLoaded(true);
   }, []);
+
+  const acceptSavedBoard = useCallback(async (saved: BoardState) => {
+    const previous = lastCacheRef.current;
+    if (!previous) throw new Error("Home must finish loading before it can be saved.");
+    const next = dashboardCacheAfterSave(previous, saved);
+    applyHomeCache(next);
+    setFromCache(false);
+    setCachedAt(null);
+    setUpdatedAt(new Date().toISOString());
+    try { await putFeatureSnapshot("dashboard", orgId, next); } catch { /* The server write already succeeded. */ }
+  }, [applyHomeCache, orgId]);
 
   const loadSnapshot = useCallback(async (
     id: string,
@@ -403,6 +415,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     grabBaseRef,
     shellRef,
     loadHome,
+    acceptSavedBoard,
     loadSnapshot,
     setLayout,
     setBoard,

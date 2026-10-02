@@ -159,28 +159,7 @@ body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button[aria-selec
   animation: fade-in var(--dur-move) var(--ease-out) backwards;
 }
 
-/* ── Sidebar ───────────────────────────────────────────────────────────── */
-
-.vrail-nav a svg {
-  transition: transform var(--dur-move) var(--ease-settle);
-}
-@media (hover: hover) {
-  .vrail-nav a:hover svg {
-    transform: scale(1.08);
-  }
-}
-.vrail-nav a {
-  transition:
-    background-color var(--dur-tint) var(--ease-out),
-    color var(--dur-tint) var(--ease-out),
-    scale var(--dur-press) var(--ease-out);
-}
-.vrail-nav a:active {
-  scale: 0.98;
-}
-/* The fill of the page you just opened fades in instead of snapping — in the
-   sidebar, the phone's bottom island and the Scouting tabs alike. */
-.vrail-nav a[aria-current="page"],
+/* The selected shortcut and Scouting tab ease into their active state. */
 .soft-island a[aria-current="page"],
 .scouting-tabs a.is-active {
   animation: rail-pick var(--dur-move) var(--ease-out);

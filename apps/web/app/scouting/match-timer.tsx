@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, timingForSeason, type MatchPhase } from "../../lib/scouting/match-clock";
 import { readScoutClock, writeScoutClock } from "../../lib/scouting/draft-autosave";
+
+import { SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
   pre: "Match timer",
@@ -32,25 +34,31 @@ function saveFromTimer() {
  * stay on the field and their thumb finds the right counters. When the match ends the bar
  * becomes "Save this match" and the form scrolls to its last answers. Restarting is one tap.
  */
-export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear = null }: {
+export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear = null, stage = "all", onStageChange, onPhaseChange, undoButton }: {
+  stage?: ScoutFormStage; onStageChange?: (stage: ScoutFormStage) => void; onPhaseChange?: (phase: MatchPhase) => void; undoButton?: ReactNode;
   fields: Array<{ key: string; label: string }>; resetKey: string; storageKey: string | null; onStarted?: () => void; seasonYear?: number | null;
 }) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const anchors = useMemo(() => phaseAnchors(fields), [fields]);
   const lastPhase = useRef<MatchPhase>("pre");
+  const phaseCallback = useRef(onPhaseChange);
+  phaseCallback.current = onPhaseChange;
 
   // A new robot or match is a new clock.
   useEffect(() => {
     setStartedAt(readScoutClock(storageKey));
     setNow(Date.now());
     lastPhase.current = "pre";
+    phaseCallback.current?.("pre");
   }, [resetKey, storageKey]);
 
   const elapsed = startedAt == null ? null : now - startedAt;
   const timing = timingForSeason(seasonYear);
   const phase = phaseAt(elapsed, timing);
   const done = phase === "done";
+
+  useEffect(() => { phaseCallback.current?.(phase); }, [phase]);
 
   // Save asks "still running?" while the clock is in the match (see scouting-ready-view).
   const running = startedAt != null && !done;
@@ -123,12 +131,11 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
         </button>
       )}
     </div>
-    <nav className="scout-phase-navigation" aria-label="Match form sections">
-      {(["auto", "teleop", "endgame"] as const).filter(key => anchors[key]).map(key => <button type="button" key={key} aria-current={phase === key ? "step" : undefined} onClick={() => {
-        document.getElementById("scout-field-" + encodeURIComponent(anchors[key]!))?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
-      }}>{PHASE_LABEL[key]}</button>)}
-      <button type="button" onClick={() => document.querySelector(".scout-save-button")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" })}>Review</button>
-    </nav>
+    <div className="scout-phase-controls">
+      <label className="section-select"><span className="sr-only">Match form section</span><select aria-label="Match form section" value={stage} onChange={event => onStageChange?.(event.target.value as ScoutFormStage)}>
+        {(["all", "pre", "auto", "teleop", "endgame", "review"] as const).filter(key => key === "all" || key === "pre" || key === "review" || anchors[key]).map(key => <option key={key} value={key}>{SCOUT_STAGE_LABELS[key]}</option>)}
+      </select></label>{undoButton}
+    </div>
     {seasonYear !== 2026 ? <small className="app-muted">Practice timing: 15s auto / 135s teleop. Follow the field clock.</small> : null}
     </div>
   );

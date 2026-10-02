@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { ChoiceField } from "../components/ui/choice-field";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import PaidSessionSplash from "../components/paid-session-splash";
@@ -139,22 +140,13 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
       <fieldset className="theme-setting">
         <legend>Appearance</legend>
         <p>System follows your device.</p>
-        <div role="radiogroup" aria-label="Color theme">
-          {(["light", "dark", "system"] as const).map((option) => (
-            <button
-              aria-checked={preference === option}
-              className={preference === option ? "active" : ""}
-              key={option}
-              onClick={() => void choose(option)}
-              role="radio"
-              type="button"
-            >
-              <span aria-hidden="true">{option === "light" ? "☀" : option === "dark" ? "☾" : "◐"}</span>
-              {option === "light" ? "Light" : option === "dark" ? "Dark" : "System"}
-              {option === "system" ? <small>Now {theme}</small> : null}
-            </button>
-          ))}
-        </div>
+        <ChoiceField<ThemePreference> label="Color theme" value={preference}
+          choices={[
+            { value: "light", label: "Light", icon: "☀" },
+            { value: "dark", label: "Dark", icon: "☾" },
+            { value: "system", label: "System", icon: "◐", hint: `Now ${theme}` },
+          ]}
+          onChange={next => void choose(next)} />
       </fieldset>
     );
   }

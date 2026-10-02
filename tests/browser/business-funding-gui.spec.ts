@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
+import { openMenuSection } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -12,7 +13,7 @@ const BANNED = ["Setup required", "Stripe", "OAuth", "STRIPE_", "Onshape OAuth"]
 function livePortal(input: { schoolFunded: boolean; sponsorsAllowed: boolean }) {
   return {
     status: "live",
-    orgId: "00000000-0000-4000-8000-000000000001",
+    orgId: "6925a000-0000-4000-8000-000000000001",
     orgName: "E2E Team",
     teamNumber: 6925,
     role: "owner",
@@ -75,7 +76,7 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
   await stubBusiness(page, livePortal({ schoolFunded: false, sponsorsAllowed: true }));
   await page.goto("/business");
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByRole("heading", { level: 1, name: "Business" })).toBeVisible({
+  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({
     timeout: 20_000,
   });
   for (const phrase of BANNED) {
@@ -84,24 +85,27 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
 
   // The tabs are the way around Business: a link row repeating Sponsors and Grants above
   // them was a second navigation for the same places.
-  const tabs = page.getByRole("tablist", { name: "Business sections" });
+  let tabs = await openMenuSection(page, "Business");
   await expect(tabs).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("navigation", { name: /Related funding tools/i })).toHaveCount(0);
-  await tabs.getByRole("tab", { name: "Overview" }).click();
+  await tabs.getByRole("link", { name: "Overview" }).click();
   // Nothing recorded: one first step instead of six dash tiles, never a fake $0.
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
   await expect(page.getByLabel("Season funding summary")).toHaveCount(0);
 
-  await expect(tabs.getByRole("tab", { name: "Sponsors" })).toBeVisible();
-  await tabs.getByRole("tab", { name: "Money" }).click();
+  tabs = await openMenuSection(page, "Business");
+  await expect(tabs.getByRole("link", { name: "Sponsors" })).toBeVisible();
+  await tabs.getByRole("link", { name: "Money" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("Setup required")).toHaveCount(0);
 
-  await tabs.getByRole("tab", { name: "Sponsors" }).click();
+  tabs = await openMenuSection(page, "Business");
+  await tabs.getByRole("link", { name: "Sponsors" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("Stripe")).toHaveCount(0);
 
-  await tabs.getByRole("tab", { name: "Grants" }).click();
+  tabs = await openMenuSection(page, "Business");
+  await tabs.getByRole("link", { name: "Grants" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("Setup required")).toHaveCount(0);
 

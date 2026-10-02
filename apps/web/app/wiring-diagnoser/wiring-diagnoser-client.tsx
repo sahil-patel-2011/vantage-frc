@@ -572,11 +572,13 @@ function NewCheckForm({
                 min={0}
                 placeholder="Ch."
                 value={row.channel}
+                aria-label={`Expected circuit ${index + 1} channel`}
                 onChange={setExpectedField(index, "channel")}
               />
               <input
                 placeholder="Device (e.g. Front Left Drive)"
                 value={row.deviceName}
+                aria-label={`Expected circuit ${index + 1} device`}
                 onChange={setExpectedField(index, "deviceName")}
               />
               <select aria-label="Wire gauge" value={row.wireGauge} onChange={setExpectedField(index, "wireGauge")}>
@@ -598,6 +600,7 @@ function NewCheckForm({
                 min={0}
                 placeholder="Draw (A)"
                 value={row.expectedCurrentDrawAmps}
+                aria-label={`Expected circuit ${index + 1} current draw`}
                 onChange={setExpectedField(index, "expectedCurrentDrawAmps")}
               />
               <button
@@ -629,11 +632,13 @@ function NewCheckForm({
                 min={0}
                 placeholder="Ch."
                 value={row.channel}
+                aria-label={`Observed circuit ${index + 1} channel`}
                 onChange={setObservedField(index, "channel")}
               />
               <input
                 placeholder="Device actually wired"
                 value={row.deviceName}
+                aria-label={`Observed circuit ${index + 1} device`}
                 onChange={setObservedField(index, "deviceName")}
               />
               <select aria-label="Wire gauge" value={row.wireGauge} onChange={setObservedField(index, "wireGauge")}>

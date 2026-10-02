@@ -1,0 +1,42 @@
+.dash-overview { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr); gap: 20px; }
+.dash-overview.single { grid-template-columns: 1fr; }
+.dash-overview > article { min-width: 0; padding: 26px; border: 1px solid var(--line-soft); border-radius: 24px; background: var(--surface); box-shadow: 0 4px 24px color-mix(in srgb, var(--ink) 3%, transparent); }
+.dash-overview .dash-scouting-overview { background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 7%, var(--surface)), var(--surface) 75%); border-color: color-mix(in srgb, var(--accent) 15%, var(--line-soft)); }
+.dash-overview header { display: flex; align-items: center; gap: 12px; }
+.dash-overview h2 { margin: 0; color: var(--ink); font: 650 19px/1.3 var(--font-sans); letter-spacing: -.025em; }
+.dash-overview header p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.dash-overview-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 15px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.dash-overview-open { margin-left: auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--muted); }
+.dash-overview-open:hover { background: var(--surface-2); }
+.dash-overview a { text-decoration: none; }
+.dash-overview a:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 6px; }
+.dash-scouting-purpose { max-width: 46ch; margin: 22px 0 16px; color: var(--ink); font-size: 16px; line-height: 1.55; }
+.dash-scouting-ready { margin: 0 0 24px; max-width: 48ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.dash-scouting-numbers { display: flex; flex-wrap: wrap; gap: 36px; margin: 20px 0 24px; }
+.dash-scouting-numbers > div { display: flex; flex-direction: column-reverse; gap: 4px; }
+.dash-scouting-numbers dt { color: var(--muted); font-size: 12px; }
+.dash-scouting-numbers dd { margin: 0; font: 650 30px/1.1 var(--font-sans); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.dash-overview footer { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.dash-overview footer > a:not(.app-button), .dash-activity-overview a, .dash-scouting-setup a { color: var(--accent); font-size: 13px; font-weight: 600; }
+.dash-overview .app-button { gap: 10px; min-height: 44px; border-radius: 12px; }
+.dash-overview-attention { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; color: var(--accent); font-size: 13px; }
+.dash-scouting-setup { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; padding-top: 18px; margin-top: 22px; border-top: 1px solid var(--line-soft); }
+.dash-scouting-setup p { flex: 1 1 220px; margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.dash-scouting-setup a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
+.dash-activity-overview header { justify-content: space-between; flex-wrap: wrap; }
+.dash-activity-overview header a { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; }
+.dash-activity-overview ol { padding: 0; margin: 20px 0 0; list-style: none; }
+.dash-activity-overview li { display: flex; align-items: center; gap: 14px; padding: 14px 0; }
+.dash-activity-overview li + li { border-top: 1px solid var(--line-soft); }
+.dash-activity-overview time { flex: 0 0 48px; display: grid; text-align: center; padding: 7px 0; background: var(--surface-2); border-radius: 12px; }
+.dash-activity-overview time strong { font-size: 20px; line-height: 1.2; }
+.dash-activity-overview time span { font-size: 11px; color: var(--muted); }
+.dash-activity-overview li a { min-width: 0; display: grid; gap: 4px; color: var(--ink); }
+.dash-activity-overview li a strong { font-size: 14px; line-height: 1.4; }
+.dash-activity-overview li small { color: var(--muted); font-size: 12px; font-weight: 400; }
+.dash-activity-empty { padding: 30px 0 8px; }
+.dash-activity-empty > svg { color: var(--muted); width: 28px; height: 28px; margin-bottom: 12px; }
+.dash-activity-empty h3 { font-size: 15px; font-weight: 600; margin: 0 0 7px; }
+.dash-activity-empty p { max-width: 32ch; color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 14px; }
+.dash-activity-empty a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+@media(max-width: 780px) { .dash-overview { grid-template-columns: 1fr; gap: 16px; } .dash-overview > article { padding: 22px; border-radius: 20px; } }

@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { assertLocalFixtureDatabase, cookieDomain } from "./tests/browser/origin";
+import { serializeConsent } from "./apps/web/lib/product-analytics/consent";
 
 assertLocalFixtureDatabase();
 
@@ -29,7 +30,7 @@ export default defineConfig({
       cookies: [
         {
           name: "vantage-analytics-consent",
-          value: "denied.1",
+          value: serializeConsent("denied"),
           domain: hostname,
           path: "/",
           expires: -1,

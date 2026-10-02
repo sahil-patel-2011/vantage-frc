@@ -12,7 +12,9 @@ type Props = {
 };
 
 export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamData = false }: Props) {
-  if (!health?.degraded) return null;
+  // A successful recovery is invisible. Individual features still report a
+  // missing result; provider diagnostics remain available in Team Data.
+  if (!health?.degraded || health.usingLastGoodCache || health.cacheHasRows) return null;
 
   if (compact) {
     // One quiet line while closed; the technical detail and the one action live inside.
@@ -20,10 +22,10 @@ export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamD
       <aside className={`data-source-degraded-banner compact mode-${health.mode}`} role="status" aria-live="polite">
         <details className="data-source-summary">
           <summary data-disclosure>
-            <strong>{health.bannerTitle}</strong>
-            <span>{health.usingLastGoodCache ? "Using saved copy" : "Details"}</span>
+            <strong>Rankings and schedule unavailable</strong>
+            <span>Details</span>
           </summary>
-          <p>{health.bannerDetail}</p>
+          <p>We couldn’t load event data. Try again in a moment.</p>
           {canOpenTeamData ? (
             <a className="data-source-settings" href={health.teamDataHref}>Open data settings</a>
           ) : (
@@ -42,13 +44,10 @@ export function DataSourceDegradedBanner({ health, compact = false, canOpenTeamD
     >
       <div>
         <span className="app-badge setup">
-          {health.mode === "stale" ? "May be out of date" : health.usingLastGoodCache ? "Using saved copy" : "Data unavailable"}
+          Data unavailable
         </span>
-        <strong>{health.bannerTitle}</strong>
-        <p>{health.bannerDetail}</p>
-        {health.usingLastGoodCache ? (
-          <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
-        ) : null}
+        <strong>Rankings and schedule unavailable</strong>
+        <p>We couldn’t load event data. Try again in a moment.</p>
       </div>
       {canOpenTeamData ? (
         <Button as="a" variant="secondary" href={health.teamDataHref}>

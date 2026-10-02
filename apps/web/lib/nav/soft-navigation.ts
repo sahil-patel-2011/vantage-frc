@@ -1,4 +1,22 @@
 import { ORG_EXEMPT_HREFS } from "./product-nav";
+import { URL_CHANGE_EVENT } from "./url-change";
+
+/** Notify mounted hub views after Next commits a query-only navigation. */
+export function pushAppNavigation(push: (href: string) => void, href: string): void {
+  const before = window.location.href;
+  try {
+    push(href);
+  } catch {
+    window.location.assign(href);
+    return;
+  }
+  let attempts = 0;
+  const follow = () => {
+    if (window.location.href !== before) window.dispatchEvent(new Event(URL_CHANGE_EVENT));
+    else if (++attempts < 60) window.setTimeout(follow, 50);
+  };
+  window.setTimeout(follow, 0);
+}
 
 /**
  * Plain `<a href="/…">` links (many cards, the sidebar, Button as="a") make the browser

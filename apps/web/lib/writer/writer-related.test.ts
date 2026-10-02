@@ -31,7 +31,7 @@ describe("writerRelated Soft-UI helpers", () => {
   it("setup and provider_setup use Needs setup and Claude Code", () => {
     expect(writerShellCopy("setup").badge).toBe("Needs setup");
     expect(writerShellCopy("provider_setup").badge).toBe("Needs setup");
-    expect(writerShellCopy("provider_setup").title).toBe("Connect Claude Code");
+    expect(writerShellCopy("provider_setup").title).toBe("Connect AI");
   });
 
   it("classifies shells without inventing DEMO copy", () => {

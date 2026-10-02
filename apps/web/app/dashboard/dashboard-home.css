@@ -84,9 +84,7 @@
 .dash-size-toggle:focus-visible::before{outline:2px solid var(--ring);outline-offset:2px}
 .dash-grid-wrap.dragging .dash-size-toggle{visibility:hidden}
 
-/* The size bar opens from the top of the card, under its button, so it is never
-   under the floating toolbar at the bottom of the window. */
-.dash-home .dash-grid-item.is-editing .dash-item-sizes{top:26px;bottom:auto;left:10px;right:10px}
+/* Card-option placement is owned by dashboard-edit.css. */
 .dash-home .dash-size-chips{flex-wrap:wrap;justify-content:flex-end}
 @media (max-width:720px){
   .dash-home .dash-size-btn{min-width:44px;min-height:44px}
@@ -154,9 +152,7 @@
 
 /* One column: every size is the full width, so S/M/L/XL changed nothing but height and moved
    the card. Resizing is a wider-screen tool; on a phone the card keeps its size. */
-.dash-pgrid[data-cols="1"] .dash-size-toggle {
-  display: none;
-}
+.dash-pgrid[data-cols="1"] .dash-size-toggle { display: inline-flex; }
 
 /* The library's one-line note lines up with its title and search box. */
 .dash-sheet-empty-note{padding:0 16px}
@@ -388,3 +384,63 @@ body.has-app-shell .dash-home .dash-widget .soft-empty-compact { padding: 10px 0
 .dash-widget-open:hover { color: var(--accent); }
 .dash-widget-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (pointer: coarse) { .dash-widget-open { min-height: 44px; } }
+
+/* A calm board: the next action leads, while live cards share one visual rhythm. */
+body.has-app-shell .dash-home:not(.is-editing) { padding-top: clamp(28px, 4vw, 48px); }
+body.has-app-shell .dash-home .dash-home-header { padding-bottom: 24px; }
+body.has-app-shell .dash-home .dash-hero-greeting { font-size: clamp(28px, 3.4vw, 42px); font-weight: 650; }
+body.has-app-shell .dash-home > .dash-now { border-radius: 28px; padding: clamp(22px, 3vw, 34px); background: linear-gradient(125deg, color-mix(in srgb, var(--accent) 11%, var(--surface)), var(--surface) 80%); box-shadow: 0 8px 30px color-mix(in srgb, var(--ink) 4%, transparent); }
+body.has-app-shell .dash-home .dash-widget.app-card { padding: 20px; border-radius: 24px; background: var(--surface); box-shadow: 0 4px 16px color-mix(in srgb, var(--ink) 3%, transparent); }
+body.has-app-shell .dash-home .dash-widget .dash-widget-title { padding-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
+body.has-app-shell .dash-home .dash-widget > header h2 { font-size: 16px; }
+@media (max-width: 640px) {
+  body.has-app-shell .dash-home:not(.is-editing) { padding-top: 24px; }
+  body.has-app-shell .dash-home .dash-widget.app-card { padding: 16px; border-radius: 20px; }
+}
+/* Shared prerequisites are a single compact row, separate from live board cards. */
+.dash-task-summary { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.dash-task-summary > strong { color: var(--accent); font-weight: 600; }
+body.has-app-shell .dash-home > .dash-setup-banner.dash-context-prompt {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: none;
+}
+.dash-context-prompt .dash-context-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+body.has-app-shell .dash-context-prompt > div > h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 1.35;
+  letter-spacing: -.02em;
+}
+body.has-app-shell .dash-context-prompt > div > p {
+  max-width: none;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+body.has-app-shell .dash-context-prompt > .app-button { align-self: center; justify-self: end; }
+@media (max-width: 600px) {
+  body.has-app-shell .dash-home > .dash-setup-banner.dash-context-prompt {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+  .dash-context-prompt .dash-context-icon { width: 32px; height: 32px; border-radius: 10px; }
+  body.has-app-shell .dash-context-prompt > .app-button { grid-column: 2; justify-self: start; }
+}

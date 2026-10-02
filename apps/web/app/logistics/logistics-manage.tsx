@@ -75,7 +75,7 @@ export function LogisticsManagePanel({
             ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
-          <select name="tripId" defaultValue={trip?.id ?? ""}>
+          <select name="tripId" aria-label="Trip" defaultValue={trip?.id ?? ""}>
             <option value="">All trips (shared)</option>
             {trips.map((t) => (
               <option key={t.id} value={t.id}>
@@ -83,14 +83,14 @@ export function LogisticsManagePanel({
               </option>
             ))}
           </select>
-          <select name="audience" defaultValue="student">
+          <select name="audience" aria-label="Checklist audience" defaultValue="student">
             {CHECKLIST_AUDIENCES.map((a) => (
               <option key={a} value={a}>
                 {AUDIENCE_LABEL[a]}
               </option>
             ))}
           </select>
-          <input name="label" placeholder="New checklist item" required />
+          <input name="label" aria-label="Checklist item" placeholder="New checklist item" required />
           <button type="submit" disabled={!act || busy}>
             Add item
           </button>
@@ -146,15 +146,15 @@ export function LogisticsManagePanel({
             ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
-          <input name="name" placeholder="Name" required />
-          <input name="roleLabel" placeholder="Role label" />
-          <input name="phone" placeholder="Phone" />
-          <input name="email" placeholder="Email" />
-          <input name="sortOrder" type="number" placeholder="Sort order" defaultValue={0} />
+          <input name="name" aria-label="Name" placeholder="Name" required />
+          <input name="roleLabel" aria-label="Contact role" placeholder="Role label" />
+          <input name="phone" aria-label="Phone" placeholder="Phone" />
+          <input name="email" aria-label="Email" placeholder="Email" />
+          <input name="sortOrder" aria-label="Display order" type="number" placeholder="Sort order" defaultValue={0} />
           <label className="log-check-inline">
             <input name="isPrimary" type="checkbox" /> Primary contact
           </label>
-          <textarea name="notes" placeholder="Notes" rows={2} />
+          <textarea name="notes" aria-label="Notes" placeholder="Notes" rows={2} />
           <button type="submit" disabled={!act || busy}>
             Save contact
           </button>
@@ -203,7 +203,7 @@ export function LogisticsManagePanel({
             ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
-          <select name="tripId" defaultValue={trip?.id ?? ""}>
+          <select name="tripId" aria-label="Trip" defaultValue={trip?.id ?? ""}>
             <option value="">Any trip</option>
             {trips.map((t) => (
               <option key={t.id} value={t.id}>
@@ -211,7 +211,7 @@ export function LogisticsManagePanel({
               </option>
             ))}
           </select>
-          <select name="mentorUserId" defaultValue="">
+          <select name="mentorUserId" aria-label="Mentor" defaultValue="">
             <option value="">Pick mentor (optional)</option>
             {members.map((m) => (
               <option key={m.userId} value={m.userId}>
@@ -219,12 +219,12 @@ export function LogisticsManagePanel({
               </option>
             ))}
           </select>
-          <input name="mentorName" placeholder="Display name override" />
-          <input name="phone" placeholder="Phone" />
-          <input name="startsAt" type="datetime-local" required />
-          <input name="endsAt" type="datetime-local" />
-          <input name="locationNote" placeholder="Location (pit, hotel lobby…)" />
-          <textarea name="notes" placeholder="Notes" rows={2} />
+          <input name="mentorName" aria-label="Mentor display name" placeholder="Display name override" />
+          <input name="phone" aria-label="Phone" placeholder="Phone" />
+          <input name="startsAt" aria-label="Start time" type="datetime-local" required />
+          <input name="endsAt" aria-label="End time" type="datetime-local" />
+          <input name="locationNote" aria-label="Location" placeholder="Location (pit, hotel lobby…)" />
+          <textarea name="notes" aria-label="Notes" placeholder="Notes" rows={2} />
           <button type="submit" disabled={!act || busy}>
             Save on-duty slot
           </button>

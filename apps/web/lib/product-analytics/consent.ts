@@ -19,7 +19,7 @@ export const ANALYTICS_CONSENT_COOKIE = "vantage-analytics-consent";
  * older version stops counting as consent, so the banner asks again rather than
  * quietly reusing a yes given to different terms.
  */
-export const ANALYTICS_CONSENT_VERSION = 1;
+export const ANALYTICS_CONSENT_VERSION = 2;
 
 /** One year. Long enough not to nag, short enough that the answer is re-asked. */
 export const ANALYTICS_CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
@@ -31,7 +31,7 @@ export type ConsentState = {
   version: number;
 };
 
-/** Cookie value format: `granted.1` / `denied.1`. Nothing else is stored. */
+/** Cookie value format: choice.version. Nothing else is stored. */
 export function serializeConsent(choice: ConsentChoice, version = ANALYTICS_CONSENT_VERSION): string {
   return `${choice}.${version}`;
 }

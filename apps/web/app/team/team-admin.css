@@ -453,3 +453,7 @@
 body.has-app-shell .invite-list article { border-bottom: none; }
 body.has-app-shell .invite-list > h3 + article,
 body.has-app-shell .invite-list > article:first-child { border-top: none; }
+.team-handover-fields { display: grid; gap: 20px; }
+.team-handover-fields label { display: grid; gap: 8px; font-weight: 600; }
+.team-handover-fields select { width: 100%; min-height: 44px; }
+.team-handover-fields small { font-weight: 400; }

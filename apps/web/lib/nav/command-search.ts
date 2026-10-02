@@ -30,6 +30,8 @@ export type CommandEntry = {
   keywords: string[];
   /** Pinned above equal-scoring results. */
   featured?: boolean;
+  /** Equivalent links with their original permission scopes. */
+  alternativeHrefs?: string[];
 };
 
 export type CommandHit = CommandEntry & { score: number };
@@ -69,7 +71,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:chemistry": ["chemistry", "partner fit", "synergy", "compatibility"],
   "competition:pairwise": ["pairwise", "ranking", "a beats b", "compare teams", "bradley terry"],
   "competition:team-tags": ["tags", "labels", "defense", "climb", "qualitative"],
-  "competition:picklist-collab": ["pick list", "picklist", "ranking teams", "draft board", "votes"],
+  "competition:picks": ["pick list", "picklist", "ranking teams", "draft board", "votes", "team discussion", "collaborative"],
   "competition:picklist-justifier": ["justify", "why this pick", "reasoning", "defend pick"],
   "competition:alliance-sim": ["simulate alliance", "what if", "alliance sim"],
   "competition:alliance-partner-brief": ["partner brief", "brief", "who are we with"],
@@ -394,6 +396,7 @@ const STANDALONE: CommandEntry[] = [
   { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
   { id: "duties", label: "Duties", context: "Team · Calendar", href: "/team?tab=duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
   { id: "free-scout", label: "Scout without an event", context: "Competition · Scouting", href: "/competition?tab=scouting&mode=free", kind: "destination", keywords: ["practice scouting", "no event", "video scouting", "manual scouting"] },
+  { id: "scouting-app", label: "Scouting app", context: "Competition · Device setup", href: "/scout", kind: "destination", keywords: ["install scouting", "add to home screen", "scouting pwa", "prepare tablet", "device storage", "offline preparation"] },
   // Four complete features — API, offline support, browser specs — that no
   // menu pointed at. They were reachable only by typing the URL, which the
   // route-coverage rule was supposed to catch and did not: it counted a route
@@ -455,6 +458,18 @@ function tabContext(hub: ProductHubDef, tab: HubTabDef): string {
 export function commandCatalog(): CommandEntry[] {
   const entries: CommandEntry[] = [];
   const byHref = new Map<string, CommandEntry>();
+  // The same standalone route can be filed under several hubs. Search lists
+  // it once and keeps the alternate labels as synonyms.
+  const canonicalHref = new Map<string, string>();
+  for (const hub of PRODUCT_HUBS) for (const tab of hub.tabs) {
+    if (!tab.legacyHref || tab.inSearch === false) continue;
+    const route = new URL(tab.legacyHref, "https://vantage.local");
+    route.searchParams.delete("from");
+    const key = route.pathname + route.search + route.hash;
+    if (!canonicalHref.has(key)) canonicalHref.set(key, hubHref(hub.href, tab.id));
+    canonicalHref.set(hubHref(hub.href, tab.id), canonicalHref.get(key)!);
+  }
+
 
   const add = (entry: CommandEntry) => {
     const teamAlias: Record<string, string> = {
@@ -462,15 +477,18 @@ export function commandCatalog(): CommandEntry[] {
       "/duties": "/team?tab=duties",
       "/visit-invites": "/team?tab=visit-invites",
     };
-    entry = { ...entry, href: teamAlias[entry.href] ?? entry.href };
+    const candidate = teamAlias[entry.href] ?? entry.href;
+    entry = { ...entry, href: canonicalHref.get(candidate) ?? candidate, alternativeHrefs: [candidate] };
     const existing = byHref.get(entry.href);
     if (existing) {
       // Two names for one place is the confusion we are removing. Keep the
       // first entry and absorb the other's synonyms so no phrasing is lost.
-      for (const keyword of entry.keywords) {
+      for (const keyword of [entry.label, ...entry.keywords]) {
         if (!existing.keywords.includes(keyword)) existing.keywords.push(keyword);
       }
+      existing.alternativeHrefs = [...new Set([...(existing.alternativeHrefs ?? []), ...(entry.alternativeHrefs ?? [])])];
       existing.featured = existing.featured || entry.featured;
+      if (entry.kind === "action") existing.kind = "action";
       return;
     }
     byHref.set(entry.href, entry);
@@ -574,7 +592,7 @@ function scoreEntry(entry: CommandEntry, query: string): number {
   if (label.split(" ").some((word) => word.startsWith(q))) bump(800);
   if (label.includes(q)) bump(700);
 
-  for (const keyword of entry.keywords) {
+  for (const keyword of [entry.label, ...entry.keywords]) {
     const k = normalize(keyword);
     if (!k) continue;
     if (k === q) bump(760);
@@ -650,7 +668,15 @@ export function searchCommands(
   options: SearchCommandsOptions = {},
 ): CommandHit[] {
   const { limit = 12, isAllowed, recentHrefs = [], canManageTeam } = options;
-  let pool = isAllowed ? entries.filter((entry) => isAllowed(entry.href)) : entries;
+  let pool = isAllowed ? entries.flatMap(entry => {
+    const href = [entry.href, ...(entry.alternativeHrefs ?? [])].find(isAllowed);
+    if (!href) return [];
+    if (href === entry.href) return [entry];
+    const url = new URL(href, "https://vantage.local");
+    const hub = PRODUCT_HUBS.find(item => item.href === url.pathname);
+    const tab = hub?.tabs.find(item => item.id === url.searchParams.get("tab"));
+    return [{ ...entry, href, ...(hub && tab ? { id: `${hub.id}:${tab.id}`, label: tab.label, context: tabContext(hub, tab) } : {}) }];
+  }) : entries;
   if (canManageTeam === false) pool = pool.filter((entry) => !isTeamAdminCommand(entry.href));
 
   if (!normalize(query)) {

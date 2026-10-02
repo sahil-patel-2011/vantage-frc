@@ -83,10 +83,10 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expect(ready.find((action) => action.id === "hours")?.label).toBe("Clock in");
   });
 
-  it("Pick desk uses rank/pick/lock language and has gold last-snapshot", () => {
+  it("Pick list uses plain save language and keeps its last snapshot", () => {
     expect(pickDeskShellCopy("setup").badge).toBe("Needs setup");
     expect(pickDeskShellCopy("empty").title).toBe("No teams to rank yet");
-    expect(pickDeskShellCopy("ready").title).toBe("Rank, pick, and lock");
+    expect(pickDeskShellCopy("ready").title).toBe("Pick list");
     expectPlainCopy(pickDeskShellCopy("empty").description);
     const empty = pickDeskNextActions({ orgId: "org-1", shell: "empty", candidateCount: 0 });
     expect(empty[0]?.label).toBe("Open Scouting");
@@ -95,7 +95,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expect(workbench).toMatch(/putFeatureSnapshot\("pick-desk"/);
     expect(workbench).toMatch(/AbortSignal\.timeout\(FEATURE_API_TIMEOUT_MS\)/);
     expect(workbench).toMatch(/response\.status === 401 \|\| response\.status === 403/);
-    expect(workbench).toMatch(/Lock this list/);
+    expect(workbench).toMatch(/Save pick list/);
     expect(workbench).not.toMatch(/\bEPA\b/);
     expect(workbench).not.toMatch(/The Blue Alliance/);
     expect(workbench).not.toMatch(/Sync event metrics/);

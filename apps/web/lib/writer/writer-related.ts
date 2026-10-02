@@ -41,7 +41,7 @@ export function writerRelatedLinks(
     { id: "awards", label: "Awards", href: withOrgHref("/team/awards", orgId) },
     { id: "knowledge", label: "Knowledge", href: hubHref("/team", "knowledge", orgId) },
     { id: "sponsors", label: "Sponsors", href: hubHref("/business", "sponsors", orgId) },
-    { id: "claude-code", label: "Claude Code", href: withOrgHref("/team/ai-bridge", orgId) },
+    { id: "claude-code", label: "Personal Codex", href: withOrgHref("/team/ai-bridge", orgId) },
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
     { id: "budgets", label: "Budgets", href: hubHref("/ai", "budgets", orgId) },
     { id: "usage", label: "AI usage", href: hubHref("/ai", "usage", orgId) },
@@ -97,15 +97,15 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         badge: "Needs setup",
         title: "Choose your team",
         description:
-          "Choose your team before composing. Templates work now. Pair Claude Code when you want the assistant.",
+          "Choose your team to use its profile and saved drafts.",
       };
     case "provider_setup":
       return {
         kind,
         badge: "Needs setup",
-        title: "Connect Claude Code",
+        title: "Connect AI",
         description:
-          "Templates still draft from this team’s profile. Pair Claude Code if you want the assistant — no API key.",
+          "Connect an assistant to draft with AI. Templates work with your team profile.",
       };
     case "empty":
       return {
@@ -113,7 +113,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         badge: "No drafts",
         title: "Draft library is empty",
         description:
-          "Templates and saved drafts stay blank until you compose.",
+          "Drafts you save will be kept here for your team.",
       };
     case "ready":
       return {

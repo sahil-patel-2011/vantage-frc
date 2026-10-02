@@ -92,8 +92,8 @@ export function AiAgentStatus({ orgId, agents, unavailableOnly = false, title, c
             </div>
             {agent.status === "unavailable" && agent.setupHref ? (
               <a className="app-button secondary ai-agent-status-setup" href={withOrgHref(agent.setupHref, orgId)}>
-                Set up
-                <span className="sr-only"> {agent.name}</span>
+                {agent.setupLabel ?? "Set up"}
+                {!agent.setupLabel ? <span className="sr-only"> {agent.name}</span> : null}
               </a>
             ) : null}
           </li>
@@ -124,8 +124,8 @@ export function AiAgentStatus({ orgId, agents, unavailableOnly = false, title, c
               </div>
               {!ready && group.setupHref ? (
                 <a className="app-button secondary ai-agent-status-setup" href={withOrgHref(group.setupHref, orgId)}>
-                  Set up
-                  <span className="sr-only"> {names}</span>
+                  {group.agents[0]?.setupLabel ?? "Set up"}
+                  {!group.agents[0]?.setupLabel ? <span className="sr-only"> {names}</span> : null}
                 </a>
               ) : null}
             </li>

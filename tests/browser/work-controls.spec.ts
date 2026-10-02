@@ -184,6 +184,7 @@ for (const width of [390, 1440]) {
     await page.screenshot({ path: info.outputPath(`account-${width}.png`) });
     await menu.getByRole("menuitem", { name: "Help and support", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Help centre", exact: true })).toBeVisible();
+    await page.locator("details.page-options > summary").press("Enter");
     for (const name of ["Support tickets", "Report a bug", "App manual"]) {
       await expect(page.getByRole("navigation", { name: "Related account tools" }).getByRole("link", { name, exact: true })).toBeVisible();
     }

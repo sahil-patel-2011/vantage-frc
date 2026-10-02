@@ -34,6 +34,7 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   ["/signin", "auth entry"],
   ["/sign-in", "auth entry alias"],
   ["/onboarding", "gated first-run flow, reached by redirect"],
+  ["/team-setup", "gated first-run recovery for incomplete core setup, reached by the request gate"],
   ["/start", "gated first-run flow"],
   ["/claim", "public self-serve org claim"],
   ["/invite", "reached from an emailed token link"],
@@ -310,7 +311,7 @@ describe("R6 — the palette surfaces a tool from a short prefix", () => {
   it("answers the jobs a member actually types", () => {
     const jobs: Array<[string, string]> = [
       ["scout", "/competition?tab=scouting"],
-      ["pick list", "/competition?tab=picklist-collab"],
+      ["pick list", "/competition?tab=picks"],
       ["hours", "/team?tab=hours"],
       ["chat", "/team?tab=messages"],
       ["budget", "/business?tab=budget"],

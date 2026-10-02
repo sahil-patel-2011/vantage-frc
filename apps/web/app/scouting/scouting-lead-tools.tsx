@@ -2,6 +2,7 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { ScoutSchema } from "@vantage/scouting";
+import { hubHref } from "../../lib/nav/hubs";
 import { Button, FormRow, Panel } from "../../components/ui";
 import { shouldShowScoutingRecentEntries } from "../../lib/scouting/scouting-related";
 import type { Bootstrap, TrustSnapshot } from "./scouting-model";
@@ -71,6 +72,12 @@ export function ScoutingLeadTools({
           <small>{entries.length ? `${entries.length} recent` : "Nothing saved yet"}</small>
         </summary>
         <div className="scout-lead-tools-body">
+          <p><a href={`/scout?orgId=${encodeURIComponent(orgId)}`}>Prepare this device for scouting →</a></p>
+          {data?.canManageSchemas ? <nav className="scout-setup-actions" aria-label="Scouting setup">
+            <a href={hubHref("/competition", "forms", orgId)}>Edit forms</a>
+            <a href={hubHref("/competition", "scout-coverage-live", orgId)}>Assign scouts</a>
+            <a href={hubHref("/competition", "scout-training-mode", orgId)}>Practice scouting</a>
+          </nav> : null}
           <Panel id="recent-entries" className="scout-activity" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Saved entries</h2>
             <p className="app-muted">Tap one to see what was recorded.</p>

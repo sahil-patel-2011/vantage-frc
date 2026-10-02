@@ -65,7 +65,7 @@ export function Modal({
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !mounted) return;
     restoreRef.current = (document.activeElement as HTMLElement) ?? null;
     const node = dialogRef.current;
     // Focus what the dialog asks for (autoFocus / data-autofocus), else the first control in its
@@ -115,7 +115,7 @@ export function Modal({
       document.body.style.overflow = prevOverflow;
       restoreRef.current?.focus?.();
     };
-  }, [open]);
+  }, [open, mounted]);
 
   if (!open || !mounted) return null;
 

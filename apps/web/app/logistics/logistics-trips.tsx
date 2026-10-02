@@ -80,14 +80,14 @@ export function LogisticsTripsPanel({
             ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
-          <input name="title" placeholder="Trip title" required />
-          <input name="eventKey" placeholder="Event code, e.g. 2026gacmp (optional)" />
-          <input name="venueName" placeholder="Venue name" />
-          <input name="venueAddress" placeholder="Venue address" />
+          <input name="title" aria-label="Title" placeholder="Trip title" required />
+          <input name="eventKey" aria-label="Event code" placeholder="Event code, e.g. 2026gacmp (optional)" />
+          <input name="venueName" aria-label="Venue name" placeholder="Venue name" />
+          <input name="venueAddress" aria-label="Venue address" placeholder="Venue address" />
           <input name="startsOn" type="date" aria-label="Trip starts" />
           <input name="endsOn" type="date" aria-label="Trip ends" />
-          <textarea name="travelNotes" placeholder="Travel notes" rows={2} />
-          <textarea name="transportNotes" placeholder="Transport notes" rows={2} />
+          <textarea name="travelNotes" aria-label="Travel notes" placeholder="Travel notes" rows={2} />
+          <textarea name="transportNotes" aria-label="Transport notes" placeholder="Transport notes" rows={2} />
           <button type="submit" disabled={!act || busy}>
             Add trip
           </button>
@@ -178,13 +178,13 @@ export function LogisticsTripsPanel({
                   ).then((saved) => { if (saved !== false) form.reset(); });
                 }}
               >
-                <input name="name" placeholder="Hotel name" required />
-                <input name="address" placeholder="Address" />
-                <input name="phone" placeholder="Phone" />
-                <input name="confirmationCode" placeholder="Confirmation code" />
-                <input name="checkInAt" type="datetime-local" />
-                <input name="checkOutAt" type="datetime-local" />
-                <textarea name="roomBlockNotes" placeholder="Room block notes" rows={2} />
+                <input name="name" aria-label="Name" placeholder="Hotel name" required />
+                <input name="address" aria-label="Address" placeholder="Address" />
+                <input name="phone" aria-label="Phone" placeholder="Phone" />
+                <input name="confirmationCode" aria-label="Confirmation code" placeholder="Confirmation code" />
+                <input name="checkInAt" aria-label="Hotel check-in" type="datetime-local" />
+                <input name="checkOutAt" aria-label="Hotel check-out" type="datetime-local" />
+                <textarea name="roomBlockNotes" aria-label="Room block notes" placeholder="Room block notes" rows={2} />
                 <button type="submit" disabled={!act || busy}>
                   Add hotel
                 </button>
@@ -264,17 +264,17 @@ export function LogisticsTripsPanel({
                   ).then((saved) => { if (saved !== false) form.reset(); });
                 }}
               >
-                <select name="kind" defaultValue="depart_home">
+                <select name="kind" aria-label="Itinerary activity" defaultValue="depart_home">
                   {TRAVEL_LEG_KINDS.map((k) => (
                     <option key={k} value={k}>
                       {TRAVEL_LEG_LABELS[k]}
                     </option>
                   ))}
                 </select>
-                <input name="title" placeholder="Title (optional)" />
-                <input name="startsAt" type="datetime-local" required />
-                <input name="meetingPoint" placeholder="Meeting point" />
-                <input name="location" placeholder="Location" />
+                <input name="title" aria-label="Title" placeholder="Title (optional)" />
+                <input name="startsAt" aria-label="Start time" type="datetime-local" required />
+                <input name="meetingPoint" aria-label="Meeting point" placeholder="Meeting point" />
+                <input name="location" aria-label="Location" placeholder="Location" />
                 <button type="submit" disabled={!act || busy}>
                   Add travel time
                 </button>
@@ -400,8 +400,8 @@ function HotelBlock({
             ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
-          <input name="roomLabel" placeholder="Room label" required />
-          <select name="occupantUserId" defaultValue="">
+          <input name="roomLabel" aria-label="Room label" placeholder="Room label" required />
+          <select name="occupantUserId" aria-label="Room occupant" defaultValue="">
             <option value="">Assign member (optional)</option>
             {members.map((m) => (
               <option key={m.userId} value={m.userId}>
@@ -409,8 +409,8 @@ function HotelBlock({
               </option>
             ))}
           </select>
-          <input name="occupantName" placeholder="Or type occupant name" />
-          <input name="notes" placeholder="Notes" />
+          <input name="occupantName" aria-label="Occupant name" placeholder="Or type occupant name" />
+          <input name="notes" aria-label="Notes" placeholder="Notes" />
           <button type="submit" disabled={!act || busy}>
             Add / update room
           </button>

@@ -129,7 +129,7 @@ describe("pickDeskNextActions", () => {
       listCount: 2,
     });
     expect(actions[0]?.id).toBe("lists");
-    expect(actions[0]?.label).toBe("Lock this list");
+    expect(actions[0]?.label).toBe("Open pick list");
     expect(actions[0]?.detail).toMatch(/2 saved/);
     expect(actions.some((a) => a.id === "scouting")).toBe(true);
     expect(JSON.stringify(actions)).not.toMatch(/Blue Alliance|TBA|EPA/);

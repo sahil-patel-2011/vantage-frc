@@ -56,6 +56,18 @@ suite("team defaults against PostgreSQL", () => {
       expect(source.ops?.Members?.[0]?.id).toBe(userId);
     } finally { await client.query("RESET ROLE"); client.release(); }
   });
+  it("keeps initialization inside the claim transaction with owner row security", async () => {
+    const client = await pool!.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SET LOCAL ROLE vantage_app");
+      await client.query("SELECT set_config('app.user_id',$1,true),set_config('app.org_id',$2,true)", [userId, orgId]);
+      await client.query("UPDATE dashboards SET name='Uncommitted fixture' WHERE org_id=$1", [orgId]);
+      await initializeTeamDefaults(client as unknown as PoolClient, orgId, { inTransaction: true });
+      await client.query("ROLLBACK");
+      expect((await client.query("SELECT name FROM dashboards WHERE org_id=$1", [orgId])).rows).toEqual([{ name: "My custom board" }]);
+    } finally { await client.query("ROLLBACK"); client.release(); }
+  });
   it("reads the registered operator bridge through the worker without owner access", async () => {
     const client = await pool!.connect();
     const bridgeUrl = "https://script.google.com/macros/s/AKfycbx1234567890abcdefghijkLMNOP/exec";

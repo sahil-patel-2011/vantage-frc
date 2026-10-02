@@ -134,11 +134,19 @@ export function dashboardNextActions(input: {
   }
 
   if (shell === "setup") {
-    actions.push({
+    actions.push(isOwnerAdmin ? {
       id: "event",
-      label: "Set active event",
-      detail: "Competition widgets need an event.",
-      href: hubHref("/competition", "command", orgId),
+      label: "Choose event",
+      detail: "Your match schedule and event scouting will appear here.",
+      href: `${hubHref("/competition", "command", orgId)}&pickEvent=1`,
+      primary: true,
+    } : {
+      id: "scout-while-event",
+      label: role === "viewer" ? "Open Scouting" : "Practice scouting",
+      detail: role === "viewer"
+        ? "Your team lead chooses the event. You can still explore Scouting."
+        : "Your team lead chooses the event. You can still scout a practice.",
+      href: `${hubHref("/competition", "scouting", orgId)}${role === "viewer" ? "" : "&mode=free"}`,
       primary: true,
     });
   }

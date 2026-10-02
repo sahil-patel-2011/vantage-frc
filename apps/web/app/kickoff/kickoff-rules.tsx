@@ -121,13 +121,13 @@ export function RulesSection({
         <input
           value={question}
           disabled={busy}
-          placeholder="Rules question (e.g. Can two robots defend the same zone?)"
+          placeholder="Rules question (e.g. Can two robots defend the same zone?)" aria-label="Rules question"
           onChange={(event) => setQuestion(event.target.value)}
         />
         <input
           value={ruleRef}
           disabled={busy}
-          placeholder="Rule ref (e.g. G420)"
+          placeholder="Rule ref (e.g. G420)" aria-label="Rule reference"
           className="kick-ref-input"
           onChange={(event) => setRuleRef(event.target.value)}
         />

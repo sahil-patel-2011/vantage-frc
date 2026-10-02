@@ -5,6 +5,7 @@ import { startTeamProvisioning } from "../../../../lib/provisioning/start";
 import type { ProvisioningStatus } from "../../../../lib/provisioning/model";
 import { z } from "zod";
 import { getRun } from "workflow/api";
+import { initializeTeamDefaults } from "../../../../lib/provisioning/defaults";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -36,11 +37,17 @@ export async function POST(request: Request) {
   const parsed = z.object({ orgId: z.string().uuid() }).strict().safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Choose your team." }, { status: 400 });
   const orgId = parsed.data.orgId;
-  const updated = await withRls({ userId: session.user.id, orgId }, (client) => client.query(`UPDATE team_provisioning_jobs SET state='queued',error=NULL,retry_after_at=NULL,updated_at=now()
+  const updated = await withRls({ userId: session.user.id, orgId }, async (client) => {
+    const updated = await client.query(`UPDATE team_provisioning_jobs SET state='queued',error=NULL,retry_after_at=NULL,updated_at=now()
     WHERE org_id=$1::uuid AND (state='failed' OR (state IN ('queued','running') AND updated_at<now()-interval '10 minutes'))
-    AND has_org_role(org_id,ARRAY['owner','admin']::org_role[]) RETURNING org_id`, [orgId]));
+    AND has_org_role(org_id,ARRAY['owner','admin']::org_role[]) RETURNING org_id`, [orgId]);
+    if (updated.rowCount) {
+      await initializeTeamDefaults(client, orgId, { inTransaction: true });
+      await client.query("UPDATE team_provisioning_jobs SET completed_phases=array_append(completed_phases,'tools') WHERE org_id=$1 AND NOT('tools'=ANY(completed_phases))", [orgId]);
+    }
+    return updated;
+  });
   if (!updated.rowCount) return Response.json({ error: "Setup is already running, complete, or unavailable to your role." }, { status: 409 });
-  const started = await startTeamProvisioning(orgId, session.user.id);
-  if (!started) return Response.json({ error: "Background setup could not start. Retry to resume." }, { status: 503 });
-  return Response.json({ accepted: true }, { status: 202 });
+  await startTeamProvisioning(orgId, session.user.id);
+  return Response.json({ accepted: true, workspaceReady: true }, { status: 202 });
 }

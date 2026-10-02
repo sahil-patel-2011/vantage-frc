@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("../provisioning/start", () => ({ startTeamProvisioning: vi.fn(async () => undefined) }));
+vi.mock("../provisioning/defaults", () => ({ initializeTeamDefaults: vi.fn(async () => undefined) }));
 
 vi.mock("@vantage/core", () => ({
   auth: { api: { getSession: async () => state.session } },

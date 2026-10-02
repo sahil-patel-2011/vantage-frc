@@ -145,7 +145,7 @@ export function ScoringSection({
         <input
           value={label}
           disabled={busy}
-          placeholder="Scoring action (e.g. Score in high goal)"
+          placeholder="Scoring action (e.g. Score in high goal)" aria-label="Scoring action"
           onChange={(event) => setLabel(event.target.value)}
         />
         <select value={phase} disabled={busy} aria-label="Phase" onChange={(event) => setPhase(event.target.value as Phase)}>
@@ -163,7 +163,7 @@ export function ScoringSection({
           step={0.5}
           value={pointsText}
           disabled={busy}
-          placeholder="Points"
+          placeholder="Points" aria-label="Points for the new action"
           onChange={(event) => setPointsText(event.target.value)}
         />
         <input
@@ -174,7 +174,7 @@ export function ScoringSection({
           step={0.5}
           value={secondsText}
           disabled={busy}
-          placeholder="Est. sec"
+          placeholder="Est. sec" aria-label="Estimated seconds for the new action"
           onChange={(event) => setSecondsText(event.target.value)}
         />
         <Button variant="secondary" type="submit" disabled={busy || !label.trim() || pointsText.trim() === ""}>

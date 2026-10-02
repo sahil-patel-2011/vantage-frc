@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import { FormGrid, FormRow, PageHeader, Button } from "../../components/ui";
@@ -25,6 +25,17 @@ export default function ClaimWorkspaceClient() {
   const [error, setError] = useState("");
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/onboarding", { signal: controller.signal }).then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (!data?.preferredTeamNumber || controller.signal.aborted) return;
+        setTeamNumber(current => current || String(data.preferredTeamNumber));
+        setName(current => current || `Team ${data.preferredTeamNumber}`);
+        setSlug(current => current || `frc-${data.preferredTeamNumber}`);
+      }).catch(() => {});
+    return () => controller.abort();
+  }, []);
 
   const consentComplete = legalConsentComplete({ terms: termsAccepted, privacy: privacyAccepted });
   const typedTeam = teamNumber.trim();
@@ -70,7 +81,7 @@ export default function ClaimWorkspaceClient() {
       setAlreadyClaimed(/already has a Vantage workspace/i.test(message));
       return;
     }
-    router.push(`/team-setup?orgId=${encodeURIComponent(data.id)}`);
+    router.push(`/dashboard?orgId=${encodeURIComponent(data.id)}`);
     } catch {
       setError("Could not reach Vantage. Check your connection and try again.");
     } finally { setSubmitting(false); }
@@ -90,7 +101,11 @@ export default function ClaimWorkspaceClient() {
             <input value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="cheesy-poofs" />
           </FormRow>
           <FormRow label="FRC team number">
-            <input value={teamNumber} onChange={(event) => setTeamNumber(event.target.value)} inputMode="numeric" />
+            <input value={teamNumber} onChange={(event) => {
+              const number = event.target.value.replace(/\D/g, "").slice(0, 5);
+              setTeamNumber(number);
+              if (!slug || /^frc-\d*$/.test(slug)) setSlug(`frc-${number}`);
+            }} inputMode="numeric" />
           </FormRow>
           <LegalAgreementCheckbox
             id="claim-legal"
@@ -143,6 +158,7 @@ export default function ClaimWorkspaceClient() {
           <Button type="button" variant="primary" disabled={!canSubmit || submitting} onClick={() => void submit()}>
             {submitting ? "Creating team…" : "Create team"}
           </Button>
+          <p className="app-muted">You’ll manage this team first. Invite your lead, then hand over the team from People whenever you’re ready.</p>
           <p className="app-muted">
             <a href={teamClaimReportHref(typedTeam)}>Report a team claimed without authorization</a>
           </p>

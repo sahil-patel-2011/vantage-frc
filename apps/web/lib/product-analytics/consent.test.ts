@@ -51,6 +51,7 @@ describe("hasAnalyticsConsent", () => {
     // A yes given to an older disclosure is not a yes to this one.
     expect(hasAnalyticsConsent(`granted.${ANALYTICS_CONSENT_VERSION + 1}`)).toBe(false);
     expect(hasAnalyticsConsent("granted.0")).toBe(false);
+    expect(hasAnalyticsConsent("granted.1")).toBe(false);
   });
 
   it("is false for a hand-edited or corrupted value", () => {
@@ -105,7 +106,7 @@ describe("requestHasAnalyticsConsent", () => {
   });
 
   it("refuses a declined request even though it is well formed", () => {
-    expect(requestHasAnalyticsConsent(withCookie(`${ANALYTICS_CONSENT_COOKIE}=denied.1`))).toBe(false);
+    expect(requestHasAnalyticsConsent(withCookie(`${ANALYTICS_CONSENT_COOKIE}=${serializeConsent("denied")}`))).toBe(false);
   });
 
   it("allows a granted request at the current version", () => {
@@ -134,20 +135,20 @@ describe("consent across the two product hosts", () => {
   const withCookie = (cookie: string) => new Headers({ cookie });
 
   it("carries only a current, well-formed answer", () => {
-    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=denied.1`))).toBe("denied.1");
-    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=granted.1`))).toBe("granted.1");
+    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=${serializeConsent("denied")}`))).toBe(serializeConsent("denied"));
+    expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=${serializeConsent("granted")}`))).toBe(serializeConsent("granted"));
     expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=granted.0`))).toBeNull();
     expect(consentToCarry(withCookie(`${ANALYTICS_CONSENT_COOKIE}=yes`))).toBeNull();
     expect(consentToCarry(new Headers())).toBeNull();
   });
 
   it("records the carried answer on the other host", () => {
-    const cookie = carriedConsentCookie("denied.1", new Headers(), true);
-    expect(cookie).toBe(`${ANALYTICS_CONSENT_COOKIE}=denied.1; ${consentCookieAttributes(true)}`);
+    const cookie = carriedConsentCookie(serializeConsent("denied"), new Headers(), true);
+    expect(cookie).toBe(`${ANALYTICS_CONSENT_COOKIE}=${serializeConsent("denied")}; ${consentCookieAttributes(true)}`);
   });
 
   it("never overrides an answer given on this host, and ignores junk", () => {
-    expect(carriedConsentCookie("granted.1", withCookie(`${ANALYTICS_CONSENT_COOKIE}=denied.1`), true)).toBeNull();
+    expect(carriedConsentCookie(serializeConsent("granted"), withCookie(`${ANALYTICS_CONSENT_COOKIE}=${serializeConsent("denied")}`), true)).toBeNull();
     expect(carriedConsentCookie("granted.1; Domain=evil.example", new Headers(), true)).toBeNull();
     expect(carriedConsentCookie("granted.0", new Headers(), true)).toBeNull();
     expect(carriedConsentCookie(null, new Headers(), true)).toBeNull();

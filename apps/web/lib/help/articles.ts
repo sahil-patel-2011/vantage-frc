@@ -390,7 +390,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "saturday-scouting",
     title: "Saturday scouting",
     summary:
-      "Assign quals, Save this match / Save this pit, Conflicts, then Lock this list — one loop for the event.",
+      "Assign scouts, collect match and pit reports, review disagreements, then save your pick list — one loop for the event.",
     category: "competition",
     keywords: [
       "saturday scouting",
@@ -423,26 +423,26 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Save this pit",
         body: [
-          "Open the Pit strip on the same hub. Fill drivetrain, language, and photos.",
+          "Choose Visit a pit under Scouting task. Fill the published pit form; photo uploads are currently paused.",
           "Press Save this pit. Pit is not claimed scoring — do not treat it as a match sheet.",
         ],
       },
       {
         heading: "Conflicts",
         body: [
-          "Open Conflicts on the Scouting hub (Match / Pit / QR / Conflicts / Trust).",
+          "Choose Review disagreements under Scouting task. Lead-only tools appear when your role allows them.",
           "Conflicts are entry-backed: pick the winning field when two scouts disagree.",
           "Stay on this hub. /scout-disagreements is a satellite, not the Saturday door.",
         ],
       },
       {
-        heading: "Rank your picks, then lock the list",
+        heading: "Rank your picks, then save the list",
         body: [
-          "After quals are in, open Competition → Strategy → Pick lists.",
+          "After quals are in, choose Pick list in Competition. Select an existing list or New pick list.",
           "Under Event pool, press Add on a team: it goes to the column we suggest (First, Second, Third or Watch).",
           "Drag a team by its handle (the two rows of dots) to change its place or move it to another column. With the keyboard, focus the handle and press the up or down arrow keys. Under More you can move it to a column, see where it plays, or remove it.",
-          "When the list is right, press Lock this list. The locked list is what you use during alliance selection.",
-          "The Collaborative pick list (Scouting → Pick list) works the same way. Its By sliders / My order switch chooses between an order suggested from your scouting and the order your team dragged.",
+          "When the list is right, press Save pick list. Your saved order is available after reload and remains editable.",
+          "Use Teams → Our scouting to compare robots and adjust pick weights before setting your order. Alliance selection opens from the link below Pick list.",
         ],
       },
       {
@@ -477,7 +477,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Where to scout",
         body: [
-          "The Saturday loop is assign quals → Save this match / Save this pit → Conflicts → Lock this list. Open Saturday scouting in Help for that path; this page is only venue Wi-Fi.",
+          "The Saturday loop is assign scouts → save match and pit reports → review disagreements → save your pick list. Open Saturday scouting in Help for that path; this page covers venue Wi-Fi.",
           "Open Competition → Scouting, or the Scouting Hub route under Competition.",
           "Build or edit forms under Competition → Scouting → Forms before expecting match/pit sheets.",
         ],

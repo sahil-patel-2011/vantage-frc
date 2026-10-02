@@ -28,8 +28,8 @@ export function LandingPanel({ state, draft }: { state: OnboardingState; draft: 
       </div>
       {leader && state.workspaceOrgId ? (
         <p className="onboarding-landing-ai">
-          Want Ask AI? It runs on your team&rsquo;s own key, and a free Google Gemini key works.{" "}
-          <a href={`/team/ai-keys?orgId=${encodeURIComponent(state.workspaceOrgId)}`}>Add one any time</a>.
+          <a href={`/ai/connect?orgId=${encodeURIComponent(state.workspaceOrgId)}`}>Connect AI</a>{" "}
+          any time to get help with scouting, writing, and team tasks.
         </p>
       ) : null}
       <h2 className="onboarding-landing-next">

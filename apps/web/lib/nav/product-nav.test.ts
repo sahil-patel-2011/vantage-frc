@@ -36,9 +36,9 @@ describe("product-nav", () => {
   it("keeps the student's match-week tabs in the primary island", () => {
     expect(PRIMARY_TABS.map((tab) => tab.href)).toEqual([
       "/dashboard",
-      "/competition",
       "/competition?tab=scouting",
-      "/rankings",
+      "/competition?tab=teams",
+      "/competition?tab=strategy",
     ]);
   });
 
@@ -86,12 +86,10 @@ describe("product-nav", () => {
     );
     expect(byLabel.Home).toEqual([]);
     // Plus the pit TV, which had no menu entry at all.
-    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Scout", "Teams", "Strategy", "Pit"]);
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Teams", "Match plan", "Pick list", "Event day", "Our robot"]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
-      "/competition?tab=scouting",
-      "/competition?tab=teams",
-      "/competition?tab=strategy",
-      "/competition?tab=match-checklist",
+      "/competition?tab=teams", "/competition?tab=strategy", "/competition?tab=picks",
+      "/competition?tab=command", "/competition?tab=match-checklist",
     ]);
     expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Work", "Playbook"]);
     expect(byLabel.Business?.map((entry) => entry.label)).toEqual([
@@ -142,7 +140,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/packing")).toBe("Competition / Packing");
     expect(breadcrumbForPath("/duties")).toBe("Team / Duties");
     expect(breadcrumbForPath("/visit-invites")).toBe("Team / Visit invites");
-    expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
+    expect(breadcrumbForPath("/strategy")).toBe("Competition / Match plan");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scout");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Forms");
     expect(breadcrumbForPath("/competition")).toBe("Competition");
@@ -164,7 +162,7 @@ describe("product-nav", () => {
       ),
     ).toBe(false);
     expect(findNavMatch("/scouting/forms")?.item.label).toBe("Forms");
-    expect(findNavMatch("/match-checklist")?.item.label).toBe("Pit");
+    expect(findNavMatch("/match-checklist")?.item.label).toBe("Our robot");
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {

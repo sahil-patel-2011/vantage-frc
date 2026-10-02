@@ -3,7 +3,7 @@
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { SyncEntry } from "@vantage/scouting";
-import { applyFormResetBehavior, recordScoutAction, validatePayload } from "@vantage/scouting";
+import { applyFormResetBehavior, recordScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
 import { answersToSave } from "../../lib/scouting/entry-answers";
 import { FreeScoutView } from "./free-scout-view";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
@@ -52,6 +52,7 @@ import {
   type MyEntry,
   type OfficialFlag,
   type SaveReceipt,
+  type SavedScoutReport,
   type ScoutTab,
   type TrustSnapshot,
 } from "./scouting-model";
@@ -61,6 +62,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
 import { cacheLiveScouting } from "../../lib/scouting/live-cache";
+import { weightedFormula } from "../../lib/scouting/weighted-formula";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
@@ -84,15 +86,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, []);
   // Robots saved on this phone since the page opened, with what was saved, so going back to one
   // loads it before the team's list catches up.
-  const [savedHere, setSavedHere] = useState<
-    Array<{
-      matchKey: string;
-      teamKey: string;
-      clientId: string;
-      payload: Record<string, unknown>;
-      confidence: "high" | "normal" | "low";
-    }>
-  >([]);
+  const [savedHere, setSavedHere] = useState<SavedScoutReport[]>([]);
   // Whether the live team data has arrived (or could not). The robot picked for you waits for it:
   // picked from the copy saved on the phone, it opened a robot already scouted, and stayed.
   const [settled, setSettled] = useState(false);
@@ -767,16 +761,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }
 
   async function saveFormula() {
-    const terms = Object.entries(formulaWeights)
-      .filter(([, weight]) => Number.isFinite(weight) && weight !== 0)
-      .map(([field, weight]) => ({
-        op: "multiply" as const,
-        args: [
-          { op: "field" as const, field },
-          { op: "constant" as const, value: weight },
-        ],
-      }));
-    if (!formulaName.trim() || !terms.length) {
+    const expression = weightedFormula(formulaWeights);
+    if (!formulaName.trim() || !expression) {
       setMessage("Name the formula and set at least one field weight");
       return;
     }
@@ -786,7 +772,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       body: JSON.stringify({
         orgId,
         name: formulaName,
-        expression: { op: "add", args: terms },
+        expression,
       }),
     });
     setMessage(response.ok ? "Coach value formula saved" : "Coach role is required to save formulas");
@@ -971,6 +957,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       setMatchKey={setMatchKey}
       setTeamKey={setTeamKey}
       setPayload={editPayload}
+      onUndo={() => {
+        const identity = { id: crypto.randomUUID(), at: new Date().toISOString() };
+        setUserEdited(true);
+        setPayload(current => undoScoutAction(current, identity));
+      }}
       setConfidence={setConfidence}
       setSource={setSource}
       setSelectedWinners={setSelectedWinners}

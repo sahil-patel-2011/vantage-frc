@@ -17,10 +17,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 async function openRobots(page: import("@playwright/test").Page) {
-  await page.goto("/competition?tab=scouting");
-  const tab = page.getByRole("button", { name: "Robots", exact: true });
-  await expect(tab).toBeVisible({ timeout: 20_000 });
-  await tab.click();
+  await page.goto("/competition?tab=teams");
+  await expect(page.getByRole("combobox", { name: "Team view", exact: true })).toBeVisible({timeout:60000});
   const panel = page.locator(".stp");
   const empty = page.getByText(/No scouting at this event yet|what your fields are worth/i);
   await expect(panel.or(empty).first()).toBeVisible({ timeout: 20_000 });

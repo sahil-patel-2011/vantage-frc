@@ -1,26 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { expectHubReadyOrGate } from "./hub-org-gate";
-import { signInAs, signInFixture } from "./session";
-
-test.beforeEach(async ({ context }) => {
-  const signed = await signInAs(context, "owner");
-  if (!signed) await signInFixture(context);
-});
-
-test("Scouting hub still loads after the panel split", async ({ page }) => {
-  await page.goto("/competition?tab=scouting");
-  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
-  await expect(page.locator("body")).not.toContainText("Application error");
-
-  const views = page.getByRole("navigation", { name: "Scouting views" });
-  const recovery = page.locator(".scout-shell-empty");
-  if (!(await expectHubReadyOrGate(page, views, recovery))) return;
-
-  await expect(views.getByRole("button", { name: "Match" })).toBeVisible();
-  await expect(views.getByRole("button", { name: "Pit visits" })).toBeVisible();
-  await expect(views.getByRole("tab")).toHaveCount(0);
-
-  await views.getByRole("button", { name: "Pit visits" }).click();
-  await expect(views.getByRole("button", { name: "Pit visits" })).toHaveAttribute("aria-current", "page");
-  await views.getByRole("button", { name: "Match" }).click();
+import { signInAs } from "./session";
+test("competition starts with scouting and one task selector",async({page,context})=>{
+ test.setTimeout(180000);expect(await signInAs(context,"owner")).toBe(true);await page.goto("/competition");
+ await expect(page.getByRole("heading",{level:1,name:"Scout",exact:true})).toBeVisible({timeout:60000});
+ await expect(page.getByRole("combobox",{name:"Competition section",exact:true})).toHaveCount(0);
+ const task=page.getByRole("combobox",{name:"Scouting task",exact:true});await expect(task).toBeVisible({timeout:60000});
+ await task.selectOption("pit");await expect(task).toHaveValue("pit");await task.selectOption("match");await expect(task).toHaveValue("match");
+ await expect(task.locator('option[value="teams"]')).toHaveCount(0);await expect(page.getByRole("dialog")).toHaveCount(0);
 });

@@ -136,9 +136,9 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   },
   ask_ai: {
     title: "AI is off",
-    body: "Add an AI key (a free one works) and Ask AI answers from your team's data.",
-    ctaHref: "/team/ai-keys",
-    ctaLabel: "Add an AI key",
+    body: "Connect AI to get answers using your team’s data.",
+    ctaHref: "/ai/connect",
+    ctaLabel: "Connect AI",
     liveLabel: "Open Ask AI",
   },
   quick_actions: {

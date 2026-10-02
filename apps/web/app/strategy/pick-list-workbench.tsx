@@ -233,7 +233,7 @@ function PickDeskShell({
   children?: ReactNode;
 }) {
   const actions = pickDeskNextActions({ orgId, shell });
-  const copy = pickDeskShellCopy(shell);
+  const copy = pickDeskShellCopy(shell, orgId);
   const setup = shell === "setup" ? pickDeskSetupSteps(orgId)[0] : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
 
@@ -244,9 +244,9 @@ function PickDeskShell({
     >
       <header className="pick-desk-heading">
         <div>
-          <h2 style={{ marginTop: 0 }}>Pick desk</h2>
+          <h2 style={{ marginTop: 0 }}>Pick list</h2>
           <p className="app-muted">
-            Rank teams into first / second / third, then lock the list.
+            Order robots by tier, then save your list.
           </p>
         </div>
         <PickDeskRelatedStrip orgId={orgId} />
@@ -293,9 +293,11 @@ function PickDeskShell({
 export function PickListWorkbench({
   orgId,
   embedded,
+  onDirtyChange,
 }: {
   orgId: string | null;
   embedded?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [desk, setDesk] = useState<PickDeskView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -316,13 +318,27 @@ export function PickListWorkbench({
   const deskRef = useRef<PickDeskView | null>(null);
   deskRef.current = desk;
 
+  useEffect(() => {
+    if (!desk) return;
+    const saved = desk.pickLists.find(list => list.id === activeListId);
+    onDirtyChange?.(saved ? draftName !== saved.name || JSON.stringify(entries) !== JSON.stringify(saved.entries) : entries.length > 0 || draftName !== "Alliance picks");
+  }, [desk, activeListId, draftName, entries, onDirtyChange]);
+
+  useEffect(() => {
+    if (!embedded || !activeListId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("listId", activeListId);
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [activeListId, embedded]);
+
   const applyDesk = useCallback((view: PickDeskView) => {
     setDesk(view);
     setSetupMessage("");
     setSetupOrgId(view.orgId);
     setSetupEventKey(view.eventKey);
     setActiveListId((currentId) => {
-      const preferred = view.pickLists.find((list) => list.id === currentId) ?? view.pickLists[0];
+      const preferredId = currentId ?? new URLSearchParams(window.location.search).get("listId");
+      const preferred = view.pickLists.find((list) => list.id === preferredId) ?? view.pickLists[0];
       if (preferred) {
         setDraftName(preferred.name);
         setEntries(preferred.entries);
@@ -651,7 +667,7 @@ export function PickListWorkbench({
           ) : (
             <span className="app-badge good">From our scouting</span>
           )}
-          <h2 style={{ marginTop: 8 }}>Rank, pick, and lock</h2>
+          <h2 style={{ marginTop: 8 }}>Pick list</h2>
           <p className="app-muted">
             {desk.eventName ?? desk.eventKey}
             {" · "}
@@ -663,11 +679,11 @@ export function PickListWorkbench({
         </div>
         <div className="strategy-pick-actions">
           <PickDeskRelatedStrip orgId={desk.orgId} />
-          {/* Only people who can save one see Lock; a scout pressing it got "Owner or admin role
+          {/* Only people who can save one see Save; a scout pressing it got "Owner or admin role
               required". */}
           {desk.canEdit ? (
             <Button variant="primary" type="button" onClick={saveList} disabled={saving}>
-              {saving ? "Locking…" : "Lock this list"}
+              {saving ? "Saving…" : "Save pick list"}
             </Button>
           ) : null}
         </div>
@@ -695,24 +711,17 @@ export function PickListWorkbench({
             placeholder="Team # or nickname"
           />
         </label>
-        {desk.pickLists.length ? (
-          <div className="strategy-pick-list-switch" role="tablist" aria-label="Saved pick lists">
-            {desk.pickLists.map((list) => (
-              <button
-                key={list.id}
-                type="button"
-                role="tab"
-                aria-selected={list.id === activeListId}
-                className={list.id === activeListId ? "active" : undefined}
-                onClick={() => selectList(list)}
-              >
-                {list.name}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="app-muted">No saved lists yet — rank teams below, then lock.</p>
-        )}
+        <label className="strategy-saved-list-select">
+          Saved list
+          <select aria-label="Saved pick list" value={activeListId ?? ""} onChange={event => {
+            const list = desk.pickLists.find(item => item.id === event.target.value);
+            if (list) selectList(list);
+            else { setActiveListId(null); setDraftName("Alliance picks"); setEntries([]); setStatus(""); }
+          }}>
+            <option value="">{desk.canEdit ? "New pick list" : "No list selected"}</option>
+            {desk.pickLists.map(list => <option key={list.id} value={list.id}>{list.name}</option>)}
+          </select>
+        </label>
         {!desk.canEdit ? (
           <p className="telemetry-status" role="status">
             Mentors and captains set the pick list. You can look through it here.

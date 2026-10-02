@@ -37,3 +37,16 @@ describe("robot capabilities without scoring formulas", () => {
     ]);
   });
 });
+
+describe("active event in Teams",()=>{
+ it("uses the same organization event as collection when no event parameter is supplied",async()=>{
+  const query=vi.fn().mockResolvedValueOnce({rows:[{eventKey:"2026event"}]}).mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[]});
+  const view=await loadTeamProfiles({query} as unknown as PoolClient,{orgId:"org",eventKey:null});
+  expect(view.eventKey).toBe("2026event");expect(query.mock.calls[1]?.[1]).toEqual(["org","2026event"]);
+ });
+ it("never substitutes another event's scouting when this team has no active event",async()=>{
+  const query=vi.fn().mockResolvedValueOnce({rows:[]});
+  const view=await loadTeamProfiles({query} as unknown as PoolClient,{orgId:"org",eventKey:null});
+  expect(view).toMatchObject({status:"empty",eventKey:null});expect(query).toHaveBeenCalledTimes(1);
+ });
+});

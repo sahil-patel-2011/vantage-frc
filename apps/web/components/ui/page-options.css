@@ -1,0 +1,14 @@
+.page-options { position: relative; min-width: 0; }
+.page-options:not(:has(.page-options-panel :is(button, a[href], input, select, textarea, summary))) { display: none; }
+.page-options > summary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: 600 13px/1.3 var(--font-sans); list-style: none; cursor: pointer; }
+.page-options > summary::-webkit-details-marker { display: none; }
+.page-options > summary:hover, .page-options[open] > summary { background: var(--surface-2); }
+.page-options > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.page-options-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 100; display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(380px, calc(100vw - 48px)); max-height: min(65dvh, 540px); overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 12px 40px color-mix(in srgb, var(--ink) 14%, transparent); }
+.page-options:not([open]) > .page-options-panel { display: none; }
+.page-options-panel > div { max-width: 100%; flex-wrap: wrap; }
+.page-options-panel :is(button, a, select, summary) { min-height: 44px; }
+.page-options-panel .help-tip { display: flex; flex-direction: column; align-items: stretch; }
+.page-options-panel .help-tip-panel { position: static; width: 100%; max-width: 100%; max-height: none; box-shadow: none; }
+.page-options-panel .help-tip-scrim { display: none; }
+@media (max-width: 640px) { .app-page-actions:has(> .page-options) { margin-left: auto; } }

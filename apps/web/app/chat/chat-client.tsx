@@ -1,5 +1,7 @@
 "use client";
 
+import { aiConnectionHref } from "../../lib/ai/connection";
+
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { AiActionProposals } from "../../components/ai-action-proposals";
@@ -85,11 +87,11 @@ function ChatRelatedStrip({ orgId }: { orgId: string }) {
 function ChatStatusPrimary({
   shell,
   onRetry,
-  claudeHref,
+  connectionHref,
 }: {
   shell: AiChatShellKind;
   onRetry: () => void;
-  claudeHref: string;
+  connectionHref: string;
 }) {
   switch (shell) {
     case "error":
@@ -106,8 +108,8 @@ function ChatStatusPrimary({
       );
     case "setup":
       return (
-        <Button as="a" variant="primary" href={claudeHref}>
-          Connect Claude Code
+        <Button as="a" variant="primary" href={connectionHref}>
+          Connect AI
         </Button>
       );
     case "loading":
@@ -438,7 +440,7 @@ export default function ChatClient({
   const blocked = shell === "auth_required" || shell === "error" || shell === "setup" || shell === "loading";
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
-  const claudeHref = withOrgHref("/team/ai-bridge", orgId);
+  const connectionHref = aiConnectionHref(orgId);
 
   return (
     <main className="module-page ch-page">
@@ -483,7 +485,7 @@ export default function ChatClient({
           description={shellCopy.description}
           aria-busy={shell === "loading"}
         >
-          <ChatStatusPrimary shell={shell} onRetry={() => void load()} claudeHref={claudeHref} />
+          <ChatStatusPrimary shell={shell} onRetry={() => void load()} connectionHref={connectionHref} />
         </EmptyState>
       ) : null}
 
@@ -702,7 +704,7 @@ export default function ChatClient({
                   </Button>
                   {notSent ? (
                     <p className="ch-status ch-not-sent" role="alert">
-                      <strong>Not sent.</strong> {notSent} <a href={withOrgHref("/team/ai-keys", orgId)}>Open AI keys</a>
+                      <strong>Not sent.</strong> {notSent} <a href={aiConnectionHref(orgId)}>Connect AI</a>
                     </p>
                   ) : status ? (
                     <p className="ch-status" role="status">

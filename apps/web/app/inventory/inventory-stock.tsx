@@ -47,12 +47,13 @@ export function InventoryStockPanel({
     <div id="inventory-stock" className="inventory-section">
       <div className="inventory-toolbar">
         <input
+          aria-label="Search inventory"
           className="inventory-search"
           placeholder="Search name, part #, vendor, subsystem…"
           value={search}
           onChange={(event) => onSearch(event.target.value)}
         />
-        <select value={category} onChange={(event) => onCategory(event.target.value)}>
+        <select aria-label="Inventory category" value={category} onChange={(event) => onCategory(event.target.value)}>
           <option value="all">All categories</option>
           {INVENTORY_CATEGORIES.map((value) => (
             <option key={value} value={value}>

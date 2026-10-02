@@ -62,11 +62,11 @@ describe("ai keys soft-ui helpers", () => {
     expect(AI_KEYS_RELATED_INCLUDE).toEqual(["chat", "claude-code"]);
   });
 
-  it("setup copy is Needs setup and points students at Claude Code", () => {
+  it("setup copy is Needs setup and explains connecting an assistant", () => {
     const copy = aiKeysShellCopy("setup");
     expect(copy.badge).toBe("Needs setup");
     expect(copy.eyebrow).toBe("NEEDS SETUP");
-    expect(copy.description).toMatch(/Claude Code/);
+    expect(copy.description).toMatch(/Connect your computer.*assistant account/);
     expect(copy.description).not.toMatch(/KMS|envelope-encrypt|vault/i);
   });
 });

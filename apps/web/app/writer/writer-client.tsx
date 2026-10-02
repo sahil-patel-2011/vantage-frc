@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
@@ -28,6 +28,7 @@ import type {
   WriterProfile,
   WriterTone,
 } from "../../lib/writer/types";
+import { ConnectAiNotice } from "../../components/connect-ai-notice";
 import { writerNextActions } from "../../lib/writer/writer-next-actions";
 
 type LiveView = Extract<WriterView, { status: "live" }>;
@@ -256,29 +257,9 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           <span className="breadcrumbs">AI / Writing Assistant</span>
           <h1>Grant &amp; Sponsorship Writer</h1>
           <p>
-            Draft grant answers and sponsor pitches from this team&apos;s profile and business data only — template or
-            the assistant after Claude Code is paired. Review and edit before sending.
+            Write grant answers and sponsor emails using your team profile. Review and edit each draft before sending.
           </p>
         </div>
-        {live && live.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? live.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {live.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
       </header>
 
       {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
@@ -327,6 +308,25 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
       ) : (
         <WriterWorkspace
           view={view}
+          seasonControl={live && live.seasons.length > 0 ? (
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                Season
+                <select
+                  value={season ?? live.seasonYear}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setSeason(next);
+                    load(next);
+                  }}
+                >
+                  {live.seasons.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+          ) : null}
           busy={busy}
           mutate={mutate}
           setView={setView}
@@ -343,6 +343,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
 
 function WriterWorkspace({
   view,
+  seasonControl,
   busy,
   mutate,
   setView,
@@ -353,6 +354,7 @@ function WriterWorkspace({
   canManageProfile,
 }: {
   view: LiveView;
+  seasonControl: ReactNode;
   busy: boolean;
   mutate: Mutate;
   setView: (view: WriterView) => void;
@@ -386,13 +388,8 @@ function WriterWorkspace({
 
   return (
     <div className="writer-workspace">
-      <WriterNextActions
-        orgId={view.orgId}
-        draftCount={view.drafts.length}
-        hasMission={hasMission}
-        hasAchievements={hasAchievements}
-      />
       <ProfilePanel
+        seasonControl={seasonControl}
         profile={profile}
         setProfile={setProfile}
         busy={busy}
@@ -412,6 +409,12 @@ function WriterWorkspace({
         setBusy={setBusy}
         cutoffCode={cutoffCode}
         setCutoffCode={setCutoffCode}
+      />
+      <WriterNextActions
+        orgId={view.orgId}
+        draftCount={view.drafts.length}
+        hasMission={hasMission}
+        hasAchievements={hasAchievements}
       />
       <DraftLibrary view={view} busy={busy} mutate={mutate} />
     </div>
@@ -444,6 +447,7 @@ function toForm(profile: WriterProfile): ProfileForm {
 
 function ProfilePanel({
   profile,
+  seasonControl,
   setProfile,
   busy,
   mutate,
@@ -451,6 +455,7 @@ function ProfilePanel({
   thinProfile,
 }: {
   profile: ProfileForm;
+  seasonControl: ReactNode;
   setProfile: (updater: (prev: ProfileForm) => ProfileForm) => void;
   busy: boolean;
   mutate: Mutate;
@@ -461,24 +466,11 @@ function ProfilePanel({
     setProfile((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <section className="app-card soft-panel writer-profile" style={{ display: "grid", gap: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Team profile</h2>
-        <small className="app-muted">
-          {canManageProfile
-            ? "Used to tailor every draft — edits apply to the preview live."
-            : "An owner or admin saves this team profile. Edits here stay on this page for the draft preview."}
-        </small>
-      </div>
-      {thinProfile ? (
-        <div className="writer-empty-hint" role="status">
-          <span className="app-badge setup">Profile incomplete</span>
-          <p className="app-muted" style={{ margin: "6px 0 0" }}>
-            Add a mission and at least one achievement so templates pull real team facts. Empty fields stay blank —
-            Writer never fabricates essays.
-          </p>
-        </div>
-      ) : null}
+    <details className="app-card soft-panel writer-profile">
+      <summary><span><strong>Team profile</strong><small>{thinProfile ? "Add your mission and achievements to personalize drafts" : "Your facts, funding needs, and writing tone"}</small></span></summary>
+      <div className="writer-profile-fields">
+      {seasonControl}
+      <p className="app-muted">{canManageProfile ? "Used when you create a draft. Save to reuse these facts next time." : "Edit for this draft. An owner or admin can save changes for the team."}</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
         <label style={{ display: "grid", gap: 4 }}>
           <span className="app-muted">Team name</span>
@@ -526,7 +518,8 @@ function ProfilePanel({
           </Button>
         </div>
       ) : null}
-    </section>
+      </div>
+    </details>
   );
 }
 
@@ -611,16 +604,13 @@ function Composer({
     source?: string | null;
   } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [providerSetup, setProviderSetup] = useState<{
-    message: string;
-    steps: Array<{ id: string; label: string; detail: string; href: string }>;
-  } | null>(null);
+  const [providerSetup, setProviderSetup] = useState(false);
 
   const isGrant = kind === "grant";
 
   const generate = () => {
     setCutoffCode(null);
-    setProviderSetup(null);
+    setProviderSetup(false);
     if (isGrant) {
       const text = composeGrantAnswer(liveProfile, {
         prompt,
@@ -653,7 +643,7 @@ function Composer({
     setBusy(true);
     setError("");
     setCutoffCode(null);
-    setProviderSetup(null);
+    setProviderSetup(false);
     void fetch("/api/writer", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -692,13 +682,7 @@ function Composer({
           });
           if (cutoff) setCutoffCode(cutoff);
           if (("code" in data && data.code === "setup_required") || data.status === "setup_required") {
-            setProviderSetup({
-              message:
-                ("message" in data && data.message) ||
-                ("error" in data && data.error) ||
-                "Pair Claude Code before using assistant drafts. Templates still work.",
-              steps: "steps" in data && Array.isArray(data.steps) ? data.steps : [],
-            });
+            setProviderSetup(true);
             setError("");
           } else if (!cutoff) {
             setError("error" in data && data.error ? data.error : "Ask AI draft failed.");
@@ -750,37 +734,17 @@ function Composer({
   const targetName = isGrant ? (prompt.slice(0, 60) || "Grant answer") : sponsorName || null;
 
   return (
-    <section className="app-card soft-panel writer-composer" style={{ display: "grid", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Compose a draft</h2>
+    <section className="app-card soft-panel writer-composer">
+      <div className="writer-compose-form">
+      <h2>Compose a draft</h2>
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
-      {providerSetup ? (
-        <div className="product-hub-setup writer-provider-setup" role="status">
-          <span className="app-badge setup">{writerShellCopy("provider_setup").badge ?? "Needs setup"}</span>
-          <p className="app-muted" style={{ margin: "8px 0" }}>
-            {providerSetup.message}
-          </p>
-          <p className="app-muted" style={{ marginTop: 0 }}>
-            {writerShellCopy("provider_setup").description}
-          </p>
-          <Button as="a" variant="primary" href={orgId ? `/team/ai-bridge?orgId=${encodeURIComponent(orgId)}` : "/team/ai-bridge"}>
-            Connect Claude Code
-          </Button>
-        </div>
-      ) : null}
-      <div className="writer-kind-pills" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {(["grant", ...EMAIL_KINDS] as DraftKind[]).map((k) => (
-          <button
-            key={k}
-            type="button"
-            className={`app-badge ${kind === k ? "good" : "muted"}`}
-            style={{ cursor: "pointer", border: "none" }}
-            onClick={() => setKind(k)}
-          >
-            {kindLabel(k)}
-          </button>
-        ))}
-      </div>
-
+      {providerSetup ? <ConnectAiNotice orgId={orgId} /> : null}
+      <label className="writer-format">
+        <span>What are you writing?</span>
+        <select value={kind} onChange={(event) => setKind(event.target.value as DraftKind)}>
+          {(["grant", ...EMAIL_KINDS] as DraftKind[]).map((option) => <option key={option} value={option}>{kindLabel(option)}</option>)}
+        </select>
+      </label>
       {isGrant ? (
         <div style={{ display: "grid", gap: 10 }}>
           <label style={{ display: "grid", gap: 4 }}>
@@ -805,50 +769,39 @@ function Composer({
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Sponsor / org name</span>
-            <input value={sponsorName} onChange={(e) => setSponsorName(e.target.value)} />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Contact name</span>
-            <input value={contactName} onChange={(e) => setContactName(e.target.value)} />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Tier (optional)</span>
-            <input value={tier} onChange={(e) => setTier(e.target.value)} placeholder="Gold" />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Ask amount ($)</span>
-            <input type="number" min={0} value={askAmount} onChange={(e) => setAskAmount(e.target.value)} />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Prior gift ($)</span>
-            <input type="number" min={0} value={priorAmount} onChange={(e) => setPriorAmount(e.target.value)} />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Your name</span>
-            <input value={senderName} onChange={(e) => setSenderName(e.target.value)} />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Your role</span>
-            <input value={senderRole} onChange={(e) => setSenderRole(e.target.value)} placeholder="Team Captain" />
-          </label>
+        <div className="writer-email-fields">
+          <div className="writer-field-grid">
+            <label><span>Sponsor / org name</span><input value={sponsorName} onChange={(event) => setSponsorName(event.target.value)} autoComplete="organization" /></label>
+            <label><span>Contact name</span><input value={contactName} onChange={(event) => setContactName(event.target.value)} /></label>
+            {["sponsorship_ask", "renewal", "grant_followup"].includes(kind) ? <label><span>Ask amount ($)</span><input type="number" min={0} value={askAmount} onChange={(event) => setAskAmount(event.target.value)} /></label> : null}
+            {["renewal", "thank_you"].includes(kind) ? <label><span>Prior gift ($)</span><input type="number" min={0} value={priorAmount} onChange={(event) => setPriorAmount(event.target.value)} /></label> : null}
+          </div>
+          <details className="writer-more-details">
+            <summary>Signature &amp; optional details</summary>
+            <div className="writer-field-grid">
+              <label><span>Your name</span><input value={senderName} onChange={(event) => setSenderName(event.target.value)} autoComplete="name" /></label>
+              <label><span>Your role</span><input value={senderRole} onChange={(event) => setSenderRole(event.target.value)} placeholder="Team Captain" /></label>
+              <label><span>Tier (optional)</span><input value={tier} onChange={(event) => setTier(event.target.value)} placeholder="Gold" /></label>
+              {!["sponsorship_ask", "renewal", "grant_followup"].includes(kind) ? <label><span>Ask amount ($)</span><input type="number" min={0} value={askAmount} onChange={(event) => setAskAmount(event.target.value)} /></label> : null}
+              {!["renewal", "thank_you"].includes(kind) ? <label><span>Prior gift ($)</span><input type="number" min={0} value={priorAmount} onChange={(event) => setPriorAmount(event.target.value)} /></label> : null}
+            </div>
+          </details>
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <Button variant="secondary" type="button" onClick={generate} disabled={busy}>
-          Compose from template
+        <Button variant="primary" type="button" onClick={generate} disabled={busy}>
+          Create draft
         </Button>
-        <Button variant="primary" type="button" onClick={generateWithAssistant} disabled={busy}>
-          {busy ? "Drafting…" : "Draft with Ask AI"}
+        <Button variant="secondary" type="button" onClick={generateWithAssistant} disabled={busy}>
+          {busy ? "Drafting…" : "Draft with AI"}
         </Button>
         <small className="app-muted">Uses only your team profile and business records.</small>
       </div>
 
+      </div>
       {draftBody ? (
-        <div className="writer-draft-preview" style={{ display: "grid", gap: 8, borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}>
+        <div className="writer-draft-preview" >
           {draftSource ? (
             <span className={`app-badge ${draftSource === "ai" ? "good" : "muted"}`}>
               {draftSource === "ai" ? "AI draft" : "Template draft"}
@@ -882,12 +835,8 @@ function Composer({
         </div>
       ) : (
         <div className="writer-template-empty" role="status">
-          <span className="app-badge setup">No draft yet</span>
-          <h3 style={{ margin: "8px 0 4px", fontSize: "1rem" }}>Templates stay empty until you compose</h3>
-          <p className="app-muted" style={{ margin: 0 }}>
-            Pick a grant or sponsor template above, then <strong>Compose from template</strong> to fill it in from your
-            team’s profile. Pair Claude Code if you want the assistant.
-          </p>
+          <h3>Your draft will appear here</h3>
+          <p>Choose a format, add the details, and create a draft.</p>
         </div>
       )}
     </section>
@@ -899,8 +848,7 @@ function DraftLibrary({ view, busy, mutate }: { view: LiveView; busy: boolean; m
     const emptyCopy = writerShellCopy("empty");
     return (
       <section className="app-card soft-panel writer-drafts-empty">
-        <span className="app-badge setup">{emptyCopy.badge ?? "No saved drafts"}</span>
-        <h2>{emptyCopy.title}</h2>
+        <h2>Saved drafts</h2>
         <p className="app-muted">{emptyCopy.description}</p>
         <WriterCrossLinks orgId={view.orgId} />
       </section>

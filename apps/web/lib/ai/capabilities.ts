@@ -461,8 +461,8 @@ function checkModel(agent: AiAgentDefinition, facts: AiCapabilityFacts): Verdict
     if (facts.model.reason === "no_model_provider") {
       return {
         reason: "no_model_provider",
-        sentence: `${agent.name} is off — this team has no AI model set up. Add a key in Team → AI keys.`,
-        setup: SETUP.keys,
+        sentence: `${agent.name} is off — connect AI to use it with your team.`,
+        setup: { href: "/ai/connect", label: "Connect AI" },
       };
     }
     return {

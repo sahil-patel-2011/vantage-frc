@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+import { serializeConsent } from "./apps/web/lib/product-analytics/consent";
 import {
   assertLocalFixtureDatabase,
   cookieDomain,
@@ -89,7 +90,7 @@ export default defineConfig({
       cookies: [
         {
           name: "vantage-analytics-consent",
-          value: "denied.1",
+          value: serializeConsent("denied"),
           domain: hostname,
           path: "/",
           expires: -1,

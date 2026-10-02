@@ -61,7 +61,7 @@ describe("searchCommands ranking", () => {
     expect(hrefs("bumpers")).toContain("/competition?tab=match-checklist");
     expect(hrefs("onshape")).toContain("/build?tab=cad");
     expect(hrefs("wpilib")).toContain("/build?tab=code");
-    expect(hrefs("clock in")).toContain("/hours-self-view");
+    expect(hrefs("clock in")).toContain("/team?tab=hours-self-view");
     expect(hrefs("dark mode")).toContain("/account?tab=appearance");
     expect(hrefs("who is coming")).toContain("/team?tab=attendance");
   });
@@ -91,7 +91,7 @@ describe("searchCommands ranking", () => {
   it("ranks the verb above the destination for action phrasing", () => {
     const first = searchCommands("clock in", catalog)[0];
     expect(first?.kind).toBe("action");
-    expect(first?.href).toBe("/hours-self-view");
+    expect(first?.href).toBe("/team?tab=hours-self-view");
   });
 
   it("returns nothing for a query that matches no tool", () => {
@@ -152,7 +152,7 @@ describe("searchCommands gating and empty state", () => {
   });
 
   it("keeps Team admin when manage access is omitted", () => {
-    expect(hrefs("team admin")).toContain("/team/admin");
+    expect(hrefs("team admin")).toContain("/team?tab=team-admin");
     expect(searchCommands("invite a teammate", catalog).some((hit) => hit.href.startsWith("/team/admin"))).toBe(true);
   });
 });
@@ -176,7 +176,7 @@ describe("searchCommands multi-word and stemming (audit regressions)", () => {
   });
 
   it("ignores filler words in a natural-language query", () => {
-    expect(hrefs("how do i log my hours", 8)).toContain("/hours-self-view");
+    expect(hrefs("how do i log my hours", 8)).toContain("/team?tab=hours-self-view");
     expect(hrefs("what is the budget", 8)).toContain("/business?tab=budget");
   });
 
@@ -255,4 +255,16 @@ describe("this wave's tools are findable by the words teams type", () => {
       expect(hrefs(query, 6)).toContain(href);
     });
   }
+});
+
+describe("equivalent destinations across permission scopes",()=>{
+ it("lists the same robot tool once for unrestricted users",()=>{
+  const hits=searchCommands("fmea",commandCatalog(),{limit:100});
+  expect(hits.filter(hit=>hit.href==="/build?tab=fmea"||hit.href==="/team?tab=fmea").length).toBe(1);
+ });
+ it("retains the Team link when Competition and Build are not permitted",()=>{
+  const hits=searchCommands("fmea",commandCatalog(),{limit:100,isAllowed:href=>href.startsWith("/team?")});
+  expect(hits.some(hit=>hit.href==="/team?tab=fmea")).toBe(true);
+  expect(hits.find(hit=>hit.href==="/team?tab=fmea")?.context).toBe("Team › Work");
+ });
 });

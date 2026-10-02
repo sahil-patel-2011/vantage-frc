@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } from "react";
-import { HelpTip } from "./help-tip";
+import { hubPageTitle } from "../lib/nav/hub-navigation";
+import { HubContextActions } from "./hub-context-actions";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
-import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "./ui";
-import { sectionHelpFor } from "../lib/help/section-help";
-import { STRATEGY_TOOL_GROUPS, strategyToolBlurb } from "../lib/strategy/strategy-tools";
+import { EmptyState, PageHeader, Button } from "./ui";
 import {
   clientCanAccessHub,
   filterTabsByHubAccess,
@@ -14,9 +13,7 @@ import {
 } from "../lib/nav/hub-access-filter";
 import {
   hubById,
-  hubLegacyHref,
   hubPrimaryTabs,
-  hubStripTabs,
   hubTabsForMember,
   hubWorkbenchId,
   isHubTab,
@@ -143,7 +140,6 @@ export function ProductHubShell({
   breadcrumbs,
   children,
   headerActions,
-  embeddedTabs,
 }: ProductHubShellProps) {
   const hub = hubById(hubId);
   const access = useClientAccessProfile();
@@ -159,16 +155,10 @@ export function ProductHubShell({
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [manageReady, setManageReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
-  /** Tools inside the open workbench — the workbench root itself is the tab above. */
-  const toolTabs = useMemo(() => {
-    const inner = hubStripTabs(hub, workbenchId, tab).filter((entry) => entry.group === workbenchId);
-    const strip = !inner.length
-      ? []
-      : primaryTabs.some((entry) => entry.id === workbenchId)
-        ? inner
-        : filterTabsByHubAccess(inner, access.hubAccess, accessHubId);
-    return hubTabsForMember(strip, canManageTeam);
-  }, [access.hubAccess, accessHubId, canManageTeam, hub, primaryTabs, tab, workbenchId]);
+  // One permitted destination list feeds compact sections and contextual actions.
+  const workspaceTabs = useMemo(() => hubTabsForMember(hub.tabs.filter(entry =>
+    primaryTabs.some(root => root.id === (entry.group ?? entry.id)),
+  ), canManageTeam), [canManageTeam, hub, primaryTabs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -276,54 +266,14 @@ export function ProductHubShell({
   return (
     <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
       <OfflineBanner feature={hub.label} />
-      {/* Primary workspaces stay visible; secondary tools share one selector. */}
-      <div className="hub-bar">
+      <div className="workspace-hub-header">
         <div className="hub-bar-id">
           {breadcrumbs ? <span className="breadcrumbs">{breadcrumbs}</span> : null}
           {/* Still an h1: the page needs one, and it is what a screen reader
               announces on arrival. It is small and inline, not a banner. */}
-          <h1>{hub.title}</h1>
+          <h1>{hubPageTitle(hub, tab)}</h1>
         </div>
-        <TabBar
-          aria-label={`${hub.label} sections`}
-          value={workbenchId}
-          onChange={selectTab}
-          tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
-          className="product-hub-tabs"
-        />
-        {/* The workbench root is the tab that is already selected beside it, so
-            repeating it here put the same label ("Event day", "Kickoff") on the
-            page twice. The strip lists only the tools inside the open workbench;
-            the tab is how you get back to its own screen. */}
-        {toolTabs.length > 0 ? (
-          <ToolStrip
-            compact
-            aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
-            value={tab}
-            onChange={selectTab}
-            describe={(id) =>
-              (hub.id === "competition" && workbenchId === "strategy" ? strategyToolBlurb(id) : undefined) ??
-              sectionHelpFor(hub.id, id)?.what
-            }
-            groups={hub.id === "competition" && workbenchId === "strategy" ? STRATEGY_TOOL_GROUPS : undefined}
-            items={toolTabs.map((entry) => ({
-              id: entry.id,
-              label: entry.label,
-              featured: entry.featured === true,
-              href:
-                embeddedTabs && !embeddedTabs.includes(entry.id) && entry.legacyHref
-                  ? hubLegacyHref(entry, orgId)
-                  : undefined,
-            }))}
-          />
-        ) : null}
-        <div className="hub-bar-end">
-          {/* How / why / when for whatever is open. Prefers the leaf tool's
-              entry and falls back to its workbench; renders nothing when
-              neither has one. */}
-          <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
-          {headerActions}
-        </div>
+        {headerActions}
       </div>
       <div
         className="product-hub-panel"
@@ -350,6 +300,7 @@ export function ProductHubShell({
           return <Suspense fallback={<HubPanelSkeleton />}>{children({ tab, orgId, selectTab })}</Suspense>;
         })()}
       </div>
+      {orgReady && access.ready && tabAllowed ? <HubContextActions hub={hub} tab={tab} tabs={workspaceTabs} orgId={orgId} canManage={canManageTeam} /> : null}
     </main>
   );
 }

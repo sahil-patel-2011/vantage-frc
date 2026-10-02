@@ -15,9 +15,9 @@ export type MeteredAiSetupStep = {
 const PROVIDER_SETUP_STEPS: MeteredAiSetupStep[] = [
   {
     id: "keys",
-    label: "Add an AI provider key",
-    detail: "Paste an OpenAI, Anthropic, or Google key, or a local OpenAI-compatible address, under Team → AI keys.",
-    href: "/team/ai-keys",
+    label: "Connect AI",
+    detail: "Choose a personal computer connection or an AI provider.",
+    href: "/ai/connect",
   },
   {
     id: "budgets",
@@ -51,7 +51,7 @@ function isProviderSetupError(error: unknown): boolean {
  * ("could not be decrypted", "was rejected") keep their own message.
  */
 export const AI_OFF_MESSAGE =
-  "AI isn't on for your team yet. An owner or admin can turn it on under Team → AI keys; a free Google Gemini key takes about two minutes.";
+  "Connect AI to use the assistant. Choose a connection in AI settings, then try again.";
 
 function isAiOffError(message: string): boolean {
   return /No AI provider key|must configure a BYO AI key|local desktop relay/i.test(message);

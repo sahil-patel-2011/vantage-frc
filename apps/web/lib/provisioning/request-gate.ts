@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { provisioningReady, type ProvisioningStatus } from "./model";
+import { workspaceReady, type ProvisioningStatus } from "./model";
 import { isTeamId } from "../nav/remembered-team";
 
 /** Read the actual request's team before falling back to the selected workspace. */
@@ -40,5 +40,5 @@ export async function pendingProvisioningTeam(client: PoolClient, userId: string
   const job = (await client.query<ProvisioningStatus>(`SELECT state,phase,completed_phases AS "completedPhases",error,
     verified_at::text AS "verifiedAt" FROM team_provisioning_jobs WHERE org_id=$1::uuid`, [orgId])).rows[0];
   // Existing teams have no setup job. Cross-team requests remain subject to RLS.
-  return job && !provisioningReady(job) ? orgId : null;
+  return job && !workspaceReady(job) ? orgId : null;
 }

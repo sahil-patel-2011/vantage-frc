@@ -2,18 +2,16 @@
  * Product navigation — single source of truth for the app-shell drawer,
  * command palette, and breadcrumb labels.
  *
- * Drawer IA: one hub row per pillar plus that hub's other workbenches (the
- * default workbench is the hub row itself). Nested tools stay on the hub
- * ToolStrip and Cmd+K — never dumped into All.
+ * Drawer IA: one destination per workspace. Specialist controls stay with their task and in command search.
  *
  * Workspaces: Home · Competition · Team · Build · Business.
  * Logistics belongs to Team; existing standalone URLs remain supported.
- * Media folded into Business › Outreach; AI is the persistent "Ask AI"
- * control and its settings live under Settings. Settings live in the drawer
- * footer only.
+ * Media folded into Business › Outreach; AI also has a direct drawer link.
+ * Account and admin settings live below the workspace list.
  */
 
-import { NAV_HUBS, PRODUCT_HUBS, hubPrimaryTabs } from "./hubs";
+import { NAV_HUBS, PRODUCT_HUBS } from "./hubs";
+import { hubNavigationSections } from "./hub-navigation";
 
 export type NavItemState = "setup" | "planned";
 
@@ -150,7 +148,7 @@ export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
 /**
  * All-panel leaves under a pillar.
  *
- * Hub rows already open the default workbench (Competition → Event day).
+ * Hub rows already open the default workbench (Competition → Scout).
  * Repeating that name here printed it twice. The other workbenches stay
  * here so All can open Scouting / Chat / CAD without a second hop through
  * the hub TabBar. Nested tools (Forms, Alliance desk, Bugbot) stay off
@@ -159,7 +157,7 @@ export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
 export function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
   const hub = NAV_HUBS.find((entry) => entry.label === group.label);
   if (!hub) return [];
-  const tabs = hubPrimaryTabs(hub)
+  const tabs = hubNavigationSections(hub, hub.tabs)
     .filter((tab) => tab.id !== hub.defaultTab)
     .map((tab) => ({ href: `${hub.href}?tab=${tab.id}`, label: tab.label }));
   return tabs;
@@ -185,15 +183,16 @@ export type IslandTabDefinition = { href: string; label: string; icon: ProductNa
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
-  // The page it opens is "Event day"; "Matches" was a third name for the same place.
-  { href: "/competition", label: "Event day", icon: "swords" },
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
-  { href: "/rankings", label: "Stats", icon: "stats" },
+  { href: "/competition?tab=teams", label: "Teams", icon: "users" },
+  { href: "/competition?tab=strategy", label: "Match plan", icon: "swords" },
 ];
 
 /** Allowlisted destinations for the four personal island slots. */
 export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   ...PRIMARY_TABS,
+  { href: "/competition?tab=command", label: "Event day", icon: "swords" },
+  { href: "/rankings", label: "Stats", icon: "stats" },
   { href: "/team", label: "Team", icon: "users" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/business", label: "Business", icon: "clipboard" },
@@ -202,8 +201,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
-  // The Scouting product (its own frame, same data) — pinnable to the island.
-  { href: "/scout", label: "Scouting app", icon: "scout" },
+
 ];
 
 /**

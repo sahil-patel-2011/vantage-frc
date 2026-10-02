@@ -66,7 +66,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     label: "Competition",
     title: "Competition",
     description: "Event day, scouting, strategy, and pit.",
-    defaultTab: "command",
+    defaultTab: "scouting",
     tabs: [
       { id: "command", label: "Event day", legacyHref: "/command" },
       ...nest("command", [
@@ -110,7 +110,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
       ]),
       { id: "teams", label: "Teams", legacyHref: "/scout/teams" },
-      { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
+      { id: "strategy", label: "Match plan", legacyHref: "/strategy" },
       ...nest("strategy", [
         // The briefing is the drive coach's main screen, so it leads Strategy's chips too.
         // Its own href keeps the hub's one-route-per-tab rule; search lists it once (Event day).
@@ -118,12 +118,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "alliance-selection-desk", label: "Alliance desk", legacyHref: "/alliance-selection-desk", featured: true },
         // Not a chip: the Strategy page right under the strip has its own "Pick lists" tab that opens
         // this same view, so the chip was a second button for one place. Search still finds it.
-        { id: "picks", label: "Pick desk", legacyHref: "/strategy?tab=picks", inStrip: false },
+        { id: "picks", label: "Pick list", legacyHref: "/strategy?tab=picks", inStrip: false, featured: true },
         { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
         { id: "chemistry", label: "Chemistry", legacyHref: "/chemistry" },
         { id: "pairwise", label: "Pairwise", legacyHref: "/pairwise" },
         { id: "team-tags", label: "Drive-team tags", legacyHref: "/team-tags" },
-        { id: "picklist-collab", label: "Pick list", legacyHref: "/picklist-collab" },
+        { id: "picklist-collab", label: "Team discussion", legacyHref: "/picklist-collab", inStrip: false, inSearch: false },
         { id: "picklist-justifier", label: "Justifier", legacyHref: "/picklist-justifier" },
         { id: "alliance-sim", label: "Alliance sim", legacyHref: "/alliance-sim" },
         { id: "alliance-partner-brief", label: "Partner brief", legacyHref: "/alliance-partner-brief" },
@@ -145,7 +145,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "dossier", label: "Team dossier", legacyHref: "/dossier" },
         { id: "video", label: "Video review", legacyHref: "/video" },
       ]),
-      { id: "match-checklist", label: "Pit", legacyHref: "/match-checklist" },
+      { id: "match-checklist", label: "Our robot", legacyHref: "/match-checklist" },
       ...nest("match-checklist", [
         // The screen the pit crew points at the TV. It was only reachable by typing "TV" into search.
         { id: "pit-tv", label: "Pit TV", legacyHref: "/display", featured: true },
@@ -456,8 +456,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "memory", label: "Memory", legacyHref: "/team/ai-memory" },
         { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
         { id: "finance", label: "Finance" },
+        { id: "connections", label: "Connect AI", legacyHref: "/ai/connect", featured: true },
         { id: "ai-keys", label: "AI keys", legacyHref: "/team/ai-keys", featured: true },
-        { id: "ai-bridge", label: "Claude Code", legacyHref: "/team/ai-bridge", featured: true },
+        { id: "ai-bridge", label: "Personal Codex", legacyHref: "/team/ai-bridge", featured: true },
         { id: "ai-usage", label: "AI cost estimate", legacyHref: "/team/ai-usage" },
         { id: "usage", label: "Usage", legacyHref: "/team/usage" },
       ]),

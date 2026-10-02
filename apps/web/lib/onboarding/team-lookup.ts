@@ -100,12 +100,6 @@ export function parseTeamNumber(raw: string): number | null {
   return value;
 }
 
-function claimAction(adult: boolean | undefined) {
-  return adult
-    ? { href: "/claim", label: "Claim this team" }
-    : null;
-}
-
 export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
   const parsed = parseTeamNumber(input.raw);
   const trimmed = input.raw.trim();
@@ -219,11 +213,9 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       tone: "warn",
       teamNumber: parsed,
       title: `Team ${parsed} isn't on Vantage yet`,
-      body: input.adult
-        ? "Nobody has set this team up. As a mentor, coach, or parent you can claim the number and become its first owner."
-        : "Nobody has set this team up yet. Ask a mentor or coach to claim it — students can't create a team.",
+      body: "If you’re authorized by this team, create its workspace and invite your teammates. You can hand it over to your team lead after they join.",
       ok: true,
-      action: claimAction(input.adult),
+      action: { href: "/claim", label: "Create this team" },
     };
   }
 

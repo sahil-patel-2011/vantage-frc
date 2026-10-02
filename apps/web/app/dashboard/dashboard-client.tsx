@@ -106,6 +106,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const firstWeek = useFirstWeek(home.orgId);
   const setupHero = useMemo(() => setupHeroFrom(firstWeek.view), [firstWeek.view]);
   const teamSetupCard = Boolean(setupHero);
+  const sharedSetupPrompt = Boolean(home.orgId && home.widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
+  const homeOverview = Boolean(home.orgId && home.widgetsLoaded);
   /** Session and the team's real board are here; before that Home is one skeleton. */
   const homeReady = home.meLoaded && (!home.orgId || home.boardLoaded);
   /*
@@ -134,8 +136,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     those pushed the real board a screen down.
   */
   const hiddenFor = useCallback(
-    (layout: DashboardWidgetLayout[]) => hiddenOnHome(layout, { shell: dashShell, widgets: home.widgets, teamSetupCard }),
-    [dashShell, home.widgets, teamSetupCard],
+    (layout: DashboardWidgetLayout[]) => hiddenOnHome(layout, { shell: dashShell, widgets: home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview }),
+    [dashShell, home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview],
   );
   const hiddenOnHomeIds = useMemo(() => hiddenFor(home.layout), [hiddenFor, home.layout]);
   const paletteEntries = useMemo(
@@ -168,8 +170,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     (layout: DashboardWidgetLayout[], editing: boolean) =>
       editing
         ? editBoardLayout(layout, hiddenFor(layout), addedThisEdit, home.widgets)
-        : homeViewLayout(layout, { editing: false, shell: dashShell, widgets: home.widgets, teamSetupCard }),
-    [hiddenFor, addedThisEdit, dashShell, home.widgets, teamSetupCard],
+        : homeViewLayout(layout, { editing: false, shell: dashShell, widgets: home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview }),
+    [hiddenFor, addedThisEdit, dashShell, home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview],
   );
   const viewLayout = useMemo(() => viewFor(home.layout, home.editing), [viewFor, home.layout, home.editing]);
   const settle = useCallback(
@@ -273,6 +275,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     previewing: home.previewing,
     resetAudience: homeAudience === "mentor" ? "mentor" : "student",
     loadHome: home.loadHome,
+    acceptSavedBoard: home.acceptSavedBoard,
     loadSnapshot: home.loadSnapshot,
     record: history.record,
     grabBaseRef: home.grabBaseRef,
@@ -376,6 +379,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}
       paletteEntries={paletteEntries}
       hiddenOnHome={hiddenOnHomeIds}
+      hasScoutingSchemas={hasScoutingSchemas}
       homeStripItems={homeStripItems}
       homeAudience={homeAudience}
       nextMatchData={nextMatchData}

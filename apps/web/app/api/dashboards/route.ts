@@ -272,13 +272,13 @@ export async function POST(request: Request) {
       if (action === "reset") {
         const layout = await defaultLayoutForMember(client, session.user.id, role);
         if (body.id) {
-          await client.query(
+          const updated = await client.query<{ id: string; name: string; scope: "personal" | "org" }>(
             `UPDATE dashboards SET layout = $3::jsonb, updated_at = now()
              WHERE id = $1 AND org_id = $2
                AND (
                  (scope = 'personal' AND owner_user_id = $4)
                  OR (scope = 'org' AND $5)
-               )`,
+               ) RETURNING id,name,scope`,
             [
               body.id,
               orgId,
@@ -287,6 +287,13 @@ export async function POST(request: Request) {
               canWriteOrgDashboard(role),
             ],
           );
+          if (!updated.rowCount) throw new Error("Board not found or not editable");
+          const target = updated.rows[0]!;
+          if (body.activate) {
+            await deactivateForSwitch(client, orgId, session.user.id, target.scope);
+            await client.query("UPDATE dashboards SET is_active=true WHERE id=$1 AND org_id=$2", [target.id, orgId]);
+          }
+          return { ...target, layout, reset: true };
         }
         return {
           id: body.id ?? null,

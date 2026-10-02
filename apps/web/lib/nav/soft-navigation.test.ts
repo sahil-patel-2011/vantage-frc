@@ -1,5 +1,50 @@
-import { describe, expect, it } from "vitest";
-import { softNavigationTarget } from "./soft-navigation";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { pushAppNavigation, softNavigationTarget } from "./soft-navigation";
+import { URL_CHANGE_EVENT } from "./url-change";
+
+describe("mounted views follow router navigation", () => {
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  function browser() {
+    vi.useFakeTimers();
+    const target = Object.assign(new EventTarget(), {
+      location: { href: "https://vantage.local/ai?tab=writer", assign: vi.fn() },
+      setTimeout: (callback: () => void, delay: number) => setTimeout(callback, delay),
+    });
+    vi.stubGlobal("window", target);
+    const changed = vi.fn();
+    target.addEventListener(URL_CHANGE_EVENT, changed);
+    return { target, changed };
+  }
+
+  it("notifies only after the router commits the new query", () => {
+    const { target, changed } = browser();
+    const push = vi.fn((href: string) => setTimeout(() => { target.location.href = `https://vantage.local${href}`; }, 20));
+    pushAppNavigation(push, "/ai?tab=connections");
+    expect(push).toHaveBeenCalledWith("/ai?tab=connections");
+    vi.advanceTimersByTime(49);
+    expect(changed).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(changed).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("stops waiting when navigation does not change the address", () => {
+    const { changed } = browser();
+    pushAppNavigation(vi.fn(), "/ai?tab=writer");
+    vi.runAllTimers();
+    expect(changed).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("falls back to a document navigation if the router is unavailable", () => {
+    const { target, changed } = browser();
+    pushAppNavigation(() => { throw new Error("Router unavailable"); }, "/ai/connect");
+    expect(target.location.assign).toHaveBeenCalledWith("/ai/connect");
+    expect(changed).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
 
 const click = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false };
 const anchor = (href: string, extra: Partial<Parameters<typeof softNavigationTarget>[1]> = {}) => ({

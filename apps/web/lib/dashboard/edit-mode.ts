@@ -13,6 +13,7 @@ import {
   packDashboardLayout,
   packFillingGaps,
   sizeForHome,
+  usesSharedSetupPrompt,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
   type WidgetCatalogEntry,
@@ -354,13 +355,15 @@ export function popHistory(stack: readonly DashboardWidgetLayout[][]): {
   return { layout: stack[stack.length - 1] ?? null, stack: stack.slice(0, -1) };
 }
 
-export type HiddenOnHomeReason = "empty" | "setup_done" | "setup_top";
+export type HiddenOnHomeReason = "empty" | "setup_done" | "setup_top" | "setup_shared" | "integrated";
 
 export const HIDDEN_ON_HOME_COPY: Record<HiddenOnHomeReason, string> = {
   empty: "Hidden until there's something to show",
   setup_done: "Hidden now that your team is set up",
   // The owner's setup steps are the card at the top of Home while setup is unfinished.
   setup_top: "Shown at the top while setup is unfinished",
+  setup_shared: "Waiting for setup — shown once above the board",
+  integrated: "Included in the scouting overview",
 };
 
 /** The library's word for a card on the board that Home is not showing right now. */
@@ -368,6 +371,8 @@ export const HIDDEN_ON_HOME_SHORT: Record<HiddenOnHomeReason, string> = {
   empty: "Hidden (empty)",
   setup_done: "Hidden (set up)",
   setup_top: "Shown during setup",
+  setup_shared: "Waiting for setup",
+  integrated: "In the overview",
 };
 
 /**
@@ -381,10 +386,12 @@ export function hiddenOnHome(
     shell: "loading" | "no_org" | "setup" | "tba" | "ready";
     widgets?: Record<string, { status?: string } | undefined>;
     teamSetupCard?: boolean;
+    sharedSetupPrompt?: boolean;
+    homeOverview?: boolean;
   },
 ): Map<string, HiddenOnHomeReason> {
   const shown = new Set(
-    homeViewLayout(layout, { editing: false, shell: input.shell, widgets: input.widgets, teamSetupCard: input.teamSetupCard }).map(
+    homeViewLayout(layout, { editing: false, ...input }).map(
       (item) => item.i,
     ),
   );
@@ -397,13 +404,17 @@ export function hiddenOnHome(
   const hidden = new Map<string, HiddenOnHomeReason>();
   for (const item of layout) {
     if (shown.has(item.i) || !possible.has(item.i)) continue;
-    const status = (rows[item.i] ?? rows[item.type])?.status;
+    const status = (rows[item.i] ?? rows[item.type] ?? Object.values(rows).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
     const setupCard = item.type === "onboarding_checklist" || item.type === "quick_actions";
     // While the owner's setup steps are the hero at the top, the setup card is not "done":
     // it is hidden because the same steps are already on screen.
     hidden.set(
       item.i,
-      setupCard && input.teamSetupCard
+      input.homeOverview && item.type === "scouting_coverage"
+        ? "integrated"
+        : input.sharedSetupPrompt && usesSharedSetupPrompt(item.type, status)
+        ? "setup_shared"
+        : setupCard && input.teamSetupCard
         ? "setup_top"
         : status === "empty" || (item.type === "ask_ai" && status === "setup_required")
           ? "empty"

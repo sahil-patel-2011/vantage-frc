@@ -1,20 +1,19 @@
 import type { Page } from "@playwright/test";
 
-/** The desktop rail replaces the phone app bar; exercise the visible primary destinations. */
+/** Desktop navigation is available inside the drawer; mobile keeps its shortcuts. */
 export function primaryNavigation(page: Page) {
-  return page.getByRole("navigation", { name: page.viewportSize()!.width >= 1024 ? "Pillars" : "Primary apps", exact: true });
+  return page.getByRole("navigation", { name: page.viewportSize()!.width >= 1024 ? "Main menu" : "Primary apps", exact: true });
 }
 
-/**
- * Open the product navigation panel the way a person would at this screen size: the top bar's
- * menu button on phones and tablets, the sidebar's Search on desktop (where the sidebar lists the
- * workspaces and the menu button is hidden because it would only open a second copy).
- */
+/** Open the same on-demand navigation drawer at every screen size. */
 export async function openNav(page: Page): Promise<void> {
-  const menu = page.getByRole("button", { name: "Menu and search" });
-  if (await menu.isVisible()) {
-    await menu.click();
-    return;
-  }
-  await page.locator(".vrail-search").click();
+  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+}
+
+/** Destination groups belong to the one hamburger menu. */
+export async function openMenuSection(page: Page, label: string) {
+  await openNav(page);
+  const section = page.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ hasText: new RegExp(`^${label}$`) }) });
+  await section.locator("summary").click();
+  return section.getByRole("navigation", { name: label, exact: true });
 }

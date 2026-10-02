@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { applyVoiceTranscriptToForm, isLayoutOnlyField, type ScoutSchema } from "@vantage/scouting";
+import { applyVoiceTranscriptToForm, isLayoutOnlyField, undoableScoutAction, type ScoutSchema } from "@vantage/scouting";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
@@ -47,7 +47,7 @@ import { ScoutQuarantinePanel } from "./scouting-quarantine";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
-import { ScoutingReportTemplatePicker } from "./scouting-report-template-picker";
+import { fieldsForMatchStage, SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 import { NextMatchCard } from "./next-match-card";
 import { MatchTimer } from "./match-timer";
 import { ScoutSaveConfirmation } from "./scout-save-confirmation";
@@ -145,6 +145,7 @@ export type ScoutingReadyViewProps = {
   setFormulaName: (name: string) => void;
   setFormulaWeights: Dispatch<SetStateAction<Record<string, number>>>;
   onTabChange: (id: string) => void;
+  onUndo?: () => void;
   sync: () => Promise<void> | void;
   retryQuarantineItem: (clientId: string) => Promise<void> | void;
   discardQuarantineItem: (clientId: string) => Promise<void> | void;
@@ -213,6 +214,7 @@ export function ScoutingReadyView({
   setFormulaName,
   setFormulaWeights,
   onTabChange,
+  onUndo,
   sync,
   retryQuarantineItem,
   discardQuarantineItem,
@@ -242,6 +244,10 @@ export function ScoutingReadyView({
   }, [mine, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
+  const [stage, setStage] = useState<ScoutFormStage>("all");
+  const collecting = type === "match" && Boolean(context) && stage !== "all" && stage !== "review";
+  const activeFields = type === "match" && context ? fieldsForMatchStage(formFields, stage) : formFields;
+  const undo = undoableScoutAction(payload);
   const scrollToFormPending = useRef(false);
 
   // While a robot's form is open, a phone gives it the whole screen: the floating tab bar sat
@@ -338,7 +344,7 @@ return (
       queue count says the same thing and says it with a number.
     */}
     <div className="scout-status-bar">
-      <Button as="a" variant="secondary" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Scout without an event</Button>
+      <a className="scout-free-link" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Scout without an event</a>
       {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey }) ? (
         <strong className="scout-status-event">
           {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey })}
@@ -676,7 +682,10 @@ return (
                   </button>
                 </div>
                 {formFields.length ? (
-                  <MatchTimer fields={formFields} resetKey={`${matchKey}|${teamKey}`}
+                  <MatchTimer fields={formFields} stage={stage} onStageChange={setStage}
+                    onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "pre" ? "all" : phase === "transition" ? "auto" : phase)}
+                    undoButton={onUndo ? <button type="button" disabled={!undo} onClick={onUndo} title={undo ? `Undo ${undo.changes.map(change => formFields.find(field => field.key === change.field)?.label ?? change.field).join(", ")}` : "Nothing to undo"}>Undo last action</button> : null}
+                    resetKey={`${matchKey}|${teamKey}`}
                     seasonYear={data?.eventKey ? Number(data.eventKey.slice(0,4)) : schema?.year ?? null}
                     storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })}
                     onStarted={() => {
@@ -690,12 +699,7 @@ return (
             </>
           ) : null}
 
-          {type === "match" && formFields.length ? (
-            <ScoutingReportTemplatePicker
-              key={`${matchKey}-${teamKey}`}
-              fields={formFields}
-            />
-          ) : null}
+          {type === "match" && context ? <div className="scout-stage-heading"><h3>{SCOUT_STAGE_LABELS[stage]}</h3><p>{collecting ? "The form follows the match clock. Switch phase to correct an earlier answer." : "Record what you observed. Leave answers you couldn't see blank."}</p></div> : null}
 
           {liveConflicts.length ? (
             <div className="scout-official-flags" role="status">
@@ -720,7 +724,7 @@ return (
             </div>
           ) : null}
 
-          {formFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
+          {activeFields.filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={`${type}:${matchKey}:${teamKey}:${field.key}`}
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
@@ -741,7 +745,7 @@ return (
 
           {/* Stored as high / normal / low; a "Guessing" entry counts for less
               when the team's numbers are added up. */}
-          <ScoutChoice
+          <div hidden={collecting}><ScoutChoice
             label="How sure are you?"
             options={CONFIDENCE_OPTIONS}
             value={confidence}
@@ -751,6 +755,7 @@ return (
             }}
           />
 
+          </div>
           {MEDIA_ENABLED ? <ScoutVoiceNotesPanel
             orgId={orgId}
             eventKey={data?.eventKey ?? ""}
@@ -801,6 +806,7 @@ return (
             variant="primary"
             type="button"
             className="scout-save-button"
+            hidden={collecting}
             disabled={!canSave}
             onClick={() => {
               // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block. The nudge

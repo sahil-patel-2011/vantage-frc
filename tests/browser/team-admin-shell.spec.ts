@@ -34,7 +34,12 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   // Team admin is people and invites; GitHub lives on Connectors now.
   await expect(page.getByRole("heading", { name: /^People/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "GitHub" })).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Team settings" }).getByRole("link", { name: "Connectors" })).toBeVisible();
+  // Settings share the main menu; no second row repeats the navigation here.
+  await expect(page.getByRole("navigation", { name: "Team settings" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true }).fill("Connectors");
+  await expect(page.getByRole("listbox", { name: "Search results", exact: true }).getByRole("option", { name: "Connectors Settings", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   // Arriving from Home's "Invite your team" puts the cursor in Email.
   const current = new URL(page.url());

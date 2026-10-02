@@ -42,6 +42,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.locator(".free-scout-report").filter({ hasText: marker }).getByText("Uploaded", { exact: true })).toBeVisible();
     const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE label=$1", [marker]);
     expect(saved.rows).toEqual([{ org_id: orgId }]);
+    if (width >= 1024) await openNav(page);
     await primaryNavigation(page).getByRole("link", { name: "Home", exact: true }).click();
     // The org is already in the scouting URL. Wait for the destination too,
     // otherwise the test opens a menu on the page that is still leaving.

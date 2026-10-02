@@ -30,11 +30,12 @@ export default function BoardClient() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [missingLink, setMissingLink] = useState(false);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
     if (!token) {
-      setError("This mentor link is missing. Ask the person who shared it to send it again.");
+      setMissingLink(true);
       setLoading(false);
       return;
     }
@@ -56,6 +57,18 @@ export default function BoardClient() {
       .catch(() => setError("Could not load shared alliance board."))
       .finally(() => setLoading(false));
   }, []);
+
+  if (missingLink) {
+    return (
+      <main className="module-page strategy-board-public draft-board-workbench soft-gate">
+        <EmptyState soft headingLevel={1} className="draft-empty" badge="Needs a link" badgeTone="setup"
+          title="Open a shared alliance board"
+          description="Ask your team for its board link. You can also open your team’s pick list to create or share a board.">
+          <a className="app-button" href="/competition?tab=picks">Open pick list</a>
+        </EmptyState>
+      </main>
+    );
+  }
 
   if (error) {
     const copy = draftShellCopy("error");

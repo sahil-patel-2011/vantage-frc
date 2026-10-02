@@ -7,6 +7,7 @@ import "../product-hub.css";
 import "../scouting/scouting.css";
 import "../scouting/forms/forms.css";
 import "../my-day/my-day.css";
+import { PickListWorkspace } from "./pick-list-workspace";
 
 const CommandClient = dynamic(() => import("../command/command-client"), { ssr: false, loading: HubPanelSkeleton });
 const MyDayClient = dynamic(() => import("../my-day/my-day-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -18,7 +19,7 @@ const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), {
   loading: () => <ScoutingLoadingSkeleton />,
 });
 const FormsClient = dynamic(() => import("../scouting/forms/forms-client"), { ssr: false, loading: HubPanelSkeleton });
-const IntelClient = dynamic(() => import("../intel/intel-client"), { ssr: false, loading: HubPanelSkeleton });
+const CompetitionTeams = dynamic(() => import("./competition-teams"), { ssr: false, loading: HubPanelSkeleton });
 const MatchChecklistClient = dynamic(() => import("../match-checklist/match-checklist-client"), {
   ssr: false,
   loading: HubPanelSkeleton,
@@ -26,15 +27,16 @@ const MatchChecklistClient = dynamic(() => import("../match-checklist/match-chec
 const PickClockClient = dynamic(() => import("../pick-clock/pick-clock-client"), { ssr: false, loading: HubPanelSkeleton });
 const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), { ssr: false, loading: HubPanelSkeleton });
 
+
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"] as const;
+const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms", "picks"] as const;
 
 export default function CompetitionHub() {
   return (
     <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
         if (tab === "teams") {
-          return <HubOrgGate orgId={orgId} label="Teams">{() => <IntelClient variant="scouting" embedded />}</HubOrgGate>;
+          return <HubOrgGate orgId={orgId} label="Teams">{id => <CompetitionTeams orgId={id} />}</HubOrgGate>;
         }
         if (tab === "command") {
           return (
@@ -57,6 +59,7 @@ export default function CompetitionHub() {
             </HubOrgGate>
           );
         }
+        if (tab === "picks" || tab === "picklist-collab") return <HubOrgGate orgId={orgId} label="Pick list">{id => <PickListWorkspace orgId={id} discussionDefault={tab === "picklist-collab"} />}</HubOrgGate>;
         if (tab === "pick-clock") {
           return (
             <HubOrgGate orgId={orgId} label="Pick clock">

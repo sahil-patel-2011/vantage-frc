@@ -11,10 +11,10 @@ import {
 } from "./island-preferences";
 
 describe("island preferences", () => {
-  it("defaults to Home, Event day, Scout, Stats — a scouter's match week", () => {
-    expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition", "/competition?tab=scouting", "/rankings"]);
-    expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Event day", "Scout", "Stats"]);
-    expect(defaultIslandLabelList()).toBe("Home, Event day, Scout, and Stats");
+  it("defaults to Home, Scout, Teams, Match plan - distinct event tasks", () => {
+    expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition?tab=scouting", "/competition?tab=teams", "/competition?tab=strategy"]);
+    expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Scout", "Teams", "Match plan"]);
+    expect(defaultIslandLabelList()).toBe("Home, Scout, Teams, and Match plan");
     expect(islandCatalogLabelList()).toContain("Team chat");
     expect(islandCatalogLabelList()).not.toMatch(/Compete|Media/);
   });
@@ -71,4 +71,14 @@ describe("island preferences", () => {
     expect(removed.draft).toEqual(["/build", "/team?tab=messages", "/business"]);
     expect(toggleIslandDraft(removed.draft, "/not-a-route").error).toBeTruthy();
   });
+});
+
+describe("saved shortcut compatibility",()=>{
+ it("keeps a saved Event day shortcut opening Event day when Competition defaults to Scout",()=>{
+  const tabs=resolveIslandTabs(["/dashboard","/competition","/rankings","/ai?tab=chat"]);
+  expect(tabs[1]).toMatchObject({label:"Event day",href:"/competition?tab=command"});
+ });
+ it("doesn't allow two shortcuts to the same collection workflow",()=>{
+  expect(isValidIslandSelection(["/dashboard","/scout","/competition?tab=scouting","/rankings"])).toBe(false);
+ });
 });

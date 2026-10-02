@@ -26,7 +26,7 @@ export function aiKeysRelatedLinks(
   const include = options?.include ? new Set(options.include) : null;
   const all: AiKeysRelatedLink[] = [
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
-    { id: "claude-code", label: "Claude Code", href: withOrgHref("/team/ai-bridge", orgId) },
+    { id: "claude-code", label: "Personal Codex", href: withOrgHref("/team/ai-bridge", orgId) },
     { id: "budgets", label: "Chat limits", href: hubHref("/ai", "budgets", orgId) },
     { id: "byok-usage", label: "AI cost estimate", href: withOrgHref("/team/ai-usage", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
@@ -107,7 +107,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
         title: "Ask a mentor to finish key storage",
         description:
           detail?.trim() ||
-          "Team keys wait until a mentor finishes storage on this deployment. Pair Claude Code so Ask AI still runs — no API key.",
+          "Shared keys are unavailable on this deployment. Connect your computer to use your own assistant account.",
         badge: "Needs setup",
       };
     case "forbidden":

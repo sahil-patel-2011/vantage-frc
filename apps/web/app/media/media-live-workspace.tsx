@@ -2,13 +2,13 @@
 
 import { useCallback, type ReactNode } from "react";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
-import { PageHeader, Panel, TabBar, ToolStrip } from "../../components/ui";
+import { Panel, ToolStrip } from "../../components/ui";
+import { PageOptions } from "../../components/ui/page-options";
 import {
   formatMediaMetric,
   mediaReadinessPct,
   shouldShowMediaSummaryTiles,
 } from "../../lib/media";
-import { hubById, hubLegacyHref, hubNestedTabs } from "../../lib/nav/hubs";
 import {
   CalendarPanel,
   DraftsPanel,
@@ -20,9 +20,6 @@ import { type LiveView, type Tab } from "./media-helpers";
 import { MediaRelatedStrip } from "./media-related-strip";
 import "../product-hub.css";
 
-const MEDIA_HUB = hubById("media");
-/** Tools nested under Kit — the Kit root itself stays in the tab bar above. */
-const kitTools = hubNestedTabs(MEDIA_HUB, "kit").filter((entry) => entry.group === "kit");
 
 export function LiveMediaWorkspace({
   view,
@@ -84,42 +81,14 @@ export function LiveMediaWorkspace({
 
   return (
     <main className="module-page media-page">
-      <PageHeader
-        breadcrumbs="Media"
-        title="Media"
-        description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
-      >
-        <div className="media-header-actions">
-          <MediaRelatedStrip orgId={orgId} />
-        </div>
-      </PageHeader>
+      <div className="workspace-hub-header">
+        <div className="hub-bar-id"><h1>Media</h1></div>
+        <ToolStrip aria-label="Media section" items={tabs.map(entry => ({ id: entry.id, label: entry.label }))}
+          value={tab} onChange={id => { if (tabs.some(entry => entry.id === id)) onTab(id as Tab); }} />
+        <PageOptions><MediaRelatedStrip orgId={orgId} /></PageOptions>
+      </div>
       {banner}
 
-      <TabBar
-        aria-label="Media sections"
-        value={tab}
-        onChange={(id) => onTab(id as Tab)}
-        tabs={tabs}
-        className="product-hub-tabs"
-      />
-      {/* Tools *inside* the open workbench only. "Kit" is already the selected
-          tab one row up, so listing its root here rendered the same workbench
-          twice — the strip is how you reach what is nested under it. */}
-      {kitTools.length > 0 && tab === "kit" ? (
-        <ToolStrip compact
-          aria-label="Tools in Kit"
-          value="kit"
-          onChange={(id) => {
-            if (id === "kit") onTab("kit");
-          }}
-          items={kitTools.map((entry) => ({
-            id: entry.id,
-            label: entry.label,
-            featured: entry.featured === true,
-            href: entry.legacyHref ? hubLegacyHref(entry, orgId) : undefined,
-          }))}
-        />
-      ) : null}
 
       {error ? <p className="app-error">{error}</p> : null}
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}

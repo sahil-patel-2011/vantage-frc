@@ -10,6 +10,7 @@ import { parseClaimAttestation, recordTeamClaimAttestation } from "../../../../l
 import { anonymizeIp, clientIp } from "../../../../lib/rate-limit";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 import { startTeamProvisioning } from "../../../../lib/provisioning/start";
+import { initializeTeamDefaults } from "../../../../lib/provisioning/defaults";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -76,10 +77,12 @@ export async function POST(request: Request) {
         ipHash,
       });
       await client.query("INSERT INTO team_provisioning_jobs(org_id,requested_by) VALUES($1::uuid,$2::uuid) ON CONFLICT(org_id) DO NOTHING", [orgId, session.user.id]);
+      await initializeTeamDefaults(client, orgId, { inTransaction: true });
+      await client.query("UPDATE team_provisioning_jobs SET completed_phases=ARRAY['team','tools']::text[],phase='workspace',updated_at=now() WHERE org_id=$1::uuid", [orgId]);
       return orgId;
     });
     await startTeamProvisioning(id, session.user.id);
-    return Response.json({ id, provisioning: true }, { status: 201 });
+    return Response.json({ id, workspaceReady: true, provisioning: true }, { status: 201 });
   } catch (error) {
     // Deploys do not run migrations. Until 0672 is applied the statement cannot
     // be stored, so the claim is refused (and rolled back) with a plain reason

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Badge, Button } from "../../components/ui";
+import { Icon } from "../../components/icon";
 import {
   dashboardSetupBannerLabel,
   dashboardSetupBannerPrimary,
@@ -16,15 +17,31 @@ export function DashboardSetupBanner({
   shell,
   nextActions,
   setupSteps,
+  compact = false,
 }: {
   shell: DashboardShellKind;
   nextActions: DashboardNextAction[];
   setupSteps: DashboardSetupStep[];
+  compact?: boolean;
 }) {
   if (shell === "ready") return null;
   const primary = dashboardSetupBannerPrimary(shell, nextActions, setupSteps);
   const href = primary && "href" in primary ? primary.href : "#";
   const label = primary ? dashboardSetupBannerLabel(primary) : null;
+
+  if (compact && primary) {
+    const title = shell === "setup" ? "No event selected" : "Match schedule isn’t connected";
+    return (
+      <section className="dash-setup-banner dash-context-prompt" aria-label="Competition setup" data-testid="dash-context-prompt">
+        <span className="dash-context-icon" aria-hidden="true"><Icon name="calendar" /></span>
+        <div>
+          <h2>{title}</h2>
+          <p>{primary.detail}</p>
+        </div>
+        <Button as="a" variant="secondary" href={href}>{primary.label}</Button>
+      </section>
+    );
+  }
 
   return (
     <section className="dash-setup-banner" aria-label="First-run setup">

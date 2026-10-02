@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { memo, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import {
   WIDGET_SIZE_KEYS,
   WIDGET_SIZE_LABEL,
   isAlwaysShown,
+  WIDGET_SIZE_CELLS_12,
   type DashboardWidgetLayout,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
@@ -54,9 +55,8 @@ type DashboardGridItemProps = {
   Edit-mode chrome is deliberately small. Each card used to carry a dark-red
   "× Remove" button over its title, a "DRAG" pill, and a five-button size bar,
   all at once — on a 4-column card that covered the name you needed to read to
-  know which card it was. Now: a neutral "−" on the corner (outside the title),
-  a grip tab on the top edge, a size button on the top-right corner, and the
-  sizes only on the card whose size button you tapped. Tapping the card's
+  know which card it was. Now: a grip tab and one readable size/options button,
+  with removal inside its popover. Tapping the card's
   content never picks it (the tap landed on its links and inputs), and the
   mouseup that ends a drag never does either.
 */
@@ -75,6 +75,7 @@ const SIZE_WIDTH_WORDS: Record<string, string> = {
   l: "Large: half the row",
   xl: "Extra large: the whole row",
 };
+const SIZE_NAMES: Record<string, string> = { s: "Small", m: "Medium", l: "Large", xl: "Full width" };
 function isRepeatRemove(detail: number, x: number, y: number): boolean {
   if (detail === 0) return false;
   const now = Date.now();
@@ -112,6 +113,11 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   onResetSize,
   onHideWhenEmpty,
 }: DashboardGridItemProps) {
+  const optionsButton = useRef<HTMLButtonElement>(null);
+  function closeOptions() {
+    onSelect?.(null);
+    optionsButton.current?.focus();
+  }
   return (
     <article
       className={`dash-grid-item${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}${
@@ -144,22 +150,6 @@ export const DashboardGridItem = memo(function DashboardGridItem({
         <>
           <button
             type="button"
-            className="dash-remove-badge"
-            data-testid="dash-remove-widget"
-            title={`Remove ${label}`}
-            aria-label={`Remove ${label}`}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              if (isRepeatRemove(event.detail, event.clientX, event.clientY)) return;
-              onRemove(item.i);
-            }}
-          >
-            <span aria-hidden="true" />
-          </button>
-          <button
-            type="button"
             className="dash-card-grip dash-drag-surface"
             data-testid="dash-drag-handle"
             aria-label={`Move ${label}. Press space to pick up, then use the arrow keys.`}
@@ -178,7 +168,8 @@ export const DashboardGridItem = memo(function DashboardGridItem({
             type="button"
             className="dash-size-toggle"
             data-testid="dash-size-toggle"
-            aria-label={`Change the size of ${label} (now ${WIDGET_SIZE_LABEL[currentSize]}${stretched ? ", stretched to fill the row" : ""})`}
+            ref={optionsButton}
+            aria-label={`Card options for ${label}`}
             aria-expanded={selected}
             // "S" on a card drawn as wide as an M looked wrong; say why it is wider.
             title={stretched ? "Change size. Stretched to fill the row; its size is still this." : "Change size"}
@@ -189,8 +180,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
               onSelect?.(selected ? null : item.i);
             }}
           >
-            {/* The size letter only: "M · fills row" squeezed onto two 8px lines. The menu says it. */}
-            <span aria-hidden="true">{WIDGET_SIZE_LABEL[currentSize]}</span>
+            <span aria-hidden="true">Size · {SIZE_NAMES[currentSize]}</span>
             <svg viewBox="0 0 12 12" aria-hidden="true">
               <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -200,11 +190,14 @@ export const DashboardGridItem = memo(function DashboardGridItem({
               {hiddenNote}
             </p>
           ) : null}
-          <div
+          {selected ? <div
             className="dash-item-sizes"
             role="group"
             aria-label={`Resize ${label}`}
             onPointerDown={(event) => event.stopPropagation()}
+            onKeyDown={event => {
+              if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeOptions(); }
+            }}
           >
             <div className="dash-size-chips">
               {WIDGET_SIZE_KEYS.map((size) => (
@@ -216,14 +209,15 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   title={SIZE_WIDTH_WORDS[size]}
                   aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
                   aria-pressed={currentSize === size}
+                  disabled={WIDGET_SIZE_CELLS_12[size].w < (item.minW ?? 1)}
                   onClick={() => {
                     onResize(item.i, size);
                     // Close once a size is picked: left open, the chips sat over the card's title
                     // and hid the change they had just made.
-                    onSelect?.(null);
+                    closeOptions();
                   }}
                 >
-                  {WIDGET_SIZE_LABEL[size]}
+                  {SIZE_NAMES[size]}
                 </button>
               ))}
               <button
@@ -235,7 +229,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                 aria-label={`Reset ${label} to its default size`}
                 onClick={() => {
                   onResetSize(item.i);
-                  onSelect?.(null);
+                  closeOptions();
                 }}
               >
                 Default
@@ -246,15 +240,21 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   className="dash-size-btn dash-size-reset"
                   data-testid="dash-hide-when-empty"
                   aria-label={`Hide ${label} on Home when it has nothing to show`}
-                  onClick={() => onHideWhenEmpty(item.i)}
+                  onClick={() => { onHideWhenEmpty(item.i); closeOptions(); }}
                 >
                   Hide when empty
                 </button>
               ) : null}
+              <button type="button" className="dash-size-btn dash-card-remove" data-testid="dash-remove-widget"
+                aria-label={`Remove ${label}`} onClick={event => {
+                  event.stopPropagation();
+                  if (isRepeatRemove(event.detail, event.clientX, event.clientY)) return;
+                  onRemove(item.i); onSelect?.(null);
+                }}>Remove card</button>
             </div>
             {/* Under the buttons, inside the menu: it was drawn over the card's title. */}
             {stretched ? <p className="dash-size-note">Fills its row on Home. Size stays {WIDGET_SIZE_LABEL[currentSize]}.</p> : null}
-          </div>
+          </div> : null}
         </>
       ) : null}
       {!editing ? <DashboardCardActions type={item.type} label={label} /> : null}

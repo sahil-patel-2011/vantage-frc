@@ -43,7 +43,13 @@ describe("consent banner copy", () => {
     expect(ANALYTICS_BANNER_COPY.detail).toMatch(/phone, tablet, or computer/i);
   });
 
-  it("denies location, ad networks, cross-site tracking, replay, and content", () => {
+  it("distinguishes location-free product events from optional Vercel traffic summaries", () => {
+    expect(ANALYTICS_BANNER_COPY.detail).toContain("Those product events include no location.");
+    expect(ANALYTICS_BANNER_COPY.detail).toContain("approximate country, region or city");
+    expect(ANALYTICS_BANNER_COPY.detail).toContain("We do not send it your account or team IDs, search text, or invite tokens.");
+  });
+
+  it("denies ad networks, cross-site tracking, replay, and content", () => {
     const detail = ANALYTICS_BANNER_COPY.detail.toLowerCase();
     expect(detail).toContain("no location");
     expect(detail).toContain("no ad networks");

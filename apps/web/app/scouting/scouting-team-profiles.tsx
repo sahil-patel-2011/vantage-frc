@@ -17,6 +17,7 @@ import { ScoutingTeamDetail } from "./scouting-team-detail";
 import { EmptyState, Button } from "../../components/ui";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { offlineSnapshotUser } from "../../lib/offline/identity";
 import { readRobotViewState, robotViewStorageKey, writeRobotViewState } from "../../lib/scouting/robot-view-state";
 import "./scouting-team-profiles.css";
@@ -52,7 +53,7 @@ type View =
       eventKey: string;
       observations?: ObservedRobot[];
     }
-  | { status: "empty" | "needs_formula" | "setup_required"; message: string; observations?: ObservedRobot[] };
+  | { status: "empty" | "needs_formula" | "setup_required"; message: string; eventKey?: string | null; observations?: ObservedRobot[] };
 
 type Sort = "fit" | "pick" | "average" | "number";
 
@@ -60,6 +61,8 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; status: number | null } | null>(null);
   const [retry, setRetry] = useState(0);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const effectiveEventKey = eventKey ?? view?.eventKey ?? null;
   const [sort, setSort] = useState<Sort>("fit");
   const { weights, update, reset, changed } = usePickWeights(orgId);
   /** The robot whose numbers fill the detail pane. */
@@ -108,26 +111,26 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     returnFocus.current = null;
     void offlineSnapshotUser(orgId).then(user => {
       if (cancelled || !user) return;
-      const key = robotViewStorageKey(user, orgId, eventKey);
+      const key = robotViewStorageKey(user, orgId, effectiveEventKey);
       const saved = readRobotViewState(key);
       setSort(saved?.sort ?? "fit"); setSelected(saved?.selected ?? null); setQuery(saved?.query ?? "");
       setCompare(saved?.compare ?? []); setSplitView(saved?.splitView ?? false);
-      setSavedContext({ orgId, eventKey, key });
+      setSavedContext({ orgId, eventKey: effectiveEventKey, key });
     });
     return () => { cancelled = true; };
-  }, [orgId, eventKey]);
+  }, [orgId, effectiveEventKey]);
 
   useEffect(() => {
-    if (!error || (error.status != null && error.status < 500)) return;
+    if (!cachedAt && (!error || (error.status != null && error.status < 500))) return;
     const reconnect = () => setRetry(current => current + 1);
     window.addEventListener("online", reconnect);
     return () => window.removeEventListener("online", reconnect);
-  }, [error]);
+  }, [error, cachedAt]);
 
   useEffect(() => {
-    if (!savedContext || savedContext.orgId !== orgId || savedContext.eventKey !== eventKey) return;
+    if (!savedContext || savedContext.orgId !== orgId || savedContext.eventKey !== effectiveEventKey) return;
     writeRobotViewState(savedContext.key, { sort, selected, query, compare, splitView });
-  }, [savedContext, orgId, eventKey, sort, selected, query, compare, splitView]);
+  }, [savedContext, orgId, effectiveEventKey, sort, selected, query, compare, splitView]);
 
   const toggleCompare = (teamKey: string) =>
     setCompare((current) =>
@@ -142,6 +145,13 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
     let cancelled = false;
     setView(null);
     setError(null);
+    setCachedAt(null);
+    const restoreSaved = async () => {
+      const saved = await getFeatureSnapshot<View>("scouting-teams", orgId);
+      if (!saved || (eventKey && (!("eventKey" in saved.data) || saved.data.eventKey !== eventKey))) return false;
+      if (!cancelled) { setView(saved.data); setCachedAt(saved.cachedAt); }
+      return true;
+    };
     void (async () => {
       try {
         const params = new URLSearchParams({ orgId });
@@ -151,13 +161,16 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         if (!response.ok) {
+          if (response.status === 401 || response.status === 403) await clearFeatureSnapshot("scouting-teams", orgId);
+          else if (response.status >= 500 && await restoreSaved()) return;
           const message = (await apiErrorMessage(response)) ?? "Could not load what your scouting says";
           if (!cancelled) setError({ message, status: response.status });
           return;
         }
         const body = (await response.json()) as View;
-        if (!cancelled) setView(body);
+        if (!cancelled) { setView(body); void putFeatureSnapshot("scouting-teams", orgId, body).catch(() => undefined); }
       } catch {
+        if (await restoreSaved()) return;
         if (!cancelled) setError({ message: "Could not load what your scouting says", status: null });
       }
     })();
@@ -239,25 +252,29 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
 
   if (view.status !== "ready") {
     if (view.observations?.length) return <ObservedRobots robots={view.observations} eventKey={eventKey} />;
+    const needsEvent = view.status === "empty" && view.eventKey === null;
     return (
       <EmptyState
         soft
-        badge={view.status === "needs_formula" ? "Needs setup" : "Nothing yet"}
+        badge={needsEvent || view.status === "needs_formula" ? "Needs setup" : "Nothing yet"}
         badgeTone="setup"
-        title={view.status === "needs_formula" ? "Tell Vantage what your fields are worth" : "No scouting at this event yet"}
+        title={needsEvent ? "Choose your event" : view.status === "needs_formula" ? "Tell Vantage what your fields are worth" : "No scouting at this event yet"}
         description={view.message}
       >
         {view.status === "needs_formula" ? (
           <Button as="a" variant="primary" href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>
             Open scouting formulas
           </Button>
-        ) : null}
+        ) : <Button as="a" variant="primary" href={`/competition?tab=${needsEvent ? "command" : "scouting"}&orgId=${encodeURIComponent(orgId)}`}>
+          {needsEvent ? "Choose event" : "Scout a match"}
+        </Button>}
       </EmptyState>
     );
   }
 
   return (
     <section className="stp" aria-label="What your scouting says">
+      {cachedAt ? <p className="scout-cached-analysis" role="status">Saved analysis for {view.eventKey} · {new Date(cachedAt).toLocaleString()}. Reconnect for new reports.</p> : null}
       <header className="stp-head">
         <div>
           <h2>{view.profiles.length} robots watched</h2>

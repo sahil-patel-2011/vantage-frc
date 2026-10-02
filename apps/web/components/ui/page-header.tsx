@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { breadcrumbForPath } from "../../lib/nav/product-nav";
+import { PageOptions } from "./page-options";
 
 type PageHeaderProps = {
   /** Explicit crumb trail. Prefer this or `navPath`, not both. */
@@ -22,7 +23,7 @@ export function PageHeader({ breadcrumbs, navPath, title, description, children,
         <h1>{title}</h1>
         {description ? <p>{description}</p> : null}
       </div>
-      {children ? <div className="app-page-actions">{children}</div> : null}
+      {children ? <div className="app-page-actions"><PageOptions>{children}</PageOptions></div> : null}
     </header>
   );
 }

@@ -21,7 +21,7 @@ export const ANALYTICS_BANNER_COPY = {
   lead:
     "This is not anonymous to us. If you turn it on, we record which pages and features your account uses inside your team, and when.",
   detail:
-    "That is the whole list: the page or feature, your account, your team, the time, and whether you are on a phone, tablet, or computer. No location, no ad networks, no tracking you across other websites, no recording of your screen, and never the things you type.",
+    "Vantage records the page or feature, your account, your team, the time, and whether you are on a phone, tablet, or computer. Those product events include no location. Vercel also provides traffic summaries with page views, device and browser information, referral sources, and approximate country, region or city. We do not send it your account or team IDs, search text, or invite tokens. No ad networks, no tracking you across other websites, no recording of your screen, and never the things you type.",
   /** Declining has to be costless, and has to be said to be costless. */
   reassurance:
     "Say no and everything in Vantage still works exactly the same. We only ever ask once, and you can change your answer at any time.",

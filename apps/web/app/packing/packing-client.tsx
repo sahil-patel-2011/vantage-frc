@@ -210,12 +210,14 @@ function ListDetail({
           }}
         >
           <input
+            aria-label="Item to request"
             value={requestLabel}
             disabled={busy}
             placeholder="What should we pack? (fast request)"
             onChange={(event) => setRequestLabel(event.target.value)}
           />
           <input
+            aria-label="Packing request note"
             value={requestNote}
             disabled={busy}
             placeholder="Optional note"
@@ -300,14 +302,15 @@ function ListDetail({
           });
         }}
       >
-        <input value={category} disabled={busy} placeholder="Category" onChange={(e) => setCategory(e.target.value)} />
-        <input value={label} disabled={busy} placeholder="Item (e.g. Spare intake wheels)" onChange={(e) => setLabel(e.target.value)} />
+        <input aria-label="Packing category" value={category} disabled={busy} placeholder="Category" onChange={(e) => setCategory(e.target.value)} />
+        <input aria-label="Packing item" value={label} disabled={busy} placeholder="Item (e.g. Spare intake wheels)" onChange={(e) => setLabel(e.target.value)} />
         <input
           type="number"
           min={1}
           step={1}
           placeholder="Qty"
           className="pack-qty-input"
+          aria-label="Packing quantity"
           value={quantity}
           disabled={busy}
           onChange={(e) => setQuantity(e.target.value)}
@@ -603,6 +606,7 @@ export default function PackingClient() {
         </div>
         <div className="pack-header-actions">
           <input
+            aria-label="New packing list name"
             value={newTitle}
             placeholder="New list name"
             disabled={busyKey === "create"}

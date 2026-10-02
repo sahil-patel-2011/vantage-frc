@@ -10,6 +10,7 @@ import {
   setMemberHubAccess,
   removeMember,
   setMemberRole,
+  handOverTeam,
   type HubAccessHubId,
   type MemberHubAccessRow,
   type OrgCapability,
@@ -73,7 +74,7 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       orgId?: string;
       userId?: string;
-      action?: "set_capabilities" | "set_role" | "set_hub_access" | "remove";
+      action?: "set_capabilities" | "set_role" | "set_hub_access" | "remove" | "handover";
       capabilities?: string[];
       role?: OrgRole;
       hubAccess?: Array<{ hubId: string; allowedTabIds?: string[] }>;
@@ -89,6 +90,11 @@ export async function PATCH(request: Request) {
         [orgId, current.user.id],
       );
       if (!admin.rowCount) throw new Error("Organization administrator access required");
+      if (body.action === "handover") {
+        if (!body.role || !["admin", "scout", "viewer"].includes(body.role)) throw new Error("Choose your new access");
+        await handOverTeam(client, current.user.id, { orgId, userId: body.userId!, role: body.role as "admin" | "scout" | "viewer" });
+        return;
+      }
 
       if (body.action === "set_capabilities") {
         const capabilities = (body.capabilities ?? []).filter((value): value is OrgCapability =>

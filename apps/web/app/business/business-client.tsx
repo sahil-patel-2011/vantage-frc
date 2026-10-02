@@ -4,16 +4,16 @@ import dynamic from "next/dynamic";
 import { HubPanelSkeleton } from "../../components/product-hub";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
-import { EmptyState, PageHeader, TabBar, ToolStrip, Button } from "../../components/ui";
+import { EmptyState, Button } from "../../components/ui";
+import { hubPageTitle } from "../../lib/nav/hub-navigation";
+import { HubContextActions } from "../../components/hub-context-actions";
 import { MoneyAddMenu } from "./money-add-menu";
-import { HelpTip } from "../../components/help-tip";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business-portal";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";
-import { sectionHelpFor } from "../../lib/help/section-help";
 import {
   clientCanAccessHub,
   filterSponsorTabs,
@@ -22,8 +22,6 @@ import {
 } from "../../lib/nav/hub-access-filter";
 import {
   hubById,
-  hubLegacyHref,
-  hubNestedTabs,
   hubPrimaryTabs,
   hubWorkbenchId,
 } from "../../lib/nav/hubs";
@@ -31,7 +29,6 @@ import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
 import {
-  isTab,
   readTabFromUrl,
   redirectMoreToolTab,
   writeTabToUrl,
@@ -193,23 +190,10 @@ export default function BusinessClient() {
     [access.hubAccess, sponsorsAllowed],
   );
   const workbenchId = hubWorkbenchId(BUSINESS_HUB, tab);
-  /**
-   * Tools *inside* the open workbench. `hubNestedTabs` leads with the workbench
-   * root, which is already the selected chip in the row above — keeping it here
-   * printed "Money"/"Sponsors" twice on the same screen. Drop it; the tab bar is
-   * how you get back to the workbench's own view.
-   */
-  const visibleNested = useMemo(() => {
-    const nested = hubNestedTabs(BUSINESS_HUB, workbenchId).filter(
-      (entry) => entry.group === workbenchId,
-    );
-    if (nested.length === 0) return [];
-    return filterTabsByHubAccess(
-      filterSponsorTabs(nested, sponsorsAllowed),
-      access.hubAccess,
-      "business",
-    );
-  }, [sponsorsAllowed, access.hubAccess, workbenchId]);
+  const workspaceTabs = useMemo(() => filterTabsByHubAccess(
+    filterSponsorTabs(BUSINESS_HUB.tabs, sponsorsAllowed), access.hubAccess, "business",
+  ).filter(entry => visibleWorkbenches.some(root => root.id === (entry.group ?? entry.id))),
+  [access.hubAccess, sponsorsAllowed, visibleWorkbenches]);
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "business");
 
   useEffect(() => {
@@ -303,76 +287,14 @@ export default function BusinessClient() {
 
   return (
     <main className="module-page business-page product-hub product-hub--business">
-      <PageHeader
-        breadcrumbs="Business"
-        title="Business"
-        description={
-          live
-            ? `Money, sponsors, grants, and awards for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
-            : view?.status === "setup_required"
-              ? withWaitlistLink(view.message)
-              : "Money, sponsors, grants, and outreach for this season."
-        }
-      >
-        <HelpTip entry={sectionHelpFor("business", tab) ?? sectionHelpFor("business", workbenchId)} />
-        {live ? (
-          <div className="biz-header-actions">
-            <MoneyAddMenu orgId={orgId ?? null} />
-            <label className="biz-season">
-              Season
-              <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
-                {live.seasons.map((season) => (
-                  <option key={season} value={season}>
-                    {season}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        ) : null}
-      </PageHeader>
+      <div className="workspace-hub-header">
+        <div className="hub-bar-id"><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
+        {live ? <MoneyAddMenu orgId={orgId ?? null} /> : null}
+      </div>
 
       <OfflineBanner feature="Business" fromCache={fromCache} cachedAt={cachedAt} />
-      <TabBar
-        aria-label="Business sections"
-        value={workbenchId}
-        onChange={(id) => {
-          if (isTab(id)) selectTab(id);
-          else selectTab((hubWorkbenchId(BUSINESS_HUB, id) as Tab) || "overview");
-        }}
-        tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
-        className="product-hub-tabs"
-      />
-      {visibleNested.length > 0 ? (
-        <ToolStrip
-          compact
-          aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}
-          value={tab}
-          onChange={(id) => {
-            if (isTab(id)) {
-              selectTab(id);
-              return;
-            }
-            const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === id);
-            if (nested?.legacyHref) {
-              window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
-            }
-          }}
-          items={visibleNested.map((entry) => ({
-            id: entry.id,
-            label: entry.label,
-            featured: entry.featured === true,
-            // Tools this hub does not render inline are real links, so they go
-            // straight to the page instead of bouncing off a redirect card.
-            href:
-              !isTab(entry.id) && entry.legacyHref
-                ? hubLegacyHref(entry, orgId ?? live?.orgId ?? null)
-                : undefined,
-          }))}
-        />
-      ) : null}
 
-      {/* Below the tab bar, not above it. A save error or a slow first load used
+      {/* Below workspace navigation. A save error or a slow first load used
           to push Business's own navigation down the page — the one thing you
           need to still be where it was when something goes wrong. These belong
           with the panel they are talking about. */}
@@ -464,6 +386,12 @@ export default function BusinessClient() {
 
       {live ? (
         <>
+          <label className="biz-season">
+            Season
+            <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
+              {live.seasons.map(season => <option key={season} value={season}>{season}</option>)}
+            </select>
+          </label>
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "finance" ? (
             <div className="product-hub-panel">
@@ -495,6 +423,7 @@ export default function BusinessClient() {
           ) : null}
           {tab === "grants" ? <Grants view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "evidence" ? <Evidence view={live} busy={busy} submit={submit} /> : null}
+          <HubContextActions hub={BUSINESS_HUB} tab={tab} tabs={workspaceTabs} orgId={live.orgId} canManage={live.canManageFinance} />
         </>
       ) : null}
     </main>

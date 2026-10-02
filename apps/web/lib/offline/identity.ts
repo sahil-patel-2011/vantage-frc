@@ -23,7 +23,8 @@ export function watchSessionBoundary(): void {
 export async function offlineSnapshotUser(orgId: string): Promise<string | null> {
   if (typeof window === "undefined" || signedOut) return null;
   watchSessionBoundary();
-  const session = await fetchProductSession(orgId);
+  // Personal caches use "_" as a storage key, not as a team identifier.
+  const session = await fetchProductSession(orgId.trim() === "_" ? null : orgId);
   if (signedOut) return null;
   if (session?.userId) {
     try {

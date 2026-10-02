@@ -30,14 +30,13 @@ import {
   type TeamAdminSnapshot,
 } from "./team-admin-model";
 import { TeamAdminPeople } from "./team-admin-people";
+import { TeamHandoverDialog } from "./team-handover-dialog";
 import { TeamAdminProvidersPanel } from "./team-admin-providers";
 import { formatInviteRole } from "../../lib/invite/invite-flow";
 import { likelyEmailTypo } from "../../lib/team/email-typo";
 import "./team-access-requests.css";
 import "./team-admin.css";
-import { TeamSettingsNav } from "../../components/team-settings-nav";
 import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
-import { ReadableSyncStatus } from "../../components/readable-sync-status";
 
 function isTeamAdminSnapshot(value: unknown): value is TeamAdminSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -69,7 +68,7 @@ function tenureTip(tenure: AdminTenure | null, invites: Invite[] = []): string |
   // Gone once a second adult is on the way: it stayed up after a mentor had been invited.
   const adultInvited = invites.some((invite) => invite.status === "pending" && invite.role !== "scout" && invite.role !== "viewer");
   if (tenure.adminCount <= 1 && !adultInvited) {
-    return "Tip: invite a second adult as a mentor or coach, so the team isn't locked out if you're away.";
+    return "Invite your team lead with team admin access. Once they join, use your people menu to hand over the team or change your access.";
   }
   return null;
 }
@@ -115,6 +114,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [memberBusyId, setMemberBusyId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
   const [accessTarget, setAccessTarget] = useState<Member | null>(null);
+  const [stepDownOpen, setStepDownOpen] = useState(false);
   const viewRef = useRef<TeamAdminSnapshot | null>(null);
   viewRef.current = view;
   const membersRef = useRef<Member[]>([]);
@@ -588,9 +588,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       breadcrumbs={teamSettingsBreadcrumb("people")}
       title="Team admin"
       description="Invite people and choose what each person can open."
-    >
-      <TeamSettingsNav orgId={orgId} current="people" />
-    </PageHeader>
+    />
   );
 
   if (!view) {
@@ -660,8 +658,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onAct={(inviteId, action) => void act(inviteId, action)}
       />
 
-      <ReadableSyncStatus orgId={orgId} />
-
       <TeamAdminAccessPanel
         accessRequests={accessRequests}
         message=""
@@ -698,6 +694,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           onAccess={(member) => setAccessTarget(member)}
           onPasswordReset={(member) => setResetTarget(member)}
           onRemove={(member) => setRemoveTarget(member)}
+          onStepDown={() => setStepDownOpen(true)}
         />
       )}
 
@@ -719,6 +716,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           await load();
         }}
       />
+
+      {stepDownOpen && actor.userId ? <TeamHandoverDialog orgId={orgId} actorUserId={actor.userId}
+        owner={actor.role === "owner"} members={members} onClose={() => setStepDownOpen(false)} /> : null}
 
       <ConfirmDialog
         open={Boolean(removeTarget)}

@@ -12,14 +12,16 @@ describe("setup access boundary", () => {
   it("retains the selected workspace for malformed bodies", async () => {
     expect(await requestedProvisioningTeam(new Request("http://localhost/api/work", { method: "POST", headers: { "content-type": "application/json" }, body: "{" }), org)).toBe(org);
   });
-  it("blocks partial and falsely marked ready jobs while allowing verified and existing teams", async () => {
+  it("blocks uninitialized tools while allowing usable teams during external sync failures", async () => {
     const job = { state: "ready", phase: "ready", completedPhases: PROVISIONING_PHASES.map(p => p.id), verifiedAt: "2026-09-26T21:00:00Z", error: null };
     const query = vi.fn();
     const client = { query } as unknown as PoolClient;
-    for (const incomplete of [{ ...job, state: "queued" }, { ...job, verifiedAt: null }, { ...job, completedPhases: ["team"] }]) {
+    for (const incomplete of [{ ...job, completedPhases: ["team"] }, { ...job, completedPhases: [] }]) {
       query.mockResolvedValueOnce({ rows: [incomplete] });
       expect(await pendingProvisioningTeam(client, "actor", org)).toBe(org);
     }
+    query.mockResolvedValueOnce({ rows: [{ ...job, state: "failed", phase: "workspace", verifiedAt: null, completedPhases: ["team", "tools"] }] });
+    expect(await pendingProvisioningTeam(client, "actor", org)).toBeNull();
     query.mockResolvedValueOnce({ rows: [job] });
     expect(await pendingProvisioningTeam(client, "actor", org)).toBeNull();
     query.mockResolvedValueOnce({ rows: [] });

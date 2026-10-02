@@ -48,6 +48,7 @@ import type {
   SnapFeedback,
 } from "./dashboard-board-types";
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
+import { DashboardOverview } from "./dashboard-overview";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { homeHeaderDetail, homeNowFromWidgets, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
@@ -100,6 +101,7 @@ export function DashboardHomeView(props: {
   widgets: Record<string, WidgetPayload>;
   /** Widget data and onboarding steps have arrived, so the hero can say what is next. */
   widgetsLoaded?: boolean;
+  hasScoutingSchemas: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
   homeStripItems: HomeStripItem[];
@@ -485,6 +487,9 @@ export function DashboardHomeView(props: {
     : [];
   const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
   const teamSetupCard = Boolean(setupHero);
+  const sharedSetupPrompt = Boolean(orgId && widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
+  const showsOverview = Boolean(orgId && widgetsLoaded && !editing);
+  const showActivity = !viewLayout.some(item => item.type === "calendar_today" || item.type === "my_day");
   // Only when something in it has a value: a strip of "Nothing waiting / No empty room slots /
   // No member checks open" on a new team looked like a report of work already done.
   const showRoleStrip = Boolean(
@@ -527,7 +532,7 @@ export function DashboardHomeView(props: {
         saving={saving}
         editing={editing}
         previewing={previewing}
-        detail={homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
+        detail={sharedSetupPrompt ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
         eventName={eventName}
         nextMatchData={nextMatchData}
         showNextGlance={!viewLayout.some((item) => item.type === "next_match")}
@@ -543,11 +548,15 @@ export function DashboardHomeView(props: {
           so with a match coming up the Next match card leads. A setup step ("Add your first
           practice") waits too: it sat above Qual 31 fourteen minutes before the match. It is
           still on Your first week. */}
-      {now.title === "Our next match" &&
+      {(showsOverview && (now.quiet || now.cta === "Open scouting form" || (showActivity && now.cta === "Open Calendar"))) ||
+      (now.href === "/todos" && viewLayout.some((item) => item.type === "team_todos")) ? null : now.title === "Our next match" &&
       (now.cta === "Open My Day" || now.cta === "Scout a match") &&
       layout.some((item) => item.type === "next_match") ? null : (
-        <DashboardNowCard now={now} setupHero={setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
+        <DashboardNowCard now={now} setupHero={sharedSetupPrompt ? null : setupHero} loaded={Boolean(widgetsLoaded)} orgId={orgId} editing={editing} />
       )}
+      {showsOverview ? <DashboardOverview orgId={orgId} role={props.role} hasEvent={!setupRequired}
+        hasForms={props.hasScoutingSchemas} eventName={eventName} widgets={widgets}
+        nextAction={sharedSetupPrompt ? nextActions[0] : undefined} showActivity={showActivity} /> : null}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
       {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
@@ -606,12 +615,12 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
-      showStandaloneSetupBanner({ editing, displayLayout }) ? (
-        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
+      {!showsOverview && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
+      showStandaloneSetupBanner({ editing, displayLayout }))) ? (
+        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} />
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard ? (
+      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard && !showsOverview ? (
         <p className="dash-ready-cue" role="status" {...dim}>
           <span>{nextActions[0]?.detail ?? nextActions[0]?.label}</span>
           {nextActions[0]?.href ? (
@@ -624,7 +633,7 @@ export function DashboardHomeView(props: {
 
       <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {meLoaded && orgId && tbaConfigured !== false ? (
+      {meLoaded && orgId && tbaConfigured !== false && viewLayout.some(item => ["next_match", "recent_result", "competition_snapshot", "prediction_summary", "match_schedule"].includes(item.type)) ? (
         <DataSourceDegradedBanner health={dataSourceHealth} compact canOpenTeamData={canOpenTeamData} />
       ) : null}
 
@@ -644,8 +653,8 @@ export function DashboardHomeView(props: {
               {/* One board for every screen: a phone move used to rearrange the computer's Home
                   without a word. */}
               {cols === 1
-                ? "Drag to move, − to remove. A computer shows the same order."
-                : "Drag a card to move it. Use its size button (top right) to resize it, or − to remove it."}
+                ? "Drag to reorder. Use Size for card options."
+                : "Drag cards to reorder. Use Size to resize or remove a card."}
             </p>
           ) : null}
           {snapFeedback ? (
@@ -674,7 +683,7 @@ export function DashboardHomeView(props: {
                 your team reads them.
               </span>
             </button>
-          ) : mounted && viewLayout.length === 0 && !editing ? (
+          ) : mounted && viewLayout.length === 0 && !editing && sharedSetupPrompt && layout.length > 0 ? null : mounted && viewLayout.length === 0 && !editing ? (
             <div className="dash-quiet-home" role="status">
               <strong>No widgets on this board</strong>
               <span>Tap Edit to add the cards you want to see.</span>

@@ -111,9 +111,9 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
       return {
         kind,
         badge: "Needs setup",
-        title: "Connect Claude Code",
+        title: "Connect AI",
         description:
-          "A mentor runs Claude Code in the terminal on one computer and pairs it here. Ask AI then runs through Claude Code — no API key.",
+          "Choose how to connect your assistant, then return here to start a conversation.",
       };
     case "empty":
       return {

@@ -61,8 +61,8 @@ export const GENDERS: Array<{ value: OnboardingGender; label: string }> = [
 
 export const ROLES: Array<{ value: OnboardingRole; label: string; detail: string }> = [
   { value: "student", label: "Student", detail: "On the team, in the shop" },
-  { value: "mentor", label: "Mentor", detail: "Adult who coaches a subteam" },
-  { value: "coach", label: "Coach", detail: "Runs the team and the season" },
+  { value: "mentor", label: "Mentor or teacher", detail: "Adult who supports or coaches the team" },
+  { value: "coach", label: "Head mentor or coach", detail: "Runs the team and the season" },
   { value: "parent", label: "Parent", detail: "Guardian supporting the team" },
   { value: "other", label: "Something else", detail: "Alum, volunteer, sponsor" },
 ];

@@ -262,6 +262,7 @@ describe("widget registry", () => {
     ]);
     expect(mentor.map((item) => item.type)).toEqual([
       "next_match",
+      "team_todos",
       "my_day",
       "hours_month",
       "ask_ai",

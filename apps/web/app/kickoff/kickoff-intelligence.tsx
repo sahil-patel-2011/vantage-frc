@@ -1,5 +1,7 @@
 "use client";
 
+import { aiConnectionHref } from "../../lib/ai/connection";
+
 import { useCallback, useEffect, useState } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { EmptyState, Button } from "../../components/ui";
@@ -195,17 +197,9 @@ export function IntelligenceSection({
           badge="Needs setup"
           badgeTone="setup"
           title="Team AI isn't connected yet"
-          description={providerSetup.message}
+          description="Connect an assistant to generate a season summary from your sources."
         >
-          {providerSetup.steps[0] ? (
-            <Button as="a" variant="primary" href={providerSetup.steps[0].href}>
-              {providerSetup.steps[0].label}
-            </Button>
-          ) : (
-            <Button as="a" variant="primary" href="/team/ai-bridge">
-              Connect Claude Code
-            </Button>
-          )}
+          <Button as="a" variant="primary" href={aiConnectionHref(orgId)}>Connect AI</Button>
         </EmptyState>
       ) : null}
 

@@ -14,6 +14,16 @@ export type DashboardOfflineCache = {
   context: Record<string, unknown>;
 };
 
+/** A successful write supersedes the old device copy before any refresh can use it. */
+export function dashboardCacheAfterSave(cache: DashboardOfflineCache, board: BoardState): DashboardOfflineCache {
+  const boards = cache.boards.map(row => ({ ...row, isActive: row.id === board.id ? true : row.scope === board.scope ? false : row.isActive }));
+  const meta = { id: board.id!, name: board.name, scope: board.scope, isActive: true };
+  const at = boards.findIndex(row => row.id === board.id);
+  if (at >= 0) boards[at] = { ...boards[at]!, ...meta };
+  else boards.push(meta);
+  return { ...cache, boards, board, scope: board.scope, layout: board.layout };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

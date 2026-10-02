@@ -504,7 +504,7 @@ export default function AccountClient() {
 
           {tab === "appearance" ? (
             <Panel className="appearance-panel account-panel">
-              <AppearancePanel />
+              <AppearancePanel orgId={org.orgId} />
             </Panel>
           ) : null}
 

@@ -23,6 +23,15 @@ export type OfficialFlag = {
   soft?: boolean;
 };
 
+/** The report saved on this device before the team snapshot catches up. */
+export type SavedScoutReport = {
+  matchKey: string;
+  teamKey: string;
+  clientId: string;
+  payload: Record<string, unknown>;
+  confidence: "high" | "normal" | "low";
+};
+
 export type Bootstrap = {
   eventKey: string | null;
   eventName?: string | null;

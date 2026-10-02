@@ -39,7 +39,7 @@ export function DashboardHiddenRow({
         </span>
         <small>{listWords(rows.map(labelOf))}</small>
       </summary>
-      <p>They stay on this board and appear on Home when they have news. Always show keeps one there even while it is empty.</p>
+      <p>They stay on this board and appear on Home when they have news. Cards waiting for competition setup share the prompt above the board.</p>
       <ul>
         {rows.map((item) => {
           const label = labelOf(item);

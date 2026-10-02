@@ -49,7 +49,7 @@ export function ShellPanel({
       ) : null}
       {shell === "setup" ? (
         <Button as="a" variant="primary" href={withOrgHref("/team/ai-bridge", orgId)}>
-          Connect Claude Code
+          Connect your computer
         </Button>
       ) : null}
     </section>

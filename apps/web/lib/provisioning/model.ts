@@ -1,7 +1,7 @@
 export const PROVISIONING_PHASES = [
   { id: "team", label: "Creating your team" },
-  { id: "workspace", label: "Preparing your workspace" },
   { id: "tools", label: "Setting up scouting and team tools" },
+  { id: "workspace", label: "Preparing your workspace" },
   { id: "sheets", label: "Creating your Google Sheets" },
   { id: "recovery", label: "Verifying your recovery copy" },
   { id: "verify", label: "Checking everything" },
@@ -18,4 +18,9 @@ export type WorkspaceWorkbookName = typeof WORKSPACE_WORKBOOK_NAMES[number];
 export type ProvisioningStatus = { state: "queued" | "running" | "waiting" | "failed" | "ready"; phase: ProvisioningPhase | "ready"; completedPhases: string[]; error: string | null; verifiedAt: string | null; retryAfterAt?: string | null };
 export function provisioningReady(job: ProvisioningStatus): boolean {
   return job.state === "ready" && Boolean(job.verifiedAt) && PROVISIONING_PHASES.every((phase) => job.completedPhases.includes(phase.id));
+}
+
+/** Application availability is independent of external copies completing. */
+export function workspaceReady(job: ProvisioningStatus): boolean {
+  return job.completedPhases.includes("team") && job.completedPhases.includes("tools");
 }

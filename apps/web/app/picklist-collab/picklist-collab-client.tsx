@@ -43,7 +43,15 @@ import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { PageOptions } from "../../components/ui/page-options";
 import "./picklist-collab.css";
+
+function PicklistHeader({ embedded, title, description, breadcrumbs, children }: {
+  embedded?: boolean; title: ReactNode; description?: ReactNode; breadcrumbs?: ReactNode; children?: ReactNode;
+}) {
+  if (!embedded) return <PageHeader title={title} description={description} breadcrumbs={breadcrumbs}>{children}</PageHeader>;
+  return <header className="picklist-inline-header"><div><h2>Team discussion</h2>{description ? <p>{description}</p> : null}</div>{children ? <PageOptions>{children}</PageOptions> : null}</header>;
+}
 
 function isPicklistCollabView(value: unknown): value is PicklistCollabView {
   if (!value || typeof value !== "object") return false;
@@ -107,6 +115,7 @@ function RelatedStrip({ orgId }: { orgId?: string | null }) {
 }
 
 function CollabShell({
+  embedded,
   description,
   orgId,
   shell,
@@ -117,6 +126,7 @@ function CollabShell({
   action,
   children,
 }: {
+  embedded?: boolean;
   description: string;
   orgId?: string | null;
   shell: PicklistCollabShellKind;
@@ -130,16 +140,17 @@ function CollabShell({
   const copy = picklistCollabShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
   const setup = shell === "setup" ? picklistCollabSetupSteps(orgId)[0] : null;
+  const Root = embedded ? "section" : "main";
 
   return (
-    <main className="module-page picklist-collab-page soft-gate">
-      <PageHeader
+    <Root className="module-page picklist-collab-page soft-gate">
+      <PicklistHeader embedded={embedded}
         breadcrumbs={<Crumbs href={competitionHref} />}
         title="Collaborative pick list"
         description={description}
       >
-        <RelatedStrip orgId={orgId} />
-      </PageHeader>
+        {embedded ? null : <RelatedStrip orgId={orgId} />}
+      </PicklistHeader>
       {children}
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading pick list">
@@ -171,11 +182,12 @@ function CollabShell({
           ) : null}
         </EmptyState>
       )}
-    </main>
+    </Root>
   );
 }
 
-export default function PicklistCollabClient() {
+export default function PicklistCollabClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<PicklistCollabView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -257,6 +269,13 @@ export default function PicklistCollabClient() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!embedded || !activeListId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("listId", activeListId);
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [activeListId, embedded]);
+
   const orgId = view && "orgId" in view ? view.orgId : null;
   const inScoutApp = useInScoutApp();
   const listCount = view?.status === "live" ? view.lists.length : 0;
@@ -271,7 +290,7 @@ export default function PicklistCollabClient() {
     setupStepIds: view?.status === "setup_required" ? view.steps.map((step) => step.id) : [],
   });
   const shellCopy = picklistCollabShellCopy(shell);
-  const relatedLinks = inScoutApp
+  const relatedLinks = inScoutApp || embedded
     ? []
     : picklistCollabRelatedLinks(orgId, {
         include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
@@ -310,7 +329,7 @@ export default function PicklistCollabClient() {
 
   if (shell === "loading") {
     return (
-      <CollabShell description={shellCopy.description} orgId={null} shell="loading">
+      <CollabShell embedded={embedded} description={shellCopy.description} orgId={null} shell="loading">
         <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
       </CollabShell>
     );
@@ -319,6 +338,7 @@ export default function PicklistCollabClient() {
   if (shell === "error") {
     return (
       <CollabShell
+        embedded={embedded}
         description={shellCopy.description}
         orgId={orgId}
         shell="error"
@@ -335,14 +355,14 @@ export default function PicklistCollabClient() {
     const createStep = setupView?.steps.find((step) => step.id === "create-list");
     if (setupView?.orgId && createStep && setupView.eventKey) {
       return (
-        <main className="module-page picklist-collab-page">
-          <PageHeader
+        <Root className="module-page picklist-collab-page">
+          <PicklistHeader embedded={embedded}
             breadcrumbs={<Crumbs href={competitionHref} />}
             title="Collaborative pick list"
             description={setupView.message}
           >
-            <RelatedStrip orgId={orgId} />
-          </PageHeader>
+            {embedded ? null : <RelatedStrip orgId={orgId} />}
+          </PicklistHeader>
           <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
@@ -355,12 +375,13 @@ export default function PicklistCollabClient() {
             eventKey={setupView.eventKey}
             eventName={setupView.eventName}
           />
-        </main>
+        </Root>
       );
     }
     const guided = Boolean(setupView?.orgId && setupView.steps[0]);
     return (
       <CollabShell
+        embedded={embedded}
         description={setupView ? setupView.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
@@ -374,8 +395,8 @@ export default function PicklistCollabClient() {
   }
 
   return (
-    <main className="module-page picklist-collab-page">
-      <PageHeader
+    <Root className="module-page picklist-collab-page">
+      <PicklistHeader embedded={embedded}
         breadcrumbs={<Crumbs href={competitionHref} />}
         title="Collaborative pick list"
         description="Rank teams into tiers together, vote on them, and download the list for the drive team."
@@ -411,7 +432,7 @@ export default function PicklistCollabClient() {
             </Button>
           ))}
         </div>
-      </PageHeader>
+      </PicklistHeader>
 
       <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -480,7 +501,7 @@ export default function PicklistCollabClient() {
           <CreateListForm busy={busy} mutate={mutate} collapsedLabel="Add another pick list" />
         </div>
       ) : null}
-    </main>
+    </Root>
   );
 }
 

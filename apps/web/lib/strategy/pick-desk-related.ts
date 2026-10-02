@@ -139,19 +139,19 @@ export function classifyPickDeskShell(input: {
 }
 
 /** Soft-UI empty / setup / error copy — never DEMO picks. */
-export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
+export function pickDeskShellCopy(kind: PickDeskShellKind, orgId?: string | null): PickDeskEmptyCopy {
   switch (kind) {
     case "loading":
       return {
         kind,
-        title: "Loading pick desk…",
+        title: "Loading pick list…",
         description: "Checking which team you are on and who you can rank.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load pick desk",
+        title: "Could not load pick list",
         description:
           "A network or server issue blocked the desk. Retry, or open Strategy / Scouting while it reloads.",
       };
@@ -159,9 +159,9 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
       return {
         kind,
         badge: "Needs setup",
-        title: "Choose your team",
+        title: orgId ? "Choose your event" : "Choose your team",
         description:
-          "Choose your team and the event this alliance is at before you rank picks.",
+          orgId ? "Set your active event to see the robots you can rank." : "Choose your team before building a pick list.",
       };
     case "empty":
       return {
@@ -174,9 +174,9 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
     case "ready":
       return {
         kind,
-        title: "Rank, pick, and lock",
+        title: "Pick list",
         description:
-          "Move teams into first / second / third, then lock the list. Numbers come from your scouting and the event list.",
+          "Order robots by tier, then save your list. Numbers come from your scouting and the event list.",
       };
     default: {
       const _never: never = kind;
@@ -208,7 +208,7 @@ export function pickDeskNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry pick desk",
+        label: "Retry pick list",
         detail: "Reload the list of teams you can rank.",
         href: hubHref("/competition", "picks", orgId),
         primary: true,
@@ -231,11 +231,11 @@ export function pickDeskNextActions(input: {
   return [
     {
       id: "lists",
-      label: listCount > 0 ? "Lock this list" : "Rank teams, then lock",
+      label: listCount > 0 ? "Open pick list" : "Build pick list",
       detail:
         listCount > 0
           ? `${formatPickDeskMetric(listCount, true)} saved list${listCount === 1 ? "" : "s"} from real event teams.`
-          : "Move teams into first / second / third, then lock the list.",
+          : "Order robots by tier, then save your list.",
       href: hubHref("/competition", "picks", orgId),
       primary: true,
     },

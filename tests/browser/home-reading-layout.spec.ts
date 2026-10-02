@@ -2,10 +2,23 @@ import { expect, test } from "@playwright/test";
 import { waitForLoadingGone } from "./ready";
 import { signInAs } from "./session";
 
+// Complete any fixture-backed background refresh before the context is disposed.
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
+
 for (const width of [320, 390]) {
   test(`a running-late match stays inside the Home card at ${width}px`, async ({ page, context }) => {
     expect(await signInAs(context, "owner")).toBe(true);
-    await page.clock.install({ time: new Date(Date.now() + 7 * 24 * 60 * 60_000) });
+    const testTime = new Date();
+    await page.clock.install({ time: testTime });
+    await page.route("**/api/dashboards?**", async route => {
+      const response = await route.fetch();
+      const body = await response.json();
+      if (body.widgets) body.widgets.next_match = { status: "live", data: {
+        compLevel: "qm", matchNumber: 12, scheduledTime: new Date(testTime.getTime() - 10 * 60_000).toISOString(),
+        ourAlliance: "red", partners: ["254", "118"], opponents: ["1114", "2056", "971"],
+      } };
+      await route.fulfill({ response, json: body });
+    });
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await waitForLoadingGone(page);

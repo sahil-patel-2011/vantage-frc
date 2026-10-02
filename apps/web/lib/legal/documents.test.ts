@@ -156,12 +156,18 @@ describe("legal documents", () => {
       expect(text()).toMatch(/team id/i);
     });
 
-    it("denies location, fingerprinting, and content collection outright", () => {
+    it("denies location, fingerprinting, and content collection for product events", () => {
       const body = text();
       expect(body).toMatch(/no location of any kind/i);
       expect(body).toMatch(/no device fingerprint/i);
       expect(body).toMatch(/no IP address/i);
       expect(body).toMatch(/not a chat message/i);
+    });
+
+    it("discloses Vercel traffic summaries separately, including approximate geography", () => {
+      expect(text()).toMatch(/Vercel Web Analytics/);
+      expect(text()).toMatch(/approximate country, region or city/);
+      expect(text()).toMatch(/24 hours/);
     });
 
     it("states the 180-day raw-event retention window", () => {

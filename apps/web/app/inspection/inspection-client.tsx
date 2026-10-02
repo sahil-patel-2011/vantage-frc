@@ -108,7 +108,7 @@ function ItemRow({
             setNoteOpen(false);
           }}
         >
-          <input value={note} disabled={busy} placeholder="e.g. Need to re-torque main breaker mount" onChange={(e) => setNote(e.target.value)} />
+          <input aria-label={`Note for ${item.requirement}`} value={note} disabled={busy} placeholder="e.g. Need to re-torque main breaker mount" onChange={(e) => setNote(e.target.value)} />
           <Button variant="secondary" size="sm" type="submit" disabled={busy}>
             Save note
           </Button>
@@ -452,8 +452,9 @@ export default function InspectionClient() {
               >
                 <h2>Add game-specific item</h2>
                 <div className="insp-add-row">
-                  <input value={customCategory} disabled={busy} placeholder="Category" onChange={(e) => setCustomCategory(e.target.value)} />
+                  <input aria-label="Inspection category" value={customCategory} disabled={busy} placeholder="Category" onChange={(e) => setCustomCategory(e.target.value)} />
                   <input
+                    aria-label="Inspection requirement"
                     value={customReq}
                     disabled={busy}
                     placeholder="Requirement (e.g. Extension within this year's limit)"
@@ -505,11 +506,12 @@ export default function InspectionClient() {
                 step="any"
                 min={0}
                 placeholder="lbs"
+                aria-label="Robot weight in pounds"
                 value={weightInput}
                 disabled={busy}
                 onChange={(e) => setWeightInput(e.target.value)}
               />
-              <input value={weightConfig} disabled={busy} placeholder="Configuration" onChange={(e) => setWeightConfig(e.target.value)} />
+              <input aria-label="Weigh-in configuration" value={weightConfig} disabled={busy} placeholder="Configuration" onChange={(e) => setWeightConfig(e.target.value)} />
               <Button variant="primary" type="submit" disabled={busy || !weightInput}>
                 Log weight
               </Button>
@@ -529,6 +531,7 @@ export default function InspectionClient() {
                   step="any"
                   min={0}
                   placeholder={`Limit (${view.weightLimitLbs} lb)`}
+                  aria-label="Season weight limit in pounds"
                   value={limitInput}
                   disabled={busy}
                   onChange={(e) => setLimitInput(e.target.value)}

@@ -89,7 +89,12 @@ export async function loadTeamProfiles(
   client: PoolClient,
   input: { orgId: string; eventKey: string | null },
 ): Promise<TeamProfilesView> {
-  if (!input.eventKey) {
+  const context = input.eventKey ? null : await client.query<{ eventKey: string | null }>(
+    'SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1::uuid',
+    [input.orgId],
+  );
+  const eventKey = input.eventKey ?? context?.rows[0]?.eventKey ?? null;
+  if (!eventKey) {
     return {
       status: "empty",
       eventKey: null,
@@ -109,7 +114,7 @@ export async function loadTeamProfiles(
           AND ${observableMatchSql("m")}
         ORDER BY CASE m.comp_level WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5 END,
                  m.set_number, m.match_number, e.team_key, e.updated_at DESC, e.id`,
-      [input.orgId, input.eventKey],
+      [input.orgId, eventKey],
     ),
     client.query<FormulaRow>(
       `SELECT name, expression FROM org_value_formulas WHERE org_id = $1::uuid ORDER BY name`,
@@ -120,7 +125,7 @@ export async function loadTeamProfiles(
   if (entries.rows.length === 0) {
     return {
       status: "empty",
-      eventKey: input.eventKey,
+      eventKey: eventKey,
       message: "Nobody has scouted a match at this event yet.",
     };
   }
@@ -128,7 +133,7 @@ export async function loadTeamProfiles(
   const robots = new Map<string, IntelScoutNote[]>();
   for (const row of entries.rows) {
     const reports = robots.get(row.teamKey) ?? [];
-    reports.push({ matchKey: row.matchKey, eventKey: input.eventKey, payload: row.payload, confidence: row.confidence ?? "normal", fields: row.fields });
+    reports.push({ matchKey: row.matchKey, eventKey: eventKey, payload: row.payload, confidence: row.confidence ?? "normal", fields: row.fields });
     robots.set(row.teamKey, reports);
   }
   const observations = [...robots].map(([teamKey,reports]) => ({ teamKey,reports }));
@@ -136,7 +141,7 @@ export async function loadTeamProfiles(
   if (!converted.ok) {
     return {
       status: "needs_formula",
-      eventKey: input.eventKey,
+      eventKey: eventKey,
       // The bridge already writes a sentence naming what is missing and why —
       // repeating it here in different words would be a second source of truth
       // about the same gap.
@@ -156,7 +161,7 @@ export async function loadTeamProfiles(
   ).map((row) => ({ teamKey: row.teamKey, score: row.score }));
   return {
     status: "ready",
-    eventKey: input.eventKey,
+    eventKey: eventKey,
     profiles,
     pickOrder,
     weighted,

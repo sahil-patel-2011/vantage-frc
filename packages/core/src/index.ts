@@ -388,3 +388,4 @@ export * from "./legal";
 
 /* The one switch that opens the doors — see public-signup.ts. */
 export * from "./public-signup";
+export * from "./team-handover";

@@ -166,7 +166,7 @@ export function buildStudentHomeStrip(input: StudentHomeStripInput): HomeStripIt
       label: "My todos",
       detail: input.mineOpenTodos > 0 ? `${input.mineOpenTodos} open` : "You're clear",
       href: withOrgHref("/todos", orgId),
-      tone: input.mineOpenTodos > 0 ? "warn" : "ok",
+      tone: input.mineOpenTodos > 0 ? "warn" : "neutral",
     },
     {
       key: "kickoff_summary",

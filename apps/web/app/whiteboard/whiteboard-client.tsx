@@ -461,6 +461,7 @@ export default function WhiteboardClient() {
         </div>
         <div className="wb-header-actions">
           <input
+            aria-label="New play name"
             value={newTitle}
             placeholder="New play name"
             disabled={busy}

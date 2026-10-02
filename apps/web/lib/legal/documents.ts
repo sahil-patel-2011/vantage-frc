@@ -1,5 +1,5 @@
 /** Shared policy content. Disclosures must match the released service. */
-export const LEGAL_LAST_UPDATED = "September 27, 2026";
+export const LEGAL_LAST_UPDATED = "October 1, 2026";
 export const LEGAL_CONTACT_EMAIL = "vantagefrc@gmail.com";
 export type LegalSection = { id: string; heading: string; paragraphs: string[]; list?: string[] };
 export type LegalDocument = { slug: "privacy" | "terms"; title: string; summary: string; sections: LegalSection[] };
@@ -52,6 +52,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       "Selected AI providers receive context for requested features. Connected Onshape, Fusion, GitHub, spreadsheet, calendar, and communication services receive information needed for authorized connections.",
       "Configured document-storage providers hold supported documents and CAD artifacts. Photo/video storage is not offered. Payment providers process applicable payments under their own terms.",
       "Plausible analytics, when configured, may run on service pages. Vantage product analytics have separate consent controls below.",
+      "Vercel Web Analytics supplies optional traffic summaries under the analytics choice described below.",
     ]),
     section("retention", "Storage and retention", [
       "We retain account and team records to provide the service. Security, legal, and dispute requirements may require additional retention. Providers may process information outside your country.",
@@ -71,6 +72,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     section("analytics", "Optional product analytics", [
       "Product analytics are off until you opt in. Declining means nothing is locked. Events include your account ID and team ID and are not anonymous.",
       "Events describe feature use, not a chat message or other content you type. They include no location of any kind, no device fingerprint, and no IP address. Raw events expire after 180 days.",
+      "The same opt-in enables Vercel Web Analytics traffic summaries. These include page views, device and browser information, referral sources, and approximate country, region or city derived from the request. Vercel uses a temporary request hash to count visitors, discarded after 24 hours. We send route shapes without account or team IDs, query strings, fragments, search text, or invite tokens. No custom content events are sent to Vercel. Declining or withdrawing the analytics choice stops new collection.",
       "The analytics control on this page reopens the chooser. You may change your choice at any time. Administrators can clear team analytics; contact us about removal of previous personal events.",
     ]),
     section("children", "Age eligibility", [

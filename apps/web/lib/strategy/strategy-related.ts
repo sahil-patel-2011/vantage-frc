@@ -150,7 +150,7 @@ export function strategyCanSync(role?: string | null): boolean {
 }
 
 /** Soft-UI empty / setup / error copy — never DEMO win rates. */
-export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
+export function strategyShellCopy(kind: StrategyShellKind, orgId?: string | null): StrategyEmptyCopy {
   switch (kind) {
     case "loading":
       return {
@@ -169,9 +169,9 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
       return {
         kind,
         badge: "Needs setup",
-        title: "Choose your team",
+        title: orgId ? "Choose your event" : "Choose your team",
         description:
-          "Choose your team, set the event you are at, then sync match data. This screen stays empty until then.",
+          orgId ? "Set your active event to see the next matchup and plan your alliance." : "Choose your team to open Match plan.",
       };
     case "empty":
       return {

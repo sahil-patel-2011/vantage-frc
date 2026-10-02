@@ -114,43 +114,26 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
   // The island lists four of these same apps, so it steps aside while the panel is up.
   await expect(island).toBeHidden();
-  // Hub row opens the default workbench. The other workbenches hang under it
-  // so All can open Scouting without a second hop. Event day is the Competition
-  // row itself, so it is not repeated.
-  await expect(drawer.getByRole("link", { name: "Competition" })).toHaveCount(1);
-  await expect(drawer.getByRole("link", { name: "Event day" })).toHaveCount(0);
-  await drawer.getByRole("button", { name: "Show Competition tools" }).click();
-  await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Pit", exact: true })).toBeVisible();
-  await drawer.getByRole("button", { name: "Show Team tools" }).click();
-  await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeHidden();
-  await expect(drawer.getByRole("link", { name: "Chat" })).toBeVisible();
-  await drawer.getByRole("button", { name: "Show Build tools" }).click();
-  await expect(drawer.getByRole("link", { name: "CAD" })).toBeVisible();
-  await expect(drawer.getByRole("button", { name: /Competition pages/ })).toHaveCount(0);
-  // Nested tools stay on the workbench ToolStrip, not in All.
-  await expect(drawer.getByRole("link", { name: "Forms" })).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: "Alliance desk" })).toHaveCount(0);
-  // Logistics has no in-page tab bar, so the panel still carries its pages.
-  await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
-  // Account lives on the profile row at the top; the footer no longer repeats it.
-  await expect(drawer.locator(".soft-drawer-foot a")).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: /Account/ })).toHaveCount(1);
+  await expect(drawer.locator(".main-menu-launch a")).toHaveCount(2);
+  await expect(drawer.getByRole("link", { name: /^Home/ })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: /^Scouting/ })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
+  await expect(drawer.locator(".main-menu-section > summary").filter({ hasText: /^AI$/ })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
+  await expect(drawer.getByRole("link", { name: "Personal settings", exact: true })).toHaveCount(1);
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await drawer.getByRole("button", { name: "Show Competition tools" }).click();
-  await drawer.getByRole("link", { name: "Scout", exact: true }).click();
+  await drawer.getByRole("combobox").fill("scout");
+  await drawer.getByRole("option").filter({ hasText: /Scout/ }).first().click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);
-  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(island).toBeVisible();
 
-  // On desktop the sidebar replaces the bottom bar and the menu button (it would only open a
-  // second copy of the same menu); the sidebar has its own Search.
+  // Desktop uses the same closed-by-default drawer; the page owns the full width.
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeHidden();
-  await expect(page.locator(".vrail")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Menu and search" })).toBeHidden();
-  await expect(page.locator(".vrail-search")).toBeVisible();
+  await expect(page.locator(".vrail")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Menu and search" })).toBeVisible();
+  await expect(drawer).toBeHidden();
 });
 
 test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
@@ -163,7 +146,7 @@ test("search is one affordance at every width, inside the navigation panel", asy
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
   // The three-line "Menu and search" button is the one opener at every width; the old
   // desktop rail (and its own search box) is retired.
-  const openerFor = (width: number) => (width < 1024 ? page.getByRole("button", { name: "Menu and search" }) : page.locator(".vrail-search"));
+  const opener = page.getByRole("button", { name: "Menu and search" });
 
   for (const size of [
     { width: 390, height: 844 },
@@ -173,11 +156,10 @@ test("search is one affordance at every width, inside the navigation panel", asy
     await page.goto("/dashboard");
     await expect(oldButton).toHaveCount(0);
     await expect(field).toBeHidden();
-    // The sidebar (and its Search) exists from 1024px up; below that the menu button is the opener.
-    if (size.width < 1024) await expect(page.locator(".vrail-search")).toBeHidden();
-    else await expect(page.locator(".vrail-search")).toBeVisible();
+    await expect(opener).toBeVisible();
+    await expect(page.locator(".vrail-search")).toHaveCount(0);
 
-    await openerFor(size.width).click();
+    await opener.click();
     await expect(field).toBeVisible();
     await expect(field).toBeFocused();
     await page.keyboard.press("Escape");
@@ -185,56 +167,34 @@ test("search is one affordance at every width, inside the navigation panel", asy
   }
 
   // And it searches: the panel's field is the only one, so this is the path.
-  await openerFor(1400).click();
+  await opener.click();
   await field.fill("pick list");
   await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/picklist|competition/);
 });
 
-test("the hub tab bar owns the workbench name and the tool strip does not repeat it", async ({ page }) => {
-  await page.setViewportSize({ width: 1400, height: 900 });
+test("one menu restores keyboard focus without a second workspace picker", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/competition");
-  await expect(page.getByRole("tab", { name: "Event day" })).toBeVisible();
-  // "Event day" was both the selected tab and the first chip under it.
-  await expect(page.locator(".hub-tool-strip").getByText("Event day", { exact: true })).toHaveCount(0);
-  const tools = page.locator(".hub-bar .hub-tool-strip");
-  await expect(tools.locator(".hub-tool-strip-row button")).toHaveCount(1);
-  await tools.getByRole("button", { name: "More tools", exact: true }).click();
-  await expect(tools).toContainText("Pre-match briefing");
-  await tools.locator(".hub-tool-list a, .hub-tool-list button").first().focus();
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
+  await expect(page.locator(".workspace-picker-trigger")).toHaveCount(0);
+  const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+  await opener.click();
+  await expect(page.getByRole("combobox", { name: /Search pages, tools/ })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(tools.locator(".hub-tool-overflow")).toHaveCount(0);
-  await expect(tools.getByRole("button", { name: "More tools", exact: true })).toBeFocused();
+  await expect(opener).toBeFocused();
 });
 
-test("scouting and Work strips hide meta jobs that still have routes", async ({ page }) => {
-  await page.setViewportSize({ width: 1400, height: 900 });
+test("specialist tools stay discoverable through the shared search", async ({ page, context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/competition?tab=scouting");
-  await expect(page.getByRole("tab", { name: "Scout", exact: true })).toBeVisible();
-  const scoutingStrip = page.locator(".hub-tool-strip");
-  await scoutingStrip.getByRole("button", { name: "More tools", exact: true }).click();
-  await expect(scoutingStrip).toContainText("Forms");
-  // The strip shows three chips now, not six, so a tool being present and a
-  // tool being a chip are different claims. What this test is about is which
-  // tools the strip *offers at all* — so the ones further down are checked
-  // where they actually live, behind one control.
-  await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
-  await expect(scoutingStrip.getByText("Cross-check", { exact: true })).toHaveCount(0);
-  await expect(scoutingStrip.getByText("Schema A/B", { exact: true })).toHaveCount(0);
-
-  await expect(scoutingStrip).toContainText("Field value");
-  await expect(scoutingStrip).toContainText("Data quality");
-  // Still hidden, even with everything open: these are meta jobs that keep a
-  // route but do not belong in a workbench strip.
-  await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
-
-  await page.goto("/team?tab=todos");
-  await expect(page.getByRole("tab", { name: "Work" })).toBeVisible();
-  const workStrip = page.locator(".hub-tool-strip");
-  await workStrip.getByRole("button", { name: "More tools", exact: true }).click();
-  await expect(workStrip).toContainText("Practice");
-  await expect(workStrip.getByText("Task board", { exact: true })).toHaveCount(0);
+  for (const label of ["Schema sync", "Data quality", "Practice"]) {
+    await openNav(page);
+    await page.getByRole("combobox", { name: /Search pages, tools/ }).fill(label);
+    await expect(page.getByRole("option").filter({ hasText: label }).first()).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
@@ -254,27 +214,10 @@ test("account keeps every setting reachable from one place", async ({ page, cont
   await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
 
-  // This used to look for a <nav aria-label="All settings">, which the
-  // settings switcher has not been since it became a card of rows. The point
-  // of the test is that the settings are reachable, so it checks that.
-  //
-  // Two kinds of destination, and they are not interchangeable: the account's
-  // own sections are tabs on this page, and everything else is a link away to
-  // its own surface. Asserting a link named "Appearance" failed for a while
-  // and looked like a missing feature — the panel was there all along, one
-  // tab across.
-  for (const tab of ["Profile", "Appearance", "Notifications"]) {
-    // Buttons in a ToolStrip, not a tablist — Account's sections switch in
-    // place but do not carry tab semantics.
-    await expect(page.getByRole("button", { name: tab, exact: true })).toBeVisible();
-  }
-  // Rows carry a subtitle, so match on the start of the name. "Billing" became "AI limits":
-  // Vantage is free, and the page only holds limits on the team's own AI key.
-  for (const link of [/^Security/, /^AI usage/, /^AI limits/, /^Connectors/]) {
-    await expect(page.getByRole("link", { name: link }).first()).toBeVisible();
-  }
-
-  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  for (const label of [/^Security/, /^AI usage/, /^AI limits/, /^Connectors/]) await expect(page.getByRole("link", { name: label }).first()).toBeVisible();
+  const sections = page.getByRole("combobox", { name: "Account sections", exact: true });
+  for (const id of ["profile", "appearance", "notifications"]) await expect(sections.locator(`option[value="${id}"]`)).toHaveCount(1);
+  await sections.selectOption("appearance");
   await expect(page.locator(".appearance-panel")).toBeVisible();
 });
 
@@ -303,7 +246,7 @@ test("account says the session ended, rather than an empty page, when it has", a
 
 test("strategy defaults to empty setup and hides fabricated probabilities", async ({ page }) => {
   await page.goto("/strategy");
-  await expect(page.getByRole("tab", { name: "Strategy" })).toBeVisible();
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Match plan");
   await expect(page.getByRole("button", { name: "Try demo scenario" })).toHaveCount(0);
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
   await expect(page.getByText("65%")).toHaveCount(0);
@@ -312,7 +255,7 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
 
 test("code route requires a real team and never falls back to fixture findings", async ({ page }) => {
   await page.goto("/code");
-  await expect(page.getByRole("tab", { name: "Code" })).toBeVisible();
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Code");
   await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
   await expect(page.getByText("blocking robot loop")).toHaveCount(0);
 });

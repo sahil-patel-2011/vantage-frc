@@ -104,18 +104,18 @@ describe("live team-number feedback", () => {
     ).toBe("unchecked");
   });
 
-  it("offers /claim on a server-confirmed empty team only to adults", () => {
+  it("offers creation on a confirmed empty team to authorized students and adults", () => {
     const confirmed = { ...BASE, raw: "9999", knownTeamNumber: 9999, accessStatus: "none" as const, workspaceMissing: true };
 
     const adult = lookupTeamNumber({ ...confirmed, adult: true });
     expect(adult.kind).toBe("no_workspace");
     expect(adult.tone).toBe("warn");
-    expect(adult.action).toEqual({ href: "/claim", label: "Claim this team" });
+    expect(adult.action).toEqual({ href: "/claim", label: "Create this team" });
 
     const student = lookupTeamNumber({ ...confirmed, adult: false });
     expect(student.kind).toBe("no_workspace");
-    expect(student.action).toBeNull();
-    expect(student.body).toMatch(/ask a mentor or coach/i);
+    expect(student.action).toEqual(adult.action);
+    expect(student.body).toMatch(/authorized.*team/i);
   });
 
   it("does not treat a saved number without a request as proof of an absent team", () => {

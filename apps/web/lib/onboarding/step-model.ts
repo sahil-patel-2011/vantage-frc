@@ -411,16 +411,14 @@ export function buildOnboardingPendingPlan(input: {
         { key: "profile", title: "Profile saved", detail: "You're signed up — you just aren't attached to a team.", phase: "done" },
         {
           key: "claim",
-          title: input.adult ? "Claim the team number" : "Ask a mentor or coach to claim it",
-          detail: input.adult
-            ? "Adults on the team can create the team and become its first owner."
-            : "Students can't create a team. An adult claims it, then invites you.",
+          title: "Create your team workspace",
+          detail: "If your team authorized you, you can set it up and manage it until you hand it over to your lead.",
           phase: "current",
         },
-        { key: "join", title: "Join once it exists", detail: "You'll get an exact-email invite, or you can request approval again.", phase: "upcoming" },
+        { key: "join", title: "Invite your teammates", detail: "Choose their access. Your team lead can take over once they join.", phase: "upcoming" },
       ],
       meanwhile: MEANWHILE_BASE,
-      primaryAction: input.adult ? { kind: "claim", label: "Claim this team" } : { kind: "edit", label: "Change the team number" },
+      primaryAction: { kind: "claim", label: "Create this team" },
     };
   }
 

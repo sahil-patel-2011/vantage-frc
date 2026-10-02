@@ -1,7 +1,7 @@
 import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField } from "@vantage/game-year";
 import { lockScoutPayload } from "./identity";
 import { ACTION_HISTORY_KEY, validateActionHistory } from "./action-history";
-export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
+export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, undoableScoutAction, undoScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
 import {
   assertStorageKeyForOrg,
   orgScopedStorageKey,

@@ -35,20 +35,20 @@ describe("leftover Writer / Home Ask AI / API keys chrome", () => {
   it("setup copy is Needs setup and Home Ask AI points at adding an AI key", () => {
     expect(writerShellCopy("setup").badge).toBe("Needs setup");
     expect(writerShellCopy("provider_setup").badge).toBe("Needs setup");
-    expect(writerShellCopy("provider_setup").title).toBe("Connect Claude Code");
+    expect(writerShellCopy("provider_setup").title).toBe("Connect AI");
     expectPlainCopy(writerShellCopy("setup").description);
     expectPlainCopy(writerShellCopy("provider_setup").description);
 
     const ask = emptyHintFor("ask_ai");
     // Vantage is free with your own AI key, so the way to turn Ask AI on is a key (a free one works).
-    expect(ask.ctaHref).toBe("/team/ai-keys");
-    expect(ask.ctaLabel).toBe("Add an AI key");
-    expect(ask.body).toMatch(/AI key/);
+    expect(ask.ctaHref).toBe("/ai/connect");
+    expect(ask.ctaLabel).toBe("Connect AI");
+    expect(ask.body).toMatch(/Connect AI/);
 
     expect(aiKeysShellCopy("setup").badge).toBe("Needs setup");
     expect(AI_KEYS_RELATED_INCLUDE).toEqual(["chat", "claude-code"]);
     const chrome = readFileSync(join(WEB, "app/team/ai-keys/ai-keys-chrome.tsx"), "utf8");
-    expect(chrome).toMatch(/Connect Claude Code/);
+    expect(chrome).toMatch(/Connect your computer/);
     expect(chrome).toMatch(/variant="primary"/);
   });
 });

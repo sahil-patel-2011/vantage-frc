@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { assertAdminTenureAllowsRoleChange } from "./admin-tenure";
 import { hashEmail } from "./email";
+import { lockTeamAdministration } from "./team-handover";
 
 type OrgRole = "owner" | "admin" | "scout" | "viewer";
 
@@ -207,6 +208,7 @@ export async function setMemberRole(
   if (!["admin", "scout", "viewer"].includes(input.role)) {
     throw new Error("Role must be admin, scout, or viewer");
   }
+  await lockTeamAdministration(client, input.orgId);
 
   const actor = await client.query<{ role: OrgRole }>(
     `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
@@ -226,10 +228,8 @@ export async function setMemberRole(
   if (target.rows[0].role === "owner") {
     throw new Error("Owner role cannot be changed here");
   }
-  if (input.userId === actorUserId) {
-    throw new Error("You cannot change your own role");
-  }
-  if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner") {
+  const self = input.userId === actorUserId;
+  if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner" && !self) {
     throw new Error("Only an owner may change another admin's role");
   }
 
@@ -240,6 +240,15 @@ export async function setMemberRole(
   });
 
   const previousRole = target.rows[0].role;
+  if (self && input.role !== "admin") {
+    await auditMembership(client, {
+      orgId: input.orgId, actorUserId, action: "member.stepped_down", email: target.rows[0].email,
+      metadata: { userId: input.userId, before: previousRole, after: input.role },
+    });
+    await client.query(`DELETE FROM membership_capabilities WHERE org_id=$1 AND user_id=$2`, [input.orgId, input.userId]);
+    await client.query(`UPDATE memberships SET role=$3::org_role WHERE org_id=$1 AND user_id=$2`, [input.orgId, input.userId, input.role]);
+    return;
+  }
   await client.query(
     `UPDATE memberships SET role = $3::org_role WHERE org_id = $1 AND user_id = $2`,
     [input.orgId, input.userId, input.role],
@@ -275,6 +284,7 @@ export async function removeMember(
   actorUserId: string,
   input: { orgId: string; userId: string },
 ) {
+  await lockTeamAdministration(client, input.orgId);
   const actor = await client.query<{ role: OrgRole }>(
     `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
     [input.orgId, actorUserId],
@@ -295,6 +305,7 @@ export async function removeMember(
   if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner") {
     throw new Error("Only an owner may remove an admin");
   }
+  await assertAdminTenureAllowsRoleChange(client, { orgId: input.orgId, targetCurrentRole: target.rows[0].role, nextRole: "viewer" });
 
   await client.query(`DELETE FROM membership_capabilities WHERE org_id = $1 AND user_id = $2`, [input.orgId, input.userId]);
   await client.query(`DELETE FROM memberships WHERE org_id = $1 AND user_id = $2`, [input.orgId, input.userId]);

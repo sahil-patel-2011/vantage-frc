@@ -3,6 +3,9 @@ import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
 import { openNav } from "./nav";
 
+// Network interception must reach the page rather than a service worker's warm-up cache.
+test.use({ serviceWorkers: "block" });
+
 test("a hub shows its loading surface while the tool bundle downloads", async ({ page, context }) => {
   expect(await signInAs(context, "owner")).toBe(true);
   let release!: () => void;
@@ -11,8 +14,8 @@ test("a hub shows its loading surface while the tool bundle downloads", async ({
   const chunks = /\/_next\/static\/chunks\/.*\.js/;
   await page.route(chunks, async route => {
     const response = await route.fetch();
-    // Turbopack names shared chunks by hash; identify the actual tool module.
-    if ((await response.text()).includes("function KickoffClient(")) {
+    // Identify product content; function names change when production bundles are minified.
+    if ((await response.text()).includes("kick-embedded-controls")) {
       blocked = true;
       await download;
     }
@@ -23,7 +26,8 @@ test("a hub shows its loading surface while the tool bundle downloads", async ({
     await expect.poll(() => blocked).toBe(true);
     await expect(page.getByRole("status", { name: "Loading section", exact: true })).toBeVisible();
     release();
-    await expect(page.getByRole("heading", { name: "Game release intelligence", exact: true })).toBeVisible();
+    await expect(page.locator(".kick-page")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "How the game works", exact: true })).toBeVisible();
     await expect(page.getByRole("status", { name: "Loading section", exact: true })).toHaveCount(0);
   } finally {
     release();
@@ -31,17 +35,42 @@ test("a hub shows its loading surface while the tool bundle downloads", async ({
   }
 });
 
-test("desktop layout reserves the rail before hydration", async ({ browser }) => {
+test("desktop destinations have one menu without repeating saved shortcuts", async ({ page, context }, info) => {
+  expect(await signInAs(context, "owner")).toBe(true);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
+  await page.route("**/api/navigation/preferences", route => route.fulfill({ json: {
+    tabs: ["/dashboard", "/competition", "/rankings", "/ai?tab=chat"],
+  } }));
+  await page.goto("/dashboard");
+  const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
+  await expect(panel).toBeHidden();
+  await openNav(page);
+  await expect(panel.locator(".soft-drawer-shortcuts")).toHaveCount(0);
+  await expect(panel.locator(".main-menu-launch a")).toHaveCount(2);
+  await panel.locator(".main-menu-section > summary").filter({ hasText: /^AI$/ }).click();
+  await panel.getByRole("navigation", { name: "AI", exact: true }).getByRole("link", { name: "Chat", exact: true }).click();
+  await expect(page).toHaveURL(/\/ai/);
+  await expect(panel).toBeHidden();
+  await expect(page.getByRole("combobox", { name: "AI section", exact: true })).toHaveCount(0);
+  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Chat");
+  await expect(page.getByRole("heading", { name: /^Loading assistant/ })).toBeHidden({ timeout: 30_000 });
+  await page.screenshot({ path: info.outputPath("ai-sidebar-collapsed.png") });
+});
+
+test("desktop navigation starts closed without reserving sidebar space before hydration", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } });
   try {
     expect(await signInAs(context, "owner")).toBe(true);
     const page = await context.newPage();
     await page.goto("/dashboard");
-    await expect(page.locator(".vrail")).toBeVisible();
+    await expect(page.locator(".vrail")).toHaveCount(0);
     await expect(page.locator(".soft-island")).toBeHidden();
-    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(244);
+    await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toBeVisible();
+    await expect(page.locator(".soft-drawer")).toBeHidden();
+    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(0);
     const header = await page.locator(".soft-topbar").boundingBox();
-    expect(header?.x).toBe(244);
+    expect(header?.x).toBe(0);
   } finally {
     await context.close();
   }
@@ -56,15 +85,12 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const hamburger = page.getByRole("button", { name: "Menu and search", exact: true });
     await expect(page.locator(".soft-topbar")).toHaveCount(1);
-    await expect(page.locator(".vrail")).toHaveCount(1);
+    await expect(page.locator(".vrail")).toHaveCount(0);
     await expect(page.locator(".soft-drawer")).toHaveCount(1);
-    if (width < 1024) {
-      await expect(hamburger).toBeVisible();
-      await expect(page.locator(".vrail")).toBeHidden();
-    } else {
-      await expect(hamburger).toBeHidden();
-      await expect(page.locator(".vrail")).toBeVisible();
-    }
+    await expect(hamburger).toBeVisible();
+    await expect(page.locator(".soft-drawer")).toBeHidden();
+    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(0);
+    await page.screenshot({ path: info.outputPath(`navigation-closed-${width}.png`) });
     await openNav(page);
     const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
     await expect(panel).toBeVisible();
@@ -75,22 +101,18 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
       const rect = el.getBoundingClientRect();
       return rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
     })).toBe(true);
-    if (width >= 1024) {
-      await expect.poll(() => panel.evaluate(el => {
-        const rect = el.getBoundingClientRect();
-        return Math.abs(rect.left + rect.width / 2 - innerWidth / 2);
-      })).toBeLessThan(2);
-    }
+    await expect.poll(() => panel.evaluate(el => Math.abs(el.getBoundingClientRect().left))).toBeLessThan(2);
     await page.waitForFunction(() => document.getAnimations().every(animation => animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));
     const audit = await new AxeBuilder({ page }).analyze();
     await info.attach(`navigation-${width}.json`, { body: JSON.stringify(audit), contentType: "application/json" });
     expect(audit.violations).toEqual([]);
     await page.screenshot({ path: info.outputPath(`navigation-${width}.png`) });
-    await panel.getByRole("link", { name: "Competition", exact: true }).click();
+    await panel.getByRole("link", { name: /^Scouting/ }).click();
     await expect(page).toHaveURL(/\/competition/);
     await expect(panel).toBeHidden();
     await expect(page.locator(".soft-topbar")).toHaveCount(1);
-    await expect(page.getByRole("tab", { name: "Event day", exact: true })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Competition section", exact: true })).toHaveCount(0);
+    await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 
@@ -99,8 +121,25 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
     await openNav(page);
     await page.setViewportSize({ width: to, height: 900 });
     await page.keyboard.press("Escape");
-    const opener = to >= 1024 ? page.locator(".vrail-search") : page.getByRole("button", { name: "Menu and search", exact: true });
+    const opener = page.getByRole("button", { name: "Menu and search", exact: true });
     await expect(opener).toBeVisible();
     await expect(opener).toBeFocused();
   }
+
+  // Every dismissal returns to the same closed layout, including a fresh load.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
+  const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+  await openNav(page);
+  await panel.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(panel).toBeHidden();
+  await expect(opener).toBeFocused();
+  await openNav(page);
+  await page.getByRole("button", { name: "Close navigation", exact: true }).click({ position: { x: 1200, y: 400 } });
+  await expect(panel).toBeHidden();
+  await expect(opener).toBeFocused();
+  await openNav(page);
+  await page.reload();
+  await expect(panel).toBeHidden();
+  await expect(opener).toBeVisible();
 });

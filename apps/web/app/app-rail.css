@@ -1,225 +1,28 @@
-/* Persistent left rail (wide screens only).
-   Component rules only — every colour, radius and space comes from system.css. */
-
-/* One number for the rail's width and the page inset it owns, so the two
-   cannot drift apart when the rail is restyled. */
-:root { --rail-w: 244px; }
-
-.vrail {
-  display: none;
-}
-
+/* Navigation is an on-demand drawer at every width. Desktop content uses the
+   full canvas; only phones and tablets need space for the bottom shortcuts. */
 @media (min-width: 1024px) {
-  .vrail {
-    position: fixed;
-    z-index: 72;
-    inset: 0 auto 0 0;
-    width: var(--rail-w);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    padding: 16px 12px calc(12px + var(--safe-bottom));
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter: saturate(140%) blur(20px);
-    border-right: 1px solid var(--line-soft);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .vrail-head {
-    display: grid;
-    gap: 2px;
-    padding: 4px 10px 0;
-  }
-  .vrail-mark {
-    font-size: var(--text-lg);
-    font-weight: 700;
-    letter-spacing: -.03em;
-    color: var(--ink);
-  }
-  .vrail-org {
-    font-size: var(--text-xs);
-    color: var(--muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .vrail-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--control-h-sm);
-    padding: 0 10px;
-    color: var(--muted);
-    background: var(--surface-2);
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius-sm);
-    font: inherit;
-    font-size: var(--text-sm);
-    cursor: pointer;
-    transition: border-color .16s ease, color .16s ease;
-  }
-  .vrail-search:hover {
-    color: var(--ink);
-    border-color: var(--line);
-  }
-  .vrail-search svg {
-    width: 15px;
-    height: 15px;
-  }
-  .vrail-search span {
-    flex: 1;
-    text-align: left;
-  }
-  .vrail-search kbd {
-    font: 600 10px var(--font-mono);
-    color: var(--muted); /* no opacity: at .8 it read 3.7:1 on the search field (needs 4.5:1) */
-  }
-
-  .vrail-nav {
-    display: grid;
-    gap: 2px;
-  }
-  .vrail-label {
-    padding: 8px 10px 4px;
-    color: var(--muted);
-    font-size: var(--text-2xs);
-    font-weight: 650;
-    letter-spacing: var(--tracking-kicker);
-    text-transform: uppercase;
-  }
-  .vrail-nav a,
-  .vrail-foot {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 36px;
-    padding: 0 10px;
-    color: var(--muted);
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-    font-size: var(--text-sm);
-    font-weight: 550;
-    /* Apple-ish: the row itself is the affordance, so only fill and ink move. */
-    transition: background-color .16s ease, color .16s ease;
-  }
-  .vrail-nav a svg,
-  .vrail-foot svg {
-    width: 17px;
-    height: 17px;
-    flex: none;
-  }
-  .vrail-nav a:hover,
-  .vrail-foot:hover {
-    color: var(--ink);
-    background: color-mix(in srgb, var(--ink) 5%, transparent);
-  }
-  .vrail-nav a[aria-current="page"] {
-    color: var(--accent);
-    background: var(--accent-soft);
-    font-weight: 600;
-  }
-  .vrail-edit {
-    justify-self: start;
-    text-align: left;
-    margin: 4px 10px 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--muted);
-    font: inherit;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .vrail-edit:hover {
-    color: var(--accent);
-  }
-
-  .vrail-foot {
-    margin-top: auto;
-    border-top: 1px solid var(--line-soft);
-    padding-top: 8px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .vrail-nav a,
-  .vrail-foot,
-  .vrail-search {
-    transition: none;
-  }
-}
-
-/* The shell, on a screen with room for the rail.
-   The rail was retired on the grounds that the three-line button already opens
-   the same places. Measuring the built app said otherwise. With the rail gone
-   the only pillars on a 1440px screen were two clicks deep, behind a hamburger,
-   and the thing that stood in for them was the floating bottom island: four
-   round targets, a phone pattern, covering up to 36 elements of the page behind
-   it. Every workspace was linked two or three times on the same screen, and the
-   five-pillar shape of the product — the thing the marketing page, the drawer
-   and the tour all describe — was nowhere on the screen.
-   So wide screens get the rail, and the island goes back to being the phone
-   control it was designed to be. The island's four slots are not thrown away:
-   they are the rail's "Your apps" section, where they are labelled. */
-@media (min-width: 1024px) {
-  /* The server-rendered rail reserves its space before AppShell's body effect runs. */
-  body:is(.has-app-shell, :has(.vrail)) .vrail {
-    display: flex !important;
-  }
-  /* The rail owns the page's left inset, and the top bar sits beside it. */
-  body:is(.has-app-shell, :has(.vrail)) {
-    padding-left: var(--rail-w) !important;
+  body:is(.has-app-shell, :has(.soft-topbar)) {
     padding-bottom: calc(28px + var(--safe-bottom)) !important;
   }
-  body:is(.has-app-shell, :has(.vrail)) .soft-topbar {
-    left: var(--rail-w) !important;
-  }
-  /* The next-match strip sits beside the rail too: from 0 its left end ("Next · Qual 31") hid
-     behind the sidebar on every page that shows it. */
-  body:is(.has-app-shell, :has(.vrail)) .soft-focus-rail {
-    left: var(--rail-w);
-    padding-inline: max(18px, calc((100vw - var(--rail-w) - 1124px) / 2));
-  }
-  body:is(.has-app-shell, :has(.vrail)) .soft-focus-reopen {
-    left: calc(50% + var(--rail-w) / 2);
-  }
-  /* The rail lists every workspace and has its own Search, so the hamburger only opened a second
-     copy of the same menu. It stays for phones and tablets, where there is no rail. */
-  body:is(.has-app-shell, :has(.vrail)) .soft-menu-btn {
+  body:is(.has-app-shell, :has(.soft-topbar)) .soft-island {
     display: none !important;
   }
-  /* The island is a phone affordance. Hiding it removes four duplicate
-     destinations from every desktop page, and the occlusion with them. */
-  body:is(.has-app-shell, :has(.vrail)) .soft-island {
-    display: none !important;
-  }
-  /* The rail already lists Ask AI. Two controls for one place is the
-     duplication this change exists to remove. */
-  body:is(.has-app-shell, :has(.vrail)) .soft-ask-ai {
+  body:is(.has-app-shell, :has(.soft-topbar)) .soft-ask-ai {
     display: none;
   }
-  /* Search opens a centered panel on desktop, rather than a second left rail. */
-  body:is(.has-app-shell, :has(.vrail)) .soft-drawer {
-    inset: 24px auto auto 50%;
-    width: min(560px, calc(100vw - 48px));
-    max-height: calc(100dvh - 48px);
-    padding: 20px;
-    border: 1px solid var(--line);
-    border-radius: 24px;
-    transform: translate(-50%, -12px);
-    transition: transform .18s var(--ease-settle), visibility 0s linear .18s;
-  }
-  body:is(.has-app-shell, :has(.vrail)) .soft-drawer.open {
-    transform: translate(-50%, 0);
-    box-shadow: var(--shadow-pop);
-    transition: transform .18s var(--ease-settle), visibility 0s;
-  }
-  body:is(.has-app-shell, :has(.vrail)).soft-nav-panel-open .vrail {
-    visibility: hidden;
-  }
+}
+
+.soft-drawer-shortcuts {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--space-3);
+}
+.soft-drawer-shortcuts > summary {
+  padding: 12px 10px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Page title stacked over the team button (non-hub pages): the pair was 64px tall inside a
@@ -259,10 +62,30 @@
     display: none;
   }
 }
-/* Keep workspace navigation compact without hiding tools from keyboard users. */
-.soft-nav-workspace-row { display: flex; align-items: center; gap: 4px; }
-.soft-nav-workspace-row > a { flex: 1; min-width: 0; }
-.soft-drawer .soft-nav-expand { flex: 0 0 48px; min-height: 48px !important; }
-.soft-nav-expand[aria-expanded="true"] svg { transform: rotate(90deg); }
-.soft-nav-items[hidden] { display: none; }
+
+/* One quiet, full-width destination per workspace. */
+.soft-drawer .soft-drawer-flat { display: grid; gap: 4px; }
+.soft-drawer .soft-workspace-link { min-height: 64px; padding: 10px 12px; border: 0; border-radius: 16px; gap: 14px; }
+.soft-drawer .soft-workspace-link > i { width: 36px; height: 36px; background: transparent; }
+.soft-workspace-link > span { display: grid; gap: 3px; min-width: 0; }
+.soft-workspace-link strong { font-size: 15px; font-weight: 650; }
+.soft-workspace-link small { font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.4; }
 .soft-menu-btn[hidden] { display: none !important; }
+/* The drawer is the destination menu. Pages keep their own task controls. */
+.main-menu-launch { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 16px; }
+.main-menu-app { display: grid; justify-items: start; gap: 6px; min-height: 104px; padding: 16px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.main-menu-app > svg { width: 23px; height: 23px; color: var(--accent); margin-bottom: 4px; }
+.main-menu-app > small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.main-menu-app[aria-current="page"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
+.main-menu-section { border-top: 1px solid var(--line); }
+.main-menu-section > summary { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 8px 12px; cursor: pointer; list-style: none; color: var(--ink); }
+.main-menu-section > summary::-webkit-details-marker { display: none; }
+.main-menu-section > summary > svg { width: 20px; height: 20px; color: var(--muted); flex: none; }
+.main-menu-section > summary > strong { flex: 1; font-size: 14px; font-weight: 600; }
+.main-menu-section[open] > summary > svg:last-child { transform: rotate(90deg); }
+.main-menu-section > nav { display: grid; gap: 2px; padding: 0 8px 10px 44px; }
+.main-menu-section > nav > a { display: flex; align-items: center; min-height: 44px; padding: 8px 12px; color: var(--muted); border-radius: 12px; text-decoration: none; font-size: 14px; }
+.main-menu-section > nav > a[aria-current="page"], .main-menu-section > nav > a:hover { color: var(--accent); background: var(--accent-soft); }
+.main-menu-section > summary:focus-visible, .main-menu-section a:focus-visible, .main-menu-app:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.soft-drawer .soft-profile-compact { margin: 0 0 8px; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.soft-drawer .soft-profile-compact .soft-org-chip { min-height: 48px; border-radius: 14px; }

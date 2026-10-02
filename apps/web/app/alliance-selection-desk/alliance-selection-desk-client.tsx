@@ -194,6 +194,7 @@ function SlotRow({
   const [team, setTeam] = useState(slot.teamNumber?.toString() ?? slot.teamKey ?? "");
   const [rationale, setRationale] = useState(slot.rationale);
   const [note, setNote] = useState("");
+  const slotName = `${pickSlotLabel(slot.pickSlot)}, alliance ${slot.allianceSeed}`;
 
   useEffect(() => {
     setTeam(slot.teamNumber?.toString() ?? slot.teamKey ?? "");
@@ -203,7 +204,7 @@ function SlotRow({
   return (
     <div className="alliance-desk-slot">
       <div className="alliance-desk-slot-head">
-        <strong>{pickSlotLabel(slot.pickSlot)}</strong>
+        <strong>{pickSlotLabel(slot.pickSlot)} · {slot.teamNumber ?? slot.teamKey ?? "No team yet"}</strong>
         {/* One pick list: this is the team's place on the SAME list the team ranked together. */}
         {slot.pickListRank != null ? <Badge tone="info">Pick list #{slot.pickListRank}</Badge> : null}
         {slot.tbaRank != null ? <Badge tone="neutral">Rank #{slot.tbaRank}</Badge> : null}
@@ -221,29 +222,31 @@ function SlotRow({
       {slot.justification ? (
         <p className="app-muted alliance-desk-tip">Why: {slot.justification}</p>
       ) : null}
+      <details className="alliance-desk-slot-editor">
+        <summary data-disclosure>{busy ? "View" : "Edit"} {slotName}</summary>
       <FormGrid>
         <FormRow label="Team #">
-          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" aria-label={`Team number, ${pickSlotLabel(slot.pickSlot)}`} disabled={busy} />
+          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" aria-label={`Team number, ${slotName}`} disabled={busy} />
         </FormRow>
         <FormRow label="Rationale">
           <input
             value={rationale}
             onChange={(e) => setRationale(e.target.value)}
             placeholder="Why this pick"
-            aria-label={`Why this pick, ${pickSlotLabel(slot.pickSlot)}`}
+            aria-label={`Why this pick, ${slotName}`}
             disabled={busy}
           />
         </FormRow>
       </FormGrid>
       <div className="alliance-desk-slot-actions">
-        <Button type="button" size="sm" disabled={busy} aria-label={`Save pick, ${pickSlotLabel(slot.pickSlot)}`} onClick={() => onSetTeam(slot.id, team, rationale)}>
+        <Button type="button" size="sm" disabled={busy} aria-label={`Save pick, ${slotName}`} onClick={() => onSetTeam(slot.id, team, rationale)}>
           Save pick
         </Button>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Attach scout note"
-          aria-label={`Scout note, ${pickSlotLabel(slot.pickSlot)}`}
+          aria-label={`Scout note, ${slotName}`}
           disabled={busy}
           className="alliance-desk-note-input"
         />
@@ -251,7 +254,7 @@ function SlotRow({
           type="button"
           size="sm"
           variant="secondary"
-          aria-label={`Attach evidence, ${pickSlotLabel(slot.pickSlot)}`}
+          aria-label={`Attach evidence, ${slotName}`}
           disabled={busy || !note.trim()}
           onClick={() => {
             onAttachNote(slot.id, note);
@@ -261,6 +264,7 @@ function SlotRow({
           Attach evidence
         </Button>
       </div>
+      </details>
       {slot.evidence.length > 0 ? (
         <ul className="app-muted alliance-desk-evidence">
           {slot.evidence.slice(0, 4).map((e) => (

@@ -10,7 +10,7 @@ import {
   type SearchHit,
 } from "./app-shell-model";
 import type { CommandHit } from "../lib/nav/command-search";
-import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
+import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../lib/nav/product-nav";
 import { AppShellNavGroups } from "./app-shell-nav-groups";
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
@@ -18,7 +18,7 @@ function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   const root = event.currentTarget;
   const focusable = [
     ...root.querySelectorAll<HTMLElement>(
-      'a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])',
+      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',
     ),
   ].filter((node) => node.offsetParent !== null || node === document.activeElement);
   if (focusable.length === 0) return;
@@ -41,8 +41,6 @@ export function AppShellNavPanel({
   panelCloseRef,
   searchInputRef,
   me,
-  initial,
-  accountLabel,
   orgLabel,
   rolePlanCue,
   orgId,
@@ -106,6 +104,7 @@ export function AppShellNavPanel({
   jumpTopResult: () => void;
   shortcutHint: string;
   visibleNavGroups: ProductNavGroup[];
+  islandTabs: IslandTabDefinition[];
   activeGroupLabel: string | undefined;
   pathname: string;
   pathSearch: string;
@@ -147,15 +146,6 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-profile-link" href={withOrgHref("/account", orgId)} onClick={closeNav}>
-            <span className="soft-avatar">
-              {me.image ? <img src={me.image} alt="" /> : initial}
-            </span>
-            <div>
-              <strong>{accountLabel ?? "Account"}</strong>
-              <span>{me.email ?? "Your account"}</span>
-            </div>
-          </a>
           <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
             <button
               type="button"
@@ -277,9 +267,10 @@ export function AppShellNavPanel({
         </div>
 
         {queryActive ? (
-          <div id="soft-nav-results" className="soft-nav-results" role="listbox" aria-label="Search results">
+          <div className="soft-nav-results">
+          <div id="soft-nav-results" role={resultRows.length ? "listbox" : undefined} aria-label="Search results">
             {commandHits.length > 0 ? (
-              <nav className="command-group" aria-label="Go to">
+              <div className="command-group" role="group" aria-label="Go to">
                 <p className="command-group-head">Go to</p>
                 {commandHits.map((hit, index) => (
                   <a
@@ -303,16 +294,16 @@ export function AppShellNavPanel({
                     {index === activeRowIndex ? <small aria-hidden="true">↵</small> : null}
                   </a>
                 ))}
-              </nav>
+              </div>
             ) : null}
 
-            {searchHits.length > 0 || searchLoading ? (
-              <section className="command-search-hits" aria-label="Your data">
+            {searchHits.length > 0 ? (
+              <section className="command-search-hits" role="group" aria-label="Your data">
                 <header>
                   <strong>In your team&apos;s data</strong>
                   {searchLoading ? <small>Searching…</small> : null}
                 </header>
-                <nav>
+                <nav role="presentation">
                   {searchHits.map((hit, offset) => {
                     const index = commandHits.length + offset;
                     return (
@@ -336,12 +327,13 @@ export function AppShellNavPanel({
                     );
                   })}
                 </nav>
-                <button type="button" className="command-open-full" onClick={openFullSearch}>
-                  Open full search for “{navQuery.trim()}”
-                </button>
               </section>
             ) : null}
-
+          </div>
+            {searchLoading ? <p role="status">Searching your team’s data…</p> : null}
+            <button type="button" className="command-open-full" onClick={openFullSearch}>
+              Open full search for “{navQuery.trim()}”
+            </button>
             {resultRows.length === 0 && !searchLoading ? (
               <p className="command-empty">
                 Nothing matches “{navQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
@@ -349,18 +341,7 @@ export function AppShellNavPanel({
             ) : null}
           </div>
         ) : (
-          <nav className="soft-drawer-flat" aria-label="Hubs">
-            {/* Says what this list is and what it is not: the few places you go
-                often, never every screen. Everything else is behind search. */}
-            {/* First for a platform admin: it is the page they came for, and it sat below Build. */}
-            {me.platformAdmin ? (
-              <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={closeNav}>
-                <i>
-                  <Icon name="grid" />
-                </i>
-                <span>Platform admin</span>
-              </a>
-            ) : null}
+          <nav className="soft-drawer-flat" aria-label="Main menu">
             <AppShellNavGroups key={`${navOpen}-${activeGroupLabel}`}
               groups={visibleNavGroups} activeGroupLabel={activeGroupLabel}
               pathname={pathname} pathSearch={pathSearch} orgId={orgId}
@@ -374,6 +355,9 @@ export function AppShellNavPanel({
             only appears for an owner or admin, because for everyone else it is a
             door that opens onto an error. */}
         <div className="soft-drawer-settings">
+          {me.platformAdmin ? (
+            <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
+          ) : null}
           <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
             <Icon name="gear" />
             <span>

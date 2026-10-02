@@ -536,22 +536,13 @@ export function renderOpsWidget({
           assigneeName: string | null;
         }> | undefined) ?? [];
       return (
-        <Shell type={type} title="Team todos" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Team tasks" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
-            <div className="dash-metric-grid" style={{ marginBottom: items.length ? 10 : 0 }}>
-              <div>
-                <strong>{String(data.open ?? 0)}</strong>
-                <span>open</span>
-              </div>
-              <div>
-                <strong>{String(data.mineOpen ?? 0)}</strong>
-                <span>mine</span>
-              </div>
-              <div>
-                <strong>{String(data.overdue ?? 0)}</strong>
-                <span>overdue</span>
-              </div>
-            </div>
+            <p className="dash-task-summary">
+              {typeof data.open === "number" && Number.isFinite(data.open) ? <span>{data.open} open {data.open === 1 ? "task" : "tasks"}</span> : null}
+              {typeof data.mineOpen === "number" && data.mineOpen > 0 ? <span>{data.mineOpen} assigned to you</span> : null}
+              {typeof data.overdue === "number" && data.overdue > 0 ? <strong>{data.overdue} overdue</strong> : null}
+            </p>
           ) : null}
           {payload?.status === "live" && items.length > 0 ? (
             <ul className="dash-checklist">

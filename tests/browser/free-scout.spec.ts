@@ -79,24 +79,20 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 25_000 });
-    const opener = width < 1024 ? page.getByRole("button", { name: "Menu and search" }) : page.locator(".vrail-search");
+    const opener = page.getByRole("button", { name: "Menu and search" });
     await openNav(page);
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
     for (const name of ["Home", "Competition", "Team", "Build", "Business"]) await expect(drawer.getByRole("link", { name, exact: true })).toBeVisible();
     await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
-    const show = drawer.getByRole("button", { name: "Show Competition tools" });
-    // Measure the settled hit target, not its fractional transformed bounds mid-transition.
+    await expect(drawer.getByRole("button", { name: /Show .* tools/ })).toHaveCount(0);
+    const workspace = drawer.getByRole("link", { name: "Competition", exact: true });
     await drawer.evaluate(async (node) => {
       await Promise.all(node.getAnimations().map((animation) => animation.finished.catch(() => {})));
     });
-    const box = await show.boundingBox();
-    expect(box!.width).toBeGreaterThanOrEqual(48);
+    const box = await workspace.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(200);
     expect(box!.height).toBeGreaterThanOrEqual(48);
-    await show.click();
-    await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeVisible();
-    await drawer.getByRole("button", { name: "Show Team tools" }).click();
-    await expect(drawer.getByRole("link", { name: "Scout", exact: true })).toBeHidden();
-    await expect(drawer.getByRole("link", { name: "Chat", exact: true })).toBeVisible();
+    await expect(drawer.getByRole("link", { name: "AI", exact: true })).toBeVisible();
     await drawer.getByRole("combobox").fill("logistics");
     await expect(drawer.getByRole("option").filter({ hasText: /Logistics|Travel/ }).first()).toBeVisible();
     await page.keyboard.press("Escape");

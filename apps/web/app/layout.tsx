@@ -14,6 +14,7 @@ import "./vantage-redesign.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
 import { ConsentBanner } from "../components/consent-banner";
+import { VercelWebAnalytics } from "../components/vercel-web-analytics";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
 const inter = localFont({
@@ -80,6 +81,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Asks before any first-party product analytics are collected, and
             owns the route-change page-view tracker that the answer gates. */}
         <ConsentBanner />
+        <VercelWebAnalytics />
         {domain && (
           <Script
             defer

@@ -33,27 +33,27 @@ export type HubAccessRow = { hubId: string; allowedTabIds: string[] };
 type Preset = { key: string; name: string; description: string; baseRole?: string };
 
 const ROLE_CHOICES: Array<{ id: "scout" | "admin" | "viewer"; label: string; hint: string }> = [
-  { id: "scout", label: "Student", hint: "Scouts and uses team tools." },
+  { id: "scout", label: "Team member", hint: "Scouts and uses team tools." },
   {
     id: "admin",
-    label: "Mentor or coach",
+    label: "Team admin",
     hint: "A team admin: invites and removes people, changes team settings and adds AI keys, and uses every team tool.",
   },
-  { id: "viewer", label: "Parent or guest", hint: "Can look, can't change." },
+  { id: "viewer", label: "View only", hint: "Can look, can't change." },
 ];
 
 export const ROLE_WORDS: Record<string, string> = {
   owner: "an owner",
-  admin: "a mentor or coach",
-  scout: "a student",
-  viewer: "a parent or guest",
+  admin: "a team admin",
+  scout: "a team member",
+  viewer: "a viewer",
 };
 
 export const ROLE_LABELS: Record<string, string> = {
   owner: "Owner",
-  admin: "Mentor or coach",
-  scout: "Student",
-  viewer: "Parent or guest",
+  admin: "Team admin",
+  scout: "Team member",
+  viewer: "View only",
 };
 
 function hubLabel(hubId: ClientHubId): { label: string; hint: string } {
@@ -320,7 +320,7 @@ export function MemberAccessPanel({
     <Modal open={Boolean(member)} onClose={onClose} title={`Access for ${who}`} description={member.email}>
       <div className="member-access">
         <fieldset className="member-access-roles" disabled={!roleEditable || busy}>
-          <legend>They are a</legend>
+          <legend>Team access</legend>
           {isOwnerRow ? (
             <p className="app-muted">Owner — can do everything. Owners can&apos;t be changed here.</p>
           ) : (
@@ -342,7 +342,7 @@ export function MemberAccessPanel({
           )}
           {!isOwnerRow && !roleEditable ? (
             <p className="app-muted member-access-note">
-              {isSelf ? "You can't change your own role." : "Only an owner can change a mentor's role."}
+              {isSelf ? "Use Change my access from your people menu." : "Only an owner can change another admin’s access."}
             </p>
           ) : null}
         </fieldset>

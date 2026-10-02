@@ -465,3 +465,13 @@
 
 /* The profile form's select looks like its inputs (it was an unstyled 23px box on desktop too). */
 .account-form select{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font:inherit}
+
+.appearance-save { position: sticky; bottom: 20px; z-index: 2; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 6px 24px color-mix(in srgb, var(--ink) 8%, transparent); }
+.appearance-save .appearance-actions { margin: 0; }
+.appearance-save > p { margin: 10px 0 0; font-size: 13px; }
+@media (max-width: 1023px) { .appearance-save { bottom: calc(92px + env(safe-area-inset-bottom)); } }
+.home-defaults-panel{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:24px 0;padding:24px;border:1px solid var(--line);border-radius:24px;background:var(--surface)}
+.home-defaults-panel>div:first-child{flex:1 1 260px}
+.home-defaults-panel h2{margin:0 0 8px;font-size:18px}
+.home-defaults-panel p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.home-defaults-panel>p{flex-basis:100%}

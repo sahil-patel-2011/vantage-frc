@@ -56,12 +56,16 @@ for (const width of [390, 1440]) {
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await page.goto("/dashboard");
-    await expect(primaryNavigation(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toBeVisible();
+    if (width < 1024) await expect(primaryNavigation(page)).toBeVisible();
+    else await expect(primaryNavigation(page)).toBeHidden();
     await expect(page.getByTestId("dash-customize")).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("home-light.png"), fullPage: true });
     await openNav(page);
     await page.screenshot({ path: testInfo.outputPath("navigation-light.png") });
     await page.keyboard.press("Escape");
-    await expect(primaryNavigation(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toBeVisible();
+    if (width < 1024) await expect(primaryNavigation(page)).toBeVisible();
+    else await expect(primaryNavigation(page)).toBeHidden();
   });
 }

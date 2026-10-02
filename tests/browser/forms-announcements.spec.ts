@@ -32,7 +32,7 @@ test.describe("the public intake page is not part of the app", () => {
     context,
     page,
   }) => {
-    await signInFixture(context);
+    expect(await signInAs(context, "owner")).toBe(true);
 
     await page.goto("/dashboard");
     await expect(page.locator("header.soft-topbar")).toHaveCount(1);
@@ -209,9 +209,10 @@ test.describe("with real sessions", () => {
     }
     await answerPanel.getByRole("button", { name: "Submit" }).click();
 
-    // The owner's Responses tab counts it — the response actually landed.
+    // The response summary reflects the saved answer, regardless of navigation chrome.
     await owner.page.goto(withOrg(`/forms/${formId}`));
-    await expect(owner.page.getByRole("button", { name: "Responses (1)" })).toBeVisible();
+    await expect(owner.page.getByRole("heading", { name: "1 response from prospective members", exact: true })).toBeVisible();
+    await expect(owner.page.getByText("dana@example.com", { exact: true })).toBeVisible();
 
     // And the second attempt is refused rather than silently double-counted.
     // A complete answer set on purpose: an empty one would only prove the
@@ -227,7 +228,7 @@ test.describe("with real sessions", () => {
     expect(String(again.json.error)).toMatch(/already answered/i);
 
     await owner.page.reload();
-    await expect(owner.page.getByRole("button", { name: "Responses (1)" })).toBeVisible();
+    await expect(owner.page.getByRole("heading", { name: "1 response from prospective members", exact: true })).toBeVisible();
   });
 
   test("a non-admin is offered no way to write a form or an announcement", async () => {
@@ -245,15 +246,13 @@ test.describe("with real sessions", () => {
     expect(create.status).toBe(403);
     expect(String(create.json.error)).toMatch(/owners and admins/i);
 
-    // A form they can see is read-only: one mode button, no Questions tab, no
-    // status controls.
+    // A form they can see accepts answers without exposing management controls.
     const forms = await api(member.context, withOrg("/api/forms"));
     const list = (forms.json.forms ?? []) as Array<{ id: string }>;
     if (list.length > 0) {
       await member.page.goto(withOrg(`/forms/${list[0]!.id}`));
-      const modes = member.page.getByRole("navigation", { name: "Form views" });
-      await expect(modes.getByRole("button")).toHaveCount(1);
-      await expect(modes.getByRole("button", { name: "Questions" })).toHaveCount(0);
+      await expect(member.page.locator(".forms-answer-panel")).toBeVisible();
+      await expect(member.page.getByRole("button", { name: "Questions", includeHidden: true })).toHaveCount(0);
       await expect(member.page.getByRole("button", { name: "Open for answers" })).toHaveCount(0);
       await expect(member.page.getByRole("button", { name: "Add question" })).toHaveCount(0);
 

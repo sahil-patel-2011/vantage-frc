@@ -42,23 +42,32 @@ function detectOs(): Os {
 
 function CommandBlock({ lines }: { lines: string[] }) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const text = lines.join("\n");
   return (
     <div className="ds-code">
-      <pre>
+      <pre tabIndex={0} aria-label="Commands">
         <code>{text}</code>
       </pre>
       <button
         type="button"
         className="ds-copy"
-        onClick={() => {
-          void navigator.clipboard?.writeText(text);
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1600);
+        onClick={async () => {
+          setCopyError(false);
+          try {
+            if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1600);
+          } catch {
+            setCopied(false);
+            setCopyError(true);
+          }
         }}
       >
         {copied ? "Copied" : "Copy"}
       </button>
+      {copyError ? <p className="ds-copy-error" role="alert">Could not copy. Select the commands to copy them, or try again.</p> : null}
     </div>
   );
 }
@@ -207,9 +216,9 @@ function StepExtras({
             Only your team sees this. Use it for the things that are specific to you — your repo URL, who has the
             roboRIO password, the trick that fixed this step last year.
           </p>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What is it?" maxLength={160} />
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Link (optional) — https://..." />
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Anything worth saying about it" />
+          <input aria-label={`Resource title for ${step.title}`} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What is it?" maxLength={160} />
+          <input aria-label={`Resource link for ${step.title}`} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Link (optional) — https://..." />
+          <textarea aria-label={`Resource note for ${step.title}`} value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Anything worth saying about it" />
           <button type="button" className="ds-link" disabled={adding || !title.trim()} onClick={() => void addResource()}>
             {adding ? "Saving…" : "Save for my team"}
           </button>
@@ -224,6 +233,7 @@ function StepExtras({
             team has written here. Just describe what happened.
           </p>
           <textarea
+            aria-label={`Question about ${step.title}`}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             rows={2}

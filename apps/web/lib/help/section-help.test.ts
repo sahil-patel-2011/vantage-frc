@@ -139,13 +139,14 @@ describe("section help lookups", () => {
     expect(sectionHelpFor("competition", "scouting")?.how).toEqual([
       "Tap the robot you're watching.",
       "When auto starts, tap Start match timer and count as they score.",
-      "Tap Save — the next match loads by itself.",
+      "The form follows Auto, Teleop, and Endgame. Use Undo to correct the last answer.",
+      "Open Review and save, check your answers, then tap Save this match.",
     ]);
     expect(sectionHelpFor("competition", "scouting")?.related.map((link) => link.href)).toEqual([
       "/help/saturday-scouting",
       "/scouting/lineup",
       "/scouting?scoutTab=conflicts",
-      "/strategy?tab=picks",
+      "/competition?tab=picks",
     ]);
     expect(sectionHelpFor("build", "assembly-manual")?.id).toBe("build.assembly-manual");
     expect(sectionHelpFor("build", "assembly-manual")?.related.some((link) => link.href === "/help/assembly-manual")).toBe(

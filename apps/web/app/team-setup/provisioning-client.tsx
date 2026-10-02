@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../../components/ui";
-import { PROVISIONING_FACTS, PROVISIONING_PHASES, provisioningReady, type ProvisioningStatus } from "../../lib/provisioning/model";
+import { PROVISIONING_FACTS, PROVISIONING_PHASES, workspaceReady, type ProvisioningStatus } from "../../lib/provisioning/model";
 
 export function ProvisioningClient({ orgId, initial }: { orgId: string; initial: ProvisioningStatus }) {
   const router = useRouter();
@@ -21,7 +21,7 @@ export function ProvisioningClient({ orgId, initial }: { orgId: string; initial:
         if (controller.signal.aborted) return;
         setJob(next);
         setConnectionError(null);
-        if (provisioningReady(next)) {
+        if (workspaceReady(next)) {
           router.replace(`/dashboard?orgId=${encodeURIComponent(orgId)}`);
           return;
         }
@@ -42,6 +42,8 @@ export function ProvisioningClient({ orgId, initial }: { orgId: string; initial:
     try {
       const response = await fetch("/api/organizations/provisioning", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orgId }) });
       if (!response.ok) throw new Error("Could not resume setup. Refresh for the latest status or contact support.");
+      const result = await response.json() as { workspaceReady?: boolean };
+      if (result.workspaceReady) { router.replace(`/dashboard?orgId=${encodeURIComponent(orgId)}`); return; }
       setJob((current) => ({ ...current, state: "queued", error: null, retryAfterAt: null }));
       setConnectionError(null);
     } catch (error) { setConnectionError((error as Error).message); }
@@ -59,7 +61,7 @@ export function ProvisioningClient({ orgId, initial }: { orgId: string; initial:
       <p role="status" aria-live="polite">{job.state === "failed" || job.state === "waiting" ? job.error : phase?.label ?? "Checking your setup"}</p>
       {job.state === "waiting" && job.retryAfterAt ? <p>Next automatic attempt: <time dateTime={job.retryAfterAt}>{new Date(job.retryAfterAt).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time></p> : null}
       <ol className="provisioning-phases" aria-label="Setup phases">
-        {PROVISIONING_PHASES.map((item) => <li key={item.id} aria-current={item.id === job.phase ? "step" : undefined}>
+        {PROVISIONING_PHASES.filter(item => item.id === "team" || item.id === "tools").map((item) => <li key={item.id} aria-current={item.id === job.phase ? "step" : undefined}>
           <span aria-hidden="true">{job.completedPhases.includes(item.id) ? "✓" : "○"}</span>
           {item.label}<span className="app-muted">{job.completedPhases.includes(item.id) ? "Done" : item.id === job.phase ? job.state === "waiting" ? "Waiting" : job.state === "failed" ? "Needs attention" : "In progress" : "Waiting"}</span>
         </li>)}

@@ -23,6 +23,7 @@
     "@vantage/prediction-strategy": "*",
     "@vantage/reference": "*",
     "@vantage/scouting": "*",
+    "@vercel/analytics": "^2.0.1",
     "better-auth": "latest",
     "jsqr": "^1.4.0",
     "next": "^16.3.4",

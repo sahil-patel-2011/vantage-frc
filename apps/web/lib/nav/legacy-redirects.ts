@@ -38,6 +38,7 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/changes/:path*", destination: "/decisions" },
   { source: "/command", destination: "/competition?tab=command" },
   { source: "/my-day", destination: "/competition?tab=my-day" },
+  { source: "/picklist-collab", destination: "/competition?tab=picks&view=discussion" },
   { source: "/strategy", destination: "/competition?tab=strategy", subTabs: ["picks"] },
   { source: "/scouting", destination: "/competition?tab=scouting" },
   { source: "/pick-clock", destination: "/competition?tab=pick-clock" },

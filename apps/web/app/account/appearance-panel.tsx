@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "../../components/ui";
+import { ChoiceField } from "../../components/ui/choice-field";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -13,7 +14,6 @@ import {
 } from "../../lib/branding/appearance";
 import { applyBranding, broadcastAppearance } from "../../lib/branding/appearance-runtime";
 import { brandingLogoUrl, type OrgBrandingView } from "../../lib/branding/branding";
-import { buildAccentPlan } from "../../lib/branding/colors";
 import {
   ISLAND_SLOT_COUNT,
   defaultIslandHrefs,
@@ -37,6 +37,7 @@ import {
 } from "../../lib/cockpit/prefs";
 import { ThemeToggle } from "../theme-provider";
 import OfflineStoragePanel from "./offline-storage-panel";
+import { HomeDefaultsPanel } from "./home-defaults-panel";
 
 type Status = { tone: "ok" | "error"; text: string } | null;
 
@@ -46,11 +47,13 @@ type Status = { tone: "ok" | "error"; text: string } | null;
  * four apps on the bottom island (which otherwise only surfaces behind a
  * long-press most people never discover).
  */
-export default function AppearancePanel() {
+export default function AppearancePanel({ orgId }: { orgId: string | null }) {
   const [org, setOrg] = useState<OrgBrandingView | null>(null);
   const [saved, setSaved] = useState<AppearancePrefs>({ ...DEFAULT_APPEARANCE_PREFS });
   const [prefs, setPrefs] = useState<AppearancePrefs>({ ...DEFAULT_APPEARANCE_PREFS });
   const [loaded, setLoaded] = useState(false);
+  const [loadProblem, setLoadProblem] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status>(null);
 
@@ -68,8 +71,10 @@ export default function AppearancePanel() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/branding", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
+    setLoaded(false);
+    setLoadProblem(false);
+    void fetch("/api/branding", { cache: "no-store", signal: AbortSignal.timeout(8_000) })
+      .then((response) => { if (!response.ok) throw new Error("Appearance unavailable"); return response.json(); })
       .then((data: { org?: OrgBrandingView | null; appearance?: unknown } | null) => {
         if (cancelled) return;
         const next = parseAppearancePrefs(data?.appearance);
@@ -78,12 +83,16 @@ export default function AppearancePanel() {
         setPrefs(next);
       })
       .catch(() => {
-        /* keep defaults — nothing is fabricated, the toggles just start neutral */
+        if (!cancelled) setLoadProblem(true);
       })
       .finally(() => {
         if (!cancelled) setLoaded(true);
       });
+    return () => { cancelled = true; };
+  }, [loadAttempt]);
 
+  useEffect(() => {
+    let cancelled = false;
     void fetch("/api/account/cockpit", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { cockpit?: unknown } | null) => {
@@ -126,10 +135,6 @@ export default function AppearancePanel() {
     [access.hubAccess, access.sponsorsAllowed],
   );
 
-  const accentPlan = useMemo(
-    () => (org?.accentColor ? buildAccentPlan(org.accentColor) : null),
-    [org?.accentColor],
-  );
   const logoUrl = org ? brandingLogoUrl(org) : null;
   const dirty = !appearanceEquals(prefs, saved);
   const islandDirty =
@@ -213,7 +218,7 @@ export default function AppearancePanel() {
       });
       const data = (await response.json()) as { tabs?: unknown; error?: string };
       if (!response.ok) {
-        setIslandNote(data.error ?? "Could not save your island.");
+        setIslandNote(data.error ?? "Could not save your shortcuts.");
         return;
       }
       const stored = isValidIslandSelection(data.tabs) ? data.tabs : tabs;
@@ -221,7 +226,7 @@ export default function AppearancePanel() {
       setIslandDraft(stored);
       setIslandNote(successText);
     } catch {
-      setIslandNote("Could not save your island.");
+      setIslandNote("Could not save your shortcuts.");
     } finally {
       setIslandBusy(false);
     }
@@ -229,14 +234,13 @@ export default function AppearancePanel() {
 
   return (
     <div className="appearance-stack">
-      <OfflineStoragePanel />
       <section className="appearance-group">
         <ThemeToggle expanded />
       </section>
 
       <section className="appearance-group" aria-labelledby="appearance-accent-title">
         <h3 id="appearance-accent-title">Team colour</h3>
-        {!loaded ? (
+        {loadProblem ? (<p>Your appearance settings could not load.</p>) : !loaded ? (
           <p className="app-muted">Loading your team’s branding…</p>
         ) : !org ? (
           <p>
@@ -262,28 +266,9 @@ export default function AppearancePanel() {
             <p>
               Choose your accent. This only changes your view.
             </p>
-            <div className="appearance-choice" role="radiogroup" aria-label="Accent colour">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={prefs.teamAccent}
-                disabled={busy}
-                onClick={() => preview({ ...prefs, teamAccent: true })}
-              >
-                <span style={{ color: accentPlan?.light.accent }}>Team accent</span>
-                <small>Match {org.orgName ?? "your team"}</small>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!prefs.teamAccent}
-                disabled={busy}
-                onClick={() => preview({ ...prefs, teamAccent: false })}
-              >
-                <span>Vantage</span>
-                <small>Default teal</small>
-              </button>
-            </div>
+            <ChoiceField label="Accent colour" value={prefs.teamAccent ? "team" : "vantage"} disabled={busy || !loaded || loadProblem}
+              choices={[{ value: "team", label: "Team accent", hint: `Match ${org.orgName ?? "your team"}` }, { value: "vantage", label: "Vantage", hint: "Default teal" }]}
+              onChange={value => preview({ ...prefs, teamAccent: value === "team" })} />
           </>
         )}
         {logoUrl && org?.showLogoInHeader ? (
@@ -302,26 +287,9 @@ export default function AppearancePanel() {
         <p>
           Compact fits more on screen. Tap targets stay the same size.
         </p>
-        <div className="appearance-choice" role="radiogroup" aria-label="Interface density">
-          {(
-            [
-              ["comfortable", "Comfortable", "Default spacing"],
-              ["compact", "Compact", "Less space between items"],
-            ] as [DensityPreference, string, string][]
-          ).map(([value, label, hint]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={prefs.density === value}
-              disabled={busy}
-              onClick={() => preview({ ...prefs, density: value })}
-            >
-              <span>{label}</span>
-              <small>{hint}</small>
-            </button>
-          ))}
-        </div>
+        <ChoiceField<DensityPreference> label="Interface density" value={prefs.density} disabled={busy || !loaded || loadProblem}
+          choices={[{ value: "comfortable", label: "Comfortable", hint: "Default spacing" }, { value: "compact", label: "Compact", hint: "Less space between items" }]}
+          onChange={value => preview({ ...prefs, density: value })} />
       </section>
 
       {/* Theme, team colour and density are what most people change. Glass, motion, the
@@ -333,27 +301,9 @@ export default function AppearancePanel() {
         <p>
           Set the transparency of navigation bars.
         </p>
-        <div className="appearance-choice" role="radiogroup" aria-label="Glass">
-          {(
-            [
-              ["clear", "Clear", "More of the page shows through"],
-              ["regular", "Regular", "Default"],
-              ["solid", "Solid", "No blur — best in sunlight"],
-            ] as [ClarityPreference, string, string][]
-          ).map(([value, label, hint]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={prefs.clarity === value}
-              disabled={busy}
-              onClick={() => preview({ ...prefs, clarity: value })}
-            >
-              <span>{label}</span>
-              <small>{hint}</small>
-            </button>
-          ))}
-        </div>
+        <ChoiceField<ClarityPreference> label="Glass" value={prefs.clarity} disabled={busy || !loaded || loadProblem}
+          choices={[{ value: "clear", label: "Clear", hint: "More of the page shows through" }, { value: "regular", label: "Regular", hint: "Default" }, { value: "solid", label: "Solid", hint: "Best in sunlight" }]}
+          onChange={value => preview({ ...prefs, clarity: value })} />
       </section>
 
       <section className="appearance-group" aria-labelledby="appearance-motion-title">
@@ -361,52 +311,14 @@ export default function AppearancePanel() {
         <p>
           Reduce animations for calmer transitions.
         </p>
-        <div className="appearance-choice" role="radiogroup" aria-label="Motion">
-          {(
-            [
-              ["full", "Full motion", "Animated sheets and drags"],
-              ["reduced", "Reduced motion", "Instant transitions"],
-            ] as [MotionPreference, string, string][]
-          ).map(([value, label, hint]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={prefs.motion === value}
-              disabled={busy}
-              onClick={() => preview({ ...prefs, motion: value })}
-            >
-              <span>{label}</span>
-              <small>{hint}</small>
-            </button>
-          ))}
-        </div>
-        <div className="appearance-actions">
-          <button
-            type="button"
-            className="primary"
-            disabled={busy || !dirty}
-            onClick={() => void savePrefs(prefs)}
-          >
-            {busy ? "Saving…" : dirty ? "Save appearance" : "Saved"}
-          </button>
-          <button
-            type="button"
-            disabled={busy || appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)}
-            onClick={() => void savePrefs({ ...DEFAULT_APPEARANCE_PREFS })}
-          >
-            Reset to defaults
-          </button>
-        </div>
-        {status ? (
-          <p className={`brand-notice ${status.tone === "ok" ? "ok" : "error"}`} role="status">
-            {status.text}
-          </p>
-        ) : null}
+        <ChoiceField<MotionPreference> label="Motion" value={prefs.motion} disabled={busy || !loaded || loadProblem}
+          choices={[{ value: "full", label: "Full motion", hint: "Animated transitions" }, { value: "reduced", label: "Reduced motion", hint: "Calmer transitions" }]}
+          onChange={value => preview({ ...prefs, motion: value })} />
+
       </section>
 
       <section className="appearance-group" aria-labelledby="appearance-cockpit-title">
-        <h3 id="appearance-cockpit-title">Cockpit</h3>
+        <h3 id="appearance-cockpit-title">Code preferences</h3>
         <p>
           Code review and live-update preferences.
         </p>
@@ -474,10 +386,10 @@ export default function AppearancePanel() {
             disabled={cockpitBusy || cockpitEquals(cockpit, cockpitSaved)}
             onClick={() => void saveCockpit(parseCockpitPrefs(cockpit))}
           >
-            {cockpitBusy ? "Saving…" : "Save cockpit"}
+            {cockpitBusy ? "Saving…" : "Save code preferences"}
           </button>
-          <Button as="a" variant="secondary" href="/team/ai-keys">
-            Your AI keys
+          <Button as="a" variant="secondary" href="/ai/connect">
+            Connect AI
           </Button>
           <Button as="a" variant="secondary" href="/cad/setup">
             Onshape CAD
@@ -542,7 +454,7 @@ export default function AppearancePanel() {
             className="primary"
             disabled={islandBusy || !islandDirty}
             onClick={() =>
-              void saveIsland(islandDraft, "Island saved. It appears on your next page load.")
+              void saveIsland(islandDraft, "Shortcuts saved.")
             }
           >
             {islandBusy ? "Saving…" : `Save ${islandDraft.length}/${ISLAND_SLOT_COUNT}`}
@@ -553,11 +465,11 @@ export default function AppearancePanel() {
             onClick={() =>
               void saveIsland(
                 defaultIslandHrefs(),
-                `Island reset to ${defaultIslandLabelList()}. It appears on your next page load.`,
+                `Shortcuts reset to ${defaultIslandLabelList()}. `,
               )
             }
           >
-            Reset to default four
+            Reset shortcuts
           </button>
           {islandDirty ? (
             <button type="button" disabled={islandBusy} onClick={() => setIslandDraft(islandSaved)}>
@@ -572,6 +484,33 @@ export default function AppearancePanel() {
         ) : null}
       </section>
       </details>
+      <div className="appearance-save">
+        {loadProblem ? <p role="status">Could not load your saved appearance. <Button onClick={() => setLoadAttempt(value => value + 1)}>Retry appearance</Button></p> : null}
+        <div className="appearance-actions">
+          <Button
+            type="button"
+            variant="primary"
+            disabled={busy || !loaded || loadProblem || !dirty}
+            onClick={() => void savePrefs(prefs)}
+          >
+            {busy ? "Saving…" : !loaded ? "Loading…" : loadProblem || dirty ? "Save appearance" : "Saved"}
+          </Button>
+          <Button
+            type="button"
+            disabled={busy || !loaded || loadProblem || appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)}
+            onClick={() => void savePrefs({ ...DEFAULT_APPEARANCE_PREFS })}
+          >
+            Reset to defaults
+          </Button>
+        </div>
+        {status ? (
+          <p className={`brand-notice ${status.tone === "ok" ? "ok" : "error"}`} role="status">
+            {status.text}
+          </p>
+        ) : null}
+      </div>
+      <HomeDefaultsPanel orgId={orgId} />
+      <OfflineStoragePanel />
     </div>
   );
 }

@@ -294,6 +294,18 @@ export function packKeepingOrder(ordered: readonly DashboardWidgetLayout[], colu
 const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist", "quick_actions"]);
 const COMPACT_WHEN_EMPTY = new Set<DashboardWidgetType>(["next_match"]);
 
+const EVENT_WIDGETS = new Set<DashboardWidgetType>([
+  "next_match", "recent_result", "competition_snapshot", "scouting_coverage",
+  "prediction_summary", "my_day", "match_schedule", "event_countdown",
+  "alliance_desk", "event_readiness", "weather_venue",
+]);
+
+/** One prerequisite prompt replaces repeated empty cards, without changing the saved board. */
+export function usesSharedSetupPrompt(type: DashboardWidgetType, status: string | undefined): boolean {
+  return SETUP_ONLY_WIDGETS.has(type) ||
+    (EVENT_WIDGETS.has(type) && (status === "empty" || status === "setup_required"));
+}
+
 /**
  * View-mode Home keeps every user-placed widget, including honest empty
  * states with a destination CTA. Setup-only cards hide once the team
@@ -307,21 +319,26 @@ export function homeViewLayout(
     widgets?: Record<string, { status?: string } | undefined>;
     /** The owner's "Set up your team" card is showing: it is the one setup list on Home. */
     teamSetupCard?: boolean;
+    sharedSetupPrompt?: boolean;
+    homeOverview?: boolean;
   },
 ): DashboardWidgetLayout[] {
   layout = layout.filter((item) => MEDIA_ENABLED || item.type !== "pit_youtube");
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
   const setupElsewhere = ready || input.teamSetupCard === true;
-  const visible = layout.filter(
-    (item) => isAlwaysShown(item) || !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type)),
-  );
   // A pinned card stays visible even when empty and keeps the user's saved size — except
   // the hero. An empty "Next match" at full hero height was the biggest thing on Home for
   // every day of the year that is not an event day; it takes two rows (one line and its link) until it is live.
   const widgets = input.widgets ?? {};
   const statusOf = (item: DashboardWidgetLayout) =>
     (widgets[item.i] ?? widgets[item.type] ?? Object.values(widgets).find((row) => (row as { type?: string } | undefined)?.type === item.type))?.status;
+  const visible = layout.filter((item) => {
+    if (isAlwaysShown(item)) return true;
+    if (input.homeOverview && item.type === "scouting_coverage") return false;
+    if (input.sharedSetupPrompt && usesSharedSetupPrompt(item.type, statusOf(item))) return false;
+    return isAlwaysShown(item) || !(setupElsewhere && SETUP_ONLY_WIDGETS.has(item.type));
+  });
   // Cards with nothing in them step aside outside edit mode: a new member's Home was nine
   // cards, eight saying "nothing yet". They come back the moment they have something, and
   // the page names them in one line (emptyHomeWidgets). Edit mode still shows every card.
@@ -348,6 +365,7 @@ export function fillRowEnds(
   const overlaps = (a: { x: number; y: number; w: number; h: number }, b: DashboardWidgetLayout) =>
     a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
   for (const item of out) {
+    if (item.config?.fixedSize === true || isAlwaysShown(item)) continue;
     const right = item.x + item.w;
     if (right >= cols) continue;
     // A strip too narrow for the smallest card (S is 3 of 12) is filled. So is the rest of a row
@@ -374,6 +392,7 @@ export function sizeForHome(
   widgets: Record<string, { status?: string } | undefined> = {},
 ): DashboardWidgetLayout[] {
   return layout.map((item) => {
+    if (item.config?.fixedSize === true) return item;
     if (!COMPACT_WHEN_EMPTY.has(item.type)) return item;
     const status = (widgets[item.i] ?? widgets[item.type])?.status;
     // Three rows, not two: the empty card says why and has a button ("Change event") that two clipped.
@@ -862,12 +881,13 @@ const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
 */
 const MENTOR_HOME_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
-  { i: "w-my_day", type: "my_day", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-hours_month", type: "hours_month", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-ask_ai", type: "ask_ai", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-duties", type: "duties", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-announcements_ack", type: "announcements_ack", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-budget_parts", type: "budget_parts", x: 0, y: 10, w: 12, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_todos", type: "team_todos", x: 0, y: 4, w: 12, h: 3, minW: 3, minH: 2 },
+  { i: "w-my_day", type: "my_day", x: 0, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-hours_month", type: "hours_month", x: 6, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-ask_ai", type: "ask_ai", x: 0, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-duties", type: "duties", x: 4, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-announcements_ack", type: "announcements_ack", x: 8, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-budget_parts", type: "budget_parts", x: 0, y: 13, w: 12, h: 3, minW: 3, minH: 2 },
 ];
 
 /** Personal Home for a new student vs a mentor — not the competition-focus board. */

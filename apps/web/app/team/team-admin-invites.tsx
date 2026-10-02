@@ -79,6 +79,8 @@ export function TeamAdminInvitesPanel({
                 and the browser's own check rejected the comma with a raw message. */}
             <input
               ref={emailRef}
+              aria-label="Email"
+              aria-describedby="team-invite-email-help"
               required
               type="text"
               inputMode="email"
@@ -95,18 +97,18 @@ export function TeamAdminInvitesPanel({
               }}
               placeholder="e.g. teammate@example.com"
             />
-            <small className="app-muted">To invite several people, separate their emails with commas.</small>
+            <small className="app-muted" id="team-invite-email-help">To invite several people, separate their emails with commas.</small>
           </label>
           <label>
-            They are a
+            Team access
             {/* The words people use. Underneath: scout, admin and viewer team roles. */}
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="scout">Student</option>
-              <option value="admin">Mentor or coach</option>
-              <option value="viewer">Parent or guest</option>
+            <select value={role} aria-label="Team access" aria-describedby="team-invite-access-help" onChange={(e) => setRole(e.target.value)}>
+              <option value="scout">Team member</option>
+              <option value="admin">Team admin</option>
+              <option value="viewer">View only</option>
             </select>
             {/* The dropdown did not say what each choice can do, and "Mentor" is an admin. */}
-            <small className="app-muted">
+            <small className="app-muted" id="team-invite-access-help">
               {role === "admin"
                 ? "A team admin: invites and removes people, changes team settings and adds AI keys, and uses every team tool."
                 : role === "viewer"

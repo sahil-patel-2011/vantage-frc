@@ -1,6 +1,6 @@
 export const ACTION_HISTORY_KEY = "_observations";
 export type ScoutActionChange = { field: string; beforeExists: boolean; afterExists: boolean; before: unknown; after: unknown };
-export type ScoutAction = { id: string; at: string; changes: ScoutActionChange[] };
+export type ScoutAction = { id: string; at: string; changes: ScoutActionChange[]; undoOf?: string };
 export type ScoutActionHistory = { version: 1; events: ScoutAction[] };
 
 export function actionHistory(payload: Record<string, unknown>): ScoutActionHistory | null {
@@ -11,7 +11,7 @@ export function actionHistory(payload: Record<string, unknown>): ScoutActionHist
 }
 
 /** The caller supplies identity/time once, outside React's replayable state updater. */
-export function recordScoutAction(before: Record<string, unknown>, after: Record<string, unknown>, identity: Pick<ScoutAction, "id" | "at">): Record<string, unknown> {
+export function recordScoutAction(before: Record<string, unknown>, after: Record<string, unknown>, identity: Pick<ScoutAction, "id" | "at" | "undoOf">): Record<string, unknown> {
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   const changes: ScoutActionChange[] = [];
   for (const field of keys) {
@@ -26,6 +26,24 @@ export function recordScoutAction(before: Record<string, unknown>, after: Record
   return { ...after, [ACTION_HISTORY_KEY]: { version: 1, events: [...(previous?.events ?? []), { ...identity, changes }] } satisfies ScoutActionHistory };
 }
 
+/** Undo is a new audited correction; original observations are retained. */
+export function undoableScoutAction(payload: Record<string, unknown>): ScoutAction | null {
+  const events = actionHistory(payload)?.events ?? [];
+  const undone = new Set(events.flatMap(event => event.undoOf ? [event.undoOf] : []));
+  return [...events].reverse().find(event => !event.undoOf && !undone.has(event.id)) ?? null;
+}
+
+export function undoScoutAction(payload: Record<string, unknown>, identity: Pick<ScoutAction, "id" | "at">): Record<string, unknown> {
+  const event = undoableScoutAction(payload);
+  if (!event) return payload;
+  const next = { ...payload };
+  for (const change of event.changes) {
+    if (change.beforeExists) next[change.field] = change.before;
+    else delete next[change.field];
+  }
+  return recordScoutAction(payload, next, { ...identity, undoOf: event.id });
+}
+
 export function validateActionHistory(value: unknown, fields: ReadonlySet<string>): string[] {
   if (value === undefined) return [];
   if (!value || typeof value !== "object" || Array.isArray(value)) return ["Observation history must be an object"];
@@ -33,6 +51,7 @@ export function validateActionHistory(value: unknown, fields: ReadonlySet<string
   if (history.version !== 1 || !Array.isArray(history.events) || history.events.length > 10000) return ["Observation history has an unsupported version or length"];
   const ids = new Set<string>();
   for (const event of history.events) {
+    if (event?.undoOf !== undefined && (typeof event.undoOf !== "string" || !ids.has(event.undoOf))) return ["Observation undo must reference an earlier action"];
     if (!event || typeof event.id !== "string" || !/^[a-zA-Z0-9-]{1,80}$/.test(event.id) || ids.has(event.id) || typeof event.at !== "string" || !Number.isFinite(Date.parse(event.at)) || !Array.isArray(event.changes) || !event.changes.length || event.changes.length > fields.size) return ["Observation history contains an invalid action"];
     ids.add(event.id);
     const changed = new Set<string>();

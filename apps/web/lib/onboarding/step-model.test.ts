@@ -285,7 +285,7 @@ describe("pending-approval plan", () => {
     }
   });
 
-  it("routes a server-confirmed empty team number to claim only for adults", () => {
+  it("routes a confirmed empty team to creation for students and adults", () => {
     const adult = buildOnboardingPendingPlan({
       accessStatus: "none",
       teamNumber: 9999,
@@ -294,7 +294,7 @@ describe("pending-approval plan", () => {
       workspaceMissing: true,
     });
     expect(adult.kind).toBe("no_workspace");
-    expect(adult.primaryAction).toEqual({ kind: "claim", label: "Claim this team" });
+    expect(adult.primaryAction).toEqual({ kind: "claim", label: "Create this team" });
 
     const student = buildOnboardingPendingPlan({
       accessStatus: "none",
@@ -304,8 +304,8 @@ describe("pending-approval plan", () => {
       workspaceMissing: true,
     });
     expect(student.kind).toBe("no_workspace");
-    expect(student.primaryAction.kind).toBe("edit");
-    expect(student.stages[1]?.title).toMatch(/mentor or coach/i);
+    expect(student.primaryAction).toEqual(adult.primaryAction);
+    expect(student.stages[1]?.detail).toMatch(/authorized.*hand it over/i);
   });
 
   it("does not infer a missing workspace or an owner notification from a saved team preference", () => {

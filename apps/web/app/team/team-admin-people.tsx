@@ -17,6 +17,7 @@ export function TeamAdminPeople({
   onAccess,
   onPasswordReset,
   onRemove,
+  onStepDown,
 }: {
   members: Member[];
   actorUserId: string | null;
@@ -25,6 +26,7 @@ export function TeamAdminPeople({
   onAccess: (member: Member) => void;
   onPasswordReset: (member: Member) => void;
   onRemove: (member: Member) => void;
+  onStepDown: () => void;
 }) {
   return (
     <section className="team-admin-people" id="people" aria-labelledby="people-title">
@@ -52,7 +54,11 @@ export function TeamAdminPeople({
                 </small>
               </div>
               <div className="team-member-actions">
-                {self ? null : (
+                {self ? (
+                  <ActionMenu label="My team access" tone="row" maxSecondary={0} overflowLabel="More" actions={[
+                    { id: "step-down", label: actorRole === "owner" ? "Hand over team" : "Change my access", onClick: onStepDown },
+                  ]} />
+                ) : (
                   <ActionMenu
                     label={`Actions for ${who}`}
                     tone="row"

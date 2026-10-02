@@ -83,7 +83,8 @@ describe("resolveAiCapabilities", () => {
     for (const id of ["ask_ai", "autonomous_agent", "writer", "cad_brief"]) {
       expect(byId[id]!.status).toBe("unavailable");
       expect(byId[id]!.reason).toBe("no_model_provider");
-      expect(byId[id]!.setupHref).toBe("/team/ai-keys");
+      expect(byId[id]!.setupHref).toBe("/ai/connect");
+      expect(byId[id]!.setupLabel).toBe("Connect AI");
       expect(byId[id]!.sentence.split(/(?<=\.)\s/).length).toBeLessThanOrEqual(2);
     }
   });

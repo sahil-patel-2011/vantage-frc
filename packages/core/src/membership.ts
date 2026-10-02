@@ -152,13 +152,15 @@ export async function createOrganizationInvite(
 ): Promise<CreatedOrganizationInvite> {
   const email = normalizeEmail(input.email);
   await assertOrgCapability(client, input.orgId, "manage_members");
-  if (input.role === "owner") {
+  if (input.role === "owner" || input.role === "admin") {
     const actor = await client.query<{ role: OrgRole }>(
       `SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2`,
       [input.orgId, actorUserId],
     );
-    if (actor.rows[0]?.role !== "owner")
+    if (input.role === "owner" && actor.rows[0]?.role !== "owner")
       throw new Error("Only an owner may invite another owner");
+    if (input.role === "admin" && !["owner", "admin"].includes(actor.rows[0]?.role ?? ""))
+      throw new Error("Only an owner or admin may invite another admin");
   }
   const existing = await client.query(
     `SELECT 1 FROM memberships m JOIN users u ON u.id=m.user_id

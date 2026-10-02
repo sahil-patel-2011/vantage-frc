@@ -65,6 +65,7 @@ export function InspectionWeightRows({
         {items.map((row, index) => (
           <div key={index} className="inspection-copilot-weight-row">
             <input
+              aria-label={`Weight item ${index + 1} component`}
               placeholder="Component (e.g. Chassis)"
               value={row.name}
               onChange={(event) => onChange(setWeightField(items, index, "name", event.target.value))}
@@ -72,6 +73,7 @@ export function InspectionWeightRows({
             <input
               type="number"
               min={0}
+              aria-label={`Weight item ${index + 1} pounds`}
               placeholder="Weight (lbs)"
               value={row.weightLbs}
               onChange={(event) =>

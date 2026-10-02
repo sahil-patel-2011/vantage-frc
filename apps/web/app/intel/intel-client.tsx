@@ -566,7 +566,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
 
   return (
     <Container className={`module-page intel-page ${embedded ? "is-embedded" : ""} ${motion.classNames.page}`}>
-      <PageHeader
+      {embedded ? null : <PageHeader
         breadcrumbs={scouting ? "Scouting / Teams" : "Competition / Research"}
         title={scouting ? "Teams" : "Research"}
         description={
@@ -576,7 +576,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         }
       >
         <IntelRelatedStrip orgId={orgId} teamNumber={view?.intel.team.teamNumber ?? null} />
-      </PageHeader>
+      </PageHeader>}
       <OfflineBanner feature="Research" fromCache={fromCache} cachedAt={cachedAt} />
 
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}

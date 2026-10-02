@@ -76,7 +76,7 @@ function LinkEditor({
         setEditing(false);
       }}
     >
-      <input value={draft} placeholder={placeholder} disabled={busy} onChange={(event) => setDraft(event.target.value)} />
+      <input aria-label={placeholder} value={draft} placeholder={placeholder} disabled={busy} onChange={(event) => setDraft(event.target.value)} />
       <Button variant="secondary" size="sm" type="submit" disabled={busy}>
         Save
       </Button>
@@ -503,7 +503,7 @@ export default function RobotClient() {
           void run({ action: "add_subsystem", orgId, robotLabel, name: newName.trim() }, "add").then(() => setNewName(""));
         }}
       >
-        <input value={newName} disabled={busy} placeholder="Add a subsystem (e.g. Turret)" onChange={(event) => setNewName(event.target.value)} />
+        <input aria-label="New subsystem name" value={newName} disabled={busy} placeholder="Add a subsystem (e.g. Turret)" onChange={(event) => setNewName(event.target.value)} />
         <Button variant="secondary" type="submit" disabled={busy || !newName.trim()}>
           Add subsystem
         </Button>

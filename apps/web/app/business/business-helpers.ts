@@ -1,6 +1,7 @@
 "use client";
 
 import { hubById, hubLegacyHref, isHubTab } from "../../lib/nav/hubs";
+import { URL_CHANGE_EVENT } from "../../lib/nav/url-change";
 
 const BUSINESS_HUB = hubById("business");
 
@@ -58,7 +59,8 @@ export function writeTabToUrl(tab: Tab) {
   const url = new URL(window.location.href);
   if (tab === "overview") url.searchParams.delete("tab");
   else url.searchParams.set("tab", tab);
-  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  window.dispatchEvent(new Event(URL_CHANGE_EVENT));
 }
 
 export function money(cents: number): string {

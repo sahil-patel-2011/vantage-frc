@@ -79,7 +79,7 @@ export function AppShellTopbar({
   crumbHint: string | null;
   orgId: string;
   navOpen: boolean;
-  /** Wide screens: whether the left menu is showing (the button turns into an X). */
+  /** Whether the on-demand navigation drawer is showing. */
   menuOpen: boolean;
   onOpenNav: () => void;
   /** Opens the drawer with the team picker already expanded. */

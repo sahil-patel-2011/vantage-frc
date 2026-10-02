@@ -13,6 +13,15 @@ function storage() {
 
 describe("authenticated offline identity on shared devices", () => {
   afterEach(() => { vi.resetModules(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
+  it("verifies personal caches against the account instead of a nonexistent team", async () => {
+    vi.stubGlobal("window", { sessionStorage: storage(), localStorage: storage(), addEventListener: vi.fn() });
+    const { offlineSnapshotUser } = await import("./identity");
+    probe.read.mockResolvedValue({ userId: "owner" });
+    expect(await offlineSnapshotUser("_")).toBe("owner");
+    expect(probe.read).toHaveBeenLastCalledWith(null);
+    await offlineSnapshotUser("team-b");
+    expect(probe.read).toHaveBeenLastCalledWith("team-b");
+  });
   it("uses server identity after an account switch and permits only that tab's verified offline identity", async () => {
     const windowStub = { sessionStorage: storage(), localStorage: storage(), addEventListener: vi.fn(), location: { replace: vi.fn() } };
     vi.stubGlobal("window", windowStub);

@@ -65,6 +65,7 @@ export function useDashboardBoardOps(input: {
   previewing: boolean;
   resetAudience: "mentor" | "student";
   loadHome: (id: string, preferredBoardId?: string | null) => Promise<void>;
+  acceptSavedBoard: (board: BoardState) => Promise<void>;
   loadSnapshot: LoadSnapshot;
   /** Remember the layout a change is about to replace, for Undo. */
   record: (snapshot: DashboardWidgetLayout[]) => void;
@@ -96,7 +97,6 @@ export function useDashboardBoardOps(input: {
     userId,
     board,
     boards,
-    layout,
     layoutRef,
     displayLayout,
     cols,
@@ -109,6 +109,7 @@ export function useDashboardBoardOps(input: {
     previewing,
     resetAudience,
     loadHome,
+    acceptSavedBoard,
     loadSnapshot,
     record,
     grabBaseRef,
@@ -127,7 +128,6 @@ export function useDashboardBoardOps(input: {
     setPreviewing,
     setLibraryOpen,
     onWidgetAdded,
-    widgetStatus,
     setBoardsOpen,
     setRenameId,
     setRenameDraft,
@@ -161,13 +161,14 @@ export function useDashboardBoardOps(input: {
       result.layout = applyOrder(result.layout, [...others.slice(0, index), added.i, ...others.slice(index)]);
     }
     /*
-      A card with nothing in it yet is added with "Always show" on. Home hides
-      empty cards, so a freshly added Batteries card vanished the moment you
-      tapped Done and looked like a bug. Only a card already known to have data
-      is left to hide itself when it empties.
+      Explicit additions retain their size and stay visible as their data changes.
+      Automatic stock cards can still collapse when another card covers them.
     */
-    const keepWhenEmpty = Boolean(added) && widgetStatus?.(type) !== "live";
-    const nextLayout = keepWhenEmpty && added ? setAlwaysShow(result.layout, added.i, true) : result.layout;
+    const keepWhenEmpty = Boolean(added);
+    const nextLayout = keepWhenEmpty && added
+      ? setAlwaysShow(result.layout, added.i, true).map(item => item.i === added.i
+        ? { ...item, config: { ...item.config, fixedSize: true } } : item)
+      : result.layout;
     record(layoutRef.current);
     // Packed, not just pulled up: a card dropped beside a hole slides into it,
     // so the board never needs a separate tidy after an add.
@@ -182,7 +183,7 @@ export function useDashboardBoardOps(input: {
     setMessageAction("undo");
     setMessage(
       keepWhenEmpty
-        ? `${label} added to the board. It stays on Home and fills in as your team uses it.`
+        ? `${label} added. It stays on Home.`
         : `${label} added to the board.`,
     );
     setAnnounce(
@@ -259,7 +260,8 @@ export function useDashboardBoardOps(input: {
     setLayout((current) => {
       const resized = current.map((item) => {
         if (item.i !== id) return item;
-        return applyWidgetSize(item, size, catalogEntry(item.type));
+        const next = applyWidgetSize(item, size, catalogEntry(item.type));
+        return { ...next, config: { ...next.config, fixedSize: true, alwaysShow: true } };
       });
       return settle(resized);
     });
@@ -279,6 +281,7 @@ export function useDashboardBoardOps(input: {
         item.i === id
           ? {
               ...item,
+              config: { ...item.config, fixedSize: true, alwaysShow: true },
               w: entry.defaultW,
               h: entry.defaultH,
               minW: entry.minW,
@@ -337,7 +340,7 @@ export function useDashboardBoardOps(input: {
           id: keepId,
           name,
           scope: activateScope,
-          layout,
+          layout: layoutRef.current,
           activate: true,
           action: "save",
         }),
@@ -369,8 +372,7 @@ export function useDashboardBoardOps(input: {
       setLibraryOpen(false);
       setGrabbedId(null);
       setPreviewing(false);
-      // After the reload: loadHome clears the message when it succeeds.
-      await loadHome(orgId, data.id);
+      await acceptSavedBoard({ id: data.id, name: data.name, scope: data.scope, layout: data.layout });
       setMessageKind("success");
       setMessageAction(null);
       setMessage(data.scope === "org" ? "Saved as the team board." : "Home saved.");
@@ -534,6 +536,9 @@ export function useDashboardBoardOps(input: {
       setMessageKind("success");
       setMessageAction(null);
       setMessage(`Created ${data.name}. Arrange it, then tap Done.`);
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not create your board. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -579,6 +584,9 @@ export function useDashboardBoardOps(input: {
       await loadHome(orgId, data.id);
       setMessageKind("success");
       setMessage(`Duplicated to ${data.name}. It is yours to edit.`);
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not copy your board. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -611,6 +619,9 @@ export function useDashboardBoardOps(input: {
       setBoards((current) => current.map((item) => (item.id === targetId ? { ...item, name: data.name } : item)));
       setMessageKind("success");
       setMessage(`Renamed to ${data.name}`);
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not rename your board. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -644,6 +655,9 @@ export function useDashboardBoardOps(input: {
       await loadHome(orgId, data.activatedId ?? null);
       setMessageKind("success");
       setMessage(`Deleted ${target.name}`);
+    } catch {
+      setMessageKind("error");
+      setMessage("Could not delete your board. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
