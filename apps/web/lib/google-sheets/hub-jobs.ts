@@ -2,12 +2,16 @@ import { randomUUID } from "node:crypto";
 import { start } from "workflow/api";
 import { provisioningPool } from "../provisioning/pool";
 import { readableHubWorkflow } from "./hub-workflow";
+import { isAppsScriptSecret } from "./apps-script-source";
+import { loadSheetsHubBridge } from "./sheets-hub";
 
 /** Called only after a membership check, or by the authenticated operator cron. */
 export async function queueReadableHubSync(orgId: string): Promise<boolean> {
+  if (!isAppsScriptSecret(process.env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "")) return false;
   const client = await provisioningPool().connect();
   const generation = randomUUID();
   try {
+    if (!await loadSheetsHubBridge(client)) return false;
     const claimed = await client.query(`INSERT INTO team_readable_sync_jobs(org_id,generation,state)
       SELECT id,$2::uuid,'queued' FROM organizations o WHERE id=$1::uuid
         AND NOT EXISTS(SELECT 1 FROM team_provisioning_jobs p WHERE p.org_id=o.id AND (p.state<>'ready' OR p.verified_at IS NULL))
@@ -31,9 +35,11 @@ export async function queueReadableHubSync(orgId: string): Promise<boolean> {
 
 /** The cron also refreshes teams with no browser open. No unready team is selected. */
 export async function queueDueReadableHubSyncs(): Promise<{ examined: number; queued: number; failed: number }> {
+  if (!isAppsScriptSecret(process.env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "")) return { examined: 0, queued: 0, failed: 0 };
   const client = await provisioningPool().connect();
   let orgIds: string[];
   try {
+    if (!await loadSheetsHubBridge(client)) return { examined: 0, queued: 0, failed: 0 };
     orgIds = (await client.query<{ id: string }>(`SELECT o.id::text FROM organizations o
       LEFT JOIN team_readable_sync_jobs s ON s.org_id=o.id
       WHERE NOT EXISTS(SELECT 1 FROM team_provisioning_jobs p WHERE p.org_id=o.id AND (p.state<>'ready' OR p.verified_at IS NULL))

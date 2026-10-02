@@ -6,6 +6,7 @@ export async function recoveryJournalWorkflow() {
   "use workflow";
   for (let cycle = 0; cycle < 3; cycle++) {
     if (cycle) await sleep("20s");
-    await exportRecoveryJournal();
+    const result = await exportRecoveryJournal();
+    if (result.state !== "verified") break;
   }
 }
