@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
@@ -38,6 +38,7 @@ vi.mock("@vantage/db", () => ({
             code: state.failAttestationInsert.code,
           });
         }
+        if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }], rowCount: 1 };
         return { rows: [], rowCount: 1 };
       },
     }),
@@ -71,11 +72,13 @@ const valid = {
 const attestationInserts = () => state.queries.filter((q) => q.sql.includes("INSERT INTO team_claim_attestations"));
 
 beforeEach(() => {
+  vi.stubEnv("BETTER_AUTH_SECRET", "claim-route-unit-test-secret");
   state.session = { user: { id: USER } };
   state.claims = 0;
   state.queries = [];
   state.failAttestationInsert = null;
 });
+afterEach(() => vi.unstubAllEnvs());
 
 describe("POST /api/organizations/claim — authorization statement", () => {
   it("rejects a claim with no acknowledgement (400) and writes nothing", async () => {
@@ -136,6 +139,23 @@ describe("POST /api/organizations/claim — authorization statement", () => {
     const response = await post(valid);
     expect(response.status).toBe(201);
     expect(attestationInserts()[0]!.params[5]).toBeNull();
+  });
+
+  it("creates a random encrypted join code when blank and preserves a chosen leading zero", async () => {
+    const { decryptTeamPin } = await import("../team/join-code");
+    for (const joinPin of [undefined, "001234"]) {
+      state.queries = [];
+      const response = await post({ ...valid, joinPin });
+      expect(response.status).toBe(201);
+      const insert = state.queries.find((query) => query.sql.includes("INSERT INTO team_join_codes"));
+      expect(insert).toBeDefined();
+      const [orgId, pin, encrypted] = insert!.params;
+      expect(orgId).toBe(ORG);
+      expect(pin).toMatch(/^\d{6}$/);
+      expect(decryptTeamPin(String(encrypted))).toBe(pin);
+      if (joinPin) expect(pin).toBe(joinPin);
+      expect(await response.text()).not.toContain(String(pin));
+    }
   });
 
   it("fails the claim (503, setup) when the attestation table is not migrated", async () => {

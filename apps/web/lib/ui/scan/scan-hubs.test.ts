@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 
 const APP = join(__dirname, "../../../app");
 const SCAN = join(APP, "vantage-scan");
-const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known"]);
+// Public code entry deliberately uses the focused invitation shell, not a
+// product workspace overlay. Its layout is covered by team-join-code.spec.ts.
+const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team"]);
 
 describe("vantage scan hub overlays", () => {
   const hubs = readdirSync(APP).filter((name) => {

@@ -31,7 +31,12 @@ No root license granting reuse was found; the license under the dashboard's chip
 - Development browser checks with real Better Auth and the isolated local mailbox: two full code-signup flows and one ordinary email-invitation signup. All passed. Tested wrong attempts, clipboard copy, profile/consent gates, member-only permissions, rotation, revocation, disable confirmation/cancellation, and accepted-member retention.
 - Axe: no violations on the join screen in either theme/size or the code-manager panel. Touch targets and horizontal overflow checked.
 - Changed TypeScript/React source lint passed. Tests use real sessions; the local API transport helper only normalizes an already-minted Secure cookie for loopback HTTP.
+- Full GitHub unit execution found three test regressions: the claim fixture did not model join-code management/encryption, and the overlay census treated the public join screen as a workspace. Those fixtures were corrected; all 15 affected tests passed, with an additional check for generated and chosen encrypted codes.
 
 [Phone entry](screenshots/team-join-phone.png) · [Desktop entry](screenshots/team-join-desktop.png)
 
 These checks cover the listed journeys, not every button on every legacy page. Earlier full GitHub browser shards failed on broader legacy expectations/configuration; this report does not claim full-suite CI success. Production outbound email was not sent as part of the isolated signup tests. No fabricated prediction-accuracy claim was introduced.
+
+## Production verification
+
+The Git-triggered production deployment for `64760f82549219083612a84c8ac9d44af9e7f48a` reached READY with the canonical `vantagefrc.vercel.app` alias. Direct HTTP checks returned 200 for `/join-team` with the new page and for `/api/health` with `database: ok`. The live Chrome GUI recheck was blocked by `ERR_PROXY_CONNECTION_FAILED`; its cached offline fallback does not establish a deployment cache defect. The screenshots and interaction checks above are from the controlled local application builds.
