@@ -78,7 +78,7 @@ function openDialogLabels(): (string | null)[] {
  */
 export function tourBlockedOn(pathname: string | null): boolean {
   if (!pathname) return false;
-  return ["/onboarding", "/invite", "/signin", "/sign-in", "/claim"].some(
+  return ["/onboarding", "/invite", "/join-team", "/signin", "/sign-in", "/claim"].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }

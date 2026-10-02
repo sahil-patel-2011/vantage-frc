@@ -48,6 +48,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "checklist-library",
   "chemistry",
   "claim",
+  "join-team",
   "code",
   "code-deploy-log",
   "code-perf",

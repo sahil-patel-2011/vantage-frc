@@ -85,6 +85,7 @@ export function PendingPanel({
           onEdit={onEdit}
         />
         {plan.primaryAction.kind === "join" ? null : <a className="signin-link" href="/invite">Have an invite?</a>}
+        <a className="signin-link" href="/join-team">Have a team code?</a>
         <button type="button" className="signin-link" disabled={busy} onClick={onSignOut}>Sign out</button>
       </div>
     </div>

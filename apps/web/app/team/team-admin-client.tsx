@@ -20,6 +20,7 @@ import {
 import { MemberAccessPanel, type HubAccessRow } from "./admin/member-access-panel";
 import { TeamAdminAccessPanel } from "./team-admin-access";
 import { TeamAdminInvitesPanel } from "./team-admin-invites";
+import { TeamJoinCode } from "./team-join-code";
 import {
   type AccessRequest,
   type AdminTenure,
@@ -637,6 +638,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     <main className="module-page team-admin-page">
       {header}
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
+      <TeamJoinCode key={orgId} orgId={orgId} />
 
       <TeamAdminInvitesPanel
         deliveryBanner={deliveryBanner}

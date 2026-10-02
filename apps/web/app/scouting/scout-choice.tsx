@@ -75,7 +75,7 @@ export function ScoutChoice({
           className="scout-choice"
           role="radiogroup"
           aria-labelledby={labelId}
-          style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${Math.min(3, options.length)}, minmax(0, 1fr))` }}
         >
           {options.map((option, index) => {
             const active = value === option.value;

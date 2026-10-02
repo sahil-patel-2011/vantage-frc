@@ -11,6 +11,7 @@ import { anonymizeIp, clientIp } from "../../../../lib/rate-limit";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 import { startTeamProvisioning } from "../../../../lib/provisioning/start";
 import { initializeTeamDefaults } from "../../../../lib/provisioning/defaults";
+import { setTeamJoinCode } from "../../../../lib/team/join-code";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
     privacyAccepted?: boolean;
     authorizationAcknowledged?: unknown;
     attestationVersion?: unknown;
+    joinPin?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -78,6 +80,7 @@ export async function POST(request: Request) {
       });
       await client.query("INSERT INTO team_provisioning_jobs(org_id,requested_by) VALUES($1::uuid,$2::uuid) ON CONFLICT(org_id) DO NOTHING", [orgId, session.user.id]);
       await initializeTeamDefaults(client, orgId, { inTransaction: true });
+      await setTeamJoinCode(client, orgId, body.joinPin?.trim() || undefined);
       await client.query("UPDATE team_provisioning_jobs SET completed_phases=ARRAY['team','tools']::text[],phase='workspace',updated_at=now() WHERE org_id=$1::uuid", [orgId]);
       return orgId;
     });

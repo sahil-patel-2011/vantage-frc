@@ -31,7 +31,7 @@ export default async function TeamAdminPage({
         <PageHeader
           breadcrumbs={teamSettingsBreadcrumb("people")}
           title="Team admin"
-          description="Invite people and choose what each person can open. People without an invite go to the waitlist."
+          description="Invite people, share your team join code, and choose what each person can open."
         />
         <EmptyState
           soft

@@ -70,7 +70,7 @@ export function TeamAdminInvitesPanel({
       <form className="team-invite-form" id="invite-form" onSubmit={onSend}>
         <h2 id="invite-title">Invite someone</h2>
         <p className="app-muted">
-          They join your team when they sign in with this email. People without an invite go to the waitlist.
+          They join when they verify this email. You can also share your team’s join code above.
         </p>
         <div className="team-invite-fields">
           <label>

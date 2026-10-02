@@ -40,7 +40,7 @@ const REOPEN_HASH = "#analytics";
  * the one button those pages exist for. Nothing is recorded without an answer, so not
  * asking here records nothing. The privacy policy's #analytics link still opens it.
  */
-const NO_ASK_PATHS = new Set(["/", "/pricing", "/workflow", "/for-teams", "/desktop", "/privacy", "/terms", "/signin", "/sign-in", "/invite", "/onboarding", "/offline"]);
+const NO_ASK_PATHS = new Set(["/", "/pricing", "/workflow", "/for-teams", "/desktop", "/privacy", "/terms", "/signin", "/sign-in", "/invite", "/join-team", "/onboarding", "/offline"]);
 
 function asksOn(pathname: string | null): boolean {
   if (!pathname) return false;

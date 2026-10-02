@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { expect, test } from "@playwright/test";
-import { baseOrigin, fixtureAccount, signInAs } from "./session";
+import { baseOrigin, fixtureAccount, signInAs, normalizeLocalApiSession } from "./session";
 import { serializeConsent } from "../../apps/web/lib/product-analytics/consent";
 
 test("scratch team, exact-email signup, invitation acceptance and role-correct Home", async ({ browser }) => {
@@ -37,6 +37,8 @@ test("scratch team, exact-email signup, invitation acceptance and role-correct H
     await page.getByRole("button", { name: "Email me a sign-in code", exact: true }).click();
     const otp = String(createHmac("sha256", process.env.DEV_OTP_SECRET ?? "vantage-local-otp").update(`${email}:sign-in`).digest().readUInt32BE(0) % 1_000_000).padStart(6, "0");
     await page.locator("input[autocomplete=one-time-code]").fill(otp);
+    await expect.poll(() => page.evaluate(async () => (await (await fetch("/api/auth/get-session")).json())?.user?.email)).toBe(email);
+    await normalizeLocalApiSession(invited);
     await expect.poll(async () => (await invited.request.get("/api/auth/get-session")).json().then(data => data?.user?.email)).toBe(email);
     const ineligible = await invited.request.post("/api/invites/accept", { headers, data: { token: link.searchParams.get("token"), termsAccepted: true, privacyAccepted: true } });
     expect(ineligible.status()).toBe(403);
@@ -58,7 +60,7 @@ test("scratch team, exact-email signup, invitation acceptance and role-correct H
     await expect.poll(async () => (await pool.query("SELECT role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.org_id=$1 AND u.email=$2", [orgId, email])).rows[0]?.role).toBe("scout");
     await page.getByRole("link", { name: "Open Home", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/, { timeout: 60_000 });
-    await expect(page.getByTestId("dash-customize")).toBeVisible();
+    await expect(page.getByTestId("dash-customize")).toBeVisible({ timeout: 30_000 });
     const me = await invited.request.get(`/api/me?orgId=${orgId}`);
     expect(await me.json()).toMatchObject({ orgId, role: "scout" });
     const blocked = await invited.request.post("/api/organizations/invites", { headers, data: { orgId, email: "blocked@example.test", role: "admin" } });

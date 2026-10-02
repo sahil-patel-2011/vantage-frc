@@ -339,6 +339,7 @@ export default function InviteClient() {
         ) : null}
 
         {identityPreview ? <InviteIdentity preview={identityPreview} /> : null}
+        {!token ? <p><a className="invite-next-link" href="/join-team">Join with a team code</a></p> : null}
 
         {showReady ? (
           <>

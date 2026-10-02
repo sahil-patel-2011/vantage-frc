@@ -14,6 +14,7 @@ import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provis
 const PUBLIC_PAGES = new Set([
   "/",
   "/invite",
+  "/join-team",
   "/features",
   "/features/cad",
   "/features/strategy",
@@ -45,6 +46,7 @@ const PUBLIC_PREFIXES = [
   // Sign-in with a recovery email: sends and checks its own codes, then sets the session.
   "/api/recovery",
   "/api/invites/preview",
+  "/api/teams/join",
   "/api/waitlist",
   // Uptime monitor: says only whether the database answers.
   "/api/health",

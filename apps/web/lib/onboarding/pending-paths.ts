@@ -10,6 +10,7 @@
 const EXACT = new Set([
   "/onboarding",
   "/invite",
+  "/join-team",
   "/claim",
   "/team-setup",
   "/docs",

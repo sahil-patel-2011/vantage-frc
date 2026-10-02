@@ -46,6 +46,14 @@ export async function addSessionCookies(context: BrowserContext, cookies: Cookie
   await dismissFirstRunOverlays(context);
 }
 
+/** Chromium sends Secure cookies to loopback HTTP; Playwright's API transport does not. */
+export async function normalizeLocalApiSession(context: BrowserContext) {
+  const origin = new URL(baseOrigin());
+  if (origin.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(origin.hostname)) return;
+  const cookie = (await context.cookies()).find(row => row.name === "better-auth.session_token" && row.domain.replace(/^\./, "") === origin.hostname);
+  if (cookie) await addSessionCookies(context, [{ name: cookie.name, value: cookie.value, httpOnly: true, secure: false }]);
+}
+
 /**
  * The local E2E auth fixture session (`E2E_AUTH_FIXTURE=1`).
  *

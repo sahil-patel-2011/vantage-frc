@@ -31,6 +31,19 @@ for (const width of [390, 1440]) {
       await expect(page.getByRole("combobox", { name: "Game", exact: true })).toHaveValue("2026");
       await page.getByLabel("Team number", { exact: true }).fill("6925");
       await page.getByRole("button", { name: "Start scouting", exact: true }).click();
+      const drivetrain = page.getByRole("radiogroup", { name: "Drivetrain", exact: true });
+      await drivetrain.getByRole("radio", { name: "Swerve", exact: true }).click();
+      await expect(drivetrain.getByRole("radio", { name: "Swerve", exact: true })).toBeChecked();
+      await drivetrain.getByRole("radio", { name: "Swerve", exact: true }).click();
+      await expect(drivetrain.getByRole("radio", { checked: true })).toHaveCount(0);
+      await drivetrain.getByRole("radio", { name: "Swerve", exact: true }).focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(drivetrain.getByRole("radio", { checked: true })).toHaveCount(1);
+      for (const choice of await drivetrain.getByRole("radio").all()) {
+        const box = await choice.boundingBox();
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+      }
+      await drivetrain.getByRole("radio", { name: "Swerve", exact: true }).click();
       await page.getByRole("textbox", { name: "Notes", exact: true }).fill(marker);
       await expect.poll(() => page.evaluate((value) => Object.keys(localStorage).some((key) => key.startsWith("free-scout:") && (localStorage.getItem(key) ?? "").includes(value)), marker)).toBe(true);
       await page.reload();
@@ -47,6 +60,7 @@ for (const width of [390, 1440]) {
       expect(rows).toHaveLength(1);
       ids.push(rows[0].id);
       expect(rows[0].payload.notes).toBe(marker);
+      expect(rows[0].payload.drivetrain_type).toBe("swerve");
       const reportRow = page.locator(".free-scout-report").filter({ hasText: `Team 6925` }).filter({ hasText: "Pit scouting" }).last();
       expect(rows[0]).not.toHaveProperty("eventKey");
       const replay = await context.request.post("/api/scouting/free-reports", { data: { orgId, userId: data.userId, report: rows[0] } });

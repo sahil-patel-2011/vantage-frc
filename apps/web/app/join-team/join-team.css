@@ -1,0 +1,57 @@
+.join-team-page {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  min-height: 70vh;
+  padding: 32px 20px;
+}
+.join-team-card {
+  width: min(100%, 460px);
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl, 24px);
+  background: var(--surface);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.join-team-card h1 {
+  font-family: inherit;
+  margin: 28px 0 8px;
+}
+.join-team-card form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+.join-team-card .soft-form-row {
+  margin: 0;
+}
+.join-team-card input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.join-team-card button {
+  min-height: 48px;
+}
+.join-team-alternative {
+  margin: 24px 0 0;
+  font-size: 14px;
+}
+.join-team-error {
+  margin: 0;
+  color: var(--danger);
+}
+@media (max-width: 480px) {
+  .join-team-card {
+    padding: 24px;
+  }
+  .join-team-page {
+    padding: 20px 14px;
+  }
+}

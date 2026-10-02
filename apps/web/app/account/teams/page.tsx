@@ -25,7 +25,7 @@ export default async function TeamsSettings({ searchParams }: { searchParams: Pr
     <Panel><ul className="dash-checklist">{teams.map(team => <li key={team.id}><a href={`/dashboard?orgId=${team.id}`} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", width: "100%" }}>
       <span><strong>{team.number ? `Team ${team.number}` : team.name}</strong><small style={{ display: "block" }}>{team.name} · {team.role.charAt(0).toUpperCase()+team.role.slice(1)}</small></span><span>{team.id === orgId ? "Current" : "Open →"}</span>
     </a></li>)}</ul>{!teams.length ? <p>No team yet. Create one or use an invitation.</p> : null}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}><Button as="a" variant="primary" href="/claim">Create a team</Button><Button as="a" variant="secondary" href="/invite">Use an invitation</Button></div>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}><Button as="a" variant="primary" href="/join-team">Join a team</Button><Button as="a" variant="secondary" href="/claim">Create a team</Button><a href="/invite">Use an invitation</a></div>
     </Panel>
   </main>;
 }

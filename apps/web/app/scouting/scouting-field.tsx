@@ -161,16 +161,13 @@ export function Field({
       const options =
         field.options?.length ? field.options : [...DEFAULT_DRIVETRAIN_OPTIONS];
       return (
-        <FormRow label={label} hint={field.helpText ?? "Select the robot drivetrain"}>
-          <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
-            <option value="">Select drivetrain…</option>
-            {options.map((option) => (
-              <option key={option} value={option}>
-                {scoutOptionLabel(option)}
-              </option>
-            ))}
-          </select>
-        </FormRow>
+        <ScoutChoice
+          label={label}
+          hint={field.helpText ?? "Choose the robot drivetrain"}
+          options={options.map((option) => ({ value: option, label: scoutOptionLabel(option) }))}
+          value={String(value ?? "")}
+          onChange={onChange}
+        />
       );
     }
     if (field.type === "robot_image" || field.widget === "robot_image") {

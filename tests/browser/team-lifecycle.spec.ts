@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { Pool } from "pg";
-import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD } from "./session";
+import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD, normalizeLocalApiSession } from "./session";
 test.use({ actionTimeout: 15_000 });
 
 async function login(context: BrowserContext, email: string) {
   expect((await context.request.post("/api/auth/sign-in/email", { headers: { origin: baseOrigin() }, data: { email, password: LOCAL_FIXTURE_PASSWORD } })).ok()).toBe(true);
+  await normalizeLocalApiSession(context);
   await addSessionCookies(context, []);
 }
 async function profile(page: Page, firstName: string, role: "student" | "mentor", teamNumber?: number) {
@@ -49,6 +50,7 @@ for (const width of [1440, 390]) test(`student setup, invited mentor, student me
     await page.getByRole("link", { name: "Create this team", exact: true }).click();
     await expect(page.getByLabel("FRC team number", { exact: true })).toHaveValue(String(teamNumber));
     await page.getByLabel("Team name", { exact: true }).fill(`Lifecycle Team ${teamNumber}`);
+    if (width === 390) await page.getByLabel("Team join code (optional)").fill("239487");
     await page.getByRole("checkbox", { name: /I agree to the Terms of Service/ }).check();
     await page.getByRole("checkbox", { name: /I agree to the Privacy Policy/ }).check();
     await page.getByRole("checkbox", { name: /I confirm I am a member/ }).check();
@@ -59,7 +61,10 @@ for (const width of [1440, 390]) test(`student setup, invited mentor, student me
     orgId = (await claimedResponse.json()).id;
     expect(orgId).toBeTruthy();
     await expect(page).toHaveURL(/dashboard/);
-    await expect(page.getByTestId("dash-overview")).toBeVisible();
+    await expect(page.getByTestId("dash-customize")).toBeVisible();
+    const initialCode = await context.request.get(`/api/organizations/join-code?orgId=${orgId}`);
+    expect(initialCode.ok(), await initialCode.text()).toBe(true);
+    expect((await initialCode.json()).pin).toMatch(width === 390 ? /^239487$/ : /^\d{6}$/);
     await expect(page.locator("main")).not.toContainText("recovery copy");
     expect((await pool.query("SELECT count(*)::int count FROM scout_schemas WHERE org_id=$1", [orgId])).rows[0].count).toBe(2);
     await page.goto(`/team/admin?orgId=${orgId}`);

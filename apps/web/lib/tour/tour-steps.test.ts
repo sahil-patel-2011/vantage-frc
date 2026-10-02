@@ -119,6 +119,7 @@ describe("where the tour waits", () => {
     const { tourBlockedOn } = await import("../../components/app-tour");
     expect(tourBlockedOn("/onboarding")).toBe(true);
     expect(tourBlockedOn("/invite")).toBe(true);
+    expect(tourBlockedOn("/join-team")).toBe(true);
     expect(tourBlockedOn("/dashboard")).toBe(false);
     expect(tourBlockedOn("/invite-codes")).toBe(false);
   });
