@@ -166,7 +166,8 @@ function buildTasks(data: Data, orgId: string): Task[] {
             ? "Discord is connected."
             : "Link a channel webhook to post announcements to your server.",
       done: s.discordConnected === true,
-      href: `/team/alumni${q}`,
+      // The Discord page. This step used to open Alumni, where there is nothing to connect.
+      href: `/team/discord${q}`,
       cta: "Connect Discord",
       adminOnly: true,
     },

@@ -656,15 +656,8 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               <button className="primary-action" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save AI governance policy"}
               </button>
-              <Button as="a" variant="secondary" href={chatHref}>
-                Open Chat
-              </Button>
-              <Button as="a" variant="secondary" href={budgetsHref}>
-                Open Budgets
-              </Button>
-              <Button as="a" variant="secondary" href={memoryHref}>
-                Open Memory
-              </Button>
+              {/* Save stands alone. Chat, Budgets and Memory are on the cards above and are
+                  tabs of this hub; a second copy beside Save made four buttons of one. */}
             </div>
           </form>
 

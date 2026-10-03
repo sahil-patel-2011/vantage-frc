@@ -605,7 +605,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                     onChange={(e) => setTvName(e.target.value)}
                   />
                 </label>
-                <Button variant="primary" type="button" onClick={() => void mintToken(pairValue)}>
+                <Button variant="secondary" type="button" onClick={() => void mintToken(pairValue)}>
                   Make TV link
                 </Button>
               </div>

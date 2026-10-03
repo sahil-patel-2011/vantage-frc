@@ -202,8 +202,10 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
             <div><span>Spent</span><strong>{moneyWhenRecorded(view.budget.spentCents)}</strong></div>
             <div><span>Raised so far</span><strong>{moneyWhenRecorded(progress.actualCents)}</strong></div>
           </div>
-          {/* The one filled button on Overview. The season budget itself is set on /budget. */}
+          {/* Quiet: the header's Add is the one filled button on Overview. The season budget
+              itself is set on /budget. */}
           <ActionMenu
+            tone="row"
             label="Spending so far"
             overflowLabel="Budget and orders"
             maxSecondary={0}

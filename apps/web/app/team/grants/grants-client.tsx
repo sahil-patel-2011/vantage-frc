@@ -739,12 +739,8 @@ function GrantWritingWorkspace({
                 soft
                 className="gwe-empty"
                 title="No drafts yet"
-                description="Compose from the editor. Amounts stay empty until you type them. Writer, Grants, and Fundraisers stay in the header."
-              >
-                <Button as="a" variant="primary" href="#gwe-editor">
-                  Compose a draft
-                </Button>
-              </EmptyState>
+                description="Compose from the editor. Amounts stay empty until you type them."
+              />
             ) : (
               view.drafts.map((draft) => (
                 <button

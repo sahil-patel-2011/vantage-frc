@@ -331,7 +331,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
           title="No grant applications yet"
           description="Add an application on the Business grants board first. Award and spend amounts stay blank until you record them."
         >
-          <Button as="a" variant="primary" href={businessGrantsHref(orgId)}>
+          <Button as="a" variant="secondary" href={businessGrantsHref(orgId)}>
             Open Business · Grants
           </Button>
         </EmptyState>

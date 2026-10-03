@@ -550,9 +550,12 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             <span className="eyebrow">THIS SEASON ONLY · {view.gameRules.seasonYear}</span>
             <h2>Game rules</h2>
           </div>
-          <Button as="a" variant="secondary" href={view.gameRules.kickoffHref}>
-            Open kickoff
-          </Button>
+          {/* With no rules yet, the empty state below is the one link to Kickoff. */}
+          {view.gameRules.status === "ready" ? (
+            <Button as="a" variant="secondary" href={view.gameRules.kickoffHref}>
+              Open kickoff
+            </Button>
+          ) : null}
         </header>
         {view.gameRules.status === "ready" ? (
           <>
