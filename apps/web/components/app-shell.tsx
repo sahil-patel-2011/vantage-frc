@@ -36,6 +36,7 @@ import { listenInboxUpdates } from "../lib/notifications/inbox-events";
 import { watchSessionBoundary } from "../lib/offline/identity";
 import { isKnownAppPath } from "../lib/nav/app-route-roots";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
+import { NextActionsDedupe } from "./next-actions-dedupe";
 import {
   accountInitialFor,
   accountLabelFor,
@@ -678,6 +679,7 @@ export default function AppShell() {
       <a className="soft-skip-link" href="#main-content">
         Skip to main content
       </a>
+      <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}

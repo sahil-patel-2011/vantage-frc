@@ -828,6 +828,14 @@ main.content:has(> h1:only-child) > h1 {
 :is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"] li.primary a.edc-next-action > strong::after {
   content: " →";
 }
+/* A next action never repeats a link the page already shows (its related links, its empty
+   state, the form it sits above). Marked by components/next-actions-dedupe.tsx; a row left
+   with nothing goes with them. */
+:is(body.has-app-shell, .scouting-product) section[aria-label="Next actions"]:has(a.edc-next-action) :is(li, a)[data-repeat],
+:is(body.has-app-shell, .scouting-product) section[class*="next-actions"]:has(a.edc-next-action) :is(li, a)[data-repeat],
+:is(body.has-app-shell, .scouting-product) section:is([aria-label="Next actions"], [class*="next-actions"])[data-all-repeats] {
+  display: none !important;
+}
 
 
 /* --- Setup / integration cards --------------------------------------------- */
