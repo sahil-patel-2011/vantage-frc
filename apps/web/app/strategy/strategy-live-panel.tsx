@@ -600,7 +600,8 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             title={`No ${view.gameRules.seasonYear} game rules yet`}
             description={view.gameRules.message}
           >
-            <Button as="a" variant="primary" href={view.gameRules.kickoffHref}>
+            {/* Secondary: "Open the briefing" is this page's one primary action. */}
+            <Button as="a" variant="secondary" href={view.gameRules.kickoffHref}>
               Capture {view.gameRules.seasonYear} rules on Kickoff
             </Button>
           </EmptyState>
