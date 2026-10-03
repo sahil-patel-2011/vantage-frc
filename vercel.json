@@ -16,14 +16,6 @@
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
   "crons": [
     {
-      "path": "/api/cron/readable-sheets",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/recovery-journal",
-      "schedule": "* * * * *"
-    },
-    {
       "path": "/api/cron/tba-sync?mode=event-day",
       "schedule": "0 14 * * *"
     },

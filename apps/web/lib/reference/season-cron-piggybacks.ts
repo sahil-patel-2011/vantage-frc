@@ -4,6 +4,8 @@ import { runMemberOnboarding } from "../member-onboarding/run-member-onboarding"
 import { runProductReleasePublish } from "../run-product-release-publish";
 import { runSponsorReminders } from "../run-sponsor-reminders";
 import { runTeamDossierRefresh } from "../team-dossier/refresh";
+import { queueDueReadableHubSyncs } from "../google-sheets/hub-jobs";
+import { dispatchRecoveryJournal } from "../recovery/dispatch";
 
 export type SeasonCronPiggybacks = {
   sponsorReminders: unknown;
@@ -11,6 +13,8 @@ export type SeasonCronPiggybacks = {
   memberOnboarding: unknown;
   teamDossiers: unknown;
   excelWorkbooks: unknown;
+  readableSheets: unknown;
+  recoveryJournal: unknown;
   research:
     | { ok: true; summary: unknown }
     | { ok: false; error: string };
@@ -39,6 +43,10 @@ export async function runSeasonCronPiggybacks(): Promise<SeasonCronPiggybacks> {
   // Connected teams' spreadsheet copies (Google Sheets and Excel), written from the TBA data
   // the sync above just cached — at most a day stale, and never a TBA call of their own.
   const excelWorkbooks = await runSafely(() => runScheduledMirrorSync());
+  // The daily catch-up for teams nobody opened today. These two had a cron each that ran
+  // every minute; while a team is using the app, its open tabs trigger both instead.
+  const readableSheets = await runSafely(() => queueDueReadableHubSyncs());
+  const recoveryJournal = await runSafely(() => dispatchRecoveryJournal());
   let research: SeasonCronPiggybacks["research"];
   try {
     research = { ok: true, summary: await runScheduledResearchSweep() };
@@ -48,7 +56,7 @@ export async function runSeasonCronPiggybacks(): Promise<SeasonCronPiggybacks> {
       error: error instanceof Error ? error.message : "Research sweep failed",
     };
   }
-  return { sponsorReminders, productReleases, memberOnboarding, teamDossiers, excelWorkbooks, research };
+  return { sponsorReminders, productReleases, memberOnboarding, teamDossiers, excelWorkbooks, readableSheets, recoveryJournal, research };
 }
 
 async function runSafely(job: () => Promise<unknown>): Promise<unknown> {

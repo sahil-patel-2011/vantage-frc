@@ -3,6 +3,7 @@ import { queueDueReadableHubSyncs } from "../../../../lib/google-sheets/hub-jobs
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+/** For an operator to run by hand. Not on a schedule: open tabs and the daily season sync do it. */
 export async function GET(request: Request) {
   const denied = assertCronAuthorized(request);
   if (denied) return denied;

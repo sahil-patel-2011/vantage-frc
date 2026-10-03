@@ -8,6 +8,7 @@ import { syncMirror } from "../../../../../lib/mirror/mirror-sync";
 import { connectedTargetDefs, readCopyStates } from "../../../../../lib/mirror/mirror-targets";
 import { createRateLimiter } from "../../../../../lib/rate-limit";
 import { queueReadableHubSync } from "../../../../../lib/google-sheets/hub-jobs";
+import { dispatchRecoveryJournal } from "../../../../../lib/recovery/dispatch";
 
 export const maxDuration = 120;
 
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
     if (!(await autoLimiter.allow(orgId))) return json({ queued: false, reason: "recent" }, 202);
     const hubQueued = process.env.VANTAGE_SHEETS_HUB_SECRET ? await queueReadableHubSync(orgId) : false;
     after(() => runAutoSync(orgId, runnerId, runnerId === user.id));
+    // The recovery copy follows use too: this ping arrives shortly after a save, which is when
+    // there is something new to export. It used to be a cron that ran every minute regardless.
+    after(() => dispatchRecoveryJournal().catch(() => undefined));
     return json({ queued: true, hubQueued }, 202);
   } catch (error) {
     return failJson(error);

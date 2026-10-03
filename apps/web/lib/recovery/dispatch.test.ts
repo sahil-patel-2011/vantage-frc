@@ -2,6 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { GET } from "../../app/api/cron/recovery-journal/route";
 import { GET as readableCron } from "../../app/api/cron/readable-sheets/route";
 import { queueReadableHubSync, queueDueReadableHubSyncs } from "../google-sheets/hub-jobs";
+import { dispatchRecoveryJournal } from "./dispatch";
 
 const fake = vi.hoisted(() => ({ query: vi.fn(), release: vi.fn(), connect: vi.fn(), bridge: vi.fn(), start: vi.fn(), pending: true }));
 vi.mock("../provisioning/pool", () => ({ provisioningPool: () => ({ connect: fake.connect }) }));
@@ -56,6 +57,14 @@ describe("scheduled runtime work", () => {
     expect(await result.json()).toEqual({ accepted: true, runId: "test-run" });
     expect(fake.start).toHaveBeenCalledOnce();
     expect(fake.release).toHaveBeenCalledOnce();
+  });
+  it("starts recovery from a person's activity and from the daily catch-up, never when idle", async () => {
+    // The spreadsheet ping and the season sync both go through this one function.
+    expect(await dispatchRecoveryJournal()).toEqual({ accepted: true, runId: "test-run" });
+    expect(fake.start).toHaveBeenCalledOnce();
+    fake.pending = false;
+    expect(await dispatchRecoveryJournal()).toEqual({ accepted: false, reason: "current" });
+    expect(fake.start).toHaveBeenCalledOnce();
   });
   it("still dispatches due readable copies and records the workflow run", async () => {
     fake.query.mockImplementation(async (sql: string) => ({ rows: sql.includes("SELECT o.id::text") ? [{ id: "org" }] : [], rowCount: sql.includes("RETURNING org_id") ? 1 : 0 }));

@@ -2,8 +2,6 @@
 
 import { useEffect } from "react";
 
-/** How often an open Vantage tab asks for a spreadsheet refresh. The server allows one per team every 2 minutes. */
-export const AUTO_SYNC_INTERVAL_MS = 3 * 60_000;
 /** After a save, wait this long so a burst of edits becomes one refresh. */
 export const AFTER_SAVE_DELAY_MS = 20_000;
 
@@ -31,9 +29,13 @@ export function isTeamDataWrite(method: string | undefined, url: string): boolea
 }
 
 /**
- * Keep the team's spreadsheets following the app without a Sync button: ping on open, every
- * few minutes while the tab is visible, and shortly after anything is saved. The server
- * decides whether anything changed; a ping with nothing new costs one hash.
+ * Keep the team's spreadsheets following the app without a Sync button: ping on open, when
+ * the tab comes back into view, and shortly after anything is saved. The server decides
+ * whether anything changed (at most one run per team every 2 minutes).
+ *
+ * There is no timer. A tab left open used to ask for a full re-hash of the team's tables
+ * every three minutes whether or not anyone had saved anything; a save in any tab already
+ * triggers the refresh, and the daily sync catches whatever no tab was open for.
  */
 export function useSheetsAutoSync(orgId: string): void {
   useEffect(() => {
@@ -64,7 +66,6 @@ export function useSheetsAutoSync(orgId: string): void {
     window.fetch = watchedFetch;
 
     const first = setTimeout(ping, 5_000);
-    const interval = setInterval(ping, AUTO_SYNC_INTERVAL_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") ping();
     };
@@ -74,7 +75,6 @@ export function useSheetsAutoSync(orgId: string): void {
       // Only put fetch back if nothing else wrapped it after us.
       if (window.fetch === watchedFetch) window.fetch = originalFetch;
       clearTimeout(first);
-      clearInterval(interval);
       if (afterSave) clearTimeout(afterSave);
       document.removeEventListener("visibilitychange", onVisible);
     };
