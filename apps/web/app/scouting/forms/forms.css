@@ -574,25 +574,28 @@
   gap: 4px;
 }
 
+/* Row controls are quiet until pointed at: three boxed buttons beside each of five options
+   put fifteen boxes in one question and buried the option text they belong to. */
 .sfb-option-actions button {
   min-width: 44px;
   min-height: 44px;
   padding: 0 10px;
   border-radius:var(--radius-xs);
-  border: 1px solid var(--line);
-  background: var(--bg);
-  color: var(--ink);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
   font: 700 12px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
 }
 
-.sfb-option-actions button:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+.sfb-option-actions button:hover:not(:disabled),
+.sfb-option-actions button:focus-visible {
+  color: var(--ink);
   background: var(--accent-soft);
 }
 
 .sfb-option-actions button:disabled {
-  opacity: 0.45;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -604,14 +607,14 @@
 }
 
 @media (max-width: 560px) {
+  /* Option controls stay on the option's line: stacked, each option was three rows tall. */
   .sfb-question-head,
-  .sfb-option-actions,
   .sfb-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
+  .sfb-option-actions { gap: 0; }
   .sfb-question-head .app-button,
-  .sfb-option-actions .app-button,
   .sfb-toolbar .app-button {
     width: 100%;
     justify-content: center;
@@ -697,5 +700,33 @@
 .sfb-more > summary { min-height: 44px; }
 .sfb-page .app-card { box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 5%, transparent); }
 .sfb-response-table:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Overview numbers and the by-scout view. One hairline grid, no cards inside the card. */
+.sfb-response-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px 32px; margin-top: 24px; padding: 20px 0; border-block: 1px solid var(--line); }
+.sfb-response-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.sfb-response-controls select { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; max-width: 100%; }
+.sfb-scout-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.sfb-scout-list > li + li { border-top: 1px solid var(--line); }
+.sfb-responses meter { height: 8px; border-radius: 99px; }
+.sfb-responses meter::-webkit-meter-bar { height: 8px; border: 0; border-radius: 99px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.sfb-responses meter::-webkit-meter-optimum-value { border-radius: 99px; background: var(--accent); }
+.sfb-responses meter::-moz-meter-bar { border-radius: 99px; background: var(--accent); }
+.sfb-scout-list summary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(60px, 2fr) minmax(3ch, auto); grid-template-areas: "name bar count" "meta meta meta"; gap: 4px 16px; align-items: center; min-height: 64px; padding: 12px 20px; cursor: pointer; list-style: none; }
+.sfb-scout-list summary::-webkit-details-marker { display: none; }
+.sfb-scout-list summary:hover, .sfb-scout-list details[open] > summary { background: var(--bg); }
+.sfb-scout-list summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sfb-scout-name { grid-area: name; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sfb-scout-list summary meter { grid-area: bar; width: 100%; accent-color: var(--accent); }
+.sfb-scout-list summary strong { grid-area: count; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sfb-scout-list summary small { grid-area: meta; color: var(--muted); }
+.sfb-scout-list details > ul { list-style: none; margin: 0; padding: 4px 20px 0; }
+.sfb-scout-list details > ul li { display: grid; grid-template-columns: 9ch minmax(0, 1fr) auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font-size: 14px; }
+.sfb-scout-list details > ul time { color: var(--muted); }
+.sfb-scout-list details > p { margin: 12px 20px 0; font-size: 14px; }
+.sfb-scout-list details > button { margin: 16px 20px 20px; }
+.sfb-scout-idle { margin: 16px 4px 0; font-size: 14px; }
+@media (max-width: 520px) {
+  .sfb-scout-list details > ul li { grid-template-columns: minmax(0, 1fr) auto; }
+  .sfb-scout-list details > ul time { grid-column: 1 / -1; }
+}
 /* Scouting's focused workspace has its own views; navigation remains in the hamburger. */
 body.has-app-shell:has(.sfb-page) .soft-island { display: none !important; }

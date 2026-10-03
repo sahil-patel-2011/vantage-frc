@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { responseSummary, responsesCsv, type FormResponseRow } from "./form-response-summary";
+import { responseOverview, responsesByScout, responseSummary, responsesCsv, type FormResponseRow } from "./form-response-summary";
 import { definitionFromDraft, draftFromDefinition, newDraftQuestion } from "./form-builder";
 import { latestScoutingYear, parseFreeScoutReport, scoutingGameLabel } from "./free-scout";
 
@@ -20,6 +20,23 @@ describe("published forms and observed responses", () => {
   it("escapes CSV quotes and neutralizes spreadsheet formulas", () => {
     const csv = responsesCsv([{ key: "notes", label: "Notes", type: "text" }], [{ ...rows[0]!, payload: { notes: '=HYPERLINK("x")' } }]);
     expect(csv).toContain('"\'=HYPERLINK(""x"")"');
+  });
+  it("counts each scout's work in full and lists what they filed", () => {
+    const filed = (id: string, team: string, scoutId: string, observedAt: string): FormResponseRow =>
+      ({ id, team, label: "Pit", event: null, payload: {}, observedAt, scoutId, scout: scoutId === "a" ? "Ada" : "Ben", mine: scoutId === "a" });
+    const loaded = [filed("1", "frc6925", "a", "2026-10-02T12:00:00Z"), filed("2", "frc254", "a", "2026-10-02T13:00:00Z"), filed("3", "frc254", "b", "2026-10-02T11:00:00Z")];
+    // Ben has 40 responses in all; only one of them is on the loaded page.
+    const scouts = [{ id: "a", name: "Ada", total: 2, teams: 2, lastAt: "2026-10-02T13:00:00Z" }, { id: "b", name: "Ben", total: 40, teams: 31, lastAt: "2026-10-02T11:00:00Z" }];
+    expect(responsesByScout(scouts, loaded).map(scout => [scout.name, scout.count, scout.rows.length])).toEqual([["Ben", 40, 1], ["Ada", 2, 2]]);
+    // Filtered to one team, the count is what the filter leaves and an empty scout drops out.
+    expect(responsesByScout(scouts, loaded.filter(row => row.team === "frc6925"), true).map(scout => [scout.name, scout.count])).toEqual([["Ada", 1]]);
+    expect(responseOverview(loaded)).toEqual({ responses: 3, teams: 2, mine: 2, latest: "2026-10-02T13:00:00Z" });
+    expect(responseOverview([])).toEqual({ responses: 0, teams: 0, mine: 0, latest: null });
+  });
+  it("puts the scout in a lead's export and leaves the column out for everyone else", () => {
+    const field = [{ key: "cycles", label: "Cycles", type: "number" as const }];
+    expect(responsesCsv(field, [{ ...rows[0]!, scout: "Ada" }]).split("\r\n")[0]).toBe('"Team","Match / report","Event","Recorded","Scout","Cycles"');
+    expect(responsesCsv(field, [rows[0]!]).split("\r\n")[0]).toBe('"Team","Match / report","Event","Recorded","Cycles"');
   });
   it("defaults to the last released game through off-season planning", () => {
     expect(latestScoutingYear(new Date("2026-10-02T00:00:00Z"))).toBe(2026);
