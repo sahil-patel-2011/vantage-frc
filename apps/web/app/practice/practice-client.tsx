@@ -671,14 +671,12 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
         <div className="practice-panel practice-empty center">
           <strong>No practice sessions yet</strong>
           <p className="practice-muted">
-            Start a session with a clear goal, link an attendance roll call by occurred_on when ready, then log each
+            Start a session with a clear goal, link that day&rsquo;s attendance roll call when ready, then log each
             scoring rep with the stopwatch. Totals stay empty until you log real work.
           </p>
+          {/* One action. Calendar, Attendance and Batteries are tabs of this same hub. */}
           <div className="practice-empty-actions">
             <Button variant="primary" type="button" onClick={() => setShowNew(true)}>Start your first session</Button>
-            <Button as="a" variant="secondary" href={teamTab("calendar", orgId)}>Open Calendar</Button>
-            <Button as="a" variant="secondary" href={teamTab("attendance", orgId)}>Open Attendance</Button>
-            <Button as="a" variant="secondary" href={teamTab("batteries", orgId)}>Open Batteries</Button>
           </div>
         </div>
       ) : (

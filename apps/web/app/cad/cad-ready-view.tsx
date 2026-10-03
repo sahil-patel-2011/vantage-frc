@@ -249,13 +249,17 @@ export function CadReadyView({
           {state && !state.onshapeConnected ? (
             <div className="cad-agent-setup">
               <p>Paste an Onshape document link above to edit it here, or keep it in the vault.</p>
-              <Button
-                as="a"
-                variant={editHref ? "secondary" : "primary"}
-                href={`${withOrgHref("/cad-vault", orgId)}#link-cad`}
-              >
-                Link a CAD document
-              </Button>
+              {/* With no document open and Onshape not connected, the viewport beside this
+                  already shows the one button that goes to the same place. */}
+              {editHref || onshapeOk || state.shadedPngBase64 ? (
+                <Button
+                  as="a"
+                  variant={editHref ? "secondary" : "primary"}
+                  href={`${withOrgHref("/cad-vault", orgId)}#link-cad`}
+                >
+                  Link a CAD document
+                </Button>
+              ) : null}
               <p className="cad-agent-hint">
                 Need the CAD agent? Ask a mentor to{" "}
                 <a href={connectionsHref}>connect Onshape</a> in the browser.

@@ -213,11 +213,11 @@ export function CodeBugbotPanel({
               description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
             >
               {canConnect ? (
-                <Button as="a" variant="primary" href={githubHref}>
+                <Button as="a" variant="secondary" href={githubHref}>
                   Connect GitHub
                 </Button>
               ) : (
-                <Button as="a" variant="primary" href="#cdc-source">
+                <Button as="a" variant="secondary" href="#cdc-source">
                   Paste a file
                 </Button>
               )}
