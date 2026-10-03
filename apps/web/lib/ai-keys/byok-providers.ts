@@ -36,7 +36,7 @@ export const BYOK_PROVIDER_META: Record<ByokProvider, ByokProviderMeta> = {
     id: "google",
     label: "Google (Gemini)",
     shortLabel: "Google",
-    placeholder: "AIza…",
+    placeholder: "AIza… or AQ.…",
     docsHint: "Gemini API key from AI Studio / Google AI",
     storageLabel: "Google Gemini (your key)",
   },
@@ -138,4 +138,4 @@ export function buildByokKeyStatuses(
 export const GOOGLE_OPENAI_COMPAT_BASE =
   "https://generativelanguage.googleapis.com/v1beta/openai";
 
-export const GOOGLE_DEFAULT_MODEL = "gemini-2.0-flash";
+export const GOOGLE_DEFAULT_MODEL = "gemini-3.8-flash";

@@ -8,6 +8,7 @@ import {
 } from "@vantage/billing";
 import {
   BYOK_MODEL_OPTIONS,
+  GOOGLE_FREE_TIER_MODEL,
   LOCAL_OPENAI_COMPAT_LABEL,
   pickByokModelForFeature,
   type ByokModelOption,
@@ -20,6 +21,7 @@ import {
 } from "./model-policy";
 import type { ChatAdapter } from "./index";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
+import { ModelFallbackChatAdapter } from "./model-fallback-adapter";
 import type { PromptCachePrices } from "./prompt-caching";
 import {
   OPENROUTER_BASE_URL,
@@ -116,7 +118,7 @@ export function chatAdapterProvenance(
   source: ResolvedModelSource,
 ): ResolvedModelProvenance {
   const baseUrl =
-    adapter instanceof HttpChatAdapter
+    adapter instanceof HttpChatAdapter || adapter instanceof ModelFallbackChatAdapter
       ? adapter.baseUrl
       : adapter instanceof PetalsPublicPoolAdapter
         ? adapter.generateUrl
@@ -247,10 +249,16 @@ const DEFAULT_PRICES: Record<"openai" | "anthropic" | "openai-compatible", Promp
 
 /** Google Gemini via the public OpenAI-compatible Generative Language endpoint. */
 const GOOGLE_OPENAI_COMPAT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
-const GOOGLE_DEFAULT_MODEL = "gemini-2.0-flash";
+const GOOGLE_DEFAULT_MODEL = GOOGLE_FREE_TIER_MODEL;
 const GOOGLE_DEFAULT_PRICES: PromptCachePrices = {
-  inputPerMillionUsd: 0.1,
-  outputPerMillionUsd: 0.4,
+  inputPerMillionUsd: 0.75,
+  outputPerMillionUsd: 3.75,
+};
+/** Last step when Flash answers 503 "high demand". List rate checked 2026-10-03. */
+const GOOGLE_OVERLOAD_MODEL = "gemini-3.5-flash-lite";
+const GOOGLE_OVERLOAD_PRICES: PromptCachePrices = {
+  inputPerMillionUsd: 0.3,
+  outputPerMillionUsd: 2.5,
 };
 
 function normalizeProvider(kind: string): HttpChatAdapterConfig["provider"] | null {
@@ -904,16 +912,26 @@ export async function resolveOrgChatAdapterWithProvenance(
       const row = orgKeys.rows.find((r) => isGoogleByokProvider(r.provider));
       if (row) {
         const apiKey = await decryptRow(row, input.decrypt);
-        return resolved(
+        const googleAdapter = (model: string, prices: PromptCachePrices) =>
           new HttpChatAdapter({
             provider: "openai-compatible",
-            model: chosen.modelId,
+            model,
             apiKey,
             baseUrl: GOOGLE_OPENAI_COMPAT_BASE,
             promptCachingEnabled: input.promptCachingEnabled,
-            prices: pricesFromOption(chosen),
+            prices,
             fetchImpl: input.fetchImpl,
-          }),
+          });
+        // A free AI Studio key has no Pro quota (429), and Flash is sometimes overloaded
+        // (503): step down a model instead of failing the turn.
+        return resolved(
+          new ModelFallbackChatAdapter([
+            googleAdapter(chosen.modelId, pricesFromOption(chosen)),
+            ...(chosen.modelId === GOOGLE_DEFAULT_MODEL
+              ? []
+              : [googleAdapter(GOOGLE_DEFAULT_MODEL, GOOGLE_DEFAULT_PRICES)]),
+            googleAdapter(GOOGLE_OVERLOAD_MODEL, GOOGLE_OVERLOAD_PRICES),
+          ]),
           keyRowSource(row),
         );
       }

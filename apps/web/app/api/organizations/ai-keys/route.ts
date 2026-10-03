@@ -3,6 +3,7 @@ import {
   LOCAL_OPENAI_COMPAT_KIND,
   LOCAL_OPENAI_COMPAT_LABEL,
   BYOK_MODEL_OPTIONS,
+  canonicalByokModelId,
   AI_HORDE_MODELS,
   isAiHordeEnabled,
   isAiHordeModel,
@@ -112,10 +113,12 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
     if (!row) return defaults;
     return {
       mode: row.mode === "fixed" ? ("fixed" as const) : ("automode" as const),
-      fixedModelId: row.fixedModelId,
+      // Through canonicalByokModelId: a saved id for a model the provider has since retired
+      // still ticks its replacement on the page.
+      fixedModelId: row.fixedModelId ? canonicalByokModelId(row.fixedModelId) : null,
       enabledModelIds:
         row.enabledModelIds && row.enabledModelIds.length
-          ? row.enabledModelIds
+          ? row.enabledModelIds.map(canonicalByokModelId)
           : BYOK_MODEL_OPTIONS.map((m) => m.id),
       // Read through the allowlist, not trusted from the column. A value that
       // is no longer one Vantage accepts reads as "any", which is the default

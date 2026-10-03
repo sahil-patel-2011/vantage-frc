@@ -7,7 +7,7 @@
  * lives in resolve-chat-adapter, UI in apps/web.
  */
 
-import type { ByokModelOption } from "./byok-model-routing";
+import { canonicalByokModelId, type ByokModelOption } from "./byok-model-routing";
 
 export type OrgModelPolicyMode = "allow_all" | "allowlist" | "force_auto";
 
@@ -44,7 +44,7 @@ export function normalizeOrgModelPolicy(
     new Set(
       (input.allowedModelIds ?? [])
         .filter((id): id is string => typeof id === "string")
-        .map((id) => id.trim())
+        .map((id) => canonicalByokModelId(id.trim()))
         .filter(Boolean),
     ),
   );

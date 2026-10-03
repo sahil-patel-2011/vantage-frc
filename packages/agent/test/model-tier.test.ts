@@ -48,6 +48,7 @@ describe("classifyModelTier", () => {
       "gpt-4o",
       "o3",
       "gemini-2.5-pro",
+      "gemini-3.1-pro-preview",
     ]) {
       expect(classifyModelTier({ provider: "any", modelId }).tier, modelId).toBe("frontier");
     }
@@ -61,6 +62,7 @@ describe("classifyModelTier", () => {
       "claude-haiku-4-5",
       "gemini-2.0-flash",
       "gemini-2.5-flash",
+      "gemini-3.8-flash",
       "command-r-08-2024",
       "openrouter/free",
     ]) {

@@ -8,7 +8,7 @@
  *
  * Family patterns verified against this codebase's catalogs (2026-08):
  * - BYOK pool: gpt-4.1 / gpt-4.1-mini, claude-opus-4 / claude-sonnet-4 /
- *   claude-sonnet-5 / claude-haiku-4-5, gemini-2.5-pro / gemini-2.0-flash
+ *   claude-sonnet-5 / claude-haiku-4-5, gemini-3.1-pro-preview / gemini-3.8-flash
  *   (packages/agent/src/byok-model-routing.ts).
  * - Hosted platform: claude-sonnet-4 / claude-opus-4 (hosted-platform-keys.ts).
  * - Sponsored pool: mistral-small-latest, llama-3.1-8b-instant, llama3.1-8b,

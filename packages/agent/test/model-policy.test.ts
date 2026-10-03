@@ -113,7 +113,7 @@ describe("applyModelPolicy — allowlist", () => {
       // plus two fast tier entries with different prices.
       allowedModelIds: ["openai:gpt-4.1-mini", "anthropic:claude-haiku-4-5"],
     };
-    const decision = applyModelPolicy(policy, "google:gemini-2.5-pro", catalog);
+    const decision = applyModelPolicy(policy, "google:gemini-3.1-pro-preview", catalog);
     // Both allowed are fast tier; gpt-4.1-mini ($0.4/M) is cheaper than haiku ($1/M).
     expect(decision.modelId).toBe("openai:gpt-4.1-mini");
     expect(decision.coerced).toBe(true);

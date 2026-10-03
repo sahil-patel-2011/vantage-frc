@@ -265,6 +265,7 @@ export * from "./resolve-stt-endpoint";
 export * from "./model-tier";
 export * from "./sponsored-provider-pool";
 export * from "./byok-model-routing";
+export * from "./model-fallback-adapter";
 export * from "./model-policy";
 export * from "./coding-assistant";
 export * from "./bugbot";

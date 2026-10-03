@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpChatAdapter } from "../src/http-chat-adapter";
+import { ModelFallbackChatAdapter } from "../src/model-fallback-adapter";
 import {
   ChatProviderResolutionError,
   resolveOrgChatAdapter,
@@ -139,9 +140,124 @@ describe("resolveOrgChatAdapter", () => {
       decrypt: async () => "AIza-test",
     });
 
-    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    expect(adapter).toBeInstanceOf(ModelFallbackChatAdapter);
     expect(adapter.provider).toBe("openai-compatible");
-    expect(adapter.model).toContain("gemini");
+    expect(adapter.model).toBe("gemini-3.8-flash");
+  });
+
+  it("answers on Flash-Lite when Flash is overloaded", async () => {
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "k-google",
+            provider: "google",
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+    ]);
+    const asked: string[] = [];
+    const fetchImpl = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      const model = (JSON.parse(String(init?.body)) as { model: string }).model;
+      asked.push(model);
+      if (model === "gemini-3.8-flash") return new Response("high demand", { status: 503 });
+      return Response.json({
+        choices: [{ message: { content: "ok" } }],
+        usage: { prompt_tokens: 7, completion_tokens: 1 },
+      });
+    }) as unknown as typeof fetch;
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async () => "AQ.test",
+      fetchImpl,
+    });
+    const result = await adapter.complete({ message: "hi", context: [] });
+    expect(result.text).toBe("ok");
+    expect(asked).toEqual(["gemini-3.8-flash", "gemini-3.5-flash-lite"]);
+    expect(adapter.model).toBe("gemini-3.5-flash-lite");
+  });
+
+  it("does not try another model when Google rejects the key", async () => {
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "k-google",
+            provider: "google",
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+    ]);
+    const fetchImpl = vi.fn(async () => new Response("denied", { status: 403 })) as unknown as typeof fetch;
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async () => "AQ.revoked",
+      fetchImpl,
+    });
+    await expect(adapter.complete({ message: "hi", context: [] })).rejects.toThrow(/key was rejected/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers on Flash when a free Google key has no quota for the Pro model", async () => {
+    const googleKey = {
+      id: "k-google",
+      provider: "google",
+      keyCiphertext: "c",
+      keyNonce: "n",
+      keyAuthTag: "t",
+      encryptedDek: "d",
+      kmsKeyId: "k",
+    };
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [googleKey] }),
+    ]);
+    const asked: string[] = [];
+    const fetchImpl = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      const model = (JSON.parse(String(init?.body)) as { model: string }).model;
+      asked.push(model);
+      if (model.includes("pro")) return new Response("quota", { status: 429 });
+      return Response.json({
+        choices: [{ message: { content: "ok" } }],
+        usage: { prompt_tokens: 7, completion_tokens: 1 },
+      });
+    }) as unknown as typeof fetch;
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "cad",
+      decrypt: async () => "AQ.test",
+      fetchImpl,
+    });
+    expect(adapter.model).toBe("gemini-3.1-pro-preview");
+
+    const result = await adapter.complete({ message: "hi", context: [] });
+    expect(result.text).toBe("ok");
+    expect(asked).toEqual(["gemini-3.1-pro-preview", "gemini-3.8-flash"]);
+    expect(adapter.model).toBe("gemini-3.8-flash");
   });
 
   it("falls through to managed peek for paid orgs", async () => {

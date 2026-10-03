@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  BYOK_MODEL_OPTIONS,
   estimateByokCostUsd,
+  findByokModelOption,
   pickByokModelForFeature,
   preferredTierForFeature,
 } from "../src/byok-model-routing";
@@ -40,6 +42,27 @@ describe("BYOK automode routing", () => {
       availableProviders: ["openai"],
     });
     expect(picked?.id).toBe("openai:gpt-4.1-mini");
+  });
+
+  it("routes a saved pool of retired Gemini ids to their replacements", () => {
+    // What a team that ticked both Google models before Google retired them has stored.
+    const saved = ["google:gemini-2.5-pro", "google:gemini-2.0-flash"];
+    const chat = pickByokModelForFeature({
+      feature: "chat",
+      mode: "automode",
+      enabledModelIds: saved,
+      availableProviders: ["google"],
+    });
+    expect(chat?.modelId).toBe("gemini-3.8-flash");
+    const fixed = pickByokModelForFeature({
+      feature: "chat",
+      mode: "fixed",
+      fixedModelId: "google:gemini-2.0-flash",
+      availableProviders: ["google"],
+    });
+    expect(fixed?.modelId).toBe("gemini-3.8-flash");
+    expect(findByokModelOption("google:gemini-2.5-pro")?.modelId).toBe("gemini-3.1-pro-preview");
+    expect(BYOK_MODEL_OPTIONS.map((m) => m.modelId)).not.toContain("gemini-2.0-flash");
   });
 
   it("estimates cost from public list rates without inventing tokens", () => {

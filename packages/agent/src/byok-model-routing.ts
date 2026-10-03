@@ -92,27 +92,48 @@ export const BYOK_MODEL_OPTIONS: readonly ByokModelOption[] = [
     inputPerMillionUsd: 1,
     outputPerMillionUsd: 5,
   },
+  // Google rows re-checked against the live API and ai.google.dev pricing on 2026-10-03:
+  // gemini-2.5-pro and gemini-2.0-flash answer 404 "no longer available". The Pro model
+  // has no free tier, so a free AI Studio key gets 429 on it (see GOOGLE_FREE_TIER_MODEL).
   {
-    id: "google:gemini-2.5-pro",
+    id: "google:gemini-3.1-pro-preview",
     provider: "google",
-    modelId: "gemini-2.5-pro",
-    label: "Gemini 2.5 Pro",
+    modelId: "gemini-3.1-pro-preview",
+    label: "Gemini 3.1 Pro",
     tier: "high",
     tierLabel: "High reasoning",
-    inputPerMillionUsd: 1.25,
-    outputPerMillionUsd: 10,
+    inputPerMillionUsd: 2,
+    outputPerMillionUsd: 12,
   },
   {
-    id: "google:gemini-2.0-flash",
+    id: "google:gemini-3.8-flash",
     provider: "google",
-    modelId: "gemini-2.0-flash",
-    label: "Gemini 2.0 Flash",
+    modelId: "gemini-3.8-flash",
+    label: "Gemini 3.8 Flash",
     tier: "fast",
     tierLabel: "Fast / light",
-    inputPerMillionUsd: 0.1,
-    outputPerMillionUsd: 0.4,
+    // List rate through 2026-12-31; Google has announced $1.50 / $7.50 from 2027-01-01.
+    inputPerMillionUsd: 0.75,
+    outputPerMillionUsd: 3.75,
   },
 ] as const;
+
+/** The Gemini model a free AI Studio key can call — the default, and the Pro fallback. */
+export const GOOGLE_FREE_TIER_MODEL = "gemini-3.8-flash";
+
+/**
+ * Ids of models a provider has retired, mapped to their replacement. Ids are persisted
+ * (org_byok_routing_prefs, org_model_policy), so a retired one must keep meaning something
+ * or a team's saved Automode pool silently empties.
+ */
+const RETIRED_BYOK_MODEL_IDS: Record<string, string> = {
+  "google:gemini-2.5-pro": "google:gemini-3.1-pro-preview",
+  "google:gemini-2.0-flash": "google:gemini-3.8-flash",
+};
+
+export function canonicalByokModelId(id: string): string {
+  return RETIRED_BYOK_MODEL_IDS[id] ?? id;
+}
 
 /** Fixed label for the Ollama / LM Studio org_provider_configs row. */
 export const LOCAL_OPENAI_COMPAT_LABEL = "OpenAI-compatible (Ollama / LM Studio)";
@@ -170,11 +191,12 @@ export function pickByokModelForFeature(input: {
   if (!catalog.length) return null;
 
   if (input.mode === "fixed") {
-    const fixed = catalog.find((m) => m.id === input.fixedModelId);
+    const fixedId = input.fixedModelId ? canonicalByokModelId(input.fixedModelId) : null;
+    const fixed = catalog.find((m) => m.id === fixedId);
     return fixed ?? catalog[0] ?? null;
   }
 
-  const enabledIds = input.enabledModelIds?.filter(Boolean) ?? [];
+  const enabledIds = (input.enabledModelIds?.filter(Boolean) ?? []).map(canonicalByokModelId);
   const pool =
     enabledIds.length > 0
       ? catalog.filter((m) => enabledIds.includes(m.id))
@@ -205,7 +227,8 @@ export function pickByokModelForFeature(input: {
 
 export function findByokModelOption(id: string | null | undefined): ByokModelOption | null {
   if (!id) return null;
-  return BYOK_MODEL_OPTIONS.find((m) => m.id === id) ?? null;
+  const canonical = canonicalByokModelId(id);
+  return BYOK_MODEL_OPTIONS.find((m) => m.id === canonical) ?? null;
 }
 
 export function estimateByokCostUsd(input: {
