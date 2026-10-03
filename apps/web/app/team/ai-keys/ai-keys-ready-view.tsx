@@ -31,6 +31,7 @@ import {
   type ProviderMeta,
   type RoutingPrefs,
 } from "./ai-keys-model";
+import { MyFreeGeminiKey } from "./ai-keys-my-free-key";
 import { ProviderCard } from "./ai-keys-provider-card";
 import { WebResearchCard } from "./ai-keys-web-research";
 import { AiTrainingCard } from "./ai-training-card";
@@ -45,6 +46,7 @@ export type AiKeysReadyViewProps = {
   setMineDraft: Dispatch<SetStateAction<MineDraft>>;
   mineBusy: boolean;
   saveMemberKey: () => void;
+  saveMyGoogleKey: (apiKey: string) => Promise<boolean>;
   removeMemberKey: (provider: string) => void;
   message: string;
   messageIsError?: boolean;
@@ -87,6 +89,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     setMineDraft,
     mineBusy,
     saveMemberKey,
+    saveMyGoogleKey,
     removeMemberKey,
     message,
     messageIsError,
@@ -120,20 +123,35 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     setMyModelChoice,
   } = props;
   const showStart = Boolean(payload.canManage && configuredProviders.size === 0 && GEMINI_FREE);
+  // Offered until this person has a Google key of their own. A member who cannot manage the
+  // team's keys sees it first: it is the one thing on this page they can do. Someone who can
+  // sees it after the team's keys, and not at all while the team start card is on screen
+  // asking for the same kind of key.
+  const hasOwnGoogleKey = (payload.memberKeys ?? []).some((row) => row.provider === "google");
+  const myFreeKey =
+    !hasOwnGoogleKey && !showStart && !payload.setupRequired ? (
+      <MyFreeGeminiKey
+        busy={mineBusy}
+        teamHasGoogleKey={configuredProviders.has("google")}
+        onSave={saveMyGoogleKey}
+      />
+    ) : null;
   return (
     <>
+          {message ? (
+            <p className={`ai-keys-flash${messageIsError ? " is-error" : ""}`} role={messageIsError ? "alert" : "status"}>
+              {message}
+            </p>
+          ) : null}
+
+          {!payload.canManage ? myFreeKey : null}
+
           {!payload.canManage ? (
             <ShellPanel
               shell="forbidden"
               detail="You can see configured / missing status. Ask an owner or admin with Manage API keys to paste or remove secrets."
               orgId={orgId}
             />
-          ) : null}
-
-          {message ? (
-            <p className={`ai-keys-flash${messageIsError ? " is-error" : ""}`} role={messageIsError ? "alert" : "status"}>
-              {message}
-            </p>
           ) : null}
 
           {/* One recommended path before any choice: most teams have no AI budget, and Gemini's
@@ -232,6 +250,8 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             })}
           </section>
           </details>
+
+          {payload.canManage ? myFreeKey : null}
 
           {/* Web research sits with the keys a team brings, straight after the
               model providers: it is the other key that changes what the AI can do. */}

@@ -8,6 +8,7 @@ import {
 } from "@vantage/billing";
 import {
   BYOK_MODEL_OPTIONS,
+  GOOGLE_FREE_TIER_INPUT_TPM,
   GOOGLE_FREE_TIER_MODEL,
   LOCAL_OPENAI_COMPAT_LABEL,
   pickByokModelForFeature,
@@ -254,12 +255,67 @@ const GOOGLE_DEFAULT_PRICES: PromptCachePrices = {
   inputPerMillionUsd: 0.75,
   outputPerMillionUsd: 3.75,
 };
-/** Last step when Flash answers 503 "high demand". List rate checked 2026-10-03. */
-const GOOGLE_OVERLOAD_MODEL = "gemini-3.5-flash-lite";
-const GOOGLE_OVERLOAD_PRICES: PromptCachePrices = {
-  inputPerMillionUsd: 0.3,
-  outputPerMillionUsd: 2.5,
-};
+/** The models a free AI Studio key can call, strongest first. */
+const GOOGLE_FREE_TIER_CHAIN: ReadonlyArray<{ model: string; prices: PromptCachePrices }> = [
+  { model: GOOGLE_DEFAULT_MODEL, prices: GOOGLE_DEFAULT_PRICES },
+  { model: "gemini-3.5-flash-lite", prices: { inputPerMillionUsd: 0.3, outputPerMillionUsd: 2.5 } },
+];
+/**
+ * Input tokens held back for the turn about to be sent: the 8,000-token context budget plus
+ * the system prompt, tool definitions and recent history. A model is treated as full for
+ * this minute once the ledger shows less than this much room under the free-tier limit.
+ */
+export const GOOGLE_TURN_INPUT_RESERVE = 20_000;
+const GOOGLE_EXHAUSTED_MESSAGE =
+  "Google's free tier is busy, or this key has used its allowance for the minute. Wait a minute and ask again. Adding your own free Google AI Studio key under Team → AI keys gives you an allowance of your own.";
+
+/**
+ * Input tokens this team sent to each Gemini model in the last minute, read from the usage
+ * ledger: `team` is everyone, `mine` is the caller alone (what counts against a personal
+ * key). Empty when the ledger cannot be read; the 429 step-down still applies then.
+ */
+async function googleInputTokensLastMinute(
+  client: PoolClient,
+  orgId: string,
+  userId: string | undefined,
+): Promise<Map<string, { team: number; mine: number }>> {
+  const used = new Map<string, { team: number; mine: number }>();
+  try {
+    const result = await client.query<{ model: string; team: string; mine: string }>(
+      `SELECT model,
+              COALESCE(SUM(prompt_tokens), 0)::text AS team,
+              COALESCE(SUM(prompt_tokens) FILTER (WHERE user_id = $3::uuid), 0)::text AS mine
+         FROM ai_usage_events
+        WHERE org_id = $1::uuid
+          AND created_at > now() - interval '60 seconds'
+          AND model = ANY($2::text[])
+        GROUP BY model`,
+      [orgId, GOOGLE_FREE_TIER_CHAIN.map((entry) => entry.model), userId ?? null],
+    );
+    for (const row of result.rows) {
+      used.set(row.model, { team: Number(row.team) || 0, mine: Number(row.mine) || 0 });
+    }
+  } catch {
+    // No ledger to read (unit fakes, a database mid-migration): no reordering.
+  }
+  return used;
+}
+
+/**
+ * The order to try Gemini models in: the chosen one, then the other free-tier models. A
+ * free-tier model with no room left this minute moves to the back, so the turn goes to a
+ * model that can take it instead of spending a request on a 429.
+ */
+export function orderGoogleModels(
+  chosen: { model: string; prices: PromptCachePrices },
+  usedInputTokens: (model: string) => number,
+): Array<{ model: string; prices: PromptCachePrices }> {
+  const order = [chosen, ...GOOGLE_FREE_TIER_CHAIN.filter((entry) => entry.model !== chosen.model)];
+  const isFull = (model: string) =>
+    GOOGLE_FREE_TIER_CHAIN.some((entry) => entry.model === model) &&
+    usedInputTokens(model) + GOOGLE_TURN_INPUT_RESERVE > GOOGLE_FREE_TIER_INPUT_TPM;
+  return [...order.filter((entry) => !isFull(entry.model)), ...order.filter((entry) => isFull(entry.model))];
+}
 
 function normalizeProvider(kind: string): HttpChatAdapterConfig["provider"] | null {
   const value = kind.trim().toLowerCase();
@@ -834,8 +890,9 @@ export async function resolveOrgChatAdapterWithProvenance(
     [input.orgId, LOCAL_OPENAI_COMPAT_LABEL],
   );
 
+  const teamKeyRows = await loadOrgLlmKeys(client, input.orgId);
   const orgKeys = {
-    rows: overlayMemberKeys(await loadOrgLlmKeys(client, input.orgId), memberKeys),
+    rows: overlayMemberKeys(teamKeyRows, memberKeys),
   };
 
   const available = availableProvidersFrom(orgKeys.rows, orgProviders.rows);
@@ -912,26 +969,40 @@ export async function resolveOrgChatAdapterWithProvenance(
       const row = orgKeys.rows.find((r) => isGoogleByokProvider(r.provider));
       if (row) {
         const apiKey = await decryptRow(row, input.decrypt);
-        const googleAdapter = (model: string, prices: PromptCachePrices) =>
-          new HttpChatAdapter({
-            provider: "openai-compatible",
-            model,
-            apiKey,
-            baseUrl: GOOGLE_OPENAI_COMPAT_BASE,
-            promptCachingEnabled: input.promptCachingEnabled,
-            prices,
-            fetchImpl: input.fetchImpl,
-          });
-        // A free AI Studio key has no Pro quota (429), and Flash is sometimes overloaded
-        // (503): step down a model instead of failing the turn.
+        const usesOwnKey = keyRowSource(row) === "member-key";
+        const used = await googleInputTokensLastMinute(client, input.orgId, input.userId);
+        // Free-tier quota is per model and per key. Stay under the per-minute input limit
+        // by reading the ledger first; step down a model on 429 / 503 if Google still
+        // says no; and when a member's own key is spent, the team key is the last resort.
+        const models = orderGoogleModels(
+          { model: chosen.modelId, prices: pricesFromOption(chosen) },
+          (model) => (usesOwnKey ? used.get(model)?.mine : used.get(model)?.team) ?? 0,
+        );
+        const keys = [apiKey];
+        const teamRow = usesOwnKey ? teamKeyRows.find((r) => isGoogleByokProvider(r.provider)) : undefined;
+        if (teamRow) {
+          try {
+            keys.push(await decryptRow(teamRow, input.decrypt));
+          } catch {
+            // An unreadable team key must not take a member's working key down with it.
+          }
+        }
+        const adapters = keys.flatMap((key) =>
+          models.map(
+            (entry) =>
+              new HttpChatAdapter({
+                provider: "openai-compatible",
+                model: entry.model,
+                apiKey: key,
+                baseUrl: GOOGLE_OPENAI_COMPAT_BASE,
+                promptCachingEnabled: input.promptCachingEnabled,
+                prices: entry.prices,
+                fetchImpl: input.fetchImpl,
+              }),
+          ),
+        ) as [HttpChatAdapter, ...HttpChatAdapter[]];
         return resolved(
-          new ModelFallbackChatAdapter([
-            googleAdapter(chosen.modelId, pricesFromOption(chosen)),
-            ...(chosen.modelId === GOOGLE_DEFAULT_MODEL
-              ? []
-              : [googleAdapter(GOOGLE_DEFAULT_MODEL, GOOGLE_DEFAULT_PRICES)]),
-            googleAdapter(GOOGLE_OVERLOAD_MODEL, GOOGLE_OVERLOAD_PRICES),
-          ]),
+          new ModelFallbackChatAdapter(adapters, GOOGLE_EXHAUSTED_MESSAGE),
           keyRowSource(row),
         );
       }

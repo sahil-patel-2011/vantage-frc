@@ -54,6 +54,14 @@ describe("BYOK automode routing", () => {
       availableProviders: ["google"],
     });
     expect(chat?.modelId).toBe("gemini-3.8-flash");
+    // Automode never lands on a model with no free tier, whatever the feature asks for.
+    const cad = pickByokModelForFeature({
+      feature: "cad",
+      mode: "automode",
+      enabledModelIds: saved,
+      availableProviders: ["google"],
+    });
+    expect(cad?.modelId).toBe("gemini-3.8-flash");
     const fixed = pickByokModelForFeature({
       feature: "chat",
       mode: "fixed",

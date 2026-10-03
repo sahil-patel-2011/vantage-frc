@@ -16,6 +16,8 @@ export function estimateItemTokens(item: Pick<ContextItem, "content">): number {
 export function contextTokenBudgetForAdapter(adapter: Pick<ChatAdapter, "provider" | "model">): number {
   const provider = adapter.provider.toLowerCase();
   const model = adapter.model.toLowerCase();
+  // Gemini is reached over the OpenAI-compatible protocol but is not a small local model.
+  if (model.startsWith("gemini")) return CLOUD_CONTEXT_TOKEN_BUDGET;
   if (
     provider === "openai-compatible" ||
     provider === "local" ||

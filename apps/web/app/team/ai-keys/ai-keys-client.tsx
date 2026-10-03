@@ -246,8 +246,10 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [mineDraft, setMineDraft] = useState({ provider: "openai", apiKey: "", baseUrl: "", model: "" });
   const [mineBusy, setMineBusy] = useState(false);
 
-  async function saveMemberKey() {
-    if (!orgId || !mineDraft.apiKey.trim()) return;
+  /** `quick` is the one-field Gemini card; without it the full personal-key form is saved. */
+  async function saveMemberKey(quick?: { provider: ByokProvider; apiKey: string }): Promise<boolean> {
+    const draft = quick ? { ...quick, baseUrl: "", model: "" } : mineDraft;
+    if (!orgId || !draft.apiKey.trim()) return false;
     setMineBusy(true);
     setMessage("");
     setMessageIsError(false);
@@ -258,21 +260,22 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         body: JSON.stringify({
           orgId,
           action: "save_member_key",
-          provider: mineDraft.provider,
-          apiKey: mineDraft.apiKey,
-          baseUrl: mineDraft.baseUrl || undefined,
-          model: mineDraft.model || undefined,
+          provider: draft.provider,
+          apiKey: draft.apiKey,
+          baseUrl: draft.baseUrl || undefined,
+          model: draft.model || undefined,
         }),
       });
       const data = (await response.json()) as { error?: string; notice?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save your personal key");
         setMessageIsError(true);
-        return;
+        return false;
       }
-      setMineDraft((d) => ({ ...d, apiKey: "" }));
+      if (!quick) setMineDraft((d) => ({ ...d, apiKey: "" }));
       setMessage(data.notice ?? "Personal key checked and saved. Your AI calls now use it instead of the team key.");
       void load();
+      return true;
     } finally {
       setMineBusy(false);
     }
@@ -555,6 +558,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           setMineDraft={setMineDraft}
           mineBusy={mineBusy}
           saveMemberKey={() => void saveMemberKey()}
+          saveMyGoogleKey={(apiKey) => saveMemberKey({ provider: "google", apiKey })}
           removeMemberKey={(provider) => void removeMemberKey(provider)}
           message={message}
           messageIsError={messageIsError}

@@ -3,8 +3,12 @@ import { HttpChatAdapter } from "../src/http-chat-adapter";
 import { ModelFallbackChatAdapter } from "../src/model-fallback-adapter";
 import {
   ChatProviderResolutionError,
+  GOOGLE_TURN_INPUT_RESERVE,
+  orderGoogleModels,
   resolveOrgChatAdapter,
 } from "../src/resolve-chat-adapter";
+import { GOOGLE_FREE_TIER_INPUT_TPM } from "../src/byok-model-routing";
+import { CLOUD_CONTEXT_TOKEN_BUDGET, contextTokenBudgetForAdapter } from "../src/context-compact";
 
 type QueryResult<T> = { rows: T[]; rowCount: number };
 
@@ -113,151 +117,158 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter.model).toContain("claude");
   });
 
-  it("uses org_llm_keys Google Gemini via OpenAI-compatible endpoint", async () => {
-    const client = fakeClient([
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({
-        rowCount: 1,
-        rows: [
-          {
-            id: "k-google",
-            provider: "google",
-            keyCiphertext: "c",
-            keyNonce: "n",
-            keyAuthTag: "t",
-            encryptedDek: "d",
-            kmsKeyId: "k",
-          },
-        ],
-      }),
-      () => ({ rowCount: 0, rows: [] }),
-    ]);
-
-    const adapter = await resolveOrgChatAdapter(client as never, {
-      orgId: "org-1",
-      promptCachingEnabled: false,
-      decrypt: async () => "AIza-test",
-    });
-
-    expect(adapter).toBeInstanceOf(ModelFallbackChatAdapter);
-    expect(adapter.provider).toBe("openai-compatible");
-    expect(adapter.model).toBe("gemini-3.8-flash");
+  const googleKeyRow = (id: string) => ({
+    id,
+    provider: "google",
+    keyCiphertext: id,
+    keyNonce: "n",
+    keyAuthTag: "t",
+    encryptedDek: "d",
+    kmsKeyId: "k",
   });
-
-  it("answers on Flash-Lite when Flash is overloaded", async () => {
-    const client = fakeClient([
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({
-        rowCount: 1,
-        rows: [
-          {
-            id: "k-google",
-            provider: "google",
-            keyCiphertext: "c",
-            keyNonce: "n",
-            keyAuthTag: "t",
-            encryptedDek: "d",
-            kmsKeyId: "k",
-          },
-        ],
-      }),
-    ]);
+  const empty = () => ({ rowCount: 0, rows: [] });
+  /** A fake Gemini endpoint: `answer(model, key)` returns an HTTP status, 200 = "ok". */
+  function geminiFetch(answer: (model: string, key: string) => number) {
     const asked: string[] = [];
     const fetchImpl = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const model = (JSON.parse(String(init?.body)) as { model: string }).model;
-      asked.push(model);
-      if (model === "gemini-3.8-flash") return new Response("high demand", { status: 503 });
+      const key = String((init?.headers as Record<string, string>).authorization).replace("Bearer ", "");
+      asked.push(`${key}/${model}`);
+      const status = answer(model, key);
+      if (status !== 200) return new Response("no", { status });
       return Response.json({
         choices: [{ message: { content: "ok" } }],
         usage: { prompt_tokens: 7, completion_tokens: 1 },
       });
     }) as unknown as typeof fetch;
+    return { asked, fetchImpl };
+  }
 
-    const adapter = await resolveOrgChatAdapter(client as never, {
-      orgId: "org-1",
-      promptCachingEnabled: false,
-      feature: "chat",
-      decrypt: async () => "AQ.test",
-      fetchImpl,
-    });
+  it("routes a Google key to free-tier models: Flash-Lite for light asks, Flash for hard ones", async () => {
+    const resolve = (feature: string) =>
+      resolveOrgChatAdapter(
+        fakeClient([empty, empty, () => ({ rowCount: 1, rows: [googleKeyRow("team")] }), empty]) as never,
+        { orgId: "org-1", promptCachingEnabled: false, feature, decrypt: async () => "AQ.team" },
+      );
+    const chat = await resolve("chat");
+    expect(chat).toBeInstanceOf(ModelFallbackChatAdapter);
+    expect(chat.provider).toBe("openai-compatible");
+    expect(chat.model).toBe("gemini-3.5-flash-lite");
+    expect((await resolve("strategy")).model).toBe("gemini-3.8-flash");
+    // CAD asks for the strongest model; Pro has no free tier, so Automode stops at Flash.
+    expect((await resolve("cad")).model).toBe("gemini-3.8-flash");
+  });
+
+  it("answers on the other free model when one is overloaded or out of quota", async () => {
+    for (const status of [429, 503]) {
+      const { asked, fetchImpl } = geminiFetch((model) => (model === "gemini-3.8-flash" ? status : 200));
+      const adapter = await resolveOrgChatAdapter(
+        fakeClient([empty, empty, () => ({ rowCount: 1, rows: [googleKeyRow("team")] })]) as never,
+        { orgId: "org-1", promptCachingEnabled: false, feature: "cad", decrypt: async () => "AQ.team", fetchImpl },
+      );
+      const result = await adapter.complete({ message: "hi", context: [] });
+      expect(result.text).toBe("ok");
+      expect(asked).toEqual(["AQ.team/gemini-3.8-flash", "AQ.team/gemini-3.5-flash-lite"]);
+      expect(adapter.model).toBe("gemini-3.5-flash-lite");
+    }
+  });
+
+  it("sends the turn to the model with room when the ledger shows the other is full this minute", async () => {
+    const { asked, fetchImpl } = geminiFetch(() => 200);
+    const adapter = await resolveOrgChatAdapter(
+      fakeClient([
+        empty,
+        empty,
+        () => ({ rowCount: 1, rows: [googleKeyRow("team")] }),
+        // 240k of the 250k free input tokens for Flash already used in the last minute.
+        () => ({ rowCount: 1, rows: [{ model: "gemini-3.8-flash", team: "240000", mine: "0" }] }),
+      ]) as never,
+      { orgId: "org-1", promptCachingEnabled: false, feature: "cad", decrypt: async () => "AQ.team", fetchImpl },
+    );
+    expect(adapter.model).toBe("gemini-3.5-flash-lite");
+    await adapter.complete({ message: "hi", context: [] });
+    expect(asked).toEqual(["AQ.team/gemini-3.5-flash-lite"]);
+  });
+
+  it("uses a member's own Google key first and the team key only when theirs is spent", async () => {
+    const { asked, fetchImpl } = geminiFetch((_model, key) => (key === "AQ.mine" ? 429 : 200));
+    const adapter = await resolveOrgChatAdapter(
+      fakeClient([
+        empty, // routing prefs + policy
+        () => ({ rowCount: 1, rows: [googleKeyRow("mine")] }), // member_llm_keys
+        empty, // org_provider_configs
+        () => ({ rowCount: 1, rows: [googleKeyRow("team")] }), // org_llm_keys
+      ]) as never,
+      {
+        orgId: "org-1",
+        userId: "user-1",
+        promptCachingEnabled: false,
+        feature: "chat",
+        decrypt: async (parts) => `AQ.${parts.ciphertext}`,
+        fetchImpl,
+      },
+    );
     const result = await adapter.complete({ message: "hi", context: [] });
     expect(result.text).toBe("ok");
-    expect(asked).toEqual(["gemini-3.8-flash", "gemini-3.5-flash-lite"]);
-    expect(adapter.model).toBe("gemini-3.5-flash-lite");
+    expect(asked).toEqual([
+      "AQ.mine/gemini-3.5-flash-lite",
+      "AQ.mine/gemini-3.8-flash",
+      "AQ.team/gemini-3.5-flash-lite",
+    ]);
+  });
+
+  it("only reaches Gemini Pro when the team fixed it, and still steps down on a free key", async () => {
+    const { asked, fetchImpl } = geminiFetch((model) => (model.includes("pro") ? 429 : 200));
+    const adapter = await resolveOrgChatAdapter(
+      fakeClient([
+        () => ({
+          rowCount: 1,
+          rows: [{ prefs: { mode: "fixed", fixed_model_id: "google:gemini-2.5-pro" }, policy: null }],
+        }),
+        empty,
+        () => ({ rowCount: 1, rows: [googleKeyRow("team")] }),
+      ]) as never,
+      { orgId: "org-1", promptCachingEnabled: false, feature: "chat", decrypt: async () => "AQ.team", fetchImpl },
+    );
+    expect(adapter.model).toBe("gemini-3.1-pro-preview");
+    await adapter.complete({ message: "hi", context: [] });
+    expect(asked).toEqual(["AQ.team/gemini-3.1-pro-preview", "AQ.team/gemini-3.8-flash"]);
+  });
+
+  it("says what to do when every free model is out of quota", async () => {
+    const { fetchImpl } = geminiFetch(() => 429);
+    const adapter = await resolveOrgChatAdapter(
+      fakeClient([empty, empty, () => ({ rowCount: 1, rows: [googleKeyRow("team")] })]) as never,
+      { orgId: "org-1", promptCachingEnabled: false, feature: "chat", decrypt: async () => "AQ.team", fetchImpl },
+    );
+    await expect(adapter.complete({ message: "hi", context: [] })).rejects.toThrow(/Wait a minute and ask again/);
   });
 
   it("does not try another model when Google rejects the key", async () => {
-    const client = fakeClient([
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({
-        rowCount: 1,
-        rows: [
-          {
-            id: "k-google",
-            provider: "google",
-            keyCiphertext: "c",
-            keyNonce: "n",
-            keyAuthTag: "t",
-            encryptedDek: "d",
-            kmsKeyId: "k",
-          },
-        ],
-      }),
-    ]);
-    const fetchImpl = vi.fn(async () => new Response("denied", { status: 403 })) as unknown as typeof fetch;
-    const adapter = await resolveOrgChatAdapter(client as never, {
-      orgId: "org-1",
-      promptCachingEnabled: false,
-      feature: "chat",
-      decrypt: async () => "AQ.revoked",
-      fetchImpl,
-    });
+    const { asked, fetchImpl } = geminiFetch(() => 403);
+    const adapter = await resolveOrgChatAdapter(
+      fakeClient([empty, empty, () => ({ rowCount: 1, rows: [googleKeyRow("team")] })]) as never,
+      { orgId: "org-1", promptCachingEnabled: false, feature: "chat", decrypt: async () => "AQ.revoked", fetchImpl },
+    );
     await expect(adapter.complete({ message: "hi", context: [] })).rejects.toThrow(/key was rejected/);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(asked).toHaveLength(1);
   });
 
-  it("answers on Flash when a free Google key has no quota for the Pro model", async () => {
-    const googleKey = {
-      id: "k-google",
-      provider: "google",
-      keyCiphertext: "c",
-      keyNonce: "n",
-      keyAuthTag: "t",
-      encryptedDek: "d",
-      kmsKeyId: "k",
-    };
-    const client = fakeClient([
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({ rowCount: 0, rows: [] }),
-      () => ({ rowCount: 1, rows: [googleKey] }),
+  it("keeps a full minute of turns inside the free-tier input limit", () => {
+    // The reserve must cover one turn's input, and ten turns a minute must fit under the limit.
+    expect(contextTokenBudgetForAdapter({ provider: "openai-compatible", model: "gemini-3.8-flash" })).toBe(
+      CLOUD_CONTEXT_TOKEN_BUDGET,
+    );
+    expect(CLOUD_CONTEXT_TOKEN_BUDGET).toBeLessThan(GOOGLE_TURN_INPUT_RESERVE);
+    expect(GOOGLE_TURN_INPUT_RESERVE * 10).toBeLessThan(GOOGLE_FREE_TIER_INPUT_TPM);
+    const flash = { model: "gemini-3.8-flash", prices: { inputPerMillionUsd: 0.75, outputPerMillionUsd: 3.75 } };
+    expect(orderGoogleModels(flash, () => 0).map((entry) => entry.model)).toEqual([
+      "gemini-3.8-flash",
+      "gemini-3.5-flash-lite",
     ]);
-    const asked: string[] = [];
-    const fetchImpl = vi.fn(async (_url: unknown, init?: RequestInit) => {
-      const model = (JSON.parse(String(init?.body)) as { model: string }).model;
-      asked.push(model);
-      if (model.includes("pro")) return new Response("quota", { status: 429 });
-      return Response.json({
-        choices: [{ message: { content: "ok" } }],
-        usage: { prompt_tokens: 7, completion_tokens: 1 },
-      });
-    }) as unknown as typeof fetch;
-
-    const adapter = await resolveOrgChatAdapter(client as never, {
-      orgId: "org-1",
-      promptCachingEnabled: false,
-      feature: "cad",
-      decrypt: async () => "AQ.test",
-      fetchImpl,
-    });
-    expect(adapter.model).toBe("gemini-3.1-pro-preview");
-
-    const result = await adapter.complete({ message: "hi", context: [] });
-    expect(result.text).toBe("ok");
-    expect(asked).toEqual(["gemini-3.1-pro-preview", "gemini-3.8-flash"]);
-    expect(adapter.model).toBe("gemini-3.8-flash");
+    expect(
+      orderGoogleModels(flash, (model) => (model === "gemini-3.8-flash" ? 231_000 : 0)).map((entry) => entry.model),
+    ).toEqual(["gemini-3.5-flash-lite", "gemini-3.8-flash"]);
   });
 
   it("falls through to managed peek for paid orgs", async () => {

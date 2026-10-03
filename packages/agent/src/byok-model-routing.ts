@@ -29,6 +29,11 @@ export type ByokModelOption = {
   inputPerMillionUsd: number;
   /** USD per 1M output tokens — public list rate snapshot. */
   outputPerMillionUsd: number;
+  /**
+   * The provider gives this model no free-tier quota. Automode never routes to it; a team
+   * that pays for it picks it on purpose (Fixed model).
+   */
+  paidKeyOnly?: boolean;
 };
 
 export const BYOK_MODEL_OPTIONS: readonly ByokModelOption[] = [
@@ -93,33 +98,54 @@ export const BYOK_MODEL_OPTIONS: readonly ByokModelOption[] = [
     outputPerMillionUsd: 5,
   },
   // Google rows re-checked against the live API and ai.google.dev pricing on 2026-10-03:
-  // gemini-2.5-pro and gemini-2.0-flash answer 404 "no longer available". The Pro model
-  // has no free tier, so a free AI Studio key gets 429 on it (see GOOGLE_FREE_TIER_MODEL).
+  // gemini-2.5-pro and gemini-2.0-flash answer 404 "no longer available". Pro has no free
+  // tier (its free quota is 0), so it is paidKeyOnly; the two Flash models are what a free
+  // AI Studio key runs on. Quota is counted per model, so splitting light and hard asks
+  // across the two also doubles what one free key can do.
   {
     id: "google:gemini-3.1-pro-preview",
     provider: "google",
     modelId: "gemini-3.1-pro-preview",
-    label: "Gemini 3.1 Pro",
+    label: "Gemini 3.1 Pro (paid Google key)",
     tier: "high",
     tierLabel: "High reasoning",
     inputPerMillionUsd: 2,
     outputPerMillionUsd: 12,
+    paidKeyOnly: true,
   },
   {
     id: "google:gemini-3.8-flash",
     provider: "google",
     modelId: "gemini-3.8-flash",
     label: "Gemini 3.8 Flash",
-    tier: "fast",
-    tierLabel: "Fast / light",
+    tier: "mid",
+    tierLabel: "Strong (strategy)",
     // List rate through 2026-12-31; Google has announced $1.50 / $7.50 from 2027-01-01.
     inputPerMillionUsd: 0.75,
     outputPerMillionUsd: 3.75,
   },
+  {
+    id: "google:gemini-3.5-flash-lite",
+    provider: "google",
+    modelId: "gemini-3.5-flash-lite",
+    label: "Gemini 3.5 Flash-Lite",
+    tier: "fast",
+    tierLabel: "Fast / light",
+    inputPerMillionUsd: 0.3,
+    outputPerMillionUsd: 2.5,
+  },
 ] as const;
 
-/** The Gemini model a free AI Studio key can call — the default, and the Pro fallback. */
+/** The strongest Gemini model a free AI Studio key can call. */
 export const GOOGLE_FREE_TIER_MODEL = "gemini-3.8-flash";
+
+/**
+ * Free-tier input tokens per minute, per model, per Google project. Measured on 2026-10-03
+ * by sending an oversized request with a free key: both Flash models answered
+ * "GenerateContentInputTokensPerModelPerMinute-FreeTier, limit: 250000". Google publishes
+ * the number only inside AI Studio, so this is the source.
+ */
+export const GOOGLE_FREE_TIER_INPUT_TPM = 250_000;
 
 /**
  * Ids of models a provider has retired, mapped to their replacement. Ids are persisted
@@ -190,18 +216,22 @@ export function pickByokModelForFeature(input: {
   const catalog = BYOK_MODEL_OPTIONS.filter((m) => available.has(m.provider));
   if (!catalog.length) return null;
 
+  // Only a deliberate Fixed pick reaches a model with no free tier.
+  const freeTier = catalog.filter((m) => !m.paidKeyOnly);
+  const automatic = freeTier.length ? freeTier : catalog;
+
   if (input.mode === "fixed") {
     const fixedId = input.fixedModelId ? canonicalByokModelId(input.fixedModelId) : null;
     const fixed = catalog.find((m) => m.id === fixedId);
-    return fixed ?? catalog[0] ?? null;
+    return fixed ?? automatic[0] ?? null;
   }
 
   const enabledIds = (input.enabledModelIds?.filter(Boolean) ?? []).map(canonicalByokModelId);
   const pool =
     enabledIds.length > 0
-      ? catalog.filter((m) => enabledIds.includes(m.id))
-      : catalog;
-  if (!pool.length) return catalog[0] ?? null;
+      ? automatic.filter((m) => enabledIds.includes(m.id))
+      : automatic;
+  if (!pool.length) return automatic[0] ?? null;
 
   const preferred: ByokModelTier = input.difficulty
     ? input.difficulty === "light"

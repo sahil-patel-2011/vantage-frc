@@ -98,6 +98,19 @@ export const ANY_ENDPOINT_POINTS: string[] = [
 
 export const MEMBER_KEY_HEADLINE = "Use your own key, just for you";
 
+/** The one-field path for a member's own free Gemini key (ai-keys-my-free-key.tsx). */
+export const MY_FREE_KEY_HEADLINE = "Add your own free Google AI Studio key";
+
+export const MY_FREE_KEY_BODY =
+  "Google gives every account its own free allowance. With your own key, your questions use your allowance instead of the team's, and nobody else can see or spend it.";
+
+/** Only shown when the team has a Google key: the resolver falls back to it (resolve-chat-adapter). */
+export const MY_FREE_KEY_TEAM_BACKUP =
+  "If yours runs out for the minute, the team key answers instead.";
+
+export const MY_FREE_KEY_SCHOOL_NOTE =
+  "School accounts often have AI Studio turned off, so use a personal Google account if it says you do not have access.";
+
 export const MEMBER_KEY_BODY =
   "A key you save here belongs to your account alone. It overrides the team key for you in every AI feature and nobody else — admins included — can see or spend it. Remove it and you fall straight back to the team's setup.";
 
