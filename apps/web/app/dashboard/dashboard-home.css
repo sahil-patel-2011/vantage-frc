@@ -203,6 +203,10 @@
   min-height: 0;
 }
 
+/* A quiet card is its title and one line. A second heading, a sentence repeating it and an
+   "Open …" link made six "Nothing…" cards read as six things to look at. */
+.dash-widget .dash-quiet { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; max-width: 44ch; }
+
 /* Empty cards still deserve a surface; the old page-colored panel looked unfinished. */
 body.has-app-shell .dash-home .dash-widget.app-card.is-empty {
   background: var(--surface);

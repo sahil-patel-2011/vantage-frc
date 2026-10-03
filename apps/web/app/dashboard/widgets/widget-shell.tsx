@@ -69,6 +69,7 @@ function WidgetEmptyState({
   href,
   orgId,
   lead,
+  openFromTitle,
 }: {
   type: string;
   hint: EmptyHint;
@@ -76,6 +77,8 @@ function WidgetEmptyState({
   href?: string;
   orgId: string;
   lead?: boolean;
+  /** The card title already opens the destination, so no second link repeats it. */
+  openFromTitle?: boolean;
 }) {
   const withOrg = (path: string) => withOrgHref(path, orgId || null);
   // Every match played: the next useful look is where the team finished, not a dead card.
@@ -103,13 +106,15 @@ function WidgetEmptyState({
         ? withOrg(hint.ctaHref)
         : href;
   const ctaLabel = noEvent ? "Pick your event" : wrongEvent ? "Change event" : eventOver ? "See the rankings" : hint.ctaLabel;
+  // Nothing to do here and the title already opens the page: one line says so.
+  if (openFromTitle && ctaLabel === hint.ctaLabel) return <p className="dash-quiet">{description}</p>;
   return (
     <EmptyState
       compact
       title={eventOver ? "Our matches here are done" : noEvent ? "Which event are you at?" : hint.title}
       description={description}
     >
-      {ctaHref && ctaLabel ? (
+      {ctaHref && ctaLabel && !(openFromTitle && ctaLabel === hint.ctaLabel) ? (
         <a className="dash-empty-cta" href={ctaHref}>
           {ctaLabel} →
         </a>
@@ -156,6 +161,19 @@ export function WidgetShell({
   // Colored circle icons only when the widget has real live data — never decorate empty/waiting shells.
   const showIcon = showLive && Boolean(iconMeta);
   const isHero = type === "next_match";
+  /*
+    A quiet card ("Nothing to assign") opens its page from the title, like a live one. Six
+    cards with nothing in them used to end in six "Open … →" links, which read as a column
+    of buttons on a Home with nothing to do. Only a plain "Open X" is folded into the title:
+    a card that needs something done ("Set active event", "Pick your event") keeps its link.
+  */
+  const quietHref =
+    !loading && !useChildren && status === "empty" && !emptyHint.noEmptyCta && /^Open /.test(emptyHint.ctaLabel ?? "")
+      ? emptyHint.ctaHref
+        ? withOrgHref(emptyHint.ctaHref, orgId || null)
+        : href
+      : undefined;
+  const titleHref = href && showLive ? href : quietHref;
 
   return (
     <article
@@ -170,8 +188,8 @@ export function WidgetShell({
             </i>
           ) : null}
           <div>
-            <h2>{href && showLive ? (
-              <a className="dash-widget-open" href={href}>
+            <h2>{titleHref ? (
+              <a className="dash-widget-open" href={titleHref}>
                 <span>{title}</span><Icon name="chevron" />
               </a>
             ) : title}</h2>
@@ -188,7 +206,7 @@ export function WidgetShell({
       ) : useChildren ? (
         children
       ) : (
-        <WidgetEmptyState type={type} hint={emptyHint} message={payload?.message} href={href} orgId={orgId} lead={lead} />
+        <WidgetEmptyState type={type} hint={emptyHint} message={payload?.message} href={href} orgId={orgId} lead={lead} openFromTitle={Boolean(quietHref)} />
       )}
 
     </article>
