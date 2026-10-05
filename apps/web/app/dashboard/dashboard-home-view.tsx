@@ -55,7 +55,8 @@ import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
 import { DashboardHomeHeader } from "./dashboard-home-header";
-import { DashboardHomeSkeleton } from "./dashboard-now-card";
+import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
+import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
@@ -498,6 +499,8 @@ export function DashboardHomeView(props: {
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
+  const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
+  const showDailyBrief = Boolean(orgId && !sharedSetupPrompt && !teamSetupCard && !matchCardLeads);
 
   return (
     <main
@@ -543,6 +546,12 @@ export function DashboardHomeView(props: {
         }}
         onEdit={startEditing}
       />
+      {orgId ? (
+        <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
+          {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} />
+        </div>
+      ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
           so with a match coming up the Next match card leads. A setup step ("Add your first
           practice") waits too: it sat above Qual 31 fourteen minutes before the match. It is
@@ -637,6 +646,12 @@ export function DashboardHomeView(props: {
           data-testid="dash-widget-grid"
           data-dash-drag={editing ? "on" : "off"}
         >
+          {!editing && displayLayout.length > 0 ? (
+            <header className="dash-board-heading">
+              <div><h2>Your overview</h2><p>The things that matter to your team, in one place.</p></div>
+              <span>{board?.scope === "org" ? "Team board" : "Personal board"}</span>
+            </header>
+          ) : null}
           {editing ? (
             <p className="dash-edit-hint" data-testid="dash-edit-hint">
               {/* One column has no size button (every size is full width), so it is not mentioned. */}

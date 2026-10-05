@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 import { expect, test } from "@playwright/test";
 import { expectHubReadyOrGate } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
@@ -36,7 +37,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "GitHub" })).toHaveCount(0);
   // Settings share the main menu; no second row repeats the navigation here.
   await expect(page.getByRole("navigation", { name: "Team settings" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await navigationOpener(page).click();
   await page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true }).fill("Connectors");
   await expect(page.getByRole("listbox", { name: "Search results", exact: true }).getByRole("option", { name: "Connectors Settings", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");

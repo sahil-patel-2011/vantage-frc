@@ -10,13 +10,15 @@ import "./product-hub.css";
 // it has to come after them to win. Tokens live in vantage-fluid.css, loaded
 // from the root layout so marketing routes get the easing curves too.
 import "./vantage-chrome.css";
-// Shared shell layout refinements; navigation opens only when requested.
+// Shared shell layout refinements and mobile shortcuts.
 import "./app-rail.css";
 // Final visual pass: calm spacing and soft depth, using the shared palette. Product half only —
 // its marketing twin lives in marketing-styles.ts so neither sheet is in two chunk groups.
 import "./apple-polish-product.css";
 // Toast and disclosure entrances, on the shared motion tokens.
 import "./product-motion.css";
+// The complete product material system, including desktop navigation.
+import "./macos-product.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

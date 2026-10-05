@@ -113,16 +113,15 @@
 .statTileLink { text-decoration: none; color: inherit; transition: transform .12s ease; }
 .statTileLink:hover { transform: translateY(-1px); }
 .statLabel {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .05em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--muted);
 }
 .statValueRow { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .statValue {
   font-size: clamp(24px, 3.4vw, 34px);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.05;
   letter-spacing: -.02em;
   color: var(--ink);
@@ -152,14 +151,13 @@
 .sectionKicker {
   margin: 0;
   color: var(--accent);
-  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  font: 500 12px/1.4 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0;
 }
 .sectionTitle {
   margin: 0;
   font-size: clamp(16px, 2vw, 20px);
-  font-weight: 700;
+  font-weight: 550;
   letter-spacing: -.01em;
   color: var(--ink);
 }
@@ -181,10 +179,10 @@
 }
 .toolbarSticky {
   position: sticky;
-  top: 0;
+  top: 64px;
   z-index: 20;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(6px);
+  background: var(--product-glass, var(--surface));
+  backdrop-filter: var(--product-filter, blur(20px));
   border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
 }
 .toolbarSticky :where(a, button, input, select, [tabindex]) {
@@ -515,20 +513,21 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: color-mix(in srgb, #0b1220 55%, transparent);
-  backdrop-filter: blur(2px);
+  background: #10152145;
+  backdrop-filter: blur(8px);
 }
 .dialog {
   width: min(560px, 100%);
   max-height: min(86vh, 720px);
   overflow: auto;
   display: grid;
-  gap: 14px;
-  padding: 20px 22px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-pop);
+  gap: 20px;
+  padding: 28px;
+  border-radius: 26px;
+  background: var(--product-glass, var(--surface));
+  backdrop-filter: var(--product-filter, none);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--product-reflection, inset 0 1px 0 transparent), 0 24px 100px #0e172a33;
   color: var(--ink);
 }
 .dialogHead {
@@ -537,7 +536,7 @@
   justify-content: space-between;
   gap: 12px;
 }
-.dialogTitle { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.dialogTitle { margin: 0; font-size: 21px; font-weight: 550; letter-spacing: -.03em; }
 .dialogClose {
   border: 0;
   background: none;

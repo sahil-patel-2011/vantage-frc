@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { signInAs } from "./session";
@@ -26,7 +27,7 @@ for (const width of [390, 1440]) {
         expect(await page.locator("body").evaluate(el => getComputedStyle(el).fontFamily)).toMatch(/inter/i);
         expect((await new AxeBuilder({ page }).include(".dash-home").analyze()).violations).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-        await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toHaveAttribute("aria-expanded", "false");
+        await expect(navigationOpener(page)).toHaveAttribute("aria-expanded", "false");
         await page.screenshot({ path: info.outputPath(`home-${name.toLowerCase()}-${width}.png`), fullPage: true });
 
         await page.goto(`/competition?tab=scouting&mode=free&orgId=${orgId}`);

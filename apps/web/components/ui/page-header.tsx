@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import { breadcrumbForPath } from "../../lib/nav/product-nav";
 import { PageOptions } from "./page-options";
 
@@ -16,6 +16,7 @@ type PageHeaderProps = {
 /** Shared Soft-UI page chrome: breadcrumbs, title, optional description + trailing actions. */
 export function PageHeader({ breadcrumbs, navPath, title, description, children, className }: PageHeaderProps) {
   const crumb = breadcrumbs ?? (navPath ? breadcrumbForPath(navPath) : null);
+  const actions = Children.toArray(children);
   return (
     <header className={["app-page-header", "scan-header", className].filter(Boolean).join(" ")}>
       <div>
@@ -23,7 +24,7 @@ export function PageHeader({ breadcrumbs, navPath, title, description, children,
         <h1>{title}</h1>
         {description ? <p>{description}</p> : null}
       </div>
-      {children ? <div className="app-page-actions"><PageOptions>{children}</PageOptions></div> : null}
+      {actions.length ? <div className="app-page-actions">{actions.slice(0, 2)}{actions.length > 2 ? <PageOptions>{actions.slice(2)}</PageOptions> : null}</div> : null}
     </header>
   );
 }

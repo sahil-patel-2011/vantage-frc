@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 /**
  * The GUI test agent.
  *
@@ -419,7 +420,7 @@ test.describe("GUI test agent", () => {
         // The drawer is the only always-available way into a workspace, so it
         // is opened first — the same thing a person who cannot see the island
         // has to do.
-        const menu = page.getByRole("button", { name: /Menu and search/i }).first();
+        const menu = navigationOpener(page);
         if (await menu.isVisible().catch(() => false)) {
           await menu.click();
           path.push("menu");

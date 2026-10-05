@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { orgNameAddsDetail } from "../../components/app-shell-model";
 import { Icon } from "../../components/icon";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -44,10 +45,15 @@ export function DashboardHomeHeader({
   onManageBoards: () => void;
   onEdit: () => void;
 }) {
+  const [today, setToday] = useState("");
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }));
+  }, []);
   const dim = editing ? ({ inert: true, "data-edit-dim": "true" } as const) : {};
   return (
     <header className="dash-home-header">
       <div className="dash-home-intro" {...dim}>
+        <p className="dash-home-date">{today || "Your workspace"}</p>
         {/* The greeting is what is specific to opening the page; the team number is in the
             top bar on every page, so it is not repeated here. */}
         <h1 className="dash-hero-greeting">{greetingText}</h1>
@@ -97,7 +103,7 @@ export function DashboardHomeHeader({
               onClick={onEdit}
             >
               <Icon name="gear" />
-              Edit
+              Customize
             </button>
           </div>
         ) : null}

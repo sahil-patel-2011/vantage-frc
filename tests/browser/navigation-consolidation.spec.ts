@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
@@ -11,7 +12,7 @@ for (const width of [390, 1440]) {
     expect(await signInAs(context, "owner"), "Real seeded session required").toBe(true);
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/competition?tab=strategy");
-    const trigger = page.getByRole("button", { name: "Menu and search", exact: true });
+    const trigger = navigationOpener(page);
     await expect(page.locator(".workspace-picker-trigger")).toHaveCount(0);
     await expect(page.locator(".workspace-hub-header select")).toHaveCount(0);
     await trigger.click();

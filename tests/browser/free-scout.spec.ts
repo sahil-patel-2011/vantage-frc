@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { signInAs } from "./session";
-import { openNav } from "./nav";
+import { openNav, navigationOpener } from "./nav";
 
 test.use({ actionTimeout: 15_000 });
 
@@ -94,7 +94,7 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 25_000 });
-    const opener = page.getByRole("button", { name: "Menu and search" });
+    const opener = navigationOpener(page);
     await openNav(page);
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
     for (const name of ["Home", "Scouting"]) await expect(drawer.getByRole("link", { name: new RegExp(`^${name} `) })).toBeVisible();

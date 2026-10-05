@@ -1,5 +1,5 @@
-/* Navigation is an on-demand drawer at every width. Desktop content uses the
-   full canvas; only phones and tablets need space for the bottom shortcuts. */
+/* Search uses the drawer; the desktop workspace sidebar is in macos-product.css.
+   Phones and tablets need space for the bottom shortcuts. */
 @media (min-width: 1024px) {
   body:is(.has-app-shell, :has(.soft-topbar)) {
     padding-bottom: calc(28px + var(--safe-bottom)) !important;

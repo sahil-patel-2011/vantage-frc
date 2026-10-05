@@ -6,9 +6,9 @@ import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
 import type { Me, MembershipOption } from "./app-shell-model";
 
-/** Current context stays visible; Settings → Your teams owns team changes. */
-function TeamChip({ label, className }: { label: string; onOpen: () => void; className: string }) {
-  return <span className={className} title={label}>{label}</span>;
+/** The current team also opens the workspace picker. */
+function TeamChip({ label, className, onOpen }: { label: string; onOpen: () => void; className: string }) {
+  return <button type="button" className={`${className} soft-team-switch`} onClick={onOpen} title="Switch team" aria-label={`Switch team — ${label}`}><span>{label}</span><Icon name="chevron" /></button>;
 }
 
 export function AppShellTopbar({
@@ -22,6 +22,7 @@ export function AppShellTopbar({
   navOpen,
   menuOpen,
   onOpenNav,
+  shortcutHint,
   onOpenTeams,
 
   unreadCount,
@@ -51,7 +52,8 @@ export function AppShellTopbar({
   /** Whether the on-demand navigation drawer is showing. */
   menuOpen: boolean;
   onOpenNav: () => void;
-  /** Opens the drawer with the team picker already expanded. */
+  shortcutHint: string;
+  /** Opens the workspace picker. */
   onOpenTeams: () => void;
 
   unreadCount: number;
@@ -145,6 +147,7 @@ export function AppShellTopbar({
         </div>
       </div>
       <div className="soft-topbar-actions">
+        <button hidden={navOpen} className="app-topbar-search" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>
         <ShellOutboxStatus orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-ask-ai"
