@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } from "react";
-import { hubPageTitle } from "../lib/nav/hub-navigation";
+import { hubPageTitle, hubNavigationSections } from "../lib/nav/hub-navigation";
 import { HubContextActions } from "./hub-context-actions";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
-import { EmptyState, PageHeader, Button } from "./ui";
+import { EmptyState, PageHeader, Button, TabBar } from "./ui";
 import {
   clientCanAccessHub,
   filterTabsByHubAccess,
@@ -262,6 +262,10 @@ export function ProductHubShell({
   const tabAllowed =
     !access.ready ||
     primaryTabs.some((entry) => entry.id === tab || entry.id === workbenchId);
+  const sections = hubNavigationSections(hub, workspaceTabs);
+  const selectedSection = sections.find(section => section.id === tab)
+    ?? sections.find(section => hubWorkbenchId(hub, section.id) === workbenchId)
+    ?? sections[0];
 
   return (
     <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
@@ -269,12 +273,12 @@ export function ProductHubShell({
       <div className="workspace-hub-header">
         <div className="hub-bar-id">
           {breadcrumbs ? <span className="breadcrumbs">{breadcrumbs}</span> : null}
-          {/* Still an h1: the page needs one, and it is what a screen reader
-              announces on arrival. It is small and inline, not a banner. */}
+          <span className="workspace-hub-eyebrow">{hub.label}</span>
           <h1>{hubPageTitle(hub, tab)}</h1>
         </div>
         {headerActions}
       </div>
+      <TabBar className="workspace-hub-tabs" aria-label={`${hub.label} sections`} tabs={sections} value={selectedSection?.id ?? tab} onChange={selectTab} />
       <div
         className="product-hub-panel"
         data-hub-tab={tab}

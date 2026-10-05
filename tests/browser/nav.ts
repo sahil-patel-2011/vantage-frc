@@ -1,13 +1,18 @@
 import type { Page } from "@playwright/test";
 
-/** Desktop navigation is available inside the drawer; mobile keeps its shortcuts. */
+/** The visible opener survives switching between desktop search and mobile menu. */
+export function navigationOpener(page: Page) {
+  return page.locator(".app-topbar-search:visible, .soft-menu-btn:visible");
+}
+
+/** Desktop has a persistent workspace sidebar; smaller screens keep shortcuts. */
 export function primaryNavigation(page: Page) {
-  return page.getByRole("navigation", { name: page.viewportSize()!.width >= 1024 ? "Main menu" : "Primary apps", exact: true });
+  return page.getByRole("navigation", { name: page.viewportSize()!.width >= 1100 ? "Workspaces" : "Primary apps", exact: true });
 }
 
 /** Open the same on-demand navigation drawer at every screen size. */
 export async function openNav(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await navigationOpener(page).click();
 }
 
 /** Destination groups belong to the one hamburger menu. */

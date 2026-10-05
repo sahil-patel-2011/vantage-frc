@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signInAs, signInFixture } from "./session";
-import { openNav } from "./nav";
+import { openNav, navigationOpener } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   await signInFixture(context);
@@ -128,25 +128,20 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(island).toBeVisible();
 
-  // Desktop uses the same closed-by-default drawer; the page owns the full width.
+  // Desktop keeps workspaces visible and opens the same drawer for search.
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeHidden();
-  await expect(page.locator(".vrail")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Menu and search" })).toBeVisible();
+  await expect(page.locator(".app-sidebar")).toBeVisible();
+  await expect(navigationOpener(page)).toBeVisible();
   await expect(drawer).toBeHidden();
 });
 
 test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
   const field = page.getByRole("combobox", { name: /Search pages, tools/ });
 
-  // There is no separate search button at any width any more. 538f3df62 gave
-  // the top bar a real menu and folded search into it — one control labelled
-  // "Menu and search" — and this spec kept looking for the old button, so it
-  // had been failing on a shell that was behaving exactly as designed.
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
-  // The three-line "Menu and search" button is the one opener at every width; the old
-  // desktop rail (and its own search box) is retired.
-  const opener = page.getByRole("button", { name: "Menu and search" });
+  // Desktop search and the phone menu open the same field.
+  const opener = navigationOpener(page);
 
   for (const size of [
     { width: 390, height: 844 },
@@ -179,7 +174,7 @@ test("one menu restores keyboard focus without a second workspace picker", async
   await page.goto("/competition");
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(page.locator(".workspace-picker-trigger")).toHaveCount(0);
-  const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+  const opener = navigationOpener(page);
   await opener.click();
   await expect(page.getByRole("combobox", { name: /Search pages, tools/ })).toBeFocused();
   await page.keyboard.press("Escape");
@@ -215,9 +210,9 @@ test("account keeps every setting reachable from one place", async ({ page, cont
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
 
   for (const label of [/^Security/, /^AI usage/, /^AI limits/, /^Connectors/]) await expect(page.getByRole("link", { name: label }).first()).toBeVisible();
-  const sections = page.getByRole("combobox", { name: "Account sections", exact: true });
-  for (const id of ["profile", "appearance", "notifications"]) await expect(sections.locator(`option[value="${id}"]`)).toHaveCount(1);
-  await sections.selectOption("appearance");
+  const sections = page.getByRole("tablist", { name: "Account sections", exact: true });
+  for (const label of ["Profile", "Appearance", "Notifications"]) await expect(sections.getByRole("tab", { name: label, exact: true })).toHaveCount(1);
+  await sections.getByRole("tab", { name: "Appearance", exact: true }).click();
   await expect(page.locator(".appearance-panel")).toBeVisible();
 });
 

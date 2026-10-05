@@ -13,7 +13,7 @@ test("failed sign-out can be retried; successful sign-out revokes the session an
   await page.goto("/account?orgId=6925a000-0000-4000-8000-000000000001");
   // CI compiles this route on first use; wait for its loaded controls before
   // beginning the sign-out failure/retry assertions.
-  await expect(page.getByRole("combobox", { name: "Account sections", exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("tablist", { name: "Account sections", exact: true })).toBeVisible({ timeout: 15_000 });
   await page.evaluate(async () => {
     for (const [name, store, value] of [
       ["vantage-feature-cache", "snapshots", { key: "sign-out-proof", data: "downloaded private view" }],

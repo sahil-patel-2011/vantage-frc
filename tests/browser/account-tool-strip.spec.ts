@@ -6,17 +6,16 @@ test.beforeEach(async ({ context }) => {
   if (!signed) await signInFixture(context);
 });
 
-test("account sections are a tool strip, not a tab bar", async ({ page }) => {
+test("account sections are visible tabs and notifications opens its preferences", async ({ page }) => {
   await page.goto("/account");
   // The page heading is "Account" — it holds both the "Your settings" and
   // "Team settings" groups, so naming it after one of them was wrong.
   await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
 
-  const sections = page.getByRole("combobox", { name: "Account sections", exact: true });
+  const sections = page.getByRole("tablist", { name: "Account sections", exact: true });
   await expect(sections).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Profile" })).toHaveCount(0);
-  await expect(sections).toHaveValue("profile");
-  await sections.selectOption("notifications");
+  await expect(sections.getByRole("tab", { name: "Profile", exact: true })).toHaveAttribute("aria-selected", "true");
+  await sections.getByRole("tab", { name: "Notifications", exact: true }).click();
   await expect(page).toHaveURL(/\/notifications\/preferences/, { timeout: 20_000 });
 });

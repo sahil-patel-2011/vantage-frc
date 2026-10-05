@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { HubPanelSkeleton } from "../../components/product-hub";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, TabBar } from "../../components/ui";
 import { hubPageTitle } from "../../lib/nav/hub-navigation";
 import { HubContextActions } from "../../components/hub-context-actions";
 import { MoneyAddMenu } from "./money-add-menu";
@@ -288,9 +288,10 @@ export default function BusinessClient() {
   return (
     <main className="module-page business-page product-hub product-hub--business">
       <div className="workspace-hub-header">
-        <div className="hub-bar-id"><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
+        <div className="hub-bar-id"><span className="workspace-hub-eyebrow">Business</span><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
         {live ? <MoneyAddMenu orgId={orgId ?? null} /> : null}
       </div>
+      <TabBar className="workspace-hub-tabs" aria-label="Business sections" tabs={visibleWorkbenches} value={workbenchId} onChange={next => selectTab(next as Tab)} />
 
       <OfflineBanner feature="Business" fromCache={fromCache} cachedAt={cachedAt} />
 

@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { mainMenuSections } from "../../apps/web/lib/nav/main-menu";
@@ -11,7 +12,7 @@ for (const width of [320, 390, 768, 1440]) test(`one destination menu at ${width
   await page.goto("/ai?tab=writer");
   await expect(page.getByLabel("What are you writing?")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "AI section", exact: true })).toHaveCount(0);
-  const menu = page.getByRole("button", { name: "Menu and search", exact: true });
+  const menu = navigationOpener(page);
   await expect(menu).toHaveAttribute("aria-expanded", "false");
   await menu.click();
   const nav = page.getByRole("navigation", { name: "Main menu", exact: true });
@@ -30,10 +31,10 @@ for (const width of [390, 1440]) test(`Home keeps real work easy to reach at ${w
   await page.setViewportSize({ width, height: 1000 });
   await page.goto("/dashboard");
   await expect(page.getByTestId("dash-now").or(page.locator(".dash-widget.hero")).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(navigationOpener(page)).toHaveAttribute("aria-expanded", "false");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath(`home-${width}.png`), fullPage: true });
-  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await navigationOpener(page).click();
   await page.getByRole("navigation", { name: "Main menu", exact: true }).getByRole("link", { name: /^Scouting/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Scout", exact: true })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Competition section", exact: true })).toHaveCount(0);
@@ -45,13 +46,13 @@ test("every grouped destination opens from the menu and keeps the team", async (
   for (const section of mainMenuSections(PRODUCT_NAV_GROUPS, () => true)) {
     for (const item of section.items) {
       await page.goto(`/dashboard?orgId=${orgId}`);
-      await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+      await navigationOpener(page).click();
       const group = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ hasText: section.label }) });
       await group.locator("summary").click();
       await group.getByRole("link", { name: item.label, exact: true }).click();
       await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
       expect(new URL(page.url()).searchParams.get("orgId"), item.href).toBe(orgId);
-      await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toHaveAttribute("aria-expanded", "false");
+      await expect(navigationOpener(page)).toHaveAttribute("aria-expanded", "false");
       await expect(page.locator("body")).not.toContainText("Application error");
     }
   }
@@ -60,7 +61,7 @@ test("every grouped destination opens from the menu and keeps the team", async (
 test("menu destinations respect workspace and sponsor restrictions", async ({ page }) => {
   const me = await (await page.request.get("/api/me")).json();
   await page.route("**/api/me**", route => route.fulfill({ json: { ...me, hubAccess: [{ hubId: "ai", allowedTabIds: ["chat"] }] } }));
-  await page.goto("/ai"); await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await page.goto("/ai"); await navigationOpener(page).click();
   const ai = page.getByRole("navigation", { name: "AI", exact: true });
   await page.locator(".main-menu-section > summary").filter({ hasText: /^AI$/ }).click();
   await expect(ai.getByRole("link", { name: "Chat", exact: true })).toBeVisible();
@@ -68,8 +69,9 @@ test("menu destinations respect workspace and sponsor restrictions", async ({ pa
 });
 
 test("account and inbox filters remain task controls", async ({ page }) => {
-  await page.goto("/account"); const selector = page.getByRole("combobox", { name: "Account sections", exact: true });
-  await selector.selectOption("appearance"); await expect(selector).toHaveValue("appearance");
+  await page.goto("/account"); const selector = page.getByRole("tablist", { name: "Account sections", exact: true });
+  await selector.getByRole("tab", { name: "Appearance", exact: true }).click();
+  await expect(selector.getByRole("tab", { name: "Appearance", exact: true })).toHaveAttribute("aria-selected", "true");
   await page.goto("/notifications"); const filters = page.getByRole("combobox", { name: "Inbox filters", exact: true });
   await filters.selectOption("unread"); await expect(filters).toHaveValue("unread");
 });
@@ -79,7 +81,7 @@ for (const width of [390, 1440]) test(`search changes the open AI and scouting t
   const orgId = "6925a000-0000-4000-8000-000000000001";
   await page.goto(`/ai?tab=writer&orgId=${orgId}`);
   await expect(page.getByLabel("What are you writing?")).toBeVisible();
-  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await navigationOpener(page).click();
   await page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true }).fill("Connect AI");
   await page.getByRole("option", { name: "Connect AI AI › Controls", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Connect AI", exact: true })).toBeVisible({ timeout: 10000 });
@@ -87,7 +89,7 @@ for (const width of [390, 1440]) test(`search changes the open AI and scouting t
   await expect(page.locator(".ai-connect-method")).toHaveCount(2);
   await page.goto(`/competition?tab=scouting&orgId=${orgId}`);
   await expect(page.getByRole("heading", { name: "Scout", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Menu and search", exact: true }).click();
+  await navigationOpener(page).click();
   const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true });
   await search.fill("Teams");
   await expect(page.getByRole("option", { name: "Teams Competition", exact: true })).toBeVisible();
@@ -95,5 +97,5 @@ for (const width of [390, 1440]) test(`search changes the open AI and scouting t
   await expect(page.getByRole("heading", { name: "Teams", exact: true })).toBeVisible();
   await expect(page.locator(".stp-row").first()).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Sort robots", exact: true })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(navigationOpener(page)).toHaveAttribute("aria-expanded", "false");
 });

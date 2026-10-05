@@ -40,6 +40,7 @@ import { WidgetsLoadedContext } from "./widgets/widgets-loaded";
 import { usePhoneCardRows } from "./use-phone-card-rows";
 import "./dashboard-dnd.css";
 import "./dash-layout.css";
+import "./dashboard-workspace.css";
 
 export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();

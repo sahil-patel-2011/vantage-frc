@@ -9,6 +9,7 @@ import { AppTour } from "./app-tour";
 import { LegalUpdateBanner } from "./legal-update-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
+import { AppShellSidebar } from "./app-shell-sidebar";
 import {
   ISLAND_TAB_CATALOG,
   PRODUCT_NAV_GROUPS,
@@ -70,6 +71,19 @@ export default function AppShell() {
    * four controls at once.
    */
   const [navOpen, setNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  useEffect(() => {
+    try { setSidebarCollapsed(localStorage.getItem("vantage.sidebar.collapsed") === "true"); } catch { /* Device preference is optional. */ }
+  }, []);
+  useEffect(() => {
+    document.body.classList.toggle("shell-sidebar-collapsed", sidebarCollapsed);
+    return () => document.body.classList.remove("shell-sidebar-collapsed");
+  }, [sidebarCollapsed]);
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    try { localStorage.setItem("vantage.sidebar.collapsed", String(next)); } catch { /* Still works for this visit. */ }
+  };
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -132,12 +146,7 @@ export default function AppShell() {
     setWorkspaceOpen(false);
   }, []);
 
-  /**
-   * The three-line button opens the one menu (search, your team, every section, settings)
-   * at every width. There used to be two: an always-open rail on wide screens and this
-   * drawer, each listing the same places differently. On touch screens the search box is
-   * not focused on open, so the keyboard does not cover the menu.
-   */
+  /** Touch opens navigation without bringing up the software keyboard. */
   const toggleMenu = useCallback(() => {
     openNav({ focusSearch: !window.matchMedia("(pointer: coarse)").matches });
   }, [openNav]);
@@ -229,7 +238,8 @@ export default function AppShell() {
       navOpenerRef.current = null;
       if (opener) requestAnimationFrame(() => {
         const visible = opener.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden";
-        const fallback = document.querySelector<HTMLElement>(".soft-menu-btn");
+        const fallback = [...document.querySelectorAll<HTMLElement>(".app-topbar-search, .soft-menu-btn")]
+          .find(control => control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");
         (visible ? opener : fallback)?.focus();
       });
       setNavQuery("");
@@ -680,6 +690,8 @@ export default function AppShell() {
         Skip to main content
       </a>
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
+      {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pathname={pathname} pathSearch={pathSearch}
+        orgId={orgId} orgLabel={orgLabel} collapsed={sidebarCollapsed} onCollapse={toggleSidebar} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}
@@ -691,13 +703,8 @@ export default function AppShell() {
         navOpen={navOpen}
         menuOpen={navOpen}
         onOpenNav={toggleMenu}
-        // Pressing the team name opens the drawer already showing the team
-        // picker, so switching, leaving and joining are one tap from every
-        // page rather than three from behind the avatar.
-        onOpenTeams={() => {
-          openNav();
-          setWorkspaceOpen(true);
-        }}
+        shortcutHint={shortcutHint}
+        onOpenTeams={() => navigate("/workspace")}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
         onToggleAccount={() => setAccountMenuOpen((value) => !value)}

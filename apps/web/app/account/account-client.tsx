@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, TabBar, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
@@ -359,16 +359,14 @@ export default function AccountClient() {
       />
 
       <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
+      <div className="account-workspace">
+      <div className="account-personal">
 
       {/* Who you are signed in as, said once and plainly. The page opened
           straight into settings rows, so the first question it answered was
           "which toggle" rather than "whose account is this" — which matters on
           a shared shop laptop. No join date here: nothing in the session
           carries one, and a made-up "member since" is worse than no line. */}
-      {/* Centred, and the avatar is the biggest thing on the screen, because
-          the first question this page answers is "whose account am I looking
-          at" — which matters most on the shared shop laptop where it is
-          usually somebody else's. */}
       <section className="acct-hero" aria-label="Signed in as">
         <span className="acct-avatar" aria-hidden="true">
           {(displayName.trim() || "?").charAt(0).toUpperCase()}
@@ -461,12 +459,11 @@ export default function AccountClient() {
               called "Account sections" and the browser test's locator matched
               both. This is the copy that switches the panel in place; the
               other one has been removed. */}
-          <ToolStrip
+          <TabBar
             aria-label="Account sections"
             value={tab}
             onChange={(id) => selectTab(id as Tab)}
-            visibleCount={4}
-            items={[
+            tabs={[
               { id: "profile", label: "Profile" },
               { id: "appearance", label: "Appearance" },
               { id: "notifications", label: "Notifications" },
@@ -532,6 +529,8 @@ export default function AccountClient() {
           ) : null}
         </>
       ) : null}
+      </div>
+      <aside className="account-directory" aria-label="Team and account settings">
 
       {/* Team settings and help come after your own profile: the menu promises "your profile,
           sign-in and notifications", and the form started 1,100px down under team rows. */}
@@ -594,6 +593,8 @@ export default function AccountClient() {
           chevron={false}
         />
       </KitCard>
+      </aside>
+      </div>
 
       <p className="kit-footnote">Vantage · FRC scouting and strategy</p>
     </main>

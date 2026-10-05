@@ -58,7 +58,7 @@ test("desktop destinations have one menu without repeating saved shortcuts", asy
   await page.screenshot({ path: info.outputPath("ai-sidebar-collapsed.png") });
 });
 
-test("desktop navigation starts closed without reserving sidebar space before hydration", async ({ browser }) => {
+test("desktop workspace navigation reserves its own space before hydration", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } });
   try {
     expect(await signInAs(context, "owner")).toBe(true);
@@ -66,17 +66,17 @@ test("desktop navigation starts closed without reserving sidebar space before hy
     await page.goto("/dashboard");
     await expect(page.locator(".vrail")).toHaveCount(0);
     await expect(page.locator(".soft-island")).toBeHidden();
-    await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toBeVisible();
+    await expect(page.locator(".app-sidebar")).toBeVisible();
     await expect(page.locator(".soft-drawer")).toBeHidden();
-    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(0);
+    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(244);
     const header = await page.locator(".soft-topbar").boundingBox();
-    expect(header?.x).toBe(0);
+    expect(header?.x).toBe(244);
   } finally {
     await context.close();
   }
 });
 
-test("one navigation surface survives routes and desktop breakpoint changes", async ({ page, context }, info) => {
+test("workspace navigation and search survive routes and desktop breakpoint changes", async ({ page, context }, info) => {
   test.setTimeout(180_000);
   expect(await signInAs(context, "owner")).toBe(true);
   for (const width of [390, 768, 1023, 1024, 1440]) {
@@ -87,9 +87,10 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
     await expect(page.locator(".soft-topbar")).toHaveCount(1);
     await expect(page.locator(".vrail")).toHaveCount(0);
     await expect(page.locator(".soft-drawer")).toHaveCount(1);
-    await expect(hamburger).toBeVisible();
+    await expect(hamburger).toBeVisible({ visible: width < 1100 });
+    await expect(page.locator(".app-sidebar")).toBeVisible({ visible: width >= 1100 });
     await expect(page.locator(".soft-drawer")).toBeHidden();
-    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(0);
+    expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(width >= 1100 ? 244 : 0);
     await page.screenshot({ path: info.outputPath(`navigation-closed-${width}.png`) });
     await openNav(page);
     const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
@@ -101,7 +102,7 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
       const rect = el.getBoundingClientRect();
       return rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
     })).toBe(true);
-    await expect.poll(() => panel.evaluate(el => Math.abs(el.getBoundingClientRect().left))).toBeLessThan(2);
+    await expect.poll(() => panel.evaluate(el => Math.abs(el.getBoundingClientRect().left - 10))).toBeLessThan(2);
     await page.waitForFunction(() => document.getAnimations().every(animation => animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));
     const audit = await new AxeBuilder({ page }).analyze();
     await info.attach(`navigation-${width}.json`, { body: JSON.stringify(audit), contentType: "application/json" });
@@ -121,7 +122,7 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
     await openNav(page);
     await page.setViewportSize({ width: to, height: 900 });
     await page.keyboard.press("Escape");
-    const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+    const opener = page.getByRole("button", { name: to >= 1100 ? "Search pages, tools, and team data" : "Menu and search", exact: true });
     await expect(opener).toBeVisible();
     await expect(opener).toBeFocused();
   }
@@ -129,7 +130,7 @@ test("one navigation surface survives routes and desktop breakpoint changes", as
   // Every dismissal returns to the same closed layout, including a fresh load.
   await page.setViewportSize({ width: 1440, height: 900 });
   const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
-  const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+  const opener = page.getByRole("button", { name: "Search pages, tools, and team data", exact: true });
   await openNav(page);
   await panel.getByRole("button", { name: "Close", exact: true }).click();
   await expect(panel).toBeHidden();
