@@ -8,7 +8,9 @@ export function HomeShowcase() {
     <>
       <section className="mk-overview-band" aria-label="The Vantage workspace">
         <p>Built around the work.<br /><strong>Connected across the team.</strong></p>
-        <span>Home</span><span>Competition</span><span>Team</span><span>Build</span><span>Business</span>
+        {/* They read as a row of links, so they are links: each opens its part of the tour. */}
+        <a href="/features">Home</a><a href="/features#competition">Competition</a><a href="/features#team">Team</a>
+        <a href="/features#build">Build</a><a href="/features#business">Business</a>
       </section>
       <section className="lux-runs" id="how-it-works" aria-labelledby="lux-runs-title">
         <div className="lux-content">

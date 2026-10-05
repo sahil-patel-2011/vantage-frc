@@ -215,7 +215,7 @@ export async function computeGrantEligibilityView(
       status: "setup_required",
       message: "No grants are in the catalog yet. A platform admin adds and maintains the grants catalog.",
       steps: [
-        { id: "profile", label: "Complete team profile", detail: "Region, rookie year, and mentor details improve matches", href: "/settings/team" },
+        { id: "profile", label: "Complete team profile", detail: "Region, rookie year, and mentor details improve matches", href: "/team/profile" },
       ],
       orgId: org.orgId,
     };

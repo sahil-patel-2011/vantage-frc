@@ -4,9 +4,11 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   analyticsAllowed,
+  consentAlreadyAsked,
   consentDecisionPending,
   CONSENT_OPEN_EVENT,
   ensureAnalyticsListeners,
+  markConsentAsked,
   readConsentState,
   trackPageView,
   writeConsentChoice,
@@ -25,6 +27,9 @@ import "./consent-banner.css";
  *   - Renders nothing until mounted, because the answer lives in a cookie and
  *     the server has no business guessing it during SSR.
  *   - Asks once. A decline is a real answer and the banner goes away.
+ *   - Asks on one page. Shown and not answered, it is gone on the next page and
+ *     on every later visit; nothing is recorded without a yes, so walking past
+ *     it is as safe as declining.
  *   - Reopens on `/privacy#analytics` (the policy's own analytics section) or
  *     when any surface dispatches `vantage:analytics-consent-open`, which is
  *     how the answer stays changeable later without a settings page of its own.
@@ -56,6 +61,8 @@ export function ConsentBanner() {
   const [asking, setAsking] = useState(false);
   const [reopened, setReopened] = useState(false);
   const [choice, setChoice] = useState<ConsentChoice | null>(null);
+  // The page the question was first shown on. It stays up there and nowhere else.
+  const [shownOn, setShownOn] = useState<string | null>(null);
 
   const syncFromCookie = useCallback(() => {
     const state = readConsentState();
@@ -67,7 +74,7 @@ export function ConsentBanner() {
     setMounted(true);
     ensureAnalyticsListeners();
     syncFromCookie();
-    setAsking(consentDecisionPending());
+    setAsking(consentDecisionPending() && !consentAlreadyAsked());
   }, [syncFromCookie]);
 
   // Reopening: the privacy policy's analytics anchor, or an explicit event.
@@ -117,6 +124,16 @@ export function ConsentBanner() {
     [],
   );
 
+  const firstAsk = asksOn(pathname) && (shownOn === null || shownOn === pathname);
+  const visible = mounted && asking && (reopened || firstAsk);
+
+  // Remember the first showing, so the next page and the next visit are left alone.
+  useEffect(() => {
+    if (!visible || reopened || shownOn !== null || !pathname) return;
+    setShownOn(pathname);
+    markConsentAsked();
+  }, [visible, reopened, shownOn, pathname]);
+
   /**
    * Give the page the height of the banner.
    *
@@ -154,9 +171,9 @@ export function ConsentBanner() {
       window.removeEventListener("resize", publish);
       clearClearance();
     };
-  }, [clearClearance, reopened]);
+  }, [clearClearance, reopened, visible]);
 
-  if (!mounted || !asking || (!reopened && !asksOn(pathname))) return null;
+  if (!visible) return null;
 
   const copy = ANALYTICS_BANNER_COPY;
   const current = choice === "granted" ? copy.currentGranted : choice === "denied" ? copy.currentDenied : null;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ANALYTICS_CONSENT_COOKIE,
   ANALYTICS_CONSENT_VERSION,
+  alreadyAsked,
   carriedConsentCookie,
   consentCookieAttributes,
   consentToCarry,
@@ -10,6 +11,7 @@ import {
   parseConsent,
   readCookie,
   requestHasAnalyticsConsent,
+  serializeAsked,
   serializeConsent,
 } from "./consent";
 
@@ -152,5 +154,22 @@ describe("consent across the two product hosts", () => {
     expect(carriedConsentCookie("granted.1; Domain=evil.example", new Headers(), true)).toBeNull();
     expect(carriedConsentCookie("granted.0", new Headers(), true)).toBeNull();
     expect(carriedConsentCookie(null, new Headers(), true)).toBeNull();
+  });
+});
+
+describe("asking once", () => {
+  it("counts a showing at the current version", () => {
+    expect(alreadyAsked(serializeAsked())).toBe(true);
+  });
+
+  it("asks when nothing is stored, and again after a version bump", () => {
+    for (const value of [null, undefined, "", "yes", "true", serializeAsked(ANALYTICS_CONSENT_VERSION - 1)]) {
+      expect(alreadyAsked(value), `asked(${String(value)})`).toBe(false);
+    }
+  });
+
+  it("is not an answer: being shown the banner is never consent", () => {
+    expect(hasAnalyticsConsent(serializeAsked())).toBe(false);
+    expect(parseConsent(serializeAsked())).toBeNull();
   });
 });

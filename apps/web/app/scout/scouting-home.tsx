@@ -302,9 +302,6 @@ export function ScoutingHome() {
           >
             {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Start scouting"}
           </Button>
-          <Button as="a" variant="secondary" href={withOrg("/scout/teams")}>
-            See all teams
-          </Button>
         </div>
       </section>
 

@@ -15,11 +15,14 @@
  */
 
 import {
+  ANALYTICS_ASKED_KEY,
   ANALYTICS_CONSENT_COOKIE,
+  alreadyAsked,
   consentCookieAttributes,
   hasAnalyticsConsent,
   needsConsentDecision,
   parseConsent,
+  serializeAsked,
   serializeConsent,
   type ConsentChoice,
   type ConsentState,
@@ -62,6 +65,27 @@ export function analyticsAllowed(): boolean {
 /** True while the banner still owes the user a question. A decline ends it. */
 export function consentDecisionPending(): boolean {
   return needsConsentDecision(rawConsentCookie());
+}
+
+/** True once this browser has been shown the banner at the current version. */
+export function consentAlreadyAsked(): boolean {
+  if (!browser()) return false;
+  try {
+    return alreadyAsked(window.localStorage.getItem(ANALYTICS_ASKED_KEY));
+  } catch {
+    // Storage blocked: we cannot remember, so the banner may show again next load.
+    return false;
+  }
+}
+
+/** Remember that the banner was shown, so it is not shown again on the next page. */
+export function markConsentAsked(): void {
+  if (!browser()) return;
+  try {
+    window.localStorage.setItem(ANALYTICS_ASKED_KEY, serializeAsked());
+  } catch {
+    // Non-fatal by design.
+  }
 }
 
 /**

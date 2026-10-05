@@ -371,13 +371,7 @@ export default function RisksClient() {
           soft
           title="No season risks logged yet"
           description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then. FMEA is for failures that already happened."
-        >
-          <div className="risks-row-links">
-            <a href={hubHref("/team", "fmea", orgId)}>FMEA →</a>
-            <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
-            <a href={withOrgHref("/subsystems", orgId)}>Subsystems →</a>
-          </div>
-        </EmptyState>
+        />
       ) : (
         <div className="risks-layout">
           <RiskMatrix view={view} />

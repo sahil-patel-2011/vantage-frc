@@ -70,6 +70,27 @@ export function needsConsentDecision(raw: string | null | undefined): boolean {
 }
 
 /**
+ * Where the browser remembers that the banner has been shown. localStorage, not a
+ * cookie: the server never needs it, and it is not an answer.
+ */
+export const ANALYTICS_ASKED_KEY = "vantage-analytics-asked";
+
+/** Stored value: the consent version the question was shown for. Nothing else. */
+export function serializeAsked(version = ANALYTICS_CONSENT_VERSION): string {
+  return String(version);
+}
+
+/**
+ * True once the banner has been shown at the current version. It is shown on one
+ * page and then stays away, answered or not — walking past it records nothing,
+ * exactly like a decline, and the privacy page still reopens it. A version bump
+ * asks once more, for the same reason a stale answer stops counting.
+ */
+export function alreadyAsked(raw: string | null | undefined): boolean {
+  return typeof raw === "string" && raw.trim() === serializeAsked();
+}
+
+/**
  * Pull one cookie out of a raw `Cookie:` header. Used server-side, where the
  * header is the only thing we have.
  */

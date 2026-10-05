@@ -239,7 +239,7 @@ export default function CrossDomainAlertsClient() {
             </label>
           ) : null}
           {orgId ? (
-            <Button as="a" variant="secondary" href={`/design-reviews?orgId=${encodeURIComponent(orgId)}`}>
+            <Button as="a" variant="secondary" href={`/reviews?orgId=${encodeURIComponent(orgId)}`}>
               Design reviews
             </Button>
           ) : null}

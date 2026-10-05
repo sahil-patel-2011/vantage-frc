@@ -100,7 +100,8 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
       label: "Set active event",
       detail: "Set the active competition context",
       done: signals.hasEventContext,
-      href: `/command${q}`,
+      // Straight to the picker: plain /command opened Event day with nothing chosen.
+      href: `/command${q}&pickEvent=1`,
     },
     {
       key: "subteam",

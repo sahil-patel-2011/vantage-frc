@@ -6,7 +6,11 @@ export type EmptyHint = {
   body: string;
   ctaHref?: string;
   ctaLabel?: string;
-  /** The Home hero already links here, so the empty card does not repeat it. */
+  /**
+   * The Home hero already links here, so the empty card does not repeat it. Every card that
+   * waits on the team's event is one of these: "No event selected · Choose event" sits above
+   * the cards, and four more "Set active event" links under it were four buttons for one job.
+   */
   noEmptyCta?: boolean;
   /** The link under a card that has data. Defaults to ctaLabel when that opens something. */
   liveLabel?: string;
@@ -27,15 +31,17 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   recent_result: {
     title: "No scored matches",
     body: "Results appear after the team connects match data.",
-    ctaHref: "/command",
+    ctaHref: "/command?pickEvent=1",
     ctaLabel: "Set active event",
+    noEmptyCta: true,
     liveLabel: "See match results",
   },
   competition_snapshot: {
     title: "No snapshot",
     body: "Rank and record need an active event plus connected match data.",
-    ctaHref: "/command",
+    ctaHref: "/command?pickEvent=1",
     ctaLabel: "Set active event",
+    noEmptyCta: true,
   },
   scouting_coverage: {
     title: "No coverage yet",
@@ -148,7 +154,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   onboarding_checklist: {
     title: "Choose your team",
     body: "Choose your team, set the active event, then connect match data.",
-    ctaHref: "/command",
+    ctaHref: "/command?pickEvent=1",
     ctaLabel: "Set active event",
   },
   attendance: {
@@ -172,8 +178,9 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   event_countdown: {
     title: "No upcoming event",
     body: "Set an active event to see the countdown.",
-    ctaHref: "/command",
+    ctaHref: "/command?pickEvent=1",
     ctaLabel: "Set active event",
+    noEmptyCta: true,
   },
   hours_month: {
     title: "No hours this month",
@@ -238,14 +245,16 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   event_readiness: {
     title: "No event on the calendar",
     body: "Set an active event to see packing and travel.",
-    ctaHref: "/command",
+    ctaHref: "/command?pickEvent=1",
     ctaLabel: "Set active event",
+    noEmptyCta: true,
   },
   weather_venue: {
     title: "No venue weather",
     body: "Weather appears when an event with a location is active.",
-    ctaHref: "/command",
+    ctaHref: "/command?pickEvent=1",
     ctaLabel: "Set active event",
+    noEmptyCta: true,
   },
 };
 

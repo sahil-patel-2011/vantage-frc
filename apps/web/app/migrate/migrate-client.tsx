@@ -930,7 +930,7 @@ export default function MigrateClient() {
                     </div>
                   ) : null}
                   <p>
-                    <a href={withOrgHref("/team/members", view.orgId)}>Open Members</a>
+                    <a href={withOrgHref("/team/admin", view.orgId)}>Open Team admin</a>
                   </p>
                 </>
               ) : null}

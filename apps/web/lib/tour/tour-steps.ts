@@ -28,7 +28,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "menu",
     target: "menu",
     title: "Find any page",
-    body: "The menu button opens every page. Ctrl or ⌘ + K searches from anywhere.",
+    body: "The menu button opens every page. Search is at the top of it.",
     prefer: "bottom",
   },
   {
@@ -60,6 +60,30 @@ export const TOUR_STEPS: readonly TourStep[] = [
     prefer: "left",
   },
 ] as const;
+
+/**
+ * How long after an account is created the tour is still offered.
+ *
+ * "Shown once" was kept in the browser, so every new browser, the desktop app and
+ * the Scouting address each showed it again to someone who had been here for months.
+ * The account's own age needs no storage and travels with the person: past the first
+ * two weeks nobody is new, on any device.
+ */
+export const TOUR_NEW_MEMBER_DAYS = 14;
+
+/**
+ * True while the account is new enough for a first-run tour. An unknown or unreadable
+ * date is "no" — the tour can wait for a load that knows who this is.
+ */
+export function tourIsForNewMember(memberSince: string | null | undefined, now: number = Date.now()): boolean {
+  // Postgres sends "2026-07-20 03:12:45.123+00", which not every browser's Date parses.
+  // The day is all a two-week window needs.
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(memberSince ?? "");
+  if (!match) return false;
+  const joined = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const ageDays = (now - joined) / 86_400_000;
+  return ageDays >= -1 && ageDays <= TOUR_NEW_MEMBER_DAYS;
+}
 
 /** Steps whose target is present, in order. Absent targets are skipped. */
 export function availableSteps(

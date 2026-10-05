@@ -366,7 +366,8 @@
 .marketing-lux .mk-overview-band { display: flex; align-items: center; justify-content: space-between; gap: 22px; flex-wrap: wrap; max-width: 1180px; margin: 0 auto; padding: 30px 24px; border-block: 1px solid #e1e8e8; color: #52616c; font-size: 14px; }
 .marketing-lux .mk-overview-band p { margin: 0; font-size: 13px; line-height: 1.7; }
 .marketing-lux .mk-overview-band strong { font-weight: 500; color: #142b35; }
-.marketing-lux .mk-overview-band > span { font-weight: 600; color: #142b35; }
+.marketing-lux .mk-overview-band > a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: #142b35; text-decoration: none; }
+.marketing-lux .mk-overview-band > a:hover { color: #0e6872; text-decoration: underline; }
 .marketing-lux .mk-explore { display: flex; justify-content: space-between; width: 100%; margin-top: 16px; font-size: 13px; font-weight: 600; color: #0e6872; }
 .marketing-lux .mk-workflow-preview { border: 1px solid #dce6e7; border-radius: 20px; padding: 22px; background: #f4f8f8; }
 .marketing-lux .mk-workflow-preview > p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 0; font-size: 11px; color: #52616c; }

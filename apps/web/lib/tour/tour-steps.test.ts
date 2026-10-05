@@ -6,6 +6,7 @@ import {
   availableSteps,
   placeCard,
   stepProgress,
+  tourIsForNewMember,
   tourShouldYield,
 } from "./tour-steps";
 
@@ -111,6 +112,26 @@ describe("stepProgress", () => {
   it("counts from one, so nobody wonders how much longer this goes on", () => {
     expect(stepProgress(0, 5)).toBe("Step 1 of 5");
     expect(stepProgress(4, 5)).toBe("Step 5 of 5");
+  });
+});
+
+describe("who the tour is for", () => {
+  const now = Date.UTC(2026, 9, 5, 12);
+
+  it("runs for an account in its first two weeks", () => {
+    expect(tourIsForNewMember("2026-10-05 08:00:00.123456+00", now)).toBe(true);
+    expect(tourIsForNewMember("2026-09-25T00:00:00Z", now)).toBe(true);
+  });
+
+  it("never replays for someone who has been here a while, whatever the browser remembers", () => {
+    expect(tourIsForNewMember("2026-09-01 00:00:00+00", now)).toBe(false);
+    expect(tourIsForNewMember("2026-07-15 00:00:00+00", now)).toBe(false);
+  });
+
+  it("waits when the account's age is unknown", () => {
+    for (const value of [null, undefined, "", "soon", "10/05/2026"]) {
+      expect(tourIsForNewMember(value, now), String(value)).toBe(false);
+    }
   });
 });
 

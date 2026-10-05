@@ -760,7 +760,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         </>
       ) : null}
       {canManage ? (
-        <Button variant="primary" type="button" onClick={() => setShowCreate((v) => !v)}>
+        <Button variant={events.length === 0 ? "secondary" : "primary"} type="button" onClick={() => setShowCreate((v) => !v)}>
           {/* "New" beside the season picker read as "new season"; it starts a roll call. */}
           {showCreate ? "Cancel" : "New roll call"}
         </Button>

@@ -1548,7 +1548,9 @@ body.has-app-shell{
   .soft-island{display:flex}
   body.has-app-shell{padding-bottom:calc(100px + var(--safe-bottom)) !important}
 }
-@media(max-width:380px){
+/* Labels stay on ordinary phones (360–390px wide): four icons with no words were a guess.
+   Measured at 375px each slot is 83px and the longest default label is 51px. */
+@media(max-width:340px){
   .soft-island a span{display:none}
   .soft-island a{min-height:48px;padding:10px 6px}
 }

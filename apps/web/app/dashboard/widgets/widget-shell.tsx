@@ -96,7 +96,10 @@ function WidgetEmptyState({
   const askLead = type === "ask_ai" && /Ask an owner or mentor/.test(message ?? "");
   const ctaHref = askLead
     ? undefined
-    : wrongEvent || noEvent
+    // No event at all: Home's own "Choose event" prompt is directly above this card.
+    : noEvent
+    ? undefined
+    : wrongEvent
     ? lead ? withOrg("/command?pickEvent=1") : undefined
     : eventOver
     ? withOrg("/rankings")

@@ -57,8 +57,9 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           ) : null}
         </EmptyState>
         <p className="app-muted biz-first-step-note">
-          Already have orders{sponsorsAllowed ? ", sponsors" : ""} or grants to record? Use the tabs above. This summary
-          fills in as soon as anything is recorded.
+          Already have orders{sponsorsAllowed ? ", sponsors" : ""} or grants to record? Open Money
+          {sponsorsAllowed ? ", Sponsors" : ""} or Grants from the menu. This summary fills in as soon as anything is
+          recorded.
         </p>
       </div>
     );

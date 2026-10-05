@@ -8,10 +8,12 @@ import {
   availableSteps,
   placeCard,
   stepProgress,
+  tourIsForNewMember,
   tourShouldYield,
   type Rect,
   type TourStep,
 } from "../lib/tour/tour-steps";
+import { requestMe } from "../lib/nav/me-request";
 
 /**
  * A five-stop tour of Home, shown once.
@@ -19,6 +21,11 @@ import {
  * It points at controls that already exist and says what they are for. It asks
  * for nothing, blocks nothing, and can be left at any point — Escape, the
  * Skip button, or clicking outside all end it, and it does not come back.
+ *
+ * "Once" is counted when it appears, not when it is dismissed: a reload or a tap
+ * on a link mid-tour used to leave it unmarked, so it started over on the next
+ * visit to Home. It is also only for an account in its first two weeks, so a
+ * new browser or the desktop app does not replay it to someone who is not new.
  *
  * Steps whose target is missing are dropped before the tour starts, so the
  * spotlight never lands on empty space. If nothing is on the page, the tour
@@ -112,23 +119,36 @@ export function AppTour() {
       document.querySelector(".consent-banner") != null;
 
     let elapsed = 0;
-    const id = window.setInterval(() => {
-      elapsed += 400;
-      if (consentShowing() || tourShouldYield(openDialogLabels())) {
-        // Give up after a while rather than waiting forever on someone who
-        // never answers the cookie card: the tour simply does not run this
-        // visit. A dialog they opened on purpose is different — keep waiting,
-        // because starting the scrim on top of it steals the next click.
-        if (consentShowing() && elapsed > 60_000) window.clearInterval(id);
-        return;
-      }
-      window.clearInterval(id);
-      const present = (name: string) => visibleTourTarget(name) != null;
-      const usable = availableSteps(TOUR_STEPS, present);
-      // One lonely step is not a tour worth interrupting anyone for.
-      if (usable.length >= 2) setSteps(usable);
-    }, 400);
-    return () => window.clearInterval(id);
+    let cancelled = false;
+    let id: number | undefined;
+    void requestMe().then((me) => {
+      if (cancelled) return;
+      const memberSince = (me.data as { memberSince?: string | null } | null)?.memberSince;
+      if (!tourIsForNewMember(memberSince)) return;
+      id = window.setInterval(() => {
+        elapsed += 400;
+        if (consentShowing() || tourShouldYield(openDialogLabels())) {
+          // Give up after a while rather than waiting forever on someone who
+          // never answers the cookie card: the tour simply does not run this
+          // visit. A dialog they opened on purpose is different — keep waiting,
+          // because starting the scrim on top of it steals the next click.
+          if (consentShowing() && elapsed > 60_000) window.clearInterval(id);
+          return;
+        }
+        window.clearInterval(id);
+        const present = (name: string) => visibleTourTarget(name) != null;
+        const usable = availableSteps(TOUR_STEPS, present);
+        // One lonely step is not a tour worth interrupting anyone for.
+        if (usable.length < 2) return;
+        // Counted as seen now, so leaving mid-tour does not start it again.
+        markDismissed();
+        setSteps(usable);
+      }, 400);
+    });
+    return () => {
+      cancelled = true;
+      if (id !== undefined) window.clearInterval(id);
+    };
     // Re-checked on navigation, so leaving onboarding for Home starts it there.
   }, [pathname]);
 

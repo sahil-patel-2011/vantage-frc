@@ -221,11 +221,11 @@ function SubsystemCard({
         <a className={subsystem.ops.bom && !subsystem.ops.bom.buildable ? "robot-chip warn" : "robot-chip"} href={withOrg("/inventory")}>
           BOM: {subsystem.ops.bom ? (subsystem.ops.bom.buildable ? "buildable" : `${subsystem.ops.bom.shortCount} short`) : "not mapped"}
         </a>
-        <a className={subsystem.ops.failures7d > 0 ? "robot-chip warn" : "robot-chip"} href={withOrg("/pit")}>
-          Failures 7d: {subsystem.ops.failures7d}
-        </a>
-        <a className={subsystem.ops.openMaintenance > 0 ? "robot-chip warn" : "robot-chip"} href={withOrg("/pit")}>
-          Maintenance: {subsystem.ops.openMaintenance}
+        <a
+          className={subsystem.ops.failures7d > 0 || subsystem.ops.openMaintenance > 0 ? "robot-chip warn" : "robot-chip"}
+          href={withOrg("/pit")}
+        >
+          Failures 7d: {subsystem.ops.failures7d} · Maintenance: {subsystem.ops.openMaintenance}
         </a>
         <button
           type="button"

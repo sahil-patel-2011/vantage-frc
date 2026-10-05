@@ -32,12 +32,28 @@ export function BrandLink({ href = "/" }: { href?: string }) {
   );
 }
 
+/**
+ * Whether this browser holds a session, asked of the auth route a visitor may call.
+ * `/api/me` answers a signed-out visitor with 401, and the browser printed that as a
+ * console error on every public page. One request per page load, shared by every link.
+ */
+let sessionCheck: Promise<boolean> | null = null;
+function hasSession(): Promise<boolean> {
+  if (!sessionCheck) {
+    sessionCheck = fetch("/api/auth/get-session", { cache: "no-store" })
+      .then((response) => (response.ok ? (response.json() as Promise<{ user?: unknown } | null>) : null))
+      .then((data) => Boolean(data?.user))
+      .catch(() => false);
+  }
+  return sessionCheck;
+}
+
 function useSignedIn(): boolean {
   const [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    void fetchProductSession().then((session) => {
-      if (!cancelled) setSignedIn(session?.authenticated === true);
+    void hasSession().then((yes) => {
+      if (!cancelled) setSignedIn(yes);
     });
     return () => {
       cancelled = true;
@@ -133,9 +149,11 @@ export function MarketingAdminLink({ href, label }: { href: string; label: strin
   const [admin, setAdmin] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    void fetchProductSession().then((session) => {
-      if (!cancelled) setAdmin(marketingShowsAdminLink(session?.role));
-    });
+    void hasSession()
+      .then((yes) => (yes ? fetchProductSession() : null))
+      .then((session) => {
+        if (!cancelled) setAdmin(marketingShowsAdminLink(session?.role));
+      });
     return () => {
       cancelled = true;
     };
