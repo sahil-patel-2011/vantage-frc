@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { validateDraft } from "../../../lib/scouting/form-builder";
+import { definitionFromDraft, validateDraft } from "../../../lib/scouting/form-builder";
 import { defaultQuestions } from "./forms-model";
 
 describe("form-builder starter drafts", () => {
+  it("starts a new 2026 match form with the actual season questions and observed-count rules", () => {
+    const questions = defaultQuestions("match", 2026);
+    const definition = definitionFromDraft("Regional scouting", questions);
+    expect(definition.fields.find(field => field.key === "auto_fuel")?.config).toMatchObject({ scoutPhase: "auto", requireObservation: true });
+    expect(definition.fields.find(field => field.key === "auto_tower_level")?.options).toEqual(["none", "L1"]);
+    expect(definition.fields.find(field => field.key === "tower_level")?.options).toEqual(["none", "L1", "L2", "L3"]);
+    expect(validateDraft("Regional scouting", questions, "match").ok).toBe(true);
+  });
   it("starts a pit form with drivetrain, language and experience without media storage", () => {
     const questions = defaultQuestions("pit");
     expect(questions.map((question) => question.label)).toEqual([

@@ -4,7 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui";
 import { visibleFields } from "../../lib/scouting/context-visible";
-import type { ScoutSchema, SchemaDefinition } from "@vantage/scouting";
+import { matchCapture, type ScoutSchema, type SchemaDefinition } from "@vantage/scouting";
+import { MatchTimer } from "./match-timer";
+import { MatchActivityRecorder } from "./match-activity-recorder";
+import { MatchActivityReport } from "./match-activity-report";
+import { clearScoutDraft, writeScoutClock } from "../../lib/scouting/draft-autosave";
+import { fieldsForMatchStage, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 import { freeScoutDefinition, portableScoutDefinition, latestScoutingYear, scoutingGameLabel, parseFreeScoutReport, type SavedFreeScoutReport } from "../../lib/scouting/free-scout";
 import { freeScoutDeviceKey, pendingFreeReports, queueFreeReport, removePendingFreeReport, syncFreeReports, type PendingFreeReport } from "../../lib/scouting/free-scout-device";
 import { Field } from "./scouting-field";
@@ -23,6 +28,7 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
   const [draft, setDraft] = useState<Draft>(() => ({ ...freshDraft(), type: search.get("scoutTab") === "match" ? "match" : "pit" }));
   const [hydrated, setHydrated] = useState(false);
   const [started, setStarted] = useState(false);
+  const [stage, setStage] = useState<ScoutFormStage>("all");
   const [reports, setReports] = useState<SavedFreeScoutReport[]>([]);
   const [pending, setPending] = useState<PendingFreeReport[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -32,7 +38,7 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
   const syncing = useRef(false);
   const draftKey = `${freeScoutDeviceKey(orgId, userId)}:draft`;
   const definition = draft.definition ?? freeScoutDefinition(draft.year, draft.type);
-  const fields = visibleFields(definition.fields, draft.payload);
+  const fields = visibleFields(draft.type === "match" ? fieldsForMatchStage(definition.fields, stage) : definition.fields, draft.payload);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -97,7 +103,10 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
     return () => clearInterval(timer);
   }, [online, sync]);
 
-  function change(patch: Partial<Draft>) { setDraft((current) => ({ ...current, ...patch })); }
+  function change(patch: Partial<Draft>) {
+    if (patch.payload && !Object.keys(patch.payload).length) writeScoutClock(draftKey, null);
+    setDraft((current) => ({ ...current, ...patch }));
+  }
 
   async function save() {
     if (busy) return;
@@ -106,7 +115,7 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
       const payload = { ...draft.payload };
       const report = parseFreeScoutReport({ id: crypto.randomUUID(), year: draft.year, type: draft.type, teamNumber: Number(draft.team), label: draft.type === "pit" ? "Pit scouting" : draft.label, schemaId: draft.schemaId, payload, observedAt: new Date().toISOString() }, definition);
       await queueFreeReport(orgId, userId, report);
-      try { localStorage.removeItem(draftKey); } catch { setStorageError("The saved draft could not be cleared from this device."); }
+      clearScoutDraft(draftKey);
       setStarted(false);
       change({ payload: {} });
       setPending(await pendingFreeReports(orgId, userId));
@@ -144,8 +153,10 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
         </> : <>
           <div className="free-scout-heading"><h3>Team {draft.team} · {draft.type === "pit" ? "Pit scouting" : draft.label}</h3><Button type="button" variant="secondary" onClick={() => setStarted(false)}>Change details</Button></div>
           <p className="app-muted">{scoutingGameLabel(draft.year)}</p>{storageError ? <p role="alert">{storageError}</p> : null}
+          {draft.type === "match" ? <MatchTimer fields={definition.fields} resetKey={draftKey} storageKey={draftKey} seasonYear={draft.year} resetDisabled={Boolean(matchCapture(draft.payload))} stage={stage} onStageChange={setStage} onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "pre" ? "all" : phase === "transition" ? "auto" : phase)} /> : null}
+          {draft.type === "match" && draft.year === 2026 ? <MatchActivityRecorder payload={draft.payload} setPayload={next => setDraft(current => ({ ...current, payload: typeof next === "function" ? next(current.payload) : next }))} storageKey={draftKey} /> : null}
           <div className="scout-form-grid">{fields.map((field) => <Field key={field.key} field={field} value={draft.payload[field.key]} flags={[]} historyHint={null} disagreementRate={null} orgId={orgId} onChange={(value) => change({ payload: { ...draft.payload, [field.key]: value } })} />)}</div>
-          <div className="scout-report-actions"><Button type="button" variant="secondary" disabled={busy} onClick={() => { if (Object.keys(draft.payload).length && !window.confirm("Discard this report? Your saved reports will stay.")) return; try { localStorage.removeItem(draftKey); } catch { setStorageError("This device could not clear its saved draft."); } setStarted(false); change({ payload: {} }); setMessage(""); }}>Cancel report</Button><Button type="button" variant="primary" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save report"}</Button></div>
+          <div className="scout-report-actions"><Button type="button" variant="secondary" disabled={busy} onClick={() => { if (Object.keys(draft.payload).length && !window.confirm("Discard this report? Your saved reports will stay.")) return; clearScoutDraft(draftKey); setStarted(false); change({ payload: {} }); setMessage(""); }}>Cancel report</Button><Button className="scout-save-button" type="button" variant="primary" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save report"}</Button></div>
         </>}
         {message ? <p role="status">{message}</p> : null}
       </div>
@@ -164,12 +175,14 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
             try {
               const recovered: Draft = { type: report.type, team: String(report.teamNumber), year: report.year, label: report.label, schemaId: report.schemaId, definition: report.definition, payload: report.payload };
               localStorage.setItem(draftKey, JSON.stringify(recovered));
+              writeScoutClock(draftKey, matchCapture(recovered.payload)?.clockStartedAt ?? null);
               await removePendingFreeReport(orgId, userId, report.id);
               setDraft(recovered); setStarted(true); setPending(await pendingFreeReports(orgId, userId));
             } catch { setMessage("Could not reopen this report. The original is still on this device."); }
           }}>Edit local report</Button> : null}
           <p className="app-muted">{report.year} · {report.type} · {new Date(report.observedAt).toLocaleString()}</p>
           <dl>{report.definition.fields.filter((field) => field.key in report.payload).map((field) => <div key={field.key}><dt>{field.label}</dt><dd>{typeof report.payload[field.key] === "object" ? JSON.stringify(report.payload[field.key]) : String(report.payload[field.key])}</dd></div>)}</dl>
+          <MatchActivityReport payload={report.payload} />
           {report.state === "Uploaded" && report.scoutUserId === userId ? <Button type="button" variant="secondary" onClick={async () => {
             if (!window.confirm(`Delete the report for team ${report.teamNumber}, ${report.label}?`)) return;
             try {

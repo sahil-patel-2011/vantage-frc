@@ -45,6 +45,22 @@ const PHASE_WORDS: Record<Exclude<MatchPhase, "pre" | "done" | "transition">, Re
   endgame: /end ?game|climb|park|hang|dock|barge|stage/i,
 };
 
+/** FIRST REBUILT §6.4; autonomous ties need the FMS announcement, not a score guess. */
+export function rebuiltShiftAt(elapsedMs: number | null, alliance: "red" | "blue" | null, firstInactiveAlliance: "red" | "blue" | "unknown" = "unknown"): { label: string; secondsLeft: number; hub: "active" | "inactive" | "unknown" } {
+  if (elapsedMs === null || elapsedMs < 0) return { label: "Before match", secondsLeft: 0, hub: "unknown" };
+  if (elapsedMs >= 163000) return { label: "Match over", secondsLeft: 0, hub: "unknown" };
+  const phases = [[20000, "Auto"], [23000, "Scoring pause"], [33000, "Transition shift"], [58000, "Alliance shift 1"], [83000, "Alliance shift 2"], [108000, "Alliance shift 3"], [133000, "Alliance shift 4"], [163000, "Endgame"]] as const;
+  const index = phases.findIndex(([end]) => elapsedMs < end);
+  const [end, label] = phases[index]!;
+  let hub: "active" | "inactive" | "unknown" = "active";
+  if (index === 1) hub = "unknown";
+  else if (index >= 3 && index <= 6) {
+    hub = !alliance || firstInactiveAlliance === "unknown" ? "unknown" :
+      (alliance === firstInactiveAlliance) === (index % 2 === 1) ? "inactive" : "active";
+  }
+  return { label, secondsLeft: Math.ceil((end - elapsedMs) / 1000), hub };
+}
+
 /**
  * The first form field for each phase, by its key or label ("Auto points", a "Teleop"
  * section header, "Endgame climb"). Phases the form has no field for are simply absent.

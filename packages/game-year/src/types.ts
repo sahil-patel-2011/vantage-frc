@@ -15,6 +15,7 @@ export type GameField = {
   required?: boolean;
   options?: string[];
   helpText?: string;
+  config?: Record<string, unknown>;
 };
 
 export type GameSchema = {

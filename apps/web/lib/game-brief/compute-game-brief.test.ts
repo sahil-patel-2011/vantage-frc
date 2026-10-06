@@ -7,7 +7,9 @@ describe("computeGameBrief", () => {
     expect(view.status).toBe("published");
     expect(view.gameName).toBe("REBUILT");
     expect(view.scoringLabels).toContain("Auto fuel scored");
-    expect(view.scoringLabels).toContain("Tower climb");
+    expect(view.scoringLabels).toContain("Autonomous tower climb");
+    expect(view.scoringLabels).toContain("Endgame tower climb");
+    expect(view.scoringLabels).not.toContain("Fuel passed");
     expect(view.designQuestions.length).toBeGreaterThan(0);
     expect(view.priorSeason).toBeNull();
   });

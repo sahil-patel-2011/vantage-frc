@@ -25,6 +25,16 @@ Every widget and tool must distinguish loading, empty, needs setup, saved data a
 
 ## Verification
 
+### Match observation contract
+
+For REBUILT, the live recorder shares the persisted match clock with the form. Keep only robot context and the clock sticky; phase navigation must never cover recording buttons. Start/stop shooting, feeding, defense and disabled intervals with match-relative timestamps. Reloading an unfinished interval preserves it; saving requires stopping it. Removal retains the interval for review and can be restored when it does not overlap another observation.
+
+Released fuel, scored fuel and passed fuel are separate observations. Throughput divides counted released fuel by the duration of those same counted bouts. Exclude unknown counts from both numerator and denominator; explicit zero remains zero. Do not extrapolate an observed rate into full-match points or treat an inactive hub as scoring. Confirm the first inactive alliance from FMS, including autonomous ties; unconfirmed hub order stays unknown.
+
+Use the actual published season starter for a new form. Preserve collection phases, observed-count rules and stable field keys when editing it. Record autonomous and endgame tower climbs separately. Saved timelines and CSV evidence must retain the versioned activity metadata. Private activity metadata stays outside the existing cross-team projection.
+
+Robot capabilities and comparisons must work without a scoring formula. Show recorded samples, confidence filtering, missing observations and disagreements. Combine repeated reports within a match before giving each match equal weight. Scoring and pick ranking continue to require their own explicit point definitions.
+
 For database-free presentation and client-interaction checks, use `npm run test:ui`. Its isolated Next server masks local and inherited credentials, disables database connections, and intercepts browser APIs. The regular census checks 31 primary and repaired destinations at 320, 390, 768 and 1440px in both appearances. `PRODUCT_UI_FULL=1` expands it to the registered non-media workspace destinations. This supplements the persisted workflow stories below; it cannot establish database or external-provider readiness.
 
 Use `tests/browser/product-ui-audit.spec.ts` for the complete registered workspace presentation census. Set `PRODUCT_UI_AUDIT=1`, choose `PRODUCT_UI_WIDTH`, `PRODUCT_UI_DARK` and `PRODUCT_UI_OUT`; it records every route's status, page errors, overflow and WCAG findings, plus screenshots. This census is separate from functional browser stories that trace UI → API → PostgreSQL → rendered result.

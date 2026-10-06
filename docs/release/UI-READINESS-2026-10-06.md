@@ -24,11 +24,23 @@ The initial complete desktop scan visited 238 registered destinations and found 
 
 The first repaired replay passes 18 tests: ten client-interaction cases and eight presentation censuses, covering 31 destinations at 320, 390, 768 and 1440px in light/dark appearances (248 presentation states). All censuses record zero WCAG violations, horizontal overflow or page JavaScript errors. [Original findings](evidence/2026-10-06-ui-census-original.json) and [pre-patch replay](evidence/2026-10-06-ui-responsive-prepatch.json) are preserved. The [final dependency-patched replay](evidence/2026-10-06-ui-responsive-final.json) also passes all 18 tests and 248 states on Next.js 16.3.6, with no retries or findings.
 
-Final dependency-patched unit checks pass 1,528 files / 11,370 tests with 18 files / 45 tests explicitly skipped. Repository lint, all workspace types, a consistent installed dependency tree, and the optimized 753-route build pass without a database. The skipped tests and controlled API fixtures do not close the persisted-workflow gates.
+Final dependency-patched unit checks pass 1,528 files / 11,370 tests with 18 files / 45 tests explicitly skipped. Repository lint, all workspace types, a consistent installed dependency tree, and the optimized web build pass without a database. The skipped tests and controlled API fixtures do not close the persisted-workflow gates.
 
 Representative controlled-response screenshots: [desktop light](evidence/2026-10-06-responses-1440-light.png) and [phone dark](evidence/2026-10-06-responses-390-dark.png).
 
 The remote PostgreSQL/RLS and complete browser jobs remain required for ready PRs and main. Draft PRs run quality and database-free UI checks; marking a PR ready triggers the remaining gates. Database-backed verification awaits explicit authorization for the isolated GitHub Actions test environment, as required by the repository's laptop database policy.
+
+## Scouting collection and analysis increment
+
+Match scouting now records shooting, feeding, defense and disabled intervals against the persisted match clock. Unfinished activities survive reload and must be stopped before saving. Removed activities retain their original interval and can be restored. Released-fuel throughput uses only counted intervals; unknown answers remain blank and observed zero remains zero. FMS hub ordering stays unconfirmed until entered, and autonomous/endgame climbs are separate questions.
+
+New 2026 forms use the season starter rather than generic scoring questions. The builder preserves phase and explicit-observation settings through editing, preview and publication. Practice reports preserve activity metadata through save/synchronization, and actual-report comparisons show numeric, yes/no and categorical capability evidence without requiring a scoring formula. Private CSV exports include the activity data. Existing published schemas are not rewritten.
+
+The final six-case scouting browser replay passes at 390/1440px in light/dark appearances. It exercises collection, draft/clock recovery, offline queueing, API acknowledgment, report review, unknown/zero distinctions, categorical comparisons, practice saves and season-form publish payloads. The broader replay also passes all ten existing client cases and all eight responsive censuses (248 states, no accessibility, overflow or page-error findings). Its initial new-form test failure was an incorrect test selector for the native form-type control; the corrected six-case replay passes without retries. [Detailed evidence and verification boundaries](evidence/2026-10-06-scouting-activity-client.json) retain that failure and replay outcome.
+
+Database-free checks pass 1,531 unit files / 11,405 tests, with 18 files / 45 tests skipped, plus repository lint, all workspace types and the optimized web build. Browser APIs are controlled responses: this does not establish fresh-user sign-in, team setup, invitations, remote schema publication, PostgreSQL persistence, RLS or live provider behavior. No local database was started. Full production acceptance and Lovat feature parity remain unverified.
+
+Representative screenshots: [phone recorder](evidence/2026-10-06-scouting-activity-390-light.png), [phone comparison](evidence/2026-10-06-scouting-comparison-390-light.png), [desktop recorder](evidence/2026-10-06-scouting-activity-1440-dark.png), and [desktop comparison](evidence/2026-10-06-scouting-comparison-1440-dark.png).
 
 ## Production gates still open
 

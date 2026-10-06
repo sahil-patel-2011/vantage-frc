@@ -42,6 +42,7 @@ import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./f
 import { OptionEditor } from "./forms-option-editor";
 import { FormsTabletPreview } from "./forms-tablet-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
+import { CollectionSettings } from "./forms-collection-settings";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
 function isSchemasPayload(value: unknown): value is SchemasPayload {
@@ -115,7 +116,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   // so the imported draft beats — rather than races — the initial schema fetch.
   const importedDraftRef = useRef<SchemaDefinition | null | undefined>(undefined);
 
-  const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType) => {
+  const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType, seasonYear?: number | null) => {
     if (importedDraftRef.current === undefined) {
       importedDraftRef.current = null;
       try {
@@ -142,7 +143,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       return;
     }
     setTitle(nextType === "pit" ? "Pit scouting" : "Match scouting");
-    setQuestions(defaultQuestions(nextType));
+    setQuestions(defaultQuestions(nextType, seasonYear));
   }, []);
 
   const load = useCallback(async (requestedYear?: number) => {
@@ -153,7 +154,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         setPayload(cached.data);
         if (cached.data.year != null) setYear(cached.data.year);
         const active = cached.data.schemas.find((schema) => schema.type === type);
-        loadSchemaIntoDraft(active, type);
+        loadSchemaIntoDraft(active, type, cached.data.year);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
         hadCache = true;
@@ -200,7 +201,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       if (requestedYear) draftsRef.current = {};
       if (body.year != null) setYear(body.year);
       const active = body.schemas.find((schema) => schema.type === type);
-      loadSchemaIntoDraft(active, type);
+      loadSchemaIntoDraft(active, type, body.year);
       setFromCache(false);
       setCachedAt(null);
       await persistScoutFormsSnapshot(orgId, body);
@@ -246,7 +247,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       setAcknowledgeBudget(draft.acknowledgeBudget);
     } else {
       const schema = payload?.schemas.find((entry) => entry.type === next);
-      loadSchemaIntoDraft(schema, next);
+      loadSchemaIntoDraft(schema, next, payload?.year);
     }
     if (payload?.year != null) setYear(payload.year);
   }
@@ -713,6 +714,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         {/* The settings most forms never change, folded: every question showed all of them. */}
                         <details className="sfb-more">
                           <summary data-disclosure>Description, chart and advanced options</summary>
+                          <CollectionSettings question={question} index={index} match={type === "match"} disabled={!payload.canManageSchemas || busy} onChange={collectionConfig => updateQuestion(question.id, { collectionConfig })} />
                           <FormRow label="Description"><input value={question.helpText ?? ""} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { helpText: event.target.value })} placeholder="Optional guidance for scouts" /></FormRow>
                           <FormRow label="Response chart"><select aria-label={`Chart for question ${index+1}`} value={question.chart ?? "auto"} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { chart: event.target.value as DraftQuestion["chart"] })}><option value="auto">Automatic</option><option value="bar">Answer counts</option><option value="trend">Number trend</option><option value="none">Table only</option></select></FormRow>
                           <FormRow
@@ -825,7 +827,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
               </p>
             ) : null}
             {currentSchema && publishStatus.kind === "draft_changes" ? (
-                    <Button variant="secondary" type="button" disabled={busy} onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
+                    <Button variant="secondary" type="button" disabled={busy} onClick={() => loadSchemaIntoDraft(currentSchema, type, year)}>
                       Undo my changes
                     </Button>
             ) : null}

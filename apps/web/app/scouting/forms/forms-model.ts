@@ -1,5 +1,6 @@
-import { type EntryType, type ScoutSchema } from "@vantage/scouting";
-import { DRIVETRAIN_OPTIONS_TEXT, newDraftQuestion, type DraftQuestion } from "../../../lib/scouting/form-builder";
+import { matchSchemaForYear, pitSchemaForYear, type EntryType, type ScoutSchema } from "@vantage/scouting";
+import { isManualPublished } from "@vantage/game-year";
+import { draftFromDefinition, DRIVETRAIN_OPTIONS_TEXT, newDraftQuestion, type DraftQuestion } from "../../../lib/scouting/form-builder";
 
 export type SchemasPayload = {
   eventKey: string | null;
@@ -10,7 +11,8 @@ export type SchemasPayload = {
 
 export type FormBuilderMode = "edit" | "preview" | "responses";
 
-export function defaultQuestions(type: EntryType): DraftQuestion[] {
+export function defaultQuestions(type: EntryType, year?: number | null): DraftQuestion[] {
+  if (year && isManualPublished(year)) return draftFromDefinition(type === "match" ? matchSchemaForYear(year) : pitSchemaForYear(year)).questions;
   if (type === "pit") {
     return [
       newDraftQuestion({

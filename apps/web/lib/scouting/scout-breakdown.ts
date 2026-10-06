@@ -13,6 +13,7 @@
  */
 
 import { sparklinePath } from "../intel/lovat-lookup";
+import { withActivityMetrics } from "./activity-metrics";
 import { combineObservations, observationFields, type ObservationConflict } from "./observations";
 import type { FieldDefinition } from "@vantage/scouting";
 
@@ -161,6 +162,7 @@ function fieldRank(field: FieldBreakdown): number {
 
 /** Build the breakdown for one team's scout rows. */
 export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
+  rows = rows.map(withActivityMetrics);
   // Lap arrays need explicit summaries, not array indexes treated as metrics.
   // Keep the original API payload untouched for the raw observation view/export.
   rows = rows.map(row => {
@@ -272,7 +274,7 @@ export function buildScoutBreakdown(rows: ScoutRow[]): ScoutBreakdown {
         kind: "number",
         key,
         label,
-        mean: round(mean),
+        mean: round(mean, evidence.unit === "fuel/second" ? 2 : 1),
         min: Math.min(...values),
         max: Math.max(...values),
         series: numbers,

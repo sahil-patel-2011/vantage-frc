@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validatePayload } from "@vantage/scouting";
+import { matchSchemaForYear, validatePayload } from "@vantage/scouting";
 import {
   ANSWER_KIND_OPTIONS,
   BIG_TARGET_ANSWER_KINDS,
@@ -43,6 +43,17 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("form-builder", () => {
+  it("keeps season collection phases and unknown-count rules through edits, preview and publish", () => {
+    const starter = matchSchemaForYear(2026);
+    const draft = draftFromDefinition(starter);
+    const auto = draft.questions.find(question => question.key === "auto_fuel")!;
+    auto.label = "Autonomous hub fuel";
+    const published = definitionFromDraft(draft.title, draft.questions);
+    expect(published.fields.find(field => field.key === "auto_fuel")?.config).toMatchObject({ scoutPhase: "auto", min: 0, integer: true, requireObservation: true });
+    expect(previewFieldForQuestion(auto).config).toMatchObject({ scoutPhase: "auto", min: 0, integer: true, requireObservation: true });
+    expect(published.fields.find(field => field.key === "auto_tower_level")?.config?.scoutPhase).toBe("auto");
+    expect(previewFieldForQuestion(retypeQuestion(auto, "short")).config).toEqual({ scoutPhase: "auto" });
+  });
   it("slugifies unique keys", () => {
     const used = new Set<string>();
     expect(slugifyKey("Auto Score", used)).toBe("auto_score");

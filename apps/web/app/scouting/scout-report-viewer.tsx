@@ -1,7 +1,8 @@
 "use client";
+import { MatchActivityReport } from "./match-activity-report";
 
 import { useState } from "react";
-import { actionHistory } from "@vantage/scouting";
+import { actionHistory, matchCapture } from "@vantage/scouting";
 import { ScoutActionHistoryView } from "./scout-action-history";
 import { Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -31,6 +32,7 @@ export function ScoutReportViewer({
         const open = openId === entry.id;
         const report = open ? scoutReportFromPayload(entry.payload) : null;
         const observations = open && entry.payload ? actionHistory(entry.payload) : null;
+        const captured = open && entry.payload ? matchCapture(entry.payload) : null;
         const type = entry.type === "pit" ? "pit" : "match";
         return (
           <li key={entry.id}>
@@ -76,7 +78,7 @@ export function ScoutReportViewer({
                   </section>
                   <section aria-label="Reported actions">
                     <h3>Timeline</h3>
-                    {report.timeline.length === 0 && !observations?.events.length ? (
+                    {report.timeline.length === 0 && !observations?.events.length && !captured?.bouts.length ? (
                       <p className="app-muted">No timed actions were recorded on this report.</p>
                     ) : report.timeline.length > 0 ? (
                       <ol>
@@ -91,6 +93,7 @@ export function ScoutReportViewer({
                     {observations?.events.length && entry.payload ? <ScoutActionHistoryView payload={entry.payload} labels={{}} /> : null}
                   </section>
                 </div>
+                {entry.payload ? <MatchActivityReport payload={entry.payload} /> : null}
                 {canDelete ? (
                   <Button
                     variant="ghost"

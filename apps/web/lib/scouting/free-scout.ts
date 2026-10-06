@@ -2,6 +2,7 @@ import { matchSchemaForYear, pitSchemaForYear, validatePayload, type SchemaDefin
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { visibleFields, withInferredPhaseRules } from "./context-visible";
 import { lastPublishedPack, packForYear } from "@vantage/game-year";
+import { answersToSave } from "./entry-answers";
 
 export type FreeScoutReport = {
   id: string;
@@ -58,8 +59,7 @@ export function parseFreeScoutReport(value: unknown, publishedDefinition?: Schem
   if (row.schemaId !== undefined && (typeof row.schemaId !== "string" || !UUID_PATTERN.test(row.schemaId))) throw new Error("Form ID is invalid.");
   const definition = publishedDefinition ? portableScoutDefinition(publishedDefinition) : freeScoutDefinition(Number(row.year), row.type);
   const fields = visibleFields(definition.fields, row.payload as Record<string, unknown>);
-  const keys = new Set(fields.map((field) => field.key));
-  const payload = Object.fromEntries(Object.entries(row.payload).filter(([key]) => keys.has(key)));
+  const payload = answersToSave(fields, row.payload as Record<string, unknown>, { fillRequiredCounters: false });
   const errors = validatePayload({ ...definition, fields }, payload);
   if (errors.length) throw new Error(errors.join("; "));
   return { id: row.id, year: Number(row.year), type: row.type, teamNumber: Number(row.teamNumber), label: row.label.trim(), payload, observedAt: new Date(row.observedAt).toISOString(), ...(typeof row.schemaId === "string" ? { schemaId: row.schemaId, definition } : {}) };

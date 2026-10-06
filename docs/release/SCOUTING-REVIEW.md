@@ -1,5 +1,19 @@
 # Scouting evidence and sharing review — September 27, 2026
 
+## October 6: match-relative collection and analysis
+
+The prior UI pass did not establish scouting feature completeness or Lovat parity. The follow-up closes a concrete collection-to-analysis gap with independently authored match-relative activity:
+
+- Event and practice scouting time shooting, feeding, defense and downtime against the same persisted match clock. Unfinished observations survive reload and block saving; the buzzer caps duration. Removed intervals remain in the report and can be restored when chronology permits.
+- Released fuel per bout is an explicit count, including zero. Unknown counts stay unknown. Observed throughput uses only counted intervals, never official-point assumptions or a full-match estimate.
+- REBUILT shift guidance uses published schedule alliance placement and manually confirmed FMS hub order. Autonomous ties are never guessed from incomplete scout totals. The phase navigation scrolls outside the compact sticky robot/clock bar.
+- New 2026 forms use the actual season starter, with separate autonomous/endgame climbs, accuracy and defense observations. Opening and republishing the form preserves phase, numeric-range and observed-count configuration. Authors can select a match section and keep untouched counts blank.
+- Saved reports, practice history, robot capability metrics, comparisons without scoring formulas, portable QR and event CSV retain usable activity evidence. Duplicate reports are combined within each match before matches receive equal weight. The existing SQL sharing projection excludes reserved private metadata.
+
+Reference facts were checked against the [FIRST 2026 manual](https://firstfrc.blob.core.windows.net/frc2026/Manual/HTML/2026GameManual.htm) and the current [Lovat product overview](https://lovat.app/). No third-party application code was copied.
+
+The database-free browser scenarios exercise the actual form, browser draft and outbox code. Intercepted API responses validate and return the payload created by those controls; they do **not** prove PostgreSQL persistence, RLS, multi-user collaboration or live FMS integration. No laptop database was started. Production acceptance and the complete remote workflow gates remain open under the authorization requirement in AGENTS.md. Current verification results are recorded in [UI readiness](UI-READINESS-2026-10-06.md).
+
 ## Decision update
 
 The user's September 27 instructions supersede the original plan's opt-in sharing default. The user explicitly answered **“Include past reports too.”** Migration 0706 enables the scouting network for existing teams and defaults new teams to enabled. Owners and admins can opt out. The immutable PLAN.md remains unchanged.
