@@ -214,20 +214,18 @@
    reads as a measurement being taken. Tokens only — reduced motion zeroes all
    of it. */
 .scmp {
-  animation: scmp-in var(--dur-sheet) var(--ease-settle) both;
+  animation: scmp-in var(--dur-sheet) var(--ease-settle) backwards;
 }
 @keyframes scmp-in {
   from {
-    opacity: 0;
     transform: translateY(-8px) scale(0.99);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }
 .scmp-card {
-  animation: scmp-card-in var(--dur-move) var(--ease-settle) both;
+  animation: scmp-card-in var(--dur-move) var(--ease-settle) backwards;
   transition:
     box-shadow var(--dur-move) var(--ease-out),
     border-color var(--dur-tint) var(--ease-out);
@@ -236,25 +234,23 @@
   box-shadow: var(--shadow);
 }
 .scmp-alliance {
-  animation: scmp-card-in var(--dur-move) var(--ease-settle) both;
+  animation: scmp-card-in var(--dur-move) var(--ease-settle) backwards;
   animation-delay: 120ms;
 }
 .scmp-card[data-slot="2"] { animation-delay: 45ms; }
 .scmp-card[data-slot="3"] { animation-delay: 90ms; }
 @keyframes scmp-card-in {
   from {
-    opacity: 0;
     transform: translateY(6px);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }
 .scmp-bar-fill,
 .scmp-range-fill {
   transform-origin: left center;
-  animation: scmp-grow var(--dur-sheet) var(--ease-settle) both;
+  animation: scmp-grow var(--dur-sheet) var(--ease-settle) backwards;
 }
 .scmp-bar-fill { animation-delay: 60ms; }
 .scmp-range-fill { animation-delay: 140ms; }

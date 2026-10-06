@@ -271,7 +271,7 @@ export function Field({
       }
       return (
         <FormRow label={label} hint={field.helpText}>
-          <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
+          <select aria-label={field.label} value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
             <option value="">Select…</option>
             {field.options?.map((option) => (
               <option key={option} value={option}>
@@ -286,6 +286,7 @@ export function Field({
       return (
         <FormRow label={label} hint={field.helpText}>
           <textarea
+            aria-label={field.label}
             value={String(value ?? "")}
             required={field.required}
             placeholder="Anything the numbers miss"
@@ -299,6 +300,7 @@ export function Field({
         <FormRow label={label} hint={field.helpText}>
           <input
             type="text"
+            aria-label={field.label}
             value={String(value ?? "")}
             required={field.required}
             onChange={(event) => onChange(event.target.value)}
@@ -314,7 +316,7 @@ export function Field({
       return (
         <ScoutChoiceRow label={label} hint={field.helpText}>
           {() => (
-          <div className="tap-counter">
+          <div className="scout-counter-control"><div className="tap-counter">
             <button type="button" aria-label={`${field.label}: one less`} disabled={count <= min} onClick={() => onChange(Math.max(min, count - 1))}>
               −
             </button>
@@ -340,6 +342,13 @@ export function Field({
               +
             </button>
           </div>
+          <div className="scout-counter-state">
+            <small>{typeof value === "number" ? "Recorded" : "Not recorded"}</small>
+            <button type="button" aria-label={`${field.label}: ${typeof value === "number" ? "clear answer" : `record ${min === 0 ? "zero" : min}`}`}
+              onClick={() => onChange(typeof value === "number" ? undefined : min)}>
+              {typeof value === "number" ? "Clear" : min === 0 ? "Record 0" : `Record ${min}`}
+            </button>
+          </div></div>
           )}
         </ScoutChoiceRow>
       );
@@ -347,6 +356,7 @@ export function Field({
     return (
       <FormRow label={label} hint={field.helpText}>
         <input
+          aria-label={field.label}
           type={field.type === "number" ? "number" : "text"}
           inputMode={field.type === "number" ? "numeric" : undefined}
           min={field.type === "number" ? numberBounds(field).min : undefined}
@@ -365,7 +375,7 @@ export function Field({
     );
   })();
   return (
-    <div id={anchorId} className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
+    <div id={anchorId} data-field-type={field.type} className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
       {body}
       {liveHint ? (
         <p className={`scout-field-flag ${tone ?? ""}`} role="status">

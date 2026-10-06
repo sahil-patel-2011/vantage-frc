@@ -198,6 +198,7 @@ test("owner can change the real sharing setting and restore it", async ({
   page,
 }) => {
   await page.goto("/scout?orgId=" + orgId);
+  await page.getByText("Scouting network and sharing", { exact: true }).click();
   const card = page.getByRole("region", {
     name: "Scouting sharing",
     exact: true,
@@ -232,6 +233,7 @@ test("a scout can inspect sharing but cannot change it", async ({
 }) => {
   expect(await signInAs(context, "member")).toBe(true);
   await page.goto("/scout?orgId=" + orgId);
+  await page.getByText("Scouting network and sharing", { exact: true }).click();
   const card = page.getByRole("region", {
     name: "Scouting sharing",
     exact: true,

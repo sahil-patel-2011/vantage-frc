@@ -500,7 +500,7 @@ export function DashboardHomeView(props: {
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
   const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
-  const showDailyBrief = Boolean(orgId && !sharedSetupPrompt && !teamSetupCard && !matchCardLeads);
+  const showDailyBrief = Boolean(orgId && !matchCardLeads && (!now.quiet || (!sharedSetupPrompt && !teamSetupCard)));
 
   return (
     <main

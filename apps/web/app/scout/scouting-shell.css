@@ -165,3 +165,40 @@
 .intel-source-more{margin-top:16px;border:1px solid var(--line);border-radius:var(--radius,14px);background:var(--surface)}
 .intel-source-more > summary{display:flex;align-items:center;min-height:48px;padding:0 14px;cursor:pointer;font-weight:600;color:var(--ink)}
 .intel-source-more > .lovat-source-picker{margin:0 12px 12px}
+
+/* The same material and controls as the main workspace, sized for the five scouting jobs. */
+.scouting-product :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),select,textarea){border-radius:11px;border-color:var(--line);background:var(--surface);color:var(--ink);font-size:14px}
+.scouting-product :where(.app-button,.soft-tab-bar button){font-weight:500;letter-spacing:-.01em}
+.scouting-product :where(.app-page-header h1){font-size:clamp(28px,4vw,36px);font-weight:600;letter-spacing:-.04em}
+.scout-home{grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);align-items:start;column-gap:40px;row-gap:28px}
+.scout-home > :not(.scout-home-hero):not(.scout-home-device){grid-column:1 / -1}
+.scout-home-hero{padding:18px 0 8px;gap:14px}
+.scout-home-hero h1{font-size:clamp(34px,4vw,46px);font-weight:600;line-height:1.1}
+.scout-home-eyebrow{font-family:inherit;font-weight:500;font-size:13px;line-height:1.4;letter-spacing:0;text-transform:none}
+.scout-home-device{margin-top:18px;padding:22px;border-radius:22px;box-shadow:var(--shadow-sm)}
+.scout-home-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.scout-home-facts div{background:var(--surface-2,var(--bg));padding:14px}
+.scout-home-facts dd{font-size:26px;font-weight:550}
+.scout-home :where(.scout-home-gaps,.scout-home-pit){padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--surface)}
+.scout-home :where(h2,.scout-home-tools strong){font-weight:550;letter-spacing:-.02em}
+.scout-home-tools a{border-radius:20px;padding:22px;box-shadow:var(--shadow-sm)}
+.scout-home-network{border-top:1px solid var(--line);padding-top:8px}
+.scout-home-network > summary{min-height:44px;display:flex;align-items:center;color:var(--muted);font-size:13px;cursor:pointer}
+.scout-home-duty span{text-transform:none;letter-spacing:0}
+.scout-teams-page{min-width:0}
+.scouting-product .team-view-heading .soft-tab-bar{width:fit-content;max-width:100%}
+@media (max-width:800px){
+  .scout-home{grid-template-columns:minmax(0,1fr);gap:22px}
+  .scout-home-device{margin-top:0}
+  .scout-home-hero{padding-top:8px}
+  .scout-home :where(.scout-home-gaps,.scout-home-pit){padding:18px;border-radius:18px}
+}
+
+@media (max-width:720px){
+  .scouting-main .scout-page > .app-page-header{margin-bottom:12px}
+  .scouting-main .scout-page > .app-page-header h1{margin:0;font-size:28px;line-height:1.15}
+  .scouting-main .scout-page > .app-page-header .app-page-actions{display:none}
+  .scouting-main .scout-page .scout-form-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;padding-bottom:12px;margin-bottom:14px}
+  .scouting-main .scout-page .scout-form-heading h2{font-size:16px}
+  .scouting-main .scout-page .scout-identity-line{margin:0;font-size:11px}
+}

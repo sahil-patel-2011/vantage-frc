@@ -1,4 +1,3 @@
-import { navigationOpener } from "./nav";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { Pool } from "pg";
@@ -24,13 +23,12 @@ for(const width of [390,1440])test(`Teams analysis, comparison and saved offline
  await page.getByText("Adjust what makes a good pick",{exact:true}).click();await expect(slider).toHaveValue(weight);
  const scan=await new AxeBuilder({page}).include(".competition-teams").analyze();expect(scan.violations).toEqual([]);
  await page.keyboard.press("Control+Home");await page.screenshot({path:info.outputPath(`teams-${width}.png`)});
- await navigationOpener(page).click();
- await page.getByRole("navigation",{name:"Main menu",exact:true}).getByRole("link",{name:/^Scouting/}).click();
- await expect(page.getByRole("combobox",{name:"Scouting task",exact:true})).toBeVisible({timeout:30000});
+ const sections=page.getByRole("tablist",{name:"Competition sections",exact:true});
+ await sections.getByRole("tab",{name:"Scout",exact:true}).click();
+ await expect(page.getByRole("tablist",{name:"Scouting task",exact:true})).toBeVisible({timeout:30000});
  await context.setOffline(true);
- await navigationOpener(page).click();
- await page.locator(".main-menu-section > summary").filter({hasText:"Competition tools"}).click();
- await page.getByRole("navigation",{name:"Competition tools",exact:true}).getByRole("link",{name:"Teams",exact:true}).click();await expect(page.locator(".scout-cached-analysis")).toBeVisible({timeout:30000});await expect(rows.first()).toBeVisible();
+ await sections.getByRole("tab",{name:"Teams",exact:true}).click();
+ await expect(page.locator(".scout-cached-analysis")).toBeVisible({timeout:30000});await expect(rows.first()).toBeVisible();
  await context.setOffline(false);await expect(page.locator(".scout-cached-analysis")).toHaveCount(0,{timeout:30000});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

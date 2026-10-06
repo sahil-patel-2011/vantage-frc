@@ -11,7 +11,6 @@ import {
   orderedSchedule,
   scheduleIsOver,
 } from "../../lib/scouting/next-match";
-import { fetchProductSession } from "../../lib/nav/product-session";
 
 /**
  * The match a scout is about to watch, with its six robots as big buttons.
@@ -30,6 +29,7 @@ export function NextMatchCard({
   onAutoPick,
   myMatchKeys = [],
   autoPickEnabled = true,
+  ownTeamNumber = null,
 }: {
   matches: ScheduleMatch[];
   scouted: ScoutedEntry[];
@@ -46,6 +46,7 @@ export function NextMatchCard({
    * a robot picked from an old copy, or after the last match, was one already scouted.
    */
   autoPickEnabled?: boolean;
+  ownTeamNumber?: number | null;
 }) {
   const schedule = useMemo(() => orderedSchedule(matches), [matches]);
   const baseStart = useMemo(() => nextMatchIndex(schedule, scouted, assignments), [schedule, scouted, assignments]);
@@ -68,19 +69,7 @@ export function NextMatchCard({
   const card = matchCard(schedule, index, scouted, assignments);
 
   // Our own team number, to leave our robot for last: the drive team is busy playing it.
-  const [ownTeamKey, setOwnTeamKey] = useState<string | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void fetchProductSession().then((session) => {
-      if (!active) return;
-      if (session?.teamNumber) setOwnTeamKey(`frc${session.teamNumber}`);
-      setSessionChecked(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const ownTeamKey = ownTeamNumber ? `frc${ownTeamNumber}` : null;
 
   // "Scout this match — your next robot, one tap" opened on six tiles with none picked. With
   // nothing picked yet, the next robot is picked for you: yours first, then one nobody has
@@ -88,7 +77,7 @@ export function NextMatchCard({
   // Only our own robot left in a match: the next match with another team open comes first
   // (the save flow skips ours the same way), then ours.
   const autoPick = useMemo(() => {
-    if (!autoPickEnabled || matchKey || baseStart < 0 || !sessionChecked) return null;
+    if (!autoPickEnabled || matchKey || baseStart < 0) return null;
     // Every match is played: nothing is "next", and the scout picks what they are catching up on.
     if (scheduleIsOver(schedule)) return null;
     const watched = new Set(myMatchKeys);
@@ -104,7 +93,7 @@ export function NextMatchCard({
       if (!ownFallback && open[0]) ownFallback = { matchKey: candidate.match.matchKey, teamKey: open[0].teamKey };
     }
     return ownFallback;
-  }, [autoPickEnabled, matchKey, baseStart, schedule, scouted, assignments, ownTeamKey, sessionChecked, myMatchKeys]);
+  }, [autoPickEnabled, matchKey, baseStart, schedule, scouted, assignments, ownTeamKey, myMatchKeys]);
   useEffect(() => {
     if (!autoPick) return;
     const at = schedule.findIndex((match) => match.matchKey === autoPick.matchKey);

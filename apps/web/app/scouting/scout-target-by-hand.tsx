@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, FormRow } from "../../components/ui";
 import {
   ASSIGNMENTS_ARE_SUGGESTIONS_COPY,
@@ -35,14 +35,17 @@ export function PitTeamField({
   onTeamKey: (teamKey: string) => void;
 }) {
   const [draft, setDraft] = useState(() => teamKey.replace(/^frc/i, ""));
+  const publishedTeam = useRef(teamKey);
   const normalized = normalizeTeamKey(draft);
   const problem = draft.trim() && !normalized ? "That is not a team number." : null;
 
   useEffect(() => {
-    if (!teamKey) return;
-    if (normalizeTeamKey(draft) === teamKey) return;
+    // Keep invalid text while it is being corrected, but follow an external
+    // selection or the blank team after Save / Cancel.
+    if (teamKey === publishedTeam.current) return;
+    publishedTeam.current = teamKey;
     setDraft(teamKey.replace(/^frc/i, ""));
-  }, [teamKey, draft]);
+  }, [teamKey]);
 
   return (
     <div className="scout-by-hand">
@@ -54,7 +57,8 @@ export function PitTeamField({
           onChange={(event) => {
             const next = event.target.value;
             setDraft(next);
-            onTeamKey(normalizeTeamKey(next) ?? "");
+            publishedTeam.current = normalizeTeamKey(next) ?? "";
+            onTeamKey(publishedTeam.current);
           }}
           placeholder="Team #"
           aria-invalid={Boolean(problem)}

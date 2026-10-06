@@ -1,6 +1,6 @@
 /* Product materials. Public marketing and full-screen scouting/kiosk layouts
    retain their own geometry. Team accents and appearance preferences remain authoritative. */
-body.has-app-shell {
+body.has-app-shell, .scouting-product {
   --sidebar-w: 244px;
   --font-sans: -apple-system, BlinkMacSystemFont, var(--font-inter), "Segoe UI", sans-serif;
   --font-source-sans: var(--font-sans);
@@ -22,12 +22,12 @@ body.has-app-shell {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
-html[data-theme="light"] body.has-app-shell { --bg: #f6f7fa; --surface: #ffffff; --surface-2: #f1f2f6; --ink: #202126; --muted: #696c78; --line: #dfe2e9; }
-html[data-theme="dark"] body.has-app-shell { --bg: #14161c; --surface: #20232b; --surface-2: #2b2f39; --ink: #f0f1f6; --muted: #a2a8b6; --line: #383d49; --shadow-card: 0 1px 2px #00000018, 0 8px 28px #00000012; --product-reflection: inset 0 1px 0 #ffffff08; }
-html:not([data-brand-accent]) body.has-app-shell { --accent: #0866e7; --accent-ink: #fff; --accent-soft: #eaf1fe; --accent-hover: #0759cc; --ring: #0866e74d; --tone-blue: var(--accent); }
-html[data-theme="dark"]:not([data-brand-accent]) body.has-app-shell { --accent: #8db7ff; --accent-ink: #11254b; --accent-soft: #283752; --accent-hover: #accaff; --ring: #8db7ff80; }
-html[data-clarity="solid"] body.has-app-shell { --product-glass: var(--surface); --product-filter: none; }
-html[data-clarity="clear"] body.has-app-shell { --product-glass: color-mix(in srgb, var(--surface) 62%, transparent); }
+html[data-theme="light"] :is(body.has-app-shell,.scouting-product) { --bg: #f6f7fa; --surface: #ffffff; --surface-2: #f1f2f6; --ink: #202126; --muted: #696c78; --line: #dfe2e9; }
+html[data-theme="dark"] :is(body.has-app-shell,.scouting-product) { --bg: #14161c; --surface: #20232b; --surface-2: #2b2f39; --ink: #f0f1f6; --muted: #a2a8b6; --line: #383d49; --shadow-card: 0 1px 2px #00000018, 0 8px 28px #00000012; --product-reflection: inset 0 1px 0 #ffffff08; }
+html:not([data-brand-accent]) :is(body.has-app-shell,.scouting-product) { --accent: #0866e7; --accent-ink: #fff; --accent-soft: #eaf1fe; --accent-hover: #0759cc; --ring: #0866e74d; --tone-blue: var(--accent); }
+html[data-theme="dark"]:not([data-brand-accent]) :is(body.has-app-shell,.scouting-product) { --accent: #8db7ff; --accent-ink: #11254b; --accent-soft: #283752; --accent-hover: #accaff; --ring: #8db7ff80; }
+html[data-clarity="solid"] :is(body.has-app-shell,.scouting-product) { --product-glass: var(--surface); --product-filter: none; }
+html[data-clarity="clear"] :is(body.has-app-shell,.scouting-product) { --product-glass: color-mix(in srgb, var(--surface) 62%, transparent); }
 body.has-app-shell ::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 
 /* The shell is a quiet window around the work. */

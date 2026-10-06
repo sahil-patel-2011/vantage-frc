@@ -21,8 +21,9 @@ for (const width of [320, 768, 1440]) {
       expect(new URL(page.url()).pathname, route).not.toBe("/signin");
       expect(await page.evaluate(() => document.documentElement.scrollWidth), route).toBeLessThanOrEqual(width + 1);
       expect(await page.getByRole("button", { name: /open (navigation|menu)/i }).count(), route).toBeLessThanOrEqual(1);
+      await page.waitForFunction(() => document.getAnimations().every(animation => !(animation.timeline instanceof DocumentTimeline) || animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));
       const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
-      expect(accessibility.violations.map(v => `${v.id}: ${v.nodes.length} nodes`), route).toEqual([]);
+      expect(accessibility.violations.map(v => ({id:v.id, nodes:v.nodes.map(n=>({target:n.target,issue:n.failureSummary}))})), route).toEqual([]);
       const name = `${route.replace(/\W/g, "") || "marketing"}-${width}.png`;
       const path = info.outputPath(name);
       await page.screenshot({ path });
