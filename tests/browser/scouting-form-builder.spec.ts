@@ -5,16 +5,16 @@ import { signInAs } from "./session";
 
 test.use({ actionTimeout: 15_000 });
 
-test("members can collaborate on team forms without misleading setup prompts", async ({ page, context }) => {
+test("ordinary scouts can preview published forms without admin controls or misleading setup prompts", async ({ page, context }) => {
   expect(await signInAs(context, "member")).toBe(true);
   const orgId = (await (await context.request.get("/api/me")).json()).orgId;
   await page.goto(`/competition?tab=forms&orgId=${orgId}`);
   const builder = page.locator(".sfb-page");
   const schemas = await context.request.get(`/api/scouting/schemas?orgId=${orgId}`);
   expect(schemas.ok()).toBe(true);
-  expect((await schemas.json()).canManageSchemas).toBe(true);
-  await expect(builder.getByLabel("Form title", { exact: true })).toBeEnabled();
-  await expect(builder.getByRole("button", { name: "Add question", exact: true })).toBeEnabled();
+  expect((await schemas.json()).canManageSchemas).toBe(false);
+  await expect(builder.getByLabel("Form title", { exact: true })).toBeDisabled();
+  await expect(builder.getByRole("button", { name: "Add question", exact: true })).toBeDisabled();
   await expect(page.getByRole("heading", { name: "Forms", exact: true })).toHaveCount(1);
   await expect(builder.getByRole("heading", { name: "Scouting forms", exact: true })).toHaveCount(0);
   await expect(builder.getByRole("heading", { name: "Choose your team", exact: true })).toHaveCount(0);
@@ -182,3 +182,46 @@ for (const width of [1280, 390]) {
     }
   });
 }
+
+
+test("a delegated custom scouting lead can publish but cannot administer people, and revocation takes effect", async ({page,context,browser}) => {
+  test.setTimeout(120_000);
+  expect(await signInAs(context,"member")).toBe(true);
+  const me=await (await context.request.get("/api/me")).json();
+  const orgId=me.orgId as string, memberId=me.userId as string;
+  const owner=await browser.newContext(); expect(await signInAs(owner,"owner")).toBe(true);
+  const members=await (await owner.request.get(`/api/organizations/members?orgId=${orgId}`)).json();
+  const prior=members.members.find((row:{userId:string})=>row.userId===memberId);
+  expect(prior).toBeTruthy();
+  const db=new URL(process.env.DATABASE_ADMIN_URL!); expect(["127.0.0.1","localhost"]).toContain(db.hostname); expect(db.pathname).toContain("vantage_ci");
+  const pool=new Pool({connectionString:db.href,ssl:false}); const key=`lead-${randomUUID()}`; const created:string[]=[];
+  try {
+    const saved=await owner.request.post("/api/organizations/role-profiles",{data:{orgId,action:"save",key,name:"Journey scouting lead",baseRole:"scout",capabilities:["manage_scouting"],hubAccess:{competition:["scouting"]}}});
+    expect(saved.ok(),await saved.text()).toBe(true);
+    expect((await saved.json()).profile.hubAccess).toEqual({competition:[]});
+    const applied=await owner.request.post("/api/organizations/role-profiles",{data:{orgId,action:"apply",key,userId:memberId}});
+    expect(applied.ok(),await applied.text()).toBe(true);
+    expect((await context.request.get(`/api/organizations/members?orgId=${orgId}`)).status()).toBe(403);
+    const setup=await (await context.request.get(`/api/scouting/schemas?orgId=${orgId}`)).json(); expect(setup.canManageSchemas).toBe(true);
+    const schema=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",definition:{title:key,fields:[{key:"notes",label:"Notes",type:"text",required:false}]}}});
+    expect(schema.status(),await schema.text()).toBe(201); created.push((await schema.json()).id);
+    await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+    const builder=page.locator(".sfb-page"); await expect(builder.getByLabel("Form title",{exact:true})).toBeEnabled();
+    await builder.getByLabel("Form title",{exact:true}).fill(`${key} edited`);
+    const published=page.waitForResponse(response=>response.url().endsWith("/api/scouting/schemas") && response.request().method()==="POST");
+    await builder.getByRole("button",{name:"Publish changes",exact:true}).click(); const response=await published;
+    expect(response.status(),await response.text()).toBe(201); created.push((await response.json()).id);
+    await page.reload(); await expect(builder.getByLabel("Form title",{exact:true})).toHaveValue(`${key} edited`);
+    const revoked=await owner.request.patch("/api/organizations/members",{data:{orgId,userId:memberId,action:"set_capabilities",capabilities:prior.capabilities ?? []}});
+    expect(revoked.ok(),await revoked.text()).toBe(true);
+    await page.reload(); await expect(builder.getByLabel("Form title",{exact:true})).toBeDisabled();
+    const forbidden=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",definition:{title:"Denied",fields:[]}}});
+    expect(forbidden.status()).toBe(403);
+  } finally {
+    await owner.request.patch("/api/organizations/members",{data:{orgId,userId:memberId,action:"set_capabilities",capabilities:prior.capabilities ?? []}});
+    await owner.request.patch("/api/organizations/members",{data:{orgId,userId:memberId,action:"set_hub_access",hubAccess:members.hubAccessByUser[memberId] ?? []}});
+    await owner.request.post("/api/organizations/role-profiles",{data:{orgId,action:"delete",key}});
+    if(created.length) await pool.query("DELETE FROM scout_schemas WHERE org_id=$1 AND id=ANY($2::uuid[])",[orgId,created]);
+    await pool.end(); await owner.close();
+  }
+});

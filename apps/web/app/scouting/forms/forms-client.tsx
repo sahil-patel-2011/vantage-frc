@@ -404,7 +404,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
             badge="Needs setup"
             badgeTone="setup"
             title="Choose your team"
-            description="Choose your team and you can build scouting forms with everyone else."
+            description="Choose your team to view its scouting forms. A scouting lead or team admin can publish them."
           />
         ) : null}
       </FormBuilderShell>
@@ -433,16 +433,16 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
       {shell === "empty" ? (
         <section className="sfb-shell-empty sfb-published-card" role="status">
-          <div><strong>Ready to publish</strong><span>Start with these questions or tailor them below.</span></div>
+          <div><strong>{payload.canManageSchemas ? "Ready to publish" : "No published form yet"}</strong><span>{payload.canManageSchemas ? "Start with these questions or tailor them below." : "Ask a scouting lead or team admin to publish a form. The questions below are a preview."}</span></div>
           {/* The step people arrive for is publishing; "Open Scouting" left the page. */}
-          <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
+          {payload.canManageSchemas ? <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
             {publishLabel}
-          </Button>
+          </Button> : null}
         </section>
       ) : null}
 
       {!payload.canManageSchemas ? (
-        <p className="app-muted">You can preview this form and review responses. Editing is unavailable for this account.</p>
+        <p className="app-muted">You can preview this form and review responses. A scouting lead or team admin can edit and publish forms.</p>
       ) : null}
 
       <fieldset className="sfb-type-switch" disabled={busy}>

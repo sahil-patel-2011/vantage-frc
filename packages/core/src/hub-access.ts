@@ -220,6 +220,16 @@ export async function setMemberHubAccess(
     normalized.push({ hubId: entry.hubId, allowedTabIds: tabs });
   }
 
+  if (normalized.length) {
+    const lead = await client.query(
+      `SELECT 1 FROM membership_capabilities WHERE org_id=$1 AND user_id=$2 AND capability='manage_scouting'::org_capability`,
+      [input.orgId, input.userId],
+    );
+    if (lead.rowCount && !normalized.some(row => row.hubId === "competition" && row.allowedTabIds.length === 0)) {
+      throw new Error("Scouting leads need full Competition access. Remove the scouting lead permission before restricting it.");
+    }
+  }
+
   const before = await listMemberHubAccess(client, input.orgId, input.userId);
 
   await client.query(`DELETE FROM membership_hub_access WHERE org_id = $1 AND user_id = $2`, [

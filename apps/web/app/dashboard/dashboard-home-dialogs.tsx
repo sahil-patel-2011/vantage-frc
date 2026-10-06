@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useExitPresence } from "../../components/ui/use-exit-presence";
 import { ConfirmDialog, type ConfirmOpts } from "../../components/ui/confirm-dialog";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
@@ -126,6 +127,8 @@ export function DashboardHomeDialogs({
   onCreatePersonal: (name: string) => void;
   onCreateOrg: (name: string) => void;
 }) {
+  const boardsPresence = useExitPresence(boardsOpen);
+  const newBoardPresence = useExitPresence(newBoardOpen);
   return (
     <>
       <ConfirmDialog
@@ -135,9 +138,9 @@ export function DashboardHomeDialogs({
           if (confirm) onConfirm(confirm, ok);
         }}
       />
-      {boardsOpen ? (
+      {boardsPresence.present ? (
         <DashboardBoardsModal
-          open
+          open={boardsOpen}
           onClose={onCloseBoards}
           board={board}
           personalBoards={personalBoards}
@@ -158,9 +161,9 @@ export function DashboardHomeDialogs({
           onCreateOrg={onCreateOrg}
         />
       ) : null}
-      {newBoardOpen ? (
+      {newBoardPresence.present ? (
         <DashboardNewBoardDialog
-          open
+          open={newBoardOpen}
           existingNames={[...personalBoards, ...orgBoards].map((item) => item.name)}
           saving={saving}
           onClose={onCloseNewBoard}

@@ -41,7 +41,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
     </nav>}
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
       {[{ href: "/ai?tab=chat", label: "Ask Vantage", icon: "sparkles" as const }, { href: "/help", label: "Help & guides", icon: "pin" as const }, { href: "/account", label: "Settings", icon: "gear" as const }]
-        .filter(item => allowed(item.href)).map(item => <a key={item.href} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
+        .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>
   </aside>;
 }

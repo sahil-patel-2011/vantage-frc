@@ -1,3 +1,4 @@
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
@@ -281,7 +282,7 @@ export async function computeScoutVoiceView(
     };
   }
 
-  const canManageOrg = org.role === "owner" || org.role === "admin";
+  const canManageOrg = await canManageScouting(client, org.orgId);
   const [orgSettings, userPrefs, providers, notes] = await Promise.all([
     loadOrgSettings(client, org.orgId),
     loadUserPrefs(client, org.orgId, input.userId),
@@ -464,7 +465,7 @@ export async function deleteVoiceNote(
   );
   const createdBy = existing.rows[0]?.createdBy;
   if (!createdBy) throw new Error("Voice note not found");
-  if (!canDeleteScoutVoiceNote({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy })) {
+  if (!canDeleteScoutVoiceNote({ role: role.rows[0]?.role, userId: input.userId, authorId: createdBy }) && !await canManageScouting(client, input.orgId)) {
     throw new Error("You cannot delete this voice note");
   }
   const deleted = await client.query(`DELETE FROM scout_voice_notes WHERE id = $1 AND org_id = $2`, [

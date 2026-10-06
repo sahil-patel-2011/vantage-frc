@@ -1,3 +1,4 @@
+import { assertScoutingLead, canManageScouting } from "@vantage/scouting/permissions";
 import { auth } from "@vantage/core";
 import { ScoutingRepository } from "@vantage/scouting/repository";
 import type { SchemaDefinition } from "@vantage/scouting";
@@ -19,14 +20,7 @@ export async function GET(request: Request) {
     if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
     const orgId = new URL(request.url).searchParams.get("orgId");
     const data = await withScoutingRequest(orgId, async (client) => {
-      // Scouting forms belong to the team, not the owner: anyone on it can
-      // build one, edit someone else's, or delete an unused one (migration
-      // 0658). A form that already has scouting filed under it cannot be
-      // deleted by anyone — the entry tables' foreign keys stop that.
-      const allowed = await client.query<{ allowed: boolean }>(
-        `SELECT is_org_member($1) AS allowed`,
-        [orgId],
-      );
+      const allowed = await canManageScouting(client, orgId!);
       const context = await client.query<{ eventKey: string | null; year: number | null }>(
         `SELECT c.active_event_key AS "eventKey", e.year
          FROM org_active_context c
@@ -42,7 +36,7 @@ export async function GET(request: Request) {
         return {
           eventKey,
           year: null,
-          canManageSchemas: Boolean(allowed.rows[0]?.allowed),
+          canManageSchemas: allowed,
           schemas: [] as Array<{
             id: string;
             orgId: string;
@@ -63,7 +57,7 @@ export async function GET(request: Request) {
       return {
         eventKey,
         year,
-        canManageSchemas: Boolean(allowed.rows[0]?.allowed),
+        canManageSchemas: allowed,
         schemas: schemas.rows.map((row) => ({
           ...row,
           definition: stripScoutIdentityFields(
@@ -94,11 +88,7 @@ export async function POST(request: Request) {
 
     if (body.action === "ensure_defaults") {
       const result = await withScoutingRequest(body.orgId, async (client) => {
-        const allowed = await client.query(
-          `SELECT is_org_member($1) AS allowed`,
-          [body.orgId],
-        );
-        if (!allowed.rows[0]?.allowed) throw new Error("Join this team to change its scouting forms");
+        await assertScoutingLead(client, body.orgId!);
         const context = await client.query<{ eventKey: string | null }>(
           `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
           [body.orgId],
@@ -125,11 +115,7 @@ export async function POST(request: Request) {
       return Response.json({ error: budget.message, budget, acknowledgeRequired: true }, { status: 422 });
     }
     const schema = await withScoutingRequest(body.orgId, async (client) => {
-      const allowed = await client.query(
-        `SELECT is_org_member($1) AS allowed`,
-        [body.orgId],
-      );
-      if (!allowed.rows[0]?.allowed) throw new Error("Join this team to change its scouting forms");
+      await assertScoutingLead(client, body.orgId!);
       const result = await client.query(
         `INSERT INTO scout_schemas (org_id,year,type,version,schema,created_by)
          SELECT $1,$2,$3,COALESCE(MAX(version),0)+1,$4::jsonb,$5

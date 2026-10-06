@@ -28,7 +28,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "menu",
     target: "menu",
     title: "Find any page",
-    body: "The menu button opens every page. Search is at the top of it.",
+    body: "Use menu or search to find any page, tool or team record.",
     prefer: "bottom",
   },
   {

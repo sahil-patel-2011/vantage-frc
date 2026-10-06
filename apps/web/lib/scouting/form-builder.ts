@@ -1182,10 +1182,10 @@ export function formBuilderNextActions(input: {
     return [
       {
         id: "publish",
-        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Choose your team",
+        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Preview published forms",
         detail: input.canManageSchemas
           ? `Publish a real ${typeLabel} form so Scouting and Coverage can use it.`
-          : `Join a team and you can build ${typeLabel} forms with everyone else.`,
+          : `A scouting lead or team admin publishes ${typeLabel} forms. You can preview and use published forms.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },
@@ -1258,9 +1258,7 @@ export function formBuilderPublishBlockedReason(input: {
   acknowledgeBudget: boolean;
 }): string | null {
   if (!input.canManageSchemas) {
-    // Anyone on the team may build and publish a form; the only people this
-    // stops are those who have not joined one yet.
-    return "Choose your team before publishing a form.";
+    return "A scouting lead or team admin must publish this form.";
   }
   if (input.year == null) {
     return "Choose a game before publishing.";

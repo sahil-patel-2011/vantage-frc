@@ -1,3 +1,4 @@
+import { canManageScouting, assertScoutingLead } from "@vantage/scouting/permissions";
 import { auth, emitPreferredNotification } from "@vantage/core";
 import type { SchemaDefinition } from "@vantage/scouting";
 import {
@@ -109,7 +110,7 @@ async function load(orgId: string, userId: string, eventKeyOverride?: string | n
     const latestSchemas = schemas.rows.filter((schema, index, all) => all.findIndex((candidate) => candidate.year === schema.year && candidate.type === schema.type) === index);
     return {
       eventKey,
-      canManage: ["owner", "admin"].includes(context.rows[0]?.role ?? ""),
+      canManage: await canManageScouting(client, orgId),
       schemaBudgets: latestSchemas.map((schema) => ({ schemaId: schema.id, year: schema.year, type: schema.type, title: schema.definition.title, version: schema.version, clonedFrom: schema.clonedFrom, fields: schema.definition.fields, ...lintSchemaBudget(schema.definition as SchemaDefinition) })),
       fieldTrust: summarizeFieldTrust(validations.rows),
       policies: policies.rows,
@@ -143,8 +144,7 @@ export async function POST(request: Request) {
     const action = text(body.action, 40);
     if (!orgId || !action) return Response.json({ error: "orgId and action are required" }, { status: 400 });
     await withScoutingRequest(orgId, async (client) => {
-      const membership = await client.query<{ role: string }>(`SELECT role::text AS role FROM memberships WHERE org_id=$1 AND user_id=$2`, [orgId, session.user.id]);
-      if (!["owner", "admin"].includes(membership.rows[0]?.role ?? "")) throw new Error("Owner or admin role required");
+      await assertScoutingLead(client, orgId);
       if (action === "set-policy") {
         const schemaId = text(body.schemaId, 64), fieldKey = text(body.fieldKey, 120);
         const preferred = text(body.preferredSource, 20);

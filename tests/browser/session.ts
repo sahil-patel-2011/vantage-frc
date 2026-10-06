@@ -39,11 +39,11 @@ async function dismissFirstRunOverlays(context: BrowserContext) {
   }, TOUR_DONE_KEY);
 }
 
-export async function addSessionCookies(context: BrowserContext, cookies: CookieSpec[]) {
+export async function addSessionCookies(context: BrowserContext, cookies: CookieSpec[], dismissTour = true) {
   await context.addCookies(
     cookies.map((cookie) => ({ sameSite: "Lax" as const, ...cookie, url: baseOrigin() })),
   );
-  await dismissFirstRunOverlays(context);
+  if (dismissTour) await dismissFirstRunOverlays(context);
 }
 
 /** Chromium sends Secure cookies to loopback HTTP; Playwright's API transport does not. */
@@ -66,10 +66,10 @@ export async function normalizeLocalApiSession(context: BrowserContext) {
  * not one. Specs that must run against a build use `signInAs` instead, which
  * mints a real Better Auth session and works in either mode.
  */
-export async function signInFixture(context: BrowserContext) {
+export async function signInFixture(context: BrowserContext, dismissTour = true) {
   await addSessionCookies(context, [
     { name: "vantage-e2e-session", value: "authenticated", httpOnly: true },
-  ]);
+  ], dismissTour);
 }
 
 // ---------------------------------------------------------------------------

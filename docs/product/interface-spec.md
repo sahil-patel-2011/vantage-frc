@@ -52,3 +52,15 @@ The local database and app/test processes were stopped at the user's request. Fi
 Final database-free checks passed: 11,358 unit tests (45 skipped), repository lint, all workspace type checks, and the optimized production build (753 static/dynamic routes generated). Browser verification of the final contrast corrections and unavailable-widget retry UI remains outstanding after the stop.
 
 The subsequent database-free audit and reliability repairs are tracked in [UI readiness](../release/UI-READINESS-2026-10-06.md). It preserves the original full-census findings and records bounded replay evidence separately from the still-open production gates.
+
+## Scouting trends and delegated leads
+
+Event trends live in the existing Teams observation view. They show schema-defined outcomes and numeric averages, confidence filters, counted versus missing robot-match answers, earlier/later qualification samples and their contributing evidence. Deduplicate reports before aggregating. A recorded no-climb outcome does not establish intent; never describe missing answers as a choice not to climb. Different units/types are not pooled. This view complements individual robot comparisons and official EPA trends rather than adding a competing scouting dashboard.
+
+Scouting leads use a dedicated `manage_scouting` capability. Owners/admins retain it implicitly. Delegated leads can manage forms, assignments, report review/deletion, formulas, sharing, trust/voice/accuracy and their active/custom event without gaining membership, billing or API-key administration. Leads have full Competition navigation; other hub limits remain. Custom access roles are authored/applied on Team admin → Custom roles. Season responsibilities track jobs and do not grant permissions. Editing a role template preserves its tab limits and does not silently update previously assigned members; applying it is explicit.
+
+Automatic walkthroughs require an atomic account claim before display. Existing accounts are marked introduced on migration; new accounts can claim once after onboarding. Concurrent tabs, a different browser, lost device storage and mid-tour reload must not replay it. If the claim is unavailable, leave the app unobstructed. Signed-in users receive no automatic cookie banner; Privacy can still explicitly change consent, and analytics still require a recorded grant.
+
+Dialog and cookie-card exits use a short fade/movement, release focus/scroll promptly, and become inert immediately. Reduced motion removes the exit delay. Preserve dialog content while it leaves the screen.
+
+The user authorized isolated GitHub Actions database-backed acceptance tests on October 6. This authorization does not permit any laptop database or production data changes.

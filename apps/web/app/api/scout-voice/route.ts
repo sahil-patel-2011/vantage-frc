@@ -1,3 +1,4 @@
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { isScoutForbidden, scoutForbiddenResponse } from "../../../lib/scout-org-access";
@@ -137,12 +138,11 @@ export async function POST(request: Request) {
         [orgId, userId],
       );
       if (!member.rowCount) throw new Error("forbidden");
-      const role = member.rows[0]?.role ?? "viewer";
-      const canManageOrg = role === "owner" || role === "admin";
+      const canManageOrg = await canManageScouting(client, orgId);
 
       switch (action) {
         case "set-org-opt-in": {
-          if (!canManageOrg) throw new Error("Only owners and admins can enable team voice notes");
+          if (!canManageOrg) throw new Error("Only scouting leads can enable team voice notes");
           await setOrgVoiceOptIn(client, {
             orgId,
             userId,

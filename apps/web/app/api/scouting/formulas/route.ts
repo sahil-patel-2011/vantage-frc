@@ -1,3 +1,4 @@
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { auth } from "@vantage/core";
 import type { FormulaExpression } from "@vantage/scouting";
 import { headers } from "next/headers";
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     }
     const name = body.name.trim();
     const formula = await withScoutingRequest(body.orgId ?? null, async (client) => {
+      await assertScoutingLead(client, body.orgId!);
       const result = await client.query(
         `INSERT INTO org_value_formulas (org_id,name,expression,created_by)
          VALUES ($1,$2,$3::jsonb,$4)

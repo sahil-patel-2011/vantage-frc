@@ -17,8 +17,8 @@ export const responses = { definition, rows: [
   { id: "2", team: "frc254", label: "Pit", event: null, payload: { drive: "Tank" }, observedAt: "2026-10-06T11:00:00Z", mine: false },
 ], hasMore: false, scouts: null, idle: null };
 
-export async function isolateUi(page: Page, context: BrowserContext, theme = "light") {
-  await signInFixture(context);
+export async function isolateUi(page: Page, context: BrowserContext, theme = "light", options: { firstRun?: boolean } = {}) {
+  await signInFixture(context, !options.firstRun);
   await context.addCookies([{ name: ANALYTICS_CONSENT_COOKIE, value: serializeConsent("denied"), url: "http://127.0.0.1:3419" }]);
   await context.addInitScript(value => {
     localStorage.setItem("vantage-theme", value);

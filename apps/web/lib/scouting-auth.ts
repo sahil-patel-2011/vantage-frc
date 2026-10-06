@@ -37,7 +37,7 @@ export function scoutingErrorResponse(error: unknown) {
     return Response.json({ error: error.message }, { status: error.status });
   }
   const raw = error instanceof Error ? error.message : "";
-  const status = /access denied|authentication policy|membership required|coach role/i.test(raw)
+  const status = /access denied|authentication policy|membership required|coach role|scouting lead/i.test(raw)
     ? 403
     : 400;
   // A database error ("permission denied for table …") never reaches the page.

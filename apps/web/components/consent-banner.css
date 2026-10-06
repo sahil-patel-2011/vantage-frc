@@ -366,3 +366,7 @@ body:has(.consent-banner) {
     font-size: 13px;
   }
 }
+
+@keyframes consentOut { to { opacity: 0; transform: translateY(6px); } }
+.consent-banner[data-closing] { pointer-events: none; animation: consentOut 150ms ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .consent-banner[data-closing] { animation: none; } }

@@ -1,5 +1,7 @@
 "use client";
 
+import { requestMe } from "../lib/nav/me-request";
+import { useExitPresence } from "./ui/use-exit-presence";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -26,7 +28,8 @@ import "./consent-banner.css";
  * Behaviour:
  *   - Renders nothing until mounted, because the answer lives in a cookie and
  *     the server has no business guessing it during SSR.
- *   - Asks once. A decline is a real answer and the banner goes away.
+ *   - Signed-in accounts never get an automatic prompt. Explicit privacy choices remain available.
+ *   - Asks anonymous visitors once. A decline is a real answer and the banner goes away.
  *   - Asks on one page. Shown and not answered, it is gone on the next page and
  *     on every later visit; nothing is recorded without a yes, so walking past
  *     it is as safe as declining.
@@ -58,6 +61,7 @@ function asksOn(pathname: string | null): boolean {
 export function ConsentBanner() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [asking, setAsking] = useState(false);
   const [reopened, setReopened] = useState(false);
   const [choice, setChoice] = useState<ConsentChoice | null>(null);
@@ -76,6 +80,18 @@ export function ConsentBanner() {
     syncFromCookie();
     setAsking(consentDecisionPending() && !consentAlreadyAsked());
   }, [syncFromCookie]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAuthenticated(null);
+    void requestMe(null).then(me => {
+      if (cancelled) return;
+      const signedIn = me.ok && (me.data as { authenticated?: boolean } | null)?.authenticated === true;
+      setAuthenticated(signedIn ? true : me.status === 401 ? false : null);
+      if (signedIn) markConsentAsked();
+    });
+    return () => { cancelled = true; };
+  }, [pathname]);
 
   // Reopening: the privacy policy's analytics anchor, or an explicit event.
   useEffect(() => {
@@ -125,7 +141,8 @@ export function ConsentBanner() {
   );
 
   const firstAsk = asksOn(pathname) && (shownOn === null || shownOn === pathname);
-  const visible = mounted && asking && (reopened || firstAsk);
+  const visible = mounted && asking && (reopened || (authenticated === false && firstAsk));
+  const presence = useExitPresence(visible);
 
   // Remember the first showing, so the next page and the next visit are left alone.
   useEffect(() => {
@@ -173,7 +190,7 @@ export function ConsentBanner() {
     };
   }, [clearClearance, reopened, visible]);
 
-  if (!visible) return null;
+  if (!presence.present) return null;
 
   const copy = ANALYTICS_BANNER_COPY;
   const current = choice === "granted" ? copy.currentGranted : choice === "denied" ? copy.currentDenied : null;
@@ -185,6 +202,9 @@ export function ConsentBanner() {
       aria-label={copy.ariaLabel}
       data-soft-ui="consent-banner"
       ref={bannerRef}
+      data-closing={presence.closing || undefined}
+      inert={presence.closing}
+      aria-hidden={presence.closing || undefined}
     >
       <div className="consent-banner-card">
         <div className="consent-banner-text">

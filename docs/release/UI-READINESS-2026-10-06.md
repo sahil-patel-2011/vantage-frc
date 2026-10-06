@@ -28,7 +28,7 @@ Final dependency-patched unit checks pass 1,528 files / 11,370 tests with 18 fil
 
 Representative controlled-response screenshots: [desktop light](evidence/2026-10-06-responses-1440-light.png) and [phone dark](evidence/2026-10-06-responses-390-dark.png).
 
-The remote PostgreSQL/RLS and complete browser jobs remain required for ready PRs and main. Draft PRs run quality and database-free UI checks; marking a PR ready triggers the remaining gates. Database-backed verification awaits explicit authorization for the isolated GitHub Actions test environment, as required by the repository's laptop database policy.
+The remote PostgreSQL/RLS and complete browser jobs remain required for ready PRs and main. Draft PRs run quality and database-free UI checks; marking a PR ready triggers the remaining gates. On October 6 the user explicitly authorized isolated GitHub Actions test databases. Laptop databases remain prohibited.
 
 ## Scouting collection and analysis increment
 
@@ -49,3 +49,5 @@ Read-only [Vercel metadata](evidence/2026-10-06-production-metadata.json) report
 Main's previous [CI run](https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37517048774) passed quality and PostgreSQL checks but failed all eight browser shards. The failures include outdated UI expectations and incomplete functional evidence; this increment does not claim those gates have passed.
 
 Fresh users/teams, invitations, custom form publication, persisted scouting/analysis, provider operations, recovery restore and capacity/cost proof still require the authorized remote environment and production verification. Public signup and media upload switches remain unchanged.
+
+The trends, scouting lead, role-editor and first-run follow-up is recorded in [trends/access review](SCOUTING-TRENDS-ACCESS-2026-10-06.md).

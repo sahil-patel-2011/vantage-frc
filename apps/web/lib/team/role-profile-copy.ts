@@ -8,6 +8,7 @@
  */
 
 export const PROFILE_CAPABILITIES = [
+  { id: "manage_scouting", label: "Scouting lead", hint: "Full scouting data, forms, assignments, report review, sharing and formulas. Does not grant team-wide admin access." },
   {
     id: "manage_members",
     label: "Invite and manage people",

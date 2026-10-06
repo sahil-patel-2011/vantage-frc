@@ -1,3 +1,4 @@
+import { canManageScouting, assertScoutingLead } from "./permissions";
 import { createHash } from "node:crypto";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
@@ -31,12 +32,7 @@ export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
 
   async bootstrap(orgId: string, userId: string) {
-    const membership = await this.client.query<{ role: string }>(
-      `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
-      [orgId, userId],
-    );
-    const role = membership.rows[0]?.role ?? "viewer";
-    const canManageSchemas = role === "owner" || role === "admin";
+    const canManageSchemas = await canManageScouting(this.client, orgId);
 
     const context = await this.client.query<{
       activeEventKey: string | null;
@@ -607,14 +603,7 @@ export class ScoutingRepository {
     userId: string,
     input: { entryId: string; type: EntryType },
   ): Promise<boolean> {
-    const membership = await this.client.query<{ role: string }>(
-      `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
-      [orgId, userId],
-    );
-    const role = membership.rows[0]?.role ?? "viewer";
-    if (role !== "owner" && role !== "admin") {
-      throw new Error("Coach role required to delete a scout report.");
-    }
+    await assertScoutingLead(this.client, orgId);
     const table = input.type === "match" ? "match_scout_entries" : "pit_scout_entries";
     const result = await this.client.query<{ clientId: string }>(
       `DELETE FROM ${table} WHERE id = $1::uuid AND org_id = $2::uuid RETURNING client_id AS "clientId"`,

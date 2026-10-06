@@ -1,0 +1,18 @@
+
+> vantage@0.2.0 test:ui
+> playwright test -c playwright.ui.config.ts tests/ui/scouting-trends-and-first-run.spec.ts
+
+
+Running 7 tests using 1 worker
+
+(node:55802) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/ui/scouting-trends-and-first-run.spec.ts:4:73 › event trends show evidence and filter real answers at 390px dark (1.9s)
+  ✓  2 tests/ui/scouting-trends-and-first-run.spec.ts:4:73 › event trends show evidence and filter real answers at 1440px light (1.4s)
+  ✓  3 tests/ui/scouting-trends-and-first-run.spec.ts:27:5 › custom role editing preserves tab limits and scouting leads can be assigned (2.2s)
+  ✓  4 tests/ui/scouting-trends-and-first-run.spec.ts:62:5 › signed-in accounts never see automatic cookie prompts, but can change consent explicitly (1.4s)
+  ✓  5 tests/ui/scouting-trends-and-first-run.spec.ts:76:5 › the first-run walkthrough is claimed once and never reappears after reload or lost browser markers (1.4s)
+  ✓  6 tests/ui/scouting-trends-and-first-run.spec.ts:90:64 › dialogs release focus cleanly when closing with no-preference motion (1.2s)
+  ✓  7 tests/ui/scouting-trends-and-first-run.spec.ts:90:64 › dialogs release focus cleanly when closing with reduce motion (577ms)
+
+  7 passed (12.4s)

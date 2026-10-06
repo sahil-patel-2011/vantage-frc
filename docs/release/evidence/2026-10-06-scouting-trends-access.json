@@ -1,0 +1,45 @@
+{
+  "recordedAt": "2026-10-06T21:56:46.395090+00:00",
+  "productionAcceptance": false,
+  "laptopDatabaseStarted": false,
+  "remoteTestAuthorization": "User explicitly authorized isolated GitHub Actions test databases on 2026-10-06. No production data access authorized.",
+  "unit": {
+    "filesPassed": 1534,
+    "testsPassed": 11416,
+    "filesSkipped": 18,
+    "testsSkipped": 47
+  },
+  "lint": "passed",
+  "workspaceTypes": "passed",
+  "databaseFreeBuild": {
+    "status": "passed",
+    "pagesGenerated": 754
+  },
+  "clientReplay": {
+    "combinedPassed": 31,
+    "focusedLatestPassed": 7,
+    "responsiveStates": 248,
+    "widths": [
+      320,
+      390,
+      768,
+      1440
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "findings": 0
+  },
+  "initialFailures": [
+    "Trend metric native selector lacked an explicit accessible name; now fixed.",
+    "Tour test used the common session fixture that marks tours complete; explicit first-run fixture mode now used.",
+    "Old capability unit fakes and a package import/type boundary failed; repaired before final checks."
+  ],
+  "remoteAcceptance": "Pending exact-head GitHub Actions run; PostgreSQL integration and multi-user publish/revoke browser journey added.",
+  "limits": [
+    "Controlled browser APIs do not prove PostgreSQL persistence.",
+    "No live email/provider/recovery/capacity acceptance established.",
+    "Production settings gates remain in UI-READINESS-2026-10-06.md."
+  ]
+}

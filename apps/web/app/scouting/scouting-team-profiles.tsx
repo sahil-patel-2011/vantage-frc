@@ -24,6 +24,7 @@ import "./scouting-team-profiles.css";
 import type { ObservedRobot } from "../../lib/scouting/team-profiles";
 import { ScoutObservationExplorer } from "../intel/scout-observation-explorer";
 import { ObservedRobotComparison } from "./observed-robot-comparison";
+import { ScoutingEventTrends } from "./scouting-event-trends";
 import "../intel/intel.css";
 
 /**
@@ -412,6 +413,7 @@ function ObservedRobots({ robots, eventKey }: { robots: ObservedRobot[]; eventKe
   const robot = robots.find(item => item.teamKey === teamKey) ?? robots[0];
   return <section className="stp-observations" aria-label="Recorded robot capabilities">
     <header><h2>{robots.length} robots watched</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
+    <ScoutingEventTrends key={eventKey ?? "all"} robots={robots} eventKey={eventKey} />
     <ObservedRobotComparison robots={robots} eventKey={eventKey} />
     <label>Robot<select aria-label="Robot" value={robot?.teamKey ?? ""} onChange={event => setTeamKey(event.target.value)} style={{ minHeight: 48 }}>{[...robots].sort((a,b) => teamNumber(a.teamKey)-teamNumber(b.teamKey)).map(item => <option key={item.teamKey} value={item.teamKey}>Team {teamNumberLabel(item.teamKey)}</option>)}</select></label>
     {robot ? <ScoutObservationExplorer key={robot.teamKey + eventKey} rows={robot.reports} activeEventKey={eventKey} /> : null}

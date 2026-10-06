@@ -19,7 +19,7 @@ type ResponseRow = {
 /**
  * One team's form history. Stable answer keys keep older responses available after edits.
  *
- * Who filed each response goes to team leads (owner / admin) only, with a per-scout total
+ * Who filed each response goes to owners, admins and delegated scouting leads only, with a per-scout total
  * counted over every response, not just the page returned. Everyone else learns which rows
  * are their own and nothing about anyone else's.
  */
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
         if (!fields.has(field.key)) fields.set(field.key, field);
       }
       const lead = await client.query<{ allowed: boolean }>(
-        `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`, [orgId],
+        `SELECT has_org_capability($1, 'manage_scouting'::org_capability) AS allowed`, [orgId],
       );
       const canSeeScouts = Boolean(lead.rows[0]?.allowed);
       // Only the two hard-coded table names can reach the SQL interpolation.

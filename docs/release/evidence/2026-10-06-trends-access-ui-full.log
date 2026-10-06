@@ -1,0 +1,50 @@
+
+> vantage@0.2.0 test:ui
+> playwright test -c playwright.ui.config.ts
+
+
+Running 31 tests using 1 worker
+
+(node:49866) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/ui/production-readiness.spec.ts:5:7 › responses preserve zero, filter real rows, retry and revoke access at 390px light (2.0s)
+  ✓   2 tests/ui/production-readiness.spec.ts:5:7 › responses preserve zero, filter real rows, retry and revoke access at 390px dark (1.9s)
+  ✓   3 tests/ui/production-readiness.spec.ts:5:7 › responses preserve zero, filter real rows, retry and revoke access at 1440px light (1.9s)
+  ✓   4 tests/ui/production-readiness.spec.ts:5:7 › responses preserve zero, filter real rows, retry and revoke access at 1440px dark (2.1s)
+  ✓   5 tests/ui/production-readiness.spec.ts:47:5 › failed preference loads cannot overwrite saved choices (1.1s)
+  ✓   6 tests/ui/production-readiness.spec.ts:73:38 › saved corrections refresh past the device cache at 390px (1.4s)
+  ✓   7 tests/ui/production-readiness.spec.ts:73:38 › saved corrections refresh past the device cache at 1440px (2.2s)
+  ✓   8 tests/ui/production-readiness.spec.ts:107:38 › search opens connection setup directly and keeps the team at 390px (1.1s)
+  ✓   9 tests/ui/production-readiness.spec.ts:107:38 › search opens connection setup directly and keeps the team at 1440px (1.3s)
+  ✓  10 tests/ui/production-readiness.spec.ts:121:5 › response metrics follow the selected scout and adapt when lead access changes (1.5s)
+  ✓  11 tests/ui/scouting-activity.spec.ts:6:77 › match activity survives reload, saves offline and synchronizes at 390px light (5.4s)
+  ✓  12 tests/ui/scouting-activity.spec.ts:6:77 › match activity survives reload, saves offline and synchronizes at 390px dark (4.0s)
+  ✓  13 tests/ui/scouting-activity.spec.ts:6:77 › match activity survives reload, saves offline and synchronizes at 1440px light (5.0s)
+  ✓  14 tests/ui/scouting-activity.spec.ts:6:77 › match activity survives reload, saves offline and synchronizes at 1440px dark (5.4s)
+  ✓  15 tests/ui/scouting-activity.spec.ts:98:5 › practice scouting retains its clock, rejects an unfinished bout and saves explicit zero (2.3s)
+  ✓  16 tests/ui/scouting-activity.spec.ts:139:5 › a new team builds and publishes the season form without losing collection rules (2.1s)
+  ✓  17 tests/ui/scouting-trends-and-first-run.spec.ts:4:73 › event trends show evidence and filter real answers at 390px dark (934ms)
+  ✓  18 tests/ui/scouting-trends-and-first-run.spec.ts:4:73 › event trends show evidence and filter real answers at 1440px light (1.0s)
+  ✓  19 tests/ui/scouting-trends-and-first-run.spec.ts:27:5 › custom role editing preserves tab limits and scouting leads can be assigned (2.3s)
+  ✓  20 tests/ui/scouting-trends-and-first-run.spec.ts:62:5 › signed-in accounts never see automatic cookie prompts, but can change consent explicitly (1.5s)
+  ✓  21 tests/ui/scouting-trends-and-first-run.spec.ts:76:5 › the first-run walkthrough is claimed once and never reappears after reload or lost browser markers (1.5s)
+  ✓  22 tests/ui/scouting-trends-and-first-run.spec.ts:90:64 › dialogs release focus cleanly when closing with no-preference motion (1.3s)
+  ✓  23 tests/ui/scouting-trends-and-first-run.spec.ts:90:64 › dialogs release focus cleanly when closing with reduce motion (609ms)
+UI recovery census: 25/31; 0 findings
+  ✓  24 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 320px light (34.2s)
+UI recovery census: 25/31; 0 findings
+  ✓  25 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 320px dark (34.1s)
+UI recovery census: 25/31; 0 findings
+  ✓  26 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 390px light (35.9s)
+UI recovery census: 25/31; 0 findings
+  ✓  27 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 390px dark (33.1s)
+UI recovery census: 25/31; 0 findings
+  ✓  28 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 768px light (33.5s)
+UI recovery census: 25/31; 0 findings
+  ✓  29 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 768px dark (35.1s)
+UI recovery census: 25/31; 0 findings
+  ✓  30 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 1440px light (34.6s)
+UI recovery census: 25/31; 0 findings
+  ✓  31 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 1440px dark (33.8s)
+
+  31 passed (5.5m)
