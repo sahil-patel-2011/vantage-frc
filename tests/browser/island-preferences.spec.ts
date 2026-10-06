@@ -52,7 +52,12 @@ test("a saved app unavailable to this team can be removed without granting acces
     hubAccess: [{ hubId: "competition", allowedTabIds: [] }, { hubId: "team", allowedTabIds: [] }],
   } }));
   await page.route("**/api/navigation/preferences", route => route.fulfill({ json: { tabs: [...defaults.slice(0, 3), "/build"] } }));
+  const preferences = page.waitForResponse(response => response.url().endsWith("/api/navigation/preferences") && response.request().method() === "GET");
   await page.goto("/dashboard");
+  expect((await preferences).ok()).toBe(true);
+  // Wait until the saved choices are applied before opening their editor. The
+  // separate late-loading stories above intentionally preserve an open draft.
+  await expect(page.getByRole("navigation", { name: "Primary apps" }).getByRole("link")).toHaveCount(3);
   await expect(page.getByRole("navigation", { name: "Primary apps" }).getByRole("link", { name: "Build", exact: true })).toHaveCount(0);
   await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
   const editor = page.getByRole("dialog", { name: "Your four apps" });
