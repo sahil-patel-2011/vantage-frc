@@ -62,6 +62,7 @@ for (const width of [1280, 390]) {
       const builder = page.locator(".sfb-page");
       await expect(builder.getByLabel("Form title", { exact: true })).toHaveValue(`${marker} pit starter`);
       const types = builder.getByRole("combobox", { name: "Form type", exact: true });
+      await builder.getByRole("button", { name: "Expand all questions", exact: true }).click();
       await types.selectOption("match");
       await builder.getByLabel("Form title", { exact: true }).fill(`${marker} Match`);
       await builder.locator(".sfb-question").first().getByLabel("Label", { exact: true }).fill("Cycle notes");

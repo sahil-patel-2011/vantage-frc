@@ -551,18 +551,19 @@
 .dialogClose svg { width: 18px; height: 18px; }
 .dialogBody { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 .dialogActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-/* Dialogs arrive instead of appearing: the scrim fades, the card rises a few
+/* Animate the scrim colour, never the overlay opacity: fading a container
+   also fades every label and input. The card rises a few
    pixels, a sheet slides up from the edge it is attached to. Durations are the
    shared tokens (vantage-fluid.css), 0ms under reduced motion. Fill is
    `backwards` so nothing stays applied after the run: a leftover transform
    would make the dialog the containing block for its own fixed popovers. */
 @keyframes overlayIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { background-color: #10152100; }
+  to { background-color: #10152145; }
 }
 @keyframes dialogIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.985); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateY(8px) scale(0.985); }
+  to { transform: none; }
 }
 @keyframes sheetIn {
   from { transform: translateY(100%); }

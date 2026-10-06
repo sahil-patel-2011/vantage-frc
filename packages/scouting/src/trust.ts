@@ -51,7 +51,9 @@ export type PitClaimLint = {
 
 export function lintPitClaimedScoring(definition: SchemaDefinition): PitClaimLint {
   const flagged = definition.fields
-    .filter((field) => PIT_CLAIMED_SCORING.test(`${field.key} ${field.label} ${field.helpText ?? ""}`))
+    // Guidance often explicitly prohibits scoring claims. Lint the question,
+    // not its instructions, so observable fields are not flagged for that advice.
+    .filter((field) => PIT_CLAIMED_SCORING.test(`${field.key.replaceAll("_", " ")} ${field.label}`))
     .map((field) => ({ key: field.key, label: field.label }));
   if (flagged.length === 0) {
     return {

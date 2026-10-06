@@ -6,7 +6,7 @@ import { matchKeyLabel } from "../scouting/scout-breakdown";
 import { loadOurMatchSummary, matchShortLabel, noNextMatchMessage } from "../matches/no-next-match";
 import type { DashboardWidgetType } from "./catalog";
 
-type WidgetDataStatus = "live" | "empty" | "setup_required";
+type WidgetDataStatus = "live" | "empty" | "setup_required" | "unavailable";
 
 type StampedWidget = {
   type: DashboardWidgetType;
@@ -803,6 +803,6 @@ export async function loadHomeWidget(
     },
     null,
   );
-  if (!result) return stamp("empty", type, undefined, FALLBACK_MESSAGE[type] ?? "Nothing yet.");
+  if (!result) return stamp("unavailable", type, undefined, "Could not load this widget. Try refreshing.");
   return stamp(result.status, type, result.data, result.message);
 }

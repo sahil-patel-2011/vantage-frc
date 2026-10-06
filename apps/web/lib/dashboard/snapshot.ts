@@ -21,7 +21,7 @@ import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from
 import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
 import { LIVE_NOTIFICATION_SQL } from "../notifications/live-sql";
 
-export type WidgetDataStatus = "live" | "empty" | "setup_required";
+export type WidgetDataStatus = "live" | "empty" | "setup_required" | "unavailable";
 
 export type WidgetPayload = {
   type: DashboardWidgetType;

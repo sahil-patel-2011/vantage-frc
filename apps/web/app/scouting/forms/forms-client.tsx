@@ -68,6 +68,8 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [type, setType] = useState<EntryType>("pit");
   const [mode, setMode] = useState<FormBuilderMode>("edit");
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [showAllQuestions, setShowAllQuestions] = useState(false);
   const [title, setTitle] = useState("Pit scouting");
   const [questions, setQuestions] = useState(() => defaultQuestions("pit"));
   /**
@@ -219,10 +221,20 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     // Mount / org only — type switches reuse the loaded schema list.
   }, [orgId]);
 
+  const focusedQuestionId = questions.some(question => question.id === editingQuestionId)
+    ? editingQuestionId : questions[0]?.id;
+
+  function addQuestion(kind?: AnswerKind) {
+    const question = newDraftQuestion(kind ? { kind, label: kind === "section" ? "Teleop" : "" } : undefined);
+    setQuestions(previous => [...previous, question]);
+    setEditingQuestionId(question.id);
+  }
+
   function switchType(next: EntryType) {
     if (publishingRef.current || next === type) return;
     draftsRef.current[type] = { title, questions, acknowledgeBudget };
     setType(next);
+    setEditingQuestionId(null);
     setRemoved(null);
     setPublished(null);
     setMessage("");
@@ -526,9 +538,12 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Drag to reorder. Use each question’s menu to duplicate or remove it.
+                    {questions.length} questions · Select a question to edit. Drag to reorder.
                   </p>
                 </div>
+                <Button variant="ghost" size="sm" type="button" aria-pressed={showAllQuestions} onClick={() => setShowAllQuestions(previous => !previous)}>
+                  {showAllQuestions ? "Focus one question" : "Expand all questions"}
+                </Button>
               </header>
               {removed ? (
                 <div className="sfb-undo" role="status">
@@ -577,15 +592,14 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                     data-entry-id={question.id}
                   >
                     <div className="sfb-question-head">
-                      <strong>
-                        Q{index + 1}
-                        <span className="sfb-question-order"> · #{index + 1}</span>
-                        {question.required ? (
-                          <span className="sfb-required-badge">Required</span>
-                        ) : (
-                          <span className="sfb-optional-badge">Optional</span>
-                        )}
-                      </strong>
+                      <button type="button" className="sfb-question-select"
+                        aria-expanded={showAllQuestions || focusedQuestionId === question.id}
+                        aria-controls={`question-editor-${question.id}`}
+                        onClick={() => { setShowAllQuestions(false); setEditingQuestionId(question.id); }}>
+                        <span className="sfb-question-number" aria-hidden="true">{index + 1}</span>
+                        <span><strong>{question.label || "Untitled question"}</strong><small>{ANSWER_KIND_OPTIONS.find(option => option.kind === question.kind)?.label}{question.required ? " · Required" : " · Optional"}</small></span>
+                        <span className="sfb-question-chevron" aria-hidden="true">⌄</span>
+                      </button>
                       {/*
                         Four buttons on every question became two and a menu.
 
@@ -623,7 +637,11 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                               intent: "normal",
                               disabled: !payload.canManageSchemas || busy,
                               hint: "A copy directly below, ready to edit",
-                              onClick: () => setQuestions((prev) => duplicateQuestion(prev, index)),
+                              onClick: () => {
+                                const next = duplicateQuestion(questions, index);
+                                setQuestions(next);
+                                setEditingQuestionId(next[index + 1]?.id ?? null);
+                              },
                             },
                             {
                               id: "remove",
@@ -640,6 +658,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         />
                       </div>
                     </div>
+                    <div id={`question-editor-${question.id}`} className="sfb-question-editor" hidden={!showAllQuestions && focusedQuestionId !== question.id}>
                     <div className="sfb-question-grid">
                       <FormRow label="Label">
                         <input
@@ -776,6 +795,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         </label>
                       </>
                     )}
+                    </div>
                   </article>
                   </Fragment>
                 ))}
@@ -785,7 +805,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 ) : null}
               </div>
               <div className="sfb-add-row">
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => setQuestions((prev) => [...prev, newDraftQuestion()])}>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => addQuestion()}>
                   Add question
                 </Button>
               </div>
@@ -836,15 +856,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                     type="button"
                     disabled={!payload.canManageSchemas || busy}
                     aria-label={`Add a ${option.label} question`}
-                    onClick={() =>
-                      setQuestions((prev) => [
-                        ...prev,
-                        newDraftQuestion({
-                          kind: option.kind,
-                          label: option.kind === "section" ? "Teleop" : "",
-                        }),
-                      ])
-                    }
+                    onClick={() => addQuestion(option.kind)}
                   >
                     <strong>{option.label}</strong>
                     <small className="app-muted">{option.hint}</small>

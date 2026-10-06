@@ -6,7 +6,8 @@ import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD, normalizeLocalAp
 test.use({ actionTimeout: 15_000 });
 
 async function login(context: BrowserContext, email: string) {
-  expect((await context.request.post("/api/auth/sign-in/email", { headers: { origin: baseOrigin() }, data: { email, password: LOCAL_FIXTURE_PASSWORD } })).ok()).toBe(true);
+  const response = await context.request.post("/api/auth/sign-in/email", { headers: { origin: baseOrigin() }, data: { email, password: LOCAL_FIXTURE_PASSWORD } });
+  expect(response.status(), "Fresh account password sign-in").toBe(200);
   await normalizeLocalApiSession(context);
   await addSessionCookies(context, []);
 }

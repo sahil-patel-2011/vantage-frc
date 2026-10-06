@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { pitSchemaForYear } from "../src/index";
 import {
   confidenceAdjustmentsForResolution,
   confidenceWeight,
@@ -47,6 +48,19 @@ describe("scouting trust", () => {
     ).toBe("ok");
   });
 
+
+  it("accepts observable pit questions whose guidance prohibits scoring claims", () => {
+    expect(lintPitClaimedScoring({ title: "Pit", fields: [
+      { key: "programming_language", label: "Programming language", type: "select", helpText: "Observe the language, not claimed scoring." },
+      { key: "trench", label: "Goes under trench", type: "boolean", helpText: "Confirm clearance; do not take a scoring claim." },
+    ] }).flagged).toEqual([]);
+    for (const year of [2024, 2025, 2026]) {
+      expect(lintPitClaimedScoring(pitSchemaForYear(year)).flagged, String(year)).toEqual([]);
+    }
+    expect(lintPitClaimedScoring({ title: "Pit", fields: [
+      { key: "claimed_accuracy", label: "Shooter accuracy", type: "number", helpText: "Ask the team." },
+    ] }).flagged).toEqual([{ key: "claimed_accuracy", label: "Shooter accuracy" }]);
+  });
 
   it("ranks scouts by TBA accuracy, not entry volume", () => {
     const ranked = rankScoutsByAccuracy([

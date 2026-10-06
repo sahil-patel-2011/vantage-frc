@@ -109,7 +109,7 @@ body.has-app-shell{padding:64px 0 0 248px;background:var(--bg);overflow-x:hidden
 .strategy-pick-empty{color:var(--muted)!important;border-style:dashed!important;background:transparent!important}
 .strategy-pick-row-actions{display:flex;flex-wrap:wrap;gap:6px}
 .strategy-pick-row-actions button{min-height:32px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--surface-2);color:var(--ink);font-size:11px;font-weight:700;cursor:pointer}
-.strategy-suggest{display:inline-flex;margin-top:6px;padding:3px 7px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-size:10px;font-style:normal;font-weight:700}
+.strategy-suggest{display:inline-flex;margin-top:6px;padding:3px 7px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--line);color:var(--accent);font-size:10px;font-style:normal;font-weight:700}
 .strategy-suggest.muted{background:var(--surface-2);color:var(--muted)}
 .strategy-draft-assist{display:grid;gap:12px;margin-bottom:14px}
 .strategy-draft-assist>header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
