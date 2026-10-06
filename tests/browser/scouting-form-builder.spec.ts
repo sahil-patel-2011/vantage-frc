@@ -194,11 +194,12 @@ test("a delegated custom scouting lead can publish but cannot administer people,
   const prior=members.members.find((row:{userId:string})=>row.userId===memberId);
   expect(prior).toBeTruthy();
   const db=new URL(process.env.DATABASE_ADMIN_URL!); expect(["127.0.0.1","localhost"]).toContain(db.hostname); expect(db.pathname).toContain("vantage_ci");
-  const pool=new Pool({connectionString:db.href,ssl:false}); const key=`lead-${randomUUID()}`; const created:string[]=[];
+  const pool=new Pool({connectionString:db.href,ssl:false}); let key=`lead-${randomUUID()}`; const created:string[]=[];
   try {
     const saved=await owner.request.post("/api/organizations/role-profiles",{data:{orgId,action:"save",key,name:"Journey scouting lead",baseRole:"scout",capabilities:["manage_scouting"],hubAccess:{competition:["scouting"]}}});
     expect(saved.ok(),await saved.text()).toBe(true);
-    expect((await saved.json()).profile.hubAccess).toEqual({competition:[]});
+    const savedProfile=(await saved.json()).profile; key=savedProfile.key;
+    expect(savedProfile.hubAccess).toEqual({competition:[]});
     const applied=await owner.request.post("/api/organizations/role-profiles",{data:{orgId,action:"apply",key,userId:memberId}});
     expect(applied.ok(),await applied.text()).toBe(true);
     expect((await context.request.get(`/api/organizations/members?orgId=${orgId}`)).status()).toBe(403);
@@ -206,7 +207,9 @@ test("a delegated custom scouting lead can publish but cannot administer people,
     const schema=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",definition:{title:key,fields:[{key:"notes",label:"Notes",type:"text",required:false}]}}});
     expect(schema.status(),await schema.text()).toBe(201); created.push((await schema.json()).id);
     await page.goto(`/competition?tab=forms&orgId=${orgId}`);
-    const builder=page.locator(".sfb-page"); await expect(builder.getByLabel("Form title",{exact:true})).toBeEnabled();
+    const builder=page.locator(".sfb-page");
+    await builder.getByRole("combobox",{name:"Form type",exact:true}).selectOption("pit");
+    await expect(builder.getByLabel("Form title",{exact:true})).toBeEnabled();
     await builder.getByLabel("Form title",{exact:true}).fill(`${key} edited`);
     const published=page.waitForResponse(response=>response.url().endsWith("/api/scouting/schemas") && response.request().method()==="POST");
     await builder.getByRole("button",{name:"Publish changes",exact:true}).click(); const response=await published;

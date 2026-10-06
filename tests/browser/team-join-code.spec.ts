@@ -178,11 +178,7 @@ for (const width of [1440, 390])
       await page.locator("input[autocomplete=one-time-code]").fill(otp);
       await expect
         .poll(() =>
-          page.evaluate(
-            async () =>
-              (await (await fetch("/api/auth/get-session")).json())?.user
-                ?.email,
-          ),
+          invited.request.get("/api/auth/get-session").then(async response => (await response.json())?.user?.email),
         )
         .toBe(email);
       await normalizeLocalApiSession(invited);

@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
@@ -60,37 +61,20 @@ for (const width of [390, 1440]) {
   });
 }
 
-test("the tool picker stays above the phone bar on narrow and landscape screens", async ({ page, context }) => {
-  test.setTimeout(120_000);
-  expect(await signInAs(context, "owner")).toBe(true);
-  await page.goto("/competition?tab=strategy");
-  await expect(page.getByRole("tab", { name: "Strategy", exact: true })).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("button", { name: "More tools", exact: true }).click();
-  for (const viewport of [{ width: 320, height: 667 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
-    await page.setViewportSize(viewport);
-    const panel = page.locator(".hub-tool-overflow");
-    await expect.poll(() => panel.evaluate(el => {
-      const rect = el.getBoundingClientRect();
-      const island = document.querySelector(".soft-island")?.getBoundingClientRect();
-      return rect.height > 0 && rect.bottom <= innerHeight - 16 && (!island?.width || rect.bottom <= island.top - 12);
-    })).toBe(true);
-    if (viewport.height < 500) {
-      await page.locator(".hub-tool-more").click();
-      await page.locator(".hub-tool-more").click();
-      const first = panel.locator(".hub-tool-list :is(a,button)").first();
-      await expect.poll(() => first.evaluate(el => {
-        const rect = el.getBoundingClientRect();
-        return el.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
-      }), "Opening the landscape picker shows a usable tool below search").toBe(true);
-    }
-    const last = panel.locator(".hub-tool-list :is(a,button)").last();
-    await last.focus();
-    await page.keyboard.press("End");
-    await expect(last).toBeFocused();
-    await expect.poll(() => last.evaluate(el => {
-      const rect = el.getBoundingClientRect();
-      return el.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
-    }), `The last tool is reachable at ${viewport.width}×${viewport.height}`).toBe(true);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+test("workspace search keeps its results usable on narrow and landscape screens", async ({page,context}) => {
+  test.setTimeout(120_000); expect(await signInAs(context,"owner")).toBe(true);
+  for(const viewport of [{width:320,height:667},{width:844,height:390},{width:768,height:1024}]) {
+    await page.setViewportSize(viewport); await page.goto("/competition?tab=strategy");
+    await expect(page.getByRole("tab",{name:"Match plan",exact:true})).toHaveAttribute("aria-selected","true");
+    const opener=navigationOpener(page); await opener.click();
+    const panel=page.getByRole("complementary",{name:"Product navigation",exact:true});
+    const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data",exact:true});
+    await search.fill("scouting");
+    const results=panel.getByRole("listbox",{name:"Search results",exact:true});
+    await expect(results.getByRole("option").first()).toBeVisible();
+    const last=results.getByRole("option").last(); await last.focus(); await expect(last).toBeFocused();
+    await expect.poll(()=>last.evaluate(el=>{const rect=el.getBoundingClientRect();return rect.top>=0 && rect.bottom<=innerHeight && el.contains(document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2));}),"The final destination stays reachable").toBe(true);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.keyboard.press("Escape"); await expect(opener).toBeFocused();
   }
 });

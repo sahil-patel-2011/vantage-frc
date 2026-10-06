@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { signInFixture } from "./session";
+import { signInAs } from "./session";
 
-const defaults = ["/dashboard", "/competition", "/competition?tab=scouting", "/rankings"];
-const personal = ["/dashboard", "/competition", "/competition?tab=scouting", "/team"];
+const defaults = ["/dashboard", "/competition?tab=scouting", "/competition?tab=teams", "/competition?tab=strategy"];
+const personal = [...defaults.slice(0, 3), "/team"];
 
 // The four-app bottom bar is the phone layout; from 1024px up the left rail carries the apps.
 test.use({ viewport: { width: 390, height: 844 } });
-test.beforeEach(async ({ context }) => { await signInFixture(context); });
+test.beforeEach(async ({ context }) => { expect(await signInAs(context, "owner")).toBe(true); });
 
 for (const phase of ["editing", "saved"] as const) {
   test(`late preference loading preserves ${phase} island choices`, async ({ page }) => {
@@ -27,7 +27,7 @@ for (const phase of ["editing", "saved"] as const) {
     await expect.poll(() => loading).toBe(true);
     await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
     const editor = page.getByRole("dialog", { name: "Your four apps" });
-    await editor.getByRole("button", { name: /^Stats App/ }).click();
+    await editor.getByRole("button", { name: /^Match plan App/ }).click();
     await editor.getByRole("button", { name: /^Team Add$/ }).click();
     if (phase === "saved") await editor.getByRole("button", { name: "Save", exact: true }).click();
     const finished = page.waitForResponse(response => response.url().endsWith("/api/navigation/preferences") && response.request().method() === "GET");
@@ -35,13 +35,13 @@ for (const phase of ["editing", "saved"] as const) {
     await finished;
     if (phase === "editing") {
       await expect(editor.getByRole("button", { name: /^Team App 4 of 4$/ })).toHaveAttribute("aria-pressed", "true");
-      await expect(editor.getByRole("button", { name: /^Stats Add$/ })).toHaveAttribute("aria-pressed", "false");
+      await expect(editor.getByRole("button", { name: /^Match plan Add$/ })).toHaveAttribute("aria-pressed", "false");
       await editor.getByRole("button", { name: "Save", exact: true }).click();
     }
     await expect(editor).toBeHidden();
     const island = page.getByRole("navigation", { name: "Primary apps" });
     await expect(island.getByRole("link", { name: "Team", exact: true })).toBeVisible();
-    await expect(island.getByRole("link", { name: "Stats", exact: true })).toHaveCount(0);
+    await expect(island.getByRole("link", { name: "Match plan", exact: true })).toHaveCount(0);
   });
 }
 

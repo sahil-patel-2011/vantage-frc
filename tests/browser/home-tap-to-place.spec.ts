@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { signInFixture } from "./session";
+import { signInAs } from "./session";
+import { resetHomeBoard } from "./dashboard-fixture";
 
 /*
   Adding a widget on a phone works the way it does on a laptop: tap it in the
@@ -15,7 +16,8 @@ test.describe("Home add widget on a phone", () => {
   });
 
   test.beforeEach(async ({ context }) => {
-    await signInFixture(context);
+    expect(await signInAs(context, "owner")).toBe(true);
+    await resetHomeBoard(context);
     // A real phone reports a coarse pointer; desktop Chrome at 390px does not.
     await context.addInitScript(() => {
       const originalMatchMedia = window.matchMedia.bind(window);
@@ -61,7 +63,7 @@ test.describe("Home add widget on a phone", () => {
     // No second "tap a slot" step: the sheet closes and the card is there.
     await expect(sheet).toHaveCount(0);
     await expect(page.getByText(/Tap a slot on the board/i)).toHaveCount(0);
-    await expect(page.getByTestId("dash-toast")).toContainText("added to the board");
+    await expect(page.getByTestId("dash-toast")).toContainText("added. It stays on Home.");
     await expect(cards).toHaveCount(before + 1);
     const added = page.locator(`[data-testid='dash-grid-item'][data-widget-type='${type}']`);
     await expect(added).toBeInViewport();

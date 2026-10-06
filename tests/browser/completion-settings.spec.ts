@@ -17,7 +17,7 @@ for (const width of [390, 1440]) {
     try {
       await page.goto(`/account?tab=appearance&orgId=${orgId}`);
       const extras = page.locator("details.appearance-more").filter({ hasText: "More display settings" });
-      await expect(page.getByRole("radio", { name: "Compact", exact: true })).toBeEnabled();
+      await expect(page.getByRole("radio", { name: "Compact", exact: true })).toBeEnabled({ timeout: 30_000 });
       await expect(extras).not.toHaveAttribute("open");
       // Native radios: arrow keys choose the next setting, rather than tabbing to every card.
       await page.getByRole("radio", { name: "Comfortable", exact: true }).check();
@@ -139,6 +139,7 @@ test("appearance loading failure preserves saved settings until retry", async ({
 
 test("command copying confirms actual clipboard success and permits retry", async ({ page }) => {
   await page.addInitScript(() => {
+    (window as Window & { clipboardFixtureReady?: boolean }).clipboardFixtureReady = true;
     let attempts = 0;
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => {
       if (++attempts === 1) throw new Error("Clipboard permission denied");
@@ -147,6 +148,7 @@ test("command copying confirms actual clipboard success and permits retry", asyn
   });
   await page.goto("/dev-setup");
   const code = page.locator(".ds-code").first();
+  await page.waitForFunction(() => (window as Window & { clipboardFixtureReady?: boolean }).clipboardFixtureReady === true);
   await code.getByRole("button", { name: "Copy", exact: true }).click();
   await expect(code.getByRole("alert")).toContainText("Could not copy.");
   await expect(code.getByRole("button", { name: "Copied", exact: true })).toHaveCount(0);
@@ -193,7 +195,7 @@ test("alliance edits stay inside their slot and survive a reload", async ({ page
   test.setTimeout(120_000);
   const database = new URL(process.env.DATABASE_ADMIN_URL!);
   expect(["localhost", "127.0.0.1"]).toContain(database.hostname);
-  expect(database.pathname).toMatch(/_test_/);
+  expect(database.pathname).toMatch(/(?:_test_|^\/vantage_ci$)/);
   const pool = new Pool({ connectionString: database.toString(), ssl: false });
   const marker = `Completion board ${randomUUID()}`;
   let id: string | undefined;

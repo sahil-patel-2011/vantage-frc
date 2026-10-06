@@ -39,7 +39,7 @@ test("one pick-list page creates, saves and reloads a new ordered list",async({p
  const pool=page.locator(".strategy-pick-pool");await pool.getByRole("button",{name:/Add to/}).first().click();
  const request=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/intel/pick-lists"&&response.request().method()==="POST");
  await page.getByRole("button",{name:"Save pick list",exact:true}).click();const response=await request;expect(response.status()).toBe(201);const body=await response.json();expect(body.id).toBeTruthy();
- const admin=process.env.DATABASE_ADMIN_URL!;expect(new URL(admin).hostname).toBe("127.0.0.1");expect(new URL(admin).pathname).toMatch(/_test_/);const db=new Pool({connectionString:admin,ssl:false});
+ const admin=process.env.DATABASE_ADMIN_URL!;expect(new URL(admin).hostname).toBe("127.0.0.1");expect(new URL(admin).pathname).toMatch(/(?:^|[_/-])(?:test|ci)(?:[_/-]|$)/);const db=new Pool({connectionString:admin,ssl:false});
  try {await page.reload();await saved.selectOption(body.id);await expect(page.getByLabel("List name",{exact:true})).toHaveValue(name);await expect(page.locator("[data-entry-id]")).toHaveCount(1);}
  finally {await db.query("DELETE FROM pick_lists WHERE org_id=$1 AND id=$2",[orgId,body.id]);await db.end();}
 });

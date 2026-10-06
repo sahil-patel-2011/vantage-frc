@@ -78,7 +78,7 @@ for (const width of [1440, 390]) test(`stock Home works immediately and reflects
     const eventKey = (await pool.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1", [orgId])).rows[0].active_event_key;
     const matchNumber = width === 1440 ? 99881 : 99882;
     matchKey = `${eventKey}_qm${matchNumber}`;
-    await pool.query("INSERT INTO matches_ref(match_key,event_key,comp_level,set_number,match_number,red_alliance,blue_alliance,event_time) VALUES($1,$2,'qm',1,$3,$4::jsonb,$5::jsonb,now()+interval '20 minutes')", [matchKey, eventKey, matchNumber,
+    await pool.query("INSERT INTO matches_ref(match_key,event_key,comp_level,set_number,match_number,red_alliance,blue_alliance,event_time) VALUES($1,$2,'qm',1,$3,$4::jsonb,$5::jsonb,now()+interval '1 minute')", [matchKey, eventKey, matchNumber,
       JSON.stringify({ teamKeys: ["frc6925", "frc254", "frc1678"], score: -1 }), JSON.stringify({ teamKeys: ["frc1323", "frc2056", "frc999"], score: -1 })]);
     const match = page.locator('[data-widget-type="next_match"]');
     await expect(match).toContainText(`Qual ${matchNumber}`, { timeout: 25_000 });

@@ -1,5 +1,6 @@
+import { hubNavigationSections } from "../../apps/web/lib/nav/hub-navigation";
 import { expect, test, type Page } from "@playwright/test";
-import { hubById, hubPrimaryTabs } from "../../apps/web/lib/nav/hubs";
+import { hubById } from "../../apps/web/lib/nav/hubs";
 import { gotoAsTeam } from "./active-org";
 import { signInAs, signInFixture } from "./session";
 import { expectPausedPage, mediaPaused } from "./media-paused";
@@ -46,7 +47,7 @@ test.describe("one control per destination", () => {
    * page header and again inside the empty state — so Event Day / My Day /
    * Team calendar / Visit invites each appeared as two separate buttons.
    */
-  test("team admin offers each related destination once", async ({ page }) => {
+  test("team admin keeps people controls separate from workspace settings", async ({ page }) => {
     // As the signed-in team. Without an org this page renders its "Choose
     // your team" state perfectly well, and the related destinations it is
     // about genuinely do not exist there — so the test failed three
@@ -70,8 +71,9 @@ test.describe("one control per destination", () => {
     // Team admin is people and invites; other settings are one row of links.
     // The shared Team settings row names them the same on every settings page.
     for (const label of ["Team profile", "Team security", "AI keys", "Connectors"]) {
-      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(0);
     }
+    await expect(main.getByRole("heading", { name: /^People \(/ })).toBeVisible();
     // None, not one. This page has a team — that is why the related links
     // above exist at all. "Choose your team" belongs to the state handled by
     // the early return above, and asserting it here required the page to be
@@ -99,7 +101,7 @@ test.describe("one control per destination", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Vendors", "Orders", "Spare Forecast"]) {
-      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(0);
     }
     if ((await main.getByRole("heading", { name: "Choose your team" }).count()) > 0) {
       await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
@@ -116,7 +118,7 @@ test.describe("one control per destination", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Logistics" })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Event Day", "My Day", "Team calendar", "Visit invites", "Packing"]) {
-      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(0);
     }
     const links = await bodyLinks(page);
     expect(new Set(links).size, `duplicate hrefs in body: ${links.join(" ")}`).toBe(links.length);
@@ -239,7 +241,7 @@ test.describe("hub chrome", () => {
       const labels = (await tabs.allTextContents()).map((text) => text.trim());
       expect(new Set(labels).size, `${hubId} repeats a tab: ${labels.join(", ")}`).toBe(labels.length);
       // Access filtering can hide workbenches, never invent them.
-      const known = new Set(hubPrimaryTabs(hub).map((tab) => tab.label));
+      const known = new Set(hubNavigationSections(hub, hub.tabs).map((tab) => tab.label));
       for (const label of labels) expect(known.has(label), `${hubId} tab ${label}`).toBe(true);
     }
   });

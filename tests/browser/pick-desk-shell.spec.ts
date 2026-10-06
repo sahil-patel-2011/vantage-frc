@@ -14,7 +14,7 @@ test("Pick desk still loads after the Saturday shell pass", async ({ page }) => 
   // Renamed to "Rank, pick, and lock" — the thing you do, rather than the
   // name of the screen. Old names kept so an older deployment still matches.
   const board = page.getByRole("heading", {
-    name: /Rank, pick, and lock|Event pick desk|First \/ second \/ third pick desk/i,
+    name: /Pick list|Rank, pick, and lock|Event pick desk|First \/ second \/ third pick desk/i,
   });
   const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Waiting on synced team metrics/i });

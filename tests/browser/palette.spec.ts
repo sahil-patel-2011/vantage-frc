@@ -25,7 +25,7 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
     await page.goto("/account?tab=appearance");
-    const themes = page.getByRole("radiogroup", { name: "Color theme" });
+    const themes = page.getByRole("group", { name: "Color theme", exact: true });
     await expect(themes).toBeVisible({ timeout: 30_000 });
 
     for (const name of ["Light", "Dark"]) {

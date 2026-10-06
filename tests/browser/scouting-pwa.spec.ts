@@ -70,7 +70,7 @@ for (const width of [390, 1440]) {
     const marker = `PWA pit ${randomUUID()}`;
     const dbUrl = process.env.DATABASE_ADMIN_URL!;
     expect(new URL(dbUrl).hostname).toBe("127.0.0.1");
-    expect(new URL(dbUrl).pathname).toMatch(/_test_/);
+    expect(new URL(dbUrl).pathname).toMatch(/(?:_test_|^\/vantage_ci$)/);
     const db = new Pool({connectionString:dbUrl,ssl:false});
     const previousClientId = randomUUID();
     let previousQueued = false;

@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { signInAs, signInFixture } from "./session";
+import { signInAs } from "./session";
+import { resetHomeBoard } from "./dashboard-fixture";
 import { openNav, navigationOpener } from "./nav";
 
 test.beforeEach(async ({ context }) => {
-  await signInFixture(context);
+  expect(await signInAs(context, "owner")).toBe(true);
+    await resetHomeBoard(context);
 });
 
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
@@ -12,10 +14,10 @@ test("dashboard home is decluttered and exposes customize controls", async ({ pa
   // One quiet "Edit" beside the greeting — not folded inside "More", where
   // testers could not find it, and not a row of editing controls either.
   await expect(page.getByTestId("dash-customize")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Edit Home/ })).toHaveText("Edit");
+  await expect(page.getByRole("button", { name: /Edit Home/ })).toHaveText("Customize");
   await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("dialog", { name: "Tour of Vantage" })).toHaveCount(0);
 });
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {

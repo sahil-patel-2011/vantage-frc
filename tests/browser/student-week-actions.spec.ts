@@ -96,20 +96,20 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `Scouting still shows ${phrase}`).not.toContainText(phrase);
   }
-  const views = page.getByRole("navigation", { name: "Scouting views" });
+  const views = page.getByRole("tablist", { name: "Scouting task", exact: true });
   const denied = page.getByRole("heading", { name: /You don't have access to this/i });
   const setup = page.getByRole("link", {
     name: /Choose your team|Set active event|Open Form builder/i,
   });
   await expect(views.or(denied).or(setup.first())).toBeVisible({ timeout: 15_000 });
   if (await views.count()) {
-    await expect(views.getByRole("button", { name: "Match" })).toBeVisible();
+    await expect(views.getByRole("tab", { name: "Match", exact: true })).toBeVisible();
     const save = page.getByRole("button", { name: /Save this match|Save on this phone/i });
     if (await save.count()) {
       await expect(save.first()).toBeVisible();
     }
-    await views.getByRole("button", { name: "Pit visits" }).click();
-    await expect(views.getByRole("button", { name: "Pit visits" })).toHaveAttribute("aria-current", "page");
+    await views.getByRole("tab", { name: "Pit", exact: true }).click();
+    await expect(views.getByRole("tab", { name: "Pit", exact: true })).toHaveAttribute("aria-selected", "true");
     const pitSave = page.getByRole("button", { name: /Save this pit|Save on this phone/i });
     if (await pitSave.count()) {
       await expect(pitSave.first()).toBeVisible();

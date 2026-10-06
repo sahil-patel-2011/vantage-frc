@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { Pool } from "pg";
-import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD, normalizeLocalApiSession } from "./session";
+import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD, normalizeLocalApiSession, passwordSignIn } from "./session";
 test.use({ actionTimeout: 15_000 });
 
 async function login(context: BrowserContext, email: string) {
-  const response = await context.request.post("/api/auth/sign-in/email", { headers: { origin: baseOrigin() }, data: { email, password: LOCAL_FIXTURE_PASSWORD } });
+  const response = await passwordSignIn(context, email, LOCAL_FIXTURE_PASSWORD);
   expect(response.status(), "Fresh account password sign-in").toBe(200);
   await normalizeLocalApiSession(context);
   await addSessionCookies(context, []);

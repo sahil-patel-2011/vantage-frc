@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signInAs, signInFixture } from "./session";
+import { signInAs } from "./session";
+import { resetHomeBoard } from "./dashboard-fixture";
 
 /*
   Edit mode on Home, the way usability testers used it: the board stays where
@@ -8,7 +9,8 @@ import { signInAs, signInFixture } from "./session";
 */
 
 test.beforeEach(async ({ context }) => {
-  await signInFixture(context);
+  expect(await signInAs(context, "owner")).toBe(true);
+  await resetHomeBoard(context);
 });
 
 async function enterEdit(page: Page) {
@@ -27,7 +29,8 @@ test("removing a card offers Undo, and Ctrl+Z steps back too", async ({ page }) 
   const count = await cards.count();
   expect(count).toBeGreaterThan(1);
 
-  const remove = page.getByTestId("dash-remove-widget").nth(1);
+  await cards.nth(1).getByTestId("dash-size-toggle").click();
+  const remove = cards.nth(1).getByTestId("dash-remove-widget");
   const label = (await remove.getAttribute("aria-label"))!.replace(/^Remove /, "");
   await remove.click();
   await expect(cards).toHaveCount(count - 1);
@@ -37,7 +40,8 @@ test("removing a card offers Undo, and Ctrl+Z steps back too", async ({ page }) 
   await page.getByTestId("dash-toast-undo").click();
   await expect(cards).toHaveCount(count);
 
-  await page.getByTestId("dash-remove-widget").first().click();
+  await cards.first().getByTestId("dash-size-toggle").click();
+  await cards.first().getByTestId("dash-remove-widget").click();
   await expect(cards).toHaveCount(count - 1);
   await page.locator("body").click({ position: { x: 5, y: 300 } });
   await page.keyboard.press("Control+z");
@@ -55,7 +59,8 @@ test("Escape asks before discarding changes, and Reset only changes the draft", 
   await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
 
   await page.getByTestId("dash-customize").click();
-  await page.getByTestId("dash-remove-widget").first().click();
+  await cards.first().getByTestId("dash-size-toggle").click();
+  await cards.first().getByTestId("dash-remove-widget").click();
   await expect(cards).toHaveCount(count - 1);
   await page.keyboard.press("Escape");
   const dialog = page.getByRole("dialog", { name: "Discard changes?" });
@@ -76,7 +81,8 @@ test("Escape asks before discarding changes, and Reset only changes the draft", 
   const resetCount = await cards.count();
   // Use a different position after Reset. Two rapid clicks at the same point
   // intentionally protect the next card from accidental double removal.
-  await page.getByTestId("dash-remove-widget").last().click();
+  await cards.last().getByTestId("dash-size-toggle").click();
+  await cards.last().getByTestId("dash-remove-widget").click();
   await expect(cards).toHaveCount(resetCount - 1);
   await page.getByTestId("dash-edit-cancel").click();
   await page.getByRole("dialog", { name: "Discard changes?" }).getByRole("button", { name: "Discard changes" }).click();
@@ -89,10 +95,10 @@ test("the widget sheet searches, and cards hidden on Home are labelled", async (
   await page.getByTestId("dash-open-library").click();
   const sheet = page.getByTestId("dash-widget-sheet");
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByRole("heading", { name: "Match day" })).toBeVisible();
+  await expect(sheet.getByRole("heading", { name: "Matches and results" })).toBeVisible();
   await page.getByTestId("dash-widget-search").fill("battery");
   await expect(sheet.getByText("Batteries", { exact: true })).toBeVisible();
-  await expect(sheet.getByRole("heading", { name: "Match day" })).toHaveCount(0);
+  await expect(sheet.getByRole("heading", { name: "Matches and results" })).toHaveCount(0);
   await page.getByTestId("dash-widget-search").fill("zzzz no such widget");
   await expect(sheet.getByText(/No widgets match/)).toBeVisible();
   await page.keyboard.press("Escape");
@@ -110,31 +116,23 @@ test.describe("as the team owner", () => {
     test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
   });
 
-  test("cards Home is hiding sit in one row under the board, and can be always shown", async ({ page }) => {
+  test("saved cards keep their place across Home, Edit and Preview", async ({ page, context }) => {
+    await resetHomeBoard(context, true);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await enterEdit(page);
-    const row = page.getByTestId("dash-hidden-row");
-    // The seeded team is set up, so at least its setup card is hidden on Home.
-    await expect(row).toBeVisible();
-    const hiddenTypes = await row
-      .getByTestId("dash-hidden-item")
-      .evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).dataset.widgetType));
-    expect(hiddenTypes.length).toBeGreaterThan(0);
-    await expect(row.locator("summary")).toContainText(`${hiddenTypes.length} ${hiddenTypes.length === 1 ? "card shows" : "cards show"} up on their own`);
-    // None of them is also painted as a card on the board.
-    for (const type of hiddenTypes) {
-      await expect(page.locator(`[data-testid='dash-grid-item'][data-widget-type='${type}']`)).toHaveCount(0);
-    }
-
+    await page.goto("/dashboard");
     const cards = page.getByTestId("dash-grid-item");
-    const count = await cards.count();
-    await row.locator("summary").click();
-    await row.getByTestId("dash-always-show").first().click();
-    await expect(cards).toHaveCount(count + 1);
-    await expect(page.locator(`[data-testid='dash-grid-item'][data-widget-type='${hiddenTypes[0]}']`)).toHaveCount(1);
-    await expect(page.getByTestId("dash-toast")).toContainText("will always show on Home");
-    await page.getByTestId("dash-toast-undo").click();
-    await expect(cards).toHaveCount(count);
+    await expect(cards).toHaveCount(7);
+    const ids = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-widget-id")));
+    await page.getByTestId("dash-customize").click();
+    await expect(cards).toHaveCount(7);
+    await expect(page.getByTestId("dash-hidden-row")).toHaveCount(0);
+    await page.getByTestId("dash-edit-more").click();
+    await page.getByTestId("dash-preview").click();
+    await expect(page.getByTestId("dash-preview-back")).toBeVisible();
+    await expect(cards).toHaveCount(7);
+    expect(await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-widget-id")))).toEqual(ids);
+    await page.getByTestId("dash-preview-back").click();
+    await expect(page.getByTestId("dash-edit-toolbar")).toBeVisible();
   });
 
   test("Snap & tidy only says cards moved when they did", async ({ page }) => {
@@ -203,7 +201,7 @@ test.describe("on a phone", () => {
 
   test("the remove and move controls are finger-sized", async ({ page }) => {
     await enterEdit(page);
-    for (const id of ["dash-remove-widget", "dash-drag-handle"]) {
+    for (const id of ["dash-size-toggle", "dash-drag-handle"]) {
       const box = await page.getByTestId(id).first().boundingBox();
       expect(box!.width).toBeGreaterThanOrEqual(44);
       expect(box!.height).toBeGreaterThanOrEqual(44);

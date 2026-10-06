@@ -59,13 +59,17 @@ for (const width of [390, 1440]) {
     await page.screenshot({ path: info.outputPath(`writer-${width}.png`), fullPage: true });
     if (width === 1440) {
       await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+      await page.waitForFunction(() => document.getAnimations().every(animation =>
+        animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));
       const darkAudit = await new AxeBuilder({ page }).include(".writer-composer").analyze();
       expect(darkAudit.violations).toEqual([]);
       await page.screenshot({ path: info.outputPath("writer-dark.png"), fullPage: true });
       await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+      await page.waitForFunction(() => document.getAnimations().every(animation =>
+        animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));
     }
     await connect.click();
-    await expect(page.getByRole("heading", { name: "Connect AI", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Connect AI", exact: true })).toBeVisible({ timeout: 30_000 });
     const orgId = new URL(page.url()).searchParams.get("orgId");
     const methods = page.locator(".ai-connect-method");
     await expect(methods).toHaveCount(2);

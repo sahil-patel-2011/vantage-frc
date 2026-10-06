@@ -20,7 +20,16 @@ for (const width of [320, 390, 1440]) {
     expect(await signInAs(context, "owner")).toBe(true);
     const db = testDatabase();
     const marker = `Scouting correction ${randomUUID()}`;
+    let schemaId: string | undefined;
     try {
+      // Each correction story publishes its own custom form; it cannot inherit
+      // whichever season/editor questions another story last selected.
+      const setup=await (await context.request.get(`/api/scouting/schemas?orgId=${orgId}`)).json();
+      const published=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"match",definition:{title:marker,fields:[
+        {key:"autoPoints",label:"Auto points",type:"number",config:{requireObservation:true,scoutPhase:"auto",min:0,integer:true}},
+        {key:"notes",label:"Notes",type:"text",required:false},
+      ]}}});
+      expect(published.status(),await published.text()).toBe(201); schemaId=(await published.json()).id;
       const response = await context.request.get(`/api/scouting/bootstrap?orgId=${orgId}`);
       expect(response.ok()).toBe(true);
       const data = await response.json() as Bootstrap;
@@ -45,7 +54,7 @@ for (const width of [320, 390, 1440]) {
       await expect(auto).toHaveValue("");
       await page.getByRole("button", { name: "Auto points: one more", exact: true }).click();
       await page.getByRole("button", { name: "Auto points: one more", exact: true }).click();
-      await page.getByRole("button", { name: "Undo last action", exact: true }).click();
+      await page.getByRole("button", { name: "Undo last answer", exact: true }).click();
       await expect(auto).toHaveValue("1");
       await page.getByRole("textbox", { name: "Notes", exact: true }).fill(marker);
       await page.getByRole("radio", { name: "Guessing", exact: true }).click();
@@ -72,6 +81,7 @@ for (const width of [320, 390, 1440]) {
       await page.screenshot({ path: info.outputPath(`match-correction-${width}.png`), fullPage: true });
     } finally {
       await db.query("DELETE FROM match_scout_entries WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker]);
+      if(schemaId) await db.query("DELETE FROM scout_schemas WHERE org_id=$1 AND id=$2",[orgId,schemaId]);
       await db.end();
     }
   });

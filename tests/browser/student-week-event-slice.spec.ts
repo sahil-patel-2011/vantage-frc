@@ -109,7 +109,7 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
   }
   await expect(page.getByText(/\bEPA\b/)).toHaveCount(0);
   const pickHeading = page.getByRole("heading", {
-    name: /Pick desk|Rank, pick, and lock|No teams to rank yet|Choose your team/i,
+    name: /Pick list|Pick desk|Rank, pick, and lock|No teams to rank yet|Choose your team/i,
   });
   await expect(pickHeading.first()).toBeVisible({ timeout: 12_000 });
   const pickPrimary = page

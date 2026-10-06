@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Strategy hub still loads after the panel split", async ({ page }) => {
   await page.goto("/competition?tab=strategy");
-  await expect(page.getByRole("tab", { name: "Strategy" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Match plan" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
   // Coach notes fold under "Details for leads"; the game plan is what a loaded match shows first.
@@ -24,7 +24,7 @@ test("Strategy hub still loads after the panel split", async ({ page }) => {
   }
 
   await expect(page.getByRole("navigation", { name: "Strategy sections" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Strategy" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Match plan" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("button", { name: "Try demo scenario" })).toHaveCount(0);
 
   await page.screenshot({ path: "/opt/cursor/artifacts/strategy-after-split.png", fullPage: true });

@@ -29,7 +29,7 @@ for(const offline of [false,true]) test(`phase scouting, undo, review and ${offl
  await page.getByRole("button",{name:"Start match timer when auto starts",exact:true}).click();
  await expect(phase.getByRole("tab",{name:"Auto",exact:true})).toHaveAttribute("aria-selected","true");await expect(page.getByLabel("Teleop cycles",{exact:true})).toHaveCount(0);
  await page.screenshot({path:info.outputPath(offline?"scout-auto-phone.png":"scout-auto-desktop.png")});
- await auto.fill("7");await page.getByRole("button",{name:"Undo last action",exact:true}).click();await expect(auto).toHaveValue("");
+ await auto.fill("7");await page.getByRole("button",{name:"Undo last answer",exact:true}).click();await expect(auto).toHaveValue("");
  await auto.fill("7");
  await page.clock.fastForward(24000);await expect(phase.getByRole("tab",{name:"Teleop",exact:true})).toHaveAttribute("aria-selected","true");await expect(auto).toHaveCount(0);
  await page.getByLabel("Teleop cycles",{exact:true}).fill("8");

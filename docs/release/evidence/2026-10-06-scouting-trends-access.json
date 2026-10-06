@@ -36,10 +36,28 @@
     "Tour test used the common session fixture that marks tours complete; explicit first-run fixture mode now used.",
     "Old capability unit fakes and a package import/type boundary failed; repaired before final checks."
   ],
-  "remoteAcceptance": "Pending exact-head GitHub Actions run; PostgreSQL integration and multi-user publish/revoke browser journey added.",
+  "remoteAcceptance": {
+    "initialRun": 37537400923,
+    "head": "6bd1a9e74a3b9be4c6a4793170d5bc3048190766",
+    "quality": "passed",
+    "databaseIntegration": "passed",
+    "databaseFreeUi": "passed",
+    "browserShards": "8 failed; replay pending after test contract and picker fixes",
+    "productionAcceptance": false
+  },
   "limits": [
     "Controlled browser APIs do not prove PostgreSQL persistence.",
     "No live email/provider/recovery/capacity acceptance established.",
     "Production settings gates remain in UI-READINESS-2026-10-06.md."
-  ]
+  ],
+  "fullAppRecoveryCensus": {
+    "routesPerCase": 243,
+    "casesPassed": 2,
+    "states": 486,
+    "viewports": [
+      "390-light",
+      "1440-dark"
+    ],
+    "findings": 0
+  }
 }

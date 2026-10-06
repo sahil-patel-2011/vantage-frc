@@ -35,7 +35,7 @@ async function missingEvent(page: Page, options: { withTodo?: boolean; resultsMi
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
 
 for (const width of [1440, 390]) {
-  test(`missing event is one compact prompt with real work retained at ${width}px`, async ({ page, context }, testInfo) => {
+  test(`missing event retains chosen cards and real work with one event action at ${width}px`, async ({ page, context }, testInfo) => {
     expect(await signInAs(context, "owner")).toBe(true);
     const writes = await missingEvent(page, { withTodo: true });
     await page.setViewportSize({ width, height: 900 });
@@ -44,18 +44,18 @@ for (const width of [1440, 390]) {
     const prompt = page.getByTestId("dash-context-prompt");
     await expect(prompt).toBeVisible();
     await expect(prompt.getByRole("link", { name: "Choose event", exact: true })).toHaveCount(1);
-    await expect(page.locator('[data-widget-type="next_match"]')).toHaveCount(0);
-    await expect(page.locator('[data-widget-type="onboarding_checklist"]')).toHaveCount(0);
+    await expect(page.locator('[data-widget-type="next_match"]')).toHaveCount(1);
+    await expect(page.locator('[data-widget-type="next_match"]')).not.toContainText("Qual");
+    await expect(page.locator('[data-widget-type="onboarding_checklist"]')).toHaveCount(1);
     await expect(page.getByRole("link", { name: "Check the robot battery" })).toBeVisible();
-    await expect(page.getByTestId("dash-now")).toHaveCount(0);
+    await expect(page.getByTestId("dash-now")).toContainText("One open team task");
     await expect(page.getByText("No widgets on this board")).toHaveCount(0);
     expect((await prompt.boundingBox())!.height).toBeLessThan(width === 390 ? 190 : 120);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await testInfo.attach(`compact-event-${width}.png`, { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
     await page.getByTestId("dash-customize").click();
-    await page.getByTestId("dash-hidden-row").locator("summary").click();
-    await expect(page.getByTestId("dash-hidden-item")).toHaveCount(4);
-    await expect(page.getByTestId("dash-hidden-row")).toContainText("Waiting for setup");
+    await expect(page.getByTestId("dash-grid-item")).toHaveCount(4);
+    await expect(page.getByTestId("dash-hidden-row")).toHaveCount(0);
     expect(writes()).toBe(0);
   });
 }
@@ -80,11 +80,11 @@ test("scouts get practice scouting instead of team-admin setup", async ({ page, 
   const prompt = page.getByTestId("dash-context-prompt");
   await expect(prompt).toContainText("Your team lead chooses the event");
   await expect(prompt.getByRole("link", { name: "Choose event" })).toHaveCount(0);
-  await page.getByTestId("dash-overview").getByRole("link", { name: "Practice scouting", exact: true }).click();
+  await page.getByRole("navigation", { name: "Quick actions", exact: true }).getByRole("link", { name: /^Practice scouting/ }).click();
   await expect(page).toHaveURL(/mode=free/);
-  await expect(page.getByRole("heading", { name: "Scout without an event", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Practice scouting", exact: true })).toBeVisible();
   await page.getByLabel("Team number", { exact: true }).fill("6925");
-  await page.getByRole("combobox", { name: "Form", exact: true }).selectOption("pit");
+  await page.getByRole("radio", { name: "Pit", exact: true }).check();
   await page.getByRole("button", { name: "Start scouting", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toBeVisible();
 });
@@ -108,5 +108,6 @@ test("missing match results share one prompt while unrelated work remains", asyn
   const prompt = page.getByTestId("dash-context-prompt");
   await expect(prompt.getByRole("link", { name: "Connect match results" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Check the robot battery" })).toBeVisible();
-  await expect(page.locator('[data-widget-type="next_match"]')).toHaveCount(0);
+  await expect(page.locator('[data-widget-type="next_match"]')).toHaveCount(1);
+    await expect(page.locator('[data-widget-type="next_match"]')).not.toContainText("Qual");
 });
