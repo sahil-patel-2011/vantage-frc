@@ -1,0 +1,73 @@
+{
+  "run": 37543819862,
+  "head": "14edd7efbed0c31386ee6eec3682f4c355d2b564",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37543819862",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "databaseId": 112542920970,
+      "name": "Database-free UI and accessibility",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921267,
+      "name": "Playwright (6/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112542921301,
+      "name": "Postgres migrations and RLS",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921339,
+      "name": "Playwright (7/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921388,
+      "name": "Lint, types, unit, build",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921460,
+      "name": "Playwright (2/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921515,
+      "name": "Playwright (5/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921632,
+      "name": "Playwright (3/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112542921659,
+      "name": "Playwright (8/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112542921678,
+      "name": "Playwright (1/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112542921687,
+      "name": "Playwright (4/8)",
+      "conclusion": "success"
+    }
+  ],
+  "failures": [
+    "tests/browser/home-workspace.spec.ts:30:7 \u203a Home shows real scouting progress and the next calendar activity at 1440px ",
+    "tests/browser/home-workspace.spec.ts:30:7 \u203a Home shows real scouting progress and the next calendar activity at 390px ",
+    "tests/browser/product-polish.spec.ts:78:5 \u203a sidebar collapse persists, workspace tabs support the keyboard, and search restores focus across breakpoints ",
+    "tests/browser/product-shell.spec.ts:256:5 \u203a code route requires a real team and never falls back to fixture findings ",
+    "tests/browser/team-switching.spec.ts:11:38 \u203a switching teams updates data, permissions and Home at 390px ",
+    "tests/browser/team-switching.spec.ts:11:38 \u203a switching teams updates data, permissions and Home at 1440px ",
+    "tests/browser/workspace-polish.spec.ts:64:5 \u203a workspace search keeps its results usable on narrow and landscape screens "
+  ],
+  "status": "Final navigation/hydration/clock/search repairs awaiting fresh exact-head remote acceptance. No failures waived."
+}

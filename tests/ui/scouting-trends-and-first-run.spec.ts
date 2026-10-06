@@ -126,3 +126,52 @@ for (const motion of ["no-preference", "reduce"] as const) test(`dialogs release
   await trigger.click(); await expect(dialog).toBeVisible(); await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused();
 });
+
+
+test("direct robot lookup hydrates consistently and Teams follows browser history", async ({page,context}) => {
+  await isolateUi(page,context);
+  const errors:string[]=[]; page.on("pageerror",error=>errors.push(error.message));
+  await page.goto(`/scout/teams?orgId=${orgId}&team=254`);
+  const views=page.getByRole("tablist",{name:"Team view",exact:true});
+  await expect(views.getByRole("tab",{name:"Team lookup",exact:true})).toHaveAttribute("aria-selected","true");
+  await views.getByRole("tab",{name:"Our scouting",exact:true}).click();
+  await expect(page).toHaveURL(/sub=scouting/);
+  await page.reload();
+  await expect(views.getByRole("tab",{name:"Our scouting",exact:true})).toHaveAttribute("aria-selected","true");
+  await page.evaluate(() => { const url=new URL(location.href);url.searchParams.set("sub","lookup");history.pushState(null,"",url); });
+  await expect(views.getByRole("tab",{name:"Team lookup",exact:true})).toHaveAttribute("aria-selected","true");
+  await page.goBack();
+  await expect(views.getByRole("tab",{name:"Our scouting",exact:true})).toHaveAttribute("aria-selected","true");
+  expect(errors).toEqual([]);
+});
+
+
+test("legacy pick links open the one ranking and discussion workspace", async ({page,context}) => {
+  await isolateUi(page,context);
+  await page.goto(`/strategy?tab=picks&orgId=${orgId}`);
+  await expect(page).toHaveURL(url=>url.pathname==="/competition" && url.searchParams.get("tab")==="picks" && url.searchParams.get("orgId")===orgId);
+  await expect(page.getByRole("heading",{level:1,name:"Pick list",exact:true})).toBeVisible();
+  await expect(page.getByTestId("pick-list-workspace")).toBeVisible();
+  await expect(page.getByRole("button",{name:"Team discussion",exact:true})).toBeVisible();
+});
+
+
+for (const viewport of [{width:320,height:667},{width:844,height:390},{width:768,height:1024}]) test(`search destinations remain polished and reachable at ${viewport.width}x${viewport.height}`, async ({page,context}) => {
+  await isolateUi(page,context); await page.setViewportSize(viewport);
+  await page.route("**/api/search?**",route=>route.fulfill({json:{status:"ready",results:Array.from({length:8},(_,index)=>({title:`Scouting help ${index+1}`,subtitle:"Saved team data and scouting guidance",href:`/help?entry=${index+1}`,sourceLabel:"Help"}))}}));
+  await page.goto(`/competition?tab=teams&orgId=${orgId}`);
+  const opener=page.getByRole("button",{name:viewport.width<1100?"Menu and search":"Search pages, tools, and team data",exact:true});
+  await opener.click();
+  const panel=page.getByRole("complementary",{name:"Product navigation",exact:true});
+  const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data",exact:true});await search.fill("scouting");
+  const results=panel.getByRole("listbox",{name:"Search results",exact:true});
+  await expect(results.getByRole("option",{name:/Scouting help 8/})).toBeVisible();
+  const reachable=(id:string)=>page.locator(id).evaluate(el=>{const rect=el.getBoundingClientRect();return rect.top>=0 && rect.bottom<=innerHeight && el.contains(document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2));});
+  await search.press("ArrowUp");
+  await expect.poll(async()=>reachable(`#${await search.getAttribute("aria-activedescendant")}`)).toBe(true);
+  const last=results.getByRole("option").last();await last.focus();
+  await expect.poll(()=>last.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0 && r.bottom<=innerHeight && el.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));})).toBe(true);
+  expect(await results.getByRole("option").first().evaluate(el=>getComputedStyle(el).display)).toBe("grid");
+  await accessible(page,".soft-drawer");
+  await page.keyboard.press("Escape");await expect(opener).toBeFocused();
+});

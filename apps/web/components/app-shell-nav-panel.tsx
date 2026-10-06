@@ -1,6 +1,6 @@
 "use client";
 
-import type { KeyboardEvent, RefObject } from "react";
+import { useEffect, type KeyboardEvent, type RefObject } from "react";
 import { Icon } from "./icon";
 import {
   type Me,
@@ -106,6 +106,10 @@ export function AppShellNavPanel({
   signingOut: boolean;
   onSignOut: () => void;
 }) {
+  useEffect(() => {
+    if (!navOpen || !queryActive || activeRowIndex < 0) return;
+    document.getElementById(`soft-nav-row-${activeRowIndex}`)?.scrollIntoView({ block: "nearest" });
+  }, [navOpen, queryActive, activeRowIndex]);
   const activeMembershipRole = orgId
     ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
     : null;
@@ -117,6 +121,7 @@ export function AppShellNavPanel({
       <aside
         id="vantage-navigation-panel"
         className={`soft-drawer ${navOpen ? "open" : ""}`}
+        data-searching={queryActive}
         aria-label="Product navigation"
         onKeyDown={navOpen ? keepTabInsidePanel : undefined}
       >
@@ -290,7 +295,7 @@ export function AppShellNavPanel({
             meant hunting through Team for a sign-in preference. The team link
             only appears for an owner or admin, because for everyone else it is a
             door that opens onto an error. */}
-        <div className="soft-drawer-settings">
+        {!queryActive ? <><div className="soft-drawer-settings">
           {me.platformAdmin ? (
             <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
           ) : null}
@@ -318,7 +323,7 @@ export function AppShellNavPanel({
           <button type="button" disabled={signingOut} onClick={onSignOut}>
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
-        </footer>
+        </footer></> : null}
       </aside>
     </>
   );

@@ -5,7 +5,7 @@
   "remoteTestAuthorization": "User explicitly authorized isolated GitHub Actions test databases on 2026-10-06. No production data access authorized.",
   "unit": {
     "filesPassed": 1534,
-    "testsPassed": 11416,
+    "testsPassed": 11418,
     "filesSkipped": 18,
     "testsSkipped": 47
   },
@@ -16,8 +16,8 @@
     "pagesGenerated": 754
   },
   "clientReplay": {
-    "combinedPassed": 31,
-    "focusedLatestPassed": 9,
+    "combinedPassed": 33,
+    "focusedLatestPassed": 14,
     "responsiveStates": 248,
     "widths": [
       320,
@@ -46,7 +46,10 @@
     "productionAcceptance": false,
     "replayRun": 37542082305,
     "replayHead": "64bd18ea51f52b1b61251b119dce91af47af7043",
-    "replayStatus": "Quality, PostgreSQL and database-free UI pass; browser groups 1 and 4 pass, six fail. Repairs awaiting a fresh replay."
+    "replayStatus": "Quality, PostgreSQL and database-free UI pass; browser groups 1 and 4 pass, six fail. Repairs awaiting a fresh replay.",
+    "secondReplayRun": 37543819862,
+    "secondReplayHead": "14edd7efbed0c31386ee6eec3682f4c355d2b564",
+    "secondReplayStatus": "Quality, isolated PostgreSQL, UI and five browser groups including scouting pass. Three groups fail; navigation/clock/search repairs require final replay."
   },
   "limits": [
     "Controlled browser APIs do not prove PostgreSQL persistence.",

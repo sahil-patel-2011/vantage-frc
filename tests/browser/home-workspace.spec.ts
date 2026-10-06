@@ -4,7 +4,7 @@ import { Pool } from "pg";
 import { signInAs } from "./session";
 
 const orgId = "6925a000-0000-4000-8000-000000000001";
-test.use({ actionTimeout: 15_000 });
+test.use({ actionTimeout: 15_000, timezoneId: "UTC" });
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
 
 for (const recovered of [true, false]) test(`reference data ${recovered ? "recovers silently" : "reports an unavailable result"}`, async ({ page, context }) => {
@@ -30,7 +30,10 @@ for (const width of [1440, 390]) {
   test(`Home shows real scouting progress and the next calendar activity at ${width}px`, async ({ page, context }, info) => {
     expect(await signInAs(context, "owner")).toBe(true);
     await page.setViewportSize({ width, height: 900 });
-    const scheduled = new Date(Date.now() + 3_600_000).toISOString();
+    // Keep the next activity within today even when CI runs near midnight.
+    const now = new Date("2026-10-06T12:00:00Z");
+    await page.clock.setFixedTime(now);
+    const scheduled = new Date(now.getTime() + 3_600_000).toISOString();
     let reports: number | undefined;
     let writes = 0;
     page.on("request", req => { if (req.url().includes("/api/dashboards") && req.method() !== "GET") writes++; });

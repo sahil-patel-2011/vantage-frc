@@ -84,6 +84,7 @@ describe("expandLegacyRedirects", () => {
 
   it("keeps the real /strategy entry wired to the pick desk", () => {
     const strategy = expandLegacyRedirects().filter((row) => row.source === "/strategy");
-    expect(strategy[0]?.destination).toContain("sub=picks");
+    expect(strategy[0]?.destination).toBe("/competition?tab=picks&orgId=:orgId");
+    expect(strategy[1]?.destination).toBe("/competition?tab=picks");
   });
 });

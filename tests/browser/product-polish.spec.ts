@@ -95,7 +95,11 @@ test("sidebar collapse persists, workspace tabs support the keyboard, and search
   await expect(page.getByRole("button", { name: "Expand sidebar", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Expand sidebar", exact: true }).click();
   await expect(page.locator("body")).not.toHaveClass(/shell-sidebar-collapsed/);
-  await expect(page.locator(".app-sidebar-team")).toHaveAttribute("href", "/workspace");
+  const picker = new URL(await page.locator(".app-sidebar-team").getAttribute("href") ?? "", page.url());
+  expect(picker.pathname).toBe("/workspace");
+  const destination = new URL(picker.searchParams.get("next") ?? "", page.url());
+  expect(destination.pathname).toBe("/team");
+  expect(destination.searchParams.get("orgId")).toBe("ui-team");
   await openNav(page);
   const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true });
   await expect(search).toBeFocused();

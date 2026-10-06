@@ -135,6 +135,8 @@ test.beforeEach(async ({ context }) => {
 
 for (const width of [390, 1280]) {
   test("scouting evidence is usable at " + width + "px", async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", error => pageErrors.push(error.message));
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/scout/teams?orgId=" + orgId + "&team=254");
     const results = page.getByRole("region", {
@@ -142,6 +144,7 @@ for (const width of [390, 1280]) {
       exact: true,
     });
     await expect(results).toBeVisible({ timeout: 60000 });
+    expect(pageErrors, "Direct robot links hydrate without resetting the selected view").toEqual([]);
     await expect(results.getByText(/Source: your team/)).toBeVisible();
     await results.locator(".intel-sb-head").first().click();
     await expect(results.getByRole("table")).toBeVisible();

@@ -399,6 +399,9 @@ export async function proxy(request: NextRequest) {
     // /workspace was a second home page (event tiles, sync status, keyboard letters) that
     // every "Choose your team" link pointed at. A member goes to their team's Home.
     if (pathname === "/workspace") {
+      // An explicit team switch must reach the membership picker, without the
+      // remembered team being injected or sending the person back to Home.
+      if (request.nextUrl.searchParams.has("next")) return NextResponse.next();
       const teamId = isTeamId(opened) ? opened : isTeamId(remembered) ? remembered : null;
       if (teamId) {
         const home = new URL("/dashboard", request.url);

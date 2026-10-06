@@ -69,7 +69,10 @@ test("workspace search keeps its results usable on narrow and landscape screens"
     const opener=navigationOpener(page); await opener.click();
     const panel=page.getByRole("complementary",{name:"Product navigation",exact:true});
     const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data",exact:true});
+    const loaded=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/search" && new URL(response.url()).searchParams.get("q")==="scouting");
     await search.fill("scouting");
+    expect((await loaded).ok()).toBe(true);
+    await expect(panel.getByRole("status")).toHaveCount(0);
     const results=panel.getByRole("listbox",{name:"Search results",exact:true});
     await expect(results.getByRole("option").first()).toBeVisible();
     const last=results.getByRole("option").last(); await last.focus(); await expect(last).toBeFocused();
