@@ -15,7 +15,7 @@
     "dist:all": "tsc && electron-builder --win nsis msi portable --mac dmg zip"
   },
   "devDependencies": {
-    "electron": "43.4.1",
+    "electron": "43.7.8",
     "electron-builder": "26.15.3",
     "typescript": "6.0.3",
     "vitest": "4.1.11"

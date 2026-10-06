@@ -466,7 +466,9 @@ export function commandCatalog(): CommandEntry[] {
     const route = new URL(tab.legacyHref, "https://vantage.local");
     route.searchParams.delete("from");
     const key = route.pathname + route.search + route.hash;
-    if (!canonicalHref.has(key)) canonicalHref.set(key, hubHref(hub.href, tab.id));
+    // Connection setup has a dedicated page. Routing through the hub first
+    // paints a second "Connect AI" heading while that hub redirects again.
+    if (!canonicalHref.has(key)) canonicalHref.set(key, key === "/ai/connect" ? key : hubHref(hub.href, tab.id));
     canonicalHref.set(hubHref(hub.href, tab.id), canonicalHref.get(key)!);
   }
 

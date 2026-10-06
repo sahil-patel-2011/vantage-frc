@@ -14,6 +14,7 @@ function asItems(data: Record<string, unknown>, key = "items"): Array<Record<str
 }
 
 function money(value: unknown): string | null {
+  if ((typeof value !== "number" && typeof value !== "string") || (typeof value === "string" && !value.trim())) return null;
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return null;
   const rounded = Math.round(n);

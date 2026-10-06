@@ -106,7 +106,9 @@ export function classifyLoadFailure(input: {
 
   if (status === 401) return "auth";
   if (status === 403) return "forbidden";
-  if (status === 503) return "setup";
+  // A temporary outage also returns 503. Only an explicit configuration
+  // message means setup is missing; retrying an outage needs no team changes.
+  if (status === 503) return matches(text, SETUP_PATTERNS) ? "setup" : "unknown";
 
   if (!text) return "unknown";
   // "Unauthorized" is HTTP 401's own reason phrase, so it means signed-out here,

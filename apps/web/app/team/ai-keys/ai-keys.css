@@ -16,7 +16,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .ai-keys-page .ai-keys-shell h2 {
@@ -195,7 +195,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .ai-keys-page .ai-keys-any h2 {

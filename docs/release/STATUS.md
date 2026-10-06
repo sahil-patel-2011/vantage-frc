@@ -17,6 +17,8 @@ The release is **not verified**. Use inventory.json and completion-matrix.md to 
 
 ## Current evidence
 
+- October 6 follow-up: remaining UI recovery states, form response metrics/access revocation, shortcut load safety and cached scouting corrections are repaired with a database-free browser harness. The full initial desktop/phone censuses and final responsive replays are recorded in [UI readiness](UI-READINESS-2026-10-06.md). Current [production metadata](evidence/2026-10-06-production-metadata.json) finds six missing settings; older ten-setting reports below are historical. No production database privilege check or live email-delivery check was performed in this increment. Complete remote workflow verification and production gates remain open.
+
 - Further UI cleanup consolidates cache input to one 2–20 GB slider, moves optional storage explanation into a disclosure, removes duplicate drawer actions and groups account help. Existing routes/actions remain reachable. The production build, 118 focused unit checks, nine repaired browser journeys and 22 accessibility states pass with the original failures recorded in [UI-CLEANUP.md](UI-CLEANUP.md). Production is unchanged; these are bounded regression results.
 
 - Device and launch increment: December 1, 2026 Eastern signup gate plus readiness switches; early-access contact; live homepage signup actions; 2–20 GB device cache budget with protected outboxes; folded member shortcuts; lap-timer evidence. Local unit/regression, build and browser evidence is recorded in DEVICE-AND-LAUNCH.md and evidence/device-and-launch.json. Production remains unchanged and release gates remain open.

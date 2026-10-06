@@ -337,8 +337,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           title="Notifications"
           description="Todos, duties, chat, and team news for your signed-in account."
         >
-          <InboxRelated />
         </PageHeader>
+        <InboxRelated />
         <OfflineBanner feature="Notifications" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
@@ -375,8 +375,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         <div className="notif-header-actions">
           {unreadCount >= 1 ? <span className="app-badge">{unreadCount} unread</span> : null}
         </div>
-        <InboxRelated />
       </PageHeader>
+      <InboxRelated />
 
       <OfflineBanner feature="Notifications" fromCache={fromCache} cachedAt={cachedAt} />
 

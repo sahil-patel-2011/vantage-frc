@@ -7,5 +7,5 @@ export const metadata = {
 };
 
 export default function ReimbursementsPage() {
-  return <ReimbursementsClient />;
+  return <main className="module-page"><ReimbursementsClient /></main>;
 }

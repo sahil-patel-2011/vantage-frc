@@ -36,7 +36,7 @@ export function CopyCommand({ command, label }: { command: string; label?: strin
     <div className="lab-command">
       {label ? <span className="app-muted">{label}</span> : null}
       <div className="lab-command-row">
-        <code>{command}</code>
+        <code tabIndex={0} aria-label="Command">{command}</code>
         <Button variant="secondary" size="sm" type="button" onClick={copy}>
           {state === "copied" ? "Copied" : "Copy"}
         </Button>

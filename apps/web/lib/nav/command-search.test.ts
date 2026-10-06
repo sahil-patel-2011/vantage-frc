@@ -9,6 +9,12 @@ const hrefs = (query: string, count = 5): string[] =>
   searchCommands(query, catalog).slice(0, count).map((hit) => hit.href);
 
 describe("commandCatalog", () => {
+  it("opens connection setup directly while retaining its AI permission scope", () => {
+    const connection = catalog.find(entry => entry.id === "ai:connections");
+    expect(connection?.href).toBe("/ai/connect");
+    expect(connection?.alternativeHrefs).toContain("/ai?tab=connections");
+    expect(connection?.context).toBe("AI › Controls");
+  });
   it("consolidates old Team routes while preserving travel and RSVP search terms", () => {
     for (const tab of ["logistics", "duties", "visit-invites"]) {
       expect(catalog.filter(entry => entry.href === `/team?tab=${tab}`)).toHaveLength(1);

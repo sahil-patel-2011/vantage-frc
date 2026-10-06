@@ -25,6 +25,8 @@ Every widget and tool must distinguish loading, empty, needs setup, saved data a
 
 ## Verification
 
+For database-free presentation and client-interaction checks, use `npm run test:ui`. Its isolated Next server masks local and inherited credentials, disables database connections, and intercepts browser APIs. The regular census checks 31 primary and repaired destinations at 320, 390, 768 and 1440px in both appearances. `PRODUCT_UI_FULL=1` expands it to the registered non-media workspace destinations. This supplements the persisted workflow stories below; it cannot establish database or external-provider readiness.
+
 Use `tests/browser/product-ui-audit.spec.ts` for the complete registered workspace presentation census. Set `PRODUCT_UI_AUDIT=1`, choose `PRODUCT_UI_WIDTH`, `PRODUCT_UI_DARK` and `PRODUCT_UI_OUT`; it records every route's status, page errors, overflow and WCAG findings, plus screenshots. This census is separate from functional browser stories that trace UI → API → PostgreSQL → rendered result.
 
 Run fresh invitation and team lifecycle journeys, custom form publishing/response journeys, scouting online/offline journeys, dashboard board/task journeys and representative Team/Build/Business operations. Validate the shared UI at 320/390, 768 and 1440px, and dark appearance. Do not start a local database on the user’s laptop. Database-backed journeys require an explicitly authorized remote test environment; existing guarded fixture tests belong in the isolated test runner. Clean up only rows created by a journey.
@@ -38,3 +40,5 @@ Five functional browser journeys passed: real email-code invitation signup, memb
 The local database and app/test processes were stopped at the user's request. Final unit, type, lint and build checks require no running database. Live external providers and the proposed fresh-team custom-match analysis simulation were not verified in this interrupted audit.
 
 Final database-free checks passed: 11,358 unit tests (45 skipped), repository lint, all workspace type checks, and the optimized production build (753 static/dynamic routes generated). Browser verification of the final contrast corrections and unavailable-widget retry UI remains outstanding after the stop.
+
+The subsequent database-free audit and reliability repairs are tracked in [UI readiness](../release/UI-READINESS-2026-10-06.md). It preserves the original full-census findings and records bounded replay evidence separately from the still-open production gates.

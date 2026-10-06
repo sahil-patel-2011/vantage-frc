@@ -1,0 +1,83 @@
+{
+  "checkedAt": "2026-10-06T20:00:02.580Z",
+  "project": "vantage-frc-web",
+  "source": "Vercel project and environment metadata; values excluded",
+  "deployment": {
+    "id": "dpl_7bGD3HzGBtKurfG8BJhZoQ1uToLe",
+    "state": "READY",
+    "target": "production"
+  },
+  "settings": [
+    {
+      "key": "DATABASE_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "DATABASE_AUTH_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "DATABASE_WORKER_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "DATABASE_AI_BRIDGE_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "BETTER_AUTH_SECRET",
+      "status": "present_unverified"
+    },
+    {
+      "key": "BETTER_AUTH_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "NEXT_PUBLIC_APP_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "NEXT_PUBLIC_SITE_URL",
+      "status": "present_unverified"
+    },
+    {
+      "key": "CRON_SECRET",
+      "status": "present_unverified"
+    },
+    {
+      "key": "TBA_AUTH_KEY",
+      "status": "present_unverified"
+    },
+    {
+      "key": "RECOVERY_ENCRYPTION_KEY",
+      "status": "missing"
+    },
+    {
+      "key": "EXPORT_ENCRYPTION_KEY",
+      "status": "missing"
+    },
+    {
+      "key": "MFA_ENCRYPTION_KEY",
+      "status": "missing"
+    },
+    {
+      "key": "MFA_RECOVERY_PEPPER",
+      "status": "missing"
+    },
+    {
+      "key": "VANTAGE_SHEETS_HUB_SECRET",
+      "status": "present_unverified"
+    },
+    {
+      "key": "RATE_LIMIT_REDIS_URL",
+      "status": "missing"
+    },
+    {
+      "key": "RATE_LIMIT_REDIS_TOKEN",
+      "status": "missing"
+    }
+  ],
+  "databaseRoles": "not checked; no database connection opened",
+  "emailDelivery": "credentials present; live delivery not verified",
+  "productionReady": false
+}

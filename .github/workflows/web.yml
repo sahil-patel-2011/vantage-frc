@@ -2,6 +2,7 @@ name: Web PR CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - "**/*.md"
       - "docs/**"
@@ -51,16 +52,43 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - name: Audit production web dependencies
+        run: npm audit --omit=dev --workspace=@vantage/web --workspace=@vantage/marketing --audit-level=high
       - name: Migration static checks
         run: npm run test:migrations
       - name: Build web without production secrets
         run: npm run build --workspace=@vantage/web
 
+  ui:
+    name: Database-free UI and accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify client interactions and workspace recovery states
+        run: npm run test:ui
+      - name: Upload UI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-free-ui-report
+          path: |
+            playwright-report/ui
+            test-results/ui
+          retention-days: 7
+
   browser:
     name: Playwright (${{ matrix.shard }}/8)
     # Avoid duplicate full browser runs on draft pushes.
     # Full suite runs when the PR is marked ready, or via workflow_dispatch.
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     # Each shard has an isolated Postgres service. Run at most six spec files
     # per managed dev server, then restart it and merge the complete reports.
@@ -181,6 +209,9 @@ jobs:
 
   postgres:
     name: Postgres migrations and RLS
+    # Draft reviews have database-free quality/UI evidence. All database gates
+    # still run when the PR is ready, on main, or through a manual dispatch.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
