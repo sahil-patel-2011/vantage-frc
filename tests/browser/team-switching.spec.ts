@@ -33,14 +33,12 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
     await page.getByLabel("Team number", { exact: true }).fill("99992");
-    await page.getByRole("radio", { name: "Match", exact: true }).check();
-    await page.getByLabel("Match name", { exact: true }).fill(marker);
-    await page.getByRole("radio", { name: "Pit", exact: true }).check();
+    await expect(page.getByRole("radio", { name: "Pit", exact: true })).toBeChecked();
     await page.getByRole("button", { name: "Start scouting", exact: true }).click();
-    await page.getByRole("textbox", { name: "Notes", exact: true }).fill("Saved after switching teams");
+    await page.getByRole("textbox", { name: "Notes", exact: true }).fill(marker);
     await page.getByRole("button", { name: "Save report", exact: true }).click();
     await expect(page.locator(".free-scout-report").filter({ hasText: marker }).getByText("Uploaded", { exact: true })).toBeVisible();
-    const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE label=$1", [marker]);
+    const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE payload->>'notes'=$1", [marker]);
     expect(saved.rows).toEqual([{ org_id: orgId }]);
     await primaryNavigation(page).getByRole("link", { name: "Home", exact: true }).click();
     // The org is already in the scouting URL. Wait for the destination too,
@@ -71,7 +69,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.getByRole("menu", { name: "Account" }).locator(".soft-account-org").first()).toContainText(marker);
     await expect(page.getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
   } finally {
-    await pool.query("DELETE FROM free_scout_reports WHERE label=$1", [marker]);
+    await pool.query("DELETE FROM free_scout_reports WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker]);
     await pool.query("DELETE FROM organizations WHERE id=$1 AND name=$2", [orgId, marker]);
     await pool.end();
   }
