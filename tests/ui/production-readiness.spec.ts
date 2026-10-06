@@ -1,5 +1,59 @@
 import { expect, test } from "@playwright/test";
-import { accessible, isolateUi, orgId, responses } from "./fixture";
+import { accessible, isolateUi, orgId, responses, schema } from "./fixture";
+
+for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a selected draft at ${width}px`, async ({ page, context }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await isolateUi(page, context);
+  let revision = 1;
+  let unavailable = false;
+  let release: (() => void) | undefined;
+  let delay: Promise<void> | undefined;
+  let refreshing = false;
+  await page.route("**/api/scouting/schemas?**", async route => {
+    refreshing = true;
+    if (delay) await delay;
+    await route.fulfill({ status: unavailable ? 503 : 200, json: unavailable ? { error: "Forms unavailable." } : {
+      eventKey: "2026test", year: 2026, canManageSchemas: true,
+      schemas: ["pit", "match"].map(type => ({ ...schema, id: type === "pit" ? schema.id : "6925a000-0000-4000-8000-000000000004", type, version: revision,
+        definition: { title: `${type} version ${revision}`, fields: [{ key: "notes", label: `${type} observation`, type: "text" }] },
+      })),
+    } });
+  });
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  const type = builder.getByRole("combobox", { name: "Form type", exact: true });
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  await expect(title).toHaveValue("pit version 1");
+  await expect(type).toBeEnabled(); // Initial cache write has completed.
+  revision = 2;
+  refreshing = false;
+  delay = new Promise<void>(resolve => { release = resolve; });
+  try {
+    await page.reload();
+    await expect.poll(() => refreshing).toBe(true);
+    await expect(title).toHaveValue("pit version 1");
+    await expect(title).toBeDisabled();
+    await expect(type).toBeDisabled();
+    await expect(builder).toContainText("Checking the latest forms");
+  } finally { release?.(); }
+  delay = undefined;
+  await expect(title).toHaveValue("pit version 2");
+  await expect(type).toBeEnabled();
+  await type.selectOption("match");
+  await expect(title).toHaveValue("match version 2");
+  await title.fill("Edited match form");
+  await type.selectOption("pit");
+  await expect(title).toHaveValue("pit version 2");
+  await type.selectOption("match");
+  await expect(title).toHaveValue("Edited match form");
+  unavailable = true;
+  await page.reload();
+  await expect(title).toHaveValue("pit version 2");
+  await expect(type).toBeEnabled();
+  await expect(builder).toContainText("Showing the last copy on this device");
+  await type.selectOption("match");
+  await expect(title).toHaveValue("match version 2");
+});
 
 for (const width of [390, 1440]) for (const theme of ["light", "dark"]) {
   test(`responses preserve zero, filter real rows, retry and revoke access at ${width}px ${theme}`, async ({ page, context }, info) => {

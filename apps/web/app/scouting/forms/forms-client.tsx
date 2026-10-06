@@ -80,7 +80,10 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
    */
   const [removed, setRemoved] = useState<{ question: DraftQuestion; index: number } | null>(null);
   const [year, setYear] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const busy = publishing || loading;
+  const loadGenerationRef = useRef(0);
   const publishingRef = useRef(false);
   const draftsRef = useRef<Partial<Record<EntryType, { title: string; questions: DraftQuestion[]; acknowledgeBudget: boolean }>>>({});
   const [message, setMessage] = useState("");
@@ -147,9 +150,12 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   }, []);
 
   const load = useCallback(async (requestedYear?: number) => {
+    const generation = ++loadGenerationRef.current;
+    setLoading(true);
     let hadCache = Boolean(payloadRef.current);
     try {
       const cached = await getFeatureSnapshot<SchemasPayload>("scout-forms", orgId || "_");
+      if (generation !== loadGenerationRef.current) return;
       if (!payloadRef.current && cached?.data && isSchemasPayload(cached.data)) {
         setPayload(cached.data);
         if (cached.data.year != null) setYear(cached.data.year);
@@ -170,6 +176,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const body: unknown = await response.json().catch(() => null);
+      if (generation !== loadGenerationRef.current) return;
       if (response.status === 401 || response.status === 403) {
         setPayload(null);
         setFromCache(false);
@@ -206,6 +213,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       setCachedAt(null);
       await persistScoutFormsSnapshot(orgId, body);
     } catch {
+      if (generation !== loadGenerationRef.current) return;
       if (hadCache || payloadRef.current) {
         setFromCache(true);
         setMessage("Could not refresh scout forms. Showing the last copy on this device.");
@@ -213,12 +221,22 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         return;
       }
       setLoadError("Could not load scout forms.");
+    } finally {
+      if (generation === loadGenerationRef.current) setLoading(false);
     }
   }, [orgId, type, loadSchemaIntoDraft]);
 
   useEffect(() => {
+    // A previous team's snapshot must never become this team's fallback.
+    payloadRef.current = null;
+    setPayload(null);
+    setFromCache(false);
+    setCachedAt(null);
+    setPublished(null);
+    setMessage("");
     draftsRef.current = {};
     void load();
+    return () => { loadGenerationRef.current++; };
     // Mount / org only — type switches reuse the loaded schema list.
   }, [orgId]);
 
@@ -232,7 +250,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   }
 
   function switchType(next: EntryType) {
-    if (publishingRef.current || next === type) return;
+    if (busy || publishingRef.current || next === type) return;
     draftsRef.current[type] = { title, questions, acknowledgeBudget };
     setType(next);
     setEditingQuestionId(null);
@@ -293,7 +311,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       return;
     }
     publishingRef.current = true;
-    setBusy(true);
+    setPublishing(true);
     try {
       const definition: SchemaDefinition = definitionFromDraft(title, questions);
       const response = await fetch("/api/scouting/schemas", {
@@ -332,7 +350,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       setMessage("Network error — try again.");
     } finally {
       publishingRef.current = false;
-      setBusy(false);
+      setPublishing(false);
     }
   }
 
@@ -381,7 +399,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     acknowledgeBudget,
   });
   const publishLabel = formBuilderPublishLabel({
-    busy,
+    busy: publishing,
     entryType: type,
     status: publishStatus,
   });
@@ -445,6 +463,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         <p className="app-muted">You can preview this form and review responses. A scouting lead or team admin can edit and publish forms.</p>
       ) : null}
 
+      {loading ? <p className="app-muted" role="status">Checking the latest forms…</p> : null}
       <fieldset className="sfb-type-switch" disabled={busy}>
         <ToolStrip
           aria-label="Form type"
@@ -480,7 +499,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         </FormRow>
         <FormRow label="Game"><select aria-label="Form game" disabled={busy} value={year ?? latestScoutingYear()} onChange={event => {
           if (publishStatus.kind !== "published" && !window.confirm("Change game? Unpublished changes to this form will be discarded.")) return;
-          setBusy(true); setPublished(null); void load(Number(event.target.value)).finally(() => setBusy(false));
+          setPublished(null); void load(Number(event.target.value));
         }}>{Array.from(new Set([year ?? latestScoutingYear(), latestScoutingYear(), 2025, 2024])).sort((a,b) => b-a).map(value => <option key={value} value={value}>{scoutingGameLabel(value)}</option>)}</select></FormRow>
         <ToolStrip presentation="segments" aria-label="Form workspace" value={mode} onChange={id => setMode(id as FormBuilderMode)} items={[{ id: "edit", label: "Questions" }, { id: "preview", label: "Preview" }, { id: "responses", label: "Responses" }]} />
       </div>
@@ -539,7 +558,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    {questions.length} questions · Select a question to edit. Drag to reorder.
+                    {questions.length} {questions.length === 1 ? "question" : "questions"} · Select a question to edit. Drag to reorder.
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" type="button" aria-pressed={showAllQuestions} onClick={() => setShowAllQuestions(previous => !previous)}>

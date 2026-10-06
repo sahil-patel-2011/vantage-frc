@@ -80,6 +80,11 @@
       "file": "tests/browser/team-lifecycle.spec.ts",
       "width": 1440,
       "reason": "First claim-page RSC navigation still pending at five-second prefill assertion; retry passes. Trace records /claim RSC in flight. Test now awaits actual claim URL before asserting persisted team number."
+    },
+    {
+      "file": "tests/browser/scouting-form-builder.spec.ts",
+      "width": 390,
+      "reason": "Reload hydrated the cached pit form before its live GET completed. Switching to match allowed that late pit response to overwrite the selected draft. Builder now locks editing/type changes while refreshing, rejects superseded requests and clears previous-team fallback snapshots. Delayed-response phone/desktop regressions cover fresh data, draft switching and cache fallback on service failure."
     }
   ],
   "additionalCoverage": "Three scouting completion cases now verify actual shooting-bout persistence through save, correction and reload in isolated PostgreSQL.",
