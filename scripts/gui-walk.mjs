@@ -14,6 +14,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
+import { ANALYTICS_CONSENT_COOKIE, serializeConsent } from "../apps/web/lib/product-analytics/consent.ts";
 import { COLOR_SOURCE } from "./lib/gui-color.mjs";
 
 const args = process.argv.slice(2);
@@ -41,7 +42,7 @@ const account = {
 };
 
 const browser = await chromium.launch();
-const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: "reduce", colorScheme: has("dark") ? "dark" : "light" });
 await context.addInitScript(() => {
   try { localStorage.setItem("vantage.tour.v1", "done"); } catch { /* storage blocked: the tour just shows */ }
 });
@@ -51,8 +52,8 @@ await context.addInitScript(() => {
 if (!has("firstrun")) {
   const hostname = new URL(origin).hostname;
   await context.addCookies([{
-    name: "vantage-analytics-consent",
-    value: "denied.1",
+    name: ANALYTICS_CONSENT_COOKIE,
+    value: serializeConsent("denied"),
     domain: hostname,
     path: "/",
     httpOnly: false,
@@ -301,7 +302,7 @@ const MEASURE = `(() => {
     headingJumps,
     rawColors,
     overflow: document.documentElement.scrollWidth > innerWidth + 1,
-    railVisible: (() => { const r = document.querySelector(".vrail"); return r ? getComputedStyle(r).display !== "none" : false; })(),
+    railVisible: (() => { const r = document.querySelector(".app-sidebar, .vrail"); return r ? getComputedStyle(r).display !== "none" : false; })(),
     islandVisible: (() => { const r = document.querySelector(".soft-island"); if (!r) return false; const b = r.getBoundingClientRect(); return b.width > 0; })(),
     topbarDeadSpace: (() => {
       const bar = document.querySelector(".soft-topbar");

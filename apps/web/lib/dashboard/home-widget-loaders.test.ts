@@ -22,7 +22,7 @@ function fakeClient(rowsByNeedle: Record<string, unknown[]>): PoolClient {
 }
 
 function stamp(
-  status: "live" | "empty" | "setup_required",
+  status: "live" | "empty" | "setup_required" | "unavailable",
   type: DashboardWidgetType,
   data?: Record<string, unknown>,
   message?: string,
@@ -62,6 +62,19 @@ describe("home widget loaders", () => {
     expect([...DASHBOARD_WIDGET_TYPES].filter((type) => !original.has(type)).sort()).toEqual(
       [...HOME_WIDGET_TYPES].sort(),
     );
+  });
+
+  it("distinguishes a failed query from an empty widget and isolates sibling loads", async () => {
+    const client = {
+      query: async (sql: string) => {
+        if (sql.includes("home-widget:batteries")) throw new Error("Database unavailable");
+        return { rows: [] };
+      },
+    } as PoolClient;
+    const failed = await loadHomeWidget(client, "batteries", ctx, stamp);
+    expect(failed).toMatchObject({ status: "unavailable", message: "Could not load this widget. Try refreshing." });
+    expect(failed.data).toBeUndefined();
+    expect((await loadHomeWidget(client, "sponsor_followups", ctx, stamp)).status).toBe("empty");
   });
 
   it("shows My day when a match is on the schedule and stays empty without one", async () => {

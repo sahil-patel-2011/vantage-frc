@@ -356,6 +356,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("focus", onResume);
     window.addEventListener("online", onResume);
+    window.addEventListener("vantage:dashboard-refresh", onResume);
 
     return () => {
       cancelled = true;
@@ -364,6 +365,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onResume);
       window.removeEventListener("online", onResume);
+      window.removeEventListener("vantage:dashboard-refresh", onResume);
     };
   }, [orgId, loadHome, loadSnapshot]);
 

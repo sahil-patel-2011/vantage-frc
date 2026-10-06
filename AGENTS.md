@@ -1,3 +1,12 @@
+# Laptop database policy
+
+The user explicitly prohibits starting a local database on their laptop. Never start
+PostgreSQL, Docker database services, or another local database for this repository
+on the laptop. Use database-free unit/lint/type/build checks. Database-backed
+verification requires an explicitly authorized remote test environment. The Base44
+microVM setup notes below are environment documentation, not authorization to run a
+laptop database.
+
 # Base44 dev environment notes
 
 Run the stack with `docker compose -f docker-compose.base44.yml up -d` (web on host port 3000).

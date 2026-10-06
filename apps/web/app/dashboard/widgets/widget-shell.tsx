@@ -3,7 +3,7 @@
 import { useContext, type ReactNode } from "react";
 import type { WidgetPayload } from "../../../lib/dashboard/snapshot";
 import { Icon, type IconName } from "../../../components/icon";
-import { EmptyState } from "../../../components/ui";
+import { Button, EmptyState } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { type EmptyHint, studentWidgetDescription } from "./widget-empty-copy";
 import { WidgetsLoadedContext } from "./widgets-loaded";
@@ -205,6 +205,11 @@ export function WidgetShell({
         <div className="dash-widget-wait" aria-busy="true" aria-label={`Loading ${title}`}>
           <i />
           <i />
+        </div>
+      ) : status === "unavailable" ? (
+        <div className="dash-widget-unavailable" role="status">
+          <p>{payload?.message || "Could not load this widget. Try refreshing."}</p>
+          <Button type="button" variant="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("vantage:dashboard-refresh"))}>Refresh data</Button>
         </div>
       ) : useChildren ? (
         children
