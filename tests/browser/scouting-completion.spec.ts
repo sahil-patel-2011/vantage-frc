@@ -69,6 +69,7 @@ for (const width of [320, 390, 1440]) {
       await expect(activity).toContainText("0:11 elapsed");
       await activity.getByRole("button", { name: "Stop shooting", exact: true }).click();
       await activity.getByLabel("Fuel released in last shooting bout", { exact: true }).fill("20");
+      await page.getByRole("tablist", { name: "Match form section", exact: true }).getByRole("tab", { name: "Review", exact: true }).click();
       await page.getByRole("radio", { name: "Guessing", exact: true }).click();
       await page.locator(".scout-save-button").click();
       await expect(page.locator(".scout-save-button")).toHaveText("Tap again to save");
