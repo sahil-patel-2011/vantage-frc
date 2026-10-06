@@ -1,5 +1,6 @@
 import { withOrgHref } from "../nav/product-nav";
 import { setupActionsFrom } from "../setup-actions";
+import { switchWorkspaceHrefFor } from "../../components/app-shell-model";
 
 /** Soft-UI related surfaces for `/workspace` join / select. */
 export const WORKSPACE_RELATED_LINKS = [
@@ -65,8 +66,20 @@ export type WorkspaceSetupStep = {
   href: string;
 };
 
-export function workspaceOrgHref(orgId?: string | null): string {
+export function workspacePickerHref(pathname: string, pathSearch: string): string {
+  return `/workspace?next=${encodeURIComponent(`${pathname}${pathSearch}`)}`;
+}
+
+export function workspaceOrgHref(orgId?: string | null, next?: string | null): string {
   if (!orgId) return "/workspace";
+  // Only an internal destination can survive the picker. The shared team
+  // switcher also drops record IDs belonging to the previous organization.
+  if (next?.startsWith("/") && !next.startsWith("//") && !next.includes("\\")) {
+    const destination = new URL(next, "https://vantage.invalid");
+    if (destination.origin === "https://vantage.invalid" && destination.pathname !== "/workspace") {
+      return switchWorkspaceHrefFor(destination.pathname, destination.search, orgId);
+    }
+  }
   return withOrgHref("/workspace", orgId);
 }
 

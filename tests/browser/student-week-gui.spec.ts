@@ -138,7 +138,7 @@ test.describe("student-week GUI path", () => {
     }
   });
 
-  test("Pick desk lock or Open Scouting is reachable", async ({ page }) => {
+  test("Pick list save or Open Scouting is reachable", async ({ page }) => {
     await openStudent(page, "/strategy?tab=picks");
     await expectNoBanned(page, "Pick desk");
     await expect(page.getByText(/\bEPA\b/)).toHaveCount(0);
@@ -147,11 +147,11 @@ test.describe("student-week GUI path", () => {
     });
     await expect(heading.first()).toBeVisible({ timeout: 12_000 });
     const primary = page
-      .getByRole("button", { name: /Lock this list|Retry/i })
+      .getByRole("button", { name: /Save pick list|Retry/i })
       .or(page.getByRole("link", { name: /Open Scouting|Choose your team|Set active event|Sign in again/i }));
     await expect(primary.first()).toBeVisible();
-    if (await page.getByRole("button", { name: /Lock this list/i }).count()) {
-      await page.getByRole("button", { name: /Lock this list/i }).click();
+    if (await page.getByRole("button", { name: /Save pick list/i }).count()) {
+      await page.getByRole("button", { name: /Save pick list/i }).click();
       await expect(page.locator("body")).not.toContainText("Application error");
     } else if (await page.getByRole("link", { name: "Open Scouting" }).count()) {
       await page.getByRole("link", { name: "Open Scouting" }).click();

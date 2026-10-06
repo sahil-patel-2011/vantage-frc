@@ -26,8 +26,8 @@ export const metadata = {
 // Session-gated server page: never prerendered, so a credential-free build works.
 export const dynamic = "force-dynamic";
 
-export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
-  const { orgId: orgIdParam } = await searchParams;
+export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string; next?: string }> }) {
+  const { orgId: orgIdParam, next: nextDestination } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/signin?next=%2Fworkspace");
 
@@ -47,7 +47,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     const shell = classifyWorkspaceShell({ membershipCount: options.length });
 
     if (shell === "ready" && options[0]) {
-      redirect(workspaceOrgHref(options[0].orgId));
+      redirect(workspaceOrgHref(options[0].orgId, nextDestination));
     }
 
     if (shell === "empty") {
@@ -101,7 +101,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           <ul className="dash-checklist workspace-org-pick">
             {options.map((row) => (
               <li key={row.orgId}>
-                <a href={workspaceOrgHref(row.orgId)}>{formatWorkspaceOrgLabel(row)}</a>
+                <a href={workspaceOrgHref(row.orgId, nextDestination)}>{formatWorkspaceOrgLabel(row)}</a>
               </li>
             ))}
           </ul>

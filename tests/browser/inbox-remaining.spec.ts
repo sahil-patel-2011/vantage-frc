@@ -49,7 +49,7 @@ test("Inbox and preferences keep one primary and drop leftover engineering copy"
   await page.goto("/notifications/preferences");
   await waitForLoadingGone(page);
   await expect(page.locator("body")).not.toContainText("Application error");
-  const prefsHeading = page.getByRole("heading", { level: 1, name: "Inbox" });
+  const prefsHeading = page.getByRole("heading", { level: 1, name: "Notification preferences" });
   await expect(prefsHeading.or(sessionEnded).first()).toBeVisible();
   for (const phrase of BANNED) {
     await expect(page.locator("body"), `prefs still shows ${phrase}`).not.toContainText(phrase);

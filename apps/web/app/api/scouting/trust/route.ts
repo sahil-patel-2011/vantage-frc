@@ -1,4 +1,4 @@
-import { canManageScouting, assertScoutingLead } from "@vantage/scouting/permissions";
+import { canManageScouting, assertScoutingLead, listScoutingCoordinators } from "@vantage/scouting/permissions";
 import { auth, emitPreferredNotification } from "@vantage/core";
 import type { SchemaDefinition } from "@vantage/scouting";
 import {
@@ -175,7 +175,11 @@ export async function POST(request: Request) {
         const maximum = Math.max(1, Math.min(8, Number(body.maximumConsecutiveMatches ?? 3)));
         const requested = Array.isArray(body.scoutUserIds) ? body.scoutUserIds.map((value) => text(value, 64)).filter(Boolean) : [];
         const scouts = requested.length ? requested : (await client.query<{ userId: string }>(
-          `SELECT user_id AS "userId" FROM memberships WHERE org_id=$1 AND role IN ('owner','admin','scout') ORDER BY created_at`, [orgId])).rows.map((row) => row.userId);
+          `SELECT m.user_id AS "userId" FROM memberships m WHERE m.org_id=$1
+           AND (m.role IN ('owner','admin','scout') OR EXISTS (
+             SELECT 1 FROM membership_capabilities c WHERE c.org_id=m.org_id AND c.user_id=m.user_id
+               AND c.capability='manage_scouting'::org_capability
+           )) ORDER BY m.created_at`, [orgId])).rows.map((row) => row.userId);
         const matches = await client.query<MatchRow>(
           `SELECT match_key AS "matchKey",match_number AS "matchNumber",comp_level AS "compLevel",red_alliance AS "redAlliance",blue_alliance AS "blueAlliance"
            FROM matches_ref WHERE event_key=$1 AND comp_level='qm' ORDER BY match_number`, [eventKey]);
@@ -225,11 +229,8 @@ export async function POST(request: Request) {
           text(body.message, 500) ||
           coverageGapMessage({ eventKey, missing: missing.length || 1, sample: missing });
         const href = `/command?orgId=${encodeURIComponent(orgId)}`;
-        const recipients = await client.query<{ userId: string }>(
-          `SELECT user_id AS "userId" FROM memberships WHERE org_id=$1 AND role IN ('owner','admin')`,
-          [orgId],
-        );
-        for (const recipient of recipients.rows) {
+        const recipients = await listScoutingCoordinators(client, orgId);
+        for (const recipient of recipients) {
           await emitPreferredNotification(client, {
             userId: recipient.userId,
             orgId,

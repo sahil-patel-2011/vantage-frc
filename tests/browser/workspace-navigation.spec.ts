@@ -50,6 +50,9 @@ test("every grouped destination opens from the menu and keeps the team", async (
       const group = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ hasText: section.label }) });
       await group.locator("summary").click();
       await group.getByRole("link", { name: item.label, exact: true }).click();
+      const destination = new URL(item.href, "http://localhost");
+      await expect(page).toHaveURL(url => url.pathname === destination.pathname &&
+        [...destination.searchParams].every(([key, value]) => url.searchParams.get(key) === value));
       await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
       expect(new URL(page.url()).searchParams.get("orgId"), item.href).toBe(orgId);
       await expect(navigationOpener(page)).toHaveAttribute("aria-expanded", "false");

@@ -147,7 +147,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
         if (!response.ok) throw new Error(data.error ?? "That did not save");
         setNotice(success);
         await load();
-        return true;
+        return generation.current === started + 1;
       } catch (cause) {
         if (generation.current === started) setError(cause instanceof Error ? cause.message : "That did not save");
         return false;
@@ -215,6 +215,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <label>
               <span>Name</span>
               <input
+                disabled={busy}
                 value={draft.name}
                 onChange={(event) => setDraft({ ...draft, name: event.target.value })}
                 placeholder="Drive coach"
@@ -225,6 +226,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <label>
               <span>What they are</span>
               <select
+                disabled={busy}
                 value={draft.baseRole}
                 onChange={(event) =>
                   setDraft({ ...draft, baseRole: event.target.value as ProfileBaseRole })
@@ -243,6 +245,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
           <label className="rpf-wide">
             <span>Description</span>
             <input
+              disabled={busy}
               value={draft.description}
               onChange={(event) => setDraft({ ...draft, description: event.target.value })}
               placeholder="Runs the pit and calls the match."
@@ -281,6 +284,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
                     <label key={capability.id}>
                       <input
                         type="checkbox"
+                        disabled={busy}
                         checked={draft.capabilities.includes(capability.id)}
                         onChange={() =>
                           setDraft({
@@ -339,6 +343,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
                 <label className="rpf-apply">
                   <span className="rpf-sr">Apply {profile.name} to</span>
                   <select
+                    disabled={busy}
                     value={applyTo[profile.key] ?? ""}
                     onChange={(event) =>
                       setApplyTo({ ...applyTo, [profile.key]: event.target.value })

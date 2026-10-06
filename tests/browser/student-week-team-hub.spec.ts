@@ -97,7 +97,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
     await expect(page.locator("body"), `Season roles still shows ${phrase}`).not.toContainText(phrase);
   }
   const rolesHeading = page.getByRole("heading", {
-    name: /Roles & Responsibilities|Choose your team/i,
+    name: /Team responsibilities|Choose your team/i,
   });
   await expect(rolesHeading.first()).toBeVisible({ timeout: 12_000 });
   const rolesPrimary = page

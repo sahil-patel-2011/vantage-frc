@@ -12,7 +12,6 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
-import { TOUR_STORAGE_KEY } from "../../lib/tour/tour-steps";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
 import { OrgContextCard } from "./account-shell";
@@ -553,7 +552,7 @@ export default function AccountClient() {
         <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
       </KitCard>
 
-      {/* The three things people come to this page to do that are not a
+      {/* The account actions people come to this page to use that are not a
           toggle. One card, one shape each, chevrons so they read as somewhere
           you go rather than something that happens on tap.
 
@@ -568,21 +567,6 @@ export default function AccountClient() {
           title="What’s new"
           subtitle="Recent updates and features"
           href="/whats-new"
-        />
-        <KitRow
-          icon="play"
-          tone="blue"
-          title="Replay the tour"
-          subtitle="Walk through the five stops on Home again"
-          onClick={() => {
-            try {
-              window.localStorage.removeItem(TOUR_STORAGE_KEY);
-            } catch {
-              // Private windows throw. Reloading still shows the tour for the
-              // rest of this session, which is what was asked for.
-            }
-            window.location.assign("/dashboard");
-          }}
         />
         <KitRow
           icon="logout"

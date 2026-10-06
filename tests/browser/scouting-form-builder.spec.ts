@@ -218,7 +218,7 @@ test("a delegated custom scouting lead can publish but cannot administer people,
     const revoked=await owner.request.patch("/api/organizations/members",{data:{orgId,userId:memberId,action:"set_capabilities",capabilities:prior.capabilities ?? []}});
     expect(revoked.ok(),await revoked.text()).toBe(true);
     await page.reload(); await expect(builder.getByLabel("Form title",{exact:true})).toBeDisabled();
-    const forbidden=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",definition:{title:"Denied",fields:[]}}});
+    const forbidden=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",definition:{title:"Denied",fields:[{key:"notes",label:"Notes",type:"text",required:false}]}}});
     expect(forbidden.status()).toBe(403);
   } finally {
     await owner.request.patch("/api/organizations/members",{data:{orgId,userId:memberId,action:"set_capabilities",capabilities:prior.capabilities ?? []}});

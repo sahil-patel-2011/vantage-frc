@@ -1,0 +1,82 @@
+{
+  "run": 37542082305,
+  "head": "64bd18ea51f52b1b61251b119dce91af47af7043",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37542082305",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "databaseId": 112537231772,
+      "name": "Lint, types, unit, build",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112537232035,
+      "name": "Postgres migrations and RLS",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112537232057,
+      "name": "Playwright (2/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112537232099,
+      "name": "Database-free UI and accessibility",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112537232177,
+      "name": "Playwright (3/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112537232230,
+      "name": "Playwright (1/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112537232242,
+      "name": "Playwright (6/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112537232268,
+      "name": "Playwright (5/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112537232347,
+      "name": "Playwright (7/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112537232350,
+      "name": "Playwright (4/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112537232352,
+      "name": "Playwright (8/8)",
+      "conclusion": "failure"
+    }
+  ],
+  "failures": [
+    "tests/browser/dashboard-context.spec.ts:63:5 \u203a a board waiting for competition setup is not described as an empty board ",
+    "tests/browser/feature-integration.spec.ts:99:7 \u203a one control per destination \u203a inventory offers each related destination once ",
+    "tests/browser/feature-integration.spec.ts:116:7 \u203a one control per destination \u203a logistics offers each related destination once ",
+    "tests/browser/palette.spec.ts:23:7 \u203a theme choices preserve contrast and navigation at 390px ",
+    "tests/browser/palette.spec.ts:23:7 \u203a theme choices preserve contrast and navigation at 1440px ",
+    "tests/browser/product-shell.spec.ts:48:5 \u203a dashboard editor rearranges widgets with drag-and-drop ",
+    "tests/browser/product-shell.spec.ts:253:5 \u203a code route requires a real team and never falls back to fixture findings ",
+    "tests/browser/scouting-form-builder.spec.ts:187:5 \u203a a delegated custom scouting lead can publish but cannot administer people, and revocation takes effect ",
+    "tests/browser/strategy-shell.spec.ts:10:5 \u203a Strategy hub still loads after the panel split ",
+    "tests/browser/student-week-event-slice.spec.ts:12:5 \u203a student this week can walk Event day packing/checklist \u2192 My Hours clock-in \u2192 Pick desk ",
+    "tests/browser/student-week-gui.spec.ts:141:7 \u203a student-week GUI path \u203a Pick desk lock or Open Scouting is reachable ",
+    "tests/browser/student-week-team-hub.spec.ts:11:5 \u203a student this week can walk Team hub People \u2192 Invites \u2192 Season roles ",
+    "tests/browser/team-switching.spec.ts:11:38 \u203a switching teams updates data, permissions and Home at 390px ",
+    "tests/browser/team-switching.spec.ts:11:38 \u203a switching teams updates data, permissions and Home at 1440px ",
+    "tests/browser/workspace-navigation.spec.ts:43:5 \u203a every grouped destination opens from the menu and keeps the team ",
+    "tests/browser/inbox-remaining.spec.ts:20:5 \u203a Inbox and preferences keep one primary and drop leftover engineering copy "
+  ],
+  "status": "Repairs awaiting fresh exact-head remote acceptance. No failures waived."
+}

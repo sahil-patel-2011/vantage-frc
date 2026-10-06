@@ -113,15 +113,15 @@ test("student this week can walk Event day packing/checklist → My Hours clock-
   });
   await expect(pickHeading.first()).toBeVisible({ timeout: 12_000 });
   const pickPrimary = page
-    .getByRole("button", { name: /Lock this list|Retry/i })
+    .getByRole("button", { name: /Save pick list|Retry/i })
     .or(page.getByRole("link", { name: /Open Scouting|Choose your team|Set active event|Sign in again/i }));
   await expect(pickPrimary.first()).toBeVisible();
-  if (await page.getByRole("button", { name: /Lock this list/i }).count()) {
-    const firstAdd = page.getByRole("button", { name: /^\+ First/i }).first();
+  if (await page.getByRole("button", { name: /Save pick list/i }).count()) {
+    const firstAdd = page.getByRole("button", { name: /^Add to First$/i }).first();
     if (await firstAdd.count()) {
       await firstAdd.click();
     }
-    await page.getByRole("button", { name: /Lock this list/i }).click();
+    await page.getByRole("button", { name: /Save pick list/i }).click();
     await expect(page.locator("body")).not.toContainText("Application error");
   }
 

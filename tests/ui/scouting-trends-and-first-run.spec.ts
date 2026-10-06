@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
 import { accessible, isolateUi, orgId, userId } from "./fixture";
+import { contrastRatio } from "../../apps/web/lib/branding/colors";
+
+for (const width of [390, 1440]) test(`product surfaces and browser chrome share the chosen palette at ${width}px`, async ({page,context}) => {
+  await page.setViewportSize({width,height:950}); await isolateUi(page,context);
+  await page.emulateMedia({reducedMotion:"reduce",colorScheme:"light"});
+  await page.goto(`/account?tab=appearance&orgId=${orgId}`);
+  const themes=page.getByRole("group",{name:"Color theme",exact:true});
+  for (const name of ["Light","Dark"]) {
+    await themes.getByRole("radio",{name,exact:true}).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme",name.toLowerCase());
+    const palettes=await page.evaluate(() => {
+      const read=(node:Element)=>Object.fromEntries(["bg","surface","ink","muted","accent","accent-ink","positive","critical","warning","alliance-blue"].map(key=>[key,getComputedStyle(node).getPropertyValue(`--${key}`).trim()]));
+      return {root:read(document.documentElement),body:read(document.body)};
+    });
+    expect(palettes.body).toEqual(palettes.root);
+    await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute("content",palettes.root.bg);
+    for (const token of ["ink","muted","accent","positive","critical","warning","alliance-blue"]) expect(contrastRatio(palettes.body[token],palettes.body.surface)).toBeGreaterThanOrEqual(4.5);
+    await accessible(page,".theme-setting");
+  }
+  await page.emulateMedia({colorScheme:"dark"});
+  await themes.getByRole("radio",{name:/^System/}).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme","dark");
+  await page.emulateMedia({colorScheme:"light"});
+  await expect(page.locator("html")).toHaveAttribute("data-theme","light");
+});
 
 for (const [width,theme] of [[390,"dark"],[1440,"light"]] as const) test(`event trends show evidence and filter real answers at ${width}px ${theme}`,async({page,context},info)=>{
   await page.setViewportSize({width,height:950}); await isolateUi(page,context,theme);
@@ -85,6 +110,9 @@ test("the first-run walkthrough is claimed once and never reappears after reload
   await expect(page.getByRole("button",{name:"Edit Home — rearrange, add, or remove widgets",exact:true})).toBeVisible();
   await expect(page.getByRole("dialog",{name:"Tour of Vantage"})).toHaveCount(0);
   expect(claims).toBe(1);
+  await page.goto(`/account?orgId=${orgId}`);
+  await expect(page.getByRole("heading",{name:"Account",level:1})).toBeVisible();
+  await expect(page.getByRole("button",{name:/Replay the tour/})).toHaveCount(0);
 });
 
 for (const motion of ["no-preference", "reduce"] as const) test(`dialogs release focus cleanly when closing with ${motion} motion`, async ({page, context}) => {

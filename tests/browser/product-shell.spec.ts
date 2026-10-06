@@ -67,8 +67,11 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   // Measured from where the drag started (the grip's centre), not the grip's
   // corner: the grip's hit area is finger-sized now, so its corner is further
   // from its centre than it was.
-  // Far enough to reach the card beside it: My day and Hours start half width each.
-  await page.mouse.move(box!.x + box!.width / 2 + 640, box!.y + box!.height / 2 + 90, { steps: 20 });
+  // Different-size cards insert before/after rather than swap. Drop in the
+  // far half of the next card; dropping before it would preserve this order.
+  const neighbor = await page.locator('[data-widget-type="scouting_coverage"]').boundingBox();
+  expect(neighbor).toBeTruthy();
+  await page.mouse.move(neighbor!.x + neighbor!.width * 0.8, neighbor!.y + neighbor!.height / 2, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
   // A lifted copy of the card follows the pointer while its slot shows the target.
   await expect(page.locator(".dash-drag-proxy.is-card .dash-widget-hit")).toHaveCount(1);
@@ -250,7 +253,8 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
   await expect(page.getByText("weighted-current-v1")).toHaveCount(0);
 });
 
-test("code route requires a real team and never falls back to fixture findings", async ({ page }) => {
+test("code route requires a real team and never falls back to fixture findings", async ({ page, context }) => {
+  expect(await signInAs(context, "no-team")).toBe(true);
   await page.goto("/code");
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Code");
   await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();

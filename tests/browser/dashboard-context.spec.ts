@@ -65,7 +65,8 @@ test("a board waiting for competition setup is not described as an empty board",
   const writes = await missingEvent(page);
   await page.goto("/dashboard");
   await expect(page.getByTestId("dash-context-prompt")).toBeVisible();
-  await expect(page.getByTestId("dash-place-canvas")).toHaveCount(0);
+  await expect(page.getByTestId("dash-place-canvas")).toBeVisible();
+  await expect(page.getByTestId("dash-grid-item")).toHaveCount(savedLayout.length);
   await expect(page.getByText("No widgets on this board")).toHaveCount(0);
   expect(writes()).toBe(0);
   await page.getByTestId("dash-context-prompt").getByRole("link", { name: "Choose event" }).click();

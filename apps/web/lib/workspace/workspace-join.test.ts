@@ -8,6 +8,7 @@ import {
   workspaceJoinCopy,
   workspaceJoinNextActions,
   workspaceOrgHref,
+  workspacePickerHref,
   workspaceRelatedLinks,
   workspaceSetupSteps,
   workspaceShellCopy,
@@ -94,5 +95,21 @@ describe("workspace Soft-UI join helpers", () => {
     expect(steps.find((s) => s.id === "onboarding-buddy")).toBeUndefined();
     expect(workspaceOrgHref("org-1")).toBe("/workspace?orgId=org-1");
     expect(workspaceOrgHref(null)).toBe("/workspace");
+  });
+});
+
+
+describe("team picker destinations", () => {
+  it("preserves the task and removes previous-team records", () => {
+    expect(workspacePickerHref("/competition", "?tab=scouting&orgId=old")).toBe("/workspace?next=%2Fcompetition%3Ftab%3Dscouting%26orgId%3Dold");
+    expect(workspaceOrgHref("org-2", "/competition?tab=scouting&mode=free&orgId=old&reportId=old-record")).toBe("/competition?tab=scouting&mode=free&orgId=org-2");
+    expect(workspaceOrgHref("org-2", "/forms/old-form?orgId=old")).toBe("/forms?orgId=org-2");
+    expect(workspaceOrgHref("org-2", "/account?tab=appearance&orgId=old")).toBe("/account?tab=appearance&orgId=org-2");
+  });
+  it("rejects external and recursive destinations", () => {
+    for (const next of ["https://example.com", "//example.com", "/\\example.com", "/workspace?next=%2Fworkspace", "javascript:alert(1)"]) {
+      expect(workspaceOrgHref("org-2", next)).toBe("/workspace?orgId=org-2");
+    }
+    expect(workspaceOrgHref("org-2", "/admin")).toBe("/workspace?orgId=org-2");
   });
 });

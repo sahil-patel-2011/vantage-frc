@@ -8,6 +8,7 @@ export {
   workspaceJoinCopy,
   workspaceJoinNextActions,
   workspaceOrgHref,
+  workspacePickerHref,
   workspaceRelatedLinks,
   workspaceSetupSteps,
   workspaceShellCopy,

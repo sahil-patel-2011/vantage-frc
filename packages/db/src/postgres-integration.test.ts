@@ -3,6 +3,7 @@ import { setMemberCapabilities } from "../../core/src/capabilities";
 import { listMemberHubAccess, setMemberHubAccess } from "../../core/src/hub-access";
 import { saveRoleProfile, applyRoleProfile } from "../../core/src/role-profiles";
 import { claimFirstTour } from "../../core/src/first-run-tour";
+import { listScoutingCoordinators } from "../../scouting/src/permissions";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Pool, type PoolClient } from "pg";
@@ -154,8 +155,14 @@ describeWithDatabase(
         const profile=await saveRoleProfile(client as unknown as DomainClient,owner,org,{key:"test-lead",name:"Test lead",baseRole:"scout",capabilities:["manage_scouting"],hubAccess:{competition:["scouting"],team:["people"]}});
         expect(profile.hubAccess).toEqual({competition:[],team:["people"]});
         await applyRoleProfile(client as unknown as DomainClient,owner,{orgId:org,userId:lead,key:profile.key});
+        expect(await listScoutingCoordinators(client as unknown as DomainClient,org)).toEqual([{userId:owner},{userId:lead}]);
+        expect((await client.query(`INSERT INTO notifications(user_id,org_id,type,payload) VALUES($1,$2,'scouting_disagreement_resolved','{}')`,[lead,org])).rowCount).toBe(1);
+        await client.query("SAVEPOINT reject_non_coordinator");
+        await expect(client.query(`INSERT INTO notifications(user_id,org_id,type,payload) VALUES($1,$2,'scouting_disagreement_resolved','{}')`,[member,org])).rejects.toThrow(/row-level security/);
+        await client.query("ROLLBACK TO SAVEPOINT reject_non_coordinator");
         await client.query("SELECT set_config('app.user_id',$1,true)",[lead]);
         expect((await client.query(`SELECT has_org_capability($1,'manage_scouting') AS scout,has_org_capability($1,'manage_members') AS members,can_manage_scouting($2) AS foreign`,[org,foreign])).rows[0]).toEqual({scout:true,members:false,foreign:false});
+        expect(await listScoutingCoordinators(client as unknown as DomainClient,foreign)).toEqual([]);
         const schema=await client.query(`INSERT INTO scout_schemas(org_id,year,type,version,schema,created_by) VALUES($1,2026,'match',987,'{"title":"Lead form","fields":[]}',$2) RETURNING id`,[org,lead]);
         expect(schema.rowCount).toBe(1);
         const event=await client.query(`INSERT INTO events_ref(event_key,year,name,org_id,created_by) VALUES('2026custom-12345678-lead',2026,'Lead offseason',$1,$2) RETURNING event_key`,[org,lead]);
@@ -173,6 +180,11 @@ describeWithDatabase(
         await client.query("SELECT set_config('app.user_id',$1,true)",[lead]);
         expect((await client.query("SELECT can_manage_scouting($1) AS allowed",[org])).rows[0].allowed).toBe(false);
         expect((await client.query("DELETE FROM scout_schemas WHERE id=$1 RETURNING id",[schema.rows[0].id])).rowCount).toBe(0);
+        expect(await listScoutingCoordinators(client as unknown as DomainClient,org)).toEqual([{userId:owner}]);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        await client.query("SAVEPOINT reject_revoked_notice");
+        await expect(client.query(`INSERT INTO notifications(user_id,org_id,type,payload) VALUES($1,$2,'scouting_disagreement_resolved','{}')`,[lead,org])).rejects.toThrow(/row-level security/);
+        await client.query("ROLLBACK TO SAVEPOINT reject_revoked_notice");
       } finally { await client.query("ROLLBACK");client.release(); }
     });
 

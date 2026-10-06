@@ -17,7 +17,7 @@
   },
   "clientReplay": {
     "combinedPassed": 31,
-    "focusedLatestPassed": 7,
+    "focusedLatestPassed": 9,
     "responsiveStates": 248,
     "widths": [
       320,
@@ -43,7 +43,10 @@
     "databaseIntegration": "passed",
     "databaseFreeUi": "passed",
     "browserShards": "8 failed; replay pending after test contract and picker fixes",
-    "productionAcceptance": false
+    "productionAcceptance": false,
+    "replayRun": 37542082305,
+    "replayHead": "64bd18ea51f52b1b61251b119dce91af47af7043",
+    "replayStatus": "Quality, PostgreSQL and database-free UI pass; browser groups 1 and 4 pass, six fail. Repairs awaiting a fresh replay."
   },
   "limits": [
     "Controlled browser APIs do not prove PostgreSQL persistence.",

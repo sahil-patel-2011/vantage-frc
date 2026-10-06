@@ -4,6 +4,7 @@ import { Icon } from "./icon";
 import { islandTabIsActive } from "./app-shell-model";
 import { mainMenuSections, mainMenuSearch } from "../lib/nav/main-menu";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
+import { workspacePickerHref } from "../lib/workspace";
 
 /** The same permission-filtered destinations as search, available without a modal. */
 export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel, collapsed, onCollapse, allowed }: {
@@ -21,7 +22,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
       <a href={withOrgHref("/dashboard", orgId)} aria-label="Vantage home"><img src="/vantage-mark.svg" width="30" height="30" alt="" /><span>Vantage</span></a>
       <button type="button" onClick={onCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="menu" /></button>
     </div>
-    <a className="app-sidebar-team" href="/workspace" title="Switch team" aria-label={`Switch team — ${orgLabel}`}><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>Team workspace</small></span><Icon name="chevron" /></a>
+    <a className="app-sidebar-team" href={workspacePickerHref(pathname, pathSearch)} title="Switch team" aria-label={`Switch team — ${orgLabel}`}><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>Team workspace</small></span><Icon name="chevron" /></a>
     <nav className="app-sidebar-main" aria-label="Workspaces">
       <p className="app-sidebar-label">Workspace</p>
       {groups.flatMap(group => group.items).map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} title={item.label}

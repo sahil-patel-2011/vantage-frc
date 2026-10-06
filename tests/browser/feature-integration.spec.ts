@@ -101,7 +101,7 @@ test.describe("one control per destination", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Vendors", "Orders", "Spare Forecast"]) {
-      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(0);
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
     if ((await main.getByRole("heading", { name: "Choose your team" }).count()) > 0) {
       await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
@@ -118,7 +118,7 @@ test.describe("one control per destination", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Logistics" })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Event Day", "My Day", "Team calendar", "Visit invites", "Packing"]) {
-      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(0);
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
     const links = await bodyLinks(page);
     expect(new Set(links).size, `duplicate hrefs in body: ${links.join(" ")}`).toBe(links.length);

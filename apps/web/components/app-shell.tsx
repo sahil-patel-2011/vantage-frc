@@ -704,7 +704,7 @@ export default function AppShell() {
         menuOpen={navOpen}
         onOpenNav={toggleMenu}
         shortcutHint={shortcutHint}
-        onOpenTeams={() => navigate("/workspace")}
+        onOpenTeams={() => navigate(`/workspace?next=${encodeURIComponent(`${pathname}${pathSearch}`)}`)}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
         onToggleAccount={() => setAccountMenuOpen((value) => !value)}
