@@ -3,7 +3,7 @@
   "head": "c3770ec828ed79d83ad3bb876b4da69b9c99d57d",
   "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37547568212",
   "recordedAt": "2026-10-06T23:48:00Z",
-  "scope": "Completed browser group 4; other groups were still running when this failure was recorded. This is not a full-run pass.",
+  "scope": "Run was superseded after quality, isolated PostgreSQL and five browser groups passed. Partial scouting and team logs are retained; canceled groups are not full passes.",
   "failure": {
     "file": "tests/browser/island-preferences.spec.ts",
     "test": "a saved app unavailable to this team can be removed without granting access",
@@ -11,5 +11,22 @@
     "reason": "The editor opened before saved preferences were applied. Its draft correctly retained defaults when the late preferences arrived; the test expected the saved Build choice instead.",
     "repair": "Wait for the actual GET response and the rendered three permitted saved shortcuts before opening the editor. Retain unavailable-app visibility, removal, keyboard focus, incomplete-selection save denial and replacement availability assertions. Separate editing/saved late-response tests remain."
   },
-  "verificationRequired": "Exact-head full CI after this test correction; application source is unchanged."
+  "verificationRequired": "Exact-head full CI after this test correction; application source is unchanged.",
+  "additionalFailures": [
+    {
+      "file": "tests/browser/team-switching.spec.ts",
+      "width": 390,
+      "reason": "Scouting focus hides the mobile shortcut bar. The test now opens the actual navigation menu to reach Home."
+    },
+    {
+      "file": "tests/browser/team-switching.spec.ts",
+      "width": 1440,
+      "reason": "Desktop Account uses the sidebar team link. The test now accepts the visible semantic team link or compact button, and waits for Account sections after navigation/history before opening its menu."
+    }
+  ],
+  "partialScoutingEvidence": {
+    "firstGroupPassed": 23,
+    "skipped": 2,
+    "details": "Includes all three persisted shooting-bout/correction/reload stories at 320/390/1440 and both real form-builder publication/type-switch stories without retries. The full scouting group was canceled after superseding the head; this is not a full-group pass."
+  }
 }

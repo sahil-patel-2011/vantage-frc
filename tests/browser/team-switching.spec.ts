@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { signInAs } from "./session";
-import { primaryNavigation } from "./nav";
+import { openNav } from "./nav";
 
 const homeOrg = "6925a000-0000-4000-8000-000000000001";
 const ownerId = "6925e2e0-0000-4000-8000-000000000001";
@@ -23,7 +23,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/competition?tab=scouting&mode=free&orgId=${homeOrg}&reportId=previous-team-record`);
     await expect(page.getByRole("heading", { name: "Practice scouting", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /^Switch team —/ }).filter({ visible: true }).click();
+    await page.getByRole("button", { name: /^Switch team —/ }).or(page.getByRole("link", { name: /^Switch team —/ })).filter({ visible: true }).click();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.locator(".workspace-org-pick a").filter({ hasText: marker }).click();
     await expect(page).toHaveURL(new RegExp(orgId));
@@ -40,7 +40,8 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.locator(".free-scout-report").filter({ hasText: marker }).getByText("Uploaded", { exact: true })).toBeVisible();
     const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE payload->>'notes'=$1", [marker]);
     expect(saved.rows).toEqual([{ org_id: orgId }]);
-    await primaryNavigation(page).getByRole("link", { name: "Home", exact: true }).click();
+    await openNav(page);
+    await page.getByRole("complementary", { name: "Product navigation", exact: true }).getByRole("link", { name: /^Home\b/ }).click();
     // The org is already in the scouting URL. Wait for the destination too,
     // otherwise the test opens a menu on the page that is still leaving.
     await expect(page).toHaveURL(new RegExp(`/dashboard\\?orgId=${orgId}`));
@@ -53,10 +54,11 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: /^Switch team —/ }).filter({ visible: true }).click();
+    await page.getByRole("button", { name: /^Switch team —/ }).or(page.getByRole("link", { name: /^Switch team —/ })).filter({ visible: true }).click();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.locator(".workspace-org-pick a").filter({ hasText: "Team 6925" }).click();
     await expect(page).toHaveURL(new RegExp(`orgId=${homeOrg}`));
+    await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menuitem", { name: "Team admin", exact: true })).toBeVisible();
     await page.reload();
@@ -65,6 +67,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(`/account\\?orgId=${orgId}`));
+    await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).locator(".soft-account-org").first()).toContainText(marker);
     await expect(page.getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
