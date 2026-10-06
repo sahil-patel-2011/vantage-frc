@@ -35,5 +35,5 @@ export default async function ScoutingPage({
       </main>
     );
   }
-  return <ScoutingClient orgId={orgId} />;
+  return <ScoutingClient key={orgId} orgId={orgId} />;
 }

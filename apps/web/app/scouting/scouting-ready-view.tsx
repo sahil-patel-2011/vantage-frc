@@ -54,6 +54,7 @@ import { ScoutSaveConfirmation } from "./scout-save-confirmation";
 import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
 import "./scout-flow.css";
+import "./scouting-workspace.css";
 import { PitProgress } from "./pit-progress";
 import { ScoutActionHistoryView } from "./scout-action-history";
 
@@ -108,6 +109,7 @@ export type ScoutingReadyViewProps = {
   conflicts: Array<Record<string, unknown>>;
   selectedWinners: Record<string, string>;
   message: string;
+  saving: boolean;
   /** "Uploaded 1 entry" — shown by the queue count, not under Save. */
   syncNote: string | null;
   saveReceipt: SaveReceipt | null;
@@ -191,6 +193,7 @@ export function ScoutingReadyView({
   conflicts,
   selectedWinners,
   message,
+  saving,
   syncNote,
   saveReceipt,
   fixLastSave,
@@ -609,6 +612,8 @@ return (
             <ScoutSaveConfirmation receipt={saveReceipt} onDismiss={() => setSaveReceipt(null)} onFix={fixLastSave} />
           ) : null}
 
+          <div className="scout-recording-layout">
+          <div className="scout-target-panel">
           {type === "match" ? (
             <div id="scout-robot-picker" className="scout-robot-picker">
               {/* Scouting is not assignment-gated. The list is a convenience:
@@ -625,6 +630,7 @@ return (
                   onAutoPick={autoPickRobot}
                   myMatchKeys={myMatchKeys}
                   autoPickEnabled={autoPickEnabled}
+                  ownTeamNumber={data?.teamNumber}
                 />
               ) : null}
               {data?.matches?.length ? (
@@ -657,6 +663,7 @@ return (
             <>
               <PitProgress
                 orgId={orgId}
+                eventKey={data?.eventKey ?? ""}
                 teamKey={teamKey}
                 onTeamKey={setTeamKey}
                 savedTeamKey={saveReceipt?.entryType === "pit" ? saveReceipt.teamKey : null}
@@ -664,6 +671,14 @@ return (
               <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
             </>
           )}
+          </div>
+          <div className="scout-answers">
+
+          {!canSave ? <div className="scout-awaiting-robot">
+            <span className="scout-context-eyebrow">{type === "match" ? "Match scouting" : "Pit visit"}</span>
+            <h3>Choose a robot to begin</h3>
+            <p>{type === "match" ? "Pick its alliance station, or enter a team and match. Your answers save on this device first." : "Tap an unvisited team or type its number. Record what the team tells you and what you can verify."}</p>
+          </div> : null}
 
           {type === "match" && context ? (
             <>
@@ -726,6 +741,7 @@ return (
             </div>
           ) : null}
 
+          <div className="scout-answer-fields">
           {(teamKey && (type === "pit" || matchKey) ? activeFields : []).filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={`${type}:${matchKey}:${teamKey}:${field.key}`}
@@ -744,10 +760,11 @@ return (
               }
             />
           ))}
+          </div>
 
           {/* Stored as high / normal / low; a "Guessing" entry counts for less
               when the team's numbers are added up. */}
-          <div hidden={collecting}><ScoutChoice
+          <div hidden={collecting || !canSave}><ScoutChoice
             label="How sure are you?"
             options={CONFIDENCE_OPTIONS}
             value={confidence}
@@ -804,13 +821,13 @@ return (
           {/* Disabled, and saying why, until there is a robot to save it
               against. It used to accept the tap and answer with an error line
               below the button, after the scout had filled in the whole form. */}
-          <div className="scout-report-actions"><Button variant="secondary" type="button" onClick={cancelReport}>Cancel report</Button>
+          <div className="scout-report-actions"><Button variant="secondary" type="button" disabled={saving || !canSave} onClick={cancelReport}>Cancel report</Button>
           <Button
             variant="primary"
             type="button"
             className="scout-save-button"
             hidden={collecting}
-            disabled={!canSave}
+            disabled={!canSave || saving}
             onClick={() => {
               // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block. The nudge
               // was a browser confirm, whose Cancel looked like Save doing nothing on a phone: now
@@ -823,7 +840,7 @@ return (
               void submit();
             }}
           >
-            {confirmRunning && canSave
+            {saving ? "Saving on this device…" : confirmRunning && canSave
               ? "Tap again to save"
               : !canSave
               ? type === "match"
@@ -851,6 +868,8 @@ return (
           {editMyReport ? (
             <MyReports reports={mine} pendingCount={counts.entries} onEdit={editMyReport} />
           ) : null}
+          </div>
+          </div>
         </Panel>
 
         <ScoutingLeadTools

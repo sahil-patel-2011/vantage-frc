@@ -576,3 +576,8 @@
 
 .scout-page .scout-workbench { grid-template-columns: minmax(0, 1fr); max-width: 820px; margin-inline: auto; }
 .scout-cached-analysis { padding: 10px 14px; border-radius: 12px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
+
+/* Selection must remain readable throughout a tap; animate depth, not foreground against background. */
+.scout-choice button { transition: transform var(--dur-tap) var(--ease-out), border-color var(--dur-tint) var(--ease-out); }
+.team-view-heading .soft-tab-bar { flex-wrap: nowrap; }
+.team-view-heading p { font-size: 14px; }

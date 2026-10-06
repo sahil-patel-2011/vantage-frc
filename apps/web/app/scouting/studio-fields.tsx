@@ -101,7 +101,8 @@ function StudioShell({
 export function CounterField({ field, value, onChange, label }: FieldProps & { label: string }) {
   const config = useMemo(() => counterConfig(field), [field]);
   const { canUndo, undoValue, remember, clear } = useOneLevelUndo(value);
-  const current = typeof value === "number" ? value : 0;
+  const touched = typeof value === "number";
+  const current = touched ? value : null;
 
   function step(delta: number) {
     remember();
@@ -117,7 +118,7 @@ export function CounterField({ field, value, onChange, label }: FieldProps & { l
           {/* Keyed so each tap remounts the number and it bumps; the live
               region itself stays put, so screen readers still announce it. */}
           <span key={current} className="scout-readout-value">
-            {current}
+            {current ?? "—"}
           </span>
         </output>
       }
@@ -127,6 +128,7 @@ export function CounterField({ field, value, onChange, label }: FieldProps & { l
           type="button"
           className="scout-tap minus"
           aria-label={`Subtract 1 from ${label}`}
+          disabled={current == null || current <= config.min}
           onClick={() => step(-1)}
         >
           −1
@@ -158,13 +160,12 @@ export function CounterField({ field, value, onChange, label }: FieldProps & { l
         <button
           type="button"
           className="text-button"
-          disabled={value === undefined}
           onClick={() => {
             remember();
-            onChange(undefined);
+            onChange(touched ? undefined : config.min);
           }}
         >
-          Clear
+          {touched ? "Clear" : `Record ${config.min}`}
         </button>
       </div>
     </StudioShell>
@@ -198,8 +199,8 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
       hint={field.helpText ?? (config.max != null ? `Max ${config.max} each` : undefined)}
       headline={
         <output className="scout-studio-readout" aria-live="polite">
-          <span key={touched ? multiCounterTotal(value, config) : 0} className="scout-readout-value">
-            {touched ? multiCounterTotal(value, config) : 0}
+          <span key={touched ? multiCounterTotal(value, config) : "—"} className="scout-readout-value">
+            {touched ? multiCounterTotal(value, config) : "—"}
           </span>
         </output>
       }

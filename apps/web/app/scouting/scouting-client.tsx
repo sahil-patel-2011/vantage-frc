@@ -63,6 +63,8 @@ import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feat
 import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
 import { cacheLiveScouting } from "../../lib/scouting/live-cache";
 import { weightedFormula } from "../../lib/scouting/weighted-formula";
+import { useScoutTask } from "./use-scout-task";
+import { focusInvalidScoutField } from "./scouting-form-focus";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
@@ -70,28 +72,28 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
-  const [tab, setTab] = useState<ScoutTab>("pit");
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
   const [loadedDraftKey, setLoadedDraftKey] = useState<string | null>(null);
-  // True once the scout changes an answer for the robot on screen. Only then is a draft kept:
-  // a report loaded to be corrected, or answers carried over from the last robot, are not a
-  // draft, and "Draft saved just now" right after Save read as if nothing had been saved.
+  // Autosave only after an edit; restored and carried answers are not new drafts.
   const [userEdited, setUserEdited] = useState(false);
   const editPayload = useCallback((next: Record<string, unknown> | ((current: Record<string, unknown>) => Record<string, unknown>)) => {
     setUserEdited(true);
     const identity = { id: crypto.randomUUID(), at: new Date().toISOString() };
     setPayload((current) => recordScoutAction(current, typeof next === "function" ? next(current) : next, identity));
   }, []);
-  // Robots saved on this phone since the page opened, with what was saved, so going back to one
-  // loads it before the team's list catches up.
+  // Local reports can reopen before the server's list catches up.
   const [savedHere, setSavedHere] = useState<SavedScoutReport[]>([]);
-  // Whether the live team data has arrived (or could not). The robot picked for you waits for it:
-  // picked from the copy saved on the phone, it opened a robot already scouted, and stayed.
+  // Wait for live data before choosing a robot; cached assignments may already be covered.
   const [settled, setSettled] = useState(false);
   // After a save with nothing next (the last qual), no robot is picked until the scout taps one.
   const [holdAutoPick, setHoldAutoPick] = useState(false);
+  const { tab, setTab, onTabChange } = useScoutTask(() => {
+    setTeamKey("");
+    setMatchKey("");
+    setHoldAutoPick(false);
+  });
   // Answers the form keeps for the next robot (formResetBehavior), applied when it opens.
   const carryOverRef = useRef<Record<string, unknown> | null>(null);
   // A saved report to open in the form ("Fix it", or Edit on one of your reports).
@@ -106,15 +108,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">("normal");
   const [source, setSource] = useState<"manual" | "voice">("manual");
   const [entryClientId, setEntryClientId] = useState(() => stableClientId());
-  // Set while the form holds an entry that is already saved (Fix it, or your own earlier report
-  // for this robot): its client id, and the robot/match it belongs to. Saving replaces it.
-  // Switching to another robot drops it, so a new robot never overwrites the old report.
+  // Corrections reuse the saved report's id; switching robots clears it.
   const editingRef = useRef<{ clientId: string; key: string | null } | null>(null);
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
   const [counts, setCounts] = useState({ entries: 0, media: 0, quarantined: 0 });
   const [quarantine, setQuarantine] = useState<QuarantinedItem[]>([]);
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const saveInFlight = useRef(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [bootstrapStatus, setBootstrapStatus] = useState<number | null>(null);
@@ -141,9 +143,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
   const type = tab === "pit" ? "pit" : "match";
-  // Switching between Match and Pit starts the new form without a team: the Pit form opened on
-  // "1678", the robot the match picker had chosen, which no one picked in the pits. A team named
-  // in the link (a pit chip) is kept.
+  // Preserve a linked pit team or report; ordinary task changes start fresh.
   const previousType = useRef(type);
   useEffect(() => {
     if (previousType.current === type) return;
@@ -349,9 +349,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     }
   }, [searchParams]);
 
-  // Conflicts load whenever that tab is showing and the event is known — a tap
-  // on the tab, or a link from a disagreement notification (?scoutTab=conflicts),
-  // which used to set the tab without ever fetching and showed "No disagreements".
+  // Fetch disagreements for both task switches and notification deep links.
   const conflictsEventKey = data?.eventKey ?? "";
   useEffect(() => {
     if (tab !== "conflicts" || !orgId || !conflictsEventKey) return;
@@ -383,12 +381,13 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         return;
       }
     }
+    if (type !== "match") return;
     const assignment = openAssignment(data, Date.now());
     if (assignment) {
       setMatchKey(assignment.matchKey);
       setTeamKey(assignment.teamKey);
     }
-  }, [settled, holdAutoPick, data, matchKey, searchParams, orgId]);
+  }, [settled, holdAutoPick, data, matchKey, searchParams, orgId, type]);
 
   // A robot picked by hand (or by the app) lets the picker choose again after the next save.
   useEffect(() => {
@@ -484,6 +483,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       return;
     }
     setPayload(carry ?? {});
+    setConfidence("normal");
+    setSource("manual");
     setDraftSavedAt(null);
     setDraftDirty(false);
   }, [draftKey]);
@@ -545,6 +546,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, [draftKey, loadedDraftKey, userEdited, payload, confidence, matchKey, teamKey, data?.scoutIdentity?.userId, data?.eventKey, orgId, type]);
 
   async function submit() {
+    if (saveInFlight.current) return;
     const storedTeam = normalizeTeamKey(teamKey);
     if (!data?.eventKey || !schema || !storedTeam || (type === "match" && !matchKey)) {
       setMessage(
@@ -560,6 +562,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     const problems = validatePayload(schema.definition, answers);
     if (problems.length) {
       setMessage(`Not saved yet. ${problems.slice(0, 3).join(". ")}.`);
+      focusInvalidScoutField(schema.definition.fields, problems);
       return;
     }
     const entry: SyncEntry = {
@@ -575,10 +578,14 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       source,
       updatedAt: new Date().toISOString(),
     };
+    saveInFlight.current = true;
+    setSaving(true);
     try {
       await queueEntry(entry);
     } catch (error) {
       setMessage(error instanceof Error ? `Not saved yet. ${error.message}` : "Not saved yet. Device storage is unavailable; keep this form open and retry.");
+      saveInFlight.current = false;
+      setSaving(false);
       return;
     }
     setLastSaved({ clientId: entryClientId, matchKey, teamKey, payload: answers, confidence });
@@ -589,9 +596,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       ]);
     }
     clearScoutDraft(draftKey);
-    // formResetBehavior: keep the constants a scout would only retype (station,
-    // alliance), step the ones that count up, and drop everything else. They
-    // are applied when the next robot opens.
+    // Apply the form's carry/reset rules when the next robot opens.
     const kept = applyFormResetBehavior(schema.definition, payload);
     carryOverRef.current = kept;
     setPayload(kept);
@@ -661,8 +666,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     // The confirmation says it; a second copy under Save only repeated it.
     setMessage("");
     setSyncNote(null);
-    await refreshCounts();
-    await sync();
+    // Finish the local save before syncing so slow Wi-Fi never blocks the next robot.
+    saveInFlight.current = false;
+    setSaving(false);
+    void refreshCounts();
+    void sync();
   }
 
   /** Open a saved report in the form; saving replaces it. */
@@ -830,11 +838,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     } else setMessage("Coach role is required to review conflicts");
   }
 
-  function onTabChange(id: string) {
-    const next = id as ScoutTab;
-    setTab(next);
-  }
-
   const shell = classifyScoutingShell({
     loading: loading && !data,
     fetchFailed: fetchFailed && !data?.eventKey,
@@ -945,6 +948,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       conflicts={conflicts}
       selectedWinners={selectedWinners}
       message={message}
+      saving={saving}
       syncNote={syncNote}
       saveReceipt={saveReceipt}
       showFormula={showFormula}

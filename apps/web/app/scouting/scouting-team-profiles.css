@@ -354,3 +354,4 @@
 @media (prefers-reduced-motion: reduce) {
   .stp-row { transition: none; }
 }
+.stp [role="tabpanel"] { animation: card-arrive var(--dur-move) var(--ease-out) backwards; }

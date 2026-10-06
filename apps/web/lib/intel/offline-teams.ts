@@ -20,6 +20,7 @@ export type OfflineRosterTeam = {
   nickname: string | null;
   epaTotal: number | null;
   scouted: number;
+  pitScouted?: number;
 };
 
 const ROSTER_VARIANT = "roster";

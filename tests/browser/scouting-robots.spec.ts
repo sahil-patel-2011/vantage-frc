@@ -18,7 +18,7 @@ test.beforeEach(async ({ context }) => {
 
 async function openRobots(page: import("@playwright/test").Page) {
   await page.goto("/competition?tab=teams");
-  await expect(page.getByRole("combobox", { name: "Team view", exact: true })).toBeVisible({timeout:60000});
+  await expect(page.getByRole("tablist", { name: "Team view", exact: true })).toBeVisible({timeout:60000});
   const panel = page.locator(".stp");
   const empty = page.getByText(/No scouting at this event yet|what your fields are worth/i);
   await expect(panel.or(empty).first()).toBeVisible({ timeout: 20_000 });
@@ -204,7 +204,6 @@ test("a weighting survives a reload, because a pick meeting is not one page view
   await page.waitForTimeout(400);
 
   await page.reload();
-  await page.getByRole("button", { name: "Robots", exact: true }).click();
   await page.getByText("Adjust what makes a good pick", { exact: true }).click();
   await expect(page.locator(".stp-weight-grid input[type='range']").nth(2)).toHaveValue("2");
 

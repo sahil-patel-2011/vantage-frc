@@ -19,7 +19,7 @@ for (const recovered of [true, false]) test(`reference data ${recovered ? "recov
     await route.fulfill({ response, json: body });
   });
   await page.goto(`/dashboard?orgId=${orgId}`);
-  await expect(page.getByTestId("dash-overview")).toBeVisible();
+  await expect(page.getByTestId("dash-widget-grid")).toBeVisible();
   await expect(page.getByText("Using saved copy", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Internal fixture diagnostics", { exact: true })).toHaveCount(0);
   if (recovered) await expect(page.locator(".data-source-degraded-banner")).toHaveCount(0);
@@ -27,7 +27,7 @@ for (const recovered of [true, false]) test(`reference data ${recovered ? "recov
 });
 
 for (const width of [1440, 390]) {
-  test(`Home combines real scouting progress and calendar activity at ${width}px`, async ({ page, context }, info) => {
+  test(`Home shows real scouting progress and the next calendar activity at ${width}px`, async ({ page, context }, info) => {
     expect(await signInAs(context, "owner")).toBe(true);
     await page.setViewportSize({ width, height: 900 });
     const scheduled = new Date(Date.now() + 3_600_000).toISOString();
@@ -37,26 +37,28 @@ for (const width of [1440, 390]) {
     await page.route("**/api/dashboards?**", async route => {
       const response = await route.fetch();
       const body = await response.json();
-      if (body.active) body.active.layout = [{ i: "tasks", type: "team_todos", x: 0, y: 0, w: 12, h: 4 }];
+      if (body.active) body.active.layout = [{ i: "scouting", type: "scouting_coverage", x: 0, y: 0, w: 12, h: 5 }];
       if (body.widgets) {
         reports = body.widgets.scouting_coverage?.data?.reports;
         body.widgets.calendar_today = { type: "calendar_today", status: "live", data: { items: [{ title: "Dashboard practice fixture", startsAt: scheduled }] } };
         body.widgets.my_day = { type: "my_day", status: "empty" };
+        body.widgets.next_match = { type: "next_match", status: "empty" };
+        body.widgets.hours_month = { type: "hours_month", status: "empty" };
       }
       await route.fulfill({ response, json: body });
     });
     await page.goto(`/dashboard?orgId=${orgId}`);
-    const overview = page.getByTestId("dash-overview");
+    const overview = page.getByTestId("dash-widget-grid");
     await expect(overview).toBeVisible();
     await expect(overview.getByRole("heading", { name: "Scouting", exact: true })).toBeVisible();
-    await expect(overview.getByRole("link", { name: "Dashboard practice fixture", exact: false })).toBeVisible();
+    await expect(page.getByTestId("dash-now")).toContainText("Dashboard practice fixture");
     await expect.poll(() => reports).toBeGreaterThan(0);
-    await expect(overview.locator(".dash-scouting-numbers")).toContainText(String(reports));
+    await expect(overview.locator(".dash-scout-card")).toContainText(String(reports));
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    expect((await new AxeBuilder({ page }).include(".dash-overview").analyze()).violations).toEqual([]);
+    expect((await new AxeBuilder({ page }).include(".dash-grid-wrap").analyze()).violations).toEqual([]);
     await page.screenshot({ path: info.outputPath(`home-overview-${width}.png`), fullPage: true });
     expect(writes).toBe(0);
-    await overview.getByRole("link", { name: "Dashboard practice fixture", exact: false }).click();
+    await page.getByTestId("dash-now-cta").click();
     await expect(page).toHaveURL(/tab=calendar/);
     await expect(page.getByRole("heading", { name: "Calendar", exact: true }).first()).toBeVisible();
   });
@@ -66,7 +68,7 @@ for (const width of [1440, 390]) {
     expect(await signInAs(context, "owner")).toBe(true);
     await page.setViewportSize({ width, height: 900 });
     const created = await context.request.post("/api/picklist-collab", { data: { orgId, action: "create-list", name: `Unified workspace ${Date.now()}`, eventKey: "2026gacmp" } });
-    expect(created.ok()).toBe(true);
+    expect(created.ok(), await created.text()).toBe(true);
     const view = await created.json();
     const listId = view.activeList.id;
     const pool = new Pool({ connectionString: process.env.DATABASE_ADMIN_URL });

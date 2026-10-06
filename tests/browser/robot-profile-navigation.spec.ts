@@ -3,8 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { signInAs } from "./session";
 
 async function openRobots(page: Page) {
-  await page.goto("/competition?tab=scouting");
-  await page.getByRole("button", { name: "Robots", exact: true }).click();
+  await page.goto("/competition?tab=teams");
   await expect(page.locator(".stp-row").first()).toBeVisible();
 }
 
@@ -106,8 +105,7 @@ test("robot list can retry a failed load and still show robots with no scored to
     data.weighted = data.weighted.filter((row: { teamKey: string }) => row.teamKey !== unscoredTeam);
     await route.fulfill({ response, json: data });
   });
-  await page.goto("/competition?tab=scouting");
-  await page.getByRole("button", { name: "Robots", exact: true }).click();
+  await page.goto("/competition?tab=teams");
   await expect(page.getByRole("button", { name: "Retry scouting" })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry scouting" }).click();

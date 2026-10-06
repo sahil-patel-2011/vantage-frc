@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, timingForSeason, type MatchPhase } from "../../lib/scouting/match-clock";
 import { readScoutClock, writeScoutClock } from "../../lib/scouting/draft-autosave";
+import { TabBar } from "../../components/ui";
 
-import { SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
+import { type ScoutFormStage } from "../../lib/scouting/match-form-flow";
+
+const STAGE_LABEL: Record<ScoutFormStage, string> = { all: "All", pre: "Before", auto: "Auto", teleop: "Teleop", endgame: "Endgame", review: "Review" };
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
   pre: "Match timer",
@@ -123,18 +126,17 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
           </button>
         </>
       ) : (
-        <button type="button" className="start" onClick={() => {
+        <button type="button" className="start" aria-label="Start match timer when auto starts" onClick={() => {
           const start = Date.now(); setNow(start); setStartedAt(start); writeScoutClock(storageKey, start); onStarted?.();
         }}>
           {/* Says what it is and when to press it; "Start with the field" read as a place. */}
-          Start match timer when auto starts
+          Start match
         </button>
       )}
     </div>
     <div className="scout-phase-controls">
-      <label className="section-select"><span className="sr-only">Match form section</span><select aria-label="Match form section" value={stage} onChange={event => onStageChange?.(event.target.value as ScoutFormStage)}>
-        {(["all", "pre", "auto", "teleop", "endgame", "review"] as const).filter(key => key === "all" || key === "pre" || key === "review" || anchors[key]).map(key => <option key={key} value={key}>{SCOUT_STAGE_LABELS[key]}</option>)}
-      </select></label>{undoButton}
+      <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
+        tabs={(["all", "pre", "auto", "teleop", "endgame", "review"] as const).map(key => ({ id: key, label: STAGE_LABEL[key] }))} />{undoButton}
     </div>
     {seasonYear !== 2026 ? <small className="app-muted">Practice timing: 15s auto / 135s teleop. Follow the field clock.</small> : null}
     </div>

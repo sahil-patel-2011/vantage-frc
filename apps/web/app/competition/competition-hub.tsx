@@ -84,7 +84,7 @@ export default function CompetitionHub() {
         if (tab === "scouting") {
           return (
             <HubOrgGate orgId={orgId} label="Scouting">
-              {(id) => <ScoutingClient orgId={id} embedded />}
+              {(id) => <ScoutingClient key={id} orgId={id} embedded />}
             </HubOrgGate>
           );
         }

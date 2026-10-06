@@ -2,12 +2,15 @@
 import { ScoutingSharing } from "../scouting/scouting-sharing";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Skeleton } from "../../components/ui";
 import { putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { useOnline } from "../../lib/offline/use-online";
 import { warmOfflineRoutes } from "../../lib/offline/warm-routes";
-import { loadRoster, prefetchEventTeams } from "../../lib/intel/offline-teams";
-import { cacheEvent, pendingCounts } from "../../lib/scout-offline";
+import { loadRoster, saveRoster, prefetchEventTeams, type OfflineRosterTeam } from "../../lib/intel/offline-teams";
+import { cacheEvent, getCachedEvent, listPendingEntries, pendingCounts } from "../../lib/scout-offline";
+import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
+import type { Bootstrap } from "../scouting/scouting-model";
 import { SCOUTING_NAV } from "./scouting-shell";
 import { deviceStorageSummary, formatBytes, type DeviceStorage } from "../../lib/scouting/device-storage";
 import {
@@ -20,7 +23,7 @@ import {
 
 type Roster = {
   activeEvent?: { eventKey?: string | null; eventName?: string | null } | null;
-  roster?: Array<{ teamNumber: number; teamKey?: string; nickname: string | null; scouted: number; pitScouted?: number }>;
+  roster?: OfflineRosterTeam[];
 };
 
 /** The number is already on the chip; a placeholder name ("Team 6925") would say it twice. */
@@ -37,22 +40,6 @@ function formatDutyTime(iso: string): string {
   if (minutes > 0 && minutes < 90) return `${clock} · in ${minutes} min`;
   if (minutes <= 0 && minutes > -15) return `${clock} · now`;
   return clock;
-}
-
-function useOnline(): boolean {
-  const [online, setOnline] = useState(true);
-  useEffect(() => {
-    setOnline(navigator.onLine);
-    const up = () => setOnline(true);
-    const down = () => setOnline(false);
-    window.addEventListener("online", up);
-    window.addEventListener("offline", down);
-    return () => {
-      window.removeEventListener("online", up);
-      window.removeEventListener("offline", down);
-    };
-  }, []);
-  return online;
 }
 
 /**
@@ -74,6 +61,11 @@ export function ScoutingHome() {
   const [readyNote, setReadyNote] = useState<string | null>(null);
   const [duty, setDuty] = useState<NextDuty | null>(null);
   const [ownTeamNumber, setOwnTeamNumber] = useState<number | null>(null);
+  const [savedEventName, setSavedEventName] = useState<string | null>(null);
+  const [savedEventKey, setSavedEventKey] = useState<string | null>(null);
+  const [queuedPits, setQueuedPits] = useState<Array<{ eventKey: string; teamKey: string }>>([]);
+  const activeOrg = useRef(orgId);
+  activeOrg.current = orgId;
 
   // The person's own next robot, from the same bootstrap the entry form loads. "Already filed"
   // is every robot the team has scouted at the event (not only the latest 30 entries), so Home
@@ -81,8 +73,13 @@ export function ScoutingHome() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    setDuty(null);
+    setOwnTeamNumber(null);
+    setSavedEventName(null);
+    setSavedEventKey(null);
     void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
+      .catch(async () => { try { return await getCachedEvent<Bootstrap>(orgId); } catch { return null; } })
       .then(
         (
           data: {
@@ -91,10 +88,15 @@ export function ScoutingHome() {
             recentEntries?: DutyEntry[];
             scouted?: Array<{ matchKey: string; teamKey: string }>;
             teamNumber?: number | null;
+            eventKey?: string | null;
+            eventName?: string | null;
           } | null,
         ) => {
           if (cancelled || !data) return;
           setOwnTeamNumber(typeof data.teamNumber === "number" ? data.teamNumber : null);
+          setSavedEventName(data.eventName ?? data.eventKey ?? null);
+          setSavedEventKey(data.eventKey ?? null);
+          if (online) void cacheEvent(orgId, data).catch(() => undefined);
           setDuty(
             nextScoutingDuty({
               assignments: data.assignments ?? [],
@@ -110,17 +112,19 @@ export function ScoutingHome() {
     return () => {
       cancelled = true;
     };
-  }, [orgId]);
+  }, [orgId, online]);
 
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    setRoster(null);
     setRosterState("loading");
     void fetch(`/api/intel/teams?orgId=${encodeURIComponent(orgId)}&q=`)
       .then((response) => (response.ok ? (response.json() as Promise<Roster>) : null))
       .then((data) => {
         if (cancelled) return;
         setRoster(data);
+        if (data?.roster) void saveRoster(orgId, data.roster).catch(() => undefined);
         setRosterState(data ? "ready" : "failed");
       })
       .catch(async () => {
@@ -137,22 +141,21 @@ export function ScoutingHome() {
     return () => {
       cancelled = true;
     };
-  }, [orgId]);
+  }, [orgId, online]);
 
   const refreshDevice = useCallback(async () => {
     try {
-      setQueue(await pendingCounts());
+      const [counts, entries, device] = await Promise.all([pendingCounts(orgId ?? undefined), orgId ? listPendingEntries(orgId) : [], deviceStorageSummary()]);
+      if (activeOrg.current !== orgId) return;
+      setQueue(counts);
+      setQueuedPits(entries.filter(entry => entry.type === "pit").map(({eventKey, teamKey}) => ({eventKey, teamKey})));
+      setStorage(device);
     } catch {
+      if (activeOrg.current !== orgId) return;
       setQueue(null);
     }
-    setStorage(await deviceStorageSummary());
-  }, []);
-
-  useEffect(() => {
-    void refreshDevice();
-    const id = window.setInterval(() => void refreshDevice(), 15_000);
-    return () => window.clearInterval(id);
-  }, [refreshDevice]);
+  }, [orgId]);
+  useScoutQueueRefresh(refreshDevice);
 
   /*
     One tap before the venue. Three things a scout would otherwise have to know to do:
@@ -165,6 +168,7 @@ export function ScoutingHome() {
     if (!orgId) return;
     setPreparing(true);
     const saved: string[] = [];
+    let recordingReady = false;
     const org = encodeURIComponent(orgId);
     const read = async (url: string): Promise<unknown> => {
       try {
@@ -180,16 +184,22 @@ export function ScoutingHome() {
       } catch {
         // Not every browser offers it; the rest still helps.
       }
-      const bootstrap = await read(`/api/scouting/bootstrap?orgId=${org}`);
+      const bootstrap = await read(`/api/scouting/bootstrap?orgId=${org}`) as Bootstrap | null;
       if (bootstrap) {
         await cacheEvent(orgId, bootstrap);
         await putFeatureSnapshot("scouting", orgId, bootstrap);
-        saved.push("forms and assignments");
+        recordingReady = Boolean(bootstrap.eventKey && bootstrap.schemas?.length);
+        saved.push(recordingReady ? "forms and assignments" : "the event setup");
       }
       const predictions = await read(`/api/match-sim?orgId=${org}`);
       if (predictions) {
         await putFeatureSnapshot("match-sim", orgId, predictions);
         saved.push("predictions");
+      }
+      const analysis = await read(`/api/scouting/teams?orgId=${org}`);
+      if (analysis) {
+        await putFeatureSnapshot("scouting-teams", orgId, analysis);
+        saved.push("robot comparisons");
       }
       const schedule = (await read(`/api/schedule?orgId=${org}`)) as { status?: string } | null;
       if (schedule?.status === "ready") {
@@ -213,7 +223,7 @@ export function ScoutingHome() {
         saved.length > 1 ? `${saved.slice(0, -1).join(", ")} and ${saved[saved.length - 1]}` : (saved[0] ?? null);
       if (warmed && warmed.pages > 0) {
         setReadyNote(
-          `Saved ${warmed.pages} pages${data ? ` and ${data}` : ""}. This phone can scout with no signal.`,
+          `Saved ${warmed.pages} pages${data ? ` and ${data}` : ""}. ${recordingReady ? "This phone can scout with no signal." : "Set an event and publish its forms before event scouting works offline."}`,
         );
       } else if (data) {
         setReadyNote(
@@ -232,14 +242,15 @@ export function ScoutingHome() {
 
   const withOrg = (href: string) => (orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href);
   const rosterLoading = Boolean(orgId) && rosterState === "loading";
-  const teams = roster?.roster ?? [];
+  const eventKey = roster?.activeEvent?.eventKey ?? savedEventKey;
+  const teams = (roster?.roster ?? []).map(team => queuedPits.some(entry => entry.eventKey === eventKey && entry.teamKey === team.teamKey) ? { ...team, pitScouted: Math.max(1, team.pitScouted ?? 0) } : team);
   const unscouted = teams.filter((team) => team.scouted === 0);
-  const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? null;
-  // Pit coverage only means something once the roster says whether it knows. Our own robot is
-  // not a pit visit: it counts as visited, and it is not a chip to tap.
+  const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? savedEventName;
+  // Count actual visits to other teams; our own unvisited robot must not inflate coverage.
   const pitKnown = teams.some((team) => typeof team.pitScouted === "number");
   const isOurs = (team: { teamNumber: number }) => ownTeamNumber != null && team.teamNumber === ownTeamNumber;
   const pitMissing = teams.filter((team) => (team.pitScouted ?? 0) === 0 && !isOurs(team));
+  const pitTeams = teams.filter(team => !isOurs(team));
   const PIT_CHIPS = 16;
   const pitHref = (teamNumber: number) =>
     `${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit&teamKey=frc${teamNumber}`;
@@ -256,7 +267,7 @@ export function ScoutingHome() {
             <Skeleton width={180} height={12} />
           </p>
         ) : (
-          <p className="scout-home-eyebrow">{eventName ?? (orgId ? "No event set" : "No team chosen")}</p>
+          <p className="scout-home-eyebrow">{eventName ?? (orgId ? rosterState === "failed" ? "Event unavailable" : "No event set" : "No team chosen")}</p>
         )}
         <h1 id="scout-home-title">Scouting</h1>
         {rosterLoading ? (
@@ -302,10 +313,10 @@ export function ScoutingHome() {
           >
             {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Start scouting"}
           </Button>
+          <Button as="a" variant="secondary" href={`${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit`}>Visit pits</Button>
         </div>
       </section>
 
-      {orgId ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}
       <section className="scout-home-device" aria-label="This device">
         <div className={`scout-home-status ${online ? "is-online" : "is-offline"}`}>
           <span aria-hidden="true" />
@@ -387,16 +398,16 @@ export function ScoutingHome() {
         </section>
       ) : null}
 
-      {pitKnown && teams.length > 0 ? (
+      {pitKnown && pitTeams.length > 0 ? (
         <section className="scout-home-pit" aria-label="Pit scouting">
           <header>
             <h2>Pit scouting</h2>
             <span>
-              {teams.length - pitMissing.length} of {teams.length} teams visited
+              {pitTeams.length - pitMissing.length} of {pitTeams.length} other teams visited
             </span>
           </header>
           <span className="scout-home-meter" aria-hidden="true">
-            <i style={{ width: `${Math.round(((teams.length - pitMissing.length) / teams.length) * 100)}%` }} />
+            <i style={{ width: `${Math.round(((pitTeams.length - pitMissing.length) / pitTeams.length) * 100)}%` }} />
           </span>
           {pitMissing.length > 0 ? (
             <ul>
@@ -421,7 +432,7 @@ export function ScoutingHome() {
               ) : null}
             </ul>
           ) : (
-            <p className="scout-home-kept">Every team at this event has a pit report.</p>
+            <p className="scout-home-kept">Every other team at this event has a pit report.</p>
           )}
         </section>
       ) : null}
@@ -440,6 +451,7 @@ export function ScoutingHome() {
           <span>Weigh what your alliance needs and rank every team at the event as you drag.</span>
         </a>
       </section>
+      {orgId ? <details className="scout-home-network"><summary>Scouting network and sharing</summary><ScoutingSharing key={orgId} orgId={orgId} /></details> : null}
     </main>
   );
 }
