@@ -65,7 +65,6 @@ import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
 import { cacheLiveScouting } from "../../lib/scouting/live-cache";
 import { weightedFormula } from "../../lib/scouting/weighted-formula";
 import { useScoutTask } from "./use-scout-task";
-import { focusInvalidScoutField } from "./scouting-form-focus";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
@@ -120,6 +119,8 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
   const [counts, setCounts] = useState({ entries: 0, media: 0, quarantined: 0 });
   const [quarantine, setQuarantine] = useState<QuarantinedItem[]>([]);
   const [message, setMessage] = useState("");
+  const [validationScope, setValidationScope] = useState<string | null>(null);
+  const [validationAttempt, setValidationAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const saveInFlight = useRef(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
@@ -472,13 +473,19 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
     [orgId, data?.eventKey, data?.scoutIdentity?.userId, type, matchKey, teamKey],
   );
 
-  // A new robot: its draft if there is one, a report asked for by "Fix it" or Edit, or a fresh
-  // form with the answers the form keeps from the last robot (formResetBehavior). Those used to
-  // be wiped here, one render after Save set them.
+  const validationProblems = useMemo(() => validationScope !== null && validationScope === draftKey && schema
+    ? validatePayload(schema.definition, answersToSave(schema.definition.fields, payload)) : [], [validationScope, draftKey, schema, payload]);
+  const saveContext = useMemo(() => ({ draftKey, schemaId: schema?.id, userId: data?.scoutIdentity?.userId, eventKey: data?.eventKey, payload, confidence, source, entryClientId }),
+    [draftKey, schema?.id, data?.scoutIdentity?.userId, data?.eventKey, payload, confidence, source, entryClientId]);
+  const saveContextRef = useRef(saveContext);
+  saveContextRef.current = saveContext;
+
+  // Restore the selected draft, requested correction or carried answers.
   useLayoutEffect(() => {
     // Restore before the new robot's controls can receive a tap. A passive reset
     // could replace an answer entered immediately after choosing the robot.
     setLoadedDraftKey(draftKey);
+    setValidationScope(null);
     setUserEdited(false);
     // A note about the robot that was on screen does not carry over to the next one.
     setMessage((current) =>
@@ -588,8 +595,9 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
     // used to be saved here, then set aside with "Entry rejected" once it reached the team.
     const problems = validatePayload(schema.definition, answers);
     if (problems.length) {
-      setMessage(`Not saved yet. ${problems.slice(0, 3).join(". ")}.`);
-      focusInvalidScoutField(schema.definition.fields, problems);
+      setValidationScope(draftKey);
+      setValidationAttempt(current => current + 1);
+      setMessage("");
       return;
     }
     const entry: SyncEntry = {
@@ -615,7 +623,29 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
       setSaving(false);
       return;
     }
+    if (saveContextRef.current !== saveContext) {
+      // The captured report was persisted, but a later target/answer owns the
+      // visible form. Never clear its draft or advance it using the older save.
+      if (saveContextRef.current.userId !== saveContext.userId || !saveContextRef.current.eventKey) {
+        saveInFlight.current = false;
+        setSaving(false);
+        return;
+      }
+      if (type === "match" && saveContextRef.current.eventKey === entry.eventKey) {
+        setSavedHere(current => [
+          ...current.filter(row => !(row.matchKey === entry.matchKey && row.teamKey === storedTeam)),
+          { matchKey, teamKey: storedTeam, clientId: entry.clientId, payload: answers, confidence },
+        ]);
+      }
+      setMessage(`Saved team ${teamNumberOf(storedTeam)} on this device. Your current answers stayed open; save again to include any newer edits.`);
+      saveInFlight.current = false;
+      setSaving(false);
+      void refreshCounts();
+      void sync();
+      return;
+    }
     setLastSaved({ clientId: entryClientId, matchKey, teamKey, payload: answers, confidence });
+    setValidationScope(null);
     if (type === "match") {
       setSavedHere((current) => [
         ...current.filter((row) => !(row.matchKey === matchKey && row.teamKey === storedTeam)),
@@ -965,6 +995,8 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
       matchKey={matchKey}
       teamKey={teamKey}
       payload={payload}
+      validationProblems={validationProblems}
+      validationAttempt={validationAttempt}
       savedHere={savedHere}
       confidence={confidence}
       entryClientId={entryClientId}
@@ -994,7 +1026,7 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
         setUserEdited(true);
         setPayload(current => undoScoutAction(current, identity));
       }}
-      setConfidence={setConfidence}
+      setConfidence={value => { setUserEdited(true); setConfidence(value); }}
       setSource={setSource}
       setSelectedWinners={setSelectedWinners}
       setSaveReceipt={setSaveReceipt}

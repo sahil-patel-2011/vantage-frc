@@ -26,4 +26,15 @@ describe("scouting schema publication boundary", () => {
     expect(schemaPublicationRequest.parse(request)).toEqual(request);
     expect(schemaPublicationRequest.parse({ orgId: request.orgId, action: "ensure_defaults" })).toEqual({ orgId: request.orgId, action: "ensure_defaults" });
   });
+  it("rejects broken conditional questions, missing controllers and self references", () => {
+    for (const rule of [{ anyOf: [null] }, { fieldKey: "missing", isTrue: true }, { fieldKey: "cycles", isSet: true }]) {
+      const definition = { ...request.definition, fields: [{ ...request.definition.fields[0]!, config: { visibleWhen: rule } }] };
+      expect(schemaPublicationRequest.safeParse({ ...request, definition }).success).toBe(false);
+    }
+    const definition = { title: "Conditional", fields: [
+      { key: "attempted", label: "Attempted", type: "boolean" },
+      { key: "seconds", label: "Seconds", type: "number", config: { visibleWhen: { fieldKey: "attempted", isTrue: true } } },
+    ] };
+    expect(schemaPublicationRequest.safeParse({ ...request, definition }).success).toBe(true);
+  });
 });

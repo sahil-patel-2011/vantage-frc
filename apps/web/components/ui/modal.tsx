@@ -14,6 +14,12 @@ export function useDialog(initial = false) {
 
 const FOCUSABLE =
   'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+// Effects register only browser-mounted dialogs. The top dialog alone owns
+// keyboard input; the first lock preserves the page's original scroll style.
+const activeDialogs: HTMLElement[] = [];
+let overflowBeforeDialogs: string | null = null;
+let focusBeforeDialogs: HTMLElement | null = null;
+const visibleControl = (el: HTMLElement) => !el.closest('[hidden], [inert], [aria-hidden="true"]') && !el.matches(":disabled") && el.getClientRects().length > 0;
 
 type ModalProps = {
   open: boolean;
@@ -55,6 +61,7 @@ export function Modal({
   const restoreRef = useRef<HTMLElement | null>(null);
   const autoId = useId();
   const titleId = labelledById ?? `modal-title-${autoId}`;
+  const descriptionId = `modal-description-${autoId}`;
   const [mounted, setMounted] = useState(false);
   // The latest onClose, read by the key handler. Callers pass a new function every render;
   // with onClose in the effect's deps the trap re-ran on each keystroke and pulled focus back
@@ -70,30 +77,34 @@ export function Modal({
     if (!open || !mounted) return;
     restoreRef.current = (document.activeElement as HTMLElement) ?? null;
     const node = dialogRef.current;
+    if (!node) return;
+    if (!activeDialogs.length) {
+      overflowBeforeDialogs = document.body.style.overflow;
+      focusBeforeDialogs = restoreRef.current;
+      document.body.style.overflow = "hidden";
+    }
+    activeDialogs.push(node);
     // Focus what the dialog asks for (autoFocus / data-autofocus), else the first control in its
     // body, else the first control at all, else the dialog itself. Never steal focus that is
     // already inside it.
     if (!node?.contains(document.activeElement)) {
       const wanted =
-        node?.querySelector<HTMLElement>("[autofocus], [data-autofocus]") ??
-        Array.from(node?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find((el) => el.getAttribute("aria-label") !== "Close dialog") ??
-        node?.querySelector<HTMLElement>(FOCUSABLE);
+        Array.from(node.querySelectorAll<HTMLElement>("[autofocus], [data-autofocus]")).find(visibleControl) ??
+        Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).find((el) => visibleControl(el) && el.getAttribute("aria-label") !== "Close dialog") ??
+        Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).find(visibleControl);
       (wanted ?? node)?.focus();
     }
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     const onKeyDown = (e: KeyboardEvent) => {
+      if (activeDialogs.at(-1) !== node) return;
       if (e.key === "Escape") {
-        e.stopPropagation();
+        e.preventDefault();
+        e.stopImmediatePropagation();
         onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !node) return;
-      const items = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null || el === document.activeElement,
-      );
+      const items = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(visibleControl);
       if (items.length === 0) {
         e.preventDefault();
         node.focus();
@@ -102,10 +113,10 @@ export function Modal({
       const firstEl = items[0]!;
       const lastEl = items[items.length - 1]!;
       const active = document.activeElement as HTMLElement;
-      if (e.shiftKey && active === firstEl) {
+      if (e.shiftKey && (active === firstEl || !node.contains(active) || active === node)) {
         e.preventDefault();
         lastEl.focus();
-      } else if (!e.shiftKey && active === lastEl) {
+      } else if (!e.shiftKey && (active === lastEl || !node.contains(active) || active === node)) {
         e.preventDefault();
         firstEl.focus();
       }
@@ -114,8 +125,21 @@ export function Modal({
     document.addEventListener("keydown", onKeyDown, true);
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
-      document.body.style.overflow = prevOverflow;
-      restoreRef.current?.focus?.();
+      const wasTop = activeDialogs.at(-1) === node;
+      const index = activeDialogs.indexOf(node);
+      if (index !== -1) activeDialogs.splice(index, 1);
+      if (!activeDialogs.length) {
+        document.body.style.overflow = overflowBeforeDialogs ?? "";
+        overflowBeforeDialogs = null;
+      }
+      if (wasTop) {
+        const top = activeDialogs.at(-1);
+        const restore = restoreRef.current;
+        if (restore?.isConnected && visibleControl(restore) && (!top || top.contains(restore))) restore.focus();
+        else if (top) top.focus();
+        else if (focusBeforeDialogs?.isConnected && visibleControl(focusBeforeDialogs)) focusBeforeDialogs.focus();
+      }
+      if (!activeDialogs.length) focusBeforeDialogs = null;
     };
   }, [open, mounted]);
 
@@ -132,8 +156,9 @@ export function Modal({
       <div
         ref={dialogRef}
         role="dialog"
-        aria-modal="true"
+        aria-modal={open || undefined}
         aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={[styles.dialog, variant === "sheet" ? styles.sheet : "", className].filter(Boolean).join(" ")}
       >
@@ -142,7 +167,7 @@ export function Modal({
             <h2 id={titleId} className={styles.dialogTitle}>
               {title}
             </h2>
-            {description ? <p className={styles.dialogBody}>{description}</p> : null}
+            {description ? <p id={descriptionId} className={styles.dialogBody}>{description}</p> : null}
           </div>
           {!hideClose ? (
             <button type="button" className={styles.dialogClose} onClick={onClose} aria-label="Close dialog">

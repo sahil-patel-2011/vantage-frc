@@ -24,6 +24,7 @@ import {
 } from "../../lib/scouting/scouting-related";
 import { ScoutingRelatedStrip } from "./scouting-chrome";
 import { Field } from "./scouting-field";
+import { focusInvalidScoutField, scoutFieldProblem } from "./scouting-form-focus";
 import { ScoutChoice } from "./scout-choice";
 import { ScoutingLeadTools } from "./scouting-lead-tools";
 import {
@@ -98,6 +99,8 @@ export type ScoutingReadyViewProps = {
   matchKey: string;
   teamKey: string;
   payload: Record<string, unknown>;
+  validationProblems?: string[];
+  validationAttempt?: number;
   /** Robots saved on this phone since the page opened, before the server list catches up. */
   savedHere: Array<{ matchKey: string; teamKey: string }>;
   confidence: "high" | "normal" | "low";
@@ -183,6 +186,8 @@ export function ScoutingReadyView({
   matchKey,
   teamKey,
   payload,
+  validationProblems = [],
+  validationAttempt = 0,
   savedHere,
   confidence,
   entryClientId,
@@ -251,6 +256,15 @@ export function ScoutingReadyView({
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
   const [stage, setStage] = useState<ScoutFormStage>("all");
+  const focusedValidationAttempt = useRef(0);
+  useLayoutEffect(() => {
+    if (!validationAttempt || validationAttempt === focusedValidationAttempt.current || !validationProblems.length) return;
+    focusedValidationAttempt.current = validationAttempt;
+    setConfirmRunning(false);
+    if (type === "match") setStage("review");
+    const frame = window.requestAnimationFrame(() => focusInvalidScoutField(formFields, validationProblems));
+    return () => window.cancelAnimationFrame(frame);
+  }, [validationAttempt, validationProblems, formFields, type]);
   const collecting = type === "match" && Boolean(context) && stage !== "all" && stage !== "review";
   const activeFields = type === "match" && context ? fieldsForMatchStage(formFields, stage) : formFields;
   const undo = undoableScoutAction(payload);
@@ -745,12 +759,17 @@ return (
           ) : null}
 
           <div className="scout-answer-fields">
+          {validationProblems.length ? <div id="scout-validation-summary" className="scout-validation-summary" role="alert" tabIndex={-1}>
+            <strong>Review before saving</strong><p>Your answers are still in this form. Correct these items, then save again.</p>
+            <ul>{validationProblems.map((problem, index) => <li key={`${index}:${problem}`}>{problem}</li>)}</ul>
+          </div> : null}
           {(teamKey && (type === "pit" || matchKey) ? activeFields : []).filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
             <Field
               key={`${type}:${matchKey}:${teamKey}:${field.key}`}
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
+              error={scoutFieldProblem(field, formFields, validationProblems)}
               flags={flagsByField.get(field.key) ?? []}
               historyHint={fieldConfidenceHint(trustByField.get(field.key))}
               disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}

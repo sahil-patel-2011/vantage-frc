@@ -68,6 +68,7 @@ export function ScoutChoice({
   /** Tapping the chosen answer again clears it, for a field that may stay blank. */
   allowClear?: boolean;
 }) {
+  const selectedExists = options.some(option => option.value === value);
   return (
     <ScoutChoiceRow label={label} hint={hint}>
       {(labelId) => (
@@ -85,7 +86,7 @@ export function ScoutChoice({
                 type="button"
                 role="radio"
                 aria-checked={active}
-                tabIndex={active || (!value && index === 0) ? 0 : -1}
+                tabIndex={active || (!selectedExists && index === 0) ? 0 : -1}
                 className={active ? "is-active" : undefined}
                 onKeyDown={event => {
                   const direction = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : ["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 0;

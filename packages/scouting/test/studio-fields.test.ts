@@ -148,6 +148,11 @@ describe("counter field", () => {
     expect(counterConfig({ config: { steps: ["x", -2, 0] } }).steps).toEqual([1, 5, 10]);
     expect(counterConfig({ config: { steps: [10, 1, 1, 5] } }).steps).toEqual([1, 5, 10]);
   });
+  it("starts above a positive minimum without recording an out-of-range first count", () => {
+    const config = counterConfig({ config: { min: 5, max: 10, steps: [1] } });
+    expect(applyCounterStep(undefined, 1, config)).toBe(6);
+    expect(applyCounterStep(9, 5, config)).toBe(10);
+  });
 });
 
 describe("multi counter field", () => {
@@ -176,12 +181,19 @@ describe("multi counter field", () => {
     const config = multiCounterConfig(multiCounterField);
     expect(config.counters.map((counter) => counter.key)).toEqual(["high", "low"]);
     const first = applyMultiCounterStep({}, "high", 5, config);
-    expect(first).toEqual({ high: 5, low: 0 });
+    expect(first).toEqual({ high: 5 });
     const second = applyMultiCounterStep(first, "low", 1, config);
     expect(second).toEqual({ high: 5, low: 1 });
     // Unknown keys are ignored rather than silently created.
     expect(applyMultiCounterStep(second, "mid", 5, config)).toEqual({ high: 5, low: 1 });
     expect(multiCounterTotal(second, config)).toBe(6);
+  });
+  it("keeps untouched sub-counters absent, while retaining an observed zero", () => {
+    const config = multiCounterConfig(multiCounterField);
+    expect(applyMultiCounterStep(undefined, "high", 1, config)).toEqual({ high: 1 });
+    expect(applyMultiCounterStep({ high: 0 }, "low", 1, config)).toEqual({ high: 0, low: 1 });
+    expect(applyMultiCounterStep({ high: 0 }, "mid", 1, config)).toEqual({ high: 0 });
+    expect(validatePayload(schemaOf(multiCounterField), { scoring: { high: 0 } })).toEqual([]);
   });
 });
 
