@@ -37,6 +37,17 @@ describe("mounted views follow router navigation", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("opens the team picker as its own document for consistent browser history", () => {
+    const { target, changed } = browser();
+    const push = vi.fn();
+    const next = encodeURIComponent("/account?tab=appearance&orgId=old-team");
+    pushAppNavigation(push, `/workspace?next=${next}&orgId=old-team`);
+    expect(target.location.assign).toHaveBeenCalledWith(`/workspace?next=${next}`);
+    expect(push).not.toHaveBeenCalled();
+    expect(changed).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("falls back to a document navigation if the router is unavailable", () => {
     const { target, changed } = browser();
     pushAppNavigation(() => { throw new Error("Router unavailable"); }, "/ai/connect");

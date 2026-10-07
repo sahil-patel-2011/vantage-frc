@@ -13,14 +13,20 @@ for (const width of [390, 1440]) test(`Account team picker preserves the active 
   expect(next.pathname).toBe("/account");
   expect(next.searchParams.get("tab")).toBe("appearance");
   expect(next.searchParams.get("orgId")).toBe(orgId);
-  // Capture the actual router request, including the shared click handler.
+  // Capture the actual navigation, including the shared click handler.
   // The destination response is intercepted before any server data access.
-  await page.route("**/workspace?**", route => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Picker request</title>" }));
+  await page.route("**/workspace?**", route => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Picker request</title><h1>Choose your team</h1>" }));
   const navigation = page.waitForRequest(request => new URL(request.url()).pathname === "/workspace");
   await link.click();
-  const requested = new URL((await navigation).url());
+  const request = await navigation;
+  expect(request.isNavigationRequest()).toBe(true);
+  const requested = new URL(request.url());
   expect(requested.searchParams.has("orgId")).toBe(false);
   expect(requested.searchParams.get("next")).toBe(picker.searchParams.get("next"));
+  await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(`/account?tab=appearance&orgId=${orgId}`);
+  await expect(page.getByRole("tab", { name: "Appearance", exact: true })).toHaveAttribute("aria-selected", "true");
 });
 
 for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a selected draft at ${width}px`, async ({ page, context }) => {

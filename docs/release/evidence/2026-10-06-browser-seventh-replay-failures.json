@@ -1,0 +1,80 @@
+{
+  "run": 37552285833,
+  "head": "a6c3128d555ca73e13d7e6612996b6e511875e5f",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37552285833",
+  "passedJobs": 10,
+  "failedJob": "Playwright (8/8)",
+  "failures": [
+    {
+      "file": "team-switching.spec.ts",
+      "title": "switching teams updates data, permissions and Home at 390px",
+      "status": "unexpected",
+      "results": [
+        {
+          "retry": 0,
+          "status": "failed",
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts",
+                "column": 75,
+                "line": 70
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('tablist', { name: 'Account sections' })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('tablist', { name: 'Account sections' })\u001b[22m\n\n\n  68 |     await page.goBack();\n  69 |     await expect(page).toHaveURL(new RegExp(`/account\\\\?orgId=${orgId}`));\n> 70 |     await expect(page.getByRole(\"tablist\", { name: \"Account sections\" })).toBeVisible({ timeout: 15_000 });\n     |                                                                           ^\n  71 |     await page.getByRole(\"button\", { name: \"Account menu\" }).click();\n  72 |     await expect(page.getByRole(\"menu\", { name: \"Account\" }).locator(\".soft-account-org\").first()).toContainText(marker);\n  73 |     await expect(page.getByRole(\"menuitem\", { name: \"Team admin\", exact: true })).toHaveCount(0);\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts:70:75"
+            }
+          ]
+        },
+        {
+          "retry": 1,
+          "status": "failed",
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts",
+                "column": 24,
+                "line": 69
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/account\\?orgId=ecfa010d-9d36-4407-9b85-d09a8bff1eea/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:3310/workspace?next=%2Faccount%3ForgId%3Decfa010d-9d36-4407-9b85-d09a8bff1eea\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 \u00d7 unexpected value \"http://127.0.0.1:3310/workspace?next=%2Faccount%3ForgId%3Decfa010d-9d36-4407-9b85-d09a8bff1eea\"\u001b[22m\n\n\n  67 |     await expect(page.getByRole(\"heading\", { name: \"Choose your team\", exact: true })).toBeVisible();\n  68 |     await page.goBack();\n> 69 |     await expect(page).toHaveURL(new RegExp(`/account\\\\?orgId=${orgId}`));\n     |                        ^\n  70 |     await expect(page.getByRole(\"tablist\", { name: \"Account sections\" })).toBeVisible({ timeout: 15_000 });\n  71 |     await page.getByRole(\"button\", { name: \"Account menu\" }).click();\n  72 |     await expect(page.getByRole(\"menu\", { name: \"Account\" }).locator(\".soft-account-org\").first()).toContainText(marker);\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts:69:24"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "team-switching.spec.ts",
+      "title": "switching teams updates data, permissions and Home at 1440px",
+      "status": "unexpected",
+      "results": [
+        {
+          "retry": 0,
+          "status": "failed",
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts",
+                "column": 24,
+                "line": 69
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/account\\?orgId=9f7a2263-522a-468a-bf85-27c0858a3b8a/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:3310/workspace?next=%2Faccount%3ForgId%3D9f7a2263-522a-468a-bf85-27c0858a3b8a\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 \u00d7 unexpected value \"http://127.0.0.1:3310/workspace?next=%2Faccount%3ForgId%3D9f7a2263-522a-468a-bf85-27c0858a3b8a\"\u001b[22m\n\n\n  67 |     await expect(page.getByRole(\"heading\", { name: \"Choose your team\", exact: true })).toBeVisible();\n  68 |     await page.goBack();\n> 69 |     await expect(page).toHaveURL(new RegExp(`/account\\\\?orgId=${orgId}`));\n     |                        ^\n  70 |     await expect(page.getByRole(\"tablist\", { name: \"Account sections\" })).toBeVisible({ timeout: 15_000 });\n  71 |     await page.getByRole(\"button\", { name: \"Account menu\" }).click();\n  72 |     await expect(page.getByRole(\"menu\", { name: \"Account\" }).locator(\".soft-account-org\").first()).toContainText(marker);\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts:69:24"
+            }
+          ]
+        },
+        {
+          "retry": 1,
+          "status": "failed",
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts",
+                "column": 75,
+                "line": 70
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('tablist', { name: 'Account sections' })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('tablist', { name: 'Account sections' })\u001b[22m\n\n\n  68 |     await page.goBack();\n  69 |     await expect(page).toHaveURL(new RegExp(`/account\\\\?orgId=${orgId}`));\n> 70 |     await expect(page.getByRole(\"tablist\", { name: \"Account sections\" })).toBeVisible({ timeout: 15_000 });\n     |                                                                           ^\n  71 |     await page.getByRole(\"button\", { name: \"Account menu\" }).click();\n  72 |     await expect(page.getByRole(\"menu\", { name: \"Account\" }).locator(\".soft-account-org\").first()).toContainText(marker);\n  73 |     await expect(page.getByRole(\"menuitem\", { name: \"Team admin\", exact: true })).toHaveCount(0);\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/team-switching.spec.ts:70:75"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "boundary": "Only user-authorized isolated GitHub Actions test databases. No laptop or production database access."
+}

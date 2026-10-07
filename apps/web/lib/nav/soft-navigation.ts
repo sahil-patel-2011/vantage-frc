@@ -4,6 +4,14 @@ import { URL_CHANGE_EVENT } from "./url-change";
 /** Notify mounted hub views after Next commits a query-only navigation. */
 export function pushAppNavigation(push: (href: string) => void, href: string): void {
   const before = window.location.href;
+  const destination = new URL(href, before);
+  if (destination.pathname === "/workspace" && destination.searchParams.has("next")) {
+    // The picker is the boundary between team documents. Keeping it in the
+    // previous team's router tree breaks Back after choosing another team.
+    destination.searchParams.delete("orgId");
+    window.location.assign(`${destination.pathname}${destination.search}${destination.hash}`);
+    return;
+  }
   try {
     push(href);
   } catch {
