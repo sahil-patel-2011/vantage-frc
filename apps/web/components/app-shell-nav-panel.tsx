@@ -115,13 +115,15 @@ export function AppShellNavPanel({
     : null;
   return (
     <>
-      {navOpen ? (
-        <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={closeNav} />
-      ) : null}
+      <button className={`soft-scrim soft-navigation-scrim${navOpen ? " open" : ""}`} type="button" aria-label="Close navigation" aria-hidden={!navOpen} inert={!navOpen} tabIndex={-1} onClick={closeNav} />
       <aside
         id="vantage-navigation-panel"
         className={`soft-drawer ${navOpen ? "open" : ""}`}
         data-searching={queryActive}
+        role="dialog"
+        aria-modal={navOpen || undefined}
+        aria-hidden={!navOpen}
+        inert={!navOpen}
         aria-label="Product navigation"
         onKeyDown={navOpen ? keepTabInsidePanel : undefined}
       >
@@ -283,7 +285,7 @@ export function AppShellNavPanel({
           </div>
         ) : (
           <nav className="soft-drawer-flat" aria-label="Main menu">
-            <AppShellNavGroups key={`${navOpen}-${activeGroupLabel}`}
+            <AppShellNavGroups key={`${navOpen}-${orgId}-${pathname}-${pathSearch}`}
               groups={visibleNavGroups} activeGroupLabel={activeGroupLabel}
               pathname={pathname} pathSearch={pathSearch} orgId={orgId}
               navHrefAllowed={navHrefAllowed} closeNav={closeNav}

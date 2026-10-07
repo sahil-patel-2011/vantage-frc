@@ -36,7 +36,7 @@ import {
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FormBuilderNextActionsPanel, FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { OptionEditor } from "./forms-option-editor";
@@ -64,6 +64,7 @@ async function persistScoutFormsSnapshot(orgId: string, data: SchemasPayload): P
 export default function FormsClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const Root = embedded ? "section" : "main";
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
+  const [loadedOrg, setLoadedOrg] = useState(orgId);
   const [loadError, setLoadError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
@@ -85,6 +86,8 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   const busy = publishing || loading;
   const loadGenerationRef = useRef(0);
   const publishingRef = useRef(false);
+  const currentOrgRef = useRef(orgId);
+  currentOrgRef.current = orgId;
   const draftsRef = useRef<Partial<Record<EntryType, { title: string; questions: DraftQuestion[]; acknowledgeBudget: boolean }>>>({});
   const [message, setMessage] = useState("");
   const [acknowledgeBudget, setAcknowledgeBudget] = useState(false);
@@ -113,6 +116,20 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   });
 
   const validation = useMemo(() => validateDraft(title, questions, type), [title, questions, type]);
+  const currentSchema = loadedOrg === orgId ? payload?.schemas.find(schema => schema.type === type) : undefined;
+  const publishStatus = resolveDraftPublishStatus({
+    published: currentSchema ? { version: currentSchema.version, definition: currentSchema.definition } : null,
+    draftTitle: title,
+    draftQuestions: questions,
+  });
+  const publicationConfirmed = Boolean(published && publishStatus.kind === "published" && published.id === currentSchema?.id);
+  const hasUnsavedChanges = Boolean(loadedOrg === orgId && payload?.canManageSchemas && !loading && publishStatus.kind !== "published");
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsavedChanges]);
 
   // One-shot handoff from the migrate page (undefined = not yet checked,
   // null = checked and nothing was waiting). Consumed inside loadSchemaIntoDraft
@@ -153,21 +170,23 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     const generation = ++loadGenerationRef.current;
     setLoading(true);
     let hadCache = Boolean(payloadRef.current);
-    try {
-      const cached = await getFeatureSnapshot<SchemasPayload>("scout-forms", orgId || "_");
-      if (generation !== loadGenerationRef.current) return;
+    let cacheAllowed = true;
+    let keepImportedDraft = false;
+    void getFeatureSnapshot<SchemasPayload>("scout-forms", orgId || "_").then(cached => {
+      if (!cacheAllowed || generation !== loadGenerationRef.current) return;
       if (!payloadRef.current && cached?.data && isSchemasPayload(cached.data)) {
+        payloadRef.current = cached.data;
         setPayload(cached.data);
         if (cached.data.year != null) setYear(cached.data.year);
         const active = cached.data.schemas.find((schema) => schema.type === type);
         loadSchemaIntoDraft(active, type, cached.data.year);
+        keepImportedDraft = Boolean(importedDraftRef.current);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
         hadCache = true;
+        setLoadError("");
       }
-    } catch {
-      // IndexedDB missing or blocked; live fetch still runs.
-    }
+    }).catch(() => { /* Optional snapshots never hold up the live request. */ });
     setLoadError("");
     setLoadErrorStatus(null);
     try {
@@ -178,9 +197,12 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       const body: unknown = await response.json().catch(() => null);
       if (generation !== loadGenerationRef.current) return;
       if (response.status === 401 || response.status === 403) {
+        cacheAllowed = false;
+        payloadRef.current = null;
         setPayload(null);
         setFromCache(false);
         setCachedAt(null);
+        void clearFeatureSnapshot("scout-forms", orgId || "_").catch(() => { /* Revoked data is already hidden. */ });
         setLoadErrorStatus(response.status);
         setLoadError(
           body && typeof body === "object" && "error" in body && typeof body.error === "string"
@@ -204,14 +226,16 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         );
         return;
       }
+      cacheAllowed = false;
+      payloadRef.current = body;
       setPayload(body);
       if (requestedYear) draftsRef.current = {};
       if (body.year != null) setYear(body.year);
       const active = body.schemas.find((schema) => schema.type === type);
-      loadSchemaIntoDraft(active, type, body.year);
+      if (!keepImportedDraft || requestedYear) loadSchemaIntoDraft(active, type, body.year);
       setFromCache(false);
       setCachedAt(null);
-      await persistScoutFormsSnapshot(orgId, body);
+      void persistScoutFormsSnapshot(orgId, body);
     } catch {
       if (generation !== loadGenerationRef.current) return;
       if (hadCache || payloadRef.current) {
@@ -229,6 +253,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   useEffect(() => {
     // A previous team's snapshot must never become this team's fallback.
     payloadRef.current = null;
+    setLoadedOrg(orgId);
     setPayload(null);
     setFromCache(false);
     setCachedAt(null);
@@ -297,7 +322,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   }
 
   async function publish() {
-    if (publishingRef.current) return;
+    if (publishingRef.current || loading) return;
     setMessage("");
     const blocked = formBuilderPublishBlockedReason({
       canManageSchemas: Boolean(payload?.canManageSchemas),
@@ -312,6 +337,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     }
     publishingRef.current = true;
     setPublishing(true);
+    const generation = loadGenerationRef.current;
     try {
       const definition: SchemaDefinition = definitionFromDraft(title, questions);
       const response = await fetch("/api/scouting/schemas", {
@@ -331,7 +357,9 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         version?: number;
         error?: string;
         acknowledgeRequired?: boolean;
+        definition?: SchemaDefinition;
       };
+      if (currentOrgRef.current !== orgId || generation !== loadGenerationRef.current) return;
       if (!response.ok) {
         if (body.acknowledgeRequired) {
           setAcknowledgeBudget(false);
@@ -341,20 +369,34 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         }
         return;
       }
-      // The green card at the top says it once.
+      if (typeof body.id !== "string" || !body.id || !Number.isInteger(body.version) || Number(body.version) < 1) {
+        throw new Error("Publication could not be confirmed");
+      }
+      // The acknowledged version becomes the local baseline immediately. A
+      // refresh failure must not turn a confirmed publish into another POST.
+      const schema: ScoutSchema = { id: body.id, version: Number(body.version), orgId, year: year!, type, definition: body.definition ?? definition };
+      const nextPayload = payload ? { ...payload, schemas: [...payload.schemas.filter(entry => entry.type !== type), schema] } : null;
+      if (nextPayload) {
+        setPayload(nextPayload);
+        payloadRef.current = nextPayload;
+        void persistScoutFormsSnapshot(orgId, nextPayload);
+      }
+      // Assign the stored field keys to the editor before another rename can
+      // generate a different key and disconnect already-collected answers.
+      loadSchemaIntoDraft(schema, type, year);
       setMessage("");
-      await load();
       delete draftsRef.current[type];
-      setPublished({ id: String(body.id), version: Number(body.version) });
+      setPublished({ id: body.id, version: Number(body.version) });
     } catch {
-      setMessage("Network error — try again.");
+      if (currentOrgRef.current !== orgId || generation !== loadGenerationRef.current) return;
+      setMessage("Could not confirm publication. Check the published form in another tab before retrying; your draft is still here.");
     } finally {
       publishingRef.current = false;
       setPublishing(false);
     }
   }
 
-  if (loadError && !payload) {
+  if (loadedOrg === orgId && loadError && !payload) {
     return (
       <FormBuilderShell
         orgId={orgId}
@@ -369,7 +411,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     );
   }
 
-  if (!payload) {
+  if (!payload || loadedOrg !== orgId) {
     return (
       <FormBuilderShell orgId={orgId} shell="loading" entryType={type}>
         <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
@@ -377,14 +419,6 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     );
   }
 
-  const currentSchema = payload.schemas.find((schema) => schema.type === type);
-  const publishStatus = resolveDraftPublishStatus({
-    published: currentSchema
-      ? { version: currentSchema.version, definition: currentSchema.definition }
-      : null,
-    draftTitle: title,
-    draftQuestions: questions,
-  });
   const shell = classifyFormBuilderShell({
     orgId,
     eventKey: payload.eventKey,
@@ -431,13 +465,13 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
   return (
     <Root className="module-page sfb-page">
-      <header className="sfb-heading">{!embedded ? <h2>Scouting forms</h2> : null}<p>Build your questions. Preview the form. Review the answers.</p></header>
+      <header className="sfb-heading">{!embedded ? <h1>Scouting forms</h1> : null}<p>Build your questions. Preview the form. Review the answers.</p></header>
 
       <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
 
       {/* Publishing was confirmed by small blue text beside a "Republish" button, with no way
           back to the setup list that sent the owner here. */}
-      {published ? (
+      {publicationConfirmed ? (
         <section className="sfb-published-card" role="status">
           <div>
             <strong>Published</strong>
@@ -501,7 +535,10 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
           if (publishStatus.kind !== "published" && !window.confirm("Change game? Unpublished changes to this form will be discarded.")) return;
           setPublished(null); void load(Number(event.target.value));
         }}>{Array.from(new Set([year ?? latestScoutingYear(), latestScoutingYear(), 2025, 2024])).sort((a,b) => b-a).map(value => <option key={value} value={value}>{scoutingGameLabel(value)}</option>)}</select></FormRow>
+      </div>
+      <div className="sfb-workspace-bar">
         <ToolStrip presentation="segments" aria-label="Form workspace" value={mode} onChange={id => setMode(id as FormBuilderMode)} items={[{ id: "edit", label: "Questions" }, { id: "preview", label: "Preview" }, { id: "responses", label: "Responses" }]} />
+        <p className={`sfb-document-state sfb-status-${publishStatus.kind}`} role="status"><strong>{publishStatus.label}</strong><span>{publishStatus.kind === "published" ? "Live for your team" : "Changes stay in this tab until published"}</span></p>
       </div>
 
       {validation.budget.status !== "healthy" ? (
@@ -542,7 +579,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       ) : null}
 
       <div className="sfb-layout sfb-layout-single">
-        <Panel as="section" className={mode === "preview" ? "sfb-tablet-panel" : undefined}>
+        <Panel as="section" className={mode === "preview" ? "sfb-tablet-panel" : mode === "edit" ? "sfb-question-document" : undefined}>
           {mode === "responses" ? <FormsResponses orgId={orgId} schemaId={currentSchema?.id} /> : mode === "preview" ? (
             <>
               <h2>What scouts see</h2>
@@ -610,6 +647,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                   <article
                     className={`sfb-question${questionDrag.drag?.id === question.id ? " is-dragging" : ""}`}
                     data-entry-id={question.id}
+                    data-expanded={showAllQuestions || focusedQuestionId === question.id}
                   >
                     <div className="sfb-question-head">
                       <button type="button" className="sfb-question-select"
@@ -835,7 +873,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         </Panel>
 
         {mode === "edit" ? <aside className="sfb-side" style={{ display: "grid", gap: 12 }}>
-          {published ? null : <Panel className="sfb-publish-bar">
+          {publicationConfirmed ? null : <Panel className="sfb-publish-bar">
             <p className={`sfb-status-inline sfb-status-${publishStatus.kind}`}>
               <strong>{publishStatus.label}</strong>
               <span className="app-muted">{publishStatus.detail}</span>

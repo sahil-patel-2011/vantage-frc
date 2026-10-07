@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       );
       return result.rows[0];
     });
-    return Response.json({ ...schema, budget }, { status: 201 });
+    return Response.json({ ...schema, definition: lockedDefinition, budget }, { status: 201 });
   } catch (error) {
     if (error instanceof RequestSecurityError) return securityErrorResponse(error, "Could not publish this form.");
     return scoutingErrorResponse(error);

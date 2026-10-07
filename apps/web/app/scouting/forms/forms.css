@@ -691,8 +691,8 @@
 .form-view-segments button { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .form-view-segments button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 10%, transparent); }
 .form-view-segments button:active { background: var(--accent-soft); }
-.sfb-heading { margin-bottom: 24px; }
-.sfb-heading h2 { margin: 0; font-size: 28px; letter-spacing: -.025em; }
+.sfb-heading { max-width: 860px; margin: 0 auto 24px; }
+.sfb-heading h1 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -.025em; }
 .sfb-heading p { margin: 8px 0 0; color: var(--muted); }
 .sfb-meta > .soft-form-row:first-child { flex: 1 1 320px; }
 .sfb-meta > .form-view-segments { flex-basis: auto; }
@@ -757,3 +757,63 @@ body.has-app-shell:has(.sfb-page) .soft-island { display: none !important; }
   .sfb-side .sfb-publish-bar { position: static; }
 }
 @media (prefers-reduced-motion: reduce) { .sfb-question-chevron { transition: none; } }
+
+/* One document column: metadata, workspace controls, then individual questions.
+   Responses retain their full table width. No nested card around the question list. */
+.sfb-page .sfb-meta {
+  padding: 24px 28px;
+  gap: 20px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-top: 5px solid var(--accent);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  max-width: 860px;
+  margin: 0 auto 16px;
+}
+.sfb-meta .soft-form-row:first-child input {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 550;
+  letter-spacing: -.025em;
+  min-height: 52px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.sfb-meta .soft-form-row:first-child input:focus-visible { outline-offset: 5px; }
+.sfb-workspace-bar { max-width: 860px; margin: 0 auto 20px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.sfb-document-state { display: grid; gap: 2px; margin: 0; font-size: 12px; color: var(--muted); }
+.sfb-document-state strong { color: var(--ink); font-weight: 600; }
+.sfb-layout:has(.sfb-question-document), .sfb-layout:has(.sfb-tablet-panel) { max-width: 860px; margin-inline: auto; }
+body.has-app-shell .sfb-page .sfb-question-document {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.sfb-question-document > .sfb-question-head { padding: 0 4px 12px; }
+.sfb-question-document .sfb-question { padding: 18px 22px; background: var(--surface); border: 1px solid var(--line-soft, var(--line)); box-shadow: var(--shadow-card); }
+.sfb-question-document .sfb-question[data-expanded="true"] { border-left: 4px solid var(--accent); padding-left: 19px; }
+.sfb-question-document .sfb-question-editor { padding-top: 20px; border-top-color: var(--line-soft, var(--line)); }
+.sfb-question-document .sfb-question-grid { grid-template-columns: minmax(0, 1fr) minmax(180px, .7fr); gap: 20px; }
+.sfb-question-document .sfb-question-grid .soft-form-row:first-child input { font-size: 17px; font-weight: 550; background: var(--surface-2); }
+.sfb-question-document .sfb-question-actions button { background: transparent; border-color: transparent; }
+.sfb-question-document .sfb-question-actions button:hover:not(:disabled) { background: var(--surface-2); }
+.sfb-question-document .sfb-add-row { padding: 12px 4px 0; }
+.sfb-tablet-panel .sfb-tablet-frame { max-width: 640px; border: 0; padding: 0; background: transparent; box-shadow: none; gap: 16px; }
+.sfb-tablet-panel .sfb-tablet-head { padding: 20px; border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: 14px; background: var(--surface); }
+.sfb-tablet-panel .sfb-tablet-head > strong { font-size: 24px; letter-spacing: -.02em; }
+.sfb-tablet-panel .scout-field-wrap { padding: 20px; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.sfb-tablet-panel .scout-field-wrap[data-field-type="section_header"] { border: 0; background: var(--surface-2); }
+.sfb-page :is(.sfb-question-actions button, .form-view-segments button, .sfb-add-question > summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .sfb-page .sfb-meta { padding: 20px; gap: 16px; }
+  .sfb-question-document .sfb-question { padding: 16px; }
+  .sfb-question-document .sfb-question[data-expanded="true"] { padding-left: 13px; }
+  .sfb-question-document .sfb-question-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .sfb-document-state { width: 100%; padding-inline: 4px; }
+  .sfb-tablet-panel .scout-field-wrap { padding: 16px; }
+}

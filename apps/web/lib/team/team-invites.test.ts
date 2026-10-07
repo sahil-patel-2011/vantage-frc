@@ -20,6 +20,7 @@ describe("team invite ledger helpers", () => {
     expect(inviteSendResultCopy({ emailSent: true, delivery: "local" }).message).toMatch(/copy the link/i);
     expect(inviteSendResultCopy({ emailSent: false, delivery: "unconfigured" }).message).toMatch(/copy the link/i);
     expect(inviteSendResultCopy({ emailSent: true, delivery: "resend" }).tone).toBe("ok");
+    expect(inviteSendResultCopy({ emailSent: true, delivery: "gmail-smtp" }).message).toMatch(/emailed/i);
     expect(inviteSendResultCopy({ emailSent: false, delivery: "failed", emailError: "boom" }).message).toMatch(
       /boom/,
     );
@@ -27,6 +28,7 @@ describe("team invite ledger helpers", () => {
 
   it("surfaces an honest delivery banner", () => {
     expect(inviteDeliveryBanner("resend")).toBeNull();
+    expect(inviteDeliveryBanner("gmail-smtp")).toBeNull();
     expect(inviteDeliveryBanner("local")?.title).toMatch(/email is off/i);
     expect(inviteDeliveryBanner("unconfigured")?.title).toMatch(/email is off/i);
   });

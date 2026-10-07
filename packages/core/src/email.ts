@@ -28,6 +28,17 @@ export type InviteEmail = {
   token: string;
   expiresAt: Date;
 };
+
+export function inviteEmailText(message: InviteEmail): string {
+  const roles: Record<string, string> = { owner: "Owner", admin: "Team admin", scout: "Team member", viewer: "View only" };
+  const role = roles[message.role] ?? (message.role.trim() || "Team member");
+  return `You’re invited to ${message.organization}\n\n` +
+    `Team access: ${role}\nInvited email: ${message.email}\n\n` +
+    `Open your personal invitation:\n${inviteAcceptUrl(message.token)}\n\n` +
+    `Verify ${message.email}, set up your password or continue with email or Google, then join your team. If you already have an account, use your existing sign-in.\n\n` +
+    `This link expires ${message.expiresAt.toUTCString()}. Reissuing an invitation replaces this link.\n\n` +
+    `If you weren’t expecting this invitation, you can ignore it.\nVantage`;
+}
 export type SecurityNotice = { email:string; subject:string; message:string };
 /** `html` is optional; providers must always deliver the plain-text body. */
 export type FreeformEmail = { to: string; subject: string; text: string; html?: string };
@@ -105,16 +116,11 @@ export class ResendEmailProvider implements EmailProvider {
     });
   }
   async sendInvite(message: InviteEmail) {
-    const acceptUrl = inviteAcceptUrl(message.token);
-    const role = message.role.trim() || "member";
     await this.postEmail({
       from: this.from,
       to: [message.email],
       subject: `Join ${message.organization} on Vantage`,
-      text:
-        `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
-        `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
-        `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
+      text: inviteEmailText(message),
     });
   }
   async sendSecurityNotice(message: SecurityNotice) {
@@ -182,14 +188,10 @@ export class GmailSmtpEmailProvider implements EmailProvider {
     );
   }
   async sendInvite(message: InviteEmail) {
-    const acceptUrl = inviteAcceptUrl(message.token);
-    const role = message.role.trim() || "member";
     await this.send(
       message.email,
       `Join ${message.organization} on Vantage`,
-      `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
-        `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
-        `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
+      inviteEmailText(message),
     );
   }
   async sendSecurityNotice(message: SecurityNotice) {
