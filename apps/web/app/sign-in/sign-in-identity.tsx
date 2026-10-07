@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent, RefObject } from "react";
-import { isLikelyEmail } from "../../lib/sign-in";
+import { isCodeComplete, isLikelyEmail } from "../../lib/sign-in";
 import {
   emailSubmitLabel,
   googleButtonLabel,
@@ -161,7 +161,11 @@ export function SignInIdentityStep({
               </span>
             </label>
           ) : null}
-          <button className="signin-submit" disabled={working}>
+          <button className="signin-submit" disabled={
+            working || !isLikelyEmail(email) || (passwordPanel === "password"
+              ? !password
+              : resetSent ? !isCodeComplete(code) || password.length < 12 : !emailAvailable)
+          }>
             {passwordSubmitLabel(passwordPanel, { resetSent, working })}
           </button>
           {passwordMessage ? (
@@ -176,6 +180,7 @@ export function SignInIdentityStep({
 }
 
 export function SignInPasswordFooter({
+  working,
   passwordSignInAvailable,
   emailAvailable,
   identityStep,
@@ -184,6 +189,7 @@ export function SignInPasswordFooter({
   onBackToCodes,
   onForgotPassword,
 }: {
+  working: boolean;
   passwordSignInAvailable: boolean;
   emailAvailable: boolean;
   identityStep: boolean;
@@ -196,18 +202,18 @@ export function SignInPasswordFooter({
   return (
     <div className="signin-footer-modes">
       {passwordPanel === "closed" ? (
-        <button type="button" className="signin-link" onClick={onUsePassword}>
+        <button type="button" className="signin-link" disabled={working} onClick={onUsePassword}>
           Use a password instead
         </button>
       ) : (
         <>
           {emailAvailable ? (
-            <button type="button" className="signin-link" onClick={onBackToCodes}>
+            <button type="button" className="signin-link" disabled={working} onClick={onBackToCodes}>
               Back to email codes
             </button>
           ) : null}
           {passwordPanel === "password" ? (
-            <button type="button" className="signin-link" onClick={onForgotPassword}>
+            <button type="button" className="signin-link" disabled={working} onClick={onForgotPassword}>
               Forgot password?
             </button>
           ) : null}

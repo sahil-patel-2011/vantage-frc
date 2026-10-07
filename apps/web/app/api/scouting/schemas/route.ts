@@ -1,6 +1,6 @@
 import { assertScoutingLead, canManageScouting } from "@vantage/scouting/permissions";
 import { auth } from "@vantage/core";
-import { ScoutingRepository } from "@vantage/scouting/repository";
+import { lockScoutingSchemaVersion, ScoutingRepository } from "@vantage/scouting/repository";
 import type { SchemaDefinition } from "@vantage/scouting";
 import { lintSchemaBudget } from "@vantage/scouting/trust";
 import { assertSchemaIdentityLock, stripScoutIdentityFields } from "@vantage/scouting/identity";
@@ -10,6 +10,8 @@ import {
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
 import { latestScoutingYear } from "../../../../lib/scouting/free-scout";
+import { schemaPublicationRequest } from "../../../../lib/scouting/schema-publication";
+import { parseSecureJson, RequestSecurityError, securityErrorResponse } from "../../../../lib/security/request";
 
 export const dynamic = "force-dynamic";
 
@@ -76,17 +78,9 @@ export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
-    const body = (await request.json()) as {
-      orgId?: string;
-      action?: "ensure_defaults";
-      year?: number;
-      type?: "match" | "pit";
-      definition?: SchemaDefinition;
-      acknowledgeBudget?: boolean;
-    };
-    if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
+    const body = await parseSecureJson(request, schemaPublicationRequest, { maxBytes: 262_144 });
 
-    if (body.action === "ensure_defaults") {
+    if ("action" in body && body.action === "ensure_defaults") {
       const result = await withScoutingRequest(body.orgId, async (client) => {
         await assertScoutingLead(client, body.orgId!);
         const context = await client.query<{ eventKey: string | null }>(
@@ -102,9 +96,7 @@ export async function POST(request: Request) {
       return Response.json(result);
     }
 
-    if (!body.year || !body.type || !body.definition?.fields.length) {
-      return Response.json({ error: "Invalid schema" }, { status: 400 });
-    }
+    if (!("definition" in body)) return Response.json({ error: "Invalid schema" }, { status: 400 });
     const identityError = assertSchemaIdentityLock(body.definition);
     if (identityError) {
       return Response.json({ error: identityError }, { status: 422 });
@@ -116,6 +108,9 @@ export async function POST(request: Request) {
     }
     const schema = await withScoutingRequest(body.orgId, async (client) => {
       await assertScoutingLead(client, body.orgId!);
+      // withScoutingRequest supplies a transaction. Serialize competing lead
+      // publications before reading MAX(version), including the first version.
+      await lockScoutingSchemaVersion(client, body.orgId, body.year, body.type);
       const result = await client.query(
         `INSERT INTO scout_schemas (org_id,year,type,version,schema,created_by)
          SELECT $1,$2,$3,COALESCE(MAX(version),0)+1,$4::jsonb,$5
@@ -130,6 +125,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ ...schema, budget }, { status: 201 });
   } catch (error) {
+    if (error instanceof RequestSecurityError) return securityErrorResponse(error, "Could not publish this form.");
     return scoutingErrorResponse(error);
   }
 }

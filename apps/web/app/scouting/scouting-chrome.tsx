@@ -91,6 +91,7 @@ export function ScoutingShell({
   error,
   errorStatus,
   onRetry,
+  canManageSchemas = false,
   embedded = false,
   children,
 }: {
@@ -100,6 +101,7 @@ export function ScoutingShell({
   /** HTTP status of the failed load, so an expired session can offer sign-in. */
   errorStatus?: number | null;
   onRetry?: () => void;
+  canManageSchemas?: boolean;
   embedded?: boolean;
   children?: ReactNode;
 }) {
@@ -166,6 +168,9 @@ export function ScoutingShell({
         {shell === "setup" && orgId ? <Button as="a" variant="primary" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Practice scouting</Button> : null}
         {shell === "setup" ? (
           <Button as="a" variant={orgId ? "secondary" : "primary"} href={orgId ? commandHref : workspaceHref}>{orgId ? "Set event" : "Choose your team"}</Button>
+        ) : null}
+        {shell === "setup" && orgId && canManageSchemas ? (
+          <Button as="a" variant="secondary" href={formsHref}>Build scouting forms</Button>
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>

@@ -28,6 +28,13 @@ export type SyncAcknowledgement = {
   validations: FieldValidation[];
 };
 
+/** Call inside the caller's transaction before creating any schema version. */
+export async function lockScoutingSchemaVersion(client: PoolClient, orgId: string, year: number, type: EntryType) {
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+    `scout-schema:${orgId.toLowerCase()}:${year}:${type}`,
+  ]);
+}
+
 export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
 
@@ -149,6 +156,7 @@ export class ScoutingRepository {
       { type: "match" as EntryType, definition: matchSchemaForYear(year) },
       { type: "pit" as EntryType, definition: pitSchemaForYear(year) },
     ]) {
+      await lockScoutingSchemaVersion(this.client, orgId, year, entry.type);
       const existing = await this.client.query(
         `SELECT 1 FROM scout_schemas WHERE org_id = $1 AND year = $2 AND type = $3 LIMIT 1`,
         [orgId, year, entry.type],

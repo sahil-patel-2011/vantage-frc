@@ -930,6 +930,7 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
         error={message || undefined}
         errorStatus={bootstrapStatus}
         onRetry={reloadBootstrap}
+        canManageSchemas={Boolean(data?.canManageSchemas)}
         embedded={embedded}
       >
         <OfflineBanner

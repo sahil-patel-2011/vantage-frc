@@ -38,6 +38,7 @@ import { likelyEmailTypo } from "../../lib/team/email-typo";
 import "./team-access-requests.css";
 import "./team-admin.css";
 import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 function isTeamAdminSnapshot(value: unknown): value is TeamAdminSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -589,7 +590,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       breadcrumbs={teamSettingsBreadcrumb("people")}
       title="Team admin"
       description="Invite people and choose what each person can open."
-    />
+    >
+      {actor.role === "owner" || actor.role === "admin" ? (
+        <nav className="team-admin-settings-links" aria-label="Team access tools">
+          <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>
+        </nav>
+      ) : null}
+    </PageHeader>
   );
 
   if (!view) {

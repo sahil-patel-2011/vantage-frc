@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { currentSeasonYear } from "@vantage/game-year";
 import { matchSchemaForYear, pitSchemaForYear } from "@vantage/scouting";
+import { lockScoutingSchemaVersion } from "@vantage/scouting/repository";
 import { defaultDashboardLayoutForAudience } from "../dashboard/catalog";
 
 /** Add usable defaults once; retries never replace a team's existing choices or records. */
@@ -15,6 +16,7 @@ export async function initializeTeamDefaults(client: PoolClient, orgId: string, 
   if (!options.inTransaction) await client.query("BEGIN");
   try {
     for (const type of ["match", "pit"] as const) {
+      await lockScoutingSchemaVersion(client, orgId, year, type);
       const schema = type === "match" ? matchSchemaForYear(year) : pitSchemaForYear(year);
       await client.query(`INSERT INTO scout_schemas(org_id,year,type,version,schema,created_by)
         SELECT $1::uuid,$2,$3::scout_schema_type,1,$4::jsonb,$5::uuid
