@@ -84,8 +84,8 @@ export async function POST(request: Request) {
       await client.query("UPDATE team_provisioning_jobs SET completed_phases=ARRAY['team','tools']::text[],phase='workspace',updated_at=now() WHERE org_id=$1::uuid", [orgId]);
       return orgId;
     });
-    await startTeamProvisioning(id, session.user.id);
-    return Response.json({ id, workspaceReady: true, provisioning: true }, { status: 201 });
+    const provisioning = await startTeamProvisioning(id, session.user.id);
+    return Response.json({ id, workspaceReady: true, provisioning }, { status: 201 });
   } catch (error) {
     // Deploys do not run migrations. Until 0672 is applied the statement cannot
     // be stored, so the claim is refused (and rolled back) with a plain reason

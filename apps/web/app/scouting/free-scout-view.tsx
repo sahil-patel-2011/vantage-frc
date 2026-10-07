@@ -15,13 +15,17 @@ import { freeScoutDeviceKey, pendingFreeReports, queueFreeReport, removePendingF
 import { Field } from "./scouting-field";
 import { useOnline } from "../../lib/offline/use-online";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./free-scout.css";
 
 type Draft = { type: "match" | "pit"; team: string; label: string; year: number; schemaId?: string; definition?: SchemaDefinition; payload: Record<string, unknown> };
 const freshDraft = (): Draft => ({ type: "pit", team: "", label: "Practice 1", year: latestScoutingYear(), payload: {} });
 
 export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string }) {
+  return <PracticeScouting key={freeScoutDeviceKey(orgId, userId)} orgId={orgId} userId={userId} />;
+}
+
+function PracticeScouting({ orgId, userId }: { orgId: string; userId: string }) {
   const search = useSearchParams();
   const online = useOnline();
   const [schemas, setSchemas] = useState<ScoutSchema[]>([]);
@@ -35,42 +39,78 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const saving = useRef(false);
   const syncing = useRef(false);
+  const historyVersion = useRef(0);
+  const historyRequest = useRef<AbortController | null>(null);
   const draftKey = `${freeScoutDeviceKey(orgId, userId)}:draft`;
   const definition = draft.definition ?? freeScoutDefinition(draft.year, draft.type);
   const fields = visibleFields(draft.type === "match" ? fieldsForMatchStage(definition.fields, stage) : definition.fields, draft.payload);
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}&year=${draft.year}`, { cache: "no-store", signal: controller.signal })
+    setSchemas([]);
+    void fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}&year=${draft.year}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]) })
       .then(async response => { if (!response.ok) return; const data = await response.json(); if (!controller.signal.aborted) setSchemas(data.schemas ?? []); })
       .catch(() => undefined);
     return () => controller.abort();
   }, [orgId, draft.year]);
 
   const refresh = useCallback(async () => {
-    setPending(await pendingFreeReports(orgId, userId));
-    if (!navigator.onLine) return;
-    const response = await fetch(`/api/scouting/free-reports?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? "Could not load saved reports.");
-    if (data.userId !== userId) throw new Error("Your account changed. Reload scouting before continuing.");
-    setReports(data.reports);
-    setHasMore(data.hasMore);
-    await putFeatureSnapshot("scouting", orgId, data.reports, `free:${userId}`).catch(() => setStorageError("Offline history could not be saved."));
+    const version = ++historyVersion.current;
+    historyRequest.current?.abort();
+    const controller = new AbortController();
+    historyRequest.current = controller;
+    try { const queued = await pendingFreeReports(orgId, userId); if (version === historyVersion.current) setPending(queued); }
+    catch { if (!controller.signal.aborted) setStorageError("Device storage is unavailable. Online report history is still available."); }
+    if (controller.signal.aborted) return;
+    if (!navigator.onLine) { setRefreshing(false); return; }
+    setRefreshing(true);
+    try {
+      const response = await fetch(`/api/scouting/free-reports?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]) });
+      const data = await response.json().catch(() => ({}));
+      if (controller.signal.aborted) return;
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setReports([]); setHasMore(false);
+          await clearFeatureSnapshot("scouting", orgId, `free:${userId}`).catch(() => undefined);
+        }
+        throw new Error(data.error ?? "Could not load saved reports.");
+      }
+      if (data.userId !== userId) {
+        setReports([]); setHasMore(false);
+        throw new Error("Your account changed. Reload scouting before continuing.");
+      }
+      if (!Array.isArray(data.reports)) throw new Error("Could not confirm saved report history. Try refreshing again.");
+      setReports(data.reports);
+      setHasMore(Boolean(data.hasMore));
+      await putFeatureSnapshot("scouting", orgId, data.reports, `free:${userId}`).catch(() => setStorageError("Offline history could not be saved."));
+    } catch (error) { if (!controller.signal.aborted) throw error; }
+    finally { if (version === historyVersion.current) setRefreshing(false); }
   }, [orgId, userId]);
 
-  const sync = useCallback(async () => {
+  useEffect(() => () => { historyVersion.current += 1; historyRequest.current?.abort(); }, []);
+
+  const sync = useCallback(async (retryRejected = false) => {
     if (syncing.current || !navigator.onLine) return;
     syncing.current = true;
     try {
       const queued = await pendingFreeReports(orgId, userId);
-      await syncFreeReports(orgId, userId);
+      if (!queued.some(row => retryRejected || row.retryable !== false)) { setPending(queued); return; }
+      setUploading(true);
+      await syncFreeReports(orgId, userId, fetch, { retryRejected });
       await refresh();
       if (queued.length && !(await pendingFreeReports(orgId, userId)).length) setMessage("Uploaded");
     }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Upload failed. Your reports are still on this device."); }
-    finally { syncing.current = false; }
+    catch (error) {
+      setMessage(error instanceof Error ? error.message : "Upload failed. Your reports are still on this device.");
+      try { setPending(await pendingFreeReports(orgId, userId)); }
+      catch { setStorageError("Could not read the upload queue. Keep scouting open to protect your unsaved answers."); }
+    }
+    finally { syncing.current = false; setUploading(false); }
   }, [orgId, userId, refresh]);
 
   useEffect(() => {
@@ -99,8 +139,10 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
   useEffect(() => {
     if (!online) return;
     void sync();
-    const timer = setInterval(() => void sync(), 30_000);
-    return () => clearInterval(timer);
+    const retry = () => { if (!document.hidden) void sync(); };
+    const timer = setInterval(retry, 30_000);
+    document.addEventListener("visibilitychange", retry);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", retry); };
   }, [online, sync]);
 
   function change(patch: Partial<Draft>) {
@@ -109,7 +151,8 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
   }
 
   async function save() {
-    if (busy) return;
+    if (saving.current) return;
+    saving.current = true;
     setBusy(true);
     try {
       const payload = { ...draft.payload };
@@ -122,10 +165,11 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
       setMessage("Saved on this device.");
       await sync();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save. Your answers are still here."); }
-    finally { setBusy(false); }
+    finally { saving.current = false; setBusy(false); }
   }
 
   const pendingIds = new Set(pending.map((row) => row.report.id));
+  const rejectedCount = pending.filter(row => row.retryable === false).length;
   const history = [
     ...pending.map((row) => ({ ...row.report, scoutUserId: userId, definition: row.report.definition ?? freeScoutDefinition(row.report.year, row.report.type), state: row.error ? "Needs attention" : "Waiting to upload", error: row.error })),
     ...reports.filter((row) => !pendingIds.has(row.id)).map((row) => ({ ...row, state: "Uploaded", error: undefined })),
@@ -137,9 +181,10 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
         <Button as="a" variant="secondary" href={withOrgHref("/competition?tab=command", orgId)}>Set event</Button>
       </header>
       {!online || pending.length > 0 ? <div className="free-scout-status" role="status">
-        {online ? "Online" : "Offline"} · {pending.length} waiting to upload
-        {pending.length > 0 && online ? <Button type="button" variant="secondary" onClick={() => void sync()}>Retry upload</Button> : null}
+        {online ? "Online" : "Offline"} · {pending.length - rejectedCount} waiting to upload{rejectedCount > 0 ? ` · ${rejectedCount} need attention` : ""}
+        {pending.length > 0 && online ? <Button type="button" variant="secondary" disabled={uploading} onClick={() => void sync(true)}>{uploading ? "Uploading…" : "Retry upload"}</Button> : null}
       </div> : null}
+      {storageError ? <p role="alert">{storageError}</p> : null}
       <div className="free-scout-card">
         {!started ? <>
           <div className="free-scout-inputs">
@@ -152,7 +197,7 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
           <Button type="button" variant="primary" disabled={!Number(draft.team) || (draft.type === "match" && !draft.label.trim()) || draft.year < 1992 || draft.year > 2100} onClick={() => setStarted(true)}>Start scouting</Button>
         </> : <>
           <div className="free-scout-heading"><h3>Team {draft.team} · {draft.type === "pit" ? "Pit scouting" : draft.label}</h3><Button type="button" variant="secondary" onClick={() => setStarted(false)}>Change details</Button></div>
-          <p className="app-muted">{scoutingGameLabel(draft.year)}</p>{storageError ? <p role="alert">{storageError}</p> : null}
+          <p className="app-muted">{scoutingGameLabel(draft.year)}</p>
           {draft.type === "match" ? <MatchTimer fields={definition.fields} resetKey={draftKey} storageKey={draftKey} seasonYear={draft.year} resetDisabled={Boolean(matchCapture(draft.payload))} stage={stage} onStageChange={setStage} onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "pre" ? "all" : phase === "transition" ? "auto" : phase)} /> : null}
           {draft.type === "match" && draft.year === 2026 ? <MatchActivityRecorder payload={draft.payload} setPayload={next => setDraft(current => ({ ...current, payload: typeof next === "function" ? next(current.payload) : next }))} storageKey={draftKey} /> : null}
           <div className="scout-form-grid">{fields.map((field) => <Field key={field.key} field={field} value={draft.payload[field.key]} flags={[]} historyHint={null} disagreementRate={null} orgId={orgId} onChange={(value) => change({ payload: { ...draft.payload, [field.key]: value } })} />)}</div>
@@ -161,16 +206,16 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
         {message ? <p role="status">{message}</p> : null}
       </div>
       <section className="free-scout-card" aria-label="Practice reports">
-        <div className="free-scout-heading"><h3>Reports</h3>{history.length > 0 ? <Button type="button" variant="secondary" onClick={() => {
+        <div className="free-scout-heading"><h3>Reports</h3><div className="free-scout-history-actions"><Button type="button" variant="secondary" disabled={!online || refreshing} onClick={() => void refresh().catch(error => setMessage(error instanceof Error ? error.message : "Could not refresh reports."))}>{refreshing ? "Refreshing…" : "Refresh reports"}</Button>{history.length > 0 ? <Button type="button" variant="secondary" onClick={() => {
           const url = URL.createObjectURL(new Blob([JSON.stringify(history, null, 2)], { type: "application/json" }));
           const link = document.createElement("a"); link.href = url; link.download = "vantage-practice-reports.json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }}>Export reports</Button> : null}</div>
-        {!history.length ? <p className="app-muted">Saved reports appear here.</p> : null}
+        }}>Export reports</Button> : null}</div></div>
+        {!history.length ? <p className="app-muted" role="status">{refreshing ? "Loading saved reports…" : "Saved reports appear here."}</p> : null}
         {hasMore ? <p className="app-muted">Showing the latest 200 uploaded reports.</p> : null}
         {history.map((report) => <details className="free-scout-report" key={report.id}>
           <summary data-disclosure><span><strong>Team {report.teamNumber}</strong> · {report.label}</span><span>{report.state}</span></summary>
           {report.error ? <p role="alert">{report.error}</p> : null}
-          {report.error ? <Button type="button" variant="secondary" onClick={async () => {
+          {report.error ? <Button type="button" variant="secondary" disabled={uploading} onClick={async () => {
             if (started && Object.keys(draft.payload).length && !window.confirm("Replace the open draft with this saved report?")) return;
             try {
               const recovered: Draft = { type: report.type, team: String(report.teamNumber), year: report.year, label: report.label, schemaId: report.schemaId, definition: report.definition, payload: report.payload };
@@ -183,14 +228,16 @@ export function FreeScoutView({ orgId, userId }: { orgId: string; userId: string
           <p className="app-muted">{report.year} · {report.type} · {new Date(report.observedAt).toLocaleString()}</p>
           <dl>{report.definition.fields.filter((field) => field.key in report.payload).map((field) => <div key={field.key}><dt>{field.label}</dt><dd>{typeof report.payload[field.key] === "object" ? JSON.stringify(report.payload[field.key]) : String(report.payload[field.key])}</dd></div>)}</dl>
           <MatchActivityReport payload={report.payload} />
-          {report.state === "Uploaded" && report.scoutUserId === userId ? <Button type="button" variant="secondary" onClick={async () => {
+          {report.state === "Uploaded" && report.scoutUserId === userId ? <Button type="button" variant="secondary" disabled={deletingId !== null} onClick={async () => {
             if (!window.confirm(`Delete the report for team ${report.teamNumber}, ${report.label}?`)) return;
             try {
-              const response = await fetch("/api/scouting/free-reports", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orgId, id: report.id }) });
+              setDeletingId(report.id);
+              const response = await fetch("/api/scouting/free-reports", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orgId, id: report.id }), signal: AbortSignal.timeout(10_000) });
               if (!response.ok) throw new Error((await response.json()).error ?? "Could not delete this report.");
               await refresh();
             } catch (error) { setMessage(error instanceof Error ? error.message : "Reconnect to delete this report."); }
-          }}>Delete report</Button> : null}
+            finally { setDeletingId(null); }
+          }}>{deletingId === report.id ? "Deleting…" : "Delete report"}</Button> : null}
         </details>)}
       </section>
     </section>

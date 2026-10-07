@@ -9,6 +9,7 @@ import { connectedTargetDefs, readCopyStates } from "../../../../../lib/mirror/m
 import { createRateLimiter } from "../../../../../lib/rate-limit";
 import { queueReadableHubSync } from "../../../../../lib/google-sheets/hub-jobs";
 import { dispatchRecoveryJournal } from "../../../../../lib/recovery/dispatch";
+import { hostedBackgroundWorkEnabled } from "../../../../../lib/hosted-background-work";
 
 export const maxDuration = 120;
 
@@ -67,6 +68,7 @@ async function runAutoSync(orgId: string, runnerId: string, callerIsRunner: bool
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
+    if (!hostedBackgroundWorkEnabled()) return json({ queued: false, reason: "disabled" });
     const orgId = await readOrgIdFromRequest(request);
     if (!isUuid(orgId)) throw new HttpError(400, "A valid orgId is required.", "invalid_team");
     const runnerId = await syncRunner(orgId, user.id);

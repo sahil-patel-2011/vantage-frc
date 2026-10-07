@@ -26,6 +26,7 @@ import {
 } from "../../lib/scouting/draft-autosave";
 import {
   cacheEvent,
+  clearCachedEvent,
   discardQuarantined,
   getCachedEvent,
   listQuarantine,
@@ -68,6 +69,10 @@ import { focusInvalidScoutField } from "./scouting-form-focus";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
+  return <ScoutingWorkspace key={orgId} orgId={orgId} embedded={embedded} />;
+}
+
+function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boolean }) {
   const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,17 +166,25 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }, [online]);
 
   const refreshCounts = useCallback(async () => {
-    setCounts(await pendingCounts(orgId));
-    setQuarantine(await listQuarantine(orgId));
+    try {
+      const [nextCounts, nextQuarantine] = await Promise.all([pendingCounts(orgId), listQuarantine(orgId)]);
+      setCounts(nextCounts);
+      setQuarantine(nextQuarantine);
+    } catch {
+      setMessage("Could not read this device’s saved reports. Keep unsaved answers open and check device storage before saving.");
+    }
   }, [orgId]);
   useScoutQueueRefresh(refreshCounts);
-  const loadTrust = useCallback(async (eventKey: string | null | undefined) => {
+  const loadTrust = useCallback(async (eventKey: string | null | undefined, signal?: AbortSignal) => {
     if (!orgId || !eventKey || !navigator.onLine) return;
     try {
       const params = new URLSearchParams({ orgId, eventKey });
-      const response = await fetch(`/api/scouting/trust?${params}`);
-      if (!response.ok) return;
+      const response = await fetch(`/api/scouting/trust?${params}`, {
+        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) : AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      if (!response.ok || signal?.aborted) return;
       const body = (await response.json()) as TrustSnapshot;
+      if (signal?.aborted) return;
       setTrust({ fieldTrust: body.fieldTrust ?? [], leaderboard: body.leaderboard ?? [] });
     } catch {
       /* keep last-good field confidence */
@@ -256,12 +269,19 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   );
 
   useEffect(() => {
+    const lifecycle = new AbortController();
+    let accessDenied = false;
     void (async () => {
       setLoading(true);
       setFetchFailed(false);
       setBootstrapStatus(null);
-      const cachedEvent = await getCachedEvent<Bootstrap>(orgId);
-      const cachedSnap = await getFeatureSnapshot<Bootstrap>("scouting", orgId);
+      // Optional read caches must not stop online scouting when device storage fails.
+      const [eventResult, snapshotResult] = await Promise.allSettled([
+        getCachedEvent<Bootstrap>(orgId), getFeatureSnapshot<Bootstrap>("scouting", orgId),
+      ]);
+      if (lifecycle.signal.aborted) return;
+      const cachedEvent = eventResult.status === "fulfilled" ? eventResult.value : null;
+      const cachedSnap = snapshotResult.status === "fulfilled" ? snapshotResult.value : null;
       const cached = cachedEvent ?? cachedSnap?.data ?? null;
       if (cached) {
         setData(cached);
@@ -270,9 +290,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       try {
         const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, {
           cache: "no-store",
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          signal: AbortSignal.any([lifecycle.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
         });
+        if (lifecycle.signal.aborted) return;
         if (response.status === 401 || response.status === 403) {
+          accessDenied = true;
           setData(null);
           setFromCache(false);
           setFetchFailed(true);
@@ -283,16 +305,18 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           // alone reads as a role problem — which is what an owner who simply
           // signed in the wrong way was told.
           setMessage((await apiErrorMessage(response)) ?? "Could not load scouting");
-          void clearFeatureSnapshot("scouting", orgId);
-          void clearFeatureSnapshot("scouting", "_");
+          await Promise.allSettled([
+            clearCachedEvent(orgId), clearFeatureSnapshot("scouting", orgId), clearFeatureSnapshot("scouting", "_"),
+          ]);
         } else if (response.ok) {
           const fresh = (await response.json()) as Bootstrap;
+          if (lifecycle.signal.aborted) return;
           setData(fresh);
           setFromCache(false);
           setFetchFailed(false);
           const cacheNotice = await cacheLiveScouting(orgId, fresh);
           if (cacheNotice) setMessage(cacheNotice);
-          await loadTrust(fresh.eventKey);
+          await loadTrust(fresh.eventKey, lifecycle.signal);
         } else if (cached) {
           setMessage("Using the last copy on this phone — could not refresh.");
         } else {
@@ -301,6 +325,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setMessage("Could not load scouting");
         }
       } catch {
+        if (lifecycle.signal.aborted) return;
         if (cached) {
           setMessage("Using the last copy on this phone");
         } else {
@@ -308,17 +333,19 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setMessage("Could not load scouting");
         }
       } finally {
-        setLoading(false);
-        setSettled(true);
+        if (!lifecycle.signal.aborted) { setLoading(false); setSettled(true); }
       }
+      if (lifecycle.signal.aborted) return;
       await refreshCounts();
+      if (lifecycle.signal.aborted || accessDenied) return;
       await sync();
     })();
     const handleOnline = () => {
-      void sync();
+      if (!accessDenied) void sync();
     };
     window.addEventListener("online", handleOnline);
     return () => {
+      lifecycle.abort();
       window.removeEventListener("online", handleOnline);
     };
   }, [orgId, refreshCounts, sync, loadTrust]);

@@ -13,6 +13,7 @@ const suite = url ? describe.sequential : describe.skip;
 suite("durable hub coordination against PostgreSQL", () => {
   const owner = randomUUID(), outsider = randomUUID(), orgId = randomUUID(), otherOrg = randomUUID();
   beforeAll(async () => {
+    vi.stubEnv("NEXT_PUBLIC_VANTAGE_HOSTED_BACKGROUND_ENABLED", "1");
     const target = new URL(url!);
     if (!["localhost", "127.0.0.1"].includes(target.hostname) || !target.pathname.includes("test")) throw new Error("Dedicated local test database required.");
     for (const id of [owner, outsider]) {
@@ -27,6 +28,7 @@ suite("durable hub coordination against PostgreSQL", () => {
     fake.start.mockResolvedValue({ runId: "controlled-workflow" });
   });
   afterAll(async () => {
+    vi.unstubAllEnvs();
     await pool?.query("DELETE FROM organizations WHERE id=ANY($1::uuid[])", [[orgId, otherOrg]]);
     await pool?.query("DELETE FROM users WHERE id=ANY($1::uuid[])", [[owner, outsider]]);
     await pool?.end();

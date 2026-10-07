@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncEntry } from "@vantage/scouting";
 import { ACTION_HISTORY_KEY, recordScoutAction } from "@vantage/scouting";
 import { decodeScoutQrContent } from "@vantage/scouting/qr-handoff";
-import { cacheEvent, discardQuarantined, encodePendingQrPayload, getCachedEvent, getLastOrgId, listPendingEntries, listQuarantine, mergeRecordsIntoOutbox, pendingCounts, quarantineEntry, queueEntry, retryQuarantined, syncOutbox } from "../scout-offline";
+import { cacheEvent, clearCachedEvent, discardQuarantined, encodePendingQrPayload, getCachedEvent, getLastOrgId, listPendingEntries, listQuarantine, mergeRecordsIntoOutbox, pendingCounts, quarantineEntry, queueEntry, retryQuarantined, syncOutbox } from "../scout-offline";
 import { idbValue, scoutTransaction } from "./personal-store";
 
 const identity = vi.hoisted(() => ({ user: "a" as string | null }));
@@ -24,6 +24,16 @@ describe("personal scouting on shared devices", () => {
     await queueEntry(entry("quota-report"));
     expect((await listPendingEntries()).map(row => row.clientId)).toEqual(["quota-report"]);
     expect(await getCachedEvent(ORG)).toEqual({ saved: "event" });
+  });
+
+  it("purges a denied team's cached event while retaining unsent reports and other teams", async () => {
+    await cacheEvent(ORG, { private: "denied team" });
+    await cacheEvent("other-team", { private: "still allowed" });
+    await queueEntry(entry("not-uploaded"));
+    await clearCachedEvent(ORG);
+    expect(await getCachedEvent(ORG)).toBeNull();
+    expect(await getCachedEvent("other-team")).toEqual({ private: "still allowed" });
+    expect((await listPendingEntries())[0]?.clientId).toBe("not-uploaded");
   });
 
   it("keeps two people's identical client IDs, cache, counts and last team separate", async () => {

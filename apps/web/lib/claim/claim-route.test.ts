@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("../provisioning/start", () => ({ startTeamProvisioning: vi.fn(async () => undefined) }));
+vi.mock("../provisioning/start", () => ({ startTeamProvisioning: vi.fn(async () => false) }));
 vi.mock("../provisioning/defaults", () => ({ initializeTeamDefaults: vi.fn(async () => undefined) }));
 
 vi.mock("@vantage/core", () => ({
@@ -139,6 +139,12 @@ describe("POST /api/organizations/claim — authorization statement", () => {
     const response = await post(valid);
     expect(response.status).toBe(201);
     expect(attestationInserts()[0]!.params[5]).toBeNull();
+  });
+
+  it("does not claim that disabled background provisioning started", async () => {
+    const response = await post(valid);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: ORG, workspaceReady: true, provisioning: false });
   });
 
   it("creates a random encrypted join code when blank and preserves a chosen leading zero", async () => {

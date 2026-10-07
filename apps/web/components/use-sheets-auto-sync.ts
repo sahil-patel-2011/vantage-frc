@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { hostedBackgroundWorkEnabled } from "../lib/hosted-background-work";
 
 /** After a save, wait this long so a burst of edits becomes one refresh. */
 export const AFTER_SAVE_DELAY_MS = 20_000;
@@ -39,7 +40,7 @@ export function isTeamDataWrite(method: string | undefined, url: string): boolea
  */
 export function useSheetsAutoSync(orgId: string): void {
   useEffect(() => {
-    if (!orgId || typeof window === "undefined") return;
+    if (!hostedBackgroundWorkEnabled() || !orgId || typeof window === "undefined") return;
     let afterSave: ReturnType<typeof setTimeout> | null = null;
 
     const ping = () => {

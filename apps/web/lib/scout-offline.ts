@@ -93,6 +93,13 @@ export async function getCachedEvent<T>(orgId: string): Promise<T | null> {
   return row?.data ?? null;
 }
 
+/** Clear a denied team's read cache without touching anyone's pending reports. */
+export async function clearCachedEvent(orgId: string): Promise<void> {
+  const user = await scoutStorageUser(orgId);
+  if (!user) return;
+  await scoutTransaction(user, CACHE, "readwrite", tx => idbValue(tx.objectStore(CACHE).delete(orgId)));
+}
+
 async function entriesFor(user: string, orgId?: string): Promise<SyncEntry[]> {
   const rows = await scoutTransaction(user, OUTBOX, "readonly", tx =>
     idbValue<SyncEntry[]>(tx.objectStore(OUTBOX).getAll()));

@@ -668,6 +668,7 @@
 
 .sfb-layout-single { grid-template-columns: minmax(0, 1fr); }
 .sfb-responses > header, .sfb-response-controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; align-items: center; }
+.sfb-response-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .sfb-responses h2, .sfb-responses h3 { margin: 0; }
 .sfb-responses p { color: var(--muted); }
 .sfb-response-controls { margin: 20px 0; }
